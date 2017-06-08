@@ -169,10 +169,15 @@ def pageSettings() {
             }
             input "deviceOnline", "bool", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
             input "askAlexa", "bool", title: "Send notifications to Ask Alexa?", required: false, submitOnChange: true, value: false
-            //if (askAlexa)
-            //    input "listOfMQs", "enum", title: "Ask Alexa Message Queues", options: state.askAlexaMQ, multiple: true, required: false
+            if (askAlexa) {
+                if (state.askAlexaMQ)    
+                    input "listOfMQs", "enum", title: "Ask Alexa Message Queues", options: state.askAlexaMQ, multiple: true, required: false
+                input "expire", "number", title: "Expire Ask Alexa Messages after this many hours", required: false, submitOnChange: false
+            }
             input "resendTime", "time", title: "Send reminder alerts at this time each day", required: false
-            input "askAlexaRemind", "bool", title: "Allow reminder alerts to be sent to Ask Alexa?", required: false, submitOnChange: false, value: false
+            input "askAlexaRemind", "bool", title: "Allow reminder alerts to be sent to Ask Alexa?", required: false, submitOnChange: true, value: false
+            if (askAlexaRemind)
+                input "askAlexaRemindOverwrite", "bool", title: "Overwrite previous reminder alerts that were sent to Alexa?", required: false, submitOnChange: true, value: false
         }
         section([title: "Other Options", mobileOnly: true]) {
             input "checkHub", "bool", title: "Send notification if hub goes offline?", required: false, submitOnChange: false, value: false
@@ -602,7 +607,8 @@ def doCheck() {
                 hubOnlinelistMapDiff = tempMap - hublistMap
             }
 
-            if ((batteryerrorlistMapDiff || batterylistMapDiff || badlistMapDiff || errorlistMapDiff || delaylistCheckMapDiff || onlinedelaylistMapDiff || onlineerrorlistMapDiff || onlinebadlistMapDiff || hublistMapDiff || hubOnlinelistMapDiff) && ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0"))) {
+            if ((batteryerrorlistMapDiff || batterylistMapDiff || badlistMapDiff || errorlistMapDiff || delaylistCheckMapDiff || onlinedelaylistMapDiff || onlineerrorlistMapDiff || onlinebadlistMapDiff || hublistMapDiff || hubOnlinelistMapDiff) && 
+               ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0") || (askAlexa?.toBoolean() == true))) {
 
                 log.trace "Preparing Notification"
 
@@ -626,9 +632,9 @@ def doCheck() {
                         b -> b["time"] as float <=> a["time"] as float
                     }).each {
                         notificationDelaylist += "${it.time} - ${it.name}\n"
-                        alexaOfflineNotifications << [name: it.name, time: it.time, id:it.id]
+                        alexaOfflineNotifications += [name: it.name, value: it.time, id:it.id]
                     }
-                    notifications += ["Devices delayed:\n${notificationDelaylist.trim()}"]
+                    notifications += ["Devices Delayed:\n${notificationDelaylist.trim()}"]
                 }
                 if (deviceOnline != null && deviceOnline.toBoolean() == true && (onlinedelaylistMapDiff || onlineerrorlistMapDiff || onlinebadlistMapDiff)) {
                     def onlineListCombined = onlinedelaylistMapDiff + onlineerrorlistMapDiff + onlinebadlistMapDiff
@@ -638,6 +644,7 @@ def doCheck() {
 
                     onlineListDiff.each {
                         notificationOnlinelist += "${it.name}\n"
+                        alexaOnlineNotifications += [name: it.name, id:it.id]
                     }
                     
                     if (notificationOnlinelist != "" ) notifications += ["Devices Are Now Online:\n${notificationOnlinelist.trim()}"]
@@ -646,6 +653,7 @@ def doCheck() {
                     def notificationBadlist = ""
                     badlistMapDiff.each {
                         notificationBadlist += "${it.name}\n"
+                        alexaOfflineNotifications += [name: it.name, id:it.id]
                     }
                     notifications += ["Devices Not Reporting Events:\n${notificationBadlist.trim()}"]
                 }
@@ -663,6 +671,7 @@ def doCheck() {
                         b -> b["battery"] as Integer <=> a["battery"] as Integer
                     }).each {
                         notificationBatterylist += "${it.battery}% - ${it.name}\n"
+                        alexaOfflineNotifications += [name: it.name, value: it.battery, id:it.id]
                     }
                     
                     notifications += ["Devices With Low Battery:\n${notificationBatterylist.trim()}"]
@@ -671,38 +680,45 @@ def doCheck() {
                     def notificationBatteryErrorlist = ""
                     batteryerrorlistMapDiff.each {
                         notificationBatteryErrorlist += "${it.name}\n"
+                        alexaOfflineNotifications += [name: it.name, id:it.id]
                     }
-                    notifications += ["Devices not reporting battery:\n${notificationBatteryErrorlist.trim()}"]
+                    notifications += ["Devices Not Reporting Battery:\n${notificationBatteryErrorlist.trim()}"]
                 }
 
                 if (errorlistMapDiff) {
                     def notificationErrorlist = ""
                     errorlistMapDiff.each {
                         notificationErrorlist += "${it.name}\n"
+                        alexaOfflineNotifications += [name: it.name, id:it.id]
                     }
-                    notifications += ["Devices with Errors:\n${notificationErrorlist.trim()}"]
+                    notifications += ["Devices With Errors:\n${notificationErrorlist.trim()}"]
                 }
                 
                 if (hublistMapDiff) {
                     hublistMapDiff.each {
                         notifications += ["SmartThings Hub OFFLINE: ${it.name}"]
+                        alexaOfflineNotifications += [name: it.name, id:it.id]
                     }
                 }
                 
                 if (hubOnlinelistMapDiff) {
                     hubOnlinelistMapDiff.each {
                         notifications += ["SmartThings Hub ONLINE: ${it.name}"]
+                        alexaOnlineNotifications += [name: it.name, id:it.id]
+                    }
+                }
+                if (askAlexa != null && askAlexa?.toBoolean() == true) {
+                    log.debug "Sending to Ask Alexa"
+                    notifications.each() {
+                        def exHours = expire ? expire as int : 0
+                        def exSec= exHours * 60 * 60
+                        if (listOfMQs) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, unit:it.replaceAll("\\s","").split(':')[0], data: [queues: listOfMQs, overwrite:false ,expires:exSec, notifyOnly:false])
+                        else sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, overwrite:false)
                     }
                 }
                 
                 if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
                     notifications.each() {
-                        if (askAlexa != null && askAlexa.toBoolean() == true) {
-                            def exMin = expire ? expire as int : 0
-                            def exSec=exMin * 60
-                            //if (listOfMQs) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, unit:"1234", data: [queues: listOfMQs, overwrite:false ,expires:exSec, notifyOnly:false])
-                            /*else*/ sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, overwrite:false)
-                        }
                         send(it)
                     }
                 }
@@ -919,7 +935,8 @@ def resend() {
         ]
     }
     
-    if ((batteryerrorlistMapDiff || batterybadlistMapDiff || badlistMapDiff || errorlistMapDiff || delaylistMapDiff || hublistMapDiff) && ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0"))) {
+    if ((batteryerrorlistMapDiff || batterybadlistMapDiff || badlistMapDiff || errorlistMapDiff || delaylistMapDiff || hublistMapDiff) && 
+       ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0") || (askAlexa?.toBoolean() == true))) {
 
         log.trace "Preparing Notification"
 
@@ -932,7 +949,7 @@ def resend() {
             delaylistMapDiff.each {
                 notificationDelaylist += "${it.time} - ${it.name}\n"
             }
-            notifications += ["Reminder - Devices delayed:\n${notificationDelaylist.trim()}"]
+            notifications += ["Reminder - Devices Delayed:\n${notificationDelaylist.trim()}"]
         }
         if (badlistMapDiff) {
             def notificationBadlist = ""
@@ -954,14 +971,14 @@ def resend() {
             batteryerrorlistMapDiff.each {
                 notificationBatteryErrorlist += "${it.name}\n"
             }
-            notifications += ["Reminder - Devices not reporting battery:\n${notificationBatteryErrorlist.trim()}"]
+            notifications += ["Reminder - Devices Not Reporting Battery:\n${notificationBatteryErrorlist.trim()}"]
         }
         if (errorlistMapDiff) {
             def notificationErrorlist = ""
             errorlistMapDiff.each {
                 notificationErrorlist += "${it.name}\n"
             }
-            notifications += ["Reminder - Devices with Errors:\n${notificationErrorlist.trim()}"]
+            notifications += ["Reminder - Devices With Errors:\n${notificationErrorlist.trim()}"]
         }
         if (hublistMapDiff) {
             hublistMapDiff.each {
@@ -969,12 +986,18 @@ def resend() {
             }
         }
 
+        if (askAlexa != null && askAlexa?.toBoolean() == true) {
+            log.debug "Resending to Ask Alexa"
+            notifications.each() {
+                def exHours = expire ? expire as int : 0
+                def exSec= exHours * 60 * 60
+                if (listOfMQs) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, unit:it.replaceAll("\\s","").split(':')[0], data: [queues: listOfMQs, overwrite:(askAlexaRemindOverwrite == true) ,expires:exSec, notifyOnly:false])
+                else sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, overwrite:false)
+            }
+        }
+                
         if ((location.contactBookEnabled && recipients) || (sendPushMessage != "No") || (phoneNumber != "0")) {
             notifications.each() {
-                if (askAlexa != null && askAlexa.toBoolean() == true) {
-                    //if (listOfMQs) sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, unit:"", data: [queues: listOfMQs, overwrite:true])
-                    /*else*/ sendLocationEvent(name: "AskAlexaMsgQueue", value: "Device Monitor", isStateChange: true, descriptionText: it, overwrite:false)
-                }
                 send(it)
             }
         }
