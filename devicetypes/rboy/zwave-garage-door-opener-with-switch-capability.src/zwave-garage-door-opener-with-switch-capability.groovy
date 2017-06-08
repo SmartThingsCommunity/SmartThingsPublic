@@ -15,8 +15,8 @@ def clientVersion() {
 }
 
 /*
- * Modified by RBoy, SmartThings Z-Wave Garage Door Opener base code as of 2015-9-19
- * Changes Copyright RBoy, redistribution of any changes or modified code is not allowed without permission
+ * Modified by RBoy Apps, SmartThings Z-Wave Garage Door Opener base code as of 2015-9-19
+ * Changes Copyright RBoy Apps, redistribution of any changes or modified code is not allowed without permission
  *
  * Change Log
  * 2017-5-4 - (v02.05.01) Updated color scheme to match ST's recommendation
@@ -57,7 +57,7 @@ def clientVersion() {
  *
  */
 metadata {
-	definition (name: "Z-Wave Garage Door Opener with Switch Capability", namespace: "rboy", author: "RBoy") {
+	definition (name: "Z-Wave Garage Door Opener with Switch Capability", namespace: "rboy", author: "RBoy Apps") {
 		capability "Actuator"
 		capability "Door Control"
 		capability "Garage Door Control"

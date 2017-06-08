@@ -11,15 +11,17 @@
  */ 
  
 def clientVersion() {
-    return "03.03.01"
+    return "03.03.03"
 }
 
 /*
- * Modified by RBoy, SmartThings Z-Wave lock base code as of 2016-6-1
- * Changes Copyright RBoy, redistribution of any changes or modified code is not allowed without permission
+ * Modified by RBoy Apps, SmartThings Z-Wave lock base code as of 2016-6-1
+ * Changes Copyright RBoy Apps, redistribution of any changes or modified code is not allowed without permission
  * Works with all Z-Wave Locks including Schlage, Yale, Kiwkset, Monoprice, DanaLock and IDLock
  *
  * Change Log
+ * 2017-5-23 - (v03.03.03) Added support for reporting Yale RFID tags/user slots
+ * 2017-5-23 - (v03.03.02) Added support for FE599 series invalid code detection
  * 2017-5-4 - (v03.03.01) Updated color scheme to match ST UX recommendations
  * 2017-4-19 - (v.03.02.03) Added more Yale fingerprints for Yale Assure Lock and patch for Yale Master Code reporting (code 0 and code 251)
  * 2017-3-13 - (v.3.2.2) Don't show unknown and reset states in the recently logs of device
@@ -114,7 +116,7 @@ def clientVersion() {
  
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Universal Z-Wave Lock With Alarms", namespace: "rboy", author: "RBoy") {
+	definition (name: "Universal Z-Wave Lock With Alarms", namespace: "rboy", author: "RBoy Apps") {
 		capability "Actuator"
 		capability "Lock"
 		capability "Polling"
@@ -194,7 +196,7 @@ metadata {
         fingerprint type:"4003", cc:"72,86,98", mfr:"0129", prod:"0002", model:"0800", deviceJoinName:"Yale YRD120"
         fingerprint type:"4003", cc:"5E,72,98,5A,73,86", mfr:"0129", prod:"8002", model:"1600", deviceJoinName:"Yale Assure with Bluetooth (YRD446-NR-605)"
         fingerprint type:"4003", cc:"72,86,98", mfr:"0129", prod:"0006", model:"0000", deviceJoinName:"Yale Keyfree Connected/Conexis L1" // UK
-        fingerprint type:"4003", cc:"72,86,98", mfr:"0129", prod:"0007", model:"0000", deviceJoinName:"Yale Keyless Connected YD-01" // UK
+        fingerprint type:"4003", cc:"72,86,98", mfr:"0129", prod:"0007", model:"0000", deviceJoinName:"Yale Keyless Connected YD-01" // UK - YD-01-CON-ZW-CH
         fingerprint type:"4003", cc:"72,86,98", mfr:"0129", prod:"0040", model:"0000", deviceJoinName:"Yale YDM3168" // Italy
         fingerprint type:"4003", cc:"5E,72,98,5A,73,86", sec:"80,62,85,59,71,70,63,8A,8B,4C,4E,7A", mfr:"0129", prod:"8001", model:"0B00", deviceJoinName:"Yale nexTouch Wireless Touchscreen" // Yale Commercial
         fingerprint type:"4003", cc:"5E,72,98,5A,80,73,70", sec:"86,62,63,85,59,71,7A", mfr:"0230", prod:"0003", model:"0001", deviceJoinName:"IDLock 101 Z-Wave/RFID Lock"
@@ -658,7 +660,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 				map = [ name: "codeChanged", descriptionText: "$device.displayName: user code not added, duplicate", isStateChange: true ]
 				break
 			case 0x10:
-				map = [ name: "invalidCode", value: "detected", descriptionText: "$device.displayName: keypad temporarily disabled", isStateChange: true, displayed: true ]
+				map = [ name: "invalidCode", value: "detected", descriptionText: "$device.displayName: code entry attempt limit exceeded, keypad temporarily disabled", isStateChange: true, displayed: true ]
 				break
 			case 0x11:
 				map = [ descriptionText: "$device.displayName: keypad is busy" ]
@@ -783,6 +785,16 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
                 map.data = [ type: "keypad" ]
             }
 			break
+		case 144: // Yale unlocked using RFID tag
+			map = [ name: "lock", value: "unlocked" ]
+			if (cmd.alarmLevel > 0) {
+				map.descriptionText = "$device.displayName was unlocked with code $cmd.alarmLevel"
+				map.data = [ usedCode: cmd.alarmLevel, type: "rfid" ]
+			} else {
+                map.descriptionText = "$device.displayName was unlocked"
+                map.data = [ type: "rfid" ]
+            }
+			break
 		case 22: // Unlocked manually via knob (Yale)
 			map = [ name: "lock", value: "unlocked" ]
             map.descriptionText = "$device.displayName was manually unlocked"
@@ -824,6 +836,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		case 131:
 			map = [ /*name: "codeChanged", value: cmd.alarmLevel,*/ descriptionText: "$device.displayName code $cmd.alarmLevel is duplicate", isStateChange: false ]
 			break
+        case 96: // Schlage FE599 (alarmType 96, alarmLevel 255)
 		case 161:
 			if (cmd.alarmLevel == 2) {
 				map = [ name: "tamper", value: "detected", descriptionText: "$device.displayName front escutcheon removed", isStateChange: true, displayed: true ]
