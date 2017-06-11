@@ -26,6 +26,11 @@ metadata {
 
         attribute "loadType", "enum", ["incandescent", "led", "cfl"]
         attribute "presetLevel", "number"
+        attribute "minLevel", "number"
+        attribute "maxLevel", "number"
+        attribute "fadeOnTime", "number"
+        attribute "fadeOffTime", "number"
+        attribute "levelIndicatorTimeout", "number"
 
         command "low"
         command "medium"
@@ -91,14 +96,29 @@ metadata {
     }
 
     preferences {
-        input name: "loadTypePref", type: "enum", title: "Load Type",
+        input name: "loadType", type: "enum", title: "Load type",
                 options: ["Incandescent (default)", "LED", "CFL"],
                 displayDuringSetup: false, required: false
-        input name: "indicatorStatusPref", type: "enum", title: "Indicator LED is lit",
+        input name: "indicatorStatus", type: "enum", title: "Indicator LED is lit",
                 options: ["When switch is off (default)", "When switch is on", "Never"],
                 displayDuringSetup: false, required: false
-        input name: "presetLevelPref", type: "number", title: "Preset light level",
-                description: "0 = last dim level (default). 1 to 100 = level", range: "0..100",
+        input name: "presetLevel", type: "number", title: "Light turns on to level",
+                description: "0 = last dim level (default)\n1 - 100 = fixed level", range: "0..100",
+                displayDuringSetup: false, required: false
+        input name: "minLevel", type: "number", title: "Minimum light level",
+                description: "0 to 100 (default 10)", range: "0..100",
+                displayDuringSetup: false, required: false
+        input name: "maxLevel", type: "number", title: "Maximum light level",
+                description: "0 to 100 (default 100)", range: "0..100",
+                displayDuringSetup: false, required: false
+        input name: "fadeOnTime", type: "number", title: "Fade-on time",
+                description: "0 = instant on\n1 - 127 = 1 - 127 seconds (default 2)\n128 - 253 = 1 - 126 minutes", range: "0..253",
+                displayDuringSetup: false, required: false
+        input name: "fadeOffTime", type: "number", title: "Fade-off time",
+                description: "0 = instant off\n1 - 127 = 1 - 127 seconds (default 2)\n128 - 253 = 1 - 126 minutes", range: "0..253",
+                displayDuringSetup: false, required: false
+        input name: "levelIndicatorTimeout", type: "number", title: "Dim level indicator timeout",
+                description: "0 = dim level indicator off\n1 - 254 = timeout in seconds (default 3)\n255 = dim level indicator always on", range: "0..255",
                 displayDuringSetup: false, required: false
     }
 }
@@ -109,34 +129,42 @@ def installed() {
 }
 
 def updated() {
+    if (state.lastUpdatedAt != null && state.lastUpdatedAt >= now() - 1000) {
+        log.debug "ignoring double updated"
+        return
+    }
     log.debug "updated..."
+    state.lastUpdatedAt = now()
+
     initialize()
     response(configure())
 }
 
 def configure() {
     def commands = []
-    switch (loadTypePref) {
-        case "Incandescent (default)":
-            sendEvent(name: "loadType", value: "incandescent")
-            commands.addAll(configurationCommand(8, 0))
-            break
-        case "LED":
-            sendEvent(name: "loadType", value: "led")
-            commands.addAll(configurationCommand(8, 1))
-            break
-        case "CFL":
-            sendEvent(name: "loadType", value: "cfl")
-            commands.addAll(configurationCommand(8, 2))
-            break
+    if (loadType != null) {
+        commands.addAll(setLoadType(loadType))
     }
-    switch (indicatorStatusPref) {
-        case "When switch is off (default)": commands.addAll(indicatorWhenOff()); break
-        case "When switch is on": commands.addAll(indicatorWhenOn()); break
-        case "Never": commands.addAll(indicatorNever()); break
+    if (indicatorStatus != null) {
+        commands.addAll(setIndicatorStatus(indicatorStatus))
     }
-    if (presetLevelPref != null) {
-        commands.addAll(setPresetLevel(presetLevelPref as short))
+    if (presetLevel != null) {
+        commands.addAll(setPresetLevel(presetLevel as short))
+    }
+    if (minLevel != null) {
+        commands.addAll(setMinLevel(minLevel as short))
+    }
+    if (maxLevel != null) {
+        commands.addAll(setMaxLevel(maxLevel as short))
+    }
+    if (fadeOnTime != null) {
+        commands.addAll(setFadeOnTime(fadeOnTime as short))
+    }
+    if (fadeOffTime != null) {
+        commands.addAll(setFadeOffTime(fadeOffTime as short))
+    }
+    if (levelIndicatorTimeout != null) {
+        commands.addAll(setLevelIndicatorTimeout(levelIndicatorTimeout as short))
     }
     log.debug "Configuring with commands $commands"
     commands
@@ -196,14 +224,14 @@ def ping() {
 
 def refresh() {
     def commands = statusCommands
-    for (i in [5, 7, 8]) {
-        commands << zwave.configurationV1.configurationGet(parameterNumber: i).format()
-    }
     if (getDataValue("MSR") == null) {
         commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
     }
+    for (i in 1..8) {
+        commands << zwave.configurationV1.configurationGet(parameterNumber: i).format()
+    }
     log.debug "Refreshing with commands $commands"
-    delayBetween(commands, 100)
+    delayBetween(commands, 1000)
 }
 
 def indicatorNever() {
@@ -264,8 +292,23 @@ private zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryRepor
 private zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
     def result = null
     switch (cmd.parameterNumber) {
+        case 1:
+            result = createEvent(name: "fadeOnTime", value: cmd.configurationValue[0])
+            break
+        case 2:
+            result = createEvent(name: "fadeOffTime", value: cmd.configurationValue[0])
+            break
+        case 3:
+            result = createEvent(name: "minLevel", value: cmd.configurationValue[0])
+            break
+        case 4:
+            result = createEvent(name: "maxLevel", value: cmd.configurationValue[0])
+            break
         case 5:
             result = createEvent(name: "presetLevel", value: cmd.configurationValue[0])
+            break
+        case 6:
+            result = createEvent(name: "levelIndicatorTimeout", value: cmd.configurationValue[0])
             break
         case 7:
             def value = null
@@ -346,7 +389,54 @@ private configurationCommand(param, value) {
     ], 1000)
 }
 
+private setFadeOnTime(short time) {
+    sendEvent(name: "fadeOnTime", value: time)
+    configurationCommand(1, time)
+}
+
+private setFadeOffTime(short time) {
+    sendEvent(name: "fadeOffTime", value: time)
+    configurationCommand(2, time)
+}
+
+private setMinLevel(short level) {
+    sendEvent(name: "minLevel", value: level)
+    configurationCommand(3, level)
+}
+
+private setMaxLevel(short level) {
+    sendEvent(name: "maxLevel", value: level)
+    configurationCommand(4, level)
+}
+
 private setPresetLevel(short level) {
     sendEvent(name: "presetLevel", value: level)
     configurationCommand(5, level)
+}
+
+private setLevelIndicatorTimeout(short timeout) {
+    sendEvent(name: "levelIndicatorTimeout", value: timeout)
+    configurationCommand(6, timeout)
+}
+
+private setLoadType(String loadType) {
+    switch (loadType) {
+        case "Incandescent (default)":
+            sendEvent(name: "loadType", value: "incandescent")
+            return configurationCommand(8, 0)
+        case "LED":
+            sendEvent(name: "loadType", value: "led")
+            return configurationCommand(8, 1)
+        case "CFL":
+            sendEvent(name: "loadType", value: "cfl")
+            return configurationCommand(8, 2)
+    }
+}
+
+private setIndicatorStatus(String status) {
+    switch (indicatorStatus) {
+        case "When switch is off (default)":    return indicatorWhenOff()
+        case "When switch is on":               return indicatorWhenOn()
+        case "Never":                           return indicatorNever()
+    }
 }
