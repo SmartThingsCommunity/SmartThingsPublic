@@ -14,6 +14,9 @@
  *
  *	Author: gary
  *	Date: 2016-06-10
+ * 
+ *  Updated by kuestess
+ *  Date: 05/19/2017
  */
 definition(
 		name: "Insteon (Connect)",
@@ -72,9 +75,12 @@ def authPage() {
         
 		def devices = getInsteonDevices()
 		log.debug "Device list: $devices"
-		return dynamicPage(name: "auth", title: "Switches", uninstall: true) {
-			section(""){
+		return dynamicPage(name: "auth", title: "Devices", uninstall: true) {
+			section("Switches"){
 				input(name: "switches", title:"", type: "enum", required:true, multiple:true, description: "Tap to choose", metadata:[values:devices])
+			}
+            section("IOLinc"){
+				input(name: "iolinc", title:"", type: "enum", required:false, multiple:true, description: "Tap to choose", metadata:[values:devices])
 			}
 		}
 	}
@@ -250,6 +256,12 @@ def getInsteonDevices() {
                         def key = "insteon_switch." + "${device.DeviceID}"
                         devices["${key}"] = value
                     }
+                    // Pick IOLincs
+                    //if (devCat == 7) {
+                    //    def value = "${device.DeviceName}"
+                    //    def key = "insteon_iolinc." + "${device.DeviceID}"
+                    //    devices["${key}"] = value
+                    //}
 				}
 
 			} else {
@@ -260,7 +272,7 @@ def getInsteonDevices() {
         log.trace "Exception getting devices: " + e.response.data
         if (e.response.data.code == 4014 || e.response.data.code == 4012) {
             atomicState.action = "getInsteonDevices"
-            retry = true
+            def retry = true
             log.debug "Refreshing your auth_token!"
             refreshAuthToken()
         }
@@ -342,7 +354,7 @@ def pollChildren(child = null) {
     	def deviceId = dni.split(/\./).last()        
            
         try {
-            if (pollData[dni] == null) {
+            //if (pollData[dni] == null) {
             
             	log.debug "polling child: $deviceId"
             
@@ -363,7 +375,7 @@ def pollChildren(child = null) {
                         }
                     }
                 }
-        	}
+        	//}
         } catch (groovyx.net.http.HttpResponseException e) {
             log.trace "Exception Sending Json: " + e.response.data
             debugEvent ("sent Json & got http status ${e.statusCode}")
@@ -384,6 +396,7 @@ def pollChildren(child = null) {
     atomicState.deviceStatus = deviceStatus
     log.debug "pollChildren updated pollData = ${pollData}"
     log.debug "pollChildren updated deviceStatus = ${deviceStatus}"
+    log.debug "Has pending: ${hasPending}"
     
     if (hasPending) {
    		log.debug "Scheduling checkPendingRequests"
@@ -476,7 +489,7 @@ def pollChild(){
 
 	def devices = getChildDevices()
 
-	if (pollChildren() ){
+	if (pollChildren()){
 		devices.each { child ->
             if(atomicState.deviceStatus[child.device.deviceNetworkId] != null) {
                 def tData = atomicState.deviceStatus[child.device.deviceNetworkId]
@@ -582,7 +595,7 @@ def switchOn(child, deviceNetworkId) {
 	def result = sendJson(jsonRequestBody)
     
     if (result) {
-    	deviceStatus[deviceNetworkId] = [level: 100]
+    	deviceStatus[deviceNetworkId] = '{level: 100}'
         atomicState.deviceStatus = deviceStatus
     }
 	return result
@@ -597,14 +610,33 @@ def switchOff(child, deviceNetworkId) {
 	def jsonRequestBody = '{ "command": "off", "device_id": ' + "${deviceId}" + ' }'
 	def result = sendJson(jsonRequestBody)
     if (result) {
-    	deviceStatus[deviceNetworkId] = [level: 0]
+    	deviceStatus[deviceNetworkId] = '{level: 0}'
         atomicState.deviceStatus = deviceStatus
     }
 	return result
 }
 
-def sendJson(child = null, String jsonBody) {
+def switchLevel(child, deviceNetworkId, level) {
+	log.debug "Calling switchLevel"
+	def deviceId = deviceNetworkId.split(/\./).last()
+    
+    def deviceStatus = atomicState.deviceStatus;
+	log.debug "FirstDeviceStatus ${deviceStatus}"
+	def jsonRequestBody = '{ "command": "on", "device_id": ' + "${deviceId}" + ', "level":' + "${level}" + ' }'
+	log.debug "JSONRequestBody ${jsonRequestBody}"
+    def result = sendJson(jsonRequestBody)
+    //log.debug "DimResult ${result}"
+    
+    if (result) {
+        deviceStatus[deviceNetworkId] = '{level: ' + "${level}" + '}'
+        atomicState.deviceStatus = deviceStatus
+        log.debug "DeviceStatus ${atomicState.deviceStatus}"
+    }
+	return result
+}
 
+def sendJson(child = null, String jsonBody) {
+	log.debug "JSONbody: ${jsonBody}"
 	def returnStatus = "not sent"
 	def cmdParams = [
 			uri: apiEndpoint,
@@ -615,7 +647,7 @@ def sendJson(child = null, String jsonBody) {
 
 	try{
 		httpPost(cmdParams) { resp ->
-
+        
 			if(resp.status == 200) {
 
 				log.debug "updated ${resp.data}"

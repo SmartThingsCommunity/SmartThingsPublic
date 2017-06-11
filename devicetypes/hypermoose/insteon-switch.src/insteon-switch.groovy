@@ -14,25 +14,48 @@
  *
  *	Author: hypermoose
  *	Date: 2016-06-19
+ *
+ *  Updated by kuestess
+ *  Date: 05/19/2017
  */
 metadata {
-	definition (name: "Insteon Switch", namespace: "hypermoose", author: "hypermoose") {
-		capability "Actuator"
+	definition (name: "Insteon Switch", namespace: "kuestess", author: "kuestess") {
+		//capability "Actuator"
 		capability "Switch"
-        capability "Sensor"
+        //capability "Sensor"
+        capability "Switch Level"
+        capability "Refresh"
+        capability "Polling"
 	}
 
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-            state "off", label: '${name}', action: "switch.on",
-                   icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-            state "on", label: 'AM ON', action: "switch.off",
-                  icon: "st.switches.switch.on", backgroundColor: "#79b821"
+tiles(scale:2) {
+       multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+            
+           tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+               attributeState "level", action:"switch level.setLevel"
+           }
+
         }
-		main "switch"
-		details "switch"
-	}
+        
+        standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+            state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
+
+        valueTile("level", "device.level", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "level", label:'${currentValue} %', unit:"%", backgroundColor:"#ffffff"
+        }
+
+        main(["switch"])
+        details(["switch", "level", "refresh"])
+    }
 }
+
 
 // parse events into attributes
 def parse(String description) {
@@ -48,7 +71,8 @@ def generateEvent(Map results) {
 	log.debug "generateEvent: parsing data $results"
 	if(results) {
     	def level = results.level
-		sendEvent(name: "switch", value: level == 100 ? "on" : "off")
+		sendEvent(name: "level", value: level, unit: "%")
+        sendEvent(name: "switch", value: level > 0 ? "on" : "off")
     }
     
     return null
@@ -62,6 +86,7 @@ def off() {
 		log.debug "Error turning switch off"
 	} else {
     	sendEvent(name: "switch", value: "off")
+        sendEvent(name: "level", value: 0, unit: "%")
     }
 }
 
@@ -72,8 +97,22 @@ def on() {
 		log.debug "Error turning switch on"
 	} else {
     	sendEvent(name: "switch", value: "on")
+        sendEvent(name: "level", value: 100, unit: "%")
     }
 }
 
+def setLevel(level) {
+	log.debug "dim to ${level}"
 
+	if (!parent.switchLevel(this, device.deviceNetworkId, level)) {
+		log.debug "Error turning switch on"
+	} else {
+    	sendEvent(name: "level", value: level, unit: "%")
+        sendEvent(name: "switch", value: level > 0 ? "on" : "off")
+    }
+}
 
+def refresh() {
+    log.debug "Refreshing.."
+    poll()
+}
