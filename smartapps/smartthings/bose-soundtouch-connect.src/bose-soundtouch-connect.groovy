@@ -1,3 +1,5 @@
+//DEPRECATED. INTEGRATION MOVED TO SUPER LAN CONNECT
+
 /**
  *  Bose SoundTouch (Connect)
  *
