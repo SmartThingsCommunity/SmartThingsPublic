@@ -56,6 +56,8 @@ metadata {
 def installed(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	response(refresh())
 }
 
 def updated(){
@@ -85,11 +87,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def open() {
-	zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format()
+	delayBetween([
+		zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format(),
+		zwave.switchBinaryV1.switchBinaryGet().format()
+	], 500)
 }
 
 def close() {
-	zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format()
+	delayBetween([
+		zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format(),
+		zwave.switchBinaryV1.switchBinaryGet().format()
+	], 500)
 }
 
 /**
@@ -105,6 +113,6 @@ def refresh() {
 
 def createEventWithDebug(eventMap) {
 	def event = createEvent(eventMap)
-	log.debug "Event created with ${event?.descriptionText}"
+	log.debug "Event created with ${event?.name}:${event?.value} - ${event?.descriptionText}"
 	return event
 }
