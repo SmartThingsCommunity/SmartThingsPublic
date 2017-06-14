@@ -152,7 +152,7 @@ def parse(description) {
             parseRelay(result)
     }
     if (result.containsKey("uptime")) {
-        events << createEvent(name: 'uptime', value: result.uptime)
+        events << createEvent(name: 'uptime', value: result.uptime, displayed: false)
     }
     } else {
         //log.debug "Response is not JSON: $body"

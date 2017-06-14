@@ -133,7 +133,7 @@ def parse(description) {
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
     
-    //log.debug "result: ${result}"
+    log.debug "result: ${result}"
     
     if (result.containsKey("type")) {
         if (result.type == "configuration")
@@ -143,15 +143,15 @@ def parse(description) {
         events << createEvent(name: "switch", value: result.power)
     }
     if (result.containsKey("uptime")) {
-        events << createEvent(name: 'uptime', value: result.uptime)
+        events << createEvent(name: "uptime", value: result.uptime, displayed: false)
     }
     } else {
         //log.debug "Response is not JSON: $body"
     }
     }
-    
+
     if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) events << createEvent(name: 'ip', value: getDataValue("ip"))
-    
+
     return events
 }
 

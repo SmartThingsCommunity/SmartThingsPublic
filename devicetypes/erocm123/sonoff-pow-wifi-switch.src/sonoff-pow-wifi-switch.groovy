@@ -13,7 +13,12 @@
  *  Sonoff POW Wifi Switch
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2016-06-02
+ *  Date: 2017-06-14
+ *
+ *  2017-06-14: Added option to adjust Uptime report frequency. Made uptime events not show up in "Recently" tab.
+ *              Fixed bug that was making settings appear as if they were not synced even when they were.
+ *              Fixed bug that prevented zero values (0) from being entered into preferences.
+ *
  */
  
 import groovy.json.JsonSlurper
@@ -142,7 +147,7 @@ def parse(description) {
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
     
-    //log.debug "result: ${result}"
+    log.debug "result: ${result}"
     
     if (result.containsKey("type")) {
         if (result.type == "configuration")
@@ -152,7 +157,7 @@ def parse(description) {
         events << createEvent(name: "switch", value: result.power)
     }
     if (result.containsKey("uptime")) {
-        events << createEvent(name: 'uptime', value: result.uptime)
+        events << createEvent(name: 'uptime', value: result.uptime, displayed: false)
     }
     if (result.containsKey("V")) {
         events << createEvent(name: "voltage", value: result.V, unit: "V")
@@ -210,6 +215,8 @@ def ping() {
 }
 
 private getAction(uri){ 
+
+  log.debug uri
   updateDNI()
   
   def userpass
@@ -375,9 +382,9 @@ def update_current_properties(cmd)
     def currentProperties = state.currentProperties ?: [:]
     currentProperties."${cmd.name}" = cmd.value
 
-    if (settings."${cmd.name}" != null)
+    if (state.settings?."${cmd.name}" != null)
     {
-        if (settings."${cmd.name}".toString() == cmd.value)
+        if (state.settings."${cmd.name}".toString() == cmd.value)
         {
             sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
         }
@@ -394,6 +401,8 @@ def update_needed_settings()
 {
     def cmds = []
     def currentProperties = state.currentProperties ?: [:]
+    
+    state.settings = settings
      
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
@@ -415,7 +424,7 @@ def update_needed_settings()
                   cmds << getAction("/configGet?name=${it.@index}")
                }
             }
-            else if ((settings."${it.@index}" != null || it.@hidden == "true") && currentProperties."${it.@index}" != (settings."${it.@index}"? settings."${it.@index}".toString() : "${it.@value}"))
+            else if ((settings."${it.@index}" != null || it.@hidden == "true") && currentProperties."${it.@index}" != (settings."${it.@index}" != null? settings."${it.@index}".toString() : "${it.@value}"))
             { 
                 isUpdateNeeded = "YES"
                 logging("Setting ${it.@index} will be updated to ${settings."${it.@index}"}", 2)
@@ -444,7 +453,7 @@ Default: Off
     <Item label="On" value="1" />
     <Item label="Previous" value="2" />
 </Value>
-<Value type="number" byteSize="1" index="autooff" label="Auto Off" min="0" max="65536" value="0" setting_type="lan" fw="">
+<Value type="number" byteSize="1" index="autooff1" label="Auto Off" min="0" max="65536" value="0" setting_type="lan" fw="">
 <Help>
 Automatically turn the switch off after this many seconds.
 Range: 0 to 65536
@@ -470,6 +479,13 @@ Default: 60
 In seconds
 Range: 0 to 65536
 Default: 60
+</Help>
+</Value>
+<Value type="number" byteSize="1" index="ureport" label="Uptime Report Interval" min="0" max="65536" value="300" setting_type="lan" fw="">
+<Help>
+Send uptime reports at this interval (in seconds).
+Range: 0 (Disabled) to 65536
+Default: 300
 </Help>
 </Value>
 <Value type="list" index="logLevel" label="Debug Logging Level?" value="0" setting_type="preference" fw="">
