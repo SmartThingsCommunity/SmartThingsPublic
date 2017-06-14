@@ -343,7 +343,7 @@ def addDevices() {
         if (!d) {
             log.debug selectedDevice
             log.debug "Creating Sonoff Switch with dni: ${selectedDevice.value.mac}"
-            log.debug Integer.parseInt(selectedDevice.value.deviceAddress,16)
+
             def deviceHandlerName
             if (selectedDevice?.value?.name?.startsWith("Sonoff TH"))
                 deviceHandlerName = "Sonoff TH Wifi Switch"
@@ -355,7 +355,7 @@ def addDevices() {
                 deviceHandlerName = "Sonoff 4CH Wifi Switch"
             else 
                 deviceHandlerName = "Sonoff Wifi Switch"
-            addChildDevice("erocm123", deviceHandlerName, selectedDevice.value.mac, selectedDevice?.value.hub, [
+            def newDevice = addChildDevice("erocm123", deviceHandlerName, selectedDevice.value.mac, selectedDevice?.value.hub, [
                 "label": selectedDevice?.value?.name ?: "Sonoff Wifi Switch",
                 "data": [
                     "mac": selectedDevice.value.mac,
