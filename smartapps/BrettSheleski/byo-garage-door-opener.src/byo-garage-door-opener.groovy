@@ -3,7 +3,7 @@ definition(
     name: "BYO Garage Door Opener",
     namespace: "BrettSheleski",
     author: "Brett Sheleski",
-    description: "Bring Your Own Garage Door Opener by specifying real sensors to control be controlled by a virtial garage door opener device.",
+    description: "Bring Your Own Garage Door Opener by specifying real sensors to control be controlled by a virtual garage door opener device.",
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/garage_contact.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/garage_contact@2x.png"
@@ -16,9 +16,10 @@ preferences {
 		input "outputButton", "capability.momentary", title: "Button", required: true, multiple: false
 	}
 
-	section("Output Device") {
-		input "garageDoorOpener", "capability.garageDoorControl", title: "Garage Door Opener", required: true, multiple: false
+	section ("Device ID"){
+		input "garageDoorNetworkId", "string", title:"Device ID", required: true, defaultValue: UUID.randomUUID().toString()
 	}
+
 }
 
 def installed(){
@@ -34,31 +35,61 @@ def initialize(){
 	subscribe(inputSensor, "contact.open", handleSensorOpened);
 	subscribe(inputSensor, "contact.close", handleSensorClosed);
 
+	def garageDoorOpener = getGarageDoorOpener();
+
+	if (garageDoorOpener == null){
+		addChildDevice("BrettSheleski", "BYO Garage Door Opener", garageDoorNetworkId);
+	}
+	
 	subscribeToCommand(garageDoorOpener, "open", garageDoorOpen);
 	subscribeToCommand(garageDoorOpener, "close", garageDoorClose);
 
-	sendEvent(garageDoorOpener, name: "door", value: "unknown");
+	garageDoorOpener.sendEvent(name: "door", value: "unknown");
+}
+
+def getGarageDoorOpener(){
+	getChildDevices(true).each
+	{
+		if (it.getDeviceNetworkId() == garageDoorNetworkId)
+        {
+			return it;
+        }
+	}
+
+    return null;
 }
 
 def handleSensorOpened(evt){
-	sendEvent(garageDoorOpener, name: "door", value: "open");
+
+	def garageDoorOpener = getGarageDoorOpener();
+
+	garageDoorOpener.sendEvent(name: "door", value: "open");
 }
 
 def handleSensorClosed(evt){
-	sendEvent(garageDoorOpener, name: "door", value: "closed");
+
+	def garageDoorOpener = getGarageDoorOpener();
+
+	garageDoorOpener.sendEvent(name: "door", value: "closed");
 }
 
 def garageDoorOpen(evt){
 	if (!isDoorOpen()){
 		outputButton.push();
-		sendEvent(garageDoorOpener, name: "door", value: "opening");
+
+		def garageDoorOpener = getGarageDoorOpener();
+
+		garageDoorOpener.sendEvent(name: "door", value: "opening");
 	}
 }
 
 def garageDoorClose(evt){
 	if (!isDoorClosed()){
 		outputButton.push();
-		sendEvent(garageDoorOpener, name: "door", value: "closing");
+
+		def garageDoorOpener = getGarageDoorOpener();
+
+		garageDoorOpener.sendEvent(name: "door", value: "closing");
 	}
 }
 
