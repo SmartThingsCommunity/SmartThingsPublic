@@ -2,10 +2,11 @@
  *  Ask Alexa Voice Report Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1 5/29/17
+ *  Version 1.0.2 6/15/17
  * 
  *  Version 1.0.0 - Initial release
- *  Version 1.0.1 - Updated icon, added restricitions
+ *  Version 1.0.1 - Updated icon, added restricitions 
+ *  Version 1.0.2 (6/15/17) - Small bug fixes, deprecated send to notification feed. Will add message queue functionality if feedback is given
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -39,6 +40,7 @@ preferences {
         page name:"pagePresenceReport"
         page name:"pageSpeakerReport"
         page name:"pageOtherReports"
+        page name:"pageMQ"
 }
 //Show main page
 def mainPage() {
@@ -59,11 +61,12 @@ def mainPage() {
             href "pageBatteryReport",title: "Battery Report", description: getDesc("battery"), state: (voiceBattery ? "complete" : null), image: parent.imgURL() + "battery.png"
             href "pageOtherReports", title: "Include Other Reports", description: getDesc("other"), state: (otherReportsList ? "complete" : null), image: parent.imgURL() + "add.png"
             input "voicePost", "text", title: "Post Message After Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false, capitalization: "sentences"
-        	input "allowNullRpt", "bool", title: "Allow For Empty Report (For Extension Groups)", defaultValue: false
         }
         section ("Output options"){
-            input "noteFeed", "bool", title: "Post To Notification Feed When Triggered", defaultValue: false, submitOnChange: true
-            if (noteFeed) input "noteFeedData", "bool", title: "Include SmartApp's Response To Alexa", defaultValue: false
+        	//href "pageMQ", title: "Send Output To Message Queue(s)", description: mqDesc(), state: vrMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
+            //input "noteFeed", "bool", title: "Post To Notification Feed When Triggered", defaultValue: false, submitOnChange: true
+            //if (noteFeed) input "noteFeedData", "bool", title: "Include SmartApp's Response To Alexa", defaultValue: false
+            input "allowNullRpt", "bool", title: "Allow For Empty Report (For Extension Groups)", defaultValue: false
             if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
         }
         section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
@@ -83,6 +86,20 @@ def mainPage() {
         section("Tap below to remove this message queue"){ }
 	}
 }
+/*def pageMQ(){
+    dynamicPage(name:"pageMQ"){
+        section {
+        	paragraph "Message Queue Configuration", image:parent.imgURL()+"mailbox.png"
+        }
+        section (" "){
+            input "vrMsgQue", "enum", title: "Message Queue Recipient(s)...", options: parent.getMQListID(true), multiple:true, required: false, submitOnChange: true
+            input "vrMQNotify", "bool", title: "Notify Only Mode (Not Stored In Queue)", defaultValue: false, submitOnChange: true
+            if (!vrMQNotify) input "vrMQExpire", "number", title: "Message Expires (Minutes)", range: "1..*", required: false, submitOnChange: true
+            if (!vrMQNotify && !vrMQExpire) input "vrMQOverwrite", "bool", title: "Overwrite Other Voice Report Messages", defaultValue: false
+            if (!vrMQNotify) input "vrSuppressTD", "bool", title: "Suppress Time/Date From Alexa Playback", defaultValue: false
+        }
+    }
+}*/
 page(name: "timeIntervalInput", title: "Only during a certain time") {
 	section {
 		input "timeStart", "time", title: "Starting", required: false
@@ -286,14 +303,50 @@ def getOutput(){
 	catch(e){ outputTxt = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. %1%" }
     def playContMsg = overRideMsg ? false : true
     if (!outputTxt && !allowNullRpt) outputTxt = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. %1%"  
-    if ((parent.advReportOutput && voiceRepFilter) || voicePre || voicePost) outputTxt = parent.replaceVoiceVar(outputTxt,"",voiceRepFilter,"Voice",app.label)
+    if ((parent.advReportOutput && voiceRepFilter) || voicePre || voicePost) outputTxt = parent.replaceVoiceVar(outputTxt,"",voiceRepFilter,"Voice",app.label,0)
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     outputTxt += (outputTxt && !outputTxt.endsWith("%") && playContMsg) ? "%4%" : (outputTxt && !outputTxt.endsWith("%") && !playContMsg) ? " " : ""
-    if (noteFeed && noteFeedData) feedData=outputTxt.endsWith("%") ? ' Data sent to Alexa: "' + outputTxt[0..-4] + '"' : ' Data sent to Alexa: "' + outputTxt + '"'
-    if (noteFeed) sendNotificationEvent("Ask Alexa triggered voice report extension: '${app.label}'. ${feedData}")
+    //if (noteFeed && noteFeedData) feedData=outputTxt.endsWith("%") ? ' Data sent to Alexa: "' + outputTxt[0..-4] + '"' : ' Data sent to Alexa: "' + outputTxt + '"'
+    //if (noteFeed) sendNotificationEvent("Ask Alexa triggered voice report extension: '${app.label}'. ${feedData}")
+    /*def expireMin=vrMQExpire ? vrMQExpire as int : 0, expireSec=expireMin*60
+    def overWrite =!vrMQNotify && !vrMQExpire && vrMQOverwrite
+    msgTxt = outputTxt.endsWith("%") ? outputTxt[0..-4] : outputTxt
+    sendLocationEvent(
+    	name: "AskAlexaMsgQueue", 
+        value: "Ask Alexa Voice Report, '${app.label}'",
+        unit: "${app.id}",
+        isStateChange: true, 
+        descriptionText: msgTxt, 
+        data:[
+        	queues:vrMsgQue,
+            overwrite: overWrite,
+            notifyOnly: vrMQNotify,
+            expires: expireSec,
+            suppressTimeDate:vrSuppressTD   
+        ]
+    )*/
     return outputTxt
 }
 //Child Common modules
+def mqDesc(){
+    def result = "Tap to add/edit the message queue options"
+    if (vrMsgQue){
+    	result = "Send to: ${translateMQid(vrMsgQue)}"
+        result += vrMQNotify ? "\nNotification Mode Only" : ""
+        result += vrMQExpire ? "\nExpires in ${vrMQExpire} seconds" : ""
+        result += vrMQOverwrite ? "\nOverwrite all previous voice report messages" : ""
+        result += vrSuppressTDRemind ? "\nSuppress Time and Date from Alexa Playback" : ""
+	}
+    return result
+}
+def translateMQid(mqIDList){
+	def result=mqIDList.contains("Primary Message Queue")?["Primary Message Queue"]:[], qName
+	mqIDList.each{qID->
+    	qName = parent.getAAMQ().find{it.id == qID}	
+    	if (qName) result += qName.label
+    }
+    return parent.getList(result)
+}
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 def extAliasCount() { return 3 }
 def extAliasDesc(){
@@ -670,6 +723,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 101 }
+private versionInt(){ return 102 }
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.1 (05/29/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.2 (06/15/2017)" }

@@ -2,10 +2,11 @@
  *  Ask Alexa Schedules Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1 6/8/17
+ *  Version 1.0.2 6/15/17
  * 
  *  Version 1.0.0 (6/1/17) - Initial release
  *  Version 1.0.1 (6/8/17) - Fixed custom schedule issue. Added %age% variable for birthdays/anniversaries
+ *  Version 1.0.2 (6/15/17) - Added %age% variable for any text field
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -85,9 +86,8 @@ def mainPage() {
             }
         }
         else if (schType =="bd"){
-        	Integer year = new Date(now()).format("yyyy", location.timeZone) as int
-            Integer age = schYearStart && (year - (schYearStart as int)) > 0 ? year - (schYearStart as int) : 0
-			def schAge = age > 1 ? "\nSchedule's age this year: ${age} years old." : age==1 ? "\nSchedule's age this year: One year." : ""
+        	Integer age = ageCalc()
+			def schAge = age > 1 ? "\nSchedule's age this year: ${age} years old" : age==1 ? "\nSchedule's age this year: One year" : ""
             section("Recurrence start time/date"){
             	def imageFile=checkDate("start").warning ? parent.imgURL()+"caution.png" : null
 				href "pageStartDate", title: "Event Start Time / Date", description: startDateDesc(), state: (schStart() ? "complete" : null), image: imageFile
@@ -106,15 +106,15 @@ def mainPage() {
             input "schAction", "enum", title: "Action To Take...", options: actionList(), submitOnChange: true, required: false
             if (schAction=="msg") {
                 input "schMsgTxt", "text", title: "Message To Send", required: false, capitalization: "sentences", submitOnChange: true
-                href "pageMQ", title: "Message Queue Options", description: mqDesc(), state: schMsgQue ? "complete" : null  
+                href "pageMQ", title: "Message Queue Options", description: mqDesc(), state: schMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
            	}
             if (schAction =="VR"){
                 input "schVR", "enum", title: "Choose Voice Reports", options: parent.getMacroList("schedV",""), required:false, submitOnChange: true, multiple:true
-            	href "pageMQ", title: "Message Queue Options", description: mqDesc(), state: schMsgQue ? "complete" : null
+            	href "pageMQ", title: "Message Queue Options", description: mqDesc(), state: schMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
             }
             if (schAction =="WR"){
                 input "schWR", "enum", title: "Choose Weather Reports", options: parent.getMacroList("schedW",""), required:false, submitOnChange: true,multiple:true
-            	href "pageMQ", title: "Message Queue Options", description: mqDesc(), state: schMsgQue ? "complete" : null
+            	href "pageMQ", title: "Message Queue Options", description: mqDesc(), state: schMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
                 input "schWeather", "bool", title: "Turn On Weather Advisory Notification Feature", defaultValue:false, submitOnChange: true
             }
             if (schAction =="purge"){
@@ -220,7 +220,7 @@ def pageCronExpression(){
             input "cronDayMon", "text", title: "Day-Of-Month Parameter", required: false, description: "1-31 and , - * ? / L W wildcards allowed",  defaultValue:"*"
             input "cronMon", "text", title: "Month Parameter", required: false, description: "1-12 or JAN-DEC and , - * /  wildcards allowed", defaultValue:"*"
             input "cronDayWeek", "text", title: "Day-Of-The-Week Parameter", required: false, description: "1-7 or SUN-SAT and , - * ? / L wildcards allowed", defaultValue:"?"
-            input "cronYear", "number", title:"Year Parameter (Optional)", range:"2017..2022", required: false, description: "2017-2022 and , - * / wildcards allowed"
+            input "cronYear", "number", title:"Year Parameter (Optional)", range:"1900..2022", required: false, description: "1900-2022 and , - * / wildcards allowed"
         }
     }
 }
@@ -234,13 +234,16 @@ def pageCronExpressionRemind(){
             input "cronDayMonRemind", "text", title: "Day-Of-Month Parameter", required: false, description: "1-31 and , - * ? / L W wildcards allowed",  defaultValue:"*"
             input "cronMonRemind", "text", title: "Month Parameter", required: false, description: "1-12 or JAN-DEC and , - * /  wildcards allowed", defaultValue:"*"
             input "cronDayWeekRemind", "text", title: "Day-Of-The-Week Parameter", required: false, description: "1-7 or SUN-SAT and , - * ? / L wildcards allowed", defaultValue:"?"
-            input "cronYearRemind", "number", title:"Year Parameter (Optional)", range:"2017..2022", required: false, description: "2017-2022 and , - * / wildcards allowed"
+            input "cronYearRemind", "number", title:"Year Parameter (Optional)", range:"1900..2022", required: false, description: "1900-2022 and , - * / wildcards allowed"
         }
     }
 }
 def pageMQ(){
-    dynamicPage(name:"pageMQ", title: "Enter Message Queue Information"){
+    dynamicPage(name:"pageMQ"){
         section {
+        	paragraph "Message Queue Configuration", image:parent.imgURL()+"mailbox.png"
+        }
+        section (" "){
             input "schMsgQue", "enum", title: "Message Queue Recipient(s)...", options: parent.getMQListID(true), multiple:true, required: false, submitOnChange: true
             input "schMQNotify", "bool", title: "Notify Only Mode (Not Stored In Queue)", defaultValue: false, submitOnChange: true
             if (!schMQNotify) input "schMQExpire", "number", title: "Message Expires (Minutes)", range: "1..*", required: false, submitOnChange: true
@@ -353,23 +356,23 @@ def doAction(){
     if (getStatus()=="On" && ((schType==~/complex|custom/ && getOkToRun()) || schType==~/simple|single|bd/) ){
 		def outputTxt
         if (schAction=="msg") {
-        	outputTxt = schAppendPre ? parent.replaceVoiceVar(schAppendPre, "", "", "Schedules", app.label) + " ": ""
-            outputTxt += schAppendPost ? schMsgTxt + parent.replaceVoiceVar(schAppendPost, "", "", "Schedules", app.label) : schMsgTxt
+        	outputTxt = schAppendPre ? schAppendPre + " ": ""
+            outputTxt += schAppendPost ? schMsgTxt + schAppendPost: schMsgTxt
             sendMsg(outputTxt)
         }
         if (schAction=="macro") parent.processMacroAction(schMacro.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""), 0, "undefined", "undefined", "undefined", false)
         if (schAction=="VR") {
-        	outputTxt = schAppendPre ? parent.replaceVoiceVar(schAppendPre, "", "", "Schedules", app.label) + " " : ""
+        	outputTxt = schAppendPre ? schAppendPre + " " : ""
             outputTxt += parent.processOtherRpt(schVR)
             if (outputTxt.endsWith("%")) result = result[0..-4]
-            outputTxt += schAppendPost ? parent.replaceVoiceVar(schAppendPost, "", "", "Schedules", app.label): ""
+            outputTxt += schAppendPost ? schAppendPost : ""
         	sendMsg(outputTxt)
         }
         if (schAction=="WR") {
-        	outputTxt = schAppendPre ? parent.replaceVoiceVar(schAppendPre, "", "", "Schedules", app.label)+ " ": ""
+        	outputTxt = schAppendPre ? schAppendPre+ " ": ""
         	outputTxt += processOtherRpt(schWR)
             if (outputTxt.endsWith("%")) result = result[0..-4]
-            outputTxt += schAppendPost ? parent.replaceVoiceVar(schAppendPost, "", "", "Schedules", app.label): ""
+            outputTxt += schAppendPost ? schAppendPost: ""
             if ((schWeather && outputTxt.contains("ALERT!")) || !schWeather) sendMsg(outputTxt)
         }
         if (schAction=="purge") {
@@ -397,7 +400,7 @@ def doPrimaryReminder(){
         state.runDate = "${month}/${day}/${year}"
         if (schRemindInterval=="None" || (schTimingRemind as int) >14 || ((schTimingRemind as int) <15 && schRemindInterval=="None") ) { 
             def runTime = schType =="single" ? "${parent.timeParse("${schTimeEnd}", "h:mm a")}" : "${parent.parseDate("${state.startTimeDate.Epoch}", "h:mm a")}"
-			def reminderTxt = schRemindText ? parent.replaceVoiceVar(schRemindText, "", "", "Schedules", app.label) : "This is a reminder that the schedule, '${app.label}, will run at ${runTime} on ${schMonthEnd}/${schDayEnd}/${schYearEnd.toString()[2..3]}. "  
+			def reminderTxt = schRemindText ? schRemindText : "This is a reminder that the schedule, '${app.label}, will run at ${runTime} on ${schMonthEnd}/${schDayEnd}/${schYearEnd.toString()[2..3]}. "  
             sendReminder(reminderTxt)
         }
         else {
@@ -406,31 +409,31 @@ def doPrimaryReminder(){
         }
 	}
     else{
-    	def reminderTxt = schRemindText ? parent.replaceVoiceVar(schRemindText, "", "", "Schedules", app.label) : "This is a reminder that the schedule, '${app.label}', is scheduled to run on the cron schedule set up within the SmartApp. "
+    	def reminderTxt = schRemindText ? schRemindText : "This is a reminder that the schedule, '${app.label}', is scheduled to run on the cron schedule set up within the SmartApp. "
         sendReminder(reminderTxt)
     }
 }
 def progressiveReminderWeek(){
 	def runTime = schType =="single" ? "${parent.timeParse("${schTimeEnd}", "h:mm a")}" : "${parent.parseDate("${state.startTimeDate.Epoch}", "h:mm a")}"
-    def reminderTxt = schRemindText ? parent.replaceVoiceVar(schRemindText, "", "", "Schedules", app.label) : "This is a reminder that the schedule, '${app.label}', will run next ${state.startTimeDate.DayFull} at ${runTime}. "
+    def reminderTxt = schRemindText ? schRemindText : "This is a reminder that the schedule, '${app.label}', will run next ${state.startTimeDate.DayFull} at ${runTime}. "
     sendReminder(reminderTxt)
 }
 def progressiveReminderDay(){
 	def runTime = schType =="single" ? "${parent.timeParse("${schTimeEnd}", "h:mm a")}" : "${parent.parseDate("${state.startTimeDate.Epoch}", "h:mm a")}"
-    def reminderTxt = schRemindText ? parent.replaceVoiceVar(schRemindText, "", "", "Schedules", app.label) : "This is a reminder that the schedule, '${app.label}', will run in tomorrow at ${runTime}. "
+    def reminderTxt = schRemindText ? schRemindText : "This is a reminder that the schedule, '${app.label}', will run in tomorrow at ${runTime}. "
     sendReminder(reminderTxt)
 }
 def progressiveReminderHour(){
-	def reminderTxt = schRemindText ? parent.replaceVoiceVar(schRemindText, "", "", "Schedules", app.label) : "This is a reminder that the schedule, '${app.label}', will run in one hour. "
+	def reminderTxt = schRemindText ? schRemindText : "This is a reminder that the schedule, '${app.label}', will run in one hour. "
     sendReminder(reminderTxt)
 }
 def progressiveReminderQtrHr(){
-	def reminderTxt = schRemindText ? parent.replaceVoiceVar(schRemindText, "", "", "Schedules", app.label) : "This is a reminder that the schedule, '${app.label}', will run in 15 min. "
+	def reminderTxt = schRemindText ? schRemindText: "This is a reminder that the schedule, '${app.label}', will run in 15 min. "
     sendReminder(reminderTxt)
 }
 def doReminderInt(){
 	if (state.reminderInterval){
-    	def reminderTxt = schRemindText ? parent.replaceVoiceVar(schRemindText, "", "", "Schedules", app.label) : "This is a reminder that the schedule, '${app.label}', will run on ${state.runDate} at ${parent.parseDate("${state.startTimeDate.Epoch}", "h:mm a")}. "
+    	def reminderTxt = schRemindText ? schRemindText : "This is a reminder that the schedule, '${app.label}', will run on ${state.runDate} at ${parent.parseDate("${state.startTimeDate.Epoch}", "h:mm a")}. "
     	sendReminder(reminderTxt)
         def runInMin = schRemindInterval=="Hourly" ? 3600 : 86400
     	runIn (runInMin, doReminderInt)
@@ -523,8 +526,9 @@ def scheduleRemindTime(){
     }
 }
 //Actions
-def sendMsg(msgTxt){
-	def expireMin=schMQExpire ? schMQExpire as int : 0, expireSec=expireMin*60
+def sendMsg(outputTxt){
+	def msgTxt = parent.replaceVoiceVar(outputTxt, "", "", "Schedules", app.label,ageCalc())
+    def expireMin=schMQExpire ? schMQExpire as int : 0, expireSec=expireMin*60
     def overWrite =!schMQNotify && !schMQExpire && schMQOverwrite
     sendLocationEvent(
     	name: "AskAlexaMsgQueue", 
@@ -541,8 +545,9 @@ def sendMsg(msgTxt){
         ]
     )
 }
-def sendReminder(msgTxt){
+def sendReminder(outputTxt){
 	if (!schRemindFollow || (schRemindFollow && (getStatus()=="On" && ((schType==~/complex|custom/ && getOkToRun()) || schType==~/simple|single|bd/)))){
+        def msgTxt = parent.replaceVoiceVar(outputTxt, "", "", "Schedules", app.label,ageCalc())
         def expireMin=schMQExpireRemind ? schMQExpireRemind as int : 0, expireSec=expireMin*60
         def overWrite =!schMQNotifyRemind && !schMQExpireRemind && schMQOverwriteRemind
         def remindMQ = schMsgQueRemind ?: schMsgQue
@@ -670,6 +675,10 @@ def notDeleteSch(){
 	return result
 }
 //Common Code
+def ageCalc(){
+	Integer year = new Date(now()).format("yyyy", location.timeZone) as int
+    return schYearStart && (year - (schYearStart as int)) > 0 ? year - (schYearStart as int) : 0 
+}
 def dayInd(num){
 	def result
 	if (num=="1") result ="1st"
@@ -885,6 +894,6 @@ def translateMQid(mqIDList){
     return parent.getList(result)
 }
 //Versions
-private versionInt(){ return 101 }
+private versionInt(){ return 102 }
 private def textAppName() { return "Ask Alexa Schedules" }	
-private def textVersion() { return "Schedules Version: 1.0.0 (06/08/2017)" }
+private def textVersion() { return "Schedules Version: 1.0.0 (06/15/2017)" }

@@ -2,12 +2,13 @@
  *  Ask Alexa Message Queue Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.2 5/30/17
+ *  Version 1.0.3 6/12/17
  * 
  *  Version 1.0.0 (3/31/17) - Initial release
  *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
  *  Version 1.0.2 (5/30/17) - Added "overwrite:[true/false]" and "notifyOnly:[true/false] parameters to message queue functions, 
  *  added sound effects alerting, Alexa notification placeholder, option to suppress time/date from Message Queue playback
+ *  Version 1.0.3 (6/12/17) - Added logging feature for added partner usage
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -106,12 +107,12 @@ def initialize() {
 	sendLocationEvent(name: "askAlexaMQ", value: "refresh", data: [queues: parent.getMQListID(false)] , isStateChange: true, descriptionText: "Ask Alexa message queue list refresh")
 }
 //Main Handlers
-def msgHandler(date, descriptionText, unit, value, overwrite, expires, notifyOnly, suppressTimeDate) {
+def msgHandler(date, descriptionText, unit, value, overwrite, expires, notifyOnly, suppressTimeDate, trackDelete) {
     if (!state.msgQueue) state.msgQueue=[]
     if (overwrite && parent.msgQueueDelete && parent.msgQueueDelete.contains(app.id)) msgDeleteHandler(unit, value)
     else if (overwrite) log.debug "An overwrite command was issued from '${value}', however, the option to allow deletions was not enabled for the '${app.label}' queue."
     if (!notifyOnly) log.debug "New message added to the '${app.label}' message queue from: " + value
-	if (!notifyOnly) state.msgQueue<<["date":date.getTime(),"appName":value,"msg":descriptionText,"id":unit,"expires":expires,"suppressTimeDate": suppressTimeDate] 
+	if (!notifyOnly) state.msgQueue<<["date":date.getTime(),"appName":value,"msg":descriptionText,"id":unit,"expires":expires,"suppressTimeDate": suppressTimeDate, "trackDelete":trackDelete] 
     if (mqSpeaker && mqVolume && ((restrictAudio && getOkToRun())||!restrictAudio)) {
 		def msgVoice, msgSFX
 		if (mqAlertType ==~/0|1|2/) {
@@ -141,7 +142,13 @@ def msgDeleteHandler(unit, value){
 	if (state.msgQueue && state.msgQueue.size()>0){
 		if (unit && value){
 			log.debug value + " is requesting to delete messages from the '${app.label}' message queue."
+            def deleteList = state.msgQueue.findAll{it.appName==value && it.id==unit && it.trackDelete}
 			state.msgQueue.removeAll{it.appName==value && it.id==unit}
+            if (deleteList){
+            	deleteList.each{
+                	sendLocationEvent(name:"askAlexaMQ", value: "${it.appName}.${it.id}",isStateChange: true, data:[[deleteType: "delete"],[queue:app.label]], descriptionText:"Ask Alexa deleted messages from the '${app.label}' message queue")
+                }
+            }
             if (msgQueueNotifyLightsOn && msgQueueNotifyLightsOff && !state.msgQueue) msgQueueNotifyLightsOn?.off()
             if (msgQueueNotifycLightsOn && msgQueueNotifyLightsOff && !state.msgQueue) msgQueueNotifycLightsOn?.off()
 		}
@@ -191,21 +198,35 @@ def MQGUI(){
 	}
     return msgRpt
 }
-def qDelete() { 
-	state.msgQueue =[] 
+def qDelete() {
+	def deleteList = state.msgQueue.findAll{it.trackDelete}
+	state.msgQueue =[]
+    if (deleteList){
+    	deleteList.each{
+			sendLocationEvent(name:"askAlexaMQ", value: "${it.appName}.${it.id}",isStateChange: true, data:[[deleteType: "delete all"],[queue:app.label]], descriptionText:"Ask Alexa deleted all messages from the '${app.label}' message queue")
+        }
+	}
 	if (msgQueueNotifyLightsOn && msgQueueNotifyLightsOff) msgQueueNotifyLightsOn?.off()
     if (msgQueueNotifycLightsOn && msgQueueNotifyLightsOff) msgQueueNotifycLightsOn?.off()
 }
 def purgeMQ(){
 	if (!state.msgQueue) state.msgQueue=[]
-    log.debug "Ask Alexa is purging expired messages from the '${app.label}' Message Queue."	
+    log.debug "Ask Alexa is purging expired messages from the '${app.label}' Message Queue."
+    def deleteList = state.msgQueue.findAll{it.expires !=0 && now() > it.expires && it.trackDelete}
 	state.msgQueue.removeAll{it.expires !=0 && now() > it.expires}
-    if (msgQueueNotifyLightsOn && msgQueueNotifyLightsOff) msgQueueNotifyLightsOn?.off()
-    if (msgQueueNotifycLightsOn && msgQueueNotifyLightsOff) msgQueueNotifycLightsOn?.off()
+    if (deleteList){
+    	deleteList.each{
+			sendLocationEvent(name:"askAlexaMQ", value: "${it.appName}.${it.id}",isStateChange: true, data:[[deleteType: "expire"],[queue:app.label]], descriptionText:"Ask Alexa expired messages from the '${app.label}' message queue")
+        }
+	}
+    if (!state.msgQueue.size()){
+    	if (msgQueueNotifyLightsOn && msgQueueNotifyLightsOff) msgQueueNotifyLightsOn?.off()
+    	if (msgQueueNotifycLightsOn && msgQueueNotifyLightsOff) msgQueueNotifycLightsOn?.off()
+	}
 }
 //Common Code
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 //Version/Copyright/Information/Help
-private versionInt(){ return 102 }
+private versionInt(){ return 103 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.2 (05/30/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.3 (06/12/2017)" }

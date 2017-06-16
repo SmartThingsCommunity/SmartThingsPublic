@@ -3,10 +3,11 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1 5/29/17
+ *  Version 1.0.2 6/15/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
+ *  Version 1.0.2 (6/15/17) - Deprecated send to notification feed. Will add message queue functionality if feedback is given
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -33,6 +34,7 @@ preferences {
     page name:"mainPage"
     page name:"pageWeatherCurrent"
     page name:"pageWeatherForecast"
+    page name:"pageMQ"
 }
 //Show main page
 def mainPage() {
@@ -60,9 +62,10 @@ def mainPage() {
             paragraph "Please Note:\nYour SmartThings location is currently set to: ${location.zipCode}. If you leave the area above blank the report will use your SmartThings location. " +
             	"Enter a zip code above if you want to report on a different location.\n\nData obtained from Weather Underground.", image: parent.imgURL() + "info.png"
 		}
-        section ("Output options"){
-            input "noteFeed", "bool", title: "Post To Notification Feed When Triggered", defaultValue: false, submitOnChange: true
-            if (noteFeed) input "noteFeedData", "bool", title: "Include SmartApp's Response To Alexa", defaultValue: false
+        section ("Output options", hideWhenEmpty: true){
+        	//href "pageMQ", title: "Send Output To Message Queue(s)", description: mqDesc(), state: wrMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
+            //input "noteFeed", "bool", title: "Post To Notification Feed When Triggered", defaultValue: false, submitOnChange: true
+            //if (noteFeed) input "noteFeedData", "bool", title: "Include SmartApp's Response To Alexa", defaultValue: false
             if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
         }
         section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
@@ -76,6 +79,20 @@ def mainPage() {
         section("Tap below to remove this message queue"){ }
 	}
 }
+/*def pageMQ(){
+    dynamicPage(name:"pageMQ"){
+        section {
+        	paragraph "Message Queue Configuration", image:parent.imgURL()+"mailbox.png"
+        }
+        section (" "){
+            input "wrMsgQue", "enum", title: "Message Queue Recipient(s)...", options: parent.getMQListID(true), multiple:true, required: false, submitOnChange: true
+            input "wrMQNotify", "bool", title: "Notify Only Mode (Not Stored In Queue)", defaultValue: false, submitOnChange: true
+            if (!wrMQNotify) input "wrMQExpire", "number", title: "Message Expires (Minutes)", range: "1..*", required: false, submitOnChange: true
+            if (!wrMQNotify && !wrMQExpire) input "wrMQOverwrite", "bool", title: "Overwrite Other Voice Report Messages", defaultValue: false
+            if (!wrMQNotify) input "wrSuppressTD", "bool", title: "Suppress Time/Date From Alexa Playback", defaultValue: false
+        }
+    }
+}*/
 page(name: "timeIntervalInput", title: "Only during a certain time") {
 	section {
 		input "timeStart", "time", title: "Starting", required: false
@@ -147,9 +164,26 @@ def getOutput(){
     else outputTxt +="You don't have any weather reporting options set up within the '${app.label}'. %1%"
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     outputTxt += (outputTxt && !outputTxt.endsWith("%") && playContMsg) ? "%4%" : (outputTxt && !outputTxt.endsWith("%") && !playContMsg) ? " " : ""
-    if (noteFeed && noteFeedData) feedData=outputTxt.endsWith("%") ? ' Data sent to Alexa: "' + outputTxt[0..-4]  + '"' : ' Data sent to Alexa: "' + outputTxt + '"'
-    if (noteFeed) sendNotificationEvent("Ask Alexa triggered weather report extension: '${app.label}'. ${feedData}")
-	return outputTxt
+    //if (noteFeed && noteFeedData) feedData=outputTxt.endsWith("%") ? ' Data sent to Alexa: "' + outputTxt[0..-4]  + '"' : ' Data sent to Alexa: "' + outputTxt + '"'
+    //if (noteFeed) sendNotificationEvent("Ask Alexa triggered weather report extension: '${app.label}'. ${feedData}")
+	/*def expireMin=wrMQExpire ? wrMQExpire as int : 0, expireSec=expireMin*60
+    def overWrite =!wrMQNotify && !wrMQExpire && wrMQOverwrite
+    msgTxt = outputTxt.endsWith("%") ? outputTxt[0..-4] : outputTxt
+    sendLocationEvent(
+    	name: "AskAlexaMsgQueue", 
+        value: "Ask Alexa Weather Report, '${app.label}'",
+        unit: "${app.id}",
+        isStateChange: true, 
+        descriptionText: msgTxt, 
+        data:[
+        	queues:wrMsgQue,
+            overwrite: overWrite,
+            notifyOnly: wrMQNotify,
+            expires: expireSec,
+            suppressTimeDate:wrSuppressTD   
+        ]
+    )*/   
+    return outputTxt
 }
 //Main Menus
 def extAliasDesc(){
@@ -169,6 +203,25 @@ def extAliasState(){
     return count ? "complete" : null
 }
 //Child Common modules
+def mqDesc(){
+    def result = "Tap to add/edit the message queue options"
+    if (wrMsgQue){
+    	result = "Send to: ${translateMQid(wrMsgQue)}"
+        result += wrMQNotify ? "\nNotification Mode Only" : ""
+        result += wrMQExpire ? "\nExpires in ${wrMQExpire} seconds" : ""
+        result += wrMQOverwrite ? "\nOverwrite all previous voice report messages" : ""
+        result += wrSuppressTDRemind ? "\nSuppress Time and Date from Alexa Playback" : ""
+	}
+    return result
+}
+def translateMQid(mqIDList){
+	def result=mqIDList.contains("Primary Message Queue")?["Primary Message Queue"]:[], qName
+	mqIDList.each{qID->
+    	qName = parent.getAAMQ().find{it.id == qID}	
+    	if (qName) result += qName.label
+    }
+    return parent.getList(result)
+}
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 private currWeatherSel() { return voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip }
 private foreWeatherSel() { return voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow}
@@ -539,6 +592,6 @@ private tideInfo() {
     return msg		
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 101 }
+private versionInt(){ return 102 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.1 (05/29/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.2 (06/15/2017)" }
