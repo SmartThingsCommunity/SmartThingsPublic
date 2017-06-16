@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.6 - 5/30/17 Copyright © 2017 Michael Struck
+ *  Version 1.2.7 - 6/15/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -20,7 +20,8 @@
  *  Version 1.2.3 - Added follow up to a missing PIN when required, updated copyright to 2017
  *  Version 1.2.4 - Added routines for new message queue
  *  Version 1.2.5 - Changed some of the responses to align with the new Ask Alexa framework
- *  Version 1.2.6 - Added icon to skill's display card for Show device 
+ *  Version 1.2.6 - Added icon to skill's display card for Show device
+ *  Version 1.2.7 - Added in option for 'whisper' mode, changed structure to SSML output. Allow for speed/pitch adjustments
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -34,9 +35,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.6';
-    var versionDate= '05/30/2017';
-    var versionNum = '126';
+    var versionTxt = '1.2.7';
+    var versionDate= '06/15/2017';
+    var versionNum = '127';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
     var STappID = '';
@@ -56,18 +57,21 @@ exports.handler = function( event, context ) {
             var STver = beginJSON.SmartAppVer;
             var IName = beginJSON.IName;
             var pName = beginJSON.pName;
-            if (beginJSON.OOD) { amzRespose("OutOfDate", context, IName, versionTxt, personality, STver, contOptions, pName); }
-            if (beginJSON.error) { output("There was an error with the Ask Alexa SmartApp execution. If this continues, please contact the author of the SmartApp. ", context, "Lambda Error", endSession, pName); }
+            var whisper = beginJSON.whisper;
+            var speed = beginJSON.speed;
+            var pitch = beginJSON.pitch;
+            if (beginJSON.OOD) { amzRespose("OutOfDate", context, IName, versionTxt, personality, STver, contOptions, pName, whisper, speed, pitch); }
+            if (beginJSON.error) { output("There was an error with the Ask Alexa SmartApp execution. If this continues, please contact the author of the SmartApp. ", context, "Lambda Error", endSession, pName, whisper, speed, pitch); }
             if (beginJSON.error === "invalid_token" || beginJSON.type === "AccessDenied") {
-                output("There was an error accessing the SmartThings cloud environment. Please check your security token and application ID and try again. ", context, "Lambda Error", endSession, pName); 
+                output("There was an error accessing the SmartThings cloud environment. Please check your security token and application ID and try again. ", context, "Lambda Error", endSession, pName, whisper, speed, pitch); 
             }
-            if (event.request.type == "LaunchRequest") { amzRespose( "LaunchRequest", context, IName, versionTxt, personality, STver, contOptions, pName); }
+            if (event.request.type == "LaunchRequest") { amzRespose( "LaunchRequest", context, IName, versionTxt, personality, STver, contOptions, pName, whisper, speed, pitch); }
             else if (event.request.type == "SessionEndedRequest"){}
             else if (event.request.type == "IntentRequest") {
                 var process = false;
                 var intentName = event.request.intent.name;
-                if (intentName.startsWith("AMAZON") && intentName.endsWith("Intent")) { amzRespose( intentName, context, IName, versionTxt, personality, STver, contOptions, pName); }
-                else if (intentName == "VersionOperation") { amzRespose( "VersionOperation", context, IName, versionTxt, personality, STver, contOptions, pName); }
+                if (intentName.startsWith("AMAZON") && intentName.endsWith("Intent")) { amzRespose( intentName, context, IName, versionTxt, personality, STver, contOptions, pName, whisper, speed, pitch); }
+                else if (intentName == "VersionOperation") { amzRespose( "VersionOperation", context, IName, versionTxt, personality, STver, contOptions, pName, whisper, speed, pitch); }
                 else if (intentName == "DeviceOperation") {
                     var Operator = event.request.intent.slots.Operator.value;
                     var Device = event.request.intent.slots.Device.value;
@@ -117,7 +121,7 @@ exports.handler = function( event, context ) {
                     process = true;
                     cardName = "SmartThings Home Operation";
                 }
-                if (!process) { output(getResponse("respError"), context, "Ask Alexa Error", false, pName); }
+                if (!process) { output(getResponse("respError"), context, "Ask Alexa Error", false, pName, whisper, speed, pitch); }
                 else {
                     url += '&access_token=' + STtoken;
                     https.get( url, function( response ) {
@@ -127,12 +131,12 @@ exports.handler = function( event, context ) {
                         if (resJSON.voiceOutput) { 
                             speechText = resJSON.voiceOutput; 
                             if (speechText.endsWith("%")){
-                                processedText = processOutput(speechText, personality, contOptions);
+                                processedText = processOutput(speechText, personality, contOptions, whisper, speed, pitch);
                                 speechText = processedText[0];
                                 endSession = processedText[1];
                             }
                         }
-                        output(speechText, context, cardName, endSession, pName);
+                        output(speechText, context, cardName, endSession, pName, whisper, speed, pitch);
                         } );
                     } );
                 }
@@ -141,7 +145,7 @@ exports.handler = function( event, context ) {
     } );
 };
 
-function processOutput(speechText, personality, contOptions){
+function processOutput(speechText, personality, contOptions, whisper, speed, pitch){
     var endSession = true;
     var addText ="";
     if (speechText.endsWith("%1%")) { 
@@ -184,28 +188,28 @@ function processOutput(speechText, personality, contOptions){
     return [speechText, endSession];
 }
 
-function amzRespose(type, context, IName, versionTxt, personality, STver, contOptions, pName){
+function amzRespose(type, context, IName, versionTxt, personality, STver, contOptions, pName, whisper, speed, pitch){
     var resText;
     var processedText;
-    if (type == "AMAZON.YesIntent") { output(getResponse("Yes",personality), context, "SmartThings Alexa Yes Command", false, pName); }
-    else if (type == "OutOfDate") { output(getResponse("OOD",personality), context, "Lambda Code Version Error", true, pName); }
-    else if (type == "AMAZON.NoIntent") { output(getResponse("No",personality), context, "SmartThings Alexa End Command", true, pName); }
-    else if (type == "AMAZON.StopIntent") { output(getResponse("Stop",personality), context, "Amazon Stop", true, pName); }
-    else if (type == "AMAZON.CancelIntent") { output(getResponse("Cancel",personality), context, "Amazon Cancel", true, pName); }
-    else if (type == "LaunchRequest") { output(getResponse("Launch", personality), context, "Ask Alexa Help", false, pName); }
+    if (type == "AMAZON.YesIntent") { output(getResponse("Yes",personality), context, "SmartThings Alexa Yes Command", false, pName, whisper, speed, pitch); }
+    else if (type == "OutOfDate") { output(getResponse("OOD",personality), context, "Lambda Code Version Error", true, pName, whisper, speed, pitch); }
+    else if (type == "AMAZON.NoIntent") { output(getResponse("No",personality), context, "SmartThings Alexa End Command", true, pName, whisper, speed, pitch); }
+    else if (type == "AMAZON.StopIntent") { output(getResponse("Stop",personality), context, "Amazon Stop", true, pName, whisper, speed, pitch); }
+    else if (type == "AMAZON.CancelIntent") { output(getResponse("Cancel",personality), context, "Amazon Cancel", true, pName, whisper, speed, pitch); }
+    else if (type == "LaunchRequest") { output(getResponse("Launch", personality), context, "Ask Alexa Help", false, pName, whisper, speed, pitch); }
     else if (type == "AMAZON.HelpIntent") {
         resText = "With the Ask Alexa SmartApp, you can integrate your SmartThings household with me; this will allow you to give me commands "+
         "to turn off a light, or unlock a door. For example, you can simply say, 'tell "+ IName +" to turn off the living room', and I'll turn off that device. " +
         "In addition, you can query your devices to get information such as open or close status, or find out the temperature in a room. To use this function, just give "+
         "me the name of the device. For example, you could say, 'ask "+ IName +" about the patio', and I'll give you all of the common attributes with that device, including battery levels. "+
         "For those who are curious, you are running SmartApp version " + STver + ", and version "+ versionTxt +" of the Lambda code, both written by Michael Struck. %2%";
-        processedText = processOutput(resText, personality, contOptions);
-        output(processedText[0], context, "Ask Alexa Help", processedText[1], pName);
+        processedText = processOutput(resText, personality, contOptions, whisper);
+        output(processedText[0], context, "Ask Alexa Help", processedText[1], pName, whisper, speed, pitch);
     }
     else if (type == "VersionOperation") {
         resText = "The Ask Alexa SmartApp was developed by Michael Struck to intergrate the SmartThings platform with the Amazon Echo. The SmartApp version is: "  +  STver + ". And the Amazon Lambda code version is: " + versionTxt + ". %2%";
-        processedText = processOutput(resText, personality, contOptions);
-        output(processedText[0], context, "SmartThings Version Help", processedText[1], pName);
+        processedText = processOutput(resText, personality, contOptions, whisper, speed, pitch);
+        output(processedText[0], context, "SmartThings Version Help", processedText[1], pName, whisper, speed, pitch);
     }
 }
 
@@ -217,7 +221,7 @@ function getResponse(respType, style){
     return response;
 }
 
-function output( text, context, card, complete, pName) { 
+function output( text, context, card, complete, pName, whisper, speed, pitch) { 
     if (text) {
         if (!pName || Math.floor(Math.random() * 2) !==0) { 
             pName="";
@@ -241,17 +245,22 @@ function output( text, context, card, complete, pName) {
         text = text.replace(/ 0(\d,) /g, " $1 ");
         text = text.replace(/ A /g, " a ");
     }
+    var SSMLtext = whisper ? "<amazon:effect name='whispered'>" + text + "</amazon:effect>" : !text ? " " : text;
+    if (pitch !="medium") SSMLtext ="<prosody pitch='" + pitch + "'>" + SSMLtext +"</prosody>";
+    if (speed !="medium") SSMLtext ="<prosody rate='" + speed + "'>" + SSMLtext +"</prosody>";
+    var cardText = text ? text :"No output given";
+    var imgURL = "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/AmazonICO/";
     var response = {
         outputSpeech: {
-            type: "PlainText",
-            text: text
+            type: "SSML",
+            ssml: "<speak>" + SSMLtext + "</speak>"
         },
         card: {
             type: "Standard",
             title: card,
-            text: text,
+            text: cardText,
             image: {
-                smallImageUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/AskAlexa512.png"
+                smallImageUrl: imgURL + "AskAlexa.png"
                 }
         },
     shouldEndSession: complete
