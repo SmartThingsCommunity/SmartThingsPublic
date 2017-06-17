@@ -3,11 +3,11 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.2 6/15/17
+ *  Version 1.0.2a 6/17/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
- *  Version 1.0.2 (6/15/17) - Deprecated send to notification feed. Will add message queue functionality if feedback is given
+ *  Version 1.0.2a (6/17/17) - Deprecated send to notification feed. Will add message queue functionality if feedback is given
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -135,7 +135,7 @@ def updated() {
     initialize()
 }
 def initialize() {
-	sendLocationEvent(name: "askAlexa", value: "refresh", data: [macros: parent.getCoREMacroList()] , isStateChange: true, descriptionText: "Ask Alexa extension list refresh")
+	sendLocationEvent(name: "askAlexa", value: "refresh", data: [macros: parent.getExtList()] , isStateChange: true, descriptionText: "Ask Alexa extension list refresh")
 }
 //Main Handlers
 def getOutput(){
@@ -594,4 +594,4 @@ private tideInfo() {
 //Version/Copyright/Information/Help
 private versionInt(){ return 102 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.2 (06/15/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.2a (06/17/2017)" }
