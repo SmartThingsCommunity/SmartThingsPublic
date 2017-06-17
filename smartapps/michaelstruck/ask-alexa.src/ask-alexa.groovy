@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.7 - 6/15/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.7a - 6/15/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.7 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.2.7 (6/15/17) Fixed issue with Ecobee custom DTH and brief replies, added whisper mode to personalities, added logging feature for added partner usage, added %age% text field variable, 
+ *  Version 2.2.7a (6/15/17) Fixed issue with Ecobee custom DTH and brief replies, added whisper mode to personalities, added logging feature for added partner usage, added %age% text field variable, 
  *  WebCoRE connectivity, deprecated most messaging options within macros/extensions...will use Message Queue if demand is present
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -2171,7 +2171,7 @@ def CoREResults(sDelay){
 }
 def CoREHandler(){ 
 	state.scheduled = false
-    webCoRE_execute(CoREName)
+    parent.webCoRE_execute(CoREName)
 	//if (noteFeedAct && noteFeed) sendNotificationEvent("Ask Alexa activated WebCoRE macro: '${app.label}'.")
 }
 //Control Handler-----------------------------------------------------------
@@ -3380,7 +3380,7 @@ private mqReq() { return 103 }
 private wrReq()  { return 102 }
 private vrReq()  { return 102 }
 private schReq()  { return 102 }
-private versionLong(){ return "2.2.7" }
+private versionLong(){ return "2.2.7a" }
 private versionDate(){ return "06/15/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
