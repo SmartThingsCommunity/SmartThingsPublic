@@ -3,7 +3,7 @@
  *  Enerwave RSM2-Plus
  *   
  *	github: Eric Maycock (erocm123)
- *	Date: 2017-04-22
+ *	Date: 2017-06-16
  *	Copyright Eric Maycock
  *
  *  Includes all configuration parameters and ease of advanced configuration. 
@@ -17,6 +17,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2017-06-16: Added support for firmware 5.11 in this handler.
  */
  
 metadata {
@@ -30,6 +31,7 @@ metadata {
       capability "Health Check"
 
       fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x60,0x85,0x8E,0x59,0x70", outClusters:"0x20"
+      fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x25,0x60,0x8E,0x85,0x59,0x27"
    }
 
    simulator {
@@ -160,6 +162,30 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
    updateDataValue("MSR", msr)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+	def fw = "${cmd.applicationVersion}.${cmd.applicationSubVersion}"
+	updateDataValue("fw", fw)
+	if (state.MSR == "003B-6341-5044") {
+		updateDataValue("ver", "${cmd.applicationVersion >> 4}.${cmd.applicationVersion & 0xF}")
+	}
+	def text = "$device.displayName: firmware version: $fw, Z-Wave version: ${cmd.zWaveProtocolVersion}.${cmd.zWaveProtocolSubVersion}"
+	createEvent(descriptionText: text, isStateChange: false)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+	log.debug "AssociationReport $cmd"
+    if (zwaveHubNodeId in cmd.nodeId) state."association${cmd.groupingIdentifier}" = true
+    else state."association${cmd.groupingIdentifier}" = false
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChannelAssociationReport cmd) {
+	log.debug "MultiChannelAssociationReport $cmd"
+    if (cmd.groupingIdentifier == 1) {
+        if ([0,zwaveHubNodeId,1] == cmd.nodeId) state."associationMC${cmd.groupingIdentifier}" = true
+        else state."associationMC${cmd.groupingIdentifier}" = false
+    }
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
    // This will capture any commands not handled by other instances of zwaveEvent
    // and is recommended for development so you can see every command the device sends
@@ -187,7 +213,7 @@ def off() {
 void childOn(String dni) {
     logging("childOn($dni)", 1)
     def cmds = []
-    cmds << new physicalgraph.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF), channelNumber(dni))))
     cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
 }
@@ -195,7 +221,7 @@ void childOn(String dni) {
 void childOff(String dni) {
     logging("childOff($dni)", 1)
 	def cmds = []
-    cmds << new physicalgraph.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00), channelNumber(dni))))
     cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
 }
@@ -342,11 +368,6 @@ def update_current_properties(cmd)
     state.currentProperties = currentProperties
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
-	logging("AssociationReport $cmd", 2)
-    state."association${cmd.groupingIdentifier}" = cmd.nodeId[0]
-}
-
 def update_needed_settings()
 {
     def cmds = []
@@ -354,16 +375,37 @@ def update_needed_settings()
      
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
-                
-    if(!state.association2 || state.association2 == "" || state.association2 != 1){
-       logging("Setting association group 2", 1)
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:2)
-    }
-    if(!state.association3 || state.association3 == "" || state.association3 != 1){
-       logging("Setting association group 3", 1)
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:3)
+    
+    cmds << zwave.versionV1.versionGet()
+    
+    if (state.fw == "5.11") {
+       if(state.association2){
+           logging("Setting association group 2", 1)
+           cmds << zwave.associationV2.associationRemove(groupingIdentifier: 2, nodeId: [])
+           cmds << zwave.associationV2.associationGet(groupingIdentifier:2)
+        }
+        if(state.association3){
+           logging("Setting association group 3", 1)
+           cmds << zwave.associationV2.associationRemove(groupingIdentifier: 3, nodeId: [])
+           cmds << zwave.associationV2.associationGet(groupingIdentifier:3)
+        }
+        if(!state.associationMC1) {
+           logging("Adding MultiChannel association group 1", 1)
+           cmds << zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: [])
+           cmds << zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier: 1, nodeId: [0,zwaveHubNodeId,1])
+           cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
+        }
+    } else {           
+       if(!state.association2){
+          logging("Setting association group 2", 1)
+          cmds << zwave.associationV2.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId)
+          cmds << zwave.associationV2.associationGet(groupingIdentifier:2)
+       }
+       if(!state.association3){
+          logging("Setting association group 3", 1)
+          cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:zwaveHubNodeId)
+          cmds << zwave.associationV2.associationGet(groupingIdentifier:3)
+       }
     }
     
     configuration.Value.each
@@ -517,7 +559,7 @@ private void createChildDevices() {
 
 private sendAlert() {
    sendEvent(
-      descriptionText: "Child device creation failed. Please make sure that the \"Metering Switch Child Device\" is installed and published.",
+      descriptionText: "Child device creation failed. Please make sure that the \"Switch Child Device\" is installed and published.",
 	  eventType: "ALERT",
 	  name: "childDeviceCreation",
 	  value: "failed",
