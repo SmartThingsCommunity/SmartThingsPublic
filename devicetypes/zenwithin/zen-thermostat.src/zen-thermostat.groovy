@@ -89,7 +89,7 @@ metadata {
         }
 
       main "frontTile"
-      details(["temperature", "mode", "thermostatSetpoint", "setpointUp", "setpointDown","refresh", "configure"])
+      details(["temperature", "mode", "thermostatSetpoint", "setpointUp", "setpointDown","refresh", "configure", "heatingSetpoint"])
   }
 }
 
