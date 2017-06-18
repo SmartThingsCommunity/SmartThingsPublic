@@ -40,10 +40,10 @@ metadata {
             state("temperature", label:'${currentValue}°', backgroundColor:"#00A0DC")
         }
         
-#        standardTile("fanMode", "device.thermostatFanMode", decoration: "flat") {
-#            state "fanAuto", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-auto"
-#            state "fanOn", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-on"
-#        }
+//        standardTile("fanMode", "device.thermostatFanMode", decoration: "flat") {
+//            state "fanAuto", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-auto"
+//            state "fanOn", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-on"
+//        }
         
         
         standardTile("mode", "device.thermostatMode", decoration: "flat") {
