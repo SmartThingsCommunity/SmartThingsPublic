@@ -3,6 +3,8 @@
  *
  *  Author: Zen Within
  *  Date: 2015-02-21
+ *  Modified by: Eric Yew
+ *  Last modified: 2017-06-18
  */
 metadata {
   definition (name: "Zen Thermostat", namespace: "zenwithin", author: "ericyew") {
@@ -13,7 +15,7 @@ metadata {
     capability "Refresh"
     capability "Sensor"
     capability "Health Check"
-    capability "Switch"
+    capability "Momentary"
 
     fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat"
     
@@ -34,7 +36,7 @@ metadata {
 
   tiles {
         valueTile("frontTile", "device.temperature", width: 1, height: 1) {
-            state("temperature", label:'${currentValue}°', backgroundColor:"#e8e3d8")
+            state "temperature", label:'${currentValue}°', backgroundColor:"#e8e3d8", icon: "st.Home.home1"
         }
     
         valueTile("temperature", "device.temperature", width: 1, height: 1) {
@@ -101,48 +103,48 @@ metadata {
 	standardTile("setHeat", "device.thermostatMode", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
 			state "heat", label: 'Turn On', action: "heat", backgroundColor:"#e86d13", icon: "st.thermostat.heat"/*, nextState: "off"
             state "off", label: 'Turn Off Heater', action: "off", backgroundColor:"#ffffff", icon: "st.Home.home30", nextState: "on"*/
-		}
+	}
 	  
         standardTile("setOff", "device.thermostatMode", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
 			state "off", label: 'Turn Off', action: "off", backgroundColor:"#ffffff", icon: "st.thermostat.heating-cooling-off"
-		}
+	}
 	  
-	standardTile("setpointHeat20", "device.thermostatSetpoint", width: 2, height: 2, decoration: "flat") {
-			state "setpointHeat20", label: 'Set temp to 20', action: "setpointHeat20", backgroundColor:"#ffffff"
-		}
+	standardTile("momentary", "device.momentary", width: 2, height: 2, decoration: "flat") {
+			state "push", label: 'Heat to 20°', action: "push", backgroundColor:"#e86d13", icon: "st.thermostat.heat"
+	}
         
-multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) {
-    tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-        attributeState("temp", label:'${currentValue}°', unit:"dC", defaultState: true)
-    }
-    tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
-        attributeState("VALUE_UP", action: "setpointUp")
-        attributeState("VALUE_DOWN", action: "setpointDown")
-    }
-    /*tileAttribute("device.thermostatMode", key: "SECONDARY_CONTROL") {
-        attributeState("mode", label:'${currentValue}', defaultState: true)
-    }*/
-    tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
-        attributeState("idle", backgroundColor:"#00A0DC")
-        attributeState("heating", backgroundColor:"#e86d13")
-        attributeState("cooling", backgroundColor:"#00A0DC")
-    }
-    tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
-        attributeState("off", label:'${name}')
-        attributeState("heat", label:'${name}')
-        attributeState("cool", label:'${name}')
-        attributeState("auto", label:'${name}')
-    }
-    tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
-        attributeState("heatingSetpoint", label:'${currentValue}', unit:"dC", defaultState: true)
-    }
-    tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
-        attributeState("coolingSetpoint", label:'${currentValue}', unit:"dC", defaultState: true)
-    }
-}
+	multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) {
+	    tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+		attributeState("temp", label:'${currentValue}°', unit:"dC", defaultState: true)
+	    }
+	    tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
+		attributeState("VALUE_UP", action: "setpointUp")
+		attributeState("VALUE_DOWN", action: "setpointDown")
+	    }
+	    /*tileAttribute("device.thermostatMode", key: "SECONDARY_CONTROL") {
+		attributeState("mode", label:'${currentValue}', defaultState: true)
+	    }*/
+	    tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+		attributeState("idle", backgroundColor:"#00A0DC")
+		attributeState("heating", backgroundColor:"#e86d13")
+		attributeState("cooling", backgroundColor:"#00A0DC")
+	    }
+	    tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+		attributeState("off", label:'${name}')
+		attributeState("heat", label:'${name}')
+		attributeState("cool", label:'${name}')
+		attributeState("auto", label:'${name}')
+	    }
+	    tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+		attributeState("heatingSetpoint", label:'${currentValue}', unit:"dC", defaultState: true)
+	    }
+	    tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+		attributeState("coolingSetpoint", label:'${currentValue}', unit:"dC", defaultState: true)
+	    }
+	}
 
       main "frontTile"
-      details(["thermostatFull", "mode", "refresh", "configure", "setHeat", "setOff", "setpointHeat20"])
+      details(["thermostatFull", "mode", "refresh", "configure", "setHeat", "setOff", "momentary"])
   }
 }
 
@@ -291,7 +293,6 @@ def getTemperature(value)
 }
 
 
-
 // =============== Setpoints ===============
 def setpointUp()
 {
@@ -386,54 +387,7 @@ def setpointDown()
     log.debug "setpointDown() - mode: ${currentMode}  unit: ${currentUnit}  value: ${nextLevel}"
     
     setSetpoint(nextLevel)
-} 
-
-def setpointHeat20()
-{
-   def currentMode = device.currentState("thermostatMode")?.value
-    def currentUnit = getTemperatureScale()
-    
-    // check if heating or cooling setpoint needs to be changed
-    double nextLevel = device.currentValue("thermostatSetpoint") - 1.0
-    
-    // check the limits
-    if (currentUnit == "C")
-    {
-    	if (currentMode == "cool")
-        {
-            if(nextLevel < 8.0)
-            {
-                nextLevel = 8.0
-            }
-        } else if (currentMode == "heat")
-        {
-        	if(nextLevel < 10.0)
-            {
-                nextLevel = 10.0
-            }
-        }
-    }
-    else  //in degF unit
-    {
-      	if (currentMode == "cool")
-        {
-            if (nextLevel < 47.0)
-            {
-                nextLevel = 47.0
-            }
-        } else if (currentMode == "heat")
-        {
-        	if (nextLevel < 50.0)
-            {
-                nextLevel = 50.0
-            }
-        }
-    }
-
-    log.debug "setpointDown() - mode: ${currentMode}  unit: ${currentUnit}  value: ${nextLevel}"
-    
-    setSetpoint(nextLevel)
-} 
+}  
 
 def setSetpoint(degrees) 
 {
@@ -567,11 +521,6 @@ def fanAuto() {
     "st wattr 0x${device.deviceNetworkId} 1 0x202 0 0x30 {05}"
 }
 
-def turnOnHeat() {
-	device.thermostatMode.heat()
-	//setHeatingSetpoint.
-}
-	
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -645,7 +594,10 @@ def configure()
           ] + refresh()
 }
 
-
+def push() {
+    heat()
+    setSetpoint(20)
+}
 
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
