@@ -143,7 +143,7 @@ metadata {
 	    }
 	}
 
-      main "thermostatFull"
+      main "frontTile"
       details(["thermostatFull", "mode", "refresh", "configure", "setHeat", "setOff", "momentary"])
   }
 }
