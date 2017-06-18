@@ -142,7 +142,7 @@ multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) 
 }
 
       main "frontTile"
-      details(["thermostatFull", "mode", "refresh", "configure", "setHeat", "setOff", "setHeatSetpoint"])
+      details(["thermostatFull", "mode", "refresh", "configure", "setHeat", "setOff", "setpointHeat20"])
   }
 }
 
