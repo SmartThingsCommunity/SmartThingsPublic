@@ -390,14 +390,47 @@ def setpointDown()
 
 def setpointHeat20()
 {
-    def currentMode = device.currentState("thermostatMode")?.value
+   def currentMode = device.currentState("thermostatMode")?.value
     def currentUnit = getTemperatureScale()
     
     // check if heating or cooling setpoint needs to be changed
-    double nextLevel = 20.0
-	log.debug "Next level: $nextLevel"
-   
-    log.debug "setpointUp() - mode: ${currentMode}  unit: ${currentUnit}  value: ${nextLevel}"
+    double nextLevel = device.currentValue("thermostatSetpoint") - 1.0
+    
+    // check the limits
+    if (currentUnit == "C")
+    {
+    	if (currentMode == "cool")
+        {
+            if(nextLevel < 8.0)
+            {
+                nextLevel = 8.0
+            }
+        } else if (currentMode == "heat")
+        {
+        	if(nextLevel < 10.0)
+            {
+                nextLevel = 10.0
+            }
+        }
+    }
+    else  //in degF unit
+    {
+      	if (currentMode == "cool")
+        {
+            if (nextLevel < 47.0)
+            {
+                nextLevel = 47.0
+            }
+        } else if (currentMode == "heat")
+        {
+        	if (nextLevel < 50.0)
+            {
+                nextLevel = 50.0
+            }
+        }
+    }
+
+    log.debug "setpointDown() - mode: ${currentMode}  unit: ${currentUnit}  value: ${nextLevel}"
     
     setSetpoint(nextLevel)
 } 
