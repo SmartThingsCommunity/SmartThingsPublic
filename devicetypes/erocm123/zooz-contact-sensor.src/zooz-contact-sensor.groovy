@@ -139,9 +139,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 {
 	def result = []
 	if (cmd.notificationType == 0x06 && cmd.event == 0x16) {
-		result << sensorValueEvent(1)
+		//result << sensorValueEvent(1)
 	} else if (cmd.notificationType == 0x06 && cmd.event == 0x17) {
-		result << sensorValueEvent(0)
+		//result << sensorValueEvent(0)
 	} else if (cmd.notificationType == 0x07) {
 		if (cmd.v1AlarmType == 0x07) {  // special case for nonstandard messages from Monoprice door/window sensors
 			result << sensorValueEvent(cmd.v1AlarmLevel)
