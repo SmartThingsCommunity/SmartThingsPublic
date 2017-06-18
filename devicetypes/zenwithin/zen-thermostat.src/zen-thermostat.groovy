@@ -98,9 +98,14 @@ metadata {
         standardTile("configure", "device.configure", decoration: "flat") {
             state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
         }
+	  
+	standardTile("switch", "device.switch", decoration: "flat") {
+			state "off", label: 'Push', action: "turnOnHeat", backgroundColor: "#ffffff", nextState: "on"
+			state "on", label: 'Push', action: "turnOnHeat", backgroundColor: "#00A0DC"
+		}
 
       main "frontTile"
-      details(["temperature", "mode", "thermostatSetpoint", "setpointUp", "setpointDown","refresh", "configure", "heatingSetpoint"])
+      details(["temperature", "mode", "thermostatSetpoint", "setpointUp", "setpointDown","refresh", "configure", "switch"])
   }
 }
 
@@ -390,7 +395,7 @@ def setCoolingSetpoint(degrees) {
 
 // =============== Thermostat Mode ===============
 def modes() {
-  ["off", "heat", "cool"]
+  ["off", "heat"]
 }
 
 def setThermostatMode() 
@@ -479,6 +484,11 @@ def fanAuto() {
     "st wattr 0x${device.deviceNetworkId} 1 0x202 0 0x30 {05}"
 }
 
+def turnOnHeat() {
+	heat()
+	setHeatingSetpoint(20)
+}
+	
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
