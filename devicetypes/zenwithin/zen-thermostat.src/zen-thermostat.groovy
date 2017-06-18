@@ -40,36 +40,36 @@ metadata {
             state("temperature", label:'${currentValue}°', backgroundColor:"#00A0DC")
         }
         
-//        standardTile("fanMode", "device.thermostatFanMode", decoration: "flat") {
-//            state "fanAuto", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-auto"
-//            state "fanOn", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-on"
-//        }
+        standardTile("fanMode", "device.thermostatFanMode", decoration: "flat") {
+            state "fanAuto", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-auto"
+            state "fanOn", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-on"
+        }
         
         
         standardTile("mode", "device.thermostatMode", decoration: "flat") {
             state "off", action:"setThermostatMode", backgroundColor:"#ffffff", icon:"st.thermostat.heating-cooling-off", nextState:"heating"
             state "heat", action:"setThermostatMode", backgroundColor:"#e86d13", icon:"st.thermostat.heat", nextState:"cooling"
-//            state "cool", action:"setThermostatMode", backgroundColor:"#00A0DC", icon:"st.thermostat.cool", nextState:"..."
+            state "cool", action:"setThermostatMode", backgroundColor:"#00A0DC", icon:"st.thermostat.cool", nextState:"..."
             //state "auto", action:"setThermostatMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.auto"
             state "heating", action:"setThermostatMode", nextState:"to_cool"
-//            state "cooling", action:"setThermostatMode", nextState:"..."
+            state "cooling", action:"setThermostatMode", nextState:"..."
             state "...", action:"off", nextState:"off"
         }
         
         valueTile("thermostatSetpoint", "device.thermostatSetpoint", width: 2, height: 2) {
             state "off", label:'${currentValue}°', unit: "C", backgroundColor:"#e8e3d8"
             state "heat", label:'${currentValue}°', unit: "C", backgroundColor:"#e8e3d8"
-//            state "cool", label:'${currentValue}°', unit: "C", backgroundColor:"#e8e3d8"
+            state "cool", label:'${currentValue}°', unit: "C", backgroundColor:"#e8e3d8"
         }
         valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false) {
 			state "heat", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
 		}
-//        valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false) {
-//			state "cool", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
-//		}
+        valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false) {
+			state "cool", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
+		}
         standardTile("thermostatOperatingState", "device.thermostatOperatingState", inactiveLabel: false) {
             state "heating", backgroundColor:"#ff6e7e"
-//            state "cooling", backgroundColor:"#90d0e8"
+            state "cooling", backgroundColor:"#90d0e8"
             state "fan only", backgroundColor:"#e8e3d8"
 		}
         standardTile("setpointUp", "device.thermostatSetpoint", decoration: "flat") {
@@ -89,7 +89,7 @@ metadata {
         }
 
       main "frontTile"
-      details(["temperature", "fanMode", "mode", "thermostatSetpoint", "setpointUp", "setpointDown","refresh", "configure"])
+      details(["temperature", "mode", "thermostatSetpoint", "setpointUp", "setpointDown","refresh", "configure"])
   }
 }
 
