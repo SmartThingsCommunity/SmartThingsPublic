@@ -310,20 +310,20 @@ def setLight(light, buttonNumber, toggle, sequence = null) {
     def color
     
     def switchType = "Switch"
-    if (light.hasCapability("Switch Level")) {
+
+    if (settings["lights_${buttonNumber}_${light.id}_power"] != null) {
+    	power = settings["lights_${buttonNumber}_${light.id}_power"]
+    } else {
+        power = false
+    }
+    if (settings["lights_${buttonNumber}_${light.id}_lightLevel"] != null) {
+    	level = settings["lights_${buttonNumber}_${light.id}_lightLevel"]
         switchType = "Dimmer"
     }
-    if (light.hasCapability("Color Control")) {
+    if (settings["lights_${buttonNumber}_${light.id}_color"] != null) {
+    	color = settings["lights_${buttonNumber}_${light.id}_color"]
         switchType = "Color"
     }
-    
-    if (settings["lights_${buttonNumber}_${light.id}_power"] != null)
-    	power = settings["lights_${buttonNumber}_${light.id}_power"]
-    else power = false
-    if (settings["lights_${buttonNumber}_${light.id}_lightLevel"] != null)
-    	level = settings["lights_${buttonNumber}_${light.id}_lightLevel"]
-    if (settings["lights_${buttonNumber}_${light.id}_color"] != null)
-    	color = settings["lights_${buttonNumber}_${light.id}_color"]
     
     if (toggle) power = false
     
