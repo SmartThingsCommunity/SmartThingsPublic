@@ -898,7 +898,8 @@ def TemperaturesModes(){
     def doorsOk = atomicState.doorsAreClosed
 
     def CurrMode = location.currentMode
-    def outsideTemp = OutsideSensor.currentTemperature
+    def Outside = OutsideSensor.currentValue("temperature") 
+    def outsideTemp = Outside
     // log.debug "atomicState.ThisIsManual value is $atomicState.ThisIsManual"
     def CurrTemp1 = Thermostat_1?.currentTemperature
     def ThermState1 = Thermostat_1?.currentValue("thermostatMode") as String
@@ -1057,7 +1058,7 @@ def TemperaturesModes(){
                 CSPSet = CSPSet.toInteger()
 
                 // no lower than 68 
-                if(CSPSet < 69){
+                if(CSPSet < OutsideTempHighThres){
                     CSPSet = defaultCSPSet
                 }
 
@@ -1084,7 +1085,10 @@ def TemperaturesModes(){
                 log.trace """doorsOk?($doorsOk), NoTurnOffOnContact?($NoTurnOffOnContact), 
 ThisIsExceptionTherm?($ThisIsExceptionTherm), 
 ContactExceptionIsOpen?($ContactExceptionIsOpen), 
-OutsideTempLowThres = $OutsideTempLowThres"""
+OutsideTempLowThres = $OutsideTempLowThres, 
+OutsideTempHighThres = $OutsideTempHighThres,
+OutsideSensor = $OutsideSensor,
+outsideTemp = $outsideTemp"""
 
                 if(doorsOk || (ThisIsExceptionTherm && !ContactExceptionIsOpen)){
 
@@ -1109,7 +1113,7 @@ OutsideTempLowThres = $OutsideTempLowThres"""
                         atomicState.ShouldCool = false
                     } 
 
-                    if(OutsideTemp <= OutsideTempLowThres && ShouldCool){
+                    if(OutsideTemp <= OutsideTempHighThres && ShouldCool && doorsOk){
                         //state.messageTooHotWindows = 0 // 
                         if(state.messageTooHotWindows == 0){
                             def message = "It is getting hot inside while windows seem to have been closed manually. AC will therefore not be turned on. Change mode to reset or open windows or AC manually"
@@ -1844,7 +1848,7 @@ def OkToOpen(){
     def Inside = XtraTempSensor.currentValue("temperature") 
     def CurrTemp = Inside
     def Outside = OutsideSensor.currentValue("temperature") 
-    def outsideTemp = OutsideSensor.currentTemperature
+    def outsideTemp = Outside
     def WithinCriticalOffSet = Inside >= CriticalTemp + OffSet
     def closed = atomicState.closed
     def OutsideTempHighThres = OutsideTempHighThres
