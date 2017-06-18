@@ -5,7 +5,7 @@
  *  Date: 2015-02-21
  */
 metadata {
-  definition (name: "Zen Thermostat", namespace: "zenwithin", author: "ZenWithin") {
+  definition (name: "Zen Thermostat", namespace: "SmartThingsPublic", author: "ericyew") {
     capability "Actuator"
     capability "Thermostat"
     capability "Temperature Measurement"
