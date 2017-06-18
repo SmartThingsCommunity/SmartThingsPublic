@@ -45,8 +45,7 @@ metadata {
             state "fanAuto", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-auto"
             state "fanOn", action:"thermostat.setThermostatFanMode", backgroundColor:"#e8e3d8", icon:"st.thermostat.fan-on"
         }
-        
-        
+                
 /*        standardTile("mode", "device.thermostatMode", decoration: "flat") {
             state "off", action:"setThermostatMode", backgroundColor:"#ffffff", icon:"st.thermostat.heating-cooling-off", nextState:"heating"
             state "heat", action:"setThermostatMode", backgroundColor:"#e86d13", icon:"st.thermostat.heat", nextState:"cooling"
@@ -56,8 +55,7 @@ metadata {
             state "cooling", action:"setThermostatMode", nextState:"..."
             state "...", action:"off", nextState:"off"
         }
-*/        
-	  
+*/        	  
         standardTile("mode", "device.thermostatMode", width: 2, height: 2, decoration: "flat") {
             state "off", action:"setThermostatMode", backgroundColor:"#ffffff", icon:"st.thermostat.heating-cooling-off", nextState:"heating"
             state "heat", action:"setThermostatMode", backgroundColor:"#e86d13", icon:"st.thermostat.heat", nextState:"off"
@@ -100,11 +98,15 @@ metadata {
             state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
         }
         
-	  standardTile("setHeat", "device.thermostatMode", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
-			state "heat", label: 'Turn On Heater', action: "heat", backgroundColor:"#ffffff", icon: "st.Home.home30"/*, nextState: "off"
+	standardTile("setHeat", "device.thermostatMode", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
+			state "heat", label: 'Turn On Heater', action: "heat", backgroundColor:"#ffffff", icon: "st.thermostat.heat"/*, nextState: "off"
             state "off", label: 'Turn Off Heater', action: "off", backgroundColor:"#ffffff", icon: "st.Home.home30", nextState: "on"*/
 		}
-        
+	  
+        standardTile("setOff", "device.thermostatMode", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
+			state "off", label: 'Turn Off', action: "off", backgroundColor:"#e86d13", icon: "st.thermostat.heating-cooling-off"
+		}
+	  
 	standardTile("setHeatSetpoint", "device.thermostatHeatingSetpoint", decoration: "flat") {
 			state "Heat22", label: 'Set temp to 22', action: "setHeatingSetpoint(22)", backgroundColor:"#ffffff"
 		}
@@ -139,9 +141,8 @@ multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) 
     }
 }
 
-
       main "frontTile"
-      details(["thermostatFull", "mode", "refresh", "configure", "setHeat", "setHeatSetpoint"])
+      details(["thermostatFull", "mode", "refresh", "configure", "setHeat", "setOff", "setHeatSetpoint"])
   }
 }
 
