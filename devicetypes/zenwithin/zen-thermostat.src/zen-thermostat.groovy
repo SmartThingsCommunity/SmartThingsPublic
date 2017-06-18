@@ -13,6 +13,7 @@ metadata {
     capability "Refresh"
     capability "Sensor"
     capability "Health Check"
+    capability "Switch"
 
     fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat"
     
@@ -57,7 +58,7 @@ metadata {
         }
 */        
 	  
-        standardTile("mode", "device.thermostatMode", decoration: "flat") {
+        standardTile("mode", "device.thermostatMode", width: 2, height: 2, decoration: "flat") {
             state "off", action:"setThermostatMode", backgroundColor:"#ffffff", icon:"st.thermostat.heating-cooling-off", nextState:"heating"
             state "heat", action:"setThermostatMode", backgroundColor:"#e86d13", icon:"st.thermostat.heat", nextState:"off"
             //state "cool", action:"setThermostatMode", backgroundColor:"#00A0DC", icon:"st.thermostat.cool", nextState:"..."
@@ -91,21 +92,56 @@ metadata {
             state "setpointDown", action:"setpointDown", icon:"st.thermostat.thermostat-down"
         }
 
-        standardTile("refresh", "device.temperature", decoration: "flat") {
+        standardTile("refresh", "device.temperature", width: 2, height: 2, decoration: "flat") {
             state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         
-        standardTile("configure", "device.configure", decoration: "flat") {
+        standardTile("configure", "device.configure", width: 2, height: 2, decoration: "flat") {
             state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
         }
-	  
-	standardTile("switch", "device.switch", decoration: "flat") {
-			state "off", label: 'Push', action: "turnOnHeat", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'Push', action: "turnOnHeat", backgroundColor: "#00A0DC"
+        
+	  standardTile("setHeat", "device.thermostatMode", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
+			state "heat", label: 'Turn On Heater', action: "heat", backgroundColor:"#ffffff", icon: "st.Home.home30"/*, nextState: "off"
+            state "off", label: 'Turn Off Heater', action: "off", backgroundColor:"#ffffff", icon: "st.Home.home30", nextState: "on"*/
 		}
+        
+	standardTile("setHeatSetpoint", "device.thermostatHeatingSetpoint", decoration: "flat") {
+			state "Heat22", label: 'Set temp to 22', action: "setHeatingSetpoint(22)", backgroundColor:"#ffffff"
+		}
+        
+multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) {
+    tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+        attributeState("temp", label:'${currentValue}°', unit:"dC", defaultState: true)
+    }
+    tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
+        attributeState("VALUE_UP", action: "setpointUp")
+        attributeState("VALUE_DOWN", action: "setpointDown")
+    }
+    /*tileAttribute("device.thermostatMode", key: "SECONDARY_CONTROL") {
+        attributeState("mode", label:'${currentValue}', defaultState: true)
+    }*/
+    tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+        attributeState("idle", backgroundColor:"#00A0DC")
+        attributeState("heating", backgroundColor:"#e86d13")
+        attributeState("cooling", backgroundColor:"#00A0DC")
+    }
+    tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+        attributeState("off", label:'${name}')
+        attributeState("heat", label:'${name}')
+        attributeState("cool", label:'${name}')
+        attributeState("auto", label:'${name}')
+    }
+    tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+        attributeState("heatingSetpoint", label:'${currentValue}', unit:"dC", defaultState: true)
+    }
+    tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+        attributeState("coolingSetpoint", label:'${currentValue}', unit:"dC", defaultState: true)
+    }
+}
+
 
       main "frontTile"
-      details(["temperature", "mode", "thermostatSetpoint", "setpointUp", "setpointDown","refresh", "configure", "switch"])
+      details(["thermostatFull", "mode", "refresh", "configure", "setHeat", "setHeatSetpoint"])
   }
 }
 
@@ -485,8 +521,8 @@ def fanAuto() {
 }
 
 def turnOnHeat() {
-	heat()
-	setHeatingSetpoint(20)
+	device.thermostatMode.heat()
+	//setHeatingSetpoint.
 }
 	
 /**
