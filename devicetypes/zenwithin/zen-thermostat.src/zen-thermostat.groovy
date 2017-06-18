@@ -107,8 +107,8 @@ metadata {
 			state "off", label: 'Turn Off', action: "off", backgroundColor:"#ffffff", icon: "st.thermostat.heating-cooling-off"
 		}
 	  
-	standardTile("setHeatSetpoint", "device.thermostatHeatingSetpoint", decoration: "flat") {
-			state "Heat22", label: 'Set temp to 22', action: "setHeatingSetpoint(22)", backgroundColor:"#ffffff"
+	standardTile("setHeatSetpoint", "device.thermostatHeatingSetpoint", width: 2, height: 2, decoration: "flat") {
+			state "Heat20", label: 'Set temp to 20', action: "setpointHeat20", backgroundColor:"#ffffff"
 		}
         
 multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) {
@@ -388,6 +388,19 @@ def setpointDown()
     setSetpoint(nextLevel)
 } 
 
+def setpointHeat20()
+{
+    def currentMode = device.currentState("thermostatMode")?.value
+    def currentUnit = getTemperatureScale()
+    
+    // check if heating or cooling setpoint needs to be changed
+    double nextLevel = 20.0
+	log.debug "Next level: $nextLevel"
+   
+    log.debug "setpointUp() - mode: ${currentMode}  unit: ${currentUnit}  value: ${nextLevel}"
+    
+    setSetpoint(nextLevel)
+} 
 
 def setSetpoint(degrees) 
 {
