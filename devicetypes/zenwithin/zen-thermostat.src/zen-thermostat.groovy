@@ -99,12 +99,12 @@ metadata {
         }
         
 	standardTile("setHeat", "device.thermostatMode", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
-			state "heat", label: 'Turn On Heater', action: "heat", backgroundColor:"#ffffff", icon: "st.thermostat.heat"/*, nextState: "off"
+			state "heat", label: 'Turn On Heater', action: "heat", backgroundColor:"#e86d13", icon: "st.thermostat.heat"/*, nextState: "off"
             state "off", label: 'Turn Off Heater', action: "off", backgroundColor:"#ffffff", icon: "st.Home.home30", nextState: "on"*/
 		}
 	  
         standardTile("setOff", "device.thermostatMode", width: 2, height: 2, decoration: "flat", inactiveLabel: false) {
-			state "off", label: 'Turn Off', action: "off", backgroundColor:"#e86d13", icon: "st.thermostat.heating-cooling-off"
+			state "off", label: 'Turn Off', action: "off", backgroundColor:"#ffffff", icon: "st.thermostat.heating-cooling-off"
 		}
 	  
 	standardTile("setHeatSetpoint", "device.thermostatHeatingSetpoint", decoration: "flat") {
