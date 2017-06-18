@@ -107,8 +107,8 @@ metadata {
 			state "off", label: 'Turn Off', action: "off", backgroundColor:"#ffffff", icon: "st.thermostat.heating-cooling-off"
 		}
 	  
-	standardTile("setHeatSetpoint", "device.thermostatHeatingSetpoint", width: 2, height: 2, decoration: "flat") {
-			state "Heat20", label: 'Set temp to 20', action: "setpointHeat20", backgroundColor:"#ffffff"
+	standardTile("setpointHeat20", "device.thermostatSetpoint", width: 2, height: 2, decoration: "flat") {
+			state "setpointHeat20", label: 'Set temp to 20', action: "setpointHeat20", backgroundColor:"#ffffff"
 		}
         
 multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) {
