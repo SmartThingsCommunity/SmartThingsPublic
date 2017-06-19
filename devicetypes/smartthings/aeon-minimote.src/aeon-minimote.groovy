@@ -1,3 +1,4 @@
+import groovy.json.JsonOutput
 /**
  *  Copyright 2015 SmartThings
  *
@@ -18,6 +19,7 @@ metadata {
 		capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
+		capability "Health Check"
 
 		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B", outClusters: "0x26,0x2B"
 		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B,0x85,0x84", outClusters: "0x26" // old style with numbered buttons
@@ -119,5 +121,7 @@ def updated() {
 }
 
 def initialize() {
+	// Arrival sensors only goes OFFLINE when Hub is off
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
 	sendEvent(name: "numberOfButtons", value: 4)
 }
