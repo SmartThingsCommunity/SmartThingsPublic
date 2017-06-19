@@ -19,7 +19,7 @@ buildscript {
                 username smartThingsArtifactoryUserName
                 password smartThingsArtifactoryPassword
             }
-            url "https://artifactory.smartthings.com/libs-release-local"
+            url "https://smartthings.jfrog.io/smartthings/libs-release-local"
         }
     }
 }
@@ -32,7 +32,7 @@ repositories {
             username smartThingsArtifactoryUserName
             password smartThingsArtifactoryPassword
         }
-        url "https://artifactory.smartthings.com/libs-release-local"
+        url "https://smartthings.jfrog.io/smartthings/libs-release-local"
     }
 }
 
