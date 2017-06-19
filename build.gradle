@@ -51,10 +51,10 @@ sourceSets {
 
 dependencies {
     devicetypesCompile 'org.codehaus.groovy:groovy-all:2.4.7'
-    devicetypesCompile 'smartthings:appengine-z-wave:0.1.2'
-    devicetypesCompile 'smartthings:appengine-zigbee:0.1.11'
+    devicetypesCompile 'smartthings:appengine-z-wave:0.1.3'
+    devicetypesCompile 'smartthings:appengine-zigbee:0.1.12'
     smartappsCompile 'org.codehaus.groovy:groovy-all:2.4.7'
-    smartappsCompile 'smartthings:appengine-common:0.1.8'
+    smartappsCompile 'smartthings:appengine-common:0.1.9'
     smartappsCompile 'org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'
     smartappsCompile 'org.grails:grails-web:2.3.11'
     smartappsCompile 'org.json:json:20140107'
