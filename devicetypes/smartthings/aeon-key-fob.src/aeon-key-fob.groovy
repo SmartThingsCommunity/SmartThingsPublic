@@ -1,3 +1,4 @@
+import groovy.json.JsonOutput
 /**
  *  Copyright 2015 SmartThings
  *
@@ -19,6 +20,7 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x80,0x84,0x85"
 		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeon Panic Button"
@@ -131,6 +133,9 @@ def updated() {
 }
 
 def initialize() {
+	// Arrival sensors only goes OFFLINE when Hub is off
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+
 	def zwMap = getZwaveInfo()
 	def buttons = 4 // Default for Key Fob
 
