@@ -9,7 +9,7 @@ apply plugin: 'smartthings-slack'
 
 buildscript {
     dependencies {
-        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.11"
+        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.12"
     }
     repositories {
         mavenLocal()
@@ -74,19 +74,19 @@ slackSendMessage {
     String username
     switch (branch) {
         case 'master':
-            username = 'Hickory'
+            username = 'DEV'
             iconUrl = wolverine
             color = '#35D0F2'
             messageText = 'Began deployment of _SmartThingsPublic[master]_ branch to the _Dev_ environments.'
             break
         case 'staging':
-            username = 'Dickory'
+            username = 'STG'
             iconUrl = beach
             color = '#FFDE20'
             messageText = 'Began deployment of _SmartThingsPublic[staging]_ branch to the _Staging_ environments.'
             break
         case 'production':
-            username = 'Dock'
+            username = 'PRD'
             iconUrl = drinks
             color = '#FF1D23'
             messageText = 'Began deployment of _SmartThingsPublic[production]_ branch to the _Prod_ environments.'
