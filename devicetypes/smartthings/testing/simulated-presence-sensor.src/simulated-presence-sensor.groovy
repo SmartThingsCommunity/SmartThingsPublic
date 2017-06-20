@@ -49,6 +49,6 @@ def arrived() {
 
 
 def departed() {
-	log.trace "Executing 'arrived'"
+	log.trace "Executing 'departed'"
 	sendEvent(name: "presence", value: "not present")
 }
