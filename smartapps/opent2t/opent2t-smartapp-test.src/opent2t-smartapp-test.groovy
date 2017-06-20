@@ -195,7 +195,10 @@ def registerDeviceChange() {
 				state.deviceSubscriptionMap.put(deviceId, [subscriptionEndpt])
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			} else if (!state.deviceSubscriptionMap[deviceId].contains(subscriptionEndpt)) {
-				state.deviceSubscriptionMap[deviceId] << subscriptionEndpt
+				// state.deviceSubscriptionMap[deviceId] << subscriptionEndpt
+				// For now, we will only have one subscription endpoint per device
+				state.deviceSubscriptionMap.remove(deviceId)
+				state.deviceSubscriptionMap.put(deviceId, [subscriptionEndpt])
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			}
 
