@@ -15,7 +15,8 @@ metadata {
         attribute "myEnergyLevel", "Number"
               
         fingerprint profileId: "0200", inClusters: "0000, 0004, 0005, 0006, 0008, 0100, 0102", manufacturer: "AXIS", model: "GR-ZB01-W", deviceJoinName: "AXIS Gear"
-        //ClusterIDs: 0000 - Basic; 0004 - Groups; 0005 - Scenes; 0006 - On/Off; 0008 - Level Control; 0100 - Shade Configuration; 0102 - Window Covering; 
+        //ClusterIDs: 0000 - Basic; 0004 - Groups; 0005 - Scenes; 0006 - On/Off; 0008 - Level Control; 0100 - Shade Configuration; 0102 - Window Covering;
+        //Updated 2017-06-21
     }
    
 	tiles(scale: 2) {
