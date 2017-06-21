@@ -490,6 +490,18 @@ def init() {
     atomicState.T4_AppMgtSP = true
 
 
+
+
+    // first default values to be set to any suitable value so it doesn't crash with null value 
+    // they will be updated within seconds with user's settings 
+    atomicState.newValueT1CSP = 75
+    atomicState.newValueT1HSP = 75
+    atomicState.newValueT2CSP = 75
+    atomicState.newValueT2HSP = 75
+    atomicState.newValueT2CSP = 75
+    atomicState.newValueT2HSP = 75
+
+
     atomicState.AllowToRunMainLoop = true // for motion handler 
     state.ThermostatOverriden = "none"
     atomicState.ThisIsManual = false
@@ -712,12 +724,14 @@ def CSPCust2 = ["0","$CSPCust2_T1", "$CSPCust2_T2", "$CSPCust2_T3", "$CSPCust2_T
         // now transpose corresponding values among tables
         // for heat values
         def ListHSPs = ["0", HSPH, HSPN, HSPA, HSPCust1, HSPCust2]
-        log.debug "ListHSPs = $ListHSPs"
         def HSPModecheck = ListHSPs[ModeIndexValue]
         log.debug "HSPModecheck = $HSPModecheck"
         def RefHeat = HSPModecheck[ThermNumber]
         //do the same with cooling values
         def ListCSPs = ["0", CSPH, CSPN, CSPA, CSPCust1, CSPCust2]
+        log.debug """
+ListCSPs = $ListCSPs
+ListHSPs = $ListHSPs"""
         def CSPModecheck = ListCSPs[ModeIndexValue]
         def RefCool = CSPModecheck[ThermNumber]
 
@@ -730,15 +744,14 @@ def CSPCust2 = ["0","$CSPCust2_T1", "$CSPCust2_T2", "$CSPCust2_T3", "$CSPCust2_T
             //reference = Math.round(Double.parseDouble(RefHeat))
             //reference = reference.toInteger()
             log.debug "RefHeat was: $RefHeat"
-            log.debug "RefHeat is now converted to a reference as: $reference"
+            log.debug "RefHeat is $RefHeat and it is now converted to a reference for comparison"
 
         }
         else  if(evt.name == "coolingSetpoint"){ 
             reference = RefCool
             //reference = Math.round(Double.parseDouble(RefCool))
             //reference = reference.toInteger()
-            log.debug "RefCool was: $RefCool"
-            log.debug "RefCool is now converted to a reference as: $reference"
+            log.debug "RefCool is $RefCool and it is now converted to a reference for comparison"
         }
 
 
@@ -758,8 +771,7 @@ log.debug "ThisIsMotion value from MAP for $evt.device is: $ThisIsMotion"
         def Value = evt.value
         //def Value = Math.round(Double.parseDouble(evt.value))
         Value = Value.toInteger()
-        log.debug "Evt value to Integer is : $Value"
-        log.debug "Value is to be compared to : $reference"
+        log.debug "Evt value to Integer is : $Value and it is to be compared to reference: $reference"
 
 
         if(Value == reference || ThisIsModeChange || thisIsExceptionTemp /* these shouldn't be needed any longer || ThisIsMotion || ThisIsLinearEq) */ )
@@ -770,7 +782,7 @@ log.debug "ThisIsMotion value from MAP for $evt.device is: $ThisIsMotion"
         }
         else {       
             atomicState.ThisIsManual = true
-            log.debug "MANUAL SETPOINT OVERRIDE"
+            log.debug "MANUAL SETPOINT OVERRIDE for $evt.device"
             def message = "user set temperature manually on $evt.device"
             log.info message
 
@@ -1359,31 +1371,16 @@ Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
                     atomicState.newValueT1CSP = CSPSet
                     atomicState.newValueT1HSP = HSPSet
 
-                    // refresh default settings values for the rest
-                    atomicState.newValueT2CSP = CSP2
-                    atomicState.newValueT2HSP = HSP2
-                    atomicState.newValueT2CSP = CSP3
-                    atomicState.newValueT2HSP = HSP3
                 }    
-                else if(loopValue == 2){
+                if(loopValue == 2){
                     atomicState.newValueT2CSP = CSPSet
                     atomicState.newValueT2HSP = HSPSet  
 
-                    // refresh default settings values for the rest
-                    atomicState.newValueT1CSP = CSP1
-                    atomicState.newValueT1HSP = HSP1
-                    atomicState.newValueT3CSP = CSP3
-                    atomicState.newValueT3HSP = HSP3
                 }
-                else if(loopValue == 3){
+                if(loopValue == 3){
                     atomicState.newValueT3CSP = CSPSet
                     atomicState.newValueT3HSP = HSPSet   
 
-                    // refresh default settings values for the rest
-                    atomicState.newValueT1CSP = CSP1
-                    atomicState.newValueT1HSP = HSP1
-                    atomicState.newValueT2CSP = CSP2
-                    atomicState.newValueT2HSP = HSP2
                 }
 
                 // finally set devices temperatures... 
