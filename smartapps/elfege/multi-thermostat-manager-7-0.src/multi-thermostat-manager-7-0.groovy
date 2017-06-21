@@ -743,8 +743,7 @@ ListHSPs = $ListHSPs"""
             reference = RefHeat
             //reference = Math.round(Double.parseDouble(RefHeat))
             //reference = reference.toInteger()
-            log.debug "RefHeat was: $RefHeat"
-            log.debug "RefHeat is $RefHeat and it is now converted to a reference for comparison"
+            log.debug """RefHeat is $RefHeat and it is now converted to a reference for comparison"""
 
         }
         else  if(evt.name == "coolingSetpoint"){ 
@@ -773,6 +772,13 @@ log.debug "ThisIsMotion value from MAP for $evt.device is: $ThisIsMotion"
         Value = Value.toInteger()
         log.debug "Evt value to Integer is : $Value and it is to be compared to reference: $reference"
 
+
+log.debug """
+RefHeat for $evt.device is: $RefHeat 
+RefCool for $evt.device is: $RefCool 
+reference for $evt.device is: $reference
+SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should have $reference = $Value 
+(unless location mode just changed or Exception Switch is on or ThisIsMotion or ThisIsLinearEq)"""
 
         if(Value == reference || ThisIsModeChange || thisIsExceptionTemp /* these shouldn't be needed any longer || ThisIsMotion || ThisIsLinearEq) */ )
         {  
@@ -844,11 +850,8 @@ log.debug "ThisIsMotion value from MAP for $evt.device is: $ThisIsMotion"
                 log.info "atomicState.T4_AppMgt set to $atomicState.T4_AppMgt"
             }
         }   
-        log.debug "RefHeat is: $RefHeat"
-        log.debug "RefCool is: $RefCool"
-        log.debug "reference is: $reference"
-        log.debug """ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should have $reference = $Value 
-(unless location mode just changed or Exception Switch is on or ThisIsMotion or ThisIsLinearEq)"""
+        
+
         atomicState.RefHeat = RefHeat
         atomicState.RefCool = RefCool
 
