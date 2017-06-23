@@ -11,9 +11,8 @@ metadata {
         command "ShadesUp"
         command "ShadesDown"
         
-        attribute "myBatteryLevel", "Number"
-        attribute "myEnergyLevel", "Number"
-              
+        
+        
         fingerprint profileId: "0200", inClusters: "0000, 0004, 0005, 0006, 0008, 0100, 0102", manufacturer: "AXIS", model: "GR-ZB01-W", deviceJoinName: "AXIS Gear"
         //ClusterIDs: 0000 - Basic; 0004 - Groups; 0005 - Scenes; 0006 - On/Off; 0008 - Level Control; 0100 - Shade Configuration; 0102 - Window Covering;
         //Updated 2017-06-21
@@ -22,25 +21,40 @@ metadata {
 	tiles(scale: 2) {
         multiAttributeTile(name:"shade", type: "lighting", width: 6, height: 6) {
             tileAttribute("device.windowShade", key: "PRIMARY_CONTROL") {
-                attributeState("open", label:'Open', action:"close", icon:"st.doors.garage.garage-open", backgroundColor:"#ffcc33", nextState: "closed")
-                attributeState("closed", label:'Closed', action:"open", icon:"https://www.jasno.com/sites/default/themes/twitter_bootstrap/img/icon_blind.png", backgroundColor:"#bbbbdd", nextState: "open")
+                attributeState("open", label:'Open', action:"close", icon:"http://i.imgur.com/VQrJVYH.png", backgroundColor:"#ffcc33", nextState: "closed")
+                attributeState("partial", label: 'Partial', icon:"http://i.imgur.com/MkY1eRD.png", backgroundColor:"#ffcc33", nextState: "closed")
+                attributeState("closed", label:'Closed', action:"open", icon:"http://i.imgur.com/WwptfpQ.png", backgroundColor:"#bbbbdd", nextState: "open")
              }
                 tileAttribute ("device.level", key: "VALUE_CONTROL") {
               		attributeState("VALUE_UP", action: "ShadesUp")
         			attributeState("VALUE_DOWN", action: "ShadesDown")
              }
    		}
+        standardTile("main", "device.windowShade"){
+        	state("open", label:'Open', action:"close", icon:"http://i.imgur.com/VQrJVYH.png", backgroundColor:"#ffcc33", nextState: "closed")
+            state("partial", label:'Partial',  icon:"http://i.imgur.com/MkY1eRD.png", backgroundColor:"#ffcc33", nextState: "closed")
+            state("closed", label:'Closed', action:"open", icon:"http://i.imgur.com/WwptfpQ.png", backgroundColor:"#bbbbdd", nextState: "open")
+        }
 	 	controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: true) {
             state("level", action:"setLevel")
         }
         
+        valueTile("integerFloat", "device.integerFloat", width:6, height: 2) {
+			state "val", label:'${currentValue}% Battery'
+		}
+                
                
         main "shade" // or maybe "Shade Control"
+        
+        main(["main"])
+        details(["shade", "levelSliderControl","integerFloat"])
         //details('shade', 'levelSliderControl')
         //details('levelSliderControl', 'otherTile', 'anotherTile') //adjustment and order of tiles
 	}
 
 }
+
+
 
 
 def ShadesUp(){
@@ -83,7 +97,16 @@ def off() {
 }
 
 def setLevel(value) {
+	sendEvent(name: "integerFloat", value: 47.0)
 	sendEvent(name:"level", value: value, displayed:true)
+    
+    if ((value>0)&&(value<100)){
+    	sendEvent(name:"windowShade", value: "partial", displayed:true)
+    } else if (value == 100){
+    	sendEvent(name:"windowShade", value: "closed", displayed:true)
+    }else{
+    	sendEvent(name:"windowShade", value: "open", displayed:true)
+    }
 	zigbee.setLevel(value)
 }
 
@@ -95,21 +118,17 @@ def close() {
 	off()
 }
 /*
-
 def refresh() {
     return zigbee.readAttribute(0x0006, 0x0000) +
         zigbee.readAttribute(0x0008, 0x0000) +
         zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) +
         zigbee.configureReporting(0x0008, 0x0000, 0x20, 1, 3600, 0x01)
 }
-
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-
     return zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) +
         zigbee.configureReporting(0x0008, 0x0000, 0x20, 1, 3600, 0x01) +
         zigbee.readAttribute(0x0006, 0x0000) +
         zigbee.readAttribute(0x0008, 0x0000)
 }
-
 */
