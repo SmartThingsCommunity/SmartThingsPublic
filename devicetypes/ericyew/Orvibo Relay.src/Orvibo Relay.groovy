@@ -1,5 +1,4 @@
 /**
- *
  *  Modification of SmartThings device handler to provide momentary press on a relay (Orvibo)
  *
  *  Copyright 2015 SmartThings
