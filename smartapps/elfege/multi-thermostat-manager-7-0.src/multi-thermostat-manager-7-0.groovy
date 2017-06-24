@@ -8,7 +8,7 @@ third party temperature sensor, modes, off override and temperature set point ov
     iconUrl: "http://elfege.com/penrose.jpg",
     iconX2Url: "http://elfege.com/penrose.jpg"
 )
-1
+
 preferences {
 
     page name: "pageSetup"
@@ -490,6 +490,11 @@ def init() {
     atomicState.T4_AppMgtSP = true
 
 
+    // motion sensor handler default start values
+    atomicState.isInActive1 = false
+    atomicState.isInActive2 = false
+    atomicState.isInActive3 = false
+
 
 
     // first default values to be set to any suitable value so it doesn't crash with null value 
@@ -527,6 +532,7 @@ def init() {
 
     atomicState.locationModeChange = true 
 
+    atomicState.SetpointDone = false
 
     atomicState.WhileMax = 50 // max iteration for while loops
 
@@ -542,7 +548,7 @@ def init() {
 
 
 
-    runIn(60, resetLocationChangeVariable)
+    runIn(10, resetLocationChangeVariable)
 
     // false positive overrides management 
 
@@ -554,68 +560,60 @@ def init() {
 
 def motionSensorHandler(evt){
 
+    atomicState.SensorHandlerIsRunning = true // forces main loop to wait 
+
     log.debug "there is $evt.value motion @ $evt.device"
 
-    def Motion1 = evt.displayName == "$MotionSensor_1"
-    def Motion2 = evt.displayName == "$MotionSensor_2"
-    def Motion3 = evt.displayName == "$MotionSensor_3"
-
-
-    log.trace "Motion1: $Motion1, Motion2: $Motion2, Motion3: $Motion3"
-
-    log.trace """
-Motion1 = $Motion1
-Motion2 = $Motion2
-Motion3 = $Motion3"""
-
-
-    def MotionSensor = evt.device
 
     def deltaMinutes = minutesMotion as Long
     log.debug "deltaMinutes = $deltaMinutes"
-    def motionEvents = MotionSensor.eventsSince(new Date(now() - (60000 * deltaMinutes)))
 
-    //MotionBoolDevice = true ?: [0, Motion1, Motion2, Motion3]
+    def timeFrame = now() - (60000 * deltaMinutes)
+    log.debug "timeFrame : $timeFrame"
 
-    if (motionEvents.find {it.value == "active" }) {
-        if(Motion1){
+    if(evt.device == MotionSensor_1){
+        def motionEvents1 = MotionSensor_1.eventsSince(new Date(timeFrame))
+
+        if(motionEvents1.find{it.value == "active" }){
             atomicState.isInActive1 = false
-        }  
+        }
         else {
             atomicState.isInActive1 = true
         }
-        if(Motion2){
+    }
+    else if(evt.device == MotionSensor_2){
+        def motionEvents2 = MotionSensor_2.eventsSince(new Date(timeFrame))
+        if(motionEvents2.find{it.value == "active" }){
             atomicState.isInActive2 = false
-        }  
+        }
         else {
             atomicState.isInActive2 = true
         }
-        if(Motion3){
+    }
+    else if(evt.device == MotionSensor_3){
+        def motionEvents3 = MotionSensor_3.eventsSince(new Date(timeFrame))
+        if(motionEvents3.find{it.value == "active" }){
             atomicState.isInActive3 = false
-        }  
+        }
         else {
             atomicState.isInActive3 = true
         }
     }
 
-    log.trace """Found ${motionEvents?.size() ?: 0} events in the last $deltaMinutes minutes at $evt.device"""
 
+    log.debug """
+Found ${motionEvents1?.size() ?: 0} events in the last $deltaMinutes minutes at $evt.device
+Found ${motionEvents2?.size() ?: 0} events in the last $deltaMinutes minutes at $evt.device
+Found ${motionEvents3?.size() ?: 0} events in the last $deltaMinutes minutes at $evt.device
 
-    def count = 0
-    while(atomicState.loopValue < atomicState.ThermsInvolved && count < atomicState.WhileMax){
-        count++
-            // log.debug "wait($count)"
+$MotionSensor_1 is INACTIVE = $atomicState.isInActive1
+$MotionSensor_2 is INACTIVE = $atomicState.isInActive2
+$MotionSensor_3 is INACTIVE = $atomicState.isInActive3
+"""
 
-            }  
-
+    atomicState.SensorHandlerIsRunning = false 
 
     TemperaturesModes()
-
-    /*
-atomicState.isInActive1 = $atomicState.isInActive1
-atomicState.isInActive2 = $atomicState.isInActive2
-atomicState.isInActive3 = $atomicState.isInActive3
-*/
 
 
 }
@@ -648,14 +646,16 @@ def switchHandler(evt){
 
 }
 def setpointHandler(evt){
-    // log.debug "The source of this event is: ${evt.source}"
-    // log.debug "New $evt.name for $evt.device : $evt.value"
-    // log.debug "evt.displayName is $evt.displayName -------------------------------"
-    state.ThermostatOverriden = evt.displayName
+    log.debug """
+The source of this event is: ${evt.source}
+log.debug "New $evt.name for $evt.device : $evt.value
+log.debug "evt.displayName is $evt.displayName
+state.ThermostatOverriden = evt.displayName"""
 
-    def ThisIsLinearEq = atomicState.ThisIsLinearEq // needs to be recoreded early after tempModes has run
 
     if(atomicState.withinApp == false){
+
+        atomicState.SetpointDone = false
 
         def CurrMode = location.currentMode
 
@@ -771,7 +771,9 @@ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should hav
 (unless location mode just changed or Exception Switch is on or ThisIsMotion or ThisIsLinearEq)
 """
 
-        if(Value == reference || ThisIsModeChange || thisIsExceptionTemp /* these shouldn't be needed any longer || ThisIsMotion || ThisIsLinearEq) */ )
+        def doorsOk = atomicState.doorsAreClosed
+
+        if(Value == reference || ThisIsModeChange || thisIsExceptionTemp || (!doorsOk && !thisIsExceptionTemp))
         {  
             log.debug "NO SETPOINT OVERRIDE"
             atomicState.ThisIsManual = false
@@ -782,8 +784,8 @@ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should hav
             log.debug "MANUAL SETPOINT OVERRIDE for $evt.device"
             def message = "user set temperature manually on $evt.device"
             log.info message
-            
-         
+
+
 
         }
 
@@ -861,139 +863,144 @@ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should hav
 
             }  
 
-    TemperaturesModes()
+    atomicState.SetpointDone = true
 }
 def ThermostatSwitchHandler(evt){
 
     log.debug "$evt.device set to $evt.value (ThermostatSwitchHandler)"
 
-/* // DEPREACATED NOT COMAPTIBLE WITH NEW FEATURES : MOTION, HUMIDITY and LINEAR EQ. 
 
     log.debug "CHECKING COMMAND ORIGIN for $evt.device "
-
-    if(atomicState.CRITICAL == false){
-        def CurrMode = location.currentMode
-        def LocatioModeChange = atomicState.locationModeChange
-        // log.debug "Location Mode Changed?($LocatioModeChange)"
-
-
-        log.trace "Latest Thermostat ModeS : $atomicState.LatestThermostatMode_T1 | $atomicState.LatestThermostatMode_T2 | $atomicState.LatestThermostatMode_T3 | $atomicState.LatestThermostatMode_T4"
-
-        def ltm1 = atomicState.LatestThermostatMode_T1.toString()
-        def ltm2 = atomicState.LatestThermostatMode_T2.toString()
-        def ltm3 = atomicState.LatestThermostatMode_T3.toString()
-        def ltm4 = atomicState.LatestThermostatMode_T4.toString()
-
-        def MapofShouldBe = ["$Thermostat_1": ltm1, "$Thermostat_2": ltm2, "$Thermostat_3": ltm3, "$Thermostat_4": ltm4]
-        def WhichThermInvolved = MapofShouldBe.find{ it.key == "$evt.device"} 
-
-        log.debug "Map of ShouldBe : ${MapofShouldBe}"
-        log.debug "ShouldBe Value : ${WhichThermInvolved.value}"
-
-        WhichThermInvolved = WhichThermInvolved.value
-        def ShouldBe = WhichThermInvolved
-        //ShouldBe = WhichThermInvolved.toString()
+    if(atomicState.withinApp == false){
+        if(atomicState.CRITICAL == false){
+            def CurrMode = location.currentMode
+            def LocatioModeChange = atomicState.locationModeChange
+             log.debug "Location Mode Changed?($LocatioModeChange)"
 
 
-
-        // is the current SetPoint app managed or manually set?
-        def IsSpAppManagedMap = ["${Thermostat_1}": atomicState.T1_AppMgtSP, "${Thermostat_2}" : atomicState.T2_AppMgtSP, "${Thermostat_3}" : atomicState.T3_AppMgtSP, "${Thermostat_4}" : atomicState.T4_AppMgtSP]
-        def IsSpAppManaged = IsSpAppManagedMap.find{it.key == "$evt.device"}
-        IsSpAppManaged = IsSpAppManaged.value
-        log.debug "IsSpAppManaged?($IsSpAppManaged)"
-
-        // is current state app managed or manually set?
-        log.debug " for $evt.device shoudlbe: evt.value($evt.value) =? ShouldBe($ShouldBe)"
-        def IdenticalShouldbe = evt.value == ShouldBe && IsSpAppManaged
-        log.debug "IDENTICAL?($IdenticalShouldbe)"
-
-        def ExceptionState = atomicState.exception
-        def thisIsExceptionTemp = evt.displayName == "$Thermostat_1" && ExceptionState
-        log.debug "ExceptionSwitch?($thisIsExceptionTemp)"
+            log.trace "Latest Thermostat ModeS : $atomicState.LatestThermostatMode_T1 | $atomicState.LatestThermostatMode_T2 | $atomicState.LatestThermostatMode_T3 | $atomicState.LatestThermostatMode_T4"
 
 
+            def ltm1 = atomicState.LatestThermostatMode_T1.toString()
+            def ltm2 = atomicState.LatestThermostatMode_T2.toString()
+            def ltm3 = atomicState.LatestThermostatMode_T3.toString()
+            def ltm4 = atomicState.LatestThermostatMode_T4.toString()
+
+            def MapofShouldBe = ["$Thermostat_1": ltm1, "$Thermostat_2": ltm2, "$Thermostat_3": ltm3, "$Thermostat_4": ltm4]
+            def WhichThermInvolved = MapofShouldBe.find{ it.key == "$evt.device"} 
+
+            log.debug "Map of ShouldBe : ${MapofShouldBe}"
+            log.debug "ShouldBe Value : ${WhichThermInvolved.value}"
+
+            WhichThermInvolved = WhichThermInvolved.value
+            def ShouldBe = WhichThermInvolved
+            //ShouldBe = WhichThermInvolved.toString()
+
+		log.debug "evt.device ShouldBe $ShouldBe and it was just set to $evt.value"
+
+            /*
+            // is the current SetPoint app managed or manually set?
+            def IsSpAppManagedMap = ["${Thermostat_1}": atomicState.T1_AppMgtSP, "${Thermostat_2}" : atomicState.T2_AppMgtSP, "${Thermostat_3}" : atomicState.T3_AppMgtSP, "${Thermostat_4}" : atomicState.T4_AppMgtSP]
+            def IsSpAppManaged = IsSpAppManagedMap.find{it.key == "$evt.device"}
+            IsSpAppManaged = IsSpAppManaged.value
+            log.debug "IsSpAppManaged?($IsSpAppManaged)"
+*/
+            // is current state app managed or manually set?
+            log.debug " for $evt.device shoudlbe: evt.value($evt.value) =? ShouldBe($ShouldBe)"
+            def IdenticalShouldbe = evt.value == ShouldBe 
+            log.debug "IDENTICAL?($IdenticalShouldbe)"
+
+            def ExceptionState = atomicState.exception
+            def thisIsExceptionTemp = evt.displayName == "$Thermostat_1" && ExceptionState
+            log.debug "ExceptionSwitch?($thisIsExceptionTemp)"
 
 
-        //make sure that  : 
-        // 1) the thermostat DID effectively had its operating mode changed
-        // 2) this change was not triggered by a home location change 
-        // 3) or by the TemperaturesModes() loop
-        // 4) no setpoint exception
-
-        def ThereWasChange = ShouldBe != evt.value && !LocatioModeChange && !ChangedByApp
-
-        // log.debug " Change($ThereWasChange)"
-
-        if(evt.displayName == "${Thermostat_1}" ){
-            if(IdenticalShouldbe || thisIsExceptionTemp ){
-                // manual override deactivated
-                log.debug "NO MANUAL ON/OFF OVERRIDE for $Thermostat_1"
-                atomicState.T1_AppMgt = true
 
 
+            //make sure that  : 
+            // 1) the thermostat DID effectively had its operating mode changed
+            // 2) this change was not triggered by a home location change 
+            // 3) or by the TemperaturesModes() loop
+            // 4) no setpoint exception
+
+
+            def ThereWasChange = !IdenticalShouldbe && !LocatioModeChange // && !IsSpAppManaged
+
+            log.debug " Change($ThereWasChange)"
+
+            if(evt.displayName == "${Thermostat_1}" ){
+                if(IdenticalShouldbe || thisIsExceptionTemp || LocatioModeChange){
+                    // manual override deactivated
+                    log.debug "NO MANUAL ON/OFF OVERRIDE for $Thermostat_1"
+                    atomicState.T1_AppMgt = true
+
+
+                }
+                else if(!IdenticalShouldbe && !thisIsExceptionTemp && ThereWasChange){
+                    // command did not come from app so manual or set point is manual override is on
+                    log.debug "MANUAL ON/OFF OVERRIDE for $Thermostat_1"
+                    atomicState.T1_AppMgt = false
+
+                }       
             }
-            else if(!IdenticalShouldbe && !thisIsExceptionTemp ){
-                // command did not come from app so manual or set point is manual override is on
-                log.debug "MANUAL ON/OFF OVERRIDE for $Thermostat_1"
-                atomicState.T1_AppMgt = false
+            else if(evt.displayName == "${Thermostat_2}"){
+               if(IdenticalShouldbe || thisIsExceptionTemp || LocatioModeChange){
+                    // manual override deactivated
+                    log.debug "NO MANUAL ON/OFF OVERRIDE for $Thermostat_2"
+                    atomicState.T2_AppMgt = true
 
-            }       
+
+                }
+                else if(!IdenticalShouldbe && !thisIsExceptionTemp && ThereWasChange){
+                    // command did not come from app so manual override is on
+                    log.debug "MANUAL ON/OFF OVERRIDE for $Thermostat_2"
+                    atomicState.T2_AppMgt = false
+
+                }     
+            } 
+            else if(evt.displayName == "${Thermostat_3}"){
+                if(IdenticalShouldbe || thisIsExceptionTemp || LocatioModeChange){
+                    // manual override deactivated
+                    log.debug "NO ON/OFF MANUAL OVERRIDE for $Thermostat_3"
+                    atomicState.T3_AppMgt = true
+
+
+                }
+                else if(!IdenticalShouldbe && !thisIsExceptionTemp && ThereWasChange){
+                    // command did not come from app so manual override is on
+                    log.debug "MANUAL ON/OFF OVERRIDE for $Thermostat_3"
+                    atomicState.T3_AppMgt = false
+
+                }     
+            } 
+            else if(evt.displayName == "${Thermostat_4}"){
+                if(IdenticalShouldbe || thisIsExceptionTemp || LocatioModeChange){
+                    // manual override deactivated
+                    log.debug "NO ON/OFF MANUAL OVERRIDE for $Thermostat_4"
+                    atomicState.T4_AppMgt = true
+
+
+                }
+                 else if(!IdenticalShouldbe && !thisIsExceptionTemp && ThereWasChange){
+                    // command did not come from app so manual override is on
+                    log.debug "MANUAL ON/OFF OVERRIDE for $Thermostat_4"
+                    atomicState.T4_AppMgt = false
+
+                }     
+            }
+
         }
-        else if(evt.displayName == "${Thermostat_2}"){
-            if(IdenticalShouldbe){
-                // manual override deactivated
-                log.debug "NO MANUAL ON/OFF OVERRIDE for $Thermostat_2"
-                atomicState.T2_AppMgt = true
-
-
-            }
-            else if(!IdenticalShouldbe){
-                // command did not come from app so manual override is on
-                log.debug "MANUAL ON/OFF OVERRIDE for $Thermostat_2"
-                atomicState.T2_AppMgt = false
-
-            }     
-        } 
-        else if(evt.displayName == "${Thermostat_3}"){
-            if(IdenticalShouldbe){
-                // manual override deactivated
-                log.debug "NO ON/OFF MANUAL OVERRIDE for $Thermostat_3"
-                atomicState.T3_AppMgt = true
-
-
-            }
-            else if(!IdenticalShouldbe){
-                // command did not come from app so manual override is on
-                log.debug "MANUAL ON/OFF OVERRIDE for $Thermostat_3"
-                atomicState.T3_AppMgt = false
-
-            }     
-        } 
-        else if(evt.displayName == "${Thermostat_4}"){
-            if(IdenticalShouldbe){
-                // manual override deactivated
-                log.debug "NO ON/OFF MANUAL OVERRIDE for $Thermostat_4"
-                atomicState.T4_AppMgt = true
-
-
-            }
-            else if(!IdenticalShouldbe){
-                // command did not come from app so manual override is on
-                log.debug "MANUAL ON/OFF OVERRIDE for $Thermostat_4"
-                atomicState.T4_AppMgt = false
-
-            }     
+        else { 
+            log.debug "CRITICAL MODE. NOT EVALUATING OVERRIDES" 
         }
-
 
     }
-    else { 
-        // log.debug "CRITICAL MODE. NOT EVALUATING OVERRIDES" 
+    else {
+        log.debug "ON/OFF COMMAND FOR $evt.device came from app, not evaluation override"
     }
-    
-    */
-
 }
+
+
 def temperatureHandler(evt) { 
 
     //log.debug "The source of this event is: ${evt.source}"
@@ -1065,7 +1072,7 @@ def contactHandlerClosed(evt) {
     // log.debug "$evt.device is $evt.value"
 
     if(contact.latestValue("contact").contains("open")){
-        // log.debug "Not all contacts are closed, doing nothing"
+        log.debug "Not all contacts are closed, doing nothing"
         atomicState.doorsAreClosed = false
 
     }
@@ -1074,10 +1081,11 @@ def contactHandlerClosed(evt) {
 
 
         // all contacts are closed, unscheduling previous TurnOffThermostats command
-        
+
         unschedule(TurnOffThermostats) // in case were closed within time frame
 
-        updated()
+        //updated()
+        TemperaturesModes()
     }
 
 
@@ -1104,7 +1112,6 @@ def contactHandlerOpen(evt) {
         CheckWindows()
     }
 }
-
 def ChangedModeHandler(evt) {
 
     log.debug "mode changed to ${evt.value}"
@@ -1117,6 +1124,8 @@ def ChangedModeHandler(evt) {
 def TemperaturesModes(){
 
     //updated()
+
+
 
     log.trace "MAIN LOOP RUNNING"
 
@@ -1211,10 +1220,12 @@ def TemperaturesModes(){
 
     def loopValue = 0
 
-    while(loopValue < atomicState.ThermsInvolved){
+
+    while(loopValue < atomicState.ThermsInvolved &&  atomicState.SensorHandlerIsRunning == false){
 
         loopValue++
             atomicState.loopValue == loopValue
+
 
         log.info "loop($loopValue)"
         CurrTemp = CurrTempList[loopValue]
@@ -1324,7 +1335,7 @@ Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
                 def defaultCSPSet = CSPSet // recording this default value so if linear equation brings setpoint too low, it'll be recovered
                 def defaultHSPSet = HSPSet // same but with heat
 
-                atomicState.ThisIsLinearEq = true
+
 
 
                 // linear function for Cooling
@@ -1383,8 +1394,41 @@ Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
 
                 log.debug "loading updated $CurrMode Cooling and Heating Set Points for $ThermSet"     
                 atomicState.withinApp = true
-                ThermSetDevice.setHeatingSetpoint(HSPSet)
-                ThermSetDevice.setCoolingSetpoint(CSPSet)
+
+                // need to call Therm list as a list of objects, not string, so we can pull current setpoint... 
+
+                def ThermObjectList = [null, Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4]
+
+                def ThermSetObject = ThermObjectList[loopValue]
+
+                def CurrentCoolingSetPoint = ThermSetObject.currentValue("coolingSetpoint") as Integer
+                def CurrentHeatingSetPoint = ThermSetObject.currentValue("heatingSetpoint") as Integer
+
+                log.debug "Current setpoint for $ThemSet is $CurrentCoolingSetPoint and Current Heating setpoint is $CurrentHeatingSetPoint"
+
+                //but only if there's not already the same 
+                // this MUST be done in order to avoid overflow of z-wave commands in this while loop
+
+				atomicState.withinApp = true
+                
+                if(CurrentCoolingSetPoint != CSPSet){
+                    ThermSetDevice.setCoolingSetpoint(CSPSet)
+                }
+                else 
+                {
+                    log.debug "Cooling SetPoint already set to $CSPSet"
+                }
+
+                if(CurrentHeatingSetPoint != HSPSet){
+                    ThermSetDevice.setHeatingSetpoint(HSPSet)
+                }
+                else 
+                { 
+                    log.debug "Heating SetPoint already set to $HSPSet"
+                }
+
+				
+
 
                 def ThisIsExceptionTherm =  false
                 def ContactExceptionIsOpen = false
@@ -1406,20 +1450,19 @@ Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
                         log.debug "$ThermSet TURNED OFF"      
                         LatestThermostatMode = "off"
                         ThermSetDevice.setThermostatMode("off") 
+
                     } 
-                    else if(CurrTemp >= CSPSet && /* OutsideTemp > OutsideTempLowThres && */ ThermState != "cool" && ShouldCool){
+                    else if(CurrTemp >= CSPSet && ThermState != "cool" && ShouldCool){
                         AppMgtTrue() 
                         log.debug "$ThermSet set to cool"
                         LatestThermostatMode = "cool"
-                        ThermSetDevice.setThermostatMode("cool") 
-                        atomicState.ShouldCool = true
+                        ThermSetDevice.setThermostatMode("cool")                 
                     }
                     else if(CurrTemp < HSPSet && ThermState != "heat" && ShouldHeat){
                         AppMgtTrue()
                         log.debug "$ThermSet set to Heat"
                         LatestThermostatMode = "heat"
-                        ThermSetDevice.setThermostatMode("heat") 
-                        atomicState.ShouldCool = false
+                        ThermSetDevice.setThermostatMode("heat")                       
                     } 
 
                     // for all situations that are not accounted for by this program... 
@@ -1448,22 +1491,8 @@ Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
         else {
 
             log.debug "${ThermSet} in OVERRIDE MODE, doing nothing -- AppMgt = $AppMgt"
+            // record restore modes after end of override
 
-            if(CurrTemp > HSPSet && ThermState != "off" && !ShouldCool){
-
-                // log.debug "$ThermSet SHOULD BE OFF"      
-                LatestThermostatMode = "off"
-            } 
-            else if(CurrTemp >= CSPSet && ThermState != "cool" && ShouldCool){
-
-                // log.debug "$ThermSet SHOULD BE set to cool"
-                LatestThermostatMode = "cool"
-            }
-            else if(CurrTemp < HSPSet && ThermState != "heat" && !ShouldCool){
-
-                // log.debug "$ThermSet SHOULD BE set to Heat"
-                LatestThermostatMode = "heat"
-            }   
 
             if(loopValue == 1){
                 atomicState.LatestThermostatMode_T1 = LatestThermostatMode
@@ -1477,54 +1506,28 @@ Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
             else if(loopValue == 4){
                 atomicState.LatestThermostatMode_T4 = LatestThermostatMode
             }
-            /*log.trace """
-$Thermostat_1 should be $atomicState.LatestThermostatMode_T1,
-$Thermostat_2 should be $atomicState.LatestThermostatMode_T2,
-$Thermostat_3 should be $atomicState.LatestThermostatMode_T3,
-$Thermostat_4 should be $atomicState.LatestThermostatMode_T4""" 
-*/
         }
         log.trace " END WHILE $loopValue" 
-        atomicState.ThisIsLinearEq = false // needs to be reset to prevent false override positive
+
     }   
 
-    /*
-DOORS AND OUTSIDE
-doorsOk?($doorsOk), 
-NoTurnOffOnContact?($NoTurnOffOnContact), 
-ThisIsExceptionTherm?($ThisIsExceptionTherm), 
-ContactExceptionIsOpen?($ContactExceptionIsOpen), 
-OutsideTempLowThres = $OutsideTempLowThres, 
-OutsideTempHighThres = $OutsideTempHighThres,
-OutsideSensor = $OutsideSensor,
-outsideTemp = $outsideTemp; 
-Currently Managed Device = $ThermSetDevice, 
-Device's current state = $ThermState,
-
-HUMIDITY
-Humidity is: $humidity,
-TooHumid?($TooHumid)
-HumidityTolerance = $HumidityTolerance
-
-
-MOTION
-
-MotionModesList = $MotionModesList // list of list : 
-Current MotionModes to be evaluated are: $MotionModes
-
-MotionSensorList = $MotionSensorList
-AddDegreesMotionList = $AddDegreesMotionList
-SubDegreesMotionList = $SubDegreesMotionList
-
-"""
-*/
     // end of while loop
 
-    atomicState.withinApp = false // this value is reset to false so if there's a manual setpoint override it'll be detected as such
 
+    if(atomicState.SensorHandlerIsRunning != false){
+        log.debug "Waiting for motion handler to be done"
+    }
+
+
+    // wait for other loops to finish before reseting this variable otherwhise there's a systemic risk of fals positive override
+    runIn(5, withinAppFALSE)
 
 }
 
+def withinAppFALSE(){
+    log.debug "Reset atomicState.withinApp to FALSE"
+    atomicState.withinApp = false // this value is reset to false so if there's a manual setpoint override it'll be detected as such
+}
 def AppMgtTrue(){
 
     def loopValue = state.loopValue
@@ -2010,6 +2013,7 @@ def TurnOffThermostats(){
 }
 def resetLocationChangeVariable(){
     atomicState.locationModeChange = false
+    log.debug "atomicState.locationModeChange reset to FALSE"
 }
 def resetOverride(){
     // log.debug "OVERRIDE RESET"
