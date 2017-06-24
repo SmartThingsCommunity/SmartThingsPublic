@@ -33,6 +33,8 @@ metadata {
         attribute "sequenceNumber", "number"
         attribute "numberOfButtons", "number"
         attribute "needUpdate", "string"
+        
+        fingerprint mfr: "0086", prod: "0102", model: "0082", deviceJoinName: "Aeon WallMote"
 
 		fingerprint deviceId: "0x1801", inClusters: "0x5E,0x73,0x98,0x86,0x85,0x59,0x8E,0x60,0x72,0x5A,0x84,0x5B,0x71,0x70,0x80,0x7A", outClusters: "0x25,0x26" // secure inclusion
         fingerprint deviceId: "0x1801", inClusters: "0x5E,0x85,0x59,0x8E,0x60,0x86,0x70,0x72,0x5A,0x73,0x84,0x80,0x5B,0x71,0x7A", outClusters: "0x25,0x26"
@@ -151,6 +153,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
     
     def request = update_needed_settings()
     
+    request << zwave.versionV1.versionGet()
+    
     if (!state.lastBatteryReport || (now() - state.lastBatteryReport) / 60000 >= 60 * 24)
     {
         logging("Over 24hr since last battery report. Requesting report")
@@ -198,6 +202,16 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
      update_current_properties(cmd)
      logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+	def fw = "${cmd.applicationVersion}.${cmd.applicationSubVersion}"
+	updateDataValue("fw", fw)
+	if (state.MSR == "003B-6341-5044") {
+		updateDataValue("ver", "${cmd.applicationVersion >> 4}.${cmd.applicationVersion & 0xF}")
+	}
+	def text = "$device.displayName: firmware version: $fw, Z-Wave version: ${cmd.zWaveProtocolVersion}.${cmd.zWaveProtocolSubVersion}"
+	createEvent(descriptionText: text, isStateChange: false)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -358,6 +372,7 @@ def update_needed_settings()
                           logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"))
                           def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
                           cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                          cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                       } else {
                         logging ("Parameter has already sent. Will not send again until updated() gets called")
                     }
@@ -365,6 +380,7 @@ def update_needed_settings()
                       logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}"))
                       def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}"? settings."${it.@index}" : "${it.@value}")
                       cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
+                      cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
                   }
                } else {
                   isUpdateNeeded = "YES"
