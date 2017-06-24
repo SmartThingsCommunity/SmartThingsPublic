@@ -1,6 +1,6 @@
 /**
  *
- *  Modification of SmartThjings device handler to provide momentary press on a relay (Orvibo)
+ *  Modification of SmartThings device handler to provide momentary press on a relay (Orvibo)
  *
  *  Copyright 2015 SmartThings
  *
@@ -16,7 +16,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee Switch (Relay)", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Orvibo Relay", namespace: "ericyew", author: "ericyew") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
