@@ -56,14 +56,14 @@ def settings() {
 
 
         section("Select an outside sensor"){
-            input(name: "HowMany", type: "number", range: "1..4", title: "set a value between 1 and 4", description: null, submitOnChange: true)
-
-            input(name: "OutsideSensor", type: "capability.temperatureMeasurement", title: "Pick a sensor for Outside's temperature", required: true, multiple: false, description: null, submitOnChange: true)
-            paragraph """
+             paragraph """
 This sensor is essential to the A.I. of this app. 
-If you do not have an outside temp measurment device, you can 
-allways create a SmartWeater virtual device. Visit Smartthings 
-Forums for help or contact me directly at elfege at elfege . com"""
+If you do not have an outside temperature measurment device, you can 
+allways create a SmartWeater virtual device. It is actually recommended 
+for it is more reliable in many aspects than a physical device located outside
+Visit Smartthings community which contains many pages indicating how to proceed step by step"""
+
+            input(name: "OutsideSensor", type: "capability.temperatureMeasurement", title: "Pick a sensor for Outside's temperature", required: true, multiple: false, description: null, submitOnChange: true)        
 
             input(name: "HumidityMeasurement", type: "capability.relativeHumidityMeasurement", title: "Pick an outside humidity sensor", required: true, multiple: false, description: null)
             input(name: "HumidityTolerance", type: "number", title: "set a humidity tolerance threshold", required: true, description: "set a humidity threshold")
@@ -74,6 +74,7 @@ and run, the less humid, the less it'll run (and if this option has
 been picked elsewhere, it'll prefer to open the windows or activate a fan)"""
         }
         section("how many thermostats do you want to control?") { 
+        input(name: "HowMany", type: "number", range: "1..4", title: "set a value between 1 and 4", description: null, submitOnChange: true)
             if(HowMany >= 1) {
                 input(name: "Thermostat_1", type: "capability.thermostat", title: "Thermostat 1 is $Thermostat_1", required: false, multiple: false, description: null, submitOnChange: true)
                 input(name: "AltSensor_1", type: "bool", title: "Control this thermostat's states using a third party sensor", required: false, default: false, submitOnChange: true)
