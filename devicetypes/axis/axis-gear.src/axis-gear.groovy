@@ -8,11 +8,11 @@ metadata {
         //capability "Temperature Measurement"
         capability "Window Shade"
 		
+        //Custom Commandes to achieve 25% increment control
         command "ShadesUp"
         command "ShadesDown"
         
-        
-        
+                
         fingerprint profileId: "0200", inClusters: "0000, 0004, 0005, 0006, 0008, 0100, 0102", manufacturer: "AXIS", model: "GR-ZB01-W", deviceJoinName: "AXIS Gear"
         //ClusterIDs: 0000 - Basic; 0004 - Groups; 0005 - Scenes; 0006 - On/Off; 0008 - Level Control; 0100 - Shade Configuration; 0102 - Window Covering;
         //Updated 2017-06-21
@@ -30,6 +30,7 @@ metadata {
         			attributeState("VALUE_DOWN", action: "ShadesDown")
              }
    		}
+        //Added a "doubled" state to toggle states between positions
         standardTile("main", "device.windowShade"){
         	state("open", label:'Open', action:"close", icon:"http://i.imgur.com/VQrJVYH.png", backgroundColor:"#ffcc33", nextState: "closed")
             state("partial", label:'Partial',  icon:"http://i.imgur.com/MkY1eRD.png", backgroundColor:"#ffcc33", nextState: "closed")
@@ -38,13 +39,10 @@ metadata {
 	 	controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: true) {
             state("level", action:"setLevel")
         }
-        
+        //Version 1: Placeholder for reporting battery level
         valueTile("integerFloat", "device.integerFloat", width:6, height: 2) {
 			state "val", label:'${currentValue}% Battery'
 		}
-                
-               
-        main "shade" // or maybe "Shade Control"
         
         main(["main"])
         details(["shade", "levelSliderControl","integerFloat"])
@@ -53,9 +51,6 @@ metadata {
 	}
 
 }
-
-
-
 
 def ShadesUp(){
 	def shadeValue = device.latestValue("level") as Integer ?: 0 
