@@ -38,6 +38,7 @@ metadata {
 		}
         
         fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeon RGBW Bulb"
+        fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeon RGBW LED Strip"
 
         fingerprint deviceId: "0x1101", inClusters: "0x5E, 0x26, 0x33, 0x27, 0x2C, 0x2B, 0x70, 0x59, 0x85, 0x72, 0x86, 0x7A, 0x73, 0xEF, 0x5A, 0x82"
 

@@ -39,6 +39,7 @@ metadata {
         attribute   "needUpdate", "string"
         attribute   "amperage", "number"
 
+        fingerprint mfr: "027A", prod: "0003", model: "0087"
         fingerprint deviceId: "0x1001", inClusters: "0x20,0x25,0x27,0x72,0x86,0x70,0x85,0x59,0x5A,0x73,0x71,0x32,0x5E"
                                                            
 	}
