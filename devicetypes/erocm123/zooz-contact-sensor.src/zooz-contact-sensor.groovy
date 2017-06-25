@@ -26,6 +26,7 @@ metadata {
 		capability "Configuration"
         capability "Health Check"
 
+        fingerprint mfr: "027A", prod: "0003", model: "0082"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x80,0x71,0x30,0x85,0x59,0x84,0x70"
 
 	}

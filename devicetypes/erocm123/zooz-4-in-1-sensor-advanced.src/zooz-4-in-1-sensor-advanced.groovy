@@ -3,7 +3,6 @@
  *  zooZ 4-in-1 Sensor (Advanced)
  *   
  *	github: Eric Maycock (erocm123)
- *	email: erocmail@gmail.com
  *	Date: 2016-07-09
  *	Copyright Eric Maycock
  *
@@ -40,6 +39,7 @@
 		
         attribute   "needUpdate", "string"
         
+        fingerprint mfr: "0109", prod: "2021", model: "2101"
         fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x31,0x70,0x5A,0x98,0x7A"
 	}
     preferences {
