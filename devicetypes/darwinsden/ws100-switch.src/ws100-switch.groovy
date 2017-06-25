@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.02 (06/25/2017) - Pulled in @stephack's changes to include button 7/8 events when triggered remotely
  *  1.01 (01/16/2017) - Corrected advertised number of buttons (8)
  *  1.00 (01/14/2017) - Added button 7 (single tap up) and button 8 (single tap down). Added firmware version display.
  *  0.12 (06/03/2016) - Added press type indicator to display last tap/hold press status
