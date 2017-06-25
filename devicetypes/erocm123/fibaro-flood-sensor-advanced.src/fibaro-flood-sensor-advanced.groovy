@@ -24,6 +24,9 @@ metadata {
         capability "Health Check"
         
         attribute "needUpdate", "string"
+        
+        fingerprint mfr: "010F", prod: "0B01", model: "2002", deviceJoinName: "Fibaro Flood Sensor"
+        
         // Wall Powered
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x22, 0x85, 0x59, 0x20, 0x70, 0x56, 0x5A, 0x7A, 0x72, 0x8E, 0x71, 0x73, 0x98, 0x9C, 0x31, 0x86"
         // Battery Powered

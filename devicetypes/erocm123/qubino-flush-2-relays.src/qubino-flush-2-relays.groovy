@@ -32,6 +32,7 @@ metadata {
         capability "Temperature Measurement"
         capability "Health Check"
 
+        fingerprint mfr: "0159", prod: "0002", model: "0051"
         fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x60,0x85,0x8E,0x59,0x70", outClusters:"0x20"
     }
 

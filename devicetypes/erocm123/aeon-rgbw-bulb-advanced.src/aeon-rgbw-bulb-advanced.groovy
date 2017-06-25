@@ -36,6 +36,8 @@ metadata {
 			command "on$n"
 			command "off$n"
 		}
+        
+        fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeon RGBW Bulb"
 
         fingerprint deviceId: "0x1101", inClusters: "0x5E, 0x26, 0x33, 0x27, 0x2C, 0x2B, 0x70, 0x59, 0x85, 0x72, 0x86, 0x7A, 0x73, 0xEF, 0x5A, 0x82"
 
@@ -243,6 +245,17 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd){
     createEvent(name: "currentFirmware", value: "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2, '0')}")
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+	def result = []
+
+	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+	log.debug "msr: $msr"
+	updateDataValue("MSR", msr)
+
+	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
+	result
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	def linkText = device.label ?: device.name
 	[linkText: linkText, descriptionText: "$linkText: $cmd", displayed: false]
@@ -289,6 +302,7 @@ def refresh() {
 	commands([
 		zwave.basicV1.basicGet(),
         zwave.configurationV1.configurationGet(parameterNumber: 37),
+        zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	])
 }
 

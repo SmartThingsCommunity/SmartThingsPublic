@@ -24,6 +24,8 @@ metadata {
         
         attribute "sequenceNumber", "number"
         attribute "numberOfButtons", "number"
+        
+        fingerprint mfr: "5254", prod: "0000", model: "8510"
 
 		fingerprint deviceId: "0x0106", inClusters: "0x5E,0x85,0x72,0x21,0x84,0x86,0x80,0x73,0x59,0x5A,0x5B,0xEF,0x5B,0x84"
 	}
@@ -115,6 +117,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
+        logging(cmd)
         logging("keyAttributes: $cmd.keyAttributes")
         logging("sceneNumber: $cmd.sceneNumber")
         logging("sequenceNumber: $cmd.sequenceNumber")
