@@ -28,7 +28,8 @@ metadata {
         capability 'Configuration'
         capability 'Refresh'
         capability 'Actuator'
-        capability 'Valve'        
+        capability 'Valve'
+        capability 'Health Check'
 		
         attribute 'switch', 'string'
         attribute 'switch1', 'string'
@@ -410,9 +411,15 @@ def notify(String val, String txt){
     sendEvent(name: 'tileMessage', value: txt, descriptionText: "", isStateChange: true, display: false)
 }
 
+def installed(){
+	//check every 48 hours
+    sendEvent(name: "checkInterval", value: 48 * 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
+    
 def updated(){
 	log.debug "updated"
-    
+    //check every 48 hours
+    sendEvent(name: "checkInterval", value: 48 * 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 //prefrences - rain sensor, manual time
