@@ -38,7 +38,7 @@ metadata {
 			attribute "energy$n", "number"
 			command "reset$n"
 		}
-
+        fingerprint mfr: "0086", prod: "0003", model: "000B"
 		fingerprint deviceId: "0x1001", inClusters: "0x25,0x32,0x27,0x70,0x85,0x72,0x86,0x60", outClusters: "0x82"
 	}
 

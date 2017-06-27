@@ -3,7 +3,6 @@
  *	Enerwave RSM2 Dual Relay Switch Device Type
  *  
  *	Author: Eric Maycock (erocm123)
- *	email: erocmail@gmail.com
  *	Date: 2016-03-25
  * 	 
  *	Device Type supports all the feautres of the Enerwave RSM2 device including both switches, 
@@ -27,6 +26,7 @@ command "off1"
 command "on2"
 command "off2"
 
+fingerprint mfr: "011A", prod: "0101", model: "5606"
 fingerprint deviceId: "0x1001", inClusters:"0x86, 0x72, 0x85, 0x60, 0x8E, 0x25, 0x20, 0x70, 0x27"
 
 }

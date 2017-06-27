@@ -3,7 +3,6 @@
  *  zooZ Z-Wave Smart Plug
  *   
  *	github: Eric Maycock (erocm123)
- *	email: erocmail@gmail.com
  *	Date: 2016-12-01
  *	Copyright Eric Maycock
  *
@@ -37,6 +36,8 @@ metadata {
         
         attribute   "needUpdate", "string"
         attribute   "amperage", "number"
+        
+        fingerprint mfr: "027A", prod: "0101", model: "000A"
 
         fingerprint deviceId: "0x1001", inClusters: "0x5E,0x25,0x32,0x27,0x2C,0x2B,0x70,0x85,0x59,0x72,0x86,0x7A,0x73,0x5A"
                                                            
