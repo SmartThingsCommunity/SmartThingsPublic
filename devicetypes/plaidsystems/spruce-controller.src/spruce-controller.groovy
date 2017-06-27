@@ -110,8 +110,8 @@ metadata {
         command 'notify'
         command 'updated'      
         
-		//ST release
-		//fingerprint endpointId: '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18', profileId: '0104', deviceId: '0002', deviceVersion: '00', inClusters: '0000,0003,0004,0005,0006,000F', outClusters: '0003, 0019', manufacturer: 'PLAID SYSTEMS', model: 'PS-SPRZ16-01'
+		//ST original release
+		fingerprint endpointId: '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18', profileId: '0104', deviceId: '0002', deviceVersion: '00', inClusters: '0000,0003,0004,0005,0006,000F', outClusters: '0003, 0019', manufacturer: 'PLAID SYSTEMS', model: 'PS-SPRZ16-01'
 		//new release
         fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,0009,000A,000F", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZ16-01"
 		fingerprint endpointId: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18", profileId: "0104", deviceId: "0002", deviceVersion: "00", inClusters: "0000,0003,0004,0005,0006,0009,000A,000F", outClusters: "0003, 0006, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRWIFI16-01"																																																																		   
@@ -586,7 +586,7 @@ def config(){
 def refresh() {
 
 	log.debug "refresh pressed"
-    sendEvent(name: 'tileMessage', value: 'Refresh', descriptionText: 'Refresh')
+    //sendEvent(name: 'tileMessage', value: 'Refresh', descriptionText: 'Refresh')
         
     def refreshCmds = [	    
         
