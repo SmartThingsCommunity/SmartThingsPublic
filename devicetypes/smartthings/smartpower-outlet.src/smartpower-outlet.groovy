@@ -51,6 +51,8 @@ metadata {
 					"http://cdn.device-gse.smartthings.com/Outlet/US/OutletUS2.jpg"
 			])
 		}
+        input name: "prefLogPower", type: "bool", title: "Show power in activity feed?", description: "", required: true
+        input name: "prefLogPowerDelta", type: "decimal", title: "Only if power changes by…", description: "Enter watts", defaultValue: 10, required: true
 	}
 
 	// UI tile definitions
@@ -82,10 +84,31 @@ def parse(String description) {
 
 	def event = zigbee.getEvent(description)
 
+	if (state.lastPowerValue == null) {
+		// initialize the last power value used to throttle updates.
+		state.lastPowerValue = 0
+	}
+
 	if (event) {
 		if (event.name == "power") {
-			def value = (event.value as Integer) / 10
-			event = createEvent(name: event.name, value: value, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true)
+			def powerValue = (event.value as Integer) / 10
+			def changeValue = powerValue - state.lastPowerValue
+			def showPowerActivity = prefLogPower
+            
+			if (changeValue < 0) {
+            	changeValue = -changeValue
+			}
+			
+            if (showPowerActivity == true) {
+            	if (changeValue > prefLogPowerDelta) {
+	                state.lastPowerValue = powerValue
+                } else {
+					showPowerActivity = false
+                }
+            }
+            
+			event = createEvent(name: event.name, value: powerValue, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', displayed: showPowerActivity, translatable: true)
+            
 		} else if (event.name == "switch") {
 			def descriptionText = event.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
 			event = createEvent(name: event.name, value: event.value, descriptionText: descriptionText, translatable: true)
@@ -135,4 +158,3 @@ def configure() {
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
 	refresh() + zigbee.onOffConfig(0, 300) + zigbee.electricMeasurementPowerConfig()
 }
-
