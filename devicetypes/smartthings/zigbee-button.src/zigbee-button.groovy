@@ -24,6 +24,7 @@ metadata {
         capability "Configuration"
         capability "Refresh"
         capability "Sensor"
+        capability "Health Check"
 
         command "enrollResponse"
 
@@ -182,6 +183,13 @@ private Map parseNonIasButtonMessage(Map descMap){
     }
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    refresh()
+}
+
 def refresh() {
     log.debug "Refreshing Battery"
 
@@ -190,6 +198,8 @@ def refresh() {
 }
 
 def configure() {
+    // Device-Watch allows 2 check-in misses from device (plus 2 mins lag time)
+    sendEvent(name: "checkInterval", value: 2 * 6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting, IAS CIE, and Bindings."
     def cmds = []
     if (device.getDataValue("model") == "3450-L") {
