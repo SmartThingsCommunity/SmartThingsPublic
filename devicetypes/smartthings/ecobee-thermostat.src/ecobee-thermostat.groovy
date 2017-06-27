@@ -158,7 +158,7 @@ def generateEvent(Map results) {
 	if(results) {
 
 			def linkText = getLinkText(device)
-		def supportedThermostatModes = []
+		def supportedThermostatModes = ["off"]
 		def thermostatMode = null
 
 		results.each { name, value ->
