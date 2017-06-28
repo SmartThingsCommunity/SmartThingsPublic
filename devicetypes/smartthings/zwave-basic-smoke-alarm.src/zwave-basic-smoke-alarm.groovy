@@ -12,34 +12,29 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Smoke Alarm", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Basic Smoke Alarm", namespace: "smartthings", author: "SmartThings") {
 		capability "Smoke Detector"
-		capability "Carbon Monoxide Detector"
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
 
-		attribute "alarmState", "string"
-
-		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)"
+		fingerprint deviceId: "0xA100", inClusters: "0x20,0x80,0x70,0x85,0x71,0x72,0x86"
+		fingerprint mfr:"0138", prod:"0001", model:"0001", deviceJoinName: "First Alert Smoke Detector"
 	}
 
 	simulator {
 		status "smoke": "command: 7105, payload: 01 FF"
 		status "clear": "command: 7105, payload: 01 00"
 		status "test": "command: 7105, payload: 0C FF"
-		status "carbonMonoxide": "command: 7105, payload: 02 FF"
-		status "carbonMonoxide clear": "command: 7105, payload: 02 00"
 		status "battery 100%": "command: 8003, payload: 64"
 		status "battery 5%": "command: 8003, payload: 05"
 	}
 
 	tiles (scale: 2){
 		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
-			tileAttribute ("device.alarmState", key: "PRIMARY_CONTROL") {
+			tileAttribute ("device.smoke", key: "PRIMARY_CONTROL") {
 				attributeState("clear", label:"clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
-				attributeState("smoke", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
-				attributeState("carbonMonoxide", label:"MONOXIDE", icon:"st.alarm.carbon-monoxide.carbon-monoxide", backgroundColor:"#e86d13")
+				attributeState("detected", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
 				attributeState("tested", label:"TEST", icon:"st.alarm.smoke.test", backgroundColor:"#e86d13")
 			}
 		}
@@ -57,7 +52,7 @@ def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 	def cmds = []
-	createSmokeOrCOEvents("allClear", cmds) // allClear to set inital states for smoke and CO
+	createSmokeEvents("smokeClear", cmds)
 	cmds.each { cmd -> sendEvent(cmd) }
 }
 
@@ -80,68 +75,44 @@ def parse(String description) {
 	return results
 }
 
-def createSmokeOrCOEvents(name, results) {
+def createSmokeEvents(name, results) {
 	def text = null
 	switch (name) {
 		case "smoke":
 			text = "$device.displayName smoke was detected!"
 			// these are displayed:false because the composite event is the one we want to see in the app
-			results << createEvent(name: "smoke",          value: "detected", descriptionText: text, displayed: false)
-			break
-		case "carbonMonoxide":
-			text = "$device.displayName carbon monoxide was detected!"
-			results << createEvent(name: "carbonMonoxide", value: "detected", descriptionText: text, displayed: false)
+			results << createEvent(name: "smoke",          value: "detected", descriptionText: text)
 			break
 		case "tested":
 			text = "$device.displayName was tested"
-			results << createEvent(name: "smoke",          value: "tested", descriptionText: text, displayed: false)
-			results << createEvent(name: "carbonMonoxide", value: "tested", descriptionText: text, displayed: false)
+			results << createEvent(name: "smoke",          value: "tested", descriptionText: text)
 			break
 		case "smokeClear":
 			text = "$device.displayName smoke is clear"
-			results << createEvent(name: "smoke",          value: "clear", descriptionText: text, displayed: false)
-			name = "clear"
-			break
-		case "carbonMonoxideClear":
-			text = "$device.displayName carbon monoxide is clear"
-			results << createEvent(name: "carbonMonoxide", value: "clear", descriptionText: text, displayed: false)
-			name = "clear"
-			break
-		case "allClear":
-			text = "$device.displayName all clear"
-			results << createEvent(name: "smoke",          value: "clear", descriptionText: text, displayed: false)
-			results << createEvent(name: "carbonMonoxide", value: "clear", displayed: false)
+			results << createEvent(name: "smoke",          value: "clear", descriptionText: text)
 			name = "clear"
 			break
 		case "testClear":
 			text = "$device.displayName test cleared"
-			results << createEvent(name: "smoke",          value: "clear", descriptionText: text, displayed: false)
-			results << createEvent(name: "carbonMonoxide", value: "clear", displayed: false)
+			results << createEvent(name: "smoke",          value: "clear", descriptionText: text)
 			name = "clear"
 			break
 	}
-	// This composite event is used for updating the tile
-	results << createEvent(name: "alarmState", value: name, descriptionText: text)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
 	if (cmd.zwaveAlarmType == physicalgraph.zwave.commands.alarmv2.AlarmReport.ZWAVE_ALARM_TYPE_SMOKE) {
 		if (cmd.zwaveAlarmEvent == 3) {
-			createSmokeOrCOEvents("tested", results)
+			createSmokeEvents("tested", results)
 		} else {
-			createSmokeOrCOEvents((cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "smoke" : "smokeClear", results)
+			createSmokeEvents((cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "smoke" : "smokeClear", results)
 		}
-	} else if (cmd.zwaveAlarmType == physicalgraph.zwave.commands.alarmv2.AlarmReport.ZWAVE_ALARM_TYPE_CO) {
-		createSmokeOrCOEvents((cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "carbonMonoxide" : "carbonMonoxideClear", results)
 	} else switch(cmd.alarmType) {
 		case 1:
-			createSmokeOrCOEvents(cmd.alarmLevel ? "smoke" : "smokeClear", results)
-			break
-		case 2:
-			createSmokeOrCOEvents(cmd.alarmLevel ? "carbonMonoxide" : "carbonMonoxideClear", results)
+			createSmokeEvents(cmd.alarmLevel ? "smoke" : "smokeClear", results)
 			break
 		case 12:  // test button pressed
-			createSmokeOrCOEvents(cmd.alarmLevel ? "tested" : "testClear", results)
+			createSmokeEvents(cmd.alarmLevel ? "tested" : "testClear", results)
 			break
 		case 13:  // sent every hour -- not sure what this means, just a wake up notification?
 			if (cmd.alarmLevel == 255) {
@@ -152,7 +123,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
 			
 			// Clear smoke in case they pulled batteries and we missed the clear msg
 			if(device.currentValue("smoke") != "clear") {
-				createSmokeOrCOEvents("smokeClear", results)
+				createSmokeEvents("smokeClear", results)
 			}
 			
 			// Check battery if we don't have a recent battery event
@@ -170,17 +141,13 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
 //
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd, results) {
 	if (cmd.sensorType == physicalgraph.zwave.commandclasses.SensorBinaryV2.SENSOR_TYPE_SMOKE) {
-		createSmokeOrCOEvents(cmd.sensorValue ? "smoke" : "smokeClear", results)
-	} else if (cmd.sensorType == physicalgraph.zwave.commandclasses.SensorBinaryV2.SENSOR_TYPE_CO) {
-		createSmokeOrCOEvents(cmd.sensorValue ? "carbonMonoxide" : "carbonMonoxideClear", results)
+		createSmokeEvents(cmd.sensorValue ? "smoke" : "smokeClear", results)
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd, results) {
 	if (cmd.sensorType == 1) {
-		createSmokeOrCOEvents(cmd.sensorState ? "smoke" : "smokeClear", results)
-	} else if (cmd.sensorType == 2) {
-		createSmokeOrCOEvents(cmd.sensorState ? "carbonMonoxide" : "carbonMonoxideClear", results)
+		createSmokeEvents(cmd.sensorState ? "smoke" : "smokeClear", results)
 	}
 	
 }
