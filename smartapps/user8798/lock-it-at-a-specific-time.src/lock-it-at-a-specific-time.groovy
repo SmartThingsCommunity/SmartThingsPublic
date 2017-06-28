@@ -62,7 +62,7 @@ def doorOpenCheck() {
   if (currentState?.value == "open") {
     def msg = "${contact.displayName} is open.  Scheduled lock failed."
     log.info msg
-    if (sendPushMessage) {
+    if (sendPushMessage == "Yes") {
       sendPush msg
     }
     if (phone) {
@@ -77,7 +77,7 @@ def doorOpenCheck() {
 def lockMessage() {
   def msg = "Locking ${lock.displayName} due to scheduled lock."
   log.info msg
-  if (sendPushMessage) {
+  if (sendPushMessage == "Yes") {
     sendPush msg
   }
   if (phone) {
