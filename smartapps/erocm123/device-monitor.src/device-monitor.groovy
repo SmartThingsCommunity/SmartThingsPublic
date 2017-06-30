@@ -45,6 +45,8 @@
  *  - Only on certain days of the week.
  *  - Only when mode is . . .
  *
+ *  2017-06-08 - Added support for Ask Alexa Queue Support. Also added Ask Alexa options to automatically expire messages after x hours
+ *               and overwrite messages that are sent as reminders (to prevent a backlog of reminder alerts).
  *  2017-03-08 - Added an option to use Offline / Online status when available. The new Health Check capability
  *               updates the offline / online status when communication is sent from the device. This eliminates
  *               the need to look at events (which may not update because of duplicate events anyway).
@@ -144,9 +146,7 @@ def pageSettings() {
             ]
 
             input "checkEvent", "bool", title: "Run a check each time one of the selected devices sends an event?", required: false, submitOnChange: true, value: false
-            if (settings.checkEvent != null && checkEvent.toBoolean() == true) {
-                input "minimumCheck", "number", title: "Minimum time (in minutes) between checks. Useful if you use the above option and subscribe to many devices.", required: false, value: 15
-            }
+            input "minimumCheck", "number", title: "Minimum time (in minutes) between checks. Useful if you use the above option and subscribe to many devices.", required: false, value: 5
             def timeLabel = timeIntervalLabel()
             href "timeIntervalInput", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
 
@@ -441,13 +441,19 @@ def doCheck() {
             }
             if (dexclude == false){
                 def lastTime
-                if(it.status.toUpperCase() in ["ONLINE", "OFFLINE"] && healthCheck?.toBoolean() == true && it.getLastActivity() != null) {
-                    lastTime = it.getLastActivity()
-                } else {
-                    lastTime = it.events([all: true, max: 100]).find {
-                        (it.source as String) == "DEVICE"
+                if(it.status.toUpperCase() in ["ONLINE", "OFFLINE"] && healthCheck?.toBoolean() == true) {
+                    if(it.status.toUpperCase() in ["ONLINE"]){
+                        if(it.getLastActivity() != null) {
+                            lastTime = it.getLastActivity()
+                        } else {
+                            lastTime = it.events([all: true, max: 100]).find {
+                                (it.source as String) == "DEVICE"
+                            }
+                            lastTime = lastTime?.date
+                        }
+                    } else { 
+                        lastTime = null
                     }
-                    lastTime = lastTime?.date
                 }
 
                 try {
@@ -456,7 +462,6 @@ def doCheck() {
                         def hours = (((rightNow.time - lastTime) / 60000) / 60)
                         def xhours = (hours.toFloat() / 1).round(2)
                         if (xhours > timer) {
-                            //def thours = (hours.toFloat()/1).round(0)
                             delaylistMap += [
                                 [time: "$xhours", name: "$it.displayName", id: "$it.id"]
                             ]
@@ -577,19 +582,6 @@ def doCheck() {
                 ]
             }
             def batterylistMapDiff = batterylistUniqueSorted - tempMap
-            
-            /*hubdevices.each() {
-                if (it.status == "INACTIVE")
-                hublistMap += [
-                         [name: "$it.name", id: "$it.id"]
-                ]
-            }
-            tempMap = []
-            atomicState.hublistMap.each {
-                tempMap += [
-                    [name: "$it.name", id: "$it.id"]
-                ]
-            }*/
             def hublistMapDiff
             def hubOnlinelistMapDiff
 
@@ -615,8 +607,6 @@ def doCheck() {
                 def text = ""
                 def check = ""
                 def notifications = []
-                def alexaOfflineNotifications = []
-                def alexaOnlineNotifications = []
 
                 if (delaylistCheckMapDiff) {
                     def notificationDelaylist = ""
@@ -632,7 +622,6 @@ def doCheck() {
                         b -> b["time"] as float <=> a["time"] as float
                     }).each {
                         notificationDelaylist += "${it.time} - ${it.name}\n"
-                        alexaOfflineNotifications += [name: it.name, value: it.time, id:it.id]
                     }
                     notifications += ["Devices Delayed:\n${notificationDelaylist.trim()}"]
                 }
@@ -644,7 +633,6 @@ def doCheck() {
 
                     onlineListDiff.each {
                         notificationOnlinelist += "${it.name}\n"
-                        alexaOnlineNotifications += [name: it.name, id:it.id]
                     }
                     
                     if (notificationOnlinelist != "" ) notifications += ["Devices Are Now Online:\n${notificationOnlinelist.trim()}"]
@@ -653,7 +641,6 @@ def doCheck() {
                     def notificationBadlist = ""
                     badlistMapDiff.each {
                         notificationBadlist += "${it.name}\n"
-                        alexaOfflineNotifications += [name: it.name, id:it.id]
                     }
                     notifications += ["Devices Not Reporting Events:\n${notificationBadlist.trim()}"]
                 }
@@ -671,7 +658,6 @@ def doCheck() {
                         b -> b["battery"] as Integer <=> a["battery"] as Integer
                     }).each {
                         notificationBatterylist += "${it.battery}% - ${it.name}\n"
-                        alexaOfflineNotifications += [name: it.name, value: it.battery, id:it.id]
                     }
                     
                     notifications += ["Devices With Low Battery:\n${notificationBatterylist.trim()}"]
@@ -680,7 +666,6 @@ def doCheck() {
                     def notificationBatteryErrorlist = ""
                     batteryerrorlistMapDiff.each {
                         notificationBatteryErrorlist += "${it.name}\n"
-                        alexaOfflineNotifications += [name: it.name, id:it.id]
                     }
                     notifications += ["Devices Not Reporting Battery:\n${notificationBatteryErrorlist.trim()}"]
                 }
@@ -689,7 +674,6 @@ def doCheck() {
                     def notificationErrorlist = ""
                     errorlistMapDiff.each {
                         notificationErrorlist += "${it.name}\n"
-                        alexaOfflineNotifications += [name: it.name, id:it.id]
                     }
                     notifications += ["Devices With Errors:\n${notificationErrorlist.trim()}"]
                 }
@@ -697,14 +681,12 @@ def doCheck() {
                 if (hublistMapDiff) {
                     hublistMapDiff.each {
                         notifications += ["SmartThings Hub OFFLINE: ${it.name}"]
-                        alexaOfflineNotifications += [name: it.name, id:it.id]
                     }
                 }
                 
                 if (hubOnlinelistMapDiff) {
                     hubOnlinelistMapDiff.each {
                         notifications += ["SmartThings Hub ONLINE: ${it.name}"]
-                        alexaOnlineNotifications += [name: it.name, id:it.id]
                     }
                 }
                 if (askAlexa != null && askAlexa?.toBoolean() == true) {
