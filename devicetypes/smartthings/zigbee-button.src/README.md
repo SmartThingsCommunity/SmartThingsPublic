@@ -28,9 +28,8 @@ Works with:
 
 ## Device Health
 
-SmartThings platform will ping the device after `checkInterval` seconds of inactivity in last attempt to reach the device before marking it `OFFLINE` 
+ZigBee Button is marked offline only in the case when Hub is offline.
 
-* __722min__ checkInterval
 
 ## Troubleshooting
 
