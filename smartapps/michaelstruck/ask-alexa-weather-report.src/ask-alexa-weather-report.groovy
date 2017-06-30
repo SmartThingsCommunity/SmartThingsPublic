@@ -3,11 +3,12 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.2a 6/17/17
+ *  Version 1.0.3 6/28/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
  *  Version 1.0.2a (6/17/17) - Deprecated send to notification feed. Will add message queue functionality if feedback is given
+ *  Version 1.0.3 - (6/28/17) Replaced notifications with Message Queue
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -62,10 +63,8 @@ def mainPage() {
             paragraph "Please Note:\nYour SmartThings location is currently set to: ${location.zipCode}. If you leave the area above blank the report will use your SmartThings location. " +
             	"Enter a zip code above if you want to report on a different location.\n\nData obtained from Weather Underground.", image: parent.imgURL() + "info.png"
 		}
-        section ("Output options", hideWhenEmpty: true){
-        	//href "pageMQ", title: "Send Output To Message Queue(s)", description: mqDesc(), state: wrMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
-            //input "noteFeed", "bool", title: "Post To Notification Feed When Triggered", defaultValue: false, submitOnChange: true
-            //if (noteFeed) input "noteFeedData", "bool", title: "Include SmartApp's Response To Alexa", defaultValue: false
+        section ("Output options"){
+        	href "pageMQ", title: "Send Output To Message Queue(s)", description: mqDesc(), state: wrMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
             if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
         }
         section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
@@ -79,7 +78,7 @@ def mainPage() {
         section("Tap below to remove this message queue"){ }
 	}
 }
-/*def pageMQ(){
+def pageMQ(){
     dynamicPage(name:"pageMQ"){
         section {
         	paragraph "Message Queue Configuration", image:parent.imgURL()+"mailbox.png"
@@ -92,7 +91,7 @@ def mainPage() {
             if (!wrMQNotify) input "wrSuppressTD", "bool", title: "Suppress Time/Date From Alexa Playback", defaultValue: false
         }
     }
-}*/
+}
 page(name: "timeIntervalInput", title: "Only during a certain time") {
 	section {
 		input "timeStart", "time", title: "Starting", required: false
@@ -164,25 +163,25 @@ def getOutput(){
     else outputTxt +="You don't have any weather reporting options set up within the '${app.label}'. %1%"
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     outputTxt += (outputTxt && !outputTxt.endsWith("%") && playContMsg) ? "%4%" : (outputTxt && !outputTxt.endsWith("%") && !playContMsg) ? " " : ""
-    //if (noteFeed && noteFeedData) feedData=outputTxt.endsWith("%") ? ' Data sent to Alexa: "' + outputTxt[0..-4]  + '"' : ' Data sent to Alexa: "' + outputTxt + '"'
-    //if (noteFeed) sendNotificationEvent("Ask Alexa triggered weather report extension: '${app.label}'. ${feedData}")
-	/*def expireMin=wrMQExpire ? wrMQExpire as int : 0, expireSec=expireMin*60
-    def overWrite =!wrMQNotify && !wrMQExpire && wrMQOverwrite
-    msgTxt = outputTxt.endsWith("%") ? outputTxt[0..-4] : outputTxt
-    sendLocationEvent(
-    	name: "AskAlexaMsgQueue", 
-        value: "Ask Alexa Weather Report, '${app.label}'",
-        unit: "${app.id}",
-        isStateChange: true, 
-        descriptionText: msgTxt, 
-        data:[
-        	queues:wrMsgQue,
-            overwrite: overWrite,
-            notifyOnly: wrMQNotify,
-            expires: expireSec,
-            suppressTimeDate:wrSuppressTD   
-        ]
-    )*/   
+	if (wrMsgQue){
+        def expireMin=wrMQExpire ? wrMQExpire as int : 0, expireSec=expireMin*60
+        def overWrite =!wrMQNotify && !wrMQExpire && wrMQOverwrite
+        def msgTxt = outputTxt.endsWith("%") ? outputTxt[0..-4] : outputTxt
+        sendLocationEvent(
+            name: "AskAlexaMsgQueue", 
+            value: "Ask Alexa Weather Report, '${app.label}'",
+            unit: "${app.id}",
+            isStateChange: true, 
+            descriptionText: msgTxt, 
+            data:[
+                queues:wrMsgQue,
+                overwrite: overWrite,
+                notifyOnly: wrMQNotify,
+                expires: expireSec,
+                suppressTimeDate:wrSuppressTD   
+            ]
+        )
+    }
     return outputTxt
 }
 //Main Menus
@@ -592,6 +591,6 @@ private tideInfo() {
     return msg		
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 102 }
+private versionInt(){ return 103 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.2a (06/17/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.3 (06/28/2017)" }

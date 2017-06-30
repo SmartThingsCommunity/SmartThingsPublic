@@ -2,11 +2,12 @@
  *  Ask Alexa Voice Report Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.2a 6/17/17
+ *  Version 1.0.3 6/26/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restricitions 
- *  Version 1.0.2a (6/17/17) - Small bug fixes, deprecated send to notification feed. Will add message queue functionality if feedback is given
+ *  Version 1.0.2a - (6/17/17) - Small bug fixes, deprecated send to notification feed. Will add message queue functionality if feedback is given
+ *  Version 1.0.3 - (6/28/17) - Added device health report, replaced notifications with Message Queue
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -40,6 +41,7 @@ preferences {
         page name:"pagePresenceReport"
         page name:"pageSpeakerReport"
         page name:"pageOtherReports"
+        page name:"pageDeviceHealth"
         page name:"pageMQ"
 }
 //Show main page
@@ -58,14 +60,13 @@ def mainPage() {
             href "pagePresenceReport", title: "Presence Report", description:  getDesc("presence"), state:(voicePresence ? "complete": null), image : parent.imgURL() + "people.png"    
             href "pageOtherReport", title: "Other Sensors Report", description: getDesc("sensor"), state: (voiceWater|| voiceMotion|| voicePower || voiceAccel  ? "complete" :null), image: parent.imgURL() + "sensor.png"
             href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: getDesc("MSHM"), state: (voiceMode|| voiceSHM? "complete": null), image: parent.imgURL() + "modes.png"
+            href "pageDeviceHealth", title: "Device Health Report", description:getDesc("health"), state: (voiceHealth ? "complete" : null), image: parent.imgURL() + "health.png"
             href "pageBatteryReport",title: "Battery Report", description: getDesc("battery"), state: (voiceBattery ? "complete" : null), image: parent.imgURL() + "battery.png"
             href "pageOtherReports", title: "Include Other Reports", description: getDesc("other"), state: (otherReportsList ? "complete" : null), image: parent.imgURL() + "add.png"
             input "voicePost", "text", title: "Post Message After Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false, capitalization: "sentences"
         }
         section ("Output options"){
-        	//href "pageMQ", title: "Send Output To Message Queue(s)", description: mqDesc(), state: vrMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
-            //input "noteFeed", "bool", title: "Post To Notification Feed When Triggered", defaultValue: false, submitOnChange: true
-            //if (noteFeed) input "noteFeedData", "bool", title: "Include SmartApp's Response To Alexa", defaultValue: false
+        	href "pageMQ", title: "Send Output To Message Queue(s)", description: mqDesc(), state: vrMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
             input "allowNullRpt", "bool", title: "Allow For Empty Report (For Extension Groups)", defaultValue: false
             if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
         }
@@ -86,7 +87,7 @@ def mainPage() {
         section("Tap below to remove this message queue"){ }
 	}
 }
-/*def pageMQ(){
+def pageMQ(){
     dynamicPage(name:"pageMQ"){
         section {
         	paragraph "Message Queue Configuration", image:parent.imgURL()+"mailbox.png"
@@ -99,7 +100,7 @@ def mainPage() {
             if (!vrMQNotify) input "vrSuppressTD", "bool", title: "Suppress Time/Date From Alexa Playback", defaultValue: false
         }
     }
-}*/
+}
 page(name: "timeIntervalInput", title: "Only during a certain time") {
 	section {
 		input "timeStart", "time", title: "Starting", required: false
@@ -230,6 +231,16 @@ def pageBatteryReport(){
         }
     }
 }
+def pageDeviceHealth(){
+    dynamicPage(name: "pageDeviceHealth", install: false, uninstall: false){
+        section { paragraph "Device Health Report", image: parent.imgURL() + "health.png" }
+        section(" "){
+            input "voiceHealth", "capability.sensor", title:"Devices To Report On...", description: "Tap to choose devices", multiple: true, required: false, submitOnChange:true
+            if (voiceHealth) input "healthOffline", "bool", title: "Report Only Devices Not Online", defaultValue: false, submitOnChange:true
+            if (voiceHealth && !healthOffline) input "healthSummary", "bool", title:"Consolidate Report When All Device Are Online", defaultValue: false
+        }
+    }
+}
 def pageHomeReport(){
     dynamicPage(name: "pageHomeReport", install: false, uninstall: false){
         section { paragraph "Mode And Security Report", image: parent.imgURL() + "modes.png" }
@@ -296,6 +307,7 @@ def getOutput(){
             def currSHM = [off : "disarmed", away: "armed away", stay: "armed home"][location.currentState("alarmSystemStatus")?.value] ?: location.currentState("alarmSystemStatus")?.value
         	outputTxt += voiceSHM ? "The current Smart Home Monitor status is '${currSHM}'. " : ""
         }
+        outputTxt +=voiceHealth && healthReport() ? healthReport() : ""
         outputTxt += voiceBattery && batteryReport() ? batteryReport() : ""
         if (otherReportsList) outputTxt +=parent.processOtherRpt(otherReportsList)
         outputTxt += voicePost ? voicePost : ""
@@ -306,25 +318,25 @@ def getOutput(){
     if ((parent.advReportOutput && voiceRepFilter) || voicePre || voicePost) outputTxt = parent.replaceVoiceVar(outputTxt,"",voiceRepFilter,"Voice",app.label,0)
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     outputTxt += (outputTxt && !outputTxt.endsWith("%") && playContMsg) ? "%4%" : (outputTxt && !outputTxt.endsWith("%") && !playContMsg) ? " " : ""
-    //if (noteFeed && noteFeedData) feedData=outputTxt.endsWith("%") ? ' Data sent to Alexa: "' + outputTxt[0..-4] + '"' : ' Data sent to Alexa: "' + outputTxt + '"'
-    //if (noteFeed) sendNotificationEvent("Ask Alexa triggered voice report extension: '${app.label}'. ${feedData}")
-    /*def expireMin=vrMQExpire ? vrMQExpire as int : 0, expireSec=expireMin*60
-    def overWrite =!vrMQNotify && !vrMQExpire && vrMQOverwrite
-    msgTxt = outputTxt.endsWith("%") ? outputTxt[0..-4] : outputTxt
-    sendLocationEvent(
-    	name: "AskAlexaMsgQueue", 
-        value: "Ask Alexa Voice Report, '${app.label}'",
-        unit: "${app.id}",
-        isStateChange: true, 
-        descriptionText: msgTxt, 
-        data:[
-        	queues:vrMsgQue,
-            overwrite: overWrite,
-            notifyOnly: vrMQNotify,
-            expires: expireSec,
-            suppressTimeDate:vrSuppressTD   
-        ]
-    )*/
+    if (vrMsgQue){
+        def expireMin=vrMQExpire ? vrMQExpire as int : 0, expireSec=expireMin*60
+        def overWrite =!vrMQNotify && !vrMQExpire && vrMQOverwrite
+        def msgTxt = outputTxt.endsWith("%") ? outputTxt[0..-4] : outputTxt
+        sendLocationEvent(
+            name: "AskAlexaMsgQueue", 
+            value: "Ask Alexa Voice Report, '${app.label}'",
+            unit: "${app.id}",
+            isStateChange: true, 
+            descriptionText: msgTxt, 
+            data:[
+                queues:vrMsgQue,
+                overwrite: overWrite,
+                notifyOnly: vrMQNotify,
+                expires: expireSec,
+                suppressTimeDate:vrSuppressTD   
+            ]
+        )
+    }
     return outputTxt
 }
 //Child Common modules
@@ -613,6 +625,17 @@ def batteryReport(){
 	}
     return result
 }
+def healthReport(){
+    String result = ""
+    def healthList = healthOffline? voiceHealth.findAll{it.status==~/OFFLINE|INACTIVE/} : voiceHealth
+    if (healthList) {
+        for (deviceName in healthList){	
+			result += "'${deviceName}' is ${deviceName.status}. "
+        }
+	}
+    if (healthSummary && !result.contains("OFFLINE") && !result.contains("INACTIVE") && !healthOffline) result ="All of the monitored devices are online. "
+    return result
+}
 def waterReport(){
     String result = ""
     def wetList = voiceWater.findAll{it.latestValue("water") != "dry"}
@@ -704,6 +727,10 @@ def getDesc(type){
 		case "battery":
         	if (voiceBattery && batteryThreshold) result = voiceBattery.size()>1 ? "Batteries report when level < ${batteryThreshold}%" : "One battery reports when level < ${batteryThreshold}%"
     		break
+        case "health":
+        	if (voiceHealth) result = voiceHealth.size()>1 ? "Devices report health" : "One device reports health"
+    		if (result && healthOffline) result += " when not online"
+            break
 		case "MSHM":
         	if (voiceMode || voiceSHM){
                 result = "Report: "
@@ -723,6 +750,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 102 }
+private versionInt(){ return 103 }
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.2a (06/17/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.3 (06/28/2017)" }
