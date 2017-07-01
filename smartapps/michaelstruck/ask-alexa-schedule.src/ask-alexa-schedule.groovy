@@ -896,4 +896,4 @@ def translateMQid(mqIDList){
 //Versions
 private versionInt(){ return 102 }
 private def textAppName() { return "Ask Alexa Schedules" }	
-private def textVersion() { return "Schedules Version: 1.0.0 (06/15/2017)" }
+private def textVersion() { return "Schedules Version: 1.0.2 (06/15/2017)" }
