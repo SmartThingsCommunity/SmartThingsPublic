@@ -441,19 +441,15 @@ def doCheck() {
             }
             if (dexclude == false){
                 def lastTime
-                if(it.status.toUpperCase() in ["ONLINE", "OFFLINE"] && healthCheck?.toBoolean() == true) {
-                    if(it.status.toUpperCase() in ["ONLINE"]){
-                        if(it.getLastActivity() != null) {
-                            lastTime = it.getLastActivity()
-                        } else {
-                            lastTime = it.events([all: true, max: 100]).find {
-                                (it.source as String) == "DEVICE"
-                            }
-                            lastTime = lastTime?.date
-                        }
-                    } else { 
-                        lastTime = null
+                if(it.status.toUpperCase() in ["ONLINE"] && healthCheck?.toBoolean() == true && it.getLastActivity() != null) {
+                    lastTime = it.getLastActivity()
+                } else if (it.status.toUpperCase() in ["OFFLINE"] && healthCheck?.toBoolean() == true){
+                   lastTime = null
+                } else {
+                    lastTime = it.events([all: true, max: 100]).find {
+                        (it.source as String) == "DEVICE"
                     }
+                    lastTime = lastTime?.date
                 }
 
                 try {
