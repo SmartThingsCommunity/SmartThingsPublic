@@ -1,0 +1,124 @@
+{
+  "intents": [
+    {
+      "slots": [
+        {
+          "name": "Operator",
+          "type": "LIST_OF_OPERATORS"
+        },
+        {
+          "name": "Device",
+          "type": "LIST_OF_DEVICES"
+        },
+        {
+          "name": "Num",
+          "type": "AMAZON.NUMBER"
+        },
+        {
+          "name": "Param",
+          "type": "LIST_OF_PARAMS"
+        }
+      ],
+      "intent": "DeviceOperation"
+    },
+    {
+      "slots": [
+        {
+          "name": "Macro",
+          "type": "LIST_OF_MACROS"
+        },
+        {
+          "name": "MNum",
+          "type": "AMAZON.NUMBER"
+        },
+        {
+          "name": "MCmd",
+          "type": "LIST_OF_OPERATORS"
+        },
+        {
+          "name": "Cancel",
+          "type": "CANCEL_CMDS"
+        },
+        {
+          "name": "MParam",
+          "type": "LIST_OF_PARAMS"
+        },
+        {
+          "name": "MPW",
+          "type": "AMAZON.NUMBER"
+        }
+      ],
+      "intent": "MacroOperation"
+    },
+    {
+      "slots": [
+        {
+          "name": "Type",
+          "type": "DEVICE_TYPE_LIST"
+        }
+      ],
+      "intent": "ListOperation"
+    },
+    {
+      "intent": "VersionOperation"
+    },
+    {
+      "slots": [
+        {
+          "name": "SHCmd",
+          "type": "LIST_OF_SHCMD"
+        },
+        {
+          "name": "SHParam",
+          "type": "LIST_OF_SHPARAM"
+        },
+        {
+          "name": "SHNum",
+          "type": "AMAZON.NUMBER"
+        }
+      ],
+      "intent": "SmartHomeOperation"
+    },
+    {
+      "slots": [
+        {
+          "name": "FType",
+          "type": "LIST_OF_FOLLOWUPS"
+        },
+        {
+          "name": "Data",
+          "type": "AMAZON.NUMBER"
+        }
+      ],
+      "intent": "FollowUpOperation"
+    },
+    {
+      "slots": [
+        {
+          "name": "Queue",
+          "type": "LIST_OF_MQ"
+        },
+        {
+          "name": "MQCmd",
+          "type": "LIST_OF_MQCMD"
+        }
+      ],
+      "intent": "MQOperation"
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.NoIntent"
+    },
+    {
+      "intent": "AMAZON.YesIntent"
+    }
+  ]
+}
