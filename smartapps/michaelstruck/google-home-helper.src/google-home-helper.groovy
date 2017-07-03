@@ -2,10 +2,10 @@
  *  Google Home Helper
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1c 2/28/17
+ *  Version 1.0.1d 2/28/17
  *
  *  Version 1.0.0 (12/1/16) - Initial release
- *  Version 1.0.1c (2/28/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
+ *  Version 1.0.1d (2/28/17) - Added loop/pusle options for OSRAM DTH from gkl-sf
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -158,10 +158,10 @@ def pageControl() {
         section { paragraph "Control Scenario Settings", image: imgURL() + "control.png" }
         section ("Switch Selection"){
 			input "GoogleSwitch", "capability.switch", title: "Control Switch (On/Off, Momentary)", multiple: false, required: true, image: imgURL() + "dimmer.png"
-    		input "showOptions", "enum", title: "Switch States To React To...", options: ["":"On/Off", "1":"On Only", "2":"Off Only"] , required: false, submitOnChange:true, defaultValue: ""
+    		input "showOptions", "enum", title: "Switch States To React To...", options: ["0":"On/Off", "1":"On Only", "2":"Off Only"] , required: false, submitOnChange:true, defaultValue:"0"
         }
-        if (!showOptions || showOptions == "1") controlOnOff("on")
-        if (!showOptions || showOptions == "2") controlOnOff("off")
+        if (!showOptions || showOptions == "1" || showOptions == "0") controlOnOff("on")
+        if (!showOptions || showOptions == "2" || showOptions == "0") controlOnOff("off")
     }
 }
 def controlOnOff(type){
@@ -805,8 +805,8 @@ def getOkToRun(module){
 	else log.warn "Google Home Helper scenario '${app.label}', '${module}' not triggered due to scenario restrictions"
     result
 }
-def getOkOnOptions(){def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onTstats || onHTTP || onIP || onSHM || onSMSMsg)}
-def getOkOffOptions(){def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offTstats || offHTTP || offIP || offSHM || offSMSMsg)}
+def getOkOnOptions(){def result = (!showOptions || showOptions == "1" || showOptions == "0") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onTstats || onHTTP || onIP || onSHM || onSMSMsg)}
+def getOkOffOptions(){def result = (!showOptions || showOptions == "2" || showOptions == "0") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offTstats || offHTTP || offIP || offSHM || offSMSMsg)}
 def changeMode(newMode) {
     if (location.mode != newMode) {
 		if (location.modes?.find{it.name == newMode}) setLocationMode(newMode)
@@ -826,8 +826,8 @@ def scenarioDesc(){
 		def onOff = !showOptions ? "On and Off" : showOptions && showOptions == "1" ? "On" : "Off"
         def delayTimeOn = onDelay && onDelay>1 ? "${onDelay} minutes" : onDelay && onDelay==1 ? "${onDelay} minute" : "immediately"
 		def delayTimeOff = offDelay && offDelay>1 ? "${offDelay} minutes" : offDelay && offDelay==1 ? "${offDelay} minute" : "immediately"
-        def timing = (!showOptions || showOptions == "1") ? "On scenario activates ${delayTimeOn} after triggered. " : ""
-        timing += (!showOptions || showOptions == "2") ? "Off scenario activates ${delayTimeOff} after triggered." : ""
+        def timing = (!showOptions || showOptions == "1" || showOptions == "0") ? "On scenario activates ${delayTimeOn} after triggered. " : ""
+        timing += (!showOptions || showOptions == "2" || showOptions == "0") ? "Off scenario activates ${delayTimeOff} after triggered." : ""
         desc = "'${GoogleSwitch}' switch (${onOff}) controls the scenario. ${timing}"
     }
     if (scenarioType=="Speaker"){
@@ -1172,7 +1172,7 @@ def getSwitchAbout(){ return "Created by Google Home Helper SmartApp" }
 //Version/Copyright/Information/Help
 private def textAppName() { return "Google Home Helper" }
 private def textVersion() {
-    def version = "SmartApp Version: 1.0.1c (02/28/2017)"
+    def version = "SmartApp Version: 1.0.1d (02/28/2017)"
     def deviceCount= getChildDevices().size()
     def deviceVersion = state.sw1Ver && deviceCount ? "\n${state.sw1Ver}": ""
     deviceVersion += state.sw2Ver && deviceCount ? "\n${state.sw2Ver}": ""
