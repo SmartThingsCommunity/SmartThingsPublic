@@ -36,3 +36,6 @@
   *  Version 2.2.4b (4/6/17) Framework changes for extensions (new one: additional message queues), added additional notifications to message queues, change SHM model to conform with new SmartThings naming standard, new icon for custom color
  *  Version 2.2.5a (4/23/17) Moved Weather/Voice reporting to an extension. Considerably sped up the execution of Ask Alexa! Created default Kelvin settings. Added "overwrite:[true/false]" parameter to message queue functions. Changed Nest to NST Manager
  *  Version 2.2.6 (6/1/17) Added Schedules Extension, code fixes, added "expires:[seconds]" to message queue parameters that developers can use when publishing to Ask Alexa, added "%random#% to the list of variables in text fields
+  *  Version 2.2.7a (6/15/17) Fixed issue with Ecobee custom DTH and brief replies, added whisper mode to personalities, added logging feature for added partner usage, added %age% text field variable, 
+ *  WebCoRE connectivity, deprecated most messaging options within macros/extensions...will use Message Queue if demand is present
+ *  Version 2.2.8 (6/26/17) Added dynamic icons to skill's card. Preparing for the Amazon Show. Added health status to additional attributes for devices.
