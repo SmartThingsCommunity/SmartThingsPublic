@@ -198,7 +198,7 @@ def off() {
 
 def setLevel(value, durationSeconds = null) {
     log.debug "setLevel >> value: $value, durationSeconds: $durationSeconds"
-    def level = Math.max(Math.min(value as short, 99), 0)
+    def level = toDisplayLevel(value as short)
     def dimmingDuration = 255
     def getStatusDelay = 1000
     if (durationSeconds != null) {
@@ -209,7 +209,7 @@ def setLevel(value, durationSeconds = null) {
     sendEvent(name: "level", value: level, unit: "%")
     sendEvent(name: "switch", value: level > 0 ? "on" : "off")
     delayBetween([
-            zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration).format(),
+            zwave.switchMultilevelV2.switchMultilevelSet(value: toZwaveLevel(level), dimmingDuration: dimmingDuration).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
     ], getStatusDelay)
 }
@@ -356,7 +356,7 @@ private dimmerEvent(short level) {
     if (level == 0) {
         result = [createEvent(name: "level", value: 0, unit: "%"), switchEvent(false)]
     } else if (level >= 1 && level <= 100) {
-        result = createEvent(name: "level", value: level, unit: "%")
+        result = createEvent(name: "level", value: toDisplayLevel(level), unit: "%")
         if (device.currentValue("switch") != "on") {
             // Don't blindly trust level. Explicitly request on/off status.
             result = [result, response(zwave.switchBinaryV1.switchBinaryGet().format())]
@@ -378,6 +378,15 @@ private getStatusCommands() {
             zwave.switchBinaryV1.switchBinaryGet().format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
     ]
+}
+
+private short toDisplayLevel(short level) {
+    level = Math.max(0, Math.min(100, level))
+    (level == (short) 99) ? 100 : level
+}
+
+private short toZwaveLevel(short level) {
+    Math.max(0, Math.min(99, level))
 }
 
 private configurationCommand(param, value) {
