@@ -63,6 +63,17 @@ def pageSetup() {
             href "AI", title: "Artificial Intelligence: make this app adjust temperatures with different scenarios", description: ""
 
         }
+        section(){
+            if(OutsideTempHighThres){
+                input(name:"adjustments", type: "enum", title: "Do you want to use dynamic temperatures adjustments?", 
+                      options: ["no, just go with my default settings", 
+                                "Yes, use a linear variation", "Yes, but use an logarithmic variation"], required: true)
+
+                paragraph """
+linear: save power and money and remain comfortable. 
+Algorithmic: save less money but be even more comfortable"""
+            }
+        }
 
         section(){
             mode(title: "Set for specific mode(s)")
@@ -674,15 +685,16 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
         // which HSP? 
         // log.debug "CurrMode is $CurrMode mode"
         //array heat
-        def HSP1 = ["0","$HSPH1", "$HSPN1", "$HSPA", "$HSPCust1_T1", "$HSPCust2_T1"]
-        def HSP2 = ["0","$HSPH2", "$HSPN2", "$HSPA", "$HSPCust1_T2", "$HSPCust2_T2"]
-        def HSP3 = ["0","$HSPH3", "$HSPN3", "$HSPA", "$HSPCust1_T3", "$HSPCust2_T3"]
-        def HSP4 = ["0","$HSPH4", "$HSPN4", "$HSPA", "$HSPCust1_T4", "$HSPCust2_T4"]
+        def HSP1 = [0,HSPH1, HSPN1, HSPA, HSPCust1_T1, HSPCust2_T1]
+        def HSP2 = [0,HSPH2, HSPN2, HSPA, HSPCust1_T2, HSPCust2_T2]
+        def HSP3 = [0,HSPH3, HSPN3, HSPA, HSPCust1_T3, HSPCust2_T3]
+        def HSP4 = [0,HSPH4, HSPN4, HSPA, HSPCust1_T4, HSPCust2_T4]
         //array cool
-        def CSP1 = ["0","$CSPH1", "$CSPN1", "$CSPA", "$CSPCust1_T1", "$CSPCust2_T1"]
-        def CSP2 = ["0","$CSPH2", "$CSPN2", "$CSPA", "$CSPCust1_T2", "$CSPCust2_T2"]
-        def CSP3 = ["0","$CSPH3", "$CSPN3", "$CSPA", "$CSPCust1_T3", "$CSPCust2_T3"]
-        def CSP4 = ["0","$CSPH4", "$CSPN4", "$CSPA", "$CSPCust1_T4", "$CSPCust2_T4"]
+        def CSP1 = [0,CSPH1, CSPN1, CSPA, CSPCust1_T1, CSPCust2_T1]
+        def CSP2 = [0,CSPH2, CSPN2, CSPA, CSPCust1_T2, CSPCust2_T2]
+        def CSP3 = [0,CSPH3, CSPN3, CSPA, CSPCust1_T3, CSPCust2_T3]
+        def CSP4 = [0,CSPH4, CSPN4, CSPA, CSPCust1_T4, CSPCust2_T4]
+
         // declare an integer value for current mode
         def MapofIndexValues = [0: "0", "$Home": "1", "$Night": "2", "$Away": "3", "$CustomMode1": "4", "$CustomMode2": "5" ]   
         def ModeIndexValue = MapofIndexValues.find{ it.key == "$location.currentMode"}
@@ -706,10 +718,10 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
             log.debug "SwitchesOn($SwitchesOn)"
         }
 
-        def HSP = ["0", "$HSP1", "$HSP2", "$HSP3", "$HSP4"]
+        def HSP = [0, HSP1, HSP2, HSP3, HSP4]
         log.debug "HSP LIST is $HSP"
         def HSPSet = 0
-        def CSP = ["0", "$CSP1", "$CSP2", "$CSP3", "$CSP4"]
+        def CSP = [0, CSP1, CSP2, CSP3, CSP4]
         log.debug "CSP LIST is $CSP"
         def CSPSet = 0
         def LatestThermostatMode = null
@@ -718,10 +730,10 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
         def ThermSet = 0
 
         def ThermDeviceList = ["null", Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4]
-        def CurrTempList = ["0", CurrTemp1, CurrTemp2, CurrTemp3, CurrTemp4]
-        def CurrTempListAlt = ["0", CurrTemp_Alt1, CurrTemp_Alt2, CurrTemp_Alt3, CurrTemp4]
+        def CurrTempList = [0, CurrTemp1, CurrTemp2, CurrTemp3, CurrTemp4]
+        def CurrTempListAlt = [0, CurrTemp_Alt1, CurrTemp_Alt2, CurrTemp_Alt3, CurrTemp4]
         def CurrTemp = 0
-        def ThermStateList = ["0", "$ThermState1", "$ThermState2", "$ThermState3", "$ThermState4"]
+        def ThermStateList = [0, "$ThermState1", "$ThermState2", "$ThermState3", "$ThermState4"]
         def ThermState = 0
 
 
@@ -737,6 +749,8 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
         def InactiveList = [0, atomicState.isInActive1, atomicState.isInActive2, atomicState.isInActive3] 
         log.debug "InactiveList = $InactiveList"
         def Inactive = 0
+
+        def OutsideTempHighThres = ExceptACModes()
 
         def loopValue = 0
 
@@ -780,7 +794,8 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
             HSPSet = HSP[loopValue]
             HSPSet = HSPSet.toInteger()            
             CSPSet = CSP[loopValue]
-            CSPSet = CSPSet.toInteger()
+
+            //CSPSet = CSPSet.toInteger()
             atomicState.CSPSet = CSPSet
             atomicState.HSPSet = HSPSet
 
@@ -793,6 +808,8 @@ Current Temperature Inside = $CurrTemp
 log.debug "ShouldHeat = $ShouldHeat
 """
 
+
+
             if(ExceptionSW){
                 if(ThermSet == "$Thermostat_1"){
                     if(SwitchesOn)
@@ -803,9 +820,7 @@ log.debug "ShouldHeat = $ShouldHeat
                 }
             }
             if(AppMgt){
-                log.info "NO OVERRIDE for $ThermSet"
-
-                log.debug "EVALUATING"     
+                log.info "NO OVERRIDE for $ThermSet -- EVALUATING"     
                 atomicState.withinApp = true
 
                 //modify with presence/motion in the room
@@ -831,48 +846,88 @@ log.debug "ShouldHeat = $ShouldHeat
                 log.trace """
 InMotionModes?($InMotionModes)
 AccountForMotion?($AccountForMotion)
-
 Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)"""
 
-
-                //modify with outside's variation using linear equation
                 def defaultCSPSet = CSPSet // recording this default value so if linear equation brings setpoint too low, it'll be recovered
                 def defaultHSPSet = HSPSet // same but with heat
 
+                if(adjustments == "Yes, use a linear variation"){
+                    // linear function for Cooling
+                    def xa = 75	//outside temp a
+                    def ya = CSPSet // desired cooling temp a 
 
-                // linear function for Cooling
-                def xa = 75				//outside temp a
-                def ya = CSPSet 	// desired cooling temp a 
-                def xb = 90 //outside temp b
-                def yb = CSPSet + 6 // desired cooling temp b  
+                    def xb = 100 		//outside temp b
+                    def yb = CSPSet + 5  // desired cooling temp b  
 
-                // take humidity into account
-                // if outside humidity is higher than .... 
-                if(TooHumid){
-                    xa = 75				//outside temp a LESS VARIATION WHEN HUMID
-                    ya = CSPSet	   // desired cooling temp a 
-                    xb = 90 //outside temp b
-                    yb = CSPSet + 2 // desired cooling temp b  LESS VARIATION WHEN HUMID
+                    // take humidity into account
+                    // if outside humidity is higher than .... 
+                    if(TooHumid){
+                        xa = 75				//outside temp a LESS VARIATION WHEN HUMID
+                        ya = CSPSet	   // desired cooling temp a 
+                        xb = 100 //outside temp b
+                        yb = CSPSet + 2 // desired cooling temp b  LESS VARIATION WHEN HUMID
+                    }
+
+                    def coef = (yb-ya)/(xb-xa)
+
+                    def b = ya - coef * xa // solution to ya = coef*xa + b // CSPSet = coef*outsideTemp + b
+
+                    //CSPSet - (coef * outsideTemp) 
+                    log.info "b is: $b ---------------------------------------"
+                    CSPSet = coef*outsideTemp + b
+
+                    CSPSet = CSPSet.toInteger()
+
+                    // no lower than defaultCSPSet 
+                    if(CSPSet <= defaultCSPSet){
+
+                        log.info """coef is: $coef ||| ${ThermSet}'s CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp
+But because CSPSet is $CSPSet and thus lower than default value ($defaultCSPSet), default settings are restored"""
+                        CSPSet = defaultCSPSet
+                    }
+                    else {
+
+                        log.info "coef is: $coef ||| ${ThermSet}'s CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
+                    }
+
+                } 
+                else if(adjustments == "Yes, but use an logarithmic variation"){
+                    // logarithmic treatment 
+
+                    /* concept: x = log(72)75   to what power (that is to say "x") do I have to raise 72, to get to 75?
+
+logb(n) = loge(n) / loge(b)
+Where log can be a logarithm function in any base, n is the number and b is the base. For example, in Java this will find the base-2 logarithm of 256:
+
+Math.log(256) / Math.log(2)
+=> 8.0
+*/
+                    //outsideTemp = 90 // for test only MUST BE DELETED
+                    def xa = OutsideTempHighThres			//outside temp threshold as of which user deems AC necessary
+                    def ya = outsideTemp						// variable outside temp
+
+                    def LOGxa = Math.log(xa)  
+                    def LOGya = Math.log(ya)  
+                    def coef = LOGya / LOGxa 
+                    log.debug "LOGxa = $LOGxa, LOGya = $LOGya and coef = $coef"
+
+                    CSPSet = CSPSet**coef
+
+                    CSPSet = CSPSet.toInteger()
+
+                    // no lower than defaultCSPSet 
+                    if(CSPSet <= defaultCSPSet){
+
+                        log.info """coef is: $coef ||| ${ThermSet}'s CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp
+But because CSPSet is $CSPSet and thus lower than default value ($defaultCSPSet), default settings are restored"""
+                        CSPSet = defaultCSPSet
+                    }
+                    else {
+
+                        log.info "coef is: $coef ||| ${ThermSet}'s CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
+                    }
                 }
-
-                def coef = (yb-ya)/(xb-xa)
-
-                def b = ya - coef * xa // solution to ya = coef*xa + b // CSPSet = coef*outsideTemp + b
-
-                //CSPSet - (coef * outsideTemp) 
-                log.info "b is: $b ---------------------------------------"
-                CSPSet = coef*outsideTemp + b
-                CSPSet = CSPSet.toInteger()
-
-                log.info "coef is: $coef ||| ${ThermSet}'s CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
-
-                // no lower than 70         
-                if(CSPSet <= 70){
-                    CSPSet = defaultCSPSet
-                    log.info "But because CSPSet is $CSPSet and thus lower than 70, default settings are restored" 
-                }
-
-
+                // end of algebraic adjustments        
 
                 // for false overrides prevention
                 // and for back to normal action
@@ -1098,8 +1153,8 @@ $MotionSensor_2 is INACTIVE = $atomicState.isInActive2
 $MotionSensor_3 is INACTIVE = $atomicState.isInActive3
 """
     atomicState.SensorHandlerIsRunning = false
-    
-    
+
+
     Evaluate()
 
 }
@@ -1831,6 +1886,7 @@ atomicState.T1_AppMgt = true
     }
     log.debug "Thermostats already turned off, doing nothing"
 }
+
 def CheckWindows(){
 
     def MessageMinutes = 60*60000 as Long
@@ -1889,11 +1945,11 @@ ContactsClosed = false ///  TEST ONLY MUST BE DELETED AFTERWARD
                 log.debug "opening windows"
 
                 if(OperatingTime){
-                    message = "Windows opened because $state.cause. Operation time is $OperatingTime seconds"
+                    message = "I'm opening windows because $state.cause. Operation time is $OperatingTime seconds"
                     runIn(OperatingTime, StopActuators) 
                 }
                 else {
-                    message = "Windows opened because $state.cause"
+                    message = "I'm opening windows because $state.cause"
                 }
 
                 log.info message 
@@ -1972,8 +2028,9 @@ ContactsClosed = false ///  TEST ONLY MUST BE DELETED AFTERWARD
         Actuators?.off()
         ActuatorException?.off()
 
-        send(state.message)
-        log.info state.message 
+		message = "I'm opening windows because $state.cause"
+        send(message)
+        log.info message 
 
         atomicState.ClosedByApp = true
         atomicState.OpenByApp = false // so it doesn't close again if user opens it manually
@@ -1984,7 +2041,6 @@ ContactsClosed = false ///  TEST ONLY MUST BE DELETED AFTERWARD
     Evaluate()
 
 }
-
 def OkToOpen(){
     def message = ""
     log.debug "Checking if it's O.K. to Open windows"
@@ -2000,7 +2056,7 @@ def OkToOpen(){
     def outsideTemp = Outside
     def WithinCriticalOffSet = (Inside >= (CriticalTemp + OffSet)) && (Outside >= (CriticalTemp + OffSet))
 
-    def OutsideTempHighThres = OutsideTempHighThres
+    def OutsideTempHighThres = ExceptACModes()
     def ExceptHighThreshold1 = ExceptHighThreshold1
 
 
@@ -2028,22 +2084,6 @@ def OkToOpen(){
     }        
 
     log.debug "ShouldCool = $ShouldCool -|-"
-
-
-    if(ExceptACMode1 && CurrMode in ExceptACMode1){
-        def ToMinus = OutsideTempHighThres
-        log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
-        def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold1
-        log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold1" 
-        OutsideTempHighThres = NewOutsideTempHighThres
-    }
-    else if(ExceptACMode2 && CurrMode in ExceptACMode2){
-        def ToMinus = OutsideTempHighThres
-        log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
-        def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold2
-        log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold2" 
-        OutsideTempHighThres = NewOutsideTempHighThres
-    }
 
 
 
@@ -2079,17 +2119,24 @@ def OkToOpen(){
         def causeNotTest = causeNotList.findAll{ val ->
             val == true ? true : false
         }
-        def and = ""
+        def and2 ="and"
+        def and3 = "and"
+        def and4 = "and"
 
-        if(causeNotTest.size() > 1){
-            and = "and"
+        if(!cause1){
+            and2 = "" 
         }
+        if(!cause2 ) {
+            and3 = ""             
+        }
+        if(!cause3){
+            and4 = ""
+        }
+
         def causeNotMap = [ "outside temperature is not within user's comfortable margin" : cause1,  
-                           "$and it is not too hot inside ${XtraTempSensor}'s room" : cause2 , 
-                           "$and it is too hot outside" : cause3 ,  
-                           "$and it is Too Humid outisde" : cause4 ]
-
-
+                           "$and2 it is not too hot inside ${XtraTempSensor}'s room" : cause2 , 
+                           "$and3 it is too hot outside" : cause3 ,  
+                           "$and4 it is Too Humid outisde" : cause4 ]
 
         // creates a new map with only the keys that have values = true
         def causeNotOkToOpen = causeNotMap.findAll{it.value == true}
@@ -2130,7 +2177,7 @@ def OkToOpen(){
         }
         def and = ""
 
-        if(causeOkTest.size() > 1){
+        if(cause1 && cause2){
             and = "and"
         }
         def causeOkMap = [ "Home is in $CurrMode and outside and inside temperatures are within safety margins" : cause1,  
@@ -2206,6 +2253,24 @@ StopActuators()
 }
 
 //miscellaneous 
+def ExceptACModes(){
+    def OutsideTempHighThres = OutsideTempHighThres
+    if(ExceptACMode1 && CurrMode in ExceptACMode1){
+        def ToMinus = OutsideTempHighThres
+        //log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
+        def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold1
+        //log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold1" 
+        OutsideTempHighThres = NewOutsideTempHighThres
+    }
+    else if(ExceptACMode2 && CurrMode in ExceptACMode2){
+        def ToMinus = OutsideTempHighThres
+        //log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
+        def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold2
+        //log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold2" 
+        OutsideTempHighThres = NewOutsideTempHighThres
+    }
+    return OutsideTempHighThres
+}
 def schedules() { 
 
     def scheduledTimeA = 1
