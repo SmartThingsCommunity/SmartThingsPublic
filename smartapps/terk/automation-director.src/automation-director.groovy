@@ -1,7 +1,7 @@
 /**
  *  Copyright 2016  by Terk
  *
- *	Automation Director version 1.4
+ *	Automation Director version 1.6
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,6 +13,17 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  Version History:
+ *  1.6 Added the ability to have the Audio Notification (AEON Labs Doorbell) play only once in a time period for door openings or any other trigger, this has been tested with contact sensors, light switches, motion, presence, and illuminance so far
+ *  1.5 Beta
+ *		Added the ability to turn a light on via a switch on, motion active, contact open, or button pushed/held and have it turn off after a specified amount of time
+ *			If a light was already on before the event happened the light will remain on after the timer period finishes,
+ *				except if there was still motion when the timer finishes then it will wait for the specified amount of time again
+ *				and when there is no longer motion it will turn off all of the lights it turned on which are set to turn off after a certain amount of time
+ *			If a light is turned off and back on during the timer period the light will remain on after the timer period finishes
+ *			If you add multiple motion sensors with the same lights then motion must not be detected on any of the motion sensors for the lights to be turned off
+ *		Corrected a motion restriction setting
+ *		Added the ability to select multiple sensors instead of just one for each requirement in the restriction setting, if you select multiple contacts they all must be in the required state
+ *		Added the AllPresent option for presence and beacon sensors
  *  1.4 Fixed button held
  *  1.3 Added the ability to disable the instance of the SmartApp
  *  1.2 Added additional requirement options
@@ -147,7 +158,7 @@ def initialize() {
 		subscribe(Shade, "windowShade.unknown", DoShadeUnknown)
 	}
 	if (Temperature) {subscribe(Temperature, "temperature", DoTemperature)}
-	if (PowerMeter) {subscribe(PowerMeter, "powerMeter", DoPowerMeter)}
+	if (PowerMeter) {subscribe(PowerMeter, "power", DoPowerMeter)}
 	if (Battery) {subscribe(Battery, "battery", DoBattery)}
 	if (Voltage) {subscribe(Voltage, "voltage", DoVoltage)}
 	if (EnergyMeter) {subscribe(EnergyMeter, "energy", DoEnergyMeter)}
@@ -187,9 +198,9 @@ def Triggers() {
 			def EnergyLabel = EnergyTriggerLabel()
 			href "EnergyLabels", title: "Energy triggers", description: EnergyLabel ?: "Tap to set", state: EnergyLabel ? "complete" : null
 		}
-		section(title: "Switch/Door conroller Triggers...", hidden: hideSwitchDoorTriggers(), hideable: true) {
+		section(title: "Switch,Door,Illuminance conroller Triggers...", hidden: hideSwitchDoorTriggers(), hideable: true) {
 			def ControllerLabel = ControllerTriggerLabel()
-			href "ControllerLabels", title: "Switch/Door triggers", description: ControllerLabel ?: "Tap to set", state: ControllerLabel ? "complete" : null
+			href "ControllerLabels", title: "Switch,Door,Illuminance triggers", description: ControllerLabel ?: "Tap to set", state: ControllerLabel ? "complete" : null
 		}
 		section(title: "Temp,Humidity,UV,ph,valve,shade Triggers...", hidden: hideOtherTriggers(), hideable: true) {
 			def OtherLabel = OtherTriggerLabel()
@@ -200,124 +211,178 @@ def Triggers() {
 			href "certainTime", title: "Only during a certain time", description: timeLabel ?: "Tap to set", state: timeLabel ? "complete" : null
 			input "days", "enum", title: "Only on certain days of the week", multiple: true, required: false, options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 			input "modes", "mode", title: "Only when mode is", multiple: true, required: false
-			input "Illuminance_Required", "capability.illuminanceMeasurement", title: "Illuminance sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "Illuminance_Required", "capability.illuminanceMeasurement", title: "Illuminance sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (Illuminance_Required) {
-				input "Illuminance_RequiredGreaterThan", "number", title: "Only when lux is >=", required: false, range: "1..*"
-				input "Illuminance_RequiredLessThan", "number", title: "Only when lux is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (Illuminance_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Illuminance_RequiredGreaterThan", "number", title: "Only when lux is >=${OptionalText}", required: false, range: "1..*", submitOnChange: true
+				input "Illuminance_RequiredLessThan", "number", title: "Only when lux is <=${OptionalText}", required: false, range: "1..*", submitOnChange: true
 				paragraph "Current lux ${Illuminance_Required.currentValue("illuminance")} would meet the requirements : ${CurrentIlluminance()}"
 			}
-			input "Contact_Required", "capability.contactSensor", title: "Only when a contact is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Contact_Required", "capability.contactSensor", title: "Only when a contact is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Contact_Required) {
-				input "Contact_state", "enum", title: "Which state?", required: true, options: ["Open", "Closed"]
+				def OptionalText = ""
+				if (Contact_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Contact_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Open", "Closed"]
 			}
-			input "Switch_Required", "capability.switch", title: "Only when a switch is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Switch_Required", "capability.switch", title: "Only when a switch is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Switch_Required) {
-				input "Switch_state", "enum", title: "Which state?", required: true, options: ["On", "Off"]
+				def OptionalText = ""
+				if (Switch_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Switch_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["On", "Off"]
 			}
-			input "Acceleration_Required", "capability.accelerationSensor", title: "Only when an acceleration sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Acceleration_Required", "capability.accelerationSensor", title: "Only when an acceleration sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Acceleration_Required) {
-				input "Acceleration_state", "enum", title: "Which state?", required: true, options: ["Active", "Inactive"]
+				def OptionalText = ""
+				if (Acceleration_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Acceleration_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Active", "Inactive"]
 			}
-			input "Motion_Required", "capability.motionSensor", title: "Only when a motion sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Motion_Required", "capability.motionSensor", title: "Only when a motion sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Motion_Required) {
-				input "Motion_state", "enum", title: "Which state?", required: true, options: ["Active", "Inactive"]
+				def OptionalText = ""
+				if (Motion_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Motion_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Active", "Inactive"]
 			}
-			input "Tamper_Required", "capability.tamperAlert", title: "Only when a tamper sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Tamper_Required", "capability.tamperAlert", title: "Only when a tamper sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Tamper_Required) {
-				input "Tamper_state", "enum", title: "Which state?", required: true, options: ["Clear", "Detected"]
+				def OptionalText = ""
+				if (Tamper_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Tamper_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Clear", "Detected"]
 			}
-			input "Shock_Required", "capability.shockSensor", title: "Only when a shock sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Shock_Required", "capability.shockSensor", title: "Only when a shock sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Shock_Required) {
-				input "Shock_state", "enum", title: "Which state?", required: true, options: ["Clear", "Detected"]
+				def OptionalText = ""
+				if (Shock_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Shock_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Clear", "Detected"]
 			}
-			input "Sleep_Required", "capability.sleepSensor", title: "Only when a sleep sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Sleep_Required", "capability.sleepSensor", title: "Only when a sleep sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Sleep_Required) {
-				input "Sleep_state", "enum", title: "Which state?", required: true, options: ["Not sleeping", "Sleeping"]
+				def OptionalText = ""
+				if (Sleep_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Sleep_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Not sleeping", "Sleeping"]
 			}
-			input "Sound_Required", "capability.soundSensor", title: "Only when a sound sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Sound_Required", "capability.soundSensor", title: "Only when a sound sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Sound_Required) {
-				input "Sound_state", "enum", title: "Which state?", required: true, options: ["Detected", "Not detected"]
+				def OptionalText = ""
+				if (Sound_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Sound_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Detected", "Not detected"]
 			}
-			input "Water_Required", "capability.waterSensor", title: "Only when a water sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Water_Required", "capability.waterSensor", title: "Only when a water sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Water_Required) {
-				input "Water_state", "enum", title: "Which state?", required: true, options: ["Dry", "Wet"]
+				def OptionalText = ""
+				if (Water_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Water_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Dry", "Wet"]
 			}
-			input "Beacon_Required", "capability.beacon", title: "Only when a beacon sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Beacon_Required", "capability.beacon", title: "Only when a beacon sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Beacon_Required) {
-				input "Beacon_state", "enum", title: "Which state?", required: true, options: ["Not present", "Present"]
+				def OptionalText = ""
+				if (Beacon_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Beacon_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Not present", "Present"]
 			}
-			input "Presence_Required", "capability.presenceSensor", title: "Only when a presence sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Presence_Required", "capability.presenceSensor", title: "Only when a presence sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Presence_Required) {
-				input "Presence_state", "enum", title: "Which state?", required: true, options: ["Not present", "Present"]
+				def OptionalText = ""
+				if (Presence_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Presence_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Not present", "Present"]
 			}
-			input "CODetector_Required", "capability.carbonMonoxideDetector", title: "Only when a CODetector sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "CODetector_Required", "capability.carbonMonoxideDetector", title: "Only when a CODetector sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (CODetector_Required) {
-				input "CODetector_state", "enum", title: "Which state?", required: true, options: ["Clear", "Detected", "Tested"]
+				def OptionalText = ""
+				if (CODetector_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "CODetector_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Clear", "Detected", "Tested"]
 			}
-			input "Smoke_Required", "capability.smokeDetector", title: "Only when a smoke sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Smoke_Required", "capability.smokeDetector", title: "Only when a smoke sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Smoke_Required) {
-				input "Smoke_state", "enum", title: "Which state?", required: true, options: ["Clear", "Detected", "Tested"]
+				def OptionalText = ""
+				if (Smoke_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Smoke_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Clear", "Detected", "Tested"]
 			}
-			input "PowerSource_Required", "capability.powerSource", title: "Only when a PowerSource sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "PowerSource_Required", "capability.powerSource", title: "Only when a PowerSource sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (PowerSource_Required) {
-				input "PowerSource_state", "enum", title: "Which state?", required: true, options: ["Battery", "DC", "Mains", "Unknown"]
+				def OptionalText = ""
+				if (PowerSource_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "PowerSource_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Battery", "DC", "Mains", "Unknown"]
 			}
-			input "Door_Required", "capability.doorControl", title: "Only when an door sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Door_Required", "capability.doorControl", title: "Only when an door sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Door_Required) {
-				input "Door_state", "enum", title: "Which state?", required: true, options: ["Closed", "Open", "Unknown"]
+				def OptionalText = ""
+				if (Door_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Door_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Closed", "Open", "Unknown"]
 			}
-			input "Valve_Required", "capability.valve", title: "Only when an valve sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Valve_Required", "capability.valve", title: "Only when an valve sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Valve_Required) {
-				input "Valve_state", "enum", title: "Which state?", required: true, options: ["Closed", "Open"]
+				def OptionalText = ""
+				if (Valve_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Valve_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Closed", "Open"]
 			}
-			input "Shade_Required", "capability.windowShade", title: "Only when an shade sensor is in a certain state", required: false, submitOnChange: true, multiple: false
+			input "Shade_Required", "capability.windowShade", title: "Only when an shade sensor is in a certain state", required: false, submitOnChange: true, multiple: true
 			if (Shade_Required) {
-				input "Shade_state", "enum", title: "Which state?", required: true, options: ["Closed", "Open", "Partially open", "Unknown"]
+				def OptionalText = ""
+				if (Shade_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Shade_state", "enum", title: "Which state?${OptionalText}", required: true, options: ["Closed", "Open", "Partially open", "Unknown"]
 			}
-			input "Temperature_Required", "capability.temperatureMeasurement", title: "Temperature sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "Temperature_Required", "capability.temperatureMeasurement", title: "Temperature sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (Temperature_Required) {
-				input "Temperature_RequiredGreaterThan", "number", title: "Only when temp is >=", required: false, range: "1..*"
-				input "Temperature_RequiredLessThan", "number", title: "Only when temp is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (Temperature_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Temperature_RequiredGreaterThan", "number", title: "Only when temp is >=${OptionalText}", required: false, range: "1..*"
+				input "Temperature_RequiredLessThan", "number", title: "Only when temp is <=${OptionalText}", required: false, range: "1..*"
 			}
-			input "PowerMeter_Required", "capability.powerMeter", title: "PowerMeter sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "PowerMeter_Required", "capability.powerMeter", title: "PowerMeter sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (PowerMeter_Required) {
-				input "PowerMeter_RequiredGreaterThan", "number", title: "Only when PowerMeter is >=", required: false, range: "1..*"
-				input "PowerMeter_RequiredLessThan", "number", title: "Only when PowerMeter is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (PowerMeter_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "PowerMeter_RequiredGreaterThan", "number", title: "Only when PowerMeter is >=${OptionalText}", required: false, range: "1..*"
+				input "PowerMeter_RequiredLessThan", "number", title: "Only when PowerMeter is <=${OptionalText}", required: false, range: "1..*"
 			}
-			input "Voltage_Required", "capability.voltageMeasurement", title: "Voltage sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "Voltage_Required", "capability.voltageMeasurement", title: "Voltage sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (Voltage_Required) {
-				input "Voltage_RequiredGreaterThan", "number", title: "Only when Voltage is >=", required: false, range: "1..*"
-				input "Voltage_RequiredLessThan", "number", title: "Only when Voltage is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (Voltage_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Voltage_RequiredGreaterThan", "number", title: "Only when Voltage is >=${OptionalText}", required: false, range: "1..*"
+				input "Voltage_RequiredLessThan", "number", title: "Only when Voltage is <=${OptionalText}", required: false, range: "1..*"
 			}
-			input "EnergyMeter_Required", "capability.energyMeter", title: "EnergyMeter sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "EnergyMeter_Required", "capability.energyMeter", title: "EnergyMeter sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (EnergyMeter_Required) {
-				input "EnergyMeter_RequiredGreaterThan", "number", title: "Only when EnergyMeter is >=", required: false, range: "1..*"
-				input "EnergyMeter_RequiredLessThan", "number", title: "Only when EnergyMeter is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (EnergyMeter_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "EnergyMeter_RequiredGreaterThan", "number", title: "Only when EnergyMeter is >=${OptionalText}", required: false, range: "1..*"
+				input "EnergyMeter_RequiredLessThan", "number", title: "Only when EnergyMeter is <=${OptionalText}", required: false, range: "1..*"
 			}
-			input "CO2Measurement_Required", "capability.carbonDioxideMeasurement", title: "CO2Measurement sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "CO2Measurement_Required", "capability.carbonDioxideMeasurement", title: "CO2Measurement sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (CO2Measurement_Required) {
-				input "CO2Measurement_RequiredGreaterThan", "number", title: "Only when CO2Measurement is >=", required: false, range: "1..*"
-				input "CO2Measurement_RequiredLessThan", "number", title: "Only when CO2Measurement is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (CO2Measurement_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "CO2Measurement_RequiredGreaterThan", "number", title: "Only when CO2Measurement is >=${OptionalText}", required: false, range: "1..*"
+				input "CO2Measurement_RequiredLessThan", "number", title: "Only when CO2Measurement is <=${OptionalText}", required: false, range: "1..*"
 			}
-			input "Humidity_Required", "capability.relativeHumidityMeasurement", title: "Humidity sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "Humidity_Required", "capability.relativeHumidityMeasurement", title: "Humidity sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (Humidity_Required) {
-				input "Humidity_RequiredGreaterThan", "number", title: "Only when Humidity is >=", required: false, range: "1..*"
-				input "Humidity_RequiredLessThan", "number", title: "Only when Humidity is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (Humidity_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "Humidity_RequiredGreaterThan", "number", title: "Only when Humidity is >=${OptionalText}", required: false, range: "1..*"
+				input "Humidity_RequiredLessThan", "number", title: "Only when Humidity is <=${OptionalText}", required: false, range: "1..*"
 			}
-			input "UltravioletIndex_Required", "capability.ultravioletIndex", title: "UltravioletIndex sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "UltravioletIndex_Required", "capability.ultravioletIndex", title: "UltravioletIndex sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (UltravioletIndex_Required) {
-				input "UltravioletIndex_RequiredGreaterThan", "number", title: "Only when UltravioletIndex is >=", required: false, range: "1..*"
-				input "UltravioletIndex_RequiredLessThan", "number", title: "Only when UltravioletIndex is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (UltravioletIndex_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "UltravioletIndex_RequiredGreaterThan", "number", title: "Only when UltravioletIndex is >=${OptionalText}", required: false, range: "1..*"
+				input "UltravioletIndex_RequiredLessThan", "number", title: "Only when UltravioletIndex is <=${OptionalText}", required: false, range: "1..*"
 			}
-			input "phMeasurement_Required", "capability.phMeasurement", title: "phMeasurement sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "phMeasurement_Required", "capability.phMeasurement", title: "phMeasurement sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (phMeasurement_Required) {
-				input "phMeasurement_RequiredGreaterThan", "number", title: "Only when phMeasurement is >=", required: false, range: "1..*"
-				input "phMeasurement_RequiredLessThan", "number", title: "Only when phMeasurement is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (phMeasurement_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "phMeasurement_RequiredGreaterThan", "number", title: "Only when phMeasurement is >=${OptionalText}", required: false, range: "1..*"
+				input "phMeasurement_RequiredLessThan", "number", title: "Only when phMeasurement is <=${OptionalText}", required: false, range: "1..*"
 			}
-			input "soundPressureLevel_Required", "capability.soundPressureLevel", title: "soundPressureLevel sensor above or below threshold", required: false, submitOnChange: true, multiple: false
+			input "soundPressureLevel_Required", "capability.soundPressureLevel", title: "soundPressureLevel sensor above or below threshold", required: false, submitOnChange: true, multiple: true
 			if (soundPressureLevel_Required) {
-				input "soundPressureLevel_RequiredGreaterThan", "number", title: "Only when soundPressureLevel is >=", required: false, range: "1..*"
-				input "soundPressureLevel_RequiredLessThan", "number", title: "Only when soundPressureLevel is <=", required: false, range: "1..*"
+				def OptionalText = ""
+				if (soundPressureLevel_Required.size() > 1) {OptionalText = "  When more than one sensor is selected they all must be in the state."}
+				input "soundPressureLevel_RequiredGreaterThan", "number", title: "Only when soundPressureLevel is >=${OptionalText}", required: false, range: "1..*"
+				input "soundPressureLevel_RequiredLessThan", "number", title: "Only when soundPressureLevel is <=${OptionalText}", required: false, range: "1..*"
 			}
 		}
 	}
@@ -698,7 +763,11 @@ def NotificationLabels() {
 		section(title: "Audio Notification Actions...", hidden: hideAudioNotifyActions(), hideable: true) {
 			input "AudioNotify", "capability.audioNotification", title: "Which Audio Notification(s) (Doorbells)?", multiple: true, required: false, submitOnChange: true
 			if (AudioNotify) {
-					input name: "SpecificNotification", title: "Make a specific track available", type: "bool", required: false, submitOnChange: true
+				input name: "SpecificNotification", title: "Make a specific track available", type: "bool", required: false, submitOnChange: true
+				input name: "NotifyOnce", title: "Only notify one time in a given period", type: "bool", required: false, submitOnChange: true
+				if (NotifyOnce) {
+					input name: "NotifyOnceinSeconds", title: "How many seconds before another ntification can be sent", type: "number", required: true, range: "1..86400"
+				}
 				if (SpecificNotification) {
 					input name: "NumberofTracks", title: "How Many tracks do you have on your doorbell", type: "number", required: true, range: "1..99"
 					paragraph "DTH https://community.smartthings.com/t/release-aeon-labs-aeotec-doorbell/39166 required for the following:"
@@ -810,12 +879,12 @@ def Assignments() {
 		}
 		if (Sirens) {
 			Sirens.each {
-				ActionstoTake = ActionstoTake += "Sirens:$it:siren"
+				ActionstoTake = ActionstoTake += "Sirens:$it:Siren"
 				ActionstoTake = ActionstoTake += "Sirens:$it:strobe"
 				ActionstoTake = ActionstoTake += "Sirens:$it:both"
 				ActionstoTake = ActionstoTake += "Sirens:$it:off"
 			}
-			ActionstoTake = ActionstoTake += "Sirens:all:siren"
+			ActionstoTake = ActionstoTake += "Sirens:all:Siren"
 			ActionstoTake = ActionstoTake += "Sirens:all:strobe"
 			ActionstoTake = ActionstoTake += "Sirens:all:both"
 			ActionstoTake = ActionstoTake += "Sirens:all:off"
@@ -1018,7 +1087,7 @@ def Assignments() {
 			}
 		}
 		if (Button) {
-			section(title: "Configure Buttons...", hidden: true, hideable: true) {
+			section(title: "Configure Buttons...", hidden: hideButtonActions(), hideable: true) {
 				for ( def h = 0; h < Button.size(); h++) {
 					paragraph "${Button[h]}"
 					boolean HoldSet = false
@@ -1029,25 +1098,48 @@ def Assignments() {
 					}
 					if (Button[h].currentValue("numberOfButtons") == null) {input "NumberofButtons${Button[h].id}", "number", title: "Number of Buttons on ${Button[h]}", required: true, submitOnChange: true}
 					if (!HoldSet) {input "Holdable${Button[h].id}", "bool", title: "Controller supports holding buttons", submitOnChange: true}
-					if (settings["NumberofButtons${Button[h].id}"] != null) {
-						def Num = settings["NumberofButtons${Button[h].id}"] as Integer
-						for ( def i = 1; i <= Num; i++) {
-							input "${Button[h].id}Button${i}Push", "enum", title: "${Button[h]} button $i Push", options: ActionstoTake, required: false, multiple: true
-							if (settings["Holdable${Button[h].id}"] || HoldSet) {input "${Button[h].id}Button${i}Hold", "enum", title: "${Button[h]} button $i Long Push", options: ActionstoTake, required: false, multiple: true}
+					int Num = 0
+					if (settings["NumberofButtons${Button[h].id}"] != null) {Num = settings["NumberofButtons${Button[h].id}"] as Integer}
+					if (Button[h].currentValue("numberOfButtons") != null) {Num = Button[h].currentValue("numberOfButtons") as Integer}
+					for ( def i = 1; i <= Num; i++) {
+						input "${Button[h].id}Button${i}Push", "enum", title: "${Button[h]} button $i Push", options: ActionstoTake, required: false, multiple: true, submitOnChange: true
+						if (settings["${Button[h].id}Button${i}Push"]) {
+							boolean AskForTime = false
+							for ( def j = 0; j < settings["${Button[h].id}Button${i}Push"].size(); j++) {
+								def Selection = settings["${Button[h].id}Button${i}Push"][j].tokenize(":")
+								if (Selection[0] == "Switches" || Selection[0] == "Bulbs" || Selection[0] == "Dimmers") {
+									if (Selection[2] == "on" || Selection[2] == "favLevel" || Selection[2] == "full") {
+										def Name = Selection[1]
+										if (Selection[1] == "all") {Name = "${Selection[0]}:${Selection[1]}"}
+										input "TurnOffAfterTime${Button[h].id}Button${i}Push$Name", "bool", title: "Turn off `$Name` after some time", submitOnChange: true
+										if (settings["TurnOffAfterTime${Button[h].id}Button${i}Push$Name"]) {AskForTime = true}
+									}
+								}
+							}
+							if (AskForTime) {input "TurnOffAfterMinutes${Button[h].id}Button${i}Push", "number", title: "Turn off after how many minutes", required: true, range: "1..*"}
 						}
-					}
-					if (Button[h].currentValue("numberOfButtons") != null) {
-						def Num = Button[h].currentValue("numberOfButtons") as Integer
-						for ( def i = 1; i <= Num; i++) {
-							input "${Button[h].id}Button${i}Push", "enum", title: "${Button[h]} button $i Push", options: ActionstoTake, required: false, multiple: true
-							if (settings["Holdable${Button[h].id}"] || HoldSet) {input "${Button[h].id}Button${i}Hold", "enum", title: "${Button[h]} button $i Long Push", options: ActionstoTake, required: false, multiple: true}
+						if (settings["Holdable${Button[h].id}"] || HoldSet) {input "${Button[h].id}Button${i}Hold", "enum", title: "${Button[h]} button $i Long Push", options: ActionstoTake, required: false, multiple: true, submitOnChange: true}
+						if (settings["${Button[h].id}Button${i}Hold"]) {
+							boolean AskForTime = false
+							for ( def j = 0; j < settings["${Button[h].id}Button${i}Hold"].size(); j++) {
+								def Selection = settings["${Button[h].id}Button${i}Hold"][j].tokenize(":")
+								if (Selection[0] == "Switches" || Selection[0] == "Bulbs" || Selection[0] == "Dimmers") {
+									if (Selection[2] == "on" || Selection[2] == "favLevel" || Selection[2] == "full") {
+										def Name = Selection[1]
+										if (Selection[1] == "all") {Name = "${Selection[0]}:${Selection[1]}"}
+										input "TurnOffAfterTime${Button[h].id}Button${i}Hold$Name", "bool", title: "Turn off `$Name` after some time", submitOnChange: true
+										if (settings["TurnOffAfterTime${Button[h].id}Button${i}Hold$Name"]) {AskForTime = true}
+									}
+								}
+							}
+							if (AskForTime) {input "TurnOffAfterMinutes${Button[h].id}Button${i}Hold", "number", title: "Turn off after how many minutes", required: true, range: "1..*"}
 						}
 					}
 				}
 			}
 		}
 		if (Acceleration) {
-			section(title: "Configure Acceleration...", hidden: true, hideable: true) {
+			section(title: "Configure Acceleration...", hidden: hideAccelerationActions(), hideable: true) {
 				for ( def i = 0; i < Acceleration.size(); i++) {
 					input "AccelerationActive${Acceleration[i].id}", "enum", title: "${Acceleration[i]} acceleration Active", options: ActionstoTake, required: false, multiple: true
 					input "AccelerationInactive${Acceleration[i].id}", "enum", title: "${Acceleration[i]} acceleration Inactive", options: ActionstoTake, required: false, multiple: true
@@ -1055,23 +1147,53 @@ def Assignments() {
 			}
 		}
 		if (Contact) {
-			section(title: "Configure Contact...", hidden: true, hideable: true) {
+			section(title: "Configure Contact...", hidden: hideContactActions(), hideable: true) {
 				for ( def i = 0; i < Contact.size(); i++) {
 					input "ContactClosed${Contact[i].id}", "enum", title: "${Contact[i]} contact Closed", options: ActionstoTake, required: false, multiple: true
-					input "ContactOpen${Contact[i].id}", "enum", title: "${Contact[i]} contact Open", options: ActionstoTake, required: false, multiple: true
+					input "ContactOpen${Contact[i].id}", "enum", title: "${Contact[i]} contact Open", options: ActionstoTake, required: false, multiple: true, submitOnChange: true
+					if (settings["ContactOpen${Contact[i].id}"]) {
+						boolean AskForTime = false
+						for ( def j = 0; j < settings["ContactOpen${Contact[i].id}"].size(); j++) {
+							def Selection = settings["ContactOpen${Contact[i].id}"][j].tokenize(":")
+							if (Selection[0] == "Switches" || Selection[0] == "Bulbs" || Selection[0] == "Dimmers") {
+								if (Selection[2] == "on" || Selection[2] == "favLevel" || Selection[2] == "full") {
+									def Name = Selection[1]
+									if (Selection[1] == "all") {Name = "${Selection[0]}:${Selection[1]}"}
+									input "TurnOffAfterTime${settings["ContactOpen${Contact[i].id}"]}$Name", "bool", title: "Turn off `$Name` after some time", submitOnChange: true
+									if (settings["TurnOffAfterTime${settings["ContactOpen${Contact[i].id}"]}$Name"]) {AskForTime = true}
+								}
+							}
+						}
+						if (AskForTime) {input "TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}", "number", title: "Turn off after how many minutes", required: true, range: "1..*"}
+					}
 				}
 			}
 		}
 		if (Motion) {
-			section(title: "Configure Motion...", hidden: true, hideable: true) {
+			section(title: "Configure Motion...", hidden: hideMotionActions(), hideable: true) {
 				for ( def i = 0; i < Motion.size(); i++) {
-					input "MotionActive${Motion[i].id}", "enum", title: "${Motion[i]} motion Active", options: ActionstoTake, required: false, multiple: true
+					input "MotionActive${Motion[i].id}", "enum", title: "${Motion[i]} motion Active", options: ActionstoTake, required: false, multiple: true, submitOnChange: true
 					input "MotionInactive${Motion[i].id}", "enum", title: "${Motion[i]} motion Inactive", options: ActionstoTake, required: false, multiple: true
+					if (settings["MotionActive${Motion[i].id}"]) {
+						boolean AskForTime = false
+						for ( def j = 0; j < settings["MotionActive${Motion[i].id}"].size(); j++) {
+							def Selection = settings["MotionActive${Motion[i].id}"][j].tokenize(":")
+							if (Selection[0] == "Switches" || Selection[0] == "Bulbs" || Selection[0] == "Dimmers") {
+								if (Selection[2] == "on" || Selection[2] == "favLevel" || Selection[2] == "full") {
+									def Name = Selection[1]
+									if (Selection[1] == "all" || settings["MotionActive${Motion[i].id}"].size() > 1) {Name = "${Selection[0]}:${Selection[1]}"}
+									input "TurnOffAfterTime${settings["MotionActive${Motion[i].id}"]}$Name", "bool", title: "Turn off `$Name` after some time", submitOnChange: true
+									if (settings["TurnOffAfterTime${settings["MotionActive${Motion[i].id}"]}$Name"]) {AskForTime = true}
+								}
+							}
+						}
+						if (AskForTime) {input "TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}", "number", title: "Turn off after how many minutes", required: true, range: "1..*"}
+					}
 				}
 			}
 		}
 		if (Tamper) {
-			section(title: "Configure Tamper...", hidden: true, hideable: true) {
+			section(title: "Configure Tamper...", hidden: hideTamperActions(), hideable: true) {
 				for ( def i = 0; i < Tamper.size(); i++) {
 					input "TamperClear${Tamper[i].id}", "enum", title: "${Tamper[i]} tamper Clear", options: ActionstoTake, required: false, multiple: true
 					input "TamperDetected${Tamper[i].id}", "enum", title: "${Tamper[i]} tamper Detected", options: ActionstoTake, required: false, multiple: true
@@ -1079,7 +1201,7 @@ def Assignments() {
 			}
 		}
 		if (Shock) {
-			section(title: "Configure Shock...", hidden: true, hideable: true) {
+			section(title: "Configure Shock...", hidden: hideShockActions(), hideable: true) {
 				for ( def i = 0; i < Shock.size(); i++) {
 					input "ShockClear${Shock[i].id}", "enum", title: "${Shock[i]} shock Clear", options: ActionstoTake, required: false, multiple: true
 					input "ShockDetected${Shock[i].id}", "enum", title: "${Shock[i]} shock Detected", options: ActionstoTake, required: false, multiple: true
@@ -1087,7 +1209,7 @@ def Assignments() {
 		   }
 		}
 		if (Sleep) {
-			section(title: "Configure Sleep...", hidden: true, hideable: true) {
+			section(title: "Configure Sleep...", hidden: hideSleepActions(), hideable: true) {
 				for ( def i = 0; i < Sleep.size(); i++) {
 					input "SleepNotSleeping${Sleep[i].id}", "enum", title: "${Sleep[i]} Not Sleeping", options: ActionstoTake, required: false, multiple: true
 					input "SleepSleeping${Sleep[i].id}", "enum", title: "${Sleep[i]} Sleeping", options: ActionstoTake, required: false, multiple: true
@@ -1095,7 +1217,7 @@ def Assignments() {
 			}
 		}
 		if (Sound) {
-			section(title: "Configure Sound...", hidden: true, hideable: true) {
+			section(title: "Configure Sound...", hidden: hideSoundActions(), hideable: true) {
 				for ( def i = 0; i < Sound.size(); i++) {
 					input "SoundDetected${Sound[i].id}", "enum", title: "${Sound[i]} sound Detected", options: ActionstoTake, required: false, multiple: true
 					input "SoundNotDetected${Sound[i].id}", "enum", title: "${Sound[i]} sound Not Detected", options: ActionstoTake, required: false, multiple: true
@@ -1103,14 +1225,14 @@ def Assignments() {
 			}
 		}
 		if (Touch) {
-		section(title: "Configure Touch...", hidden: true, hideable: true) {
+		section(title: "Configure Touch...", hidden: hideTouchActions(), hideable: true) {
 				for ( def i = 0; i < Touch.size(); i++) {
 					input "Touched${Touch[i].id}", "enum", title: "${Touch[i]} Touched", options: ActionstoTake, required: false, multiple: true
 				}
 			}
 		}
 		if (Water) {
-			section(title: "Configure Water...", hidden: true, hideable: true) {
+			section(title: "Configure Water...", hidden: hideWaterActions(), hideable: true) {
 				for ( def i = 0; i < Water.size(); i++) {
 					input "WaterDry${Water[i].id}", "enum", title: "${Water[i]} Dry", options: ActionstoTake, required: false, multiple: true
 					input "WaterWet${Water[i].id}", "enum", title: "${Water[i]} Wet", options: ActionstoTake, required: false, multiple: true
@@ -1118,7 +1240,7 @@ def Assignments() {
 			}
 		}
 		if (CODetector) {
-			section(title: "Configure CODetector...", hidden: true, hideable: true) {
+			section(title: "Configure CODetector...", hidden: hideCODetectorActions(), hideable: true) {
 				for ( def i = 0; i < CODetector.size(); i++) {
 					input "CODetectorClear${CODetector[i].id}", "enum", title: "${CODetector[i]} CO Clear", options: ActionstoTake, required: false, multiple: true
 					input "CODetectorDetected${CODetector[i].id}", "enum", title: "${CODetector[i]} CO Detected", options: ActionstoTake, required: false, multiple: true
@@ -1127,7 +1249,7 @@ def Assignments() {
 			}
 		}
 		if (Smoke) {
-			section(title: "Configure Smoke...", hidden: true, hideable: true) {
+			section(title: "Configure Smoke...", hidden: hideSmokeActions(), hideable: true) {
 				for ( def i = 0; i < Smoke.size(); i++) {
 					input "SmokeClear${Smoke[i].id}", "enum", title: "${Smoke[i]} smoke Clear", options: ActionstoTake, required: false, multiple: true
 					input "SmokeDetected${Smoke[i].id}", "enum", title: "${Smoke[i]} smoke Detected", options: ActionstoTake, required: false, multiple: true
@@ -1136,7 +1258,7 @@ def Assignments() {
 			}
 		}
 		if (CO2Measurement) {
-			section(title: "Configure CO2Measurement...", hidden: true, hideable: true) {
+			section(title: "Configure CO2Measurement...", hidden: hideCO2MeasurementActions(), hideable: true) {
 				if (AllCO2MeasurementHighThreshold) {
 						input "AllCO2MeasurementHighActions", "enum", title: "Any CO2 Measurement above threshold", options: ActionstoTake, required: false, multiple: true
 					} else {
@@ -1147,27 +1269,27 @@ def Assignments() {
 			}
 		}
 		if (Beacon) {
-			section(title: "Configure Beacon...", hidden: true, hideable: true) {
+			section(title: "Configure Beacon...", hidden: hideBeaconActions(), hideable: true) {
  				for ( def i = 0; i < Beacon.size(); i++) {
 					input "BeaconNotPresent${Beacon[i].id}", "enum", title: "${Beacon[i]} Not Present", options: ActionstoTake, required: false, multiple: true
 					input "BeaconPresent${Beacon[i].id}", "enum", title: "${Beacon[i]} Present", options: ActionstoTake, required: false, multiple: true
 				}
-					input "BeaconAllAway", "enum", title: "All Beacons Away", options: ActionstoTake, required: false, multiple: true
-//					input "BeaconAllPresent", "enum", title: "All Beacons Present", options: ActionstoTake, required: false, multiple: true
+				input "BeaconAllAway", "enum", title: "All Beacons Away", options: ActionstoTake, required: false, multiple: true
+				input "BeaconAllPresent", "enum", title: "All Beacons Present", options: ActionstoTake, required: false, multiple: true
 			}
 		}
 		if (Presence) {
-			section(title: "Configure Presence...", hidden: true, hideable: true) {
+			section(title: "Configure Presence...", hidden: hidePresenceActions(), hideable: true) {
 				for ( def i = 0; i < Presence.size(); i++) {
 					input "PresenceNotPresent${Presence[i].id}", "enum", title: "${Presence[i]} Not Present", options: ActionstoTake, required: false, multiple: true
 					input "PresencePresent${Presence[i].id}", "enum", title: "${Presence[i]} Present", options: ActionstoTake, required: false, multiple: true
 				}
-					input "PresenceAllAway", "enum", title: "All Presence devices Away", options: ActionstoTake, required: false, multiple: true
-//					input "PresenceAllPresent", "enum", title: "All Presence devices Present", options: ActionstoTake, required: false, multiple: true
+				input "PresenceAllAway", "enum", title: "All Presence devices Away", options: ActionstoTake, required: false, multiple: true
+				input "PresenceAllPresent", "enum", title: "All Presence devices Present", options: ActionstoTake, required: false, multiple: true
 			}
 		}
 		if (PowerSource) {
-			section(title: "Configure PowerSource...", hidden: true, hideable: true) {
+			section(title: "Configure PowerSource...", hidden: hidePowerSourceActions(), hideable: true) {
 				for ( def i = 0; i < PowerSource.size(); i++) {
 					input "PowerSourceBattery${PowerSource[i].id}", "enum", title: "${PowerSource[i]} running on Battery", options: ActionstoTake, required: false, multiple: true
 					input "PowerSourceDC${PowerSource[i].id}", "enum", title: "${PowerSource[i]} running on DC", options: ActionstoTake, required: false, multiple: true
@@ -1177,7 +1299,7 @@ def Assignments() {
 			}
 		}
 		if (PowerMeter) {
-			section(title: "Configure PowerMeter...", hidden: true, hideable: true) {
+			section(title: "Configure PowerMeter...", hidden: hidePowerMeterActions(), hideable: true) {
 				if (AllPowerMeterHighThreshold || AllPowerMeterLowThreshold) {
 						if (AllPowerMeterHighThreshold) {input "AllPowerMeterHighActions", "enum", title: "Any high power usage", options: ActionstoTake, required: false, multiple: true}
 						if (AllPowerMeterLowThreshold) {input "AllPowerMeterLowActions", "enum", title: "Any low power usage", options: ActionstoTake, required: false, multiple: true}
@@ -1190,7 +1312,7 @@ def Assignments() {
 			}
 		}
 		if (Battery) {
-			section(title: "Configure Battery...", hidden: true, hideable: true) {
+			section(title: "Configure Battery...", hidden: hideBatteryActions(), hideable: true) {
 				if (AllBatteryLowThreshold) {
 						input "AllBatteryLowActions", "enum", title: "Any battery low", options: ActionstoTake, required: false, multiple: true
 					} else {
@@ -1201,7 +1323,7 @@ def Assignments() {
 			}
 		}
 		if (Voltage) {
-			section(title: "Configure Voltage...", hidden: true, hideable: true) {
+			section(title: "Configure Voltage...", hidden: hideVoltageActions(), hideable: true) {
 				if (AllVoltageHighThreshold || AllVoltageLowThreshold) {
 						if (AllVoltageHighThreshold) {input "AllVoltageHighActions", "enum", title: "Any high voltage", options: ActionstoTake, required: false, multiple: true}
 						if (AllVoltageLowThreshold) {input "AllVoltageLowActions", "enum", title: "Any low voltage", options: ActionstoTake, required: false, multiple: true}
@@ -1214,7 +1336,7 @@ def Assignments() {
 			}
 		}
 		if (EnergyMeter) {
-			section(title: "Configure EnergyMeter...", hidden: true, hideable: true) {
+			section(title: "Configure EnergyMeter...", hidden: hideEnergyMeterActions(), hideable: true) {
 				if (AllEnergyMeterHighThreshold || AllEnergyMeterLowThreshold) {
 						if (AllEnergyMeterHighThreshold) {input "AllEnergyMeterHighActions", "enum", title: "Any high energy usage", options: ActionstoTake, required: false, multiple: true}
 						if (AllEnergyMeterLowThreshold) {input "AllEnergyMeterLowActions", "enum", title: "Any low energy usage", options: ActionstoTake, required: false, multiple: true}
@@ -1227,7 +1349,7 @@ def Assignments() {
 			}
 		}
 		if (Door) {
-			section(title: "Configure Doors...", hidden: true, hideable: true) {
+			section(title: "Configure Doors...", hidden: hideDoorActions(), hideable: true) {
 				for ( def i = 0; i < Door.size(); i++) {
 					input "DoorClosed${Door[i].id}", "enum", title: "${Door[i]} Closed", options: ActionstoTake, required: false, multiple: true
 					input "DoorOpen${Door[i].id}", "enum", title: "${Door[i]} Open", options: ActionstoTake, required: false, multiple: true
@@ -1236,15 +1358,30 @@ def Assignments() {
 			}
 		}
 		if (Switch) {
-			section(title: "Configure Switches...", hidden: true, hideable: true) {
+			section(title: "Configure Switches...", hidden: hideSwitchActions(), hideable: true) {
 				for ( def i = 0; i < Switch.size(); i++) {
 					input "SwitchOff${Switch[i].id}", "enum", title: "${Switch[i]} Off", options: ActionstoTake, required: false, multiple: true
-					input "SwitchOn${Switch[i].id}", "enum", title: "${Switch[i]} On", options: ActionstoTake, required: false, multiple: true
+					input "SwitchOn${Switch[i].id}", "enum", title: "${Switch[i]} On", options: ActionstoTake, required: false, multiple: true, submitOnChange: true
+					if (settings["SwitchOn${Switch[i].id}"]) {
+						boolean AskForTime = false
+						for ( def j = 0; j < settings["SwitchOn${Switch[i].id}"].size(); j++) {
+							def Selection = settings["SwitchOn${Switch[i].id}"][j].tokenize(":")
+							if (Selection[0] == "Switches" || Selection[0] == "Bulbs" || Selection[0] == "Dimmers") {
+								if (Selection[2] == "on" || Selection[2] == "favLevel" || Selection[2] == "full") {
+									def Name = Selection[1]
+									if (Selection[1] == "all" || settings["SwitchOn${Switch[i].id}"].size() > 1) {Name = "${Selection[0]}:${Selection[1]}"}
+									input "TurnOffAfterTime${settings["SwitchOn${Switch[i].id}"]}$Name", "bool", title: "Turn off `$Name` after some time", submitOnChange: true
+									if (settings["TurnOffAfterTime${settings["SwitchOn${Switch[i].id}"]}$Name"]) {AskForTime = true}
+								}
+							}
+						}
+						if (AskForTime) {input "TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}", "number", title: "Turn off after how many minutes", required: true, range: "1..*"}
+					}
 				}
 			}
 		}
 		if (Temperature) {
-			section(title: "Configure Temperature...", hidden: true, hideable: true) {
+			section(title: "Configure Temperature...", hidden: hideTemperatureActions(), hideable: true) {
 				if (AllHighThreshold || AllLowThreshold) {
 						if (AllHighThreshold) {input "AllHighActions", "enum", title: "Any high temp", options: ActionstoTake, required: false, multiple: true}
 						if (AllLowThreshold) {input "AllLowActions", "enum", title: "Any low temp", options: ActionstoTake, required: false, multiple: true}
@@ -1257,7 +1394,7 @@ def Assignments() {
 			}
 		}
 		if (Valve) {
-			section(title: "Configure Valve...", hidden: true, hideable: true) {
+			section(title: "Configure Valve...", hidden: hideValveActions(), hideable: true) {
  				for ( def i = 0; i < Valve.size(); i++) {
 					input "ValveClosed${Valve[i].id}", "enum", title: "${Valve[i]} Closed", options: ActionstoTake, required: false, multiple: true
 					input "ValveOpen${Valve[i].id}", "enum", title: "${Valve[i]} Open", options: ActionstoTake, required: false, multiple: true
@@ -1265,7 +1402,7 @@ def Assignments() {
 			}
 		}
 		if (Shade) {
-			section(title: "Configure Shade...", hidden: true, hideable: true) {
+			section(title: "Configure Shade...", hidden: hideShadeActions(), hideable: true) {
 				for ( def i = 0; i < Shade.size(); i++) {
 					input "ShadeClosed${Shade[i].id}", "enum", title: "${Shade[i]} Closed", options: ActionstoTake, required: false, multiple: true
 					input "ShadeOpen${Shade[i].id}", "enum", title: "${Shade[i]} Open", options: ActionstoTake, required: false, multiple: true
@@ -1275,7 +1412,7 @@ def Assignments() {
 			}
 		}
 		if (Step) {
-			section(title: "Configure Step...", hidden: true, hideable: true) {
+			section(title: "Configure Step...", hidden: hideStepActions(), hideable: true) {
 				if (AllStepHighThreshold || AllStepLowThreshold || AllStepGoal) {
 						if (AllStepHighThreshold) {input "AllStepHighActions", "enum", title: "Any step high", options: ActionstoTake, required: false, multiple: true}
 						if (AllStepLowThreshold) {input "AllStepLowActions", "enum", title: "Any step low", options: ActionstoTake, required: false, multiple: true}
@@ -1290,7 +1427,7 @@ def Assignments() {
 			}
 		}
 		if (Illuminance) {
-			section(title: "Configure Illuminance...", hidden: true, hideable: true) {
+			section(title: "Configure Illuminance...", hidden: hideIlluminanceActions(), hideable: true) {
 				if (AllIlluminanceHighThreshold || AllIlluminanceLowThreshold) {
 						if (AllIlluminanceHighThreshold) {input "AllIlluminanceHighActions", "enum", title: "Any illuminance high", options: ActionstoTake, required: false, multiple: true}
 						if (AllIlluminanceLowThreshold) {input "AllIlluminanceLowActions", "enum", title: "Any illuminance low", options: ActionstoTake, required: false, multiple: true}
@@ -1303,7 +1440,7 @@ def Assignments() {
 			}
 		}
 		if (Humidity) {
-			section(title: "Configure Humidity...", hidden: true, hideable: true) {
+			section(title: "Configure Humidity...", hidden: hideHumidityActions(), hideable: true) {
 				if (AllHumidityHighThreshold || AllHumidityLowThreshold) {
 						if (AllHumidityHighThreshold) {input "AllHumidityHighActions", "enum", title: "Any humidity high", options: ActionstoTake, required: false, multiple: true}
 						if (AllHumidityLowThreshold) {input "AllHumidityLowActions", "enum", title: "Any humidity low", options: ActionstoTake, required: false, multiple: true}
@@ -1316,7 +1453,7 @@ def Assignments() {
 			}
 		}
 		if (soundPressureLevel) {
-			section(title: "Configure Sound Pressure Level...", hidden: true, hideable: true) {
+			section(title: "Configure Sound Pressure Level...", hidden: hidesoundPressureLevelActions(), hideable: true) {
 				if (AllsoundPressureLevelHighThreshold || AllsoundPressureLevelLowThreshold) {
 						if (AllsoundPressureLevelHighThreshold) {input "AllsoundPressureLevelHighActions", "enum", title: "Any sound pressure level high", options: ActionstoTake, required: false, multiple: true}
 						if (AllsoundPressureLevelLowThreshold) {input "AllsoundPressureLevelLowActions", "enum", title: "Any sound pressure level low", options: ActionstoTake, required: false, multiple: true}
@@ -1329,7 +1466,7 @@ def Assignments() {
 			}
 		}
 		if (UltravioletIndex) {
-			section(title: "Configure UV Index...", hidden: true, hideable: true) {
+			section(title: "Configure UV Index...", hidden: hideUltravioletIndexActions(), hideable: true) {
 				if (AllUltravioletIndexHighThreshold || AllUltravioletIndexLowThreshold) {
 						if (AllUltravioletIndexHighThreshold) {input "AllUltravioletIndexHighActions", "enum", title: "Any ultraviolet index high", options: ActionstoTake, required: false, multiple: true}
 						if (AllUltravioletIndexLowThreshold) {input "AllUltravioletIndexLowActions", "enum", title: "Any ultraviolet index low", options: ActionstoTake, required: false, multiple: true}
@@ -1342,7 +1479,7 @@ def Assignments() {
 			}
 		}
 		if (phMeasurement) {
-			section(title: "Configure ph Measurement...", hidden: true, hideable: true) {
+			section(title: "Configure ph Measurement...", hidden: hidephMeasurementActions(), hideable: true) {
 				if (AllphMeasurementHighThreshold || AllphMeasurementLowThreshold) {
 						if (AllphMeasurementHighThreshold) {input "AllphMeasurementHighActions", "enum", title: "Any ph index high", options: ActionstoTake, required: false, multiple: true}
 						if (AllphMeasurementLowThreshold) {input "AllphMeasurementLowActions", "enum", title: "Any ph low", options: ActionstoTake, required: false, multiple: true}
@@ -1360,7 +1497,7 @@ def Assignments() {
 def NametheApp() {
 	def DefaultName = "Automation Director"
 	if (!overrideLabel) {
-		log.debug "will set default label of $DefaultName"
+		//log.debug "will set default label of $DefaultName"
 		app.updateLabel(DefaultName)
 	}
 	if (app.label != "Automation Director") {DefaultName = app.label}
@@ -1395,8 +1532,8 @@ def DoContactOpen(evt) {
 			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ContactOpen${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ContactOpen${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ContactOpen${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				//log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"opened","open"])
 			}
 		}
 	}
@@ -1414,11 +1551,10 @@ def DoContactClosed(evt) {
 			}
 		}
 		if (settings["ContactClosed${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ContactClosed${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ContactClosed${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ContactClosed${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ContactClosed${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"closed",null])
 			}
 		}
 	}
@@ -1436,11 +1572,10 @@ def DoSwitchOn(evt) {
 			}
 		}
 		if (settings["SwitchOn${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SwitchOn${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SwitchOn${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SwitchOn${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SwitchOn${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"on",null])
 			}
 		}
 	}
@@ -1458,11 +1593,10 @@ def DoSwitchOff(evt) {
 			}
 		}
 		if (settings["SwitchOff${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SwitchOff${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SwitchOff${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SwitchOff${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SwitchOff${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"off",null])
 			}
 		}
 	}
@@ -1480,11 +1614,10 @@ def DoAccelerationActive(evt) {
 			}
 		}
 		if (settings["AccelerationActive${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["AccelerationActive${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["AccelerationActive${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["AccelerationActive${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["AccelerationActive${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"active",null])
 			}
 		}
 	}
@@ -1502,11 +1635,10 @@ def DoAccelerationInactive(evt) {
 			}
 		}
 		if (settings["AccelerationInactive${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["AccelerationInactive${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["AccelerationInactive${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["AccelerationInactive${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["AccelerationInactive${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"inactive",null])
 			}
 		}
 	}
@@ -1524,11 +1656,10 @@ def DoMotionActive(evt) {
 			}
 		}
 		if (settings["MotionActive${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["MotionActive${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["MotionActive${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["MotionActive${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["MotionActive${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"detected motion",null])
 			}
 		}
 	}
@@ -1546,11 +1677,10 @@ def DoMotionInactive(evt) {
 			}
 		}
 		if (settings["MotionInactive${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["MotionInactive${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["MotionInactive${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["MotionInactive${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["MotionInactive${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"motion has stopped",null])
 			}
 		}
 	}
@@ -1568,11 +1698,10 @@ def DoTamperClear(evt) {
 			}
 		}
 		if (settings["TamperClear${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["TamperClear${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["TamperClear${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["TamperClear${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["TamperClear${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"clear",null])
 			}
 		}
 	}
@@ -1590,11 +1719,10 @@ def DoTamperDetected(evt) {
 			}
 		}
 		if (settings["TamperDetected${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["TamperDetected${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["TamperDetected${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["TamperDetected${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["TamperDetected${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"detected",null])
 			}
 		}
 	}
@@ -1612,11 +1740,10 @@ def DoShockClear(evt) {
 			}
 		}
 		if (settings["ShockClear${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ShockClear${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ShockClear${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ShockClear${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ShockClear${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"clear",null])
 			}
 		}
 	}
@@ -1634,11 +1761,10 @@ def DoShockDetected(evt) {
 			}
 		}
 		if (settings["ShockDetected${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ShockDetected${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ShockDetected${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ShockDetected${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ShockDetected${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"detected",null])
 			}
 		}
 	}
@@ -1656,11 +1782,10 @@ def DoSleepNotSleeping(evt) {
 			}
 		}
 		if (settings["SleepNotSleeping${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SleepNotSleeping${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SleepNotSleeping${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SleepNotSleeping${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SleepNotSleeping${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"not sleeping",null])
 			}
 		}
 	}
@@ -1678,11 +1803,10 @@ def DoSleepSleeping(evt) {
 			}
 		}
 		if (settings["SleepSleeping${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SleepSleeping${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SleepSleeping${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SleepSleeping${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SleepSleeping${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"sleeping",null])
 			}
 		}
 	}
@@ -1700,11 +1824,10 @@ def DoSoundDetected(evt) {
 			}
 		}
 		if (settings["SoundDetected${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SoundDetected${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SoundDetected${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SoundDetected${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SoundDetected${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"detected",null])
 			}
 		}
 	}
@@ -1722,11 +1845,10 @@ def DoSoundNotDetected(evt) {
 			}
 		}
 		if (settings["SoundNotDetected${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SoundNotDetected${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SoundNotDetected${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SoundNotDetected${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SoundNotDetected${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"not detected",null])
 			}
 		}
 	}
@@ -1744,11 +1866,10 @@ def DoTouched(evt) {
 			}
 		}
 		if (settings["Touched${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["Touched${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["Touched${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["Touched${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["Touched${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"touched",null])
 			}
 		}
 	}
@@ -1766,11 +1887,10 @@ def DoWaterDry(evt) {
 			}
 		}
 		if (settings["WaterDry${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["WaterDry${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["WaterDry${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["WaterDry${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["WaterDry${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"dry",null])
 			}
 		}
 	}
@@ -1788,11 +1908,10 @@ def DoWaterWet(evt) {
 			}
 		}
 		if (settings["WaterWet${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["WaterWet${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["WaterWet${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["WaterWet${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["WaterWet${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"wet",null])
 			}
 		}
 	}
@@ -1810,26 +1929,20 @@ def DoBeaconNotPresent(evt) {
 			}
 		}
 		if (settings["BeaconNotPresent${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["BeaconNotPresent${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["BeaconNotPresent${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["BeaconNotPresent${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["BeaconNotPresent${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"has left",null])
 			}
 		}
 		if (settings["BeaconAllAway"]) {
 			boolean AllAway = true
-			Beacon.each {
-				//log.debug "$it = ${it.currentValue("presence")}"
-				if (it.currentValue("presence") == "present") {AllAway = false}
-			}
-			//log.debug "AllAway = $AllAway"
+			Beacon.each {if (it.currentValue("presence") == "present") {AllAway = false}}
 			if (AllAway) {
 				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $BeaconAllAway"
 				for ( def i = 0; i < BeaconAllAway.size(); i++) {
 					SelectionArray[i] = BeaconAllAway[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"has left",null])
 				}
 			}
 		}
@@ -1848,11 +1961,21 @@ def DoBeaconPresent(evt) {
 			}
 		}
 		if (settings["BeaconPresent${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["BeaconPresent${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["BeaconPresent${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["BeaconPresent${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["BeaconPresent${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"has arrived",null])
+			}
+		}
+		if (settings["BeaconAllPresent"]) {
+			boolean AllPresent = true
+			Beacon.each {if (it.currentValue("presence") != "present") {AllPresent = false}}
+			if (AllPresent) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $PresenceAllPresent"
+				for ( def i = 0; i < BeaconAllPresent.size(); i++) {
+					SelectionArray[i] = BeaconAllPresent[i].tokenize(":")
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"has arrived",null])
+				}
 			}
 		}
 	}
@@ -1873,23 +1996,17 @@ def DoPresenceNotPresent(evt) {
 			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["PresenceNotPresent${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["PresenceNotPresent${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["PresenceNotPresent${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"has left",null])
 			}
 		}
 		if (settings["PresenceAllAway"]) {
 			boolean AllAway = true
-			Presence.each {
-				//log.debug "$it = ${it.currentValue("presence")}"
-				if (it.currentValue("presence") == "present") {AllAway = false}
-			}
-			//log.debug "AllAway = $AllAway"
+			Presence.each {if (it.currentValue("presence") == "present") {AllAway = false}}
 			if (AllAway) {
 				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $PresenceAllAway"
 				for ( def i = 0; i < PresenceAllAway.size(); i++) {
 					SelectionArray[i] = PresenceAllAway[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"has left",null])
 				}
 			}
 		}
@@ -1908,11 +2025,21 @@ def DoPresencePresent(evt) {
 			}
 		}
 		if (settings["PresencePresent${evt.deviceId}"]) {
-			log.debug "Found the device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["PresencePresent${evt.deviceId}"]}"
+			log.debug "Found the device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["PresencePresent${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["PresencePresent${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["PresencePresent${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"has arrived",null])
+			}
+		}
+		if (settings["PresenceAllPresent"]) {
+			boolean AllPresent = true
+			Presence.each {if (it.currentValue("presence") != "present") {AllPresent = false}}
+			if (AllPresent) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $PresenceAllPresent"
+				for ( def i = 0; i < PresenceAllPresent.size(); i++) {
+					SelectionArray[i] = PresenceAllPresent[i].tokenize(":")
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"has arrived",null])
+				}
 			}
 		}
 	}
@@ -1930,11 +2057,10 @@ def DoCODetectorClear(evt) {
 			}
 		}
 		if (settings["CODetectorClear${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["CODetectorClear${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["CODetectorClear${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["CODetectorClear${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["CODetectorClear${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"clear",null])
 			}
 		}
 	}
@@ -1952,11 +2078,10 @@ def DoCODetectorDetected(evt) {
 			}
 		}
 		if (settings["CODetectorDetected${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["CODetectorDetected${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["CODetectorDetected${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["CODetectorDetected${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["CODetectorDetected${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"detected",null])
 			}
 		}
 	}
@@ -1974,11 +2099,10 @@ def DoCODetectorTested(evt) {
 			}
 		}
 		if (settings["CODetectorTested${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["CODetectorTested${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["CODetectorTested${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["CODetectorTested${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["CODetectorTested${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"tested",null])
 			}
 		}
 	}
@@ -1996,11 +2120,10 @@ def DoSmokeClear(evt) {
 			}
 		}
 		if (settings["SmokeClear${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SmokeClear${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SmokeClear${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SmokeClear${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SmokeClear${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"clear",null])
 			}
 		}
 	}
@@ -2018,11 +2141,10 @@ def DoSmokeDetected(evt) {
 			}
 		}
 		if (settings["SmokeDetected${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SmokeDetected${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SmokeDetected${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SmokeDetected${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SmokeDetected${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"detected",null])
 			}
 		}
 	}
@@ -2040,11 +2162,10 @@ def DoSmokeTested(evt) {
 			}
 		}
 		if (settings["SmokeTested${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["SmokeTested${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["SmokeTested${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["SmokeTested${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["SmokeTested${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"tested",null])
 			}
 		}
 	}
@@ -2062,11 +2183,10 @@ def DoPowerSourceBattery(evt) {
 			}
 		}
 		if (settings["PowerSourceBattery${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["PowerSourceBattery${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["PowerSourceBattery${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["PowerSourceBattery${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["PowerSourceBattery${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"battery",null])
 			}
 		}
 	}
@@ -2084,11 +2204,10 @@ def DoPowerSourceDC(evt) {
 			}
 		}
 		if (settings["PowerSourceDC${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["PowerSourceDC${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["PowerSourceDC${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["PowerSourceDC${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["PowerSourceDC${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"dc",null])
 			}
 		}
 	}
@@ -2106,11 +2225,10 @@ def DoPowerSourceMains(evt) {
 			}
 		}
 		if (settings["PowerSourceMains${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["PowerSourceMains${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["PowerSourceMains${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["PowerSourceMains${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["PowerSourceMains${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"mains",null])
 			}
 		}
 	}
@@ -2128,11 +2246,10 @@ def DoPowerSourceUnknown(evt) {
 			}
 		}
 		if (settings["PowerSourceUnknown${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["PowerSourceUnknown${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["PowerSourceUnknown${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["PowerSourceUnknown${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["PowerSourceUnknown${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"unknown",null])
 			}
 		}
 	}
@@ -2150,11 +2267,10 @@ def DoDoorClosed(evt) {
 			}
 		}
 		if (settings["DoorClosed${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["DoorClosed${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["DoorClosed${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["DoorClosed${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["DoorClosed${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"closed",null])
 			}
 		}
 	}
@@ -2172,11 +2288,10 @@ def DoDoorOpen(evt) {
 			}
 		}
 		if (settings["DoorOpen${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["DoorOpen${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["DoorOpen${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["DoorOpen${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["DoorOpen${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"open",null])
 			}
 		}
 	}
@@ -2194,11 +2309,10 @@ def DoDoorUnknown(evt) {
 			}
 		}
 		if (settings["DoorUnknown${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["DoorUnknown${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["DoorUnknown${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["DoorUnknown${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["DoorUnknown${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"unknown",null])
 			}
 		}
 	}
@@ -2216,11 +2330,10 @@ def DoValveClosed(evt) {
 			}
 		}
 		if (settings["ValveClosed${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ValveClosed${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ValveClosed${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ValveClosed${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ValveClosed${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"closed",null])
 			}
 		}
 	}
@@ -2238,11 +2351,10 @@ def DoValveOpen(evt) {
 			}
 		}
 		if (settings["ValveOpen${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ValveOpen${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ValveOpen${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ValveOpen${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ValveOpen${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"open",null])
 			}
 		}
 	}
@@ -2260,11 +2372,10 @@ def DoShadeClosed(evt) {
 			}
 		}
 		if (settings["ShadeClosed${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ShadeClosed${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ShadeClosed${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ShadeClosed${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ShadeClosed${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"closed",null])
 			}
 		}
 	}
@@ -2282,11 +2393,10 @@ def DoShadeOpen(evt) {
 			}
 		}
 		if (settings["ShadeOpen${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ShadeOpen${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ShadeOpen${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ShadeOpen${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ShadeOpen${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"open",null])
 			}
 		}
 	}
@@ -2304,11 +2414,10 @@ def DoShadePartiallyOpen(evt) {
 			}
 		}
 		if (settings["ShadePartiallyOpen${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ShadePartiallyOpen${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ShadePartiallyOpen${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ShadePartiallyOpen${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ShadePartiallyOpen${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"partially open",null])
 			}
 		}
 	}
@@ -2326,11 +2435,10 @@ def DoShadeUnknown(evt) {
 			}
 		}
 		if (settings["ShadeUnknown${evt.deviceId}"]) {
-			log.debug "Device that triggered the event: ${Changed.displayName} Number = $Number | Actions = ${settings["ShadeUnknown${evt.deviceId}"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["ShadeUnknown${evt.deviceId}"]}"
 			for ( def i = 0; i < settings["ShadeUnknown${evt.deviceId}"].size(); i++) {
 				SelectionArray[i] = settings["ShadeUnknown${evt.deviceId}"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"unknown",null])
 			}
 		}
 	}
@@ -2351,40 +2459,40 @@ def DoTemperature(evt) {
 		if (settings["HighActions${evt.deviceId}"]) {
 			int HighSetting = settings["HighThreshold${evt.deviceId}"] as Integer
 			if (CurrentTemp > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["HighThreshold${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["HighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["HighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,CurrentTemp,null])
 				}
 			}
 		}
 		if (settings["LowActions${evt.deviceId}"]) {
 			int LowSetting = settings["LowThreshold${evt.deviceId}"] as Integer
 			if (CurrentTemp < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["LowThreshold${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["LowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["LowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,CurrentTemp,null])
 				}
 			}
 		}
 		if (AllHighActions) {
 			int HighSetting = AllHighThreshold as Integer
 			if (CurrentTemp > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllHighActions"
 				for ( def i = 0; i < AllHighActions.size(); i++) {
 					SelectionArray[i] = AllHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,CurrentTemp,null])
 				}
 			}
 		}
 		if (AllLowActions) {
 			int LowSetting = AllLowThreshold as Integer
 			if (CurrentTemp < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllLowActions"
 				for ( def i = 0; i < AllLowActions.size(); i++) {
 					SelectionArray[i] = AllLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,CurrentTemp,null])
 				}
 			}
 		}
@@ -2406,40 +2514,40 @@ def DoPowerMeter(evt) {
 		if (settings["PowerMeterHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["PowerMeterHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["PowerMeterHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["PowerMeterHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["PowerMeterHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (settings["PowerMeterLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["PowerMeterLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["PowerMeterLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["PowerMeterLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["PowerMeterLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllPowerMeterHighActions) {
 			int HighSetting = AllPowerMeterHighThreshold as Integer
-			if (CurrentTemp > HighSetting) {
+			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllPowerMeterHighActions"
 				for ( def i = 0; i < AllPowerMeterHighActions.size(); i++) {
 					SelectionArray[i] = AllPowerMeterHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllPowerMeterLowActions) {
 			int LowSetting = AllPowerMeterLowThreshold as Integer
-			if (CurrentTemp < LowSetting) {
+			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllPowerMeterLowActions"
 				for ( def i = 0; i < AllPowerMeterLowActions.size(); i++) {
 					SelectionArray[i] = AllPowerMeterLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2461,6 +2569,7 @@ def DoBattery(evt) {
 		if (settings["BatteryLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["BatteryLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["BatteryLowActions${evt.deviceId}"]}"
 				if (SendBatteryPush) sendPush("$Changed battery level is $Currentstate which is below the threshold you have set")
 				if (SendBatterySMSPhone != null) {
 					if ( SendBatterySMSPhone.indexOf(";") > 1){
@@ -2476,14 +2585,14 @@ def DoBattery(evt) {
 				}
 				for ( def i = 0; i < settings["BatteryLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["BatteryLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllBatteryLowActions) {
 			int LowSetting = AllBatteryLowThreshold as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllBatteryLowActions}"
 				if (SendBatteryPush) sendPush("$Changed battery level is $Currentstate which is below the threshold you have set")
 				if (SendBatterySMSPhone != null) {
 					if ( SendBatterySMSPhone.indexOf(";") > 1){
@@ -2499,8 +2608,7 @@ def DoBattery(evt) {
 				}
 				for ( def i = 0; i < AllBatteryLowActions.size(); i++) {
 					SelectionArray[i] = AllBatteryLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2522,40 +2630,40 @@ def DoVoltage(evt) {
 		if (settings["VoltageHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["VoltageHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["VoltageHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["VoltageHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["VoltageHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (settings["VoltageLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["VoltageLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["VoltageLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["VoltageLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["VoltageLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllVoltageHighActions) {
 			int HighSetting = AllVoltageHighThreshold as Integer
-			if (CurrentTemp > HighSetting) {
+			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllVoltageHighActions"
 				for ( def i = 0; i < AllVoltageHighActions.size(); i++) {
 					SelectionArray[i] = AllVoltageHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllVoltageLowActions) {
 			int LowSetting = AllVoltageLowThreshold as Integer
-			if (CurrentTemp < LowSetting) {
+			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllVoltageLowActions"
 				for ( def i = 0; i < AllVoltageLowActions.size(); i++) {
 					SelectionArray[i] = AllVoltageLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2563,6 +2671,7 @@ def DoVoltage(evt) {
 }
 
 def DoEnergyMeter(evt) {
+log.debug "Energy Meter"
 	if (allOk) {
 		def Changed
 		def Number
@@ -2577,40 +2686,40 @@ def DoEnergyMeter(evt) {
 		if (settings["EnergyMeterHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["EnergyMeterHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["EnergyMeterHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["EnergyMeterHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["EnergyMeterHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (settings["EnergyMeterLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["EnergyMeterLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["EnergyMeterLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["EnergyMeterLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["EnergyMeterLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllEnergyMeterHighActions) {
 			int HighSetting = AllEnergyMeterHighThreshold as Integer
-			if (CurrentTemp > HighSetting) {
+			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllEnergyMeterHighActions"
 				for ( def i = 0; i < AllEnergyMeterHighActions.size(); i++) {
 					SelectionArray[i] = AllEnergyMeterHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllEnergyMeterLowActions) {
 			int LowSetting = AllEnergyMeterLowThreshold as Integer
-			if (CurrentTemp < LowSetting) {
+			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllEnergyMeterLowActions"
 				for ( def i = 0; i < AllEnergyMeterLowActions.size(); i++) {
 					SelectionArray[i] = AllEnergyMeterLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2632,20 +2741,20 @@ def DoCO2Measurement(evt) {
 		if (settings["CO2MeasurementHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["CO2MeasurementHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["CO2MeasurementHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["CO2MeasurementHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["CO2MeasurementHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllCO2MeasurementHighActions) {
 			int HighSetting = AllCO2MeasurementHighThreshold as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllCO2MeasurementHighActions"
 				for ( def i = 0; i < AllCO2MeasurementHighActions.size(); i++) {
 					SelectionArray[i] = AllCO2MeasurementHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2667,40 +2776,40 @@ def DoStep(evt) {
 		if (settings["StepHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["StepHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["StepHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["StepHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["StepHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (settings["StepLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["StepLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["StepLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["StepLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["StepLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllStepHighActions) {
 			int HighSetting = AllStepHighThreshold as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllStepHighActions"
 				for ( def i = 0; i < AllStepHighActions.size(); i++) {
 					SelectionArray[i] = AllStepHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllStepLowActions) {
 			int LowSetting = AllStepLowThreshold as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllStepLowActions"
 				for ( def i = 0; i < AllStepLowActions.size(); i++) {
 					SelectionArray[i] = AllStepLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2722,20 +2831,20 @@ def DoStepGoal(evt) {
 		if (settings["StepGoalActions${evt.deviceId}"]) {
 			int HighSetting = settings["StepGoal${evt.deviceId}"] as Integer
 			if (Currentstate >= HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["StepGoalActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["StepGoalActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["StepGoalActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllStepGoalActions) {
 			int HighSetting = AllStepGoalThreshold as Integer
 			if (Currentstate >= HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllStepGoalActions"
 				for ( def i = 0; i < AllStepGoalActions.size(); i++) {
 					SelectionArray[i] = AllStepGoalActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2757,40 +2866,40 @@ def DoIlluminance(evt) {
 		if (settings["IlluminanceHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["IlluminanceHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["IlluminanceHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["IlluminanceHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["IlluminanceHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"lux",null])
 				}
 			}
 		}
 		if (settings["IlluminanceLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["IlluminanceLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["IlluminanceLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["IlluminanceLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["IlluminanceLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"lux",null])
 				}
 			}
 		}
 		if (AllIlluminanceHighActions) {
 			int HighSetting = AllIlluminanceHighThreshold as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllIlluminanceHighActions"
 				for ( def i = 0; i < AllIlluminanceHighActions.size(); i++) {
 					SelectionArray[i] = AllIlluminanceHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"lux",null])
 				}
 			}
 		}
 		if (AllIlluminanceLowActions) {
 			int LowSetting = AllIlluminanceLowThreshold as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllIlluminanceLowActions"
 				for ( def i = 0; i < AllIlluminanceLowActions.size(); i++) {
 					SelectionArray[i] = AllIlluminanceLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"lux",null])
 				}
 			}
 		}
@@ -2812,40 +2921,40 @@ def DoHumidity(evt) {
 		if (settings["HumidityHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["HumidityHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["HumidityHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["HumidityHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["HumidityHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"%",null])
 				}
 			}
 		}
 		if (settings["HumidityLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["HumidityLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["HumidityLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["HumidityLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["HumidityLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"%",null])
 				}
 			}
 		}
 		if (AllHumidityHighActions) {
 			int HighSetting = AllHumidityHighThreshold as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllHumidityHighActions"
 				for ( def i = 0; i < AllHumidityHighActions.size(); i++) {
 					SelectionArray[i] = AllHumidityHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"%",null])
 				}
 			}
 		}
 		if (AllHumidityLowActions) {
 			int LowSetting = AllHumidityLowThreshold as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllHumidityLowActions"
 				for ( def i = 0; i < AllHumidityLowActions.size(); i++) {
 					SelectionArray[i] = AllHumidityLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,"%",null])
 				}
 			}
 		}
@@ -2867,40 +2976,40 @@ def DoUltravioletIndex(evt) {
 		if (settings["UltravioletIndexHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["UltravioletIndexHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["UltravioletIndexHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["UltravioletIndexHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["UltravioletIndexHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (settings["UltravioletIndexLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["UltravioletIndexLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["UltravioletIndexLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["UltravioletIndexLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["UltravioletIndexLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllUltravioletIndexHighActions) {
 			int HighSetting = AllUltravioletIndexHighThreshold as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllUltravioletIndexHighActions"
 				for ( def i = 0; i < AllUltravioletIndexHighActions.size(); i++) {
 					SelectionArray[i] = AllUltravioletIndexHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllUltravioletIndexLowActions) {
 			int LowSetting = AllUltravioletIndexLowThreshold as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllUltravioletIndexLowActions"
 				for ( def i = 0; i < AllUltravioletIndexLowActions.size(); i++) {
 					SelectionArray[i] = AllUltravioletIndexLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2922,40 +3031,40 @@ def DophMeasurement(evt) {
 		if (settings["phMeasurementHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["phMeasurementHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["phMeasurementHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["phMeasurementHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["phMeasurementHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (settings["phMeasurementLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["phMeasurementLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["phMeasurementLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["phMeasurementLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["phMeasurementLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllphMeasurementHighActions) {
 			int HighSetting = AllphMeasurementHighThreshold as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllphMeasurementHighActions"
 				for ( def i = 0; i < AllphMeasurementHighActions.size(); i++) {
 					SelectionArray[i] = AllphMeasurementHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllphMeasurementLowActions) {
 			int LowSetting = AllphMeasurementLowThreshold as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllphMeasurementLowActions"
 				for ( def i = 0; i < AllphMeasurementLowActions.size(); i++) {
 					SelectionArray[i] = AllphMeasurementLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -2977,40 +3086,40 @@ def DosoundPressureLevel(evt) {
 		if (settings["soundPressureLevelHighActions${evt.deviceId}"]) {
 			int HighSetting = settings["soundPressureLevelHighThreshold${evt.deviceId}"] as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["soundPressureLevelHighActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["soundPressureLevelHighActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["soundPressureLevelHighActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (settings["soundPressureLevelLowActions${evt.deviceId}"]) {
 			int LowSetting = settings["soundPressureLevelLowThreshold${evt.deviceId}"] as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = ${settings["soundPressureLevelLowActions${evt.deviceId}"]}"
 				for ( def i = 0; i < settings["soundPressureLevelLowActions${evt.deviceId}"].size(); i++) {
 					SelectionArray[i] = settings["soundPressureLevelLowActions${evt.deviceId}"][i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllsoundPressureLevelHighActions) {
 			int HighSetting = AllsoundPressureLevelHighThreshold as Integer
 			if (Currentstate > HighSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllsoundPressureLevelHighActions"
 				for ( def i = 0; i < AllsoundPressureLevelHighActions.size(); i++) {
 					SelectionArray[i] = AllsoundPressureLevelHighActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
 		if (AllsoundPressureLevelLowActions) {
 			int LowSetting = AllsoundPressureLevelLowThreshold as Integer
 			if (Currentstate < LowSetting) {
+				log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Actions = $AllsoundPressureLevelLowActions"
 				for ( def i = 0; i < AllsoundPressureLevelLowActions.size(); i++) {
 					SelectionArray[i] = AllsoundPressureLevelLowActions[i].tokenize(":")
-					log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-					SwitchSelection(SelectionArray[i])
+					SwitchSelection(SelectionArray[i],[evt.deviceId,null,Changed,Currentstate,null])
 				}
 			}
 		}
@@ -3030,11 +3139,11 @@ def DoButtonPushed(evt) {
 			}
 		}
 		if (settings["${evt.deviceId}Button${buttonNumber}Push"]) {
-			//log.debug "Device that triggered the event: ${Changed.displayName} | Number = $evt.deviceId | Button $buttonNumber Pushed | Command = ${settings["${evt.deviceId}Button${buttonNumber}Push"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Button $buttonNumber Pushed | Command = ${settings["${evt.deviceId}Button${buttonNumber}Push"]}"
 			for ( def i = 0; i < settings["${evt.deviceId}Button${buttonNumber}Push"].size(); i++) {
 				SelectionArray[i] = settings["${evt.deviceId}Button${buttonNumber}Push"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				//log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
+				SwitchSelection(SelectionArray[i],[evt.deviceId, buttonNumber,Changed,"pushed",null])
 			}
 		}
 	}
@@ -3053,62 +3162,176 @@ def DoButtonHeld(evt) {
 			}
 		}
 		if (settings["${evt.deviceId}Button${buttonNumber}Hold"]) {
-			//log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Button $buttonNumber Held | Command = ${settings["${evt.deviceId}Button${buttonNumber}Hold"]}"
+			log.debug "Device that triggered the event: ${Changed.displayName} | Number = $Number | Button $buttonNumber Held | Command = ${settings["${evt.deviceId}Button${buttonNumber}Hold"]}"
 			for ( def i = 0; i < settings["${evt.deviceId}Button${buttonNumber}Hold"].size(); i++) {
 				SelectionArray[i] = settings["${evt.deviceId}Button${buttonNumber}Hold"][i].tokenize(":")
-				log.debug "DeviceType = ${SelectionArray[i][0]},Device = ${SelectionArray[i][1]},Action = ${SelectionArray[i][2]}"
-				SwitchSelection(SelectionArray[i])
+				SwitchSelection(SelectionArray[i],[evt.deviceId, buttonNumber,Changed,"held",null])
 			}		 
 		}
 	}
 }
 
-def SwitchSelection(Selection) {
+def SwitchSelection(Selection,InfoArray) {
+	/*
+	def RuninParams = [DeviceType: Selection[0],Device: Selection[1],Action: "off"]
+	if (Params) {
+		Selection[0] = Params.DeviceType
+		Selection[1] = Params.Device
+		Selection[2] = Params.Action
+		log.debug "Params.Action = ${Params.Action}"
+	}*/
 	def hueColor = 0
 	def saturation = 100
-	log.debug "Selection[2] = ${Selection[2]}"
 	switch (Selection[2]) {
 		case "on":
 			if (Selection[0] == "Bulbs") {
-				if ("${Selection[1]}" != "all") {
-						Bulbs.each {
-							if ("$it" == "${Selection[1]}") {log.debug "Turning $it on"}
-							if ("$it" == "${Selection[1]}") {
-								it.on()
-								it.setLevel(100)
+				boolean SwitchChanged = false
+				boolean MotionChanged = false
+				boolean ContactChanged = false
+				boolean ButtonPushed = false
+				boolean ButtonHeld = false
+				Bulbs.each {
+					if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+						if (it.currentValue("switch") != "on") {
+							log.debug "Turning $it on"
+							it.on()
+							it.setLevel(100)
+							if (Switch) {
+								if (settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]) {
+									SwitchChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Motion) {
+								if (settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]) {
+									MotionChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+									//atomicState.FirstRun = true
+								}
+							}
+							if (Contact) {
+								if (settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]) {
+									ContactChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Button) {
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]) {
+									ButtonPushed = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]} minute(s) to change $it to off"
+								}
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]) {
+									ButtonHeld = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]} minute(s) to change $it to off"
+								}
 							}
 						}
-					} else {
-						log.debug "Turning All Bulbs on"
-						Bulbs.on()
-						Bulbs.setLevel(100)
+					}
 				}
+				if (SwitchChanged) {runIn(settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]*60, TurnOffBulbs_Switch)}
+				if (MotionChanged) {runIn(settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]*60, TurnOffBulbs_Motion)}
+				if (ContactChanged) {runIn(settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]*60, TurnOffBulbs_Contact)}
+				if (ButtonPushed) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]*60, TurnOffBulbs_Push)}
+				if (ButtonHeld) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]*60, TurnOffBulbs_Hold)}
 			}
 			if (Selection[0] == "Dimmers") {
-				if ("${Selection[1]}" != "all") {
-						Dimmers.each {
-							if ("$it" == "${Selection[1]}") {log.debug "Turning $it on"}
-							if ("$it" == "${Selection[1]}") {
-								it.on()
-								it.setLevel(100)
+				boolean SwitchChanged = false
+				boolean MotionChanged = false
+				boolean ContactChanged = false
+				boolean ButtonPushed = false
+				boolean ButtonHeld = false
+				Dimmers.each {
+					if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+						if (it.currentValue("switch") != "on") {
+							log.debug "Turning $it on"
+							it.on()
+							it.setLevel(100)
+							if (Switch) {
+								if (settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]) {
+									SwitchChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Motion) {
+								if (settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]) {
+									MotionChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+									//atomicState.FirstRun = true
+								}
+							}
+							if (Contact) {
+								if (settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]) {
+									ContactChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Button) {
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]) {
+									ButtonPushed = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]} minute(s) to change $it to off"
+								}
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]) {
+									ButtonHeld = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]} minute(s) to change $it to off"
+								}
 							}
 						}
-					} else {
-						log.debug "Turning All Dimmers on"
-						Dimmers.on()
-						Dimmers.setLevel(100)
+					}
 				}
+				if (SwitchChanged) {runIn(settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]*60, TurnOffDimmers_Switch)}
+				if (MotionChanged) {runIn(settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]*60, TurnOffDimmers_Motion)}
+				if (ContactChanged) {runIn(settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]*60, TurnOffDimmers_Contact)}
+				if (ButtonPushed) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]*60, TurnOffDimmers_Push)}
+				if (ButtonHeld) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]*60, TurnOffDimmers_Hold)}
 			}
 			if (Selection[0] == "Switches") {
-				if ("${Selection[1]}" != "all") {
-						Switches.each {
-							if ("$it" == "${Selection[1]}") {log.debug "Turning $it on"}
-							if ("$it" == "${Selection[1]}") {it.on()}
+				boolean SwitchChanged = false
+				boolean MotionChanged = false
+				boolean ContactChanged = false
+				boolean ButtonPushed = false
+				boolean ButtonHeld = false
+				Switches.each {
+					if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+						if (it.currentValue("switch") != "on") {
+							log.debug "Turning $it on"
+							it.on()
+							if (Switch) {
+								if (settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]) {
+									SwitchChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Motion) {
+								if (settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]) {
+									MotionChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+									//atomicState.FirstRun = true
+								}
+							}
+							if (Contact) {
+								if (settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]) {
+									ContactChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Button) {
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]) {
+									ButtonPushed = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]} minute(s) to change $it to off"
+								}
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]) {
+									ButtonHeld = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]} minute(s) to change $it to off"
+								}
+							}
 						}
-					} else {
-						log.debug "Turning All Switches on"
-						Switches.on()
+					}
 				}
+				if (SwitchChanged) {runIn(settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]*60, TurnOffSwitches_Switch)}
+				if (MotionChanged) {runIn(settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]*60, TurnOffSwitches_Motion)}
+				if (ContactChanged) {runIn(settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]*60, TurnOffSwitches_Contact)}
+				if (ButtonPushed) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]*60, TurnOffSwitches_Push)}
+				if (ButtonHeld) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]*60, TurnOffSwitches_Hold)}
 			}
 			if (Selection[0] == "Outlets") {
 				if ("${Selection[1]}" != "all") {
@@ -3202,84 +3425,327 @@ def SwitchSelection(Selection) {
 			}
 		break
 		case "Doorbell":
+			def Now = new Date()
 			if ("${Selection[1]}" != "all") {
 					AudioNotify.each {
 						if ("$it" == "${Selection[1]}") {
-							log.debug "Activating doorbell on $it"
-							it.on()
+							if (NotifyOnce) {
+									boolean EventFound = false
+									boolean TriggerEventFound = false
+									def Events = it.eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*600 - 600), new Date(Now.getTime() - 6000), [max: 20])
+									if (Events.size() == 0) {
+											log.debug "Activating Doorbell on $it"
+											it.on()
+										} else {
+											for ( def k =  Events.size(); k >= 0; k--) {
+												if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('status is play')) {EventFound = true}}}
+											}
+											if (EventFound) {
+												def TriggerEvents = InfoArray[2].eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600), new Date(Now.getTime()), [max: 20])//1000 = 1 second
+												if (InfoArray[4] == null) {for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}")) {TriggerEventFound = true}}}}}
+												if (InfoArray[4] != null) {for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}") || TriggerEvents[k].descriptionText.endsWith("${InfoArray[4]}")) {TriggerEventFound = true}}}}}
+											}
+											if (!TriggerEventFound) {EventFound = false}
+											if (!EventFound) {
+													log.debug "Activating Doorbell on $it"
+													it.on()
+												} else {
+													if (!TriggerEventFound) {
+														log.debug "Event details = ${Events.descriptionText} | Triggered by = ${InfoArray[2]} being ${InfoArray[3]}"
+														log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds."
+													}
+													if (TriggerEventFound) {log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds due to ${InfoArray[2]} being ${InfoArray[3]}."}
+											}
+									}
+								} else {
+									log.debug "Activating Doorbell on $it"
+									it.on()
+							}
 						}
 					}
 				} else {
-					log.debug "Activating Doorbell on All"
-					AudioNotify.on()
-			}
-		break
-		case "Siren":
-			if ("${Selection[1]}" != "all") {
 					AudioNotify.each {
-						if ("$it" == "${Selection[1]}") {
-							log.debug "Activating siren on $it"
-							it.both()
+						if (NotifyOnce) {
+								boolean EventFound = false
+								boolean TriggerEventFound = false
+								def Events = it.eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*600 - 600), new Date(Now.getTime() - 6000), [max: 20])
+								if (Events.size() == 0) {
+										log.debug "Activating Doorbell on $it"
+										it.on()
+									} else {
+										for ( def k =  Events.size(); k >= 0; k--) {
+											if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('status is play')) {EventFound = true}}}
+										}
+										if (EventFound) {
+											def TriggerEvents = InfoArray[2].eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600), new Date(Now.getTime()), [max: 20])//1000 = 1 second
+											if (InfoArray[4] == null) {for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}")) {TriggerEventFound = true}}}}}
+											if (InfoArray[4] != null) {for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}") || TriggerEvents[k].descriptionText.endsWith("${InfoArray[4]}")) {TriggerEventFound = true}}}}}
+										}
+										if (!TriggerEventFound) {EventFound = false}
+										if (!EventFound) {
+												log.debug "Activating Doorbell on $it"
+												it.on()
+											} else {
+												if (!TriggerEventFound) {
+													log.debug "Event details = ${Events.descriptionText} | Triggered by = ${InfoArray[2]} being ${InfoArray[3]}"
+													log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds."
+												}
+												if (TriggerEventFound) {log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds due to ${InfoArray[2]} being ${InfoArray[3]}."}
+										}
+								}
+							} else {
+								log.debug "Activating Doorbell on $it"
+								it.on()
 						}
 					}
-				} else {
-					log.debug "Activating Siren on All"
-					AudioNotify.both()
 			}
 		break
 		case "Beep":
+			def Now = new Date()
 			if ("${Selection[1]}" != "all") {
 					AudioNotify.each {
 						if ("$it" == "${Selection[1]}") {
-							log.debug "Activating beep on $it"
-							it.beep()
+							if (NotifyOnce) {
+									boolean EventFound = false
+									boolean TriggerEventFound = false
+									def Events = it.eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*600 - 600), new Date(Now.getTime() - 6000), [max: 20])
+									if (Events.size() == 0) {
+											log.debug "Activating Beep on $it"
+											it.beep()
+										} else {
+											for ( def k =  Events.size(); k >= 0; k--) {
+												if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('status is play')) {EventFound = true}}}
+											}
+											if (EventFound) {
+												def TriggerEvents = InfoArray[2].eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600), new Date(Now.getTime()), [max: 20])//1000 = 1 second
+												if (InfoArray[4] == null) {for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}")) {TriggerEventFound = true}}}}}
+												if (InfoArray[4] != null) {for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}") || TriggerEvents[k].descriptionText.endsWith("${InfoArray[4]}")) {TriggerEventFound = true}}}}}
+											}
+											if (!TriggerEventFound) {EventFound = false}
+											if (!EventFound) {
+													log.debug "Activating Beep on $it"
+													it.beep()
+												} else {
+													if (!TriggerEventFound) {
+														log.debug "Event details = ${Events.descriptionText} | Triggered by = ${InfoArray[2]} being ${InfoArray[3]}"
+														log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds."
+													}
+													if (TriggerEventFound) {log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds due to ${InfoArray[2]} being ${InfoArray[3]}."}
+											}
+									}
+								} else {
+									log.debug "Activating Beep on $it"
+									it.beep()
+							}
 						}
 					}
 				} else {
-					log.debug "Activating Beep on All"
-					AudioNotify.beep()
+					AudioNotify.each {
+						if (NotifyOnce) {
+								boolean EventFound = false
+								boolean TriggerEventFound = false
+								def Events = it.eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*600 - 600), new Date(Now.getTime() - 6000), [max: 20])
+								if (Events.size() == 0) {
+										log.debug "Activating Beep on $it"
+										it.beep()
+									} else {
+										for ( def k =  Events.size(); k >= 0; k--) {
+											if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('status is play')) {EventFound = true}}}
+										}
+										if (EventFound) {
+											def TriggerEvents = InfoArray[2].eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600), new Date(Now.getTime()), [max: 20])//1000 = 1 second
+											if (InfoArray[4] == null) {for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}")) {TriggerEventFound = true}}}}}
+											if (InfoArray[4] != null) {for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}") || TriggerEvents[k].descriptionText.endsWith("${InfoArray[4]}")) {TriggerEventFound = true}}}}}
+										}
+										if (!TriggerEventFound) {EventFound = false}
+										if (!EventFound) {
+												log.debug "Activating Beep on $it"
+												it.beep()
+											} else {
+												if (!TriggerEventFound) {
+													log.debug "Event details = ${Events.descriptionText} | Triggered by = ${InfoArray[2]} being ${InfoArray[3]}"
+													log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds."
+												}
+												if (TriggerEventFound) {log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds due to ${InfoArray[2]} being ${InfoArray[3]}."}
+										}
+								}
+							} else {
+								log.debug "Activating Beep on $it"
+								it.beep()
+						}
+					}
 			}
 		break
 		case "Track":
+			def Now = new Date()
 			if ("${Selection[1]}" != "all") {
 					AudioNotify.each {
 						if ("$it" == "${Selection[1]}") {
-							if (!AudioNotifyAtVolume && !AudioNotifyRepeat) {
-								log.debug "Activating track ${Selection[3]} on $it"
-								it.playTrack(Selection[3])
-							}
-							if (!AudioNotifyAtVolume && AudioNotifyRepeat) {
-								log.debug "Activating track ${Selection[3]} on $it $AudioNotifyRepeatCount times"
-								it.playRepeatTrack(Selection[3], AudioNotifyRepeatCount)
-							}
-							if (AudioNotifyAtVolume && !AudioNotifyRepeat) {
-								log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume"
-								it.playTrackAtVolume(Selection[3], AudioNotifyVolume)
-							}
-							if (AudioNotifyAtVolume && AudioNotifyRepeat) {
-								log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume $AudioNotifyRepeatCount times"
-								it.playRepeatTrackAtVolume(Selection[3], AudioNotifyVolume, AudioNotifyRepeatCount)
+							if (NotifyOnce) {
+									boolean EventFound = false
+									boolean TriggerEventFound = false
+									def Events = it.eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*600 - 600), new Date(Now.getTime() - 6000), [max: 20])
+									if (Events.size() == 0) {
+											if (!AudioNotifyAtVolume && !AudioNotifyRepeat) {
+												log.debug "Activating track ${Selection[3]} on $it"
+												it.playTrack(Selection[3])
+											}
+											if (!AudioNotifyAtVolume && AudioNotifyRepeat) {
+												log.debug "Activating track ${Selection[3]} on $it $AudioNotifyRepeatCount times"
+												it.playRepeatTrack(Selection[3], AudioNotifyRepeatCount)
+											}
+											if (AudioNotifyAtVolume && !AudioNotifyRepeat) {
+												log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume"
+												it.playTrackAtVolume(Selection[3], AudioNotifyVolume)
+											}
+											if (AudioNotifyAtVolume && AudioNotifyRepeat) {
+												log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume $AudioNotifyRepeatCount times"
+												it.playRepeatTrackAtVolume(Selection[3], AudioNotifyVolume, AudioNotifyRepeatCount)
+											}
+										} else {
+											for ( def k =  Events.size(); k >= 0; k--) {
+												if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('status is play')) {EventFound = true}}}
+											}
+											if (EventFound) {
+												//log.debug "-----Looking at events for ${InfoArray[2]}"
+												def TriggerEvents = InfoArray[2].eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600), new Date(Now.getTime()), [max: 20])//1000 = 1 second
+												//log.debug "Time Between ${new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600)} and ${new Date(Now.getTime())}"
+												for ( def k =  TriggerEvents.size(); k >= 1; k--) {
+													if (InfoArray[4] == null) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}")) {TriggerEventFound = true}}}}
+													if (InfoArray[4] != null) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}") || TriggerEvents[k].descriptionText.endsWith("${InfoArray[4]}")) {TriggerEventFound = true}}}}
+													if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {log.trace "*****Event details $k= ${TriggerEvents[k].descriptionText} @ ${TriggerEvents[k].date}"}}
+												}
+											}
+											//log.debug "-----TriggerEventFound = $TriggerEventFound"
+											if (!TriggerEventFound) {EventFound = false}
+											if (!EventFound) {
+													if (!AudioNotifyAtVolume && !AudioNotifyRepeat) {
+														log.debug "Activating track ${Selection[3]} on $it"
+														it.playTrack(Selection[3])
+													}
+													if (!AudioNotifyAtVolume && AudioNotifyRepeat) {
+														log.debug "Activating track ${Selection[3]} on $it $AudioNotifyRepeatCount times"
+														it.playRepeatTrack(Selection[3], AudioNotifyRepeatCount)
+													}
+													if (AudioNotifyAtVolume && !AudioNotifyRepeat) {
+														log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume"
+														it.playTrackAtVolume(Selection[3], AudioNotifyVolume)
+													}
+													if (AudioNotifyAtVolume && AudioNotifyRepeat) {
+														log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume $AudioNotifyRepeatCount times"
+														it.playRepeatTrackAtVolume(Selection[3], AudioNotifyVolume, AudioNotifyRepeatCount)
+													}
+												} else {
+													if (!TriggerEventFound) {
+														log.debug "Event details = ${Events.descriptionText} | Triggered by = ${InfoArray[2]} being ${InfoArray[3]}"
+														log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds."
+													}
+													if (TriggerEventFound) {log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds due to ${InfoArray[2]} being ${InfoArray[3]}."}
+											}
+									}
+								} else {
+									if (!AudioNotifyAtVolume && !AudioNotifyRepeat) {
+										log.debug "Activating track ${Selection[3]} on $it"
+										it.playTrack(Selection[3])
+									}
+									if (!AudioNotifyAtVolume && AudioNotifyRepeat) {
+										log.debug "Activating track ${Selection[3]} on $it $AudioNotifyRepeatCount times"
+										it.playRepeatTrack(Selection[3], AudioNotifyRepeatCount)
+									}
+									if (AudioNotifyAtVolume && !AudioNotifyRepeat) {
+										log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume"
+										it.playTrackAtVolume(Selection[3], AudioNotifyVolume)
+									}
+									if (AudioNotifyAtVolume && AudioNotifyRepeat) {
+										log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume $AudioNotifyRepeatCount times"
+										it.playRepeatTrackAtVolume(Selection[3], AudioNotifyVolume, AudioNotifyRepeatCount)
+									}
 							}
 						}
 					}
 				} else {
-					log.debug "Activating track ${Selection[1]} on All"
-							if (!AudioNotifyAtVolume && !AudioNotifyRepeat) {
-								log.debug "Activating track ${Selection[3]} on All"
-								AudioNotify.playTrack(Selection[3])
-							}
-							if (!AudioNotifyAtVolume && AudioNotifyRepeat) {
-								log.debug "Activating track ${Selection[3]} on All $AudioNotifyRepeatCount times"
-								AudioNotify.playRepeatTrack(Selection[3], AudioNotifyRepeatCount)
-							}
-							if (AudioNotifyAtVolume && !AudioNotifyRepeat) {
-								log.debug "Activating track ${Selection[3]} on All at volume $AudioNotifyVolume"
-								AudioNotify.playTrackAtVolume(Selection[3], AudioNotifyVolume)
-							}
-							if (AudioNotifyAtVolume && AudioNotifyRepeat) {
-								log.debug "Activating track ${Selection[3]} on All at volume $AudioNotifyVolume $AudioNotifyRepeatCount times"
-								AudioNotify.playRepeatTrackAtVolume(Selection[3], AudioNotifyVolume, AudioNotifyRepeatCount)
-							}
+					AudioNotify.each {
+						if (NotifyOnce) {
+								boolean EventFound = false
+								boolean TriggerEventFound = false
+								def Events = it.eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*600 - 600), new Date(Now.getTime() - 6000), [max: 20])
+								if (Events.size() == 0) {
+										if (!AudioNotifyAtVolume && !AudioNotifyRepeat) {
+											log.debug "Activating track ${Selection[3]} on $it"
+											it.playTrack(Selection[3])
+										}
+										if (!AudioNotifyAtVolume && AudioNotifyRepeat) {
+											log.debug "Activating track ${Selection[3]} on $it $AudioNotifyRepeatCount times"
+											it.playRepeatTrack(Selection[3], AudioNotifyRepeatCount)
+										}
+										if (AudioNotifyAtVolume && !AudioNotifyRepeat) {
+											log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume"
+											it.playTrackAtVolume(Selection[3], AudioNotifyVolume)
+										}
+										if (AudioNotifyAtVolume && AudioNotifyRepeat) {
+											log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume $AudioNotifyRepeatCount times"
+											it.playRepeatTrackAtVolume(Selection[3], AudioNotifyVolume, AudioNotifyRepeatCount)
+										}
+									} else {
+										for ( def k =  Events.size(); k >= 0; k--) {
+											if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('status is play')) {EventFound = true}}}
+										}
+										if (EventFound) {
+											//log.debug "-----Looking at events for ${InfoArray[2]}"
+											def TriggerEvents = InfoArray[2].eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600), new Date(Now.getTime()), [max: 20])//1000 = 1 second
+											//log.debug "Time Between ${new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600)} and ${new Date(Now.getTime())}"
+											for ( def k =  TriggerEvents.size(); k >= 1; k--) {
+												if (InfoArray[4] == null) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}")) {TriggerEventFound = true}}}}
+												if (InfoArray[4] != null) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}") || TriggerEvents[k].descriptionText.endsWith("${InfoArray[4]}")) {TriggerEventFound = true}}}}
+												if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {log.trace "*****Event details $k= ${TriggerEvents[k].descriptionText} @ ${TriggerEvents[k].date}"}}
+											}
+										}
+										//log.debug "-----TriggerEventFound = $TriggerEventFound"
+										if (!TriggerEventFound) {EventFound = false}
+										if (!EventFound) {
+												if (!AudioNotifyAtVolume && !AudioNotifyRepeat) {
+													log.debug "Activating track ${Selection[3]} on $it"
+													it.playTrack(Selection[3])
+												}
+												if (!AudioNotifyAtVolume && AudioNotifyRepeat) {
+													log.debug "Activating track ${Selection[3]} on $it $AudioNotifyRepeatCount times"
+													it.playRepeatTrack(Selection[3], AudioNotifyRepeatCount)
+												}
+												if (AudioNotifyAtVolume && !AudioNotifyRepeat) {
+													log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume"
+													it.playTrackAtVolume(Selection[3], AudioNotifyVolume)
+												}
+												if (AudioNotifyAtVolume && AudioNotifyRepeat) {
+													log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume $AudioNotifyRepeatCount times"
+													it.playRepeatTrackAtVolume(Selection[3], AudioNotifyVolume, AudioNotifyRepeatCount)
+												}
+											} else {
+												if (!TriggerEventFound) {
+													log.debug "Event details = ${Events.descriptionText} | Triggered by = ${InfoArray[2]} being ${InfoArray[3]}"
+													log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds."
+												}
+												if (TriggerEventFound) {log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds due to ${InfoArray[2]} being ${InfoArray[3]}."}
+										}
+								}
+							} else {
+								if (!AudioNotifyAtVolume && !AudioNotifyRepeat) {
+									log.debug "Activating track ${Selection[3]} on $it"
+									it.playTrack(Selection[3])
+								}
+								if (!AudioNotifyAtVolume && AudioNotifyRepeat) {
+									log.debug "Activating track ${Selection[3]} on $it $AudioNotifyRepeatCount times"
+									it.playRepeatTrack(Selection[3], AudioNotifyRepeatCount)
+								}
+								if (AudioNotifyAtVolume && !AudioNotifyRepeat) {
+									log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume"
+									it.playTrackAtVolume(Selection[3], AudioNotifyVolume)
+								}
+								if (AudioNotifyAtVolume && AudioNotifyRepeat) {
+									log.debug "Activating track ${Selection[3]} on $it at volume $AudioNotifyVolume $AudioNotifyRepeatCount times"
+									it.playRepeatTrackAtVolume(Selection[3], AudioNotifyVolume, AudioNotifyRepeatCount)
+								}
+						}
+					}
 			}
 		break
 		case "Away":
@@ -3317,27 +3783,103 @@ def SwitchSelection(Selection) {
 				}
 			}
 		break
-		case "siren":
-			if ("${Selection[1]}" != "all") {
-					Sirens.each {
-						if ("$it" == "${Selection[1]}") {log.debug "Sounding $it"}
-						if ("$it" == "${Selection[1]}") {it.siren()}
-					}
-				} else {
-					log.debug "Sounding All"
-					Sirens.siren()
-			}
-			if (Notifications?.toBoolean()) sendPush(PushMessage ?: "Siren activated" )
-			if (PhoneNumber != null) {
-				if ( PhoneNumber.indexOf(";") > 1){
-						def PhoneNumber = PhoneNumber.split(";")
-						for ( def i = 0; i < PhoneNumber.size(); i++) {
-							log.debug "Sending an SMS to ${PhoneNumber[i]}"
-							sendSms(PhoneNumber[i] as String, SMSMessage ?:"Siren activated")
+		case "Siren":
+			if (Selection[0] == "AudioNotify") {
+				def Now = new Date()
+				if ("${Selection[1]}" != "all") {
+						AudioNotify.each {
+							if ("$it" == "${Selection[1]}") {
+								if (NotifyOnce) {
+										boolean EventFound = false
+										boolean TriggerEventFound = false
+										def Events = it.eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*600 - 600), new Date(Now.getTime() - 6000), [max: 20])
+										if (Events.size() == 0) {
+												log.debug "Activating Siren on $it"
+												it.both()
+											} else {
+												for ( def k =  Events.size(); k >= 0; k--) {
+													if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('status is play')) {EventFound = true}}}
+												}
+												if (EventFound) {
+													def TriggerEvents = InfoArray[2].eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600), new Date(Now.getTime()), [max: 20])//1000 = 1 second
+													for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}")) {TriggerEventFound = true}}}}
+												}
+												if (!TriggerEventFound) {EventFound = false}
+												if (!EventFound) {
+														log.debug "Activating Siren on $it"
+														it.both()
+													} else {
+														if (!TriggerEventFound) {
+															log.debug "Event details = ${Events.descriptionText} | Triggered by = ${InfoArray[2]} being ${InfoArray[3]}"
+															log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds."
+														}
+														if (TriggerEventFound) {log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds due to ${InfoArray[2]} being ${InfoArray[3]}."}
+												}
+										}
+									} else {
+										log.debug "Activating Siren on $it"
+										it.both()
+								}
+							}
 						}
 					} else {
-						log.debug "Sending an SMS to ${PhoneNumber}"
-						sendSms(PhoneNumber as String, SMSMessage ?:"Siren activated")
+						AudioNotify.each {
+							if (NotifyOnce) {
+									boolean EventFound = false
+									boolean TriggerEventFound = false
+									def Events = it.eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*600 - 600), new Date(Now.getTime() - 6000), [max: 20])
+									if (Events.size() == 0) {
+											log.debug "Activating Siren on $it"
+											it.both()
+										} else {
+											for ( def k =  Events.size(); k >= 0; k--) {
+												if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('status is play')) {EventFound = true}}}
+											}
+											if (EventFound) {
+												def TriggerEvents = InfoArray[2].eventsBetween(new Date(Now.getTime() - NotifyOnceinSeconds*1000 - 600), new Date(Now.getTime()), [max: 20])//1000 = 1 second
+												for ( def k =  TriggerEvents.size(); k >= 1; k--) {if (TriggerEvents[k] != null) {if (TriggerEvents[k].descriptionText != null) {if (TriggerEvents[k].descriptionText.endsWith("${InfoArray[3]}")) {TriggerEventFound = true}}}}
+											}
+											if (!TriggerEventFound) {EventFound = false}
+											if (!EventFound) {
+													log.debug "Activating Siren on $it"
+													it.both()
+												} else {
+													if (!TriggerEventFound) {
+														log.debug "Event details = ${Events.descriptionText} | Triggered by = ${InfoArray[2]} being ${InfoArray[3]}"
+														log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds."
+													}
+													if (TriggerEventFound) {log.debug "Not changing $it since it has already played once in the last $NotifyOnceinSeconds seconds due to ${InfoArray[2]} being ${InfoArray[3]}."}
+											}
+									}
+								} else {
+									log.debug "Activating Siren on $it"
+									it.both()
+							}
+						}
+				}
+			}
+			if (Selection[0] == "Sirens") {
+				if ("${Selection[1]}" != "all") {
+						Sirens.each {
+							if ("$it" == "${Selection[1]}") {log.debug "Sounding $it"}
+							if ("$it" == "${Selection[1]}") {it.siren()}
+						}
+					} else {
+						log.debug "Sounding All"
+						Sirens.siren()
+				}
+				if (Notifications?.toBoolean()) sendPush(PushMessage ?: "Siren activated" )
+				if (PhoneNumber != null) {
+					if ( PhoneNumber.indexOf(";") > 1){
+							def PhoneNumber = PhoneNumber.split(";")
+							for ( def i = 0; i < PhoneNumber.size(); i++) {
+								log.debug "Sending an SMS to ${PhoneNumber[i]}"
+								sendSms(PhoneNumber[i] as String, SMSMessage ?:"Siren activated")
+							}
+						} else {
+							log.debug "Sending an SMS to ${PhoneNumber}"
+							sendSms(PhoneNumber as String, SMSMessage ?:"Siren activated")
+					}
 				}
 			}
 		break
@@ -3465,30 +4007,110 @@ def SwitchSelection(Selection) {
 			ChangeColor(Selection[1],Selection[0],hueColor,saturation)
 		break;
 		case "favLevel":
-			Favorite(Selection[1],Selection[0])
+			if (InfoArray) {
+					Favorite(Selection[1],Selection[0],InfoArray)
+				} else {
+					Favorite(Selection[1],Selection[0],null)
+			}
 		break
 		case "full":
 			if (Selection[0] == "Bulbs") {
-				if ("${Selection[1]}" != "all") {
-						Bulbs.each {
-							if ("$it" == "${Selection[1]}") {log.debug "Turning $it to full"}
-							if ("$it" == "${Selection[1]}") {it.setLevel(100)}
+				boolean SwitchChanged = false
+				boolean MotionChanged = false
+				boolean ContactChanged = false
+				boolean ButtonPushed = false
+				boolean ButtonHeld = false
+				Bulbs.each {
+					if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+						if (it.currentValue("switch") != "on") {
+							log.debug "Turning $it to full"
+							it.setLevel(100)
+							if (Switch) {
+								if (settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]) {
+									SwitchChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Motion) {
+								if (settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]) {
+									MotionChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+									//atomicState.FirstRun = true
+								}
+							}
+							if (Contact) {
+								if (settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]) {
+									ContactChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Button) {
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]) {
+									ButtonPushed = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]} minute(s) to change $it to off"
+								}
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]) {
+									ButtonHeld = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]} minute(s) to change $it to off"
+								}
+							}
 						}
-					} else {
-						log.debug "Turning All Bulbs to full"
-						Bulbs.setLevel(100)
+					}
 				}
+				if (SwitchChanged) {runIn(settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]*60, TurnOffBulbs_Switch)}
+				if (MotionChanged) {runIn(settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]*60, TurnOffBulbs_Motion)}
+				if (ContactChanged) {runIn(settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]*60, TurnOffBulbs_Contact)}
+				if (ButtonPushed) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]*60, TurnOffBulbs_Push)}
+				if (ButtonHeld) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]*60, TurnOffBulbs_Hold)}
 			}
 			if (Selection[0] == "Dimmers") {
-				if ("${Selection[1]}" != "all") {
-						Dimmers.each {
-							if ("$it" == "${Selection[1]}") {log.debug "Turning $it to full"}
-							if ("$it" == "${Selection[1]}") {it.setLevel(100)}
+				boolean SwitchChanged = false
+				boolean MotionChanged = false
+				boolean ContactChanged = false
+				boolean ButtonPushed = false
+				boolean ButtonHeld = false
+				Dimmers.each {
+					if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+						if (it.currentValue("switch") != "on") {
+							log.debug "Turning $it to full"
+							it.setLevel(100)
+							if (Switch) {
+								if (settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]) {
+									SwitchChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Motion) {
+								if (settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]) {
+									MotionChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+									//atomicState.FirstRun = true
+								}
+							}
+							if (Contact) {
+								if (settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]) {
+									ContactChanged = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+								}
+							}
+							if (Button) {
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]) {
+									ButtonPushed = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]} minute(s) to change $it to off"
+								}
+								if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]) {
+									ButtonHeld = true
+									log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]} minute(s) to change $it to off"
+								}
+							}
 						}
-					} else {
-						log.debug "Turning All Dimmers to full"
-						Dimmers.setLevel(100)
+					}
 				}
+				if (SwitchChanged) {runIn(settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]*60, TurnOffDimmers_Switch)}
+				if (MotionChanged) {runIn(settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]*60, TurnOffDimmers_Motion)}
+				if (ContactChanged) {runIn(settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]*60, TurnOffDimmers_Contact)}
+				if (ButtonPushed) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]*60, TurnOffDimmers_Push)}
+				if (ButtonHeld) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]*60, TurnOffDimmers_Hold)}
 			}
 		break
 		case "temperature":
@@ -3880,28 +4502,104 @@ def toggle_on_off(selection,DeviceName) {
 	}
 }
 
-def Favorite(selection,DeviceName) {
+def Favorite(selection,DeviceName,InfoArray) {
 	if (DeviceName == "Bulbs") {
-		if (selection != "all") {
-			Bulbs.each {
-				if ("$it" == selection) {log.debug "Set $it to $BulbsFav"}
-				if ("$it" == selection) {it.setLevel(BulbsFav as Integer)}
+		boolean SwitchChanged = false
+		boolean MotionChanged = false
+		boolean ContactChanged = false
+		boolean ButtonPushed = false
+		boolean ButtonHeld = false
+		Bulbs.each {
+			if ("$it" == selection || selection == "all") {
+				if (it.currentValue("switch") != "on") {
+					log.debug "Set $it to $BulbsFav"
+					it.setLevel(BulbsFav as Integer)
+					if (Switch) {
+						if (settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]) {
+							SwitchChanged = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+						}
+					}
+					if (Motion) {
+						if (settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]) {
+							MotionChanged = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+							//atomicState.FirstRun = true
+						}
+					}
+					if (Contact) {
+						if (settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]) {
+							ContactChanged = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+						}
+					}
+					if (Button) {
+						if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]) {
+							ButtonPushed = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]} minute(s) to change $it to off"
+						}
+						if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]) {
+							ButtonHeld = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]} minute(s) to change $it to off"
+						}
+					}
+				}
 			}
-		} else {
-			log.debug "Set All to $BulbsFav"
-			Bulbs.setLevel(BulbsFav as Integer)
 		}
+		if (SwitchChanged) {runIn(settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]*60, TurnOffBulbs_Switch)}
+		if (MotionChanged) {runIn(settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]*60, TurnOffBulbs_Motion)}
+		if (ContactChanged) {runIn(settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]*60, TurnOffBulbs_Contact)}
+		if (ButtonPushed) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]*60, TurnOffBulbs_Push)}
+		if (ButtonHeld) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]*60, TurnOffBulbs_Hold)}
 	}
 	if (DeviceName == "Dimmers") {
-		if (selection != "all") {
-			Dimmers.each {
-				if ("$it" == selection) {log.debug "Set $it to $DimmersFav"}
-				if ("$it" == selection) {it.setLevel(DimmersFav as Integer)}
+		boolean SwitchChanged = false
+		boolean MotionChanged = false
+		boolean ContactChanged = false
+		boolean ButtonPushed = false
+		boolean ButtonHeld = false
+		Dimmers.each {
+			if ("$it" == selection || selection == "all") {
+				if (it.currentValue("switch") != "on") {
+					log.debug "Set $it to $DimmersFav"
+					it.setLevel(DimmersFav as Integer)
+					if (Switch) {
+						if (settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]) {
+							SwitchChanged = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+						}
+					}
+					if (Motion) {
+						if (settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]) {
+							MotionChanged = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+							//atomicState.FirstRun = true
+						}
+					}
+					if (Contact) {
+						if (settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]) {
+							ContactChanged = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]} minute(s) to change $it to off"
+						}
+					}
+					if (Button) {
+						if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]) {
+							ButtonPushed = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]} minute(s) to change $it to off"
+						}
+						if (settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]) {
+							ButtonHeld = true
+							log.debug "Setting timer for ${settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]} minute(s) to change $it to off"
+						}
+					}
+				}
 			}
-		} else {
-			log.debug "Set All to $DimmersFav"
-			Dimmers.setLevel(DimmersFav as Integer)
 		}
+		if (SwitchChanged) {runIn(settings["TurnOffAfterMinutes${settings["SwitchOn${InfoArray[0]}"]}"]*60, TurnOffDimmers_Switch)}
+		if (MotionChanged) {runIn(settings["TurnOffAfterMinutes${settings["MotionActive${InfoArray[0]}"]}"]*60, TurnOffDimmers_Motion)}
+		if (ContactChanged) {runIn(settings["TurnOffAfterMinutes${settings["ContactOpen${InfoArray[0]}"]}"]*60, TurnOffDimmers_Contact)}
+		if (ButtonPushed) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Push"]*60, TurnOffDimmers_Push)}
+		if (ButtonHeld) {runIn(settings["TurnOffAfterMinutes${InfoArray[0]}Button${InfoArray[1]}Hold"]*60, TurnOffDimmers_Hold)}
 	}
 }
 
@@ -4323,6 +5021,309 @@ private hideOptionsSection() {
 	(starting || ending || days || modes || startingX || endingX || Illuminance_Required || Contact_Required || Switch_Required || Acceleration_Required || Motion_Required || Tamper_Required || Shock_Required || Sleep_Required || Sound_Required || Water_Required || Beacon_Required || Presence_Required || CODetector_Required || Smoke_Required || PowerSource_Required || Door_Required || Valve_Required || Shade_Required || Temperature_Required || PowerMeter_Required || Voltage_Required || EnergyMeter_Required || CO2Measurement_Required || Step_Required || Humidity_Required || UltravioletIndex_Required || phMeasurement_Required || soundPressureLevel_Required) ? false : true
 }
 
+private hideButtonActions() {
+	boolean Hidden = true
+	for ( def h = 0; h < Button.size(); h++) {
+		int Num = 0
+		if (settings["NumberofButtons${Button[h].id}"] != null) {Num = settings["NumberofButtons${Button[h].id}"] as Integer}
+		if (Button[h].currentValue("numberOfButtons") != null) {Num = Button[h].currentValue("numberOfButtons") as Integer}
+		for ( def i = 1; i <= Num; i++) {
+			if (settings["${Button[h].id}Button${i}Push"] || settings["${Button[h].id}Button${i}Hold"]) {Hidden = false}
+		}
+	}
+	Hidden
+}
+
+private hideAccelerationActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Acceleration.size(); i++) {
+		if (settings["AccelerationActive${Acceleration[i].id}"] || settings["AccelerationInactive${Acceleration[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideContactActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Contact.size(); i++) {
+		if (settings["ContactClosed${Contact[i].id}"] || settings["ContactOpen${Contact[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideMotionActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Motion.size(); i++) {
+		if (settings["MotionActive${Motion[i].id}"] || settings["MotionInactive${Motion[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideTamperActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Tamper.size(); i++) {
+		if (settings["TamperClear${Tamper[i].id}"] || settings["TamperDetected${Tamper[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideShockActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Shock.size(); i++) {
+		if (settings["ShockClear${Shock[i].id}"] || settings["ShockDetected${Shock[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideSleepActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Sleep.size(); i++) {
+		if (settings["SleepNotSleeping${Sleep[i].id}"] || settings["SleepSleeping${Sleep[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideSoundActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Sound.size(); i++) {
+		if (settings["SoundDetected${Sound[i].id}"] || settings["SoundNotDetected${Sound[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideTouchActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Touch.size(); i++) {
+		if (settings["Touched${Touch[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideWaterActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Water.size(); i++) {
+		if (settings["WaterDry${Water[i].id}"] || settings["WaterWet${Water[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideCODetectorActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < CODetector.size(); i++) {
+		if (settings["CODetectorClear${CODetector[i].id}"] || settings["CODetectorDetected${CODetector[i].id}"] || settings["CODetectorTested${CODetector[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideSmokeActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Smoke.size(); i++) {
+		if (settings["SmokeClear${Smoke[i].id}"] || settings["SmokeDetected${Smoke[i].id}"] || settings["SmokeTested${Smoke[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideCO2MeasurementActions() {
+	boolean Hidden = true
+	if (AllCO2MeasurementHighActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < CO2Measurement.size(); i++) {
+				if (settings["CO2MeasurementHighActions${CO2Measurement[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideBeaconActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Beacon.size(); i++) {
+		if (settings["BeaconNotPresent${Beacon[i].id}"] || settings["BeaconPresent${Beacon[i].id}"]) {Hidden = false}
+	}
+	if (BeaconAllAway || BeaconAllPresent) {Hidden = false}
+	Hidden
+}
+
+private hidePresenceActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Presence.size(); i++) {
+		if (settings["PresenceNotPresent${Presence[i].id}"] || settings["PresencePresent${Presence[i].id}"]) {Hidden = false}
+	}
+	if (PresenceAllAway || PresenceAllPresent) {Hidden = false}
+	Hidden
+}
+
+private hidePowerSourceActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < PowerSource.size(); i++) {
+		if (settings["PowerSourceBattery${PowerSource[i].id}"] || settings["PowerSourceDC${PowerSource[i].id}"] || settings["PowerSourceMains${PowerSource[i].id}"] || settings["PowerSourceUnknown${PowerSource[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hidePowerMeterActions() {
+	boolean Hidden = true
+	if (AllPowerMeterHighActions || AllPowerMeterLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < PowerMeter.size(); i++) {
+				if (settings["PowerMeterHighActions${PowerMeter[i].id}"] || settings["PowerMeterLowActions${PowerMeter[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideBatteryActions() {
+	boolean Hidden = true
+	if (AllBatteryLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < Battery.size(); i++) {
+				if (settings["BatteryLowActions${Battery[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideVoltageActions() {
+	boolean Hidden = true
+	if (AllVoltageHighActions || AllVoltageLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < Voltage.size(); i++) {
+				if (settings["VoltageHighActions${Voltage[i].id}"] || settings["VoltageLowActions${Voltage[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideEnergyMeterActions() {
+	boolean Hidden = true
+	if (AllEnergyMeterHighActions || AllEnergyMeterLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < EnergyMeter.size(); i++) {
+				if (settings["EnergyMeterHighActions${EnergyMeter[i].id}"] || settings["EnergyMeterLowActions${EnergyMeter[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideDoorActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Door.size(); i++) {
+		if (settings["DoorClosed${Door[i].id}"] || settings["DoorOpen${Door[i].id}"] || settings["DoorUnknown${Door[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideSwitchActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Switch.size(); i++) {
+		if (settings["SwitchOff${Switch[i].id}"] || settings["SwitchOn${Switch[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideTemperatureActions() {
+	boolean Hidden = true
+	if (AllHighActions || AllLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < Temperature.size(); i++) {
+				if (settings["HighActions${Temperature[i].id}"] || settings["LowActions${Temperature[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideValveActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Valve.size(); i++) {
+		if (settings["ValveClosed${Valve[i].id}"] || settings["ValveOpen${Valve[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideShadeActions() {
+	boolean Hidden = true
+	for ( def i = 0; i < Shade.size(); i++) {
+		if (settings["ShadeClosed${Shade[i].id}"] || settings["ShadeOpen${Shade[i].id}"] || settings["ShadePartiallyOpen${Shade[i].id}"] || settings["ShadeUnknown${Shade[i].id}"]) {Hidden = false}
+	}
+	Hidden
+}
+
+private hideStepActions() {
+	boolean Hidden = true
+	if (AllStepHighActions || AllStepLowActions || AllStepGoalActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < Step.size(); i++) {
+				if (settings["StepHighActions${Step[i].id}"] || settings["StepLowActions${Step[i].id}"] || settings["StepGoalActions${Step[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideIlluminanceActions() {
+	boolean Hidden = true
+	if (AllIlluminanceHighActions || AllIlluminanceLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < Illuminance.size(); i++) {
+				if (settings["IlluminanceHighActions${Illuminance[i].id}"] || settings["IlluminanceLowActions${Illuminance[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideHumidityActions() {
+	boolean Hidden = true
+	if (AllHumidityHighActions || AllHumidityLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < Humidity.size(); i++) {
+				if (settings["HumidityHighActions${Humidity[i].id}"] || settings["HumidityLowActions${Humidity[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hidesoundPressureLevelActions() {
+	boolean Hidden = true
+	if (AllsoundPressureLevelHighActions || AllsoundPressureLevelLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < soundPressureLevel.size(); i++) {
+				if (settings["soundPressureLevelHighActions${soundPressureLevel[i].id}"] || settings["soundPressureLevelLowActions${soundPressureLevel[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hideUltravioletIndexActions() {
+	boolean Hidden = true
+	if (AllUltravioletIndexHighActions || AllUltravioletIndexLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < UltravioletIndex.size(); i++) {
+				if (settings["UltravioletIndexHighActions${UltravioletIndex[i].id}"] || settings["UltravioletIndexLowActions${UltravioletIndex[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
+private hidephMeasurementActions() {
+	boolean Hidden = true
+	if (AllphMeasurementHighActions || AllphMeasurementLowActions) {
+			Hidden = false
+		} else {
+			for ( def i = 0; i < phMeasurement.size(); i++) {
+				if (settings["phMeasurementHighActions${phMeasurement[i].id}"] || settings["phMeasurementLowActions${phMeasurement[i].id}"]) {Hidden = false}
+			}
+	}
+	Hidden
+}
+
 private offset(value) {
 	def result = value ? ((value > 0 ? "+" : "") + value + " min") : ""
 }
@@ -4466,18 +5467,12 @@ private ButtonAssignmentsLabel() {
 
 private CurrentIlluminance() {
 	if (Illuminance_RequiredLessThan || Illuminance_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = Illuminance_Required.currentValue("illuminance") as Integer
-			log.debug "Currentstate = $Currentstate | Illuminance_RequiredLessThan = $Illuminance_RequiredLessThan | Illuminance_RequiredGreaterThan = $Illuminance_RequiredGreaterThan"
-			if (Illuminance_RequiredLessThan && Illuminance_RequiredGreaterThan) {
-					if (Currentstate <= Illuminance_RequiredLessThan && Currentstate >= Illuminance_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (Illuminance_RequiredLessThan) {
-						if (Currentstate <= Illuminance_RequiredLessThan) {OkToRun = true}
-					}
-					if (Illuminance_RequiredGreaterThan) {
-						if (Currentstate >= Illuminance_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < Illuminance_Required.size(); i++) {
+			int Currentstate = Illuminance_Required[i].currentValue("illuminance") as Integer
+				log.debug "Currentstate = $Currentstate | Illuminance_RequiredLessThan = ${Illuminance_RequiredLessThan} | Illuminance_RequiredGreaterThan = ${Illuminance_RequiredGreaterThan}"
+				if (Illuminance_RequiredLessThan) {if (Currentstate > Illuminance_RequiredLessThan) {OkToRun = false}}
+				if (Illuminance_RequiredGreaterThan) {if (Currentstate < Illuminance_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "Illuminance OkToRun = $OkToRun"
 			return OkToRun
@@ -4488,18 +5483,12 @@ private CurrentIlluminance() {
 
 private CurrentTemperature() {
 	if (Temperature_RequiredLessThan || Temperature_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = Temperature_Required.currentValue("temperature") as Integer
-			log.debug "Currentstate = $Currentstate | Temperature_RequiredLessThan = $Temperature_RequiredLessThan | Temperature_RequiredGreaterThan = $Temperature_RequiredGreaterThan"
-			if (Temperature_RequiredLessThan && Temperature_RequiredGreaterThan) {
-					if (Currentstate <= Temperature_RequiredLessThan && Currentstate >= Temperature_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (Temperature_RequiredLessThan) {
-						if (Currentstate <= Temperature_RequiredLessThan) {OkToRun = true}
-					}
-					if (Temperature_RequiredGreaterThan) {
-						if (Currentstate >= Temperature_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < Temperature_Required.size(); i++) {
+				int Currentstate = Temperature_Required[i].currentValue("temperature") as Integer
+				log.debug "Currentstate = $Currentstate | Temperature_RequiredLessThan = $Temperature_RequiredLessThan | Temperature_RequiredGreaterThan = $Temperature_RequiredGreaterThan"
+				if (Temperature_RequiredLessThan) {if (Currentstate > Temperature_RequiredLessThan) {OkToRun = false}}
+				if (Temperature_RequiredGreaterThan) {if (Currentstate < Temperature_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "Temperature OkToRun = $OkToRun"
 			return OkToRun
@@ -4510,18 +5499,12 @@ private CurrentTemperature() {
 
 private CurrentPowerMeter() {
 	if (PowerMeter_RequiredLessThan || PowerMeter_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = PowerMeter_Required.currentValue("power") as Integer
-			log.debug "Currentstate = $Currentstate | PowerMeter_RequiredLessThan = $PowerMeter_RequiredLessThan | PowerMeter_RequiredGreaterThan = $PowerMeter_RequiredGreaterThan"
-			if (PowerMeter_RequiredLessThan && PowerMeter_RequiredGreaterThan) {
-					if (Currentstate <= PowerMeter_RequiredLessThan && Currentstate >= PowerMeter_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (PowerMeter_RequiredLessThan) {
-						if (Currentstate <= PowerMeter_RequiredLessThan) {OkToRun = true}
-					}
-					if (PowerMeter_RequiredGreaterThan) {
-						if (Currentstate >= PowerMeter_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < PowerMeter_Required.size(); i++) {
+				int Currentstate = PowerMeter_Required[i].currentValue("power") as Integer
+				log.debug "Currentstate = $Currentstate | PowerMeter_RequiredLessThan = $PowerMeter_RequiredLessThan | PowerMeter_RequiredGreaterThan = $PowerMeter_RequiredGreaterThan"
+				if (PowerMeter_RequiredLessThan) {if (Currentstate > PowerMeter_RequiredLessThan) {OkToRun = false}}
+				if (PowerMeter_RequiredGreaterThan) {if (Currentstate < PowerMeter_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "PowerMeter OkToRun = $OkToRun"
 			return OkToRun
@@ -4532,18 +5515,12 @@ private CurrentPowerMeter() {
 
 private CurrentVoltage() {
 	if (Voltage_RequiredLessThan || Voltage_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = Voltage_Required.currentValue("voltage") as Integer
-			log.debug "Currentstate = $Currentstate | Voltage_RequiredLessThan = $Voltage_RequiredLessThan | Voltage_RequiredGreaterThan = $Voltage_RequiredGreaterThan"
-			if (Voltage_RequiredLessThan && Voltage_RequiredGreaterThan) {
-					if (Currentstate <= Voltage_RequiredLessThan && Currentstate >= Voltage_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (Voltage_RequiredLessThan) {
-						if (Currentstate <= Voltage_RequiredLessThan) {OkToRun = true}
-					}
-					if (Voltage_RequiredGreaterThan) {
-						if (Currentstate >= Voltage_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < Voltage_Required.size(); i++) {
+				int Currentstate = Voltage_Required[i].currentValue("voltage") as Integer
+				log.debug "Currentstate = $Currentstate | Voltage_RequiredLessThan = $Voltage_RequiredLessThan | Voltage_RequiredGreaterThan = $Voltage_RequiredGreaterThan"
+				if (Voltage_RequiredLessThan) {if (Currentstate > Voltage_RequiredLessThan) {OkToRun = false}}
+				if (Voltage_RequiredGreaterThan) {if (Currentstate < Voltage_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "Voltage OkToRun = $OkToRun"
 			return OkToRun
@@ -4554,18 +5531,12 @@ private CurrentVoltage() {
 
 private CurrentEnergyMeter() {
 	if (EnergyMeter_RequiredLessThan || EnergyMeter_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = EnergyMeter_Required.currentValue("energy") as Integer
-			log.debug "Currentstate = $Currentstate | EnergyMeter_RequiredLessThan = $EnergyMeter_RequiredLessThan | EnergyMeter_RequiredGreaterThan = $EnergyMeter_RequiredGreaterThan"
-			if (EnergyMeter_RequiredLessThan && EnergyMeter_RequiredGreaterThan) {
-					if (Currentstate <= EnergyMeter_RequiredLessThan && Currentstate >= EnergyMeter_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (EnergyMeter_RequiredLessThan) {
-						if (Currentstate <= EnergyMeter_RequiredLessThan) {OkToRun = true}
-					}
-					if (EnergyMeter_RequiredGreaterThan) {
-						if (Currentstate >= EnergyMeter_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < EnergyMeter_Required.size(); i++) {
+				int Currentstate = EnergyMeter_Required[i].currentValue("energy") as Integer
+				log.debug "Currentstate = $Currentstate | EnergyMeter_RequiredLessThan = $EnergyMeter_RequiredLessThan | EnergyMeter_RequiredGreaterThan = $EnergyMeter_RequiredGreaterThan"
+				if (EnergyMeter_RequiredLessThan) {if (Currentstate > EnergyMeter_RequiredLessThan) {OkToRun = false}}
+				if (EnergyMeter_RequiredGreaterThan) {if (Currentstate < EnergyMeter_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "EnergyMeter OkToRun = $OkToRun"
 			return OkToRun
@@ -4576,18 +5547,12 @@ private CurrentEnergyMeter() {
 
 private CurrentCO2Measurement() {
 	if (CO2Measurement_RequiredLessThan || CO2Measurement_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = CO2Measurement_Required.currentValue("carbonDioxide") as Integer
-			log.debug "Currentstate = $Currentstate | CO2Measurement_RequiredLessThan = $CO2Measurement_RequiredLessThan | CO2Measurement_RequiredGreaterThan = $CO2Measurement_RequiredGreaterThan"
-			if (CO2Measurement_RequiredLessThan && CO2Measurement_RequiredGreaterThan) {
-					if (Currentstate <= CO2Measurement_RequiredLessThan && Currentstate >= CO2Measurement_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (CO2Measurement_RequiredLessThan) {
-						if (Currentstate <= CO2Measurement_RequiredLessThan) {OkToRun = true}
-					}
-					if (CO2Measurement_RequiredGreaterThan) {
-						if (Currentstate >= CO2Measurement_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < CO2Measurement_Required.size(); i++) {
+				int Currentstate = CO2Measurement_Required[i].currentValue("carbonDioxide") as Integer
+				log.debug "Currentstate = $Currentstate | CO2Measurement_RequiredLessThan = $CO2Measurement_RequiredLessThan | CO2Measurement_RequiredGreaterThan = $CO2Measurement_RequiredGreaterThan"
+				if (CO2Measurement_RequiredLessThan) {if (Currentstate > CO2Measurement_RequiredLessThan) {OkToRun = false}}
+				if (CO2Measurement_RequiredGreaterThan) {if (Currentstate < CO2Measurement_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "CO2Measurement OkToRun = $OkToRun"
 			return OkToRun
@@ -4598,18 +5563,12 @@ private CurrentCO2Measurement() {
 
 private CurrentHumidity() {
 	if (Humidity_RequiredLessThan || Humidity_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = Humidity_Required.currentValue("humidity") as Integer
-			log.debug "Currentstate = $Currentstate | Humidity_RequiredLessThan = $Humidity_RequiredLessThan | Humidity_RequiredGreaterThan = $Humidity_RequiredGreaterThan"
-			if (Humidity_RequiredLessThan && Humidity_RequiredGreaterThan) {
-					if (Currentstate <= Humidity_RequiredLessThan && Currentstate >= Humidity_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (Humidity_RequiredLessThan) {
-						if (Currentstate <= Humidity_RequiredLessThan) {OkToRun = true}
-					}
-					if (Humidity_RequiredGreaterThan) {
-						if (Currentstate >= Humidity_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < Humidity_Required.size(); i++) {
+				int Currentstate = Humidity_Required[i].currentValue("humidity") as Integer
+				log.debug "Currentstate = $Currentstate | Humidity_RequiredLessThan = $Humidity_RequiredLessThan | Humidity_RequiredGreaterThan = $Humidity_RequiredGreaterThan"
+				if (Humidity_RequiredLessThan) {if (Currentstate > Humidity_RequiredLessThan) {OkToRun = false}}
+				if (Humidity_RequiredGreaterThan) {if (Currentstate < Humidity_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "Humidity OkToRun = $OkToRun"
 			return OkToRun
@@ -4620,18 +5579,12 @@ private CurrentHumidity() {
 
 private CurrentUltravioletIndex() {
 	if (UltravioletIndex_RequiredLessThan || UltravioletIndex_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = UltravioletIndex_Required.currentValue("ultravioletIndex") as Integer
-			log.debug "Currentstate = $Currentstate | UltravioletIndex_RequiredLessThan = $UltravioletIndex_RequiredLessThan | UltravioletIndex_RequiredGreaterThan = $UltravioletIndex_RequiredGreaterThan"
-			if (UltravioletIndex_RequiredLessThan && UltravioletIndex_RequiredGreaterThan) {
-					if (Currentstate <= UltravioletIndex_RequiredLessThan && Currentstate >= UltravioletIndex_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (UltravioletIndex_RequiredLessThan) {
-						if (Currentstate <= UltravioletIndex_RequiredLessThan) {OkToRun = true}
-					}
-					if (UltravioletIndex_RequiredGreaterThan) {
-						if (Currentstate >= UltravioletIndex_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < UltravioletIndex_Required.size(); i++) {
+				int Currentstate = UltravioletIndex_Required[i].currentValue("ultravioletIndex") as Integer
+				log.debug "Currentstate = $Currentstate | UltravioletIndex_RequiredLessThan = $UltravioletIndex_RequiredLessThan | UltravioletIndex_RequiredGreaterThan = $UltravioletIndex_RequiredGreaterThan"
+				if (UltravioletIndex_RequiredLessThan) {if (Currentstate > UltravioletIndex_RequiredLessThan) {OkToRun = false}}
+				if (UltravioletIndex_RequiredGreaterThan) {if (Currentstate < UltravioletIndex_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "UltravioletIndex OkToRun = $OkToRun"
 			return OkToRun
@@ -4642,18 +5595,12 @@ private CurrentUltravioletIndex() {
 
 private CurrentphMeasurement() {
 	if (phMeasurement_RequiredLessThan || phMeasurement_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = phMeasurement_Required.currentValue("pH") as Integer
-			log.debug "Currentstate = $Currentstate | phMeasurement_RequiredLessThan = $phMeasurement_RequiredLessThan | phMeasurement_RequiredGreaterThan = $phMeasurement_RequiredGreaterThan"
-			if (phMeasurement_RequiredLessThan && phMeasurement_RequiredGreaterThan) {
-					if (Currentstate <= phMeasurement_RequiredLessThan && Currentstate >= phMeasurement_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (phMeasurement_RequiredLessThan) {
-						if (Currentstate <= phMeasurement_RequiredLessThan) {OkToRun = true}
-					}
-					if (phMeasurement_RequiredGreaterThan) {
-						if (Currentstate >= phMeasurement_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < phMeasurement_Required.size(); i++) {
+				int Currentstate = phMeasurement_Required[i].currentValue("pH") as Integer
+				log.debug "Currentstate = $Currentstate | phMeasurement_RequiredLessThan = $phMeasurement_RequiredLessThan | phMeasurement_RequiredGreaterThan = $phMeasurement_RequiredGreaterThan"
+				if (phMeasurement_RequiredLessThan) {if (Currentstate > phMeasurement_RequiredLessThan) {OkToRun = false}}
+				if (phMeasurement_RequiredGreaterThan) {if (Currentstate < phMeasurement_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "phMeasurement OkToRun = $OkToRun"
 			return OkToRun
@@ -4664,18 +5611,12 @@ private CurrentphMeasurement() {
 
 private CurrentsoundPressureLevel() {
 	if (soundPressureLevel_RequiredLessThan || soundPressureLevel_RequiredGreaterThan) {
-			boolean OkToRun = false
-			int Currentstate = soundPressureLevel_Required.currentValue("soundPressureLevel") as Integer
-			log.debug "Currentstate = $Currentstate | soundPressureLevel_RequiredLessThan = $soundPressureLevel_RequiredLessThan | soundPressureLevel_RequiredGreaterThan = $soundPressureLevel_RequiredGreaterThan"
-			if (soundPressureLevel_RequiredLessThan && soundPressureLevel_RequiredGreaterThan) {
-					if (Currentstate <= soundPressureLevel_RequiredLessThan && Currentstate >= soundPressureLevel_RequiredGreaterThan) {OkToRun = true}
-				} else {
-					if (soundPressureLevel_RequiredLessThan) {
-						if (Currentstate <= soundPressureLevel_RequiredLessThan) {OkToRun = true}
-					}
-					if (soundPressureLevel_RequiredGreaterThan) {
-						if (Currentstate >= soundPressureLevel_RequiredGreaterThan) {OkToRun = true}
-					}
+			boolean OkToRun = true
+			for ( def i = 0; i < soundPressureLevel_Required.size(); i++) {
+				int Currentstate = soundPressureLevel_Required[i].currentValue("soundPressureLevel") as Integer
+				log.debug "Currentstate = $Currentstate | soundPressureLevel_RequiredLessThan = $soundPressureLevel_RequiredLessThan | soundPressureLevel_RequiredGreaterThan = $soundPressureLevel_RequiredGreaterThan"
+				if (soundPressureLevel_RequiredLessThan) {if (Currentstate > soundPressureLevel_RequiredLessThan) {OkToRun = false}}
+				if (soundPressureLevel_RequiredGreaterThan) {if (Currentstate < soundPressureLevel_RequiredGreaterThan) {OkToRun = false}}
 			}
 			log.debug "soundPressureLevel OkToRun = $OkToRun"
 			return OkToRun
@@ -4686,10 +5627,12 @@ private CurrentsoundPressureLevel() {
 
 private CurrentContact() {
 	if (Contact_Required) {
-			boolean OkToRun = false
-			def Currentstate = Contact_Required.currentValue("contact")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Contact_state = ${Contact_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Contact_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Contact_Required.size(); i++) {
+				def Currentstate = Contact_Required[i].currentValue("contact")
+				log.debug "Currentstate for ${Contact_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Contact_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Contact_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Contact OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4699,10 +5642,12 @@ private CurrentContact() {
 
 private CurrentSwitch() {
 	if (Switch_Required) {
-			boolean OkToRun = false
-			def Currentstate = Switch_Required.currentValue("switch")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Switch_state = ${Switch_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Switch_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Switch_Required.size(); i++) {
+				def Currentstate = Switch_Required[i].currentValue("switch")
+				log.debug "Currentstate for ${Switch_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Switch_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Switch_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Switch OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4712,10 +5657,12 @@ private CurrentSwitch() {
 
 private CurrentAcceleration() {
 	if (Acceleration_Required) {
-			boolean OkToRun = false
-			def Currentstate = Acceleration_Required.currentValue("acceleration")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Acceleration_state = ${Acceleration_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Acceleration_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Acceleration_Required.size(); i++) {
+				def Currentstate = Acceleration_Required[i].currentValue("acceleration")
+				log.debug "Currentstate for ${Acceleration_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Acceleration_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Acceleration_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Acceleration OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4725,10 +5672,12 @@ private CurrentAcceleration() {
 
 private CurrentMotion() {
 	if (Motion_Required) {
-			boolean OkToRun = false
-			def Currentstate = Motion_Required.currentValue("motionSensor")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Motion_state = ${Motion_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Motion_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Motion_Required.size(); i++) {
+				def Currentstate = Motion_Required[i].currentValue("motion")
+				log.debug "Currentstate for ${Motion_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Motion_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Motion_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Motion OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4738,10 +5687,12 @@ private CurrentMotion() {
 
 private CurrentTamper() {
 	if (Tamper_Required) {
-			boolean OkToRun = false
-			def Currentstate = Tamper_Required.currentValue("tamper")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Tamper_state = ${Tamper_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Tamper_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Tamper_Required.size(); i++) {
+				def Currentstate = Tamper_Required[i].currentValue("tamper")
+				log.debug "Currentstate for ${Tamper_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Tamper_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Tamper_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Tamper OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4751,10 +5702,12 @@ private CurrentTamper() {
 
 private CurrentShock() {
 	if (Shock_Required) {
-			boolean OkToRun = false
-			def Currentstate = Shock_Required.currentValue("shock")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Shock_state = ${Shock_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Shock_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Shock_Required.size(); i++) {
+				def Currentstate = Shock_Required[i].currentValue("shock")
+				log.debug "Currentstate for ${Shock_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Shock_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Shock_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Shock OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4764,10 +5717,12 @@ private CurrentShock() {
 
 private CurrentSleep() {
 	if (Sleep_Required) {
-			boolean OkToRun = false
-			def Currentstate = Sleep_Required.currentValue("sleeping")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Sleep_state = ${Sleep_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Sleep_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Sleep_Required.size(); i++) {
+				def Currentstate = Sleep_Required[i].currentValue("sleeping")
+				log.debug "Currentstate for ${Sleep_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Sleep_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Sleep_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Sleep OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4777,10 +5732,12 @@ private CurrentSleep() {
 
 private CurrentSound() {
 	if (Sound_Required) {
-			boolean OkToRun = false
-			def Currentstate = Sound_Required.currentValue("sound")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Sound_state = ${Sound_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Sound_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Sound_Required.size(); i++) {
+				def Currentstate = Sound_Required[i].currentValue("sound")
+				log.debug "Currentstate for ${Sound_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Sound_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Sound_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Sound OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4790,10 +5747,12 @@ private CurrentSound() {
 
 private CurrentWater() {
 	if (Water_Required) {
-			boolean OkToRun = false
-			def Currentstate = Water_Required.currentValue("water")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Water_state = ${Water_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Water_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Water_Required.size(); i++) {
+				def Currentstate = Water_Required[i].currentValue("water")
+				log.debug "Currentstate for ${Water_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Water_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Water_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Water OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4803,10 +5762,12 @@ private CurrentWater() {
 
 private CurrentBeacon() {
 	if (Beacon_Required) {
-			boolean OkToRun = false
-			def Currentstate = Beacon_Required.currentValue("presence")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Beacon_state = ${Beacon_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Beacon_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Beacon_Required.size(); i++) {
+				def Currentstate = Beacon_Required[i].currentValue("presence")
+				log.debug "Currentstate for ${Beacon_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Beacon_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Beacon_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Beacon OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4816,10 +5777,12 @@ private CurrentBeacon() {
 
 private CurrentPresence() {
 	if (Presence_Required) {
-			boolean OkToRun = false
-			def Currentstate = Presence_Required.currentValue("presence")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Presence_state = ${Presence_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Presence_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Presence_Required.size(); i++) {
+				def Currentstate = Presence_Required[i].currentValue("presence")
+				log.debug "Currentstate for ${Presence_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Presence_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Presence_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Presence OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4829,10 +5792,12 @@ private CurrentPresence() {
 
 private CurrentCODetector() {
 	if (CODetector_Required) {
-			boolean OkToRun = false
-			def Currentstate = CODetector_Required.currentValue("carbonMonoxide")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | CODetector_state = ${CODetector_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == CODetector_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < CODetector_Required.size(); i++) {
+				def Currentstate = CODetector_Required[i].currentValue("carbonMonoxide")
+				log.debug "Currentstate for ${CODetector_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${CODetector_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != CODetector_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "CODetector OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4842,10 +5807,12 @@ private CurrentCODetector() {
 
 private CurrentSmoke() {
 	if (Smoke_Required) {
-			boolean OkToRun = false
-			def Currentstate = Smoke_Required.currentValue("smoke")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Smoke_state = ${Smoke_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Smoke_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Smoke_Required.size(); i++) {
+				def Currentstate = Smoke_Required[i].currentValue("smoke")
+				log.debug "Currentstate for ${Smoke_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Smoke_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Smoke_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Smoke OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4855,10 +5822,12 @@ private CurrentSmoke() {
 
 private CurrentPowerSource() {
 	if (PowerSource_Required) {
-			boolean OkToRun = false
-			def Currentstate = PowerSource_Required.currentValue("powerSource")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | PowerSource_state = ${PowerSource_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == PowerSource_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < PowerSource_Required.size(); i++) {
+				def Currentstate = PowerSource_Required[i].currentValue("powerSource")
+				log.debug "Currentstate for ${PowerSource_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${PowerSource_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != PowerSource_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "PowerSource OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4868,10 +5837,12 @@ private CurrentPowerSource() {
 
 private CurrentDoor() {
 	if (Door_Required) {
-			boolean OkToRun = false
-			def Currentstate = Door_Required.currentValue("door")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Door_state = ${Door_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Door_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Door_Required.size(); i++) {
+				def Currentstate = Door_Required[i].currentValue("door")
+				log.debug "Currentstate for ${Door_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Door_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Door_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Door OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4881,10 +5852,12 @@ private CurrentDoor() {
 
 private CurrentValve() {
 	if (Valve_Required) {
-			boolean OkToRun = false
-			def Currentstate = Valve_Required.currentValue("contact")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Valve_state = ${Valve_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Valve_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Valve_Required.size(); i++) {
+				def Currentstate = Valve_Required[i].currentValue("contact")
+				log.debug "Currentstate for ${Valve_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Valve_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Valve_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Valve OkToRun = $OkToRun"
 			return OkToRun
 		} else {
@@ -4894,13 +5867,956 @@ private CurrentValve() {
 
 private CurrentShade() {
 	if (Shade_Required) {
-			boolean OkToRun = false
-			def Currentstate = Shade_Required.currentValue("windowShade")
-			log.debug "Currentstate = ${Currentstate.toLowerCase()} | Shade_state = ${Shade_state.toLowerCase()}"
-			if (Currentstate.toLowerCase() == Shade_state.toLowerCase()) {OkToRun = true}
+			boolean OkToRun = true
+			for ( def i = 0; i < Shade_Required.size(); i++) {
+				def Currentstate = Shade_Required[i].currentValue("windowShade")
+				log.debug "Currentstate for ${Shade_Required[i]} = ${Currentstate.toLowerCase()} | Required state = ${Shade_state.toLowerCase()}"
+				if (Currentstate.toLowerCase() != Shade_state.toLowerCase()) {OkToRun = false}
+			}
 			log.debug "Shade OkToRun = $OkToRun"
 			return OkToRun
 		} else {
 			return true
+	}
+}
+
+def TurnOffBulbs_Switch() {
+	if (Switch) {
+		for ( def i = 0; i < Switch.size(); i++) {
+			if (settings["SwitchOn${Switch[i].id}"]) {
+				for ( def j = 0; j < settings["SwitchOn${Switch[i].id}"].size(); j++) {
+					def Selection = settings["SwitchOn${Switch[i].id}"][j].tokenize(":")
+					if (settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]) {
+						def Now = new Date()
+						if (Bulbs) {
+							Bulbs.each {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									boolean PriorFound = false
+									def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]*60000 - 18000), [max: 50])
+									for ( def k = PriorEvents.size(); k >= 0; k--) {
+										if (PriorEvents[k] != null) {
+											if (PriorEvents[k].descriptionText != null) {
+												if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+												if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+											}
+										}
+									}
+									log.debug "$it was on = $PriorFound"
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Events.size() == 0) {
+													log.debug "Turning $it off"
+													it.off()
+												} else {
+													boolean Found = false
+													for ( def k =  Events.size(); k >= 0; k--) {
+														if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+													}
+													if (!Found) {
+															log.debug "Turning $it off"
+															it.off()
+														} else {
+															log.debug "Not changing $it as it's state was changed during the timer event."
+															log.debug "Event details = ${Events.descriptionText}"
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffDimmers_Switch() {
+	if (Switch) {
+		for ( def i = 0; i < Switch.size(); i++) {
+			if (settings["SwitchOn${Switch[i].id}"]) {
+				for ( def j = 0; j < settings["SwitchOn${Switch[i].id}"].size(); j++) {
+					def Selection = settings["SwitchOn${Switch[i].id}"][j].tokenize(":")
+					if (settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]) {
+						def Now = new Date()
+						if (Dimmers) {
+							Dimmers.each {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									boolean PriorFound = false
+									def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]*60000 - 18000), [max: 50])
+									for ( def k = PriorEvents.size(); k >= 0; k--) {
+										if (PriorEvents[k] != null) {
+											if (PriorEvents[k].descriptionText != null) {
+												if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+												if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+											}
+										}
+									}
+									log.debug "$it was on = $PriorFound"
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Events.size() == 0) {
+													log.debug "Turning $it off"
+													it.off()
+												} else {
+													boolean Found = false
+													for ( def k =  Events.size(); k >= 0; k--) {
+														if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+													}
+													if (!Found) {
+															log.debug "Turning $it off"
+															it.off()
+														} else {
+															log.debug "Not changing $it as it's state was changed during the timer event."
+															log.debug "Event details = ${Events.descriptionText}"
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffSwitches_Switch() {
+	if (Switch) {
+		for ( def i = 0; i < Switch.size(); i++) {
+			if (settings["SwitchOn${Switch[i].id}"]) {
+				for ( def j = 0; j < settings["SwitchOn${Switch[i].id}"].size(); j++) {
+					def Selection = settings["SwitchOn${Switch[i].id}"][j].tokenize(":")
+					if (settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]) {
+						def Now = new Date()
+						if (Switches) {
+							Switches.each {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									boolean PriorFound = false
+									def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]*60000 - 18000), [max: 50])
+									for ( def k = PriorEvents.size(); k >= 0; k--) {
+										if (PriorEvents[k] != null) {
+											if (PriorEvents[k].descriptionText != null) {
+												if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+												if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+											}
+										}
+									}
+									log.debug "$it was on = $PriorFound"
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["SwitchOn${Switch[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Events.size() == 0) {
+													log.debug "Turning $it off"
+													it.off()
+												} else {
+													boolean Found = false
+													for ( def k =  Events.size(); k >= 0; k--) {
+														if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+													}
+													if (!Found) {
+															log.debug "Turning $it off"
+															it.off()
+														} else {
+															log.debug "Not changing $it as it's state was changed during the timer event."
+															log.debug "Event details = ${Events.descriptionText}"
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffBulbs_Motion() {
+	if (Motion) {
+		if (Bulbs) {
+			def Now = new Date()
+			Bulbs.each {
+				boolean PriorFound = false
+				boolean OKToTurnOff = false
+				boolean MotionWasActive = false
+				int Minutes = 0
+				for ( def i = 0; i < Motion.size(); i++) {
+					if (settings["MotionActive${Motion[i].id}"]) {
+						for ( def j = 0; j < settings["MotionActive${Motion[i].id}"].size(); j++) {
+							def Selection = settings["MotionActive${Motion[i].id}"][j].tokenize(":")
+							if (settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]) {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									//if (atomicState.FirstRun) {
+											PriorFound = false
+											def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]*60000 - 18000), [max: 50])
+											for ( def k = PriorEvents.size(); k >= 0; k--) {
+												if (PriorEvents[k] != null) {
+													if (PriorEvents[k].descriptionText != null) {
+														if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+														if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+													}
+												}
+											}
+											log.debug "$it was on = $PriorFound"
+										//} else {
+										//	PriorFound = false
+									//}
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Motion[i].currentValue("motion") == "active") {
+													log.debug "Reseting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]} minutes since motion was still detected."
+													MotionWasActive = true
+													Minutes = settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]
+												} else {
+													if (Events.size() == 0) {
+															if (!MotionWasActive) {OKToTurnOff = true}
+														} else {
+															boolean Found = false
+															for ( def k =  Events.size(); k >= 0; k--) {
+																if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+															}
+															if (!Found) {
+																	if (!MotionWasActive) {OKToTurnOff = true}
+																} else {
+																	log.debug "Not changing $it as it's state was changed during the timer event."
+																	log.debug "Event details = ${Events.descriptionText}"
+															}
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+				if (OKToTurnOff) {
+					log.debug "Turning $it off"
+					it.off()
+				}
+			}
+		}
+		if (MotionWasActive) {
+			//atomicState.FirstRun = false
+			runIn(Minutes * 60, TurnOffBulbs_Motion)
+		}
+	}
+}
+
+def TurnOffDimmers_Motion() {
+	if (Motion) {
+		if (Dimmers) {
+			def Now = new Date()
+			Dimmers.each {
+				boolean PriorFound = false
+				boolean OKToTurnOff = false
+				boolean MotionWasActive = false
+				int Minutes = 0
+				for ( def i = 0; i < Motion.size(); i++) {
+					if (settings["MotionActive${Motion[i].id}"]) {
+						for ( def j = 0; j < settings["MotionActive${Motion[i].id}"].size(); j++) {
+							def Selection = settings["MotionActive${Motion[i].id}"][j].tokenize(":")
+							if (settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]) {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									//if (atomicState.FirstRun) {
+											PriorFound = false
+											def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]*60000 - 18000), [max: 50])
+											for ( def k = PriorEvents.size(); k >= 0; k--) {
+												if (PriorEvents[k] != null) {
+													if (PriorEvents[k].descriptionText != null) {
+														if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+														if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+													}
+												}
+											}
+											log.debug "$it was on = $PriorFound"
+										//} else {
+										//	PriorFound = false
+									//}
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Motion[i].currentValue("motion") == "active") {
+													log.debug "Reseting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]} minutes since motion was still detected."
+													MotionWasActive = true
+													Minutes = settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]
+												} else {
+													if (Events.size() == 0) {
+															if (!MotionWasActive) {OKToTurnOff = true}
+														} else {
+															boolean Found = false
+															for ( def k =  Events.size(); k >= 0; k--) {
+																if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+															}
+															if (!Found) {
+																	if (!MotionWasActive) {OKToTurnOff = true}
+																} else {
+																	log.debug "Not changing $it as it's state was changed during the timer event."
+																	log.debug "Event details = ${Events.descriptionText}"
+															}
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+				if (OKToTurnOff) {
+					log.debug "Turning $it off"
+					it.off()
+				}
+			}
+		}
+		if (MotionWasActive) {
+			//atomicState.FirstRun = false
+			runIn(Minutes * 60, TurnOffDimmers_Motion)
+		}
+	}
+}
+
+def TurnOffSwitches_Motion() {
+	if (Motion) {
+		boolean MotionWasActive = false
+		int Minutes = 0
+		if (Switches) {
+			def Now = new Date()
+			Switches.each {
+				boolean PriorFound = false
+				boolean OKToTurnOff = false
+				for ( def i = 0; i < Motion.size(); i++) {
+					if (settings["MotionActive${Motion[i].id}"]) {
+						for ( def j = 0; j < settings["MotionActive${Motion[i].id}"].size(); j++) {
+							def Selection = settings["MotionActive${Motion[i].id}"][j].tokenize(":")
+							if (settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]) {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									//if (atomicState.FirstRun) {
+											PriorFound = false
+											def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]*60000 - 18000), [max: 50])
+											for ( def k = PriorEvents.size(); k >= 0; k--) {
+												if (PriorEvents[k] != null) {
+													if (PriorEvents[k].descriptionText != null) {
+														if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+														if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+													}
+												}
+											}
+											log.debug "$it was on = $PriorFound"
+										//} else {
+										//	PriorFound = false
+									//}
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Motion[i].currentValue("motion") == "active") {
+													log.debug "Reseting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]} minutes since motion was still detected on ${Motion[i]}."
+													MotionWasActive = true
+													Minutes = settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]
+												} else {
+													if (Events.size() == 0) {
+															if (!MotionWasActive) {OKToTurnOff = true}
+														} else {
+															boolean Found = false
+															for ( def k =  Events.size(); k >= 0; k--) {
+																if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+															}
+															if (!Found) {
+																	if (!MotionWasActive) {OKToTurnOff = true}
+																} else {
+																	log.debug "Not changing $it as it's state was changed during the timer event."
+																	log.debug "Event details = ${Events.descriptionText}"
+															}
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+				if (OKToTurnOff) {
+					log.debug "Turning $it off"
+					it.off()
+				}
+			}
+		}
+		if (MotionWasActive) {
+			//atomicState.FirstRun = false
+			log.debug "Starting timer for $Minutes minutes."
+			runIn(Minutes * 60, TurnOffMotion)
+		}
+	}
+}
+
+def TurnOffMotion() {
+	if (Motion) {
+		boolean MotionWasActive = false
+		int Minutes = 0
+		if (Switches) {
+			def Now = new Date()
+			Switches.each {
+				boolean PriorFound = false
+				boolean OKToTurnOff = false
+				for ( def i = 0; i < Motion.size(); i++) {
+					if (settings["MotionActive${Motion[i].id}"]) {
+						for ( def j = 0; j < settings["MotionActive${Motion[i].id}"].size(); j++) {
+							def Selection = settings["MotionActive${Motion[i].id}"][j].tokenize(":")
+							if (settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]) {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+									if (Motion[i].currentValue("motion") == "active") {
+											log.debug "Reseting timer for ${settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]} minutes since motion was still detected on ${Motion[i]}."
+											MotionWasActive = true
+											Minutes = settings["TurnOffAfterMinutes${settings["MotionActive${Motion[i].id}"]}"]
+										} else {
+											if (Events.size() == 0) {
+													if (!MotionWasActive) {OKToTurnOff = true}
+												} else {
+													boolean Found = false
+													for ( def k =  Events.size(); k >= 0; k--) {
+														if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+													}
+													if (!Found) {
+															if (!MotionWasActive) {OKToTurnOff = true}
+														} else {
+															log.debug "Not changing $it as it's state was changed during the timer event."
+															log.debug "Event details = ${Events.descriptionText}"
+													}
+											}
+									}
+								}
+							}
+						}
+					}
+				}
+				if (OKToTurnOff) {
+					log.debug "Turning $it off"
+					it.off()
+				}
+			}
+		}
+		if (MotionWasActive) {
+			//atomicState.FirstRun = false
+			log.debug "Starting timer for $Minutes minutes."
+			runIn(Minutes * 60, TurnOffMotion)
+		}
+	}
+}
+
+def TurnOffBulbs_Contact() {
+	if (Contact) {
+		for ( def i = 0; i < Contact.size(); i++) {
+			if (settings["ContactOpen${Contact[i].id}"]) {
+				for ( def j = 0; j < settings["ContactOpen${Contact[i].id}"].size(); j++) {
+					def Selection = settings["ContactOpen${Contact[i].id}"][j].tokenize(":")
+					if (settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]) {
+						def Now = new Date()
+						if (Bulbs) {
+							Bulbs.each {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									boolean PriorFound = false
+									def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]*60000 - 18000), [max: 50])
+									for ( def k = PriorEvents.size(); k >= 0; k--) {
+										if (PriorEvents[k] != null) {
+											if (PriorEvents[k].descriptionText != null) {
+												if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+												if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+											}
+										}
+									}
+									log.debug "$it was on = $PriorFound"
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]*60000 - 600 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Events.size() == 0) {
+													log.debug "Turning $it off"
+													it.off()
+												} else {
+													boolean Found = false
+													for ( def k =  Events.size(); k >= 0; k--) {
+														if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+													}
+													if (!Found) {
+															log.debug "Turning $it off"
+															it.off()
+														} else {
+															log.debug "Not changing $it as it's state was changed during the timer event."
+															log.debug "Event details = ${Events.descriptionText}"
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffDimmers_Contact() {
+	if (Contact) {
+		for ( def i = 0; i < Contact.size(); i++) {
+			if (settings["ContactOpen${Contact[i].id}"]) {
+				for ( def j = 0; j < settings["ContactOpen${Contact[i].id}"].size(); j++) {
+					def Selection = settings["ContactOpen${Contact[i].id}"][j].tokenize(":")
+					if (settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]) {
+						def Now = new Date()
+						if (Dimmers) {
+							Dimmers.each {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									boolean PriorFound = false
+									def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]*60000 - 18000), [max: 50])
+									for ( def k = PriorEvents.size(); k >= 0; k--) {
+										if (PriorEvents[k] != null) {
+											if (PriorEvents[k].descriptionText != null) {
+												if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+												if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+											}
+										}
+									}
+									log.debug "$it was on = $PriorFound"
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Events.size() == 0) {
+													log.debug "Turning $it off"
+													it.off()
+												} else {
+													boolean Found = false
+													for ( def k =  Events.size(); k >= 0; k--) {
+														if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+													}
+													if (!Found) {
+															log.debug "Turning $it off"
+															it.off()
+														} else {
+															log.debug "Not changing $it as it's state was changed during the timer event."
+															log.debug "Event details = ${Events.descriptionText}"
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffSwitches_Contact() {
+	if (Contact) {
+		for ( def i = 0; i < Contact.size(); i++) {
+			if (settings["ContactOpen${Contact[i].id}"]) {
+				for ( def j = 0; j < settings["ContactOpen${Contact[i].id}"].size(); j++) {
+					def Selection = settings["ContactOpen${Contact[i].id}"][j].tokenize(":")
+					if (settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]) {
+						def Now = new Date()
+						if (Switches) {
+							Switches.each {
+								if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+									boolean PriorFound = false
+									def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]*60000 - 18000), [max: 50])
+									for ( def k = PriorEvents.size(); k >= 0; k--) {
+										if (PriorEvents[k] != null) {
+											if (PriorEvents[k].descriptionText != null) {
+												if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+												if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+											}
+										}
+									}
+									log.debug "$it was on = $PriorFound"
+									if (!PriorFound) {
+											def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${settings["ContactOpen${Contact[i].id}"]}"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+											if (Events.size() == 0) {
+													log.debug "Turning $it off"
+													it.off()
+												} else {
+													boolean Found = false
+													for ( def k =  Events.size(); k >= 0; k--) {
+														if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+													}
+													if (!Found) {
+															log.debug "Turning $it off"
+															it.off()
+														} else {
+															log.debug "Not changing $it as it's state was changed during the timer event."
+															log.debug "Event details = ${Events.descriptionText}"
+													}
+											}
+										} else {
+											log.debug "Not changing $it as it was on before the timer event started."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffBulbs_Push() {
+	if (Button) {
+		for ( def h = 0; h < Button.size(); h++) {
+			int Num = 0
+			if (settings["NumberofButtons${Button[h].id}"] != null) {Num = settings["NumberofButtons${Button[h].id}"] as Integer}
+			if (Button[h].currentValue("numberOfButtons") != null) {Num = Button[h].currentValue("numberOfButtons") as Integer}
+			for ( def i = 1; i <= Num; i++) {
+				if (settings["${Button[h].id}Button${i}Push"]) {
+					for ( def j = 0; j < settings["${Button[h].id}Button${i}Push"].size(); j++) {
+						def Selection = settings["${Button[h].id}Button${i}Push"][j].tokenize(":")
+						if (settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]) {
+							def Now = new Date()
+							if (Bulbs) {
+								Bulbs.each {
+									if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+										boolean PriorFound = false
+										def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]*60000 - 18000), [max: 50])
+										for ( def k = PriorEvents.size(); k >= 0; k--) {
+											if (PriorEvents[k] != null) {
+												if (PriorEvents[k].descriptionText != null) {
+													if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+													if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+												}
+											}
+										}
+										log.debug "$it was on = $PriorFound"
+										if (!PriorFound) {
+												def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+												if (Events.size() == 0) {
+														log.debug "Turning $it off"
+														it.off()
+													} else {
+														boolean Found = false
+														for ( def k =  Events.size(); k >= 0; k--) {
+															if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+														}
+														if (!Found) {
+																log.debug "Turning $it off"
+																it.off()
+															} else {
+																log.debug "Not changing $it as it's state was changed during the timer event."
+																log.debug "Event details = ${Events.descriptionText}"
+														}
+												}
+											} else {
+												log.debug "Not changing $it as it was on before the timer event started."
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffDimmers_Push() {
+	if (Button) {
+		for ( def h = 0; h < Button.size(); h++) {
+			int Num = 0
+			if (settings["NumberofButtons${Button[h].id}"] != null) {Num = settings["NumberofButtons${Button[h].id}"] as Integer}
+			if (Button[h].currentValue("numberOfButtons") != null) {Num = Button[h].currentValue("numberOfButtons") as Integer}
+			for ( def i = 1; i <= Num; i++) {
+				if (settings["${Button[h].id}Button${i}Push"]) {
+					for ( def j = 0; j < settings["${Button[h].id}Button${i}Push"].size(); j++) {
+						def Selection = settings["${Button[h].id}Button${i}Push"][j].tokenize(":")
+						if (settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]) {
+							def Now = new Date()
+							if (Dimmers) {
+								Dimmers.each {
+									if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+										boolean PriorFound = false
+										def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]*60000 - 18000), [max: 50])
+										for ( def k = PriorEvents.size(); k >= 0; k--) {
+											if (PriorEvents[k] != null) {
+												if (PriorEvents[k].descriptionText != null) {
+													if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+													if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+												}
+											}
+										}
+										log.debug "$it was on = $PriorFound"
+										if (!PriorFound) {
+												def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+												if (Events.size() == 0) {
+														log.debug "Turning $it off"
+														it.off()
+													} else {
+														boolean Found = false
+														for ( def k =  Events.size(); k >= 0; k--) {
+															if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+														}
+														if (!Found) {
+																log.debug "Turning $it off"
+																it.off()
+															} else {
+																log.debug "Not changing $it as it's state was changed during the timer event."
+																log.debug "Event details = ${Events.descriptionText}"
+														}
+												}
+											} else {
+												log.debug "Not changing $it as it was on before the timer event started."
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffSwitches_Push() {
+	if (Button) {
+		for ( def h = 0; h < Button.size(); h++) {
+			int Num = 0
+			if (settings["NumberofButtons${Button[h].id}"] != null) {Num = settings["NumberofButtons${Button[h].id}"] as Integer}
+			if (Button[h].currentValue("numberOfButtons") != null) {Num = Button[h].currentValue("numberOfButtons") as Integer}
+			for ( def i = 1; i <= Num; i++) {
+				if (settings["${Button[h].id}Button${i}Push"]) {
+					for ( def j = 0; j < settings["${Button[h].id}Button${i}Push"].size(); j++) {
+						def Selection = settings["${Button[h].id}Button${i}Push"][j].tokenize(":")
+						if (settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]) {
+							def Now = new Date()
+							if (Switches) {
+								Switches.each {
+									if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+										boolean PriorFound = false
+										def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]*60000 - 18000), [max: 50])
+										for ( def k = PriorEvents.size(); k >= 0; k--) {
+											if (PriorEvents[k] != null) {
+												if (PriorEvents[k].descriptionText != null) {
+													if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+													if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+												}
+											}
+										}
+										log.debug "$it was on = $PriorFound"
+										if (!PriorFound) {
+												def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Push"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+												if (Events.size() == 0) {
+														log.debug "Turning $it off"
+														it.off()
+													} else {
+														boolean Found = false
+														for ( def k =  Events.size(); k >= 0; k--) {
+															if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+														}
+														if (!Found) {
+																log.debug "Turning $it off"
+																it.off()
+															} else {
+																log.debug "Not changing $it as it's state was changed during the timer event."
+																log.debug "Event details = ${Events.descriptionText}"
+														}
+												}
+											} else {
+												log.debug "Not changing $it as it was on before the timer event started."
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffBulbs_Hold() {
+	if (Button) {
+		for ( def h = 0; h < Button.size(); h++) {
+			int Num = 0
+			if (settings["NumberofButtons${Button[h].id}"] != null) {Num = settings["NumberofButtons${Button[h].id}"] as Integer}
+			if (Button[h].currentValue("numberOfButtons") != null) {Num = Button[h].currentValue("numberOfButtons") as Integer}
+			for ( def i = 1; i <= Num; i++) {
+				if (settings["${Button[h].id}Button${i}Hold"]) {
+					for ( def j = 0; j < settings["${Button[h].id}Button${i}Hold"].size(); j++) {
+						def Selection = settings["${Button[h].id}Button${i}Hold"][j].tokenize(":")
+						if (settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]) {
+							def Now = new Date()
+							if (Bulbs) {
+								Bulbs.each {
+									if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+										boolean PriorFound = false
+										def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]*60000 - 18000), [max: 50])
+										for ( def k = PriorEvents.size(); k >= 0; k--) {
+											if (PriorEvents[k] != null) {
+												if (PriorEvents[k].descriptionText != null) {
+													if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+													if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+												}
+											}
+										}
+										log.debug "$it was on = $PriorFound"
+										if (!PriorFound) {
+												def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+												if (Events.size() == 0) {
+														log.debug "Turning $it off"
+														it.off()
+													} else {
+														boolean Found = false
+														for ( def k =  Events.size(); k >= 0; k--) {
+															if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+														}
+														if (!Found) {
+																log.debug "Turning $it off"
+																it.off()
+															} else {
+																log.debug "Not changing $it as it's state was changed during the timer event."
+																log.debug "Event details = ${Events.descriptionText}"
+														}
+												}
+											} else {
+												log.debug "Not changing $it as it was on before the timer event started."
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffDimmers_Hold() {
+	if (Button) {
+		for ( def h = 0; h < Button.size(); h++) {
+			int Num = 0
+			if (settings["NumberofButtons${Button[h].id}"] != null) {Num = settings["NumberofButtons${Button[h].id}"] as Integer}
+			if (Button[h].currentValue("numberOfButtons") != null) {Num = Button[h].currentValue("numberOfButtons") as Integer}
+			for ( def i = 1; i <= Num; i++) {
+				if (settings["${Button[h].id}Button${i}Hold"]) {
+					for ( def j = 0; j < settings["${Button[h].id}Button${i}Hold"].size(); j++) {
+						def Selection = settings["${Button[h].id}Button${i}Hold"][j].tokenize(":")
+						if (settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]) {
+							def Now = new Date()
+							if (Dimmers) {
+								Dimmers.each {
+									if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+										boolean PriorFound = false
+										def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]*60000 - 18000), [max: 50])
+										for ( def k = PriorEvents.size(); k >= 0; k--) {
+											if (PriorEvents[k] != null) {
+												if (PriorEvents[k].descriptionText != null) {
+													if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+													if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+												}
+											}
+										}
+										log.debug "$it was on = $PriorFound"
+										if (!PriorFound) {
+												def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+												if (Events.size() == 0) {
+														log.debug "Turning $it off"
+														it.off()
+													} else {
+														boolean Found = false
+														for ( def k =  Events.size(); k >= 0; k--) {
+															if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+														}
+														if (!Found) {
+																log.debug "Turning $it off"
+																it.off()
+															} else {
+																log.debug "Not changing $it as it's state was changed during the timer event."
+																log.debug "Event details = ${Events.descriptionText}"
+														}
+												}
+											} else {
+												log.debug "Not changing $it as it was on before the timer event started."
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+def TurnOffSwitches_Hold() {
+	if (Button) {
+		for ( def h = 0; h < Button.size(); h++) {
+			int Num = 0
+			if (settings["NumberofButtons${Button[h].id}"] != null) {Num = settings["NumberofButtons${Button[h].id}"] as Integer}
+			if (Button[h].currentValue("numberOfButtons") != null) {Num = Button[h].currentValue("numberOfButtons") as Integer}
+			for ( def i = 1; i <= Num; i++) {
+				if (settings["${Button[h].id}Button${i}Hold"]) {
+					for ( def j = 0; j < settings["${Button[h].id}Button${i}Hold"].size(); j++) {
+						def Selection = settings["${Button[h].id}Button${i}Hold"][j].tokenize(":")
+						if (settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]) {
+							def Now = new Date()
+							if (Switches) {
+								Switches.each {
+									if ("$it" == "${Selection[1]}" || "${Selection[1]}" == "all") {
+										boolean PriorFound = false
+										def PriorEvents = it.eventsBetween(new Date(Now.getTime() - 300*60000), new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]*60000 - 18000), [max: 50])
+										for ( def k = PriorEvents.size(); k >= 0; k--) {
+											if (PriorEvents[k] != null) {
+												if (PriorEvents[k].descriptionText != null) {
+													if (PriorEvents[k].descriptionText.endsWith('switch is on')) {PriorFound = true}
+													if (PriorEvents[k].descriptionText.endsWith('switch is off')) {PriorFound = false}
+												}
+											}
+										}
+										log.debug "$it was on = $PriorFound"
+										if (!PriorFound) {
+												def Events = it.eventsBetween(new Date(Now.getTime() - settings["TurnOffAfterMinutes${Button[h].id}Button${i}Hold"]*60000 - 600), new Date(Now.getTime() - 1*600), [max: 20])
+												if (Events.size() == 0) {
+														log.debug "Turning $it off"
+														it.off()
+													} else {
+														boolean Found = false
+														for ( def k =  Events.size(); k >= 0; k--) {
+															if (Events[k] != null) {if (Events[k].descriptionText != null) {if (Events[k].descriptionText.endsWith('switch is on') || Events[k].descriptionText.endsWith('switch is off')) {Found = true}}}
+														}
+														if (!Found) {
+																log.debug "Turning $it off"
+																it.off()
+															} else {
+																log.debug "Not changing $it as it's state was changed during the timer event."
+																log.debug "Event details = ${Events.descriptionText}"
+														}
+												}
+											} else {
+												log.debug "Not changing $it as it was on before the timer event started."
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }
