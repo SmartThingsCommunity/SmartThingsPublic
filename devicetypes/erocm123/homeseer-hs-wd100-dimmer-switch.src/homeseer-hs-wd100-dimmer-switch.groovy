@@ -22,7 +22,9 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
         capability "Button"
+        capability "Holdable Button"
 
+        fingerprint mfr: "000C", prod: "4447", model: "3034"
         fingerprint deviceId: "0x1101", inClusters: "0x5E,0x86,0x72,0x5A,0x85,0x59,0x73,0x26,0x27,0x70,0x2C,0x2B,0x5B,0x7A,0xEF,0x5B"
         
 	}

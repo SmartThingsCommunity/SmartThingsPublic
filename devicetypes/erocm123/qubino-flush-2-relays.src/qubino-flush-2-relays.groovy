@@ -527,6 +527,7 @@ private void createChildDevices() {
                 isComponent: false, componentName: "ep$i", componentLabel: "Output $i"])
         }
     } catch (e) {
+        log.debug e
         runIn(2, "sendAlert")
     }
 }

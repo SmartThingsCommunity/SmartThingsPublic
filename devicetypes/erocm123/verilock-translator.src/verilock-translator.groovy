@@ -19,6 +19,8 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Zw Multichannel"
+        
+        fingerprint mfr: "0178", prod: "5A44", model: "414E"
 	}
 
 	simulator {
