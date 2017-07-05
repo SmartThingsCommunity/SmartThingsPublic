@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -183,13 +185,6 @@ private Map parseNonIasButtonMessage(Map descMap){
     }
 }
 
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
-def ping() {
-    refresh()
-}
-
 def refresh() {
     log.debug "Refreshing Battery"
 
@@ -198,8 +193,6 @@ def refresh() {
 }
 
 def configure() {
-    // Device-Watch allows 2 check-in misses from device (plus 2 mins lag time)
-    sendEvent(name: "checkInterval", value: 2 * 6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting, IAS CIE, and Bindings."
     def cmds = []
     if (device.getDataValue("model") == "3450-L") {
@@ -259,6 +252,8 @@ def updated() {
 }
 
 def initialize() {
+    // Arrival sensors only goes OFFLINE when Hub is off
+    sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
     if ((device.getDataValue("manufacturer") == "OSRAM") && (device.getDataValue("model") == "LIGHTIFY Dimming Switch")) {
         sendEvent(name: "numberOfButtons", value: 2)
     }
