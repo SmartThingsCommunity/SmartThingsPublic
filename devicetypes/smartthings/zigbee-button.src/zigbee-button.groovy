@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -24,6 +26,7 @@ metadata {
         capability "Configuration"
         capability "Refresh"
         capability "Sensor"
+        capability "Health Check"
 
         command "enrollResponse"
 
@@ -249,6 +252,8 @@ def updated() {
 }
 
 def initialize() {
+    // Arrival sensors only goes OFFLINE when Hub is off
+    sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
     if ((device.getDataValue("manufacturer") == "OSRAM") && (device.getDataValue("model") == "LIGHTIFY Dimming Switch")) {
         sendEvent(name: "numberOfButtons", value: 2)
     }
