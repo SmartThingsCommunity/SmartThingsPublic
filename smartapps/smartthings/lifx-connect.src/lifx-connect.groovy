@@ -72,7 +72,7 @@ def authPage() {
 		log.debug "have LIFX access token"
 
 		def options = locationOptions() ?: []
-		def count = options.size()
+		def count = options.size().toString()
 
 		return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
 			section("Select your location") {
