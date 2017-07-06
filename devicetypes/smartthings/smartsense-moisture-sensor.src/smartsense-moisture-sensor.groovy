@@ -105,6 +105,8 @@ def parse(String description) {
 				} else {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
+				map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
 			}
 		}
 	} else if (map.name == "temperature") {
@@ -129,6 +131,10 @@ def parse(String description) {
 private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
+	translateZoneStatus(zs)
+}
+
+private Map translateZoneStatus(ZoneStatus zs) {
 	return zs.isAlarm1Set() ? getMoistureResult('wet') : getMoistureResult('dry')
 }
 
@@ -197,7 +203,8 @@ def ping() {
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
 	return refreshCmds + zigbee.enrollResponse()
 }
