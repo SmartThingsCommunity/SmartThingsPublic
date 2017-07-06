@@ -32,7 +32,6 @@ metadata {
         capability "Health Check"
         //capability "Polling"
 		
-        attribute "checkInterval", "string"
         attribute "maxHum", "string"
         attribute "minHum", "string"        
         
