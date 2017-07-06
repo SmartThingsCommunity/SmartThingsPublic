@@ -1,5 +1,5 @@
 /**
- *  Spruce Scheduler Pre-release V2.53.1 - Updated 11/07/2016, BAB
+ *  Spruce Scheduler Pre-release V2.6 - Updated 7/2017
  *
  *	
  *  Copyright 2015 Plaid Systems
@@ -13,6 +13,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+-------v2.6---------------------
+* update compatibility with composite device commands
+* ln 1368 remove daysavailable bug
 
 -------v2.53.1-------------------
 -ln 210: enableManual string modified
@@ -942,7 +945,7 @@ private boolean attemptRecovery() {
 				resetEverything()
 				if (atomicState.finishTime) atomicState.finishTime = null
 				if ((cst == 'active') || atomicState.startTime) {	// if we announced we were in preCheck, or made it all the way to cycleOn before it crashed
-					settings.switches.programOff()					// only if we think we actually started (cycleOn() started)
+					settings.program.programOff()//settings.switches.programOff()	//CDTH				// only if we think we actually started (cycleOn() started)
 					// probably kills manual cycles too, but we'll let that go for now
 				}
 				if (atomicState.startTime) atomicState.startTime = null
@@ -968,7 +971,8 @@ private def resetEverything() {
 	unschedule(writeCycles)
 	unschedule(subOff)
 
-	if (settings.enableManual) subscribe(settings.switches, 'switch.programOn', manualStart)
+	if (settings.enableManual) subscribe(settings.switches, 'program.programOn', manualStart)	//CDTH
+    //if (settings.enableManual) subscribe(settings.switches, 'switch.programOn', manualStart)
 }
 
 // unsubscribe from ALL events EXCEPT app.touch
@@ -1105,7 +1109,8 @@ def manualStart(evt){
             if (runNowMap) { 
                 atomicState.run = true
                 settings.switches.programWait()
-                subscribe(settings.switches, 'switch.off', cycleOff)
+                subscribe(settings.switches, 'program.off', cycleOff)	//CDTH
+                //subscribe(settings.switches, 'switch.off', cycleOff)
 
                 runIn(60, cycleOn)   			// start water program
 
@@ -1150,7 +1155,8 @@ boolean busy(){
     // Moved from cycleOn() - don't even start pre-check until the other controller completes its cycle
     if (settings.sync) {
 		if ((settings.sync.currentSwitch != 'off') || settings.sync.currentStatus == 'pause') {
-            subscribe(settings.sync, 'switch.off', syncOn)
+            subscribe(settings.sync, 'program.off', syncOn)	//CDTH
+            //subscribe(settings.sync, 'switch.off', syncOn)
 
             note('delayed', "${app.label}: Waiting for ${settings.sync.displayName} to complete before starting", 'c')
             return true
@@ -1170,7 +1176,8 @@ boolean busy(){
     if (isDay()) {											// Yup, we need to run today, so wait for the other schedule to finish
     	log.debug "switches ${csw}, status ${cst} (3rd)"
     	resetEverything()
-    	subscribe(settings.switches, 'switch.off', busyOff)
+    	subscribe(settings.switches, 'program.off', busyOff)	//CDTH
+        //subscribe(settings.switches, 'switch.off', busyOff)
 		note('delayed', "${app.label}: Waiting for currently running schedule to complete before starting", 'c')
        	return true
     }
@@ -1207,7 +1214,8 @@ def preCheck() {
 		runIn(45, checkRunMap)						// schedule checkRunMap() before doing weather check, gives isWeather 45s to complete
 													// because that seems to be a little more than the max that the ST platform allows
 		unsubAllBut()								// unsubscribe to everything except appTouch()
-		subscribe(settings.switches, 'switch.off', cycleOff)	// and start setting up for today's cycle
+		subscribe(settings.switches, 'program.off', cycleOff)	//CDTH // and start setting up for today's cycle
+        //subscribe(settings.switches, 'switch.off', cycleOff)	// and start setting up for today's cycle
 		def start = now()
 		note('active', "${app.label}: Starting...", 'd')  //
 		def end = now()
@@ -1230,7 +1238,8 @@ def cycleOn(){
 
         if (!isWaterStopped()) {					// make sure ALL the contacts and toggles aren't paused
             // All clear, let's start running!
-            subscribe(settings.switches, 'switch.off', cycleOff)
+            subscribe(settings.switches, 'program.off', cycleOff)	//CDTH
+            //subscribe(settings.switches, 'switch.off', cycleOff)
             subWaterStop()							// subscribe to all the pause contacts and toggles
             resume()
             
@@ -1291,7 +1300,8 @@ def checkRunMap(){
 
         if (runNowMap) { 
             runIn(60, cycleOn)											// start water
-            subscribe(settings.switches, 'switch.off', cycleOff)		// allow manual off before cycleOn() starts
+            subscribe(settings.switches, 'program.off', cycleOff)	//CDTH		// allow manual off before cycleOn() starts
+            //subscribe(settings.switches, 'switch.off', cycleOff)		// allow manual off before cycleOn() starts
             if (atomicState.startTime) atomicState.startTime = null		// these were already cleared in cycleLoop() above
             if (state.pauseTime) state.pauseTime = null					// ditto
             // leave atomicState.finishTime alone so that recovery in busy() knows we never started if cycleOn() doesn't clear it
@@ -1315,7 +1325,8 @@ def checkRunMap(){
             unsubscribe(settings.switches)
             unsubWaterStoppers()
             switches.programOff()
-            if (enableManual) subscribe(settings.switches, 'switch.programOn', manualStart)
+            if (enableManual) subscribe(settings.switches, 'program.programOn', manualStart)	//CDTH
+            //if (enableManual) subscribe(settings.switches, 'switch.programOn', manualStart)
             note('skipping', "${app.label}: No watering today", 'd')
             if (atomicState.run) atomicState.run = false 		// do this last, so that the above note gets sent to the controller
         }
@@ -1355,7 +1366,7 @@ def cycleLoop(int i)
           	int runToday = 0
           	// if manual, or every day allowed, or zone uses a sensor, then we assume we can today
           	//  - preCheck() has already verified that today isDay()
-          	if ((i == 0) || (state.daysAvailable == 7) || (settings."sensor${zone}")) {
+          	if ((i == 0) || /*(state.daysAvailable == 7) ||*/ (settings."sensor${zone}")) {
           		runToday = 1	
           	}
           	else {
@@ -1466,7 +1477,8 @@ def writeCycles(){
 
 def resume(){
 	log.debug 'resume()'
-	settings.switches.zon()    
+	//settings.switches.programOn()    //CDTH
+    settings.switches.start()
 }
 
 def syncOn(evt){
@@ -1515,22 +1527,26 @@ def waterStop(evt){
 	}
 	if (settings.switches.currentSwitch != 'off') {
 		runIn(30, subOff)
-		settings.switches.off()								// stop the water
+        settings.switches.pause()	//CDTH
+		//settings.switches.off()								// stop the water
 	}
 	else 
-		subscribe(settings.switches, 'switch.off', cycleOff)
+		subscribe(settings.switches, 'program.off', cycleOff)	//CDTH
+        //subscribe(settings.switches, 'switch.off', cycleOff)
 }
 
 // This is a hack to work around the delay in response from the controller to the above programOff command...
 // We frequently see the off notification coming a long time after the command is issued, so we try to catch that so that
 // we don't prematurely exit the cycle.
 def subOff() {
-	subscribe(settings.switches, 'switch.off', offPauseCheck)
+	subscribe(settings.switches, 'program.off', offPauseCheck)	//CDTH
+    //subscribe(settings.switches, 'switch.off', offPauseCheck)
 }
 
 def offPauseCheck( evt ) {
 	unsubscribe(settings.switches)
-	subscribe(settings.switches, 'switch.off', cycleOff)
+	subscribe(settings.switches, 'program.off', cycleOff)	//CDTH
+    //subscribe(settings.switches, 'switch.off', cycleOff)
 	if (/*(switches.currentSwitch != 'off') && */ (settings.switches.currentStatus != 'pause')) { // eat the first off while paused
 		cycleOff(evt)
 	} 
