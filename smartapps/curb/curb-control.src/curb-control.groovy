@@ -65,7 +65,16 @@ void updateSwitch() {
 private void updateAll(devices) {
 	def command = request.JSON?.command
 	if (command) {
-		devices."$command"()
+		switch(command) {
+			case "on":
+				devices.on()
+				break
+			case "off":
+				devices.off()
+				break
+			default:
+				httpError(403, "Access denied. This command is not supported by current capability.")
+		}
 	}
 }
 
@@ -77,7 +86,16 @@ private void update(devices) {
 		if (!device) {
 			httpError(404, "Device not found")
 		} else {
-			device."$command"()
+			switch(command) {
+				case "on":
+					device.on()
+					break
+				case "off":
+					device.off()
+					break
+				default:
+					httpError(403, "Access denied. This command is not supported by current capability.")
+			}
 		}
 	}
 }

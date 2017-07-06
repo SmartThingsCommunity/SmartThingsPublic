@@ -78,7 +78,7 @@ def humidityHandler(evt) {
 			log.debug "Notification already sent within the last ${deltaMinutes} minutes"
 			
 		} else {
-			log.debug "Humidity Rose Above ${tooHumid}:  sending SMS to $phone1 and activating ${mySwitch}"
+			log.debug "Humidity Rose Above ${tooHumid}:  sending SMS and activating ${mySwitch}"
 			send("${humiditySensor1.label} sensed high humidity level of ${evt.value}")
 			switch1?.on()
 		}
@@ -91,7 +91,7 @@ def humidityHandler(evt) {
 			log.debug "Notification already sent within the last ${deltaMinutes} minutes"
 			
 		} else {
-			log.debug "Humidity Fell Below ${notHumidEnough}:  sending SMS to $phone1 and activating ${mySwitch}"
+			log.debug "Humidity Fell Below ${notHumidEnough}:  sending SMS and activating ${mySwitch}"
 			send("${humiditySensor1.label} sensed high humidity level of ${evt.value}")
 			switch1?.off()
 		}

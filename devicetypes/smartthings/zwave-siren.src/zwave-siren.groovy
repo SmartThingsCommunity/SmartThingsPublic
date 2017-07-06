@@ -16,7 +16,7 @@
  *  Date: 2014-07-15
  */
 metadata {
-	definition (name: "Z-Wave Siren", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 		capability "Actuator"
         capability "Alarm"
         capability "Battery"
@@ -113,6 +113,10 @@ def strobe() {
 		zwave.basicV1.basicSet(value: 0xFF).format(),
 		zwave.basicV1.basicGet().format()
 	]
+}
+
+def both() {
+	on()
 }
 
 def refresh() {

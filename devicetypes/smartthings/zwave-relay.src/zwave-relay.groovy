@@ -38,7 +38,7 @@ metadata {
 	// tile definitions
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
@@ -81,7 +81,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 	def value = "when off"
 	if (cmd.configurationValue[0] == 1) {value = "when on"}
 	if (cmd.configurationValue[0] == 2) {value = "never"}
-	[name: "indicatorStatus", value: value, display: false]
+	[name: "indicatorStatus", value: value, displayed: false]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {

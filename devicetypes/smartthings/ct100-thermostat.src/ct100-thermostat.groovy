@@ -9,6 +9,7 @@ metadata {
 		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 		
 		attribute "thermostatFanState", "string"
 
@@ -18,6 +19,7 @@ metadata {
 		command "quickSetHeat"
 
 		fingerprint deviceId: "0x08", inClusters: "0x43,0x40,0x44,0x31,0x80,0x85,0x60"
+		fingerprint mfr:"0098", prod:"6401", model:"0107", deviceJoinName: "2Gig CT100 Programmable Thermostat"
 	}
 
 	// simulator metadata
@@ -81,13 +83,13 @@ metadata {
 			state "fanCirculate", label:'${name}', action:"switchFanMode"
 		}
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "setHeatingSetpoint", action:"quickSetHeat", backgroundColor:"#d04e00"
+			state "setHeatingSetpoint", action:"quickSetHeat", backgroundColor:"#e86d13"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "heat", label:'${currentValue}° heat', backgroundColor:"#ffffff"
 		}
 		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "setCoolingSetpoint", action:"quickSetCool", backgroundColor: "#1e9cbb"
+			state "setCoolingSetpoint", action:"quickSetCool", backgroundColor: "#00a0dc"
 		}
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "cool", label:'${currentValue}° cool', backgroundColor:"#ffffff"
@@ -104,6 +106,16 @@ metadata {
 		main "temperature"
 		details(["temperature", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh", "humidity", "battery"])
 	}
+}
+
+def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(String description)
@@ -437,6 +449,14 @@ def setCoolingSetpoint(Double degrees, Integer delay = 30000) {
 		zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: deviceScale, precision: p,	 scaledValue: convertedDegrees).format(),
 		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2).format()
 	], delay)
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	log.debug "ping() called"
+	refresh()
 }
 
 def configure() {

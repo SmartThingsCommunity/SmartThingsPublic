@@ -24,7 +24,8 @@ definition(
     category: "Connections",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/withings.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/withings%402x.png",
-    oauth: true
+    oauth: true,
+    singleInstance: true
 ) {
 	appSetting "clientId"
 	appSetting "clientSecret"
@@ -59,7 +60,7 @@ def authPage() {
 
 def oauthInitUrl() {
 	def token = getToken()
-	log.debug "initiateOauth got token: $token"
+	//log.debug "initiateOauth got token: $token"
 
 	// store these for validate after the user takes the oauth journey
 	state.oauth_request_token = token.oauth_token
@@ -75,7 +76,7 @@ def getToken() {
 	]
 	def requestTokenBaseUrl = "https://oauth.withings.com/account/request_token"
 	def url = buildSignedUrl(requestTokenBaseUrl, params)
-	log.debug "getToken - url: $url"
+	//log.debug "getToken - url: $url"
 
 	return getJsonFromUrl(url)
 }
@@ -181,7 +182,7 @@ def exchangeToken() {
 
 	def requestTokenBaseUrl = "https://oauth.withings.com/account/access_token"
 	def url = buildSignedUrl(requestTokenBaseUrl, params, tokenSecret)
-	log.debug "signed url: $url with secret $tokenSecret"
+	//log.debug "signed url: $url with secret $tokenSecret"
 
 	def token = getJsonFromUrl(url)
 
@@ -197,8 +198,8 @@ def exchangeToken() {
 
 def load() {
 	def json = get(getMeasurement(new Date() - 30))
-
-	log.debug "swapped, then received: $json"
+	// removed logging of actual json payload.  Can be put back for debugging
+	log.debug "swapped, then received json"
 	parse(data:json)
 
 	def html = """

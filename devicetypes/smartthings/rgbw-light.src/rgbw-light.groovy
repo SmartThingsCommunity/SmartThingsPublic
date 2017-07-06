@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "RGBW Light", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "RGBW Light", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 		capability "Switch Level"
 		capability "Color Control"
 		capability "Color Temperature"
@@ -37,9 +37,9 @@ metadata {
 	}
 
 	standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-		state "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+		state "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
 		state "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-		state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+		state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff"
 		state "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 	}
 	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat") {

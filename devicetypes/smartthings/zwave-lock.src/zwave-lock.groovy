@@ -20,11 +20,30 @@ metadata {
 		capability "Sensor"
 		capability "Lock Codes"
 		capability "Battery"
+		capability "Health Check"
 
 		command "unlockwtimeout"
 
 		fingerprint deviceId: "0x4003", inClusters: "0x98"
 		fingerprint deviceId: "0x4004", inClusters: "0x98"
+		fingerprint mfr:"0090", prod:"0001", model:"0236", deviceJoinName: "KwikSet SmartCode 910 Deadbolt Door Lock"
+		fingerprint mfr:"0090", prod:"0003", model:"0238", deviceJoinName: "KwikSet SmartCode 910 Deadbolt Door Lock"
+		fingerprint mfr:"0090", prod:"0001", model:"0001", deviceJoinName: "KwikSet SmartCode 910 Contemporary Deadbolt Door Lock"
+		fingerprint mfr:"0090", prod:"0003", model:"0339", deviceJoinName: "KwikSet SmartCode 912 Lever Door Lock"
+		fingerprint mfr:"0090", prod:"0003", model:"4006", deviceJoinName: "KwikSet SmartCode 914 Deadbolt Door Lock" //backlit version
+		fingerprint mfr:"0090", prod:"0003", model:"0440", deviceJoinName: "KwikSet SmartCode 914 Deadbolt Door Lock"
+		fingerprint mfr:"0090", prod:"0001", model:"0642", deviceJoinName: "KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock"
+		fingerprint mfr:"0090", prod:"0003", model:"0642", deviceJoinName: "KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock"
+		fingerprint mfr:"003B", prod:"6341", model:"0544", deviceJoinName: "Schlage Camelot Touchscreen Deadbolt Door Lock"
+		fingerprint mfr:"003B", prod:"6341", model:"5044", deviceJoinName: "Schlage Century Touchscreen Deadbolt Door Lock"
+		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Connected Keypad Lever Door Lock"
+		fingerprint mfr:"0129", prod:"0002", model:"0800", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120
+		fingerprint mfr:"0129", prod:"0002", model:"0000", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD220, YRD240
+		fingerprint mfr:"0129", prod:"0002", model:"FFFF", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
+		fingerprint mfr:"0129", prod:"0004", model:"0800", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110
+		fingerprint mfr:"0129", prod:"0004", model:"0000", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD210
+		fingerprint mfr:"0129", prod:"0001", model:"0000", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
+		fingerprint mfr:"0129", prod:"8002", model:"0600", deviceJoinName: "Yale Assure Lock with Bluetooth"
 	}
 
 	simulator {
@@ -38,10 +57,10 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"toggle", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.lock", key: "PRIMARY_CONTROL") {
-				attributeState "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#79b821", nextState:"unlocking"
+				attributeState "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00A0DC", nextState:"unlocking"
 				attributeState "unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking"
 				attributeState "unknown", label:"unknown", action:"lock.lock", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff", nextState:"locking"
-				attributeState "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#79b821"
+				attributeState "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#00A0DC"
 				attributeState "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
 			}
 		}
@@ -66,9 +85,27 @@ metadata {
 import physicalgraph.zwave.commands.doorlockv1.*
 import physicalgraph.zwave.commands.usercodev1.*
 
+def installed() {
+	// Device-Watch pings if no device events received for 1 hour (checkInterval)
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
+	// Device-Watch pings if no device events received for 1 hour (checkInterval)
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	try {
+		if (!state.init) {
+			state.init = true
+			response(secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()]))
+		}
+	} catch (e) {
+		log.warn "updated() threw $e"
+	}
+}
+
 def parse(String description) {
 	def result = null
-	if (description.startsWith("Err")) {
+	if (description.startsWith("Err 106")) {
 		if (state.sec) {
 			result = createEvent(descriptionText:description, displayed:false)
 		} else {
@@ -80,6 +117,8 @@ def parse(String description) {
 				displayed: true,
 			)
 		}
+	} else if (description == "updated") {
+		return null
 	} else {
 		def cmd = zwave.parse(description, [ 0x98: 1, 0x72: 2, 0x85: 2, 0x86: 1 ])
 		if (cmd) {
@@ -113,6 +152,10 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
 
 def zwaveEvent(DoorLockOperationReport cmd) {
 	def result = []
+
+	unschedule("followupStateCheck")
+	unschedule("stateCheck")
+
 	def map = [ name: "lock" ]
 	if (cmd.doorLockMode == 0xFF) {
 		map.value = "locked"
@@ -262,6 +305,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		case 32:
 			map = [ name: "codeChanged", value: "all", descriptionText: "$device.displayName: all user codes deleted", isStateChange: true ]
 			allCodesDeleted()
+			break
 		case 33:
 			map = [ name: "codeReport", value: cmd.alarmLevel, data: [ code: "" ], isStateChange: true ]
 			map.descriptionText = "$device.displayName code $cmd.alarmLevel was deleted"
@@ -286,7 +330,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 			}
 			break
 		case 167:
-			if (!state.lastbatt || (new Date().time) - state.lastbatt > 12*60*60*1000) {
+			if (!state.lastbatt || now() - state.lastbatt > 12*60*60*1000) {
 				map = [ descriptionText: "$device.displayName: battery low", isStateChange: true ]
 				result << response(secure(zwave.batteryV1.batteryGet()))
 			} else {
@@ -325,17 +369,17 @@ def zwaveEvent(UserCodeReport cmd) {
 			code = state["set$name"] ?: decrypt(state[name]) ?: "****"
 			state.remove("set$name".toString())
 		} else {
-			map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: code ] ]
+			map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: code ], isStateChange: true ]
 			map.descriptionText = "$device.displayName code $cmd.userIdentifier is set"
 			map.displayed = (cmd.userIdentifier != state.requestCode && cmd.userIdentifier != state.pollCode)
-			map.isStateChange = (code != decrypt(state[name]))
+			map.isStateChange = true
 		}
 		result << createEvent(map)
 	} else {
 		map = [ name: "codeReport", value: cmd.userIdentifier, data: [ code: "" ] ]
 		if (state.blankcodes && state["reset$name"]) {  // we deleted this code so we can tell that our new code gets set
 			map.descriptionText = "$device.displayName code $cmd.userIdentifier was reset"
-			map.displayed = map.isStateChange = false
+			map.displayed = map.isStateChange = true
 			result << createEvent(map)
 			state["set$name"] = state["reset$name"]
 			result << response(setCode(cmd.userIdentifier, state["reset$name"]))
@@ -347,7 +391,7 @@ def zwaveEvent(UserCodeReport cmd) {
 				map.descriptionText = "$device.displayName code $cmd.userIdentifier is not set"
 			}
 			map.displayed = (cmd.userIdentifier != state.requestCode && cmd.userIdentifier != state.pollCode)
-			map.isStateChange = state[name] as Boolean
+			map.isStateChange = true
 			result << createEvent(map)
 		}
 		code = ""
@@ -416,11 +460,12 @@ def zwaveEvent(physicalgraph.zwave.commands.timev1.TimeGet cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	// The old Schlage locks use group 1 for basic control - we don't want that, so unsubscribe from group 1
 	def result = [ createEvent(name: "lock", value: cmd.value ? "unlocked" : "locked") ]
-	result << response(zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-	if (state.assoc != zwaveHubNodeId) {
-		result << response(zwave.associationV1.associationGet(groupingIdentifier:2))
-	}
-	result
+	def cmds = [
+			zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId).format(),
+			"delay 1200",
+			zwave.associationV1.associationGet(groupingIdentifier:2).format()
+	]
+	[result, response(cmds)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -431,7 +476,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	} else {
 		map.value = cmd.batteryLevel
 	}
-	state.lastbatt = new Date().time
+	state.lastbatt = now()
 	createEvent(map)
 }
 
@@ -490,6 +535,20 @@ def unlockwtimeout() {
 	lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_UNSECURED_WITH_TIMEOUT)
 }
 
+def ping() {
+	runIn(30, followupStateCheck)
+	secure(zwave.doorLockV1.doorLockOperationGet())
+}
+
+def followupStateCheck() {
+	runEvery1Hour(stateCheck)
+	stateCheck()
+}
+
+def stateCheck() {
+	sendHubCommand(new physicalgraph.device.HubAction(secure(zwave.doorLockV1.doorLockOperationGet())))
+}
+
 def refresh() {
 	def cmds = [secure(zwave.doorLockV1.doorLockOperationGet())]
 	if (state.assoc == zwaveHubNodeId) {
@@ -499,15 +558,14 @@ def refresh() {
 		cmds << "delay 4200"
 		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()  // old Schlage locks use group 2 and don't secure the Association CC
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
-		state.associationQuery = new Date().time
-	} else if (new Date().time - state.associationQuery.toLong() > 9000) {
-		log.debug "setting association"
+		state.associationQuery = now()
+	} else if (secondsPast(state.associationQuery, 9)) {
 		cmds << "delay 6000"
 		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
 		cmds << secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
 		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
-		state.associationQuery = new Date().time
+		state.associationQuery = now()
 	}
 	log.debug "refresh sending ${cmds.inspect()}"
 	cmds
@@ -515,55 +573,22 @@ def refresh() {
 
 def poll() {
 	def cmds = []
-	if (state.assoc != zwaveHubNodeId && secondsPast(state.associationQuery, 19 * 60)) {
-		log.debug "setting association"
-		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
-		cmds << secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()
-		cmds << "delay 6000"
-		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
-		cmds << "delay 6000"
-		state.associationQuery = new Date().time
-	} else {
-		// Only check lock state if it changed recently or we haven't had an update in an hour
-		def latest = device.currentState("lock")?.date?.time
-		if (!latest || !secondsPast(latest, 6 * 60) || secondsPast(state.lastPoll, 55 * 60)) {
-			cmds << secure(zwave.doorLockV1.doorLockOperationGet())
-			state.lastPoll = (new Date()).time
-		} else if (!state.MSR) {
-			cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-		} else if (!state.fw) {
-			cmds << zwave.versionV1.versionGet().format()
-		} else if (!state.codes) {
-			state.pollCode = 1
-			cmds << secure(zwave.userCodeV1.usersNumberGet())
-		} else if (state.pollCode && state.pollCode <= state.codes) {
-			cmds << requestCode(state.pollCode)
-		} else if (!state.lastbatt || (new Date().time) - state.lastbatt > 53*60*60*1000) {
-			cmds << secure(zwave.batteryV1.batteryGet())
-		} else if (!state.enc) {
-			encryptCodes()
-			state.enc = 1
-		}
+	// Only check lock state if it changed recently or we haven't had an update in an hour
+	def latest = device.currentState("lock")?.date?.time
+	if (!latest || !secondsPast(latest, 6 * 60) || secondsPast(state.lastPoll, 55 * 60)) {
+		cmds << secure(zwave.doorLockV1.doorLockOperationGet())
+		state.lastPoll = now()
+	} else if (!state.lastbatt || now() - state.lastbatt > 53*60*60*1000) {
+		cmds << secure(zwave.batteryV1.batteryGet())
+		state.lastbatt = now()  //inside-214
 	}
-	log.debug "poll is sending ${cmds.inspect()}"
-	device.activity()
-	cmds ?: null
-}
-
-private def encryptCodes() {
-	def keys = new ArrayList(state.keySet().findAll { it.startsWith("code") })
-	keys.each { key ->
-		def match = (key =~ /^code(\d+)$/)
-		if (match) try {
-			def keynum = match[0][1].toInteger()
-			if (keynum > 30 && !state[key]) {
-				state.remove(key)
-			} else if (state[key] && !state[key].startsWith("~")) {
-				log.debug "encrypting $key: ${state[key].inspect()}"
-				state[key] = encrypt(state[key])
-			}
-		} catch (java.lang.NumberFormatException e) { }
+	if (cmds) {
+		log.debug "poll is sending ${cmds.inspect()}"
+		cmds
+	} else {
+		// workaround to keep polling from stopping due to lack of activity
+		sendEvent(descriptionText: "skipping poll", isStateChange: true, displayed: false)
+		null
 	}
 }
 
@@ -672,7 +697,7 @@ private Boolean secondsPast(timestamp, seconds) {
 			return true
 		}
 	}
-	return (new Date().time - timestamp) > (seconds * 1000)
+	return (now() - timestamp) > (seconds * 1000)
 }
 
 private allCodesDeleted() {
