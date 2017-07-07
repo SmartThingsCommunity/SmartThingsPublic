@@ -134,8 +134,9 @@ def parse(String description) {
 				} else {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
+				maps += translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
 			} else {
-
 				maps += handleAcceleration(descMap)
 			}
 		}
@@ -229,6 +230,11 @@ private List<Map> parseAxis(List<Map> attrData) {
 
 private List<Map> parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
+
+	translateZoneStatus(zs)
+}
+
+private List<Map> translateZoneStatus(ZoneStatus zs) {
 	List<Map> results = []
 
 	if (garageSensor != "Yes") {
@@ -313,7 +319,7 @@ def refresh() {
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 			zigbee.readAttribute(0xFC02, 0x0010, [mfgCode: manufacturerCode]) +
-			zigbee.enrollResponse()
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
 
 	return refreshCmds
 }
