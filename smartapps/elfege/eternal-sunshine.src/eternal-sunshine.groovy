@@ -87,7 +87,7 @@ def Options() {
     return dynamicPage(pageProperties){
         section("Select Optional Rules") {    
             input "OnlyIfNotOff", "bool", title: "Run this app only if ${dimmer} isn't turned off", default: false, uninstall: true, install: true
-            paragraph = "This option also works with level setting: if you manually change the level, the app stops running until you turn off and on the light"
+            paragraph "This option also works with level setting: if you manually change the level, the app stops running until you turn the light off and on (give it about 5 secs delay)"
 
             paragraph "Below you can set a maximum value above which your lights won't be set. Useful after watching a movie or when you want your night mode to be more intimate..."        
             input "Partvalue", "bool", title: "optional: set a maximum light level?", required:false, default: false, submitOnChange: true, uninstall: true, install: true
