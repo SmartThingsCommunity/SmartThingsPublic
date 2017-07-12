@@ -1016,7 +1016,7 @@ private send(message) {
             log.debug("Sending Push Notification...")
             sendPush(message)
         } 
-        if (phoneNumber != "0") {
+        if (phoneNumber) {
             log.debug("Sending text message...")
             sendSms(phoneNumber, message)
         }
