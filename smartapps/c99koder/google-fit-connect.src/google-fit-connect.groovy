@@ -48,7 +48,7 @@ def mainPage() {
             
             section("Google Authentication") {
                 paragraph "Tap below to log in to Google and authorize SmartThings access."
-                href url:redirectUrl, style:"embedded", required:true, title:"", description:"Click to enter credentials"
+                href url:redirectUrl, style:"external", required:true, title:"", description:"Click to enter credentials"
             }
         } else {
             section("Options") {
