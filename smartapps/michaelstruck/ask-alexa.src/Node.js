@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.8 - 6/29/17 Copyright © 2017 Michael Struck
+ *  Version 1.2.9 - 7/12/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -23,6 +23,7 @@
  *  Version 1.2.6 - Added icon to skill's display card for Show device
  *  Version 1.2.7 - Added in option for 'whisper' mode, changed structure to SSML output. Allow for speed/pitch adjustments
  *  Version 1.2.8 - Added dynamic icons for skill's card. Ready for the Amazon Show!
+ *  Version 1.2.9 - Added advanced featured to WebCoRE macros, added varibles for whipser and emphasis, updated brief replies
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -36,9 +37,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.8';
-    var versionDate= '06/29/2017';
-    var versionNum = '128';
+    var versionTxt = '1.2.9';
+    var versionDate= '07/12/2017';
+    var versionNum = '129';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
     var STappID = '';
@@ -114,8 +115,9 @@ exports.handler = function( event, context ) {
                     var MParam = event.request.intent.slots.MParam.value;
                     var Cancel = event.request.intent.slots.Cancel.value;
                     var MPW = event.request.intent.slots.MPW.value;
+                    var xParam = event.request.intent.slots.xParam.value;
                     if (Cancel) {MNum = 9999}
-                    url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Num=' + MNum + '&MPW=' + MPW;
+                    url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Num=' + MNum + '&MPW=' + MPW + "&xParam="+xParam;
                     process = true;
                     cardName = "SmartThings Macros/Extensions";
                 }
@@ -186,11 +188,13 @@ function processOutput(speechText, personality, contOptions){
             endSession = false;
         }
     }
+    if (speechText.endsWith("%7%") && contOptions.slice(2,-1)=="1") endSession = false;
+    if (speechText.endsWith("%X%") && contOptions.endsWith("1")) endSession = false;
     if (speechText.endsWith("%P%")){
         speechText += getResponse("PIN", personality);
         endSession = false;
     }
-    speechText=speechText.replace(/%[1-4]%|%[P]%/,"");
+    speechText=speechText.replace(/%[1-8]%|%[P]%|%[X]%/,"");
     if (addText) {
         var beginText = addText[Math.floor(Math.random() * addText.length)];
         speechText = beginText + speechText;
@@ -276,10 +280,22 @@ function output( text, context, card, complete, pName, whisper, speed, pitch, ic
         text = text.replace(/ 0(\d,) /g, " $1 ");
         text = text.replace(/ A /g, " a ");
     }
-    var SSMLtext = whisper ? "<amazon:effect name='whispered'>" + text + "</amazon:effect>" : !text ? " " : text;
+    var SSMLtext;
+    if (whisper) SSMLtext = "<amazon:effect name='whispered'>" + text + "</amazon:effect>";
+    else {
+        if (!text) SSMLtext=" ";
+        else {
+            SSMLtext=text.replace(/<w>/g,"<amazon:effect name='whispered'>");
+            SSMLtext=SSMLtext.replace(/<\/w>/g,"</amazon:effect>");
+            SSMLtext=SSMLtext.replace(/<eH>/g,"<emphasis level='strong'>");
+            SSMLtext=SSMLtext.replace(/<eL>/g,"<emphasis level='reduced'>");
+            SSMLtext=SSMLtext.replace(/<\/e>/g,"</emphasis>");
+        }
+    }
     if (pitch !="medium") SSMLtext ="<prosody pitch='" + pitch + "'>" + SSMLtext +"</prosody>";
     if (speed !="medium") SSMLtext ="<prosody rate='" + speed + "'>" + SSMLtext +"</prosody>";
     var cardText = text ? text :"No output given";
+    cardText=cardText.replace(/<w>|<\/w>|<eH>|<eL>|<\/e>/g,"");
     var imgURL = "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/AmazonICO/";
     if (!icon) icon = "AskAlexa";
     var response = {
@@ -299,7 +315,6 @@ function output( text, context, card, complete, pName, whisper, speed, pitch, ic
     };
     context.succeed( { response: response } );
 }
-
 function responseNormal(respType){
     var responses;
     if (respType == "PIN") {
@@ -343,7 +358,6 @@ function responseNormal(respType){
     var response = responses[Math.floor(Math.random() * responses.length)];
     return response;
 }
-
 function responseCourtesy(respType){
     var responses;
     if (respType == "PIN") {
@@ -431,7 +445,6 @@ function responseSnarky(respType){
     var response = responses[Math.floor(Math.random() * responses.length)];
     return response;
 }
-
 function cvtList(){
     var wordCvt=[{txt:" N ",cvt: " north " },{txt:" S ",cvt: " south "},{txt:" E ",cvt: " east " },{ txt:" W ",cvt: " west " },{ txt:" ESE ",cvt: " east-south east " },
     {txt:" NW ",cvt: " northwest " },{txt:" SW ",cvt: " southwest "},{ txt:" NE ",cvt: " northeast " },{ txt:" SE ",cvt: " southeast "},{txt:" NNW ",cvt: " north-north west " },
