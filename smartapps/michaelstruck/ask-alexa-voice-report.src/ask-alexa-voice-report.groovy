@@ -2,12 +2,13 @@
  *  Ask Alexa Voice Report Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.3 6/26/17
+ *  Version 1.0.4 7/11/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restricitions 
  *  Version 1.0.2a - (6/17/17) - Small bug fixes, deprecated send to notification feed. Will add message queue functionality if feedback is given
  *  Version 1.0.3 - (6/28/17) - Added device health report, replaced notifications with Message Queue
+ *  Version 1.0.4 - (7/11/17) - Added code for additional text field variables, allow suppression of continuation messages.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -68,7 +69,10 @@ def mainPage() {
         section ("Output options"){
         	href "pageMQ", title: "Send Output To Message Queue(s)", description: mqDesc(), state: vrMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
             input "allowNullRpt", "bool", title: "Allow For Empty Report (For Extension Groups)", defaultValue: false
-            if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
+            if (parent.contMacro) {
+                	input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)", defaultValue: false, submitOnChange: true
+                    if (!overRideMsg) input "suppressCont", "bool", title:"Suppress Continuation Messages (But Still Allow Continuation Commands)", defaultValue: false 
+            }
         }
         section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
 			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
@@ -314,10 +318,12 @@ def getOutput(){
 	}
 	catch(e){ outputTxt = "There was an error processing the report. Please try again. If this error continues, please contact the author of Ask Alexa. %1%" }
     def playContMsg = overRideMsg ? false : true
+    def suppressContMsg = suppressCont && !overRideMsg && parent.contMacro
     if (!outputTxt && !allowNullRpt) outputTxt = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. %1%"  
-    if ((parent.advReportOutput && voiceRepFilter) || voicePre || voicePost) outputTxt = parent.replaceVoiceVar(outputTxt,"",voiceRepFilter,"Voice",app.label,0)
+    if ((parent.advReportOutput && voiceRepFilter) || voicePre || voicePost) outputTxt = parent.replaceVoiceVar(outputTxt,"",voiceRepFilter,"Voice",app.label,0,"")
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
-    outputTxt += (outputTxt && !outputTxt.endsWith("%") && playContMsg) ? "%4%" : (outputTxt && !outputTxt.endsWith("%") && !playContMsg) ? " " : ""
+    if (outputTxt && !outputTxt.endsWith("%") && playContMsg && !suppressContMsg ) outputTxt += "%4%"
+    else if (outputTxt && !outputTxt.endsWith("%") && suppressContMsg ) outputTxt += "%X%"   
     if (vrMsgQue){
         def expireMin=vrMQExpire ? vrMQExpire as int : 0, expireSec=expireMin*60
         def overWrite =!vrMQNotify && !vrMQExpire && vrMQOverwrite
@@ -750,6 +756,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 103 }
+private versionInt(){ return 104}
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.3 (06/28/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.4 (07/11/2017)" }

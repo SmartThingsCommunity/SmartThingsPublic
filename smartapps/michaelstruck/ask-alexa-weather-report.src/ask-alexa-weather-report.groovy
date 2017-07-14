@@ -3,12 +3,13 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.3 6/28/17
+ *  Version 1.0.4 7/11/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
  *  Version 1.0.2a (6/17/17) - Deprecated send to notification feed. Will add message queue functionality if feedback is given
  *  Version 1.0.3 - (6/28/17) Replaced notifications with Message Queue
+ *  Version 1.0.4 - (7/11/17) Allow suppression of continuation messages.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -65,7 +66,10 @@ def mainPage() {
 		}
         section ("Output options"){
         	href "pageMQ", title: "Send Output To Message Queue(s)", description: mqDesc(), state: wrMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
-            if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
+            if (parent.contMacro) {
+				input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)", defaultValue: false, submitOnChange: true
+				if (!overRideMsg) input "suppressCont", "bool", title:"Suppress Continuation Messages (But Still Allow Continuation Commands)", defaultValue: false 
+            }
         }
         section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
 			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
@@ -139,6 +143,7 @@ def initialize() {
 //Main Handlers
 def getOutput(){
 	String outputTxt = "", feedData = ""
+    def playContMsg, suppressContMsg 
 	if (currWeatherSel() || foreWeatherSel() || voiceSunset || voiceSunrise || voiceMoon || voiceTide ){
 		if (location.timeZone || zipCode){
 			Map cond = getWeatherFeature("conditions", zipCode)
@@ -155,14 +160,16 @@ def getOutput(){
 				outputTxt += foreWeatherSel() || voiceSunset || voiceSunrise ? getWeatherForecast() : ""
 				outputTxt += voiceMoon ? getMoonInfo() : ""
 				outputTxt += voiceTide ? tideInfo(): ""
-				def playContMsg = overRideMsg ? false : true 
+				playContMsg = overRideMsg ? false : true 
+                suppressContMsg = suppressCont && !overRideMsg && parent.contMacro
             }
 		}
 	else outputTxt += "Please set the location of your hub with the SmartThings mobile app, or enter a zip code to receive weather reports. %1%"
 	} 
     else outputTxt +="You don't have any weather reporting options set up within the '${app.label}'. %1%"
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
-    outputTxt += (outputTxt && !outputTxt.endsWith("%") && playContMsg) ? "%4%" : (outputTxt && !outputTxt.endsWith("%") && !playContMsg) ? " " : ""
+    if (outputTxt && !outputTxt.endsWith("%") && playContMsg && !suppressContMsg ) outputTxt += "%4%"
+    else if (outputTxt && !outputTxt.endsWith("%") && suppressContMsg ) outputTxt += "%X%"
 	if (wrMsgQue){
         def expireMin=wrMQExpire ? wrMQExpire as int : 0, expireSec=expireMin*60
         def overWrite =!wrMQNotify && !wrMQExpire && wrMQOverwrite
@@ -591,6 +598,6 @@ private tideInfo() {
     return msg		
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 103 }
+private versionInt(){ return 104 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.3 (06/28/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.4 (07/11/2017)" }

@@ -2,13 +2,14 @@
  *  Ask Alexa Message Queue Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.3 6/12/17
+ *  Version 1.0.4 7/8/17
  * 
  *  Version 1.0.0 (3/31/17) - Initial release
  *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
  *  Version 1.0.2 (5/30/17) - Added "overwrite:[true/false]" and "notifyOnly:[true/false] parameters to message queue functions, 
  *  added sound effects alerting, Alexa notification placeholder, option to suppress time/date from Message Queue playback
  *  Version 1.0.3 (6/12/17) - Added logging feature for added partner usage
+ *  Version 1.0.4 (7/8/17) - Added REST URL access to Message Queue
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -33,6 +34,7 @@ definition(
     )
 preferences {
     page name:"mainPage"
+    page name:"pageMQURL"
 }
 //Show main page
 def mainPage() {
@@ -87,7 +89,19 @@ def mainPage() {
 				if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
             }
         }
+        section ("REST URL for this message queue", hideable: true, hidden:true){
+        	href "pageMQURL", title:"Tap To Send REST URL For This Message Queue To Live Logging", description: none, image:parent.imgURL()+"info.png"
+        }
         section("Tap below to remove this message queue"){ }
+	}
+}
+def pageMQURL(){
+    dynamicPage(name: "pageMQURL", install: false, uninstall: false) {
+    	section{
+        	paragraph "Please check your Live Logging to copy this URL to your messaging application", image: parent.imgURL()+"info.png"
+         	paragraph "${parent.getExtAddr(app.id)}"
+        	log.info "Message Queue URL: " + parent.getExtAddr(app.id)
+		}
 	}
 }
 page(name: "timeIntervalInput", title: "Only during a certain time") {
@@ -227,6 +241,6 @@ def purgeMQ(){
 //Common Code
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 //Version/Copyright/Information/Help
-private versionInt(){ return 103 }
+private versionInt(){ return 104 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.3 (06/12/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.4 (07/08/2017)" }

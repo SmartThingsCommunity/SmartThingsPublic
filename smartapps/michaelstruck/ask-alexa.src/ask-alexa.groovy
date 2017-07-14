@@ -1,14 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.8 - 6/26/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.9 - 7/13/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
- *  Version information prior to 2.2.7 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
+ *  Version information prior to 2.2.9 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.2.7a (6/15/17) Fixed issue with Ecobee custom DTH and brief replies, added whisper mode to personalities, added logging feature for added partner usage, added %age% text field variable, 
- *  WebCoRE connectivity, deprecated most messaging options within macros/extensions...will use Message Queue if demand is present
- *  Version 2.2.8 (6/26/17) Added dynamic icons to skill's card. Preparing for the Amazon Show. Added health status to additional attributes for devices.
+ *  Version 2.2.9 (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -57,6 +55,7 @@ preferences {
         	page name:"pageMacros"
             page name:"pageMsgQue"
             	page name:"pagePriQueue"
+                page name:"pageMQURL"
             page name:"pageWeather"
             page name:"pageVoiceRPT"
             page name:"pageSchdr"
@@ -121,7 +120,7 @@ def pageExtensions(){
             duplicates +=getVR().label.findAll{getVR().label.count(it)>1}.unique()
             duplicates +=getAAMQ().label.findAll{getAAMQ().label.count(it)>1}.unique()
             duplicates +=getSCHD().label.findAll{getSCHD().lable.count(it)>1}.unique()
-            if (duplicates) paragraph "You have two or more extension names that are the same. Please ensure each extension has a unique name and also does not conflict with device or other extension names.", image: imgURL() + "caution.png" 
+            if (duplicates) paragraph "You have two or more extensions that have the same name. Please ensure each extension has a unique name and also does not conflict with device or other extension names.", image: imgURL() + "caution.png" 
         	href "pageMacros", title: "Macros", description: macroDesc(macroCount), state: (macroCount ? "complete" : null), image: imgURL() + "speak.png" 
      		href "pageMsgQue", title: "Message Queues", description: mqDesc(mqCount), state: "complete", image: imgURL() + "mailbox.png"
             href "pageSchdr", title: "Schedules",  description: schDesc(schCount), state: (schCount ? "complete" : null), image: imgURL() + "schedule.png"
@@ -155,7 +154,7 @@ def pageMQGUI(){
         }
         section ("Options"){ 
             href "pageMsgQue", title: "Tap To Go To Messaging Queue Options", description: none
-            href "pageMsgDelete", title: "Tap To Delete All Message In The Message Queues Above", description: none
+            href "pageMsgDelete", title: "Tap To Delete All Messages In The Message Queues Above", description: none
         }
 	}
 }
@@ -435,10 +434,10 @@ def pageVoiceRPT() {
         }
         def children = getVR(), vrCount = children.size(), duplicates = children.label.findAll{children.label.count(it)>1}.unique(), aaVRVer
         if (vrCount) children.each { aaVRVer=it.versionInt()}   
-		if (duplicates || (children.size() && (aaVRVer < vrReq()))){
+		if (duplicates || (vrCount && (aaVRVer < vrReq()))){
         	section ("Warning"){
         		if (duplicates) paragraph "You have two or more voice reports with the same name. Please ensure each report has a unique name and also does not conflict with device names or other extensions.", image: imgURL() + "caution.png"
-        		if (children.size() && (aaVRVer < vrReq())) paragraph "You are using an outdated version of the voice report extension. Please update the software and try again.", image: imgURL() + "caution.png" 
+        		if (vrCount && (aaVRVer < vrReq())) paragraph "You are using an outdated version of the voice report extension. Please update the software and try again.", image: imgURL() + "caution.png" 
         	}
         }
         if (vrCount) section(vrCount==1 ? "One voice report configured" : vrCount + " voice reports configured" ){} 
@@ -452,9 +451,16 @@ def pageWeather() {
         section{ paragraph "Weather Reports", image: imgURL() + "weather.png" }
         def children = getWR(), wrCount = children.size(), duplicates = children.label.findAll{children.label.count(it)>1}.unique(), aaWRVer
         if (wrCount) children.each { aaWRVer=it.versionInt()}
+        log.debug wrCount && (aaWRVer < wrReq())
+        if (duplicates || (wrCount && (aaWRVer < wrReq()))){
+        	section ("Warning"){
+            	        log.debug aaWRVer
+        log.debug wrReq()
+        		if (duplicates) paragraph "You have two or more weather reports with the same name. Please ensure each report has a unique name and also does not conflict with device names or other extensions.", image: imgURL() + "caution.png"
+        		if (wrCount && (aaWRVer < wrReq())) paragraph "You are using an outdated version of the weather report extension. Please update the software and try again.", image: imgURL() + "caution.png" 
+        	}
+        }
         if (wrCount) section(wrCount==1 ? "One weather report configured" : wrCount + " weather reports configured" ){}    
-		if (duplicates) section { paragraph "You have two or more weather reports with the same name. Please ensure each report has a unique name and also does not conflict with device names or other extensions.", image: imgURL() + "caution.png"}
-        if (children.size() && (aaWRVer < wrReq())) section {paragraph "You are using an outdated version of the weather report extension. Please update the software and try again.", image: imgURL() + "caution.png" }
         section(" "){
         	app(name: "childWR", appName: "Ask Alexa Weather Report", namespace: "MichaelStruck", title: "Create A New Weather Report...", description: "Tap to create a new report", multiple: true, image: imgURL() + "add.png")
         }
@@ -501,7 +507,8 @@ def pageSettings(){
         section { paragraph "Settings", image: imgURL() + "settings.png" }
         section ("Additional voice settings"){ 
         	input "briefReply", "bool", title: "Give 'Brief' Device Action Reply", defaultValue: false, submitOnChange: true            
-            if (briefReply) input "briefReplyTxt", "enum", title: "Brief Reply", options: ["No reply spoken", "Ok", "Done"], required:false, multiple:false, defaultValue: "Ok"
+            if (briefReply) input "briefReplyTxt", "enum", title: "Brief Reply", options: ["No reply spoken", "Ok", "Done", "User-defined"], required:false, multiple:false, defaultValue: "Ok", submitOnChange: true
+            if (briefReply && briefReplyTxt=="User-defined") input "briefReplyCustom", "text", title:"User-defined Brief Reply", description:"Enter your brief reply", required: false
             input "flash", "bool", title: "Enable Flash Briefing", defaultValue: false, submitOnChange: true            
             if (flash) input "flashRPT", "enum", title: "Choose Flash Briefing Output", options: getMacroList("flash",""), required: false, multiple: false
             input "otherStatus", "bool", title: "Speak Additional Device Status Attributes", defaultValue: false
@@ -583,8 +590,20 @@ def pagePriQueue(){
 				if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
             }
         }
+        section ("REST URL for this message queue", hideable: true, hidden:true){
+        	href "pageMQURL", title:"Tap To Send REST URL For This Message Queue To Live Logging", description: none, image:imgURL()+"info.png"
+        }
     }
 }
+def pageMQURL(){
+    dynamicPage(name: "pageMQURL", install: false, uninstall: false) {
+    	section{
+        	paragraph "Please check your Live Logging to copy this URL to your messaging application", image: imgURL()+"info.png"
+         	paragraph "${getExtAddr("Primary Message Queue")}"
+        	log.info "Message Queue URL: " + getExtAddr("Primary Message Queue")
+		}
+	}
+}   
 def pageMsgQue() {
     dynamicPage(name: "pageMsgQue", install: false, uninstall: false) {
         section{ paragraph "Message Queues", image: imgURL() + "mailbox.png" }
@@ -633,8 +652,11 @@ def pageContCommands(){
         section ("Continuation of commands..."){
 			input "contError", "bool", title: "After Error", defaultValue: false
             input "contStatus", "bool", title: "After Status/List", defaultValue: false
-            input "contAction", "bool", title: "After Action/Event History", defaultValue: false
-            input "contMacro", "bool", title: "After Extension Execution", defaultValue: false
+            input "contAction", "bool", title: "After Action/Event History", defaultValue: false, submitOnChange: true
+            if (contAction && briefReply) paragraph "Please note that 'Brief Device Action Reply' is turned on. "+
+            	"There will be no prompt for continuation commands, but Alexa will still be active waiting "+
+                "for these additional commands with this option enabled.", image: imgURL()+"info.png"
+            input "contMacro", "bool", title: "After Macro/Extension Execution", defaultValue: false
 		}
         section ("Personality"){
 			input "Personality", "enum", title: "Response Personality Style", options: ["Normal","Courtesy","Snarky"], defaultValue: "Normal", submitOnChange: true
@@ -717,7 +739,7 @@ def pageGlobalVariables(){
         section ("Built in variables"){
         	paragraph "The following variables are built in:\n\n%time% - Time the variable is called\n%day% - Day of the week\n%date% - Full date\n" +
             	"%macro% - Macro/Extension name\n%mtype% - Macro/Extension type\n%dtype% - Device group type\n%dtypes% - Device group type (plural)\n%delay% - Control/WebCoRE macro delay"+
-                "\n%age% - Schedules age number"
+                "\n%age% - Schedules age number\n%xParam% - WebCoRE passed parameter"
         }
         if (getWR().size()){
         	section ("Weather Report"){
@@ -797,7 +819,10 @@ def mainPageChild(){
             def fullMacroName=[GroupM: "Extension Group",CoRE:"WebCoRE Trigger", Control:"Control", Group:"Device Group"][macroType] ?: macroType
             if (macroType) {
             	href "page${macroType}", title: "${fullMacroName} Settings", description: macroTypeDesc(), state: greyOutMacro()
-                if (parent.contMacro) input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)" , defaultValue: false
+                if (parent.contMacro) {
+                	input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)", defaultValue: false, submitOnChange: true
+                    if (!overRideMsg) input "suppressCont", "bool", title:"Suppress Continuation Messages (But Still Allow Continuation Commands)", defaultValue: false 
+                }
                 if (parent.showURLs && macroType==~/Control|GroupM/ &&  macroTypeDesc() !="Status: UNCONFIGURED - Tap to configure macro" && app.label !="Ask Alexa") {
                     href url:"${getApiServerUrl()}/api/smartapps/installations/${parent.app.id}/u?mName=${app.label}&access_token=${parent.state.accessToken}", style:"embedded", required:false, title:"Show REST URL For This Macro", description: none
 				}
@@ -860,13 +885,19 @@ def pageCoRE() {
         	input "cDelay", "number", title: "Default Delay (Minutes) To Trigger", range:"0..*", defaultValue: 0, required: false
             if (parent.pwNeeded) input "usePW", "bool", title: "Require PIN To Run This WebCoRE Macro", defaultValue: false
         }
+        section("Advanced features"){
+        	paragraph "You may pass a single parameter to the WebCoRE piston by adding your list of words to proper developer slot and speaking the addition parameter when executing the piston. "+
+            	"Please see the documentation from more information.", image: parent.imgURL() + "info.png"
+        	input "advWebCore", "bool", title: "Require Additional Parameter To Run Macro", defaultValue: false, submitOnChange:true
+        }
         section("Custom acknowledgment"){
              if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after macro runs", required: false, capitalization: "sentences"
+             if (!noAck && advWebCore ) input "voicePostAdv", "text", title: "Message When No Advanced Parameter Received", required: false, capitalization: "sentences"
              input "noAck", "bool", title: "No Acknowledgment Message", defaultValue: false, submitOnChange: true
         }
         if (!parent.webCoRE_list('enum')){
         	section("Missing WebCoRE pistons"){
-				paragraph "It looks like you don't have the WebCoRE SmartApp installed, or you haven't created any pistons yet. To use this capability, please install WebCoRE or, if already installed, create some pistons, then try again.", image: parent.imgURL() + "caution.png"
+				paragraph "It looks like you don't have the WebCoRE SmartApp installed, or you haven't created any pistons yet. To use this capability, please install WebCoRE, or if already installed, create some pistons, then try again.", image: parent.imgURL() + "caution.png"
             }
         }	
     }
@@ -1008,6 +1039,7 @@ def childUninstalled() {
     mqRefresh()
 }
 def initialize() {
+    unsubscribe()
     if (!parent){
         if (!state.accessToken) log.error "Access token not defined. Ensure OAuth is enabled in the SmartThings IDE."
 		webCoRE_init()
@@ -1033,6 +1065,7 @@ mappings {
 	path("/u") { action: [GET: "getURLs"] }
     path("/f") { action: [GET: "processFollowup"] }
     path("/q") { action: [GET: "processMQ"] }
+    path("/mq") {action: [GET: "extMQ"] }
 	path("/setup") { action: [GET: "setupData"] }
     path("/flash") { action: [GET: "flash"] }
     path("/cheat") { action: [GET: "cheat"] }
@@ -1087,7 +1120,7 @@ def processFollowup(){
 	String outputTxt = ""
     def devIcon
     if (type =~/password|pin/){
-		def pw = data == "undefined" || data =="?" ? 0 : data
+		def pw = data ==~/undefined|\?/ ? 0 : data
         if (!state.cmdFollowup && pwNeeded) outputTxt = "You issued a password but have no active commands in memory. No action is being taken. %1%"
         else if (!pwNeeded) outputTxt = "Passwords have not been enabled in your Ask Alexa SmartApp. No action is being taken. %1%"
         else if (pw && state.cmdFollowup){
@@ -1109,7 +1142,7 @@ def processFollowup(){
             }
             else if (state.cmdFollowup.return == "macroAction") {
             	devIcon="macro"
-                outputTxt=processMacroAction(state.cmdFollowup.mac, state.cmdFollowup.mNum, state.cmdFollowup.cmd, state.cmdFollowup.param, pw, true)
+                outputTxt=processMacroAction(state.cmdFollowup.mac, state.cmdFollowup.mNum, state.cmdFollowup.cmd, state.cmdFollowup.param, pw, true, state.cmdFollowup.xParam)
             }
         }
     }
@@ -1122,7 +1155,7 @@ def processDevice() {
 	def op = params.Operator												//Operation to perform
     def numVal = params.Num     											//Number for dimmer/PIN type settings
     def param = params.Param.toLowerCase()									//Other parameter (color)
-    if (op == "status" || (op=="undefined" && param=="undefined" && numVal=="undefined")) op="status"
+    if (op==~/status|undefined|null/ && param==~/undefined|null/ && numVal==~/undefined|null/) op="status"
     processDeviceAction(dev, op, numVal, param, false)
 }
 def processDeviceAction(dev, op, numVal, param, followup){        
@@ -1131,7 +1164,7 @@ def processDeviceAction(dev, op, numVal, param, followup){
 	log.debug "Op: " + op
 	log.debug "Num: " + numVal
 	log.debug "Param: " + param
-	def num = numVal == "undefined" || numVal =="?" ? 0 : numVal as int
+	def num = numVal ==~/undefined|null|\?/ || !numVal ? 0 : numVal as int
 	String outputTxt = ""
 	def deviceList, count = 0, aliasDeviceType, aliasDeviceObj, aliasDeviceList, aliasDeviceName, devIcon
 	getDeviceList().each{if (it.name==dev) {deviceList=it; count++}}
@@ -1208,7 +1241,7 @@ def processList(){
     if (listType =~/device/) outputTxt = parseMacroLists("Group","device group","control")
     if (listType =~/schedule/) outputTxt = parseMacroLists("Schedule","schedule","")
     if (listType =~/control/) outputTxt = parseMacroLists("Control","control macro","run")
-    if (listType =~/core/) outputTxt = parseMacroLists("WebCoRE","core trigger","run")
+    if (listType =~/core|webcore|trigger/) outputTxt = parseMacroLists("CoRE","WEBCORE trigger","run")
     if (listType =~/extension group|group extention/) outputTxt = parseMacroLists("GroupM","extension group","run")
     if (listType =~/weather/) outputTxt = parseMacroLists("Weather","weather report","play")
     if (listType =~/message|queue/) outputTxt = parseMacroLists("MQ","message queue","play")
@@ -1225,7 +1258,7 @@ def processList(){
     if (listType ==~/light|lights/) outputTxt ="Please be a bit more specific about what kind of lighting devices you want me to list. You can ask me to list devices like 'switches', 'dimmers' or 'colored lights'. %1%"
     if (outputTxt.startsWith("%") && outputTxt.endsWith("%")) outputTxt = "There are no" + outputTxt.replaceAll("%", " ") + "set up within your Ask Alexa SmartApp. "
     if (outputTxt.startsWith("@") && outputTxt.endsWith("@")){
-    	if (Math.abs(new Random().nextInt() % 2)==1) outputTxt = "The only available" + outputTxt.replaceAll("@", " ")+ "is the '" +  getList(devices) + "'. "
+    	if (Math.abs(new Random().nextInt() % 2)==1) outputTxt = "The only available" + outputTxt.replaceAll("@", " ")+ "is named: '" +  getList(devices) + "'. "
     	else outputTxt = "You only have one" + outputTxt.replaceAll("@", " ")+ "set up in your app named: '" +  getList(devices) + "'. "
     }
     if (outputTxt.startsWith("#") && outputTxt.endsWith("#")) outputTxt = "The available" + outputTxt.replaceAll("#", " ") + "include the following: "+ getList(devices) + ". "
@@ -1254,7 +1287,7 @@ def parseMacroLists(type, noun, action){
 	else macName = count==1 ? "You only have one ${noun} called: " : count> 1 ? "You can ask me for detail about the following ${noun}s: " : "You don't have any ${noun}s created"
     if (count && type !="MQ"){
 		children.each{if (it.macroType==type){
-			macName += it.label ; count --
+			macName += "'" + it.label + "'"  ; count --
 			macName += count>1 ? ", " : count==1 ? " and " : ""
 			}	
 		}
@@ -1266,14 +1299,14 @@ def parseMacroLists(type, noun, action){
     return macName + ". " + extraTxt
 }
 //Extension Group
-def processMacroGroup(macroList, msg, append, noMsg, macLabel,macFeed,macFeedData){
+def processMacroGroup(macroList, msg, append, noMsg, macLabel){
     String result = "", feedData =""
-    def runCount=0, macChildren = getAskAlexa()
+    def runCount=0
     if (macroList){ 
         macroList.each{
-            macChildren.each{child->
+            getAskAlexa().each{child->
                 if (child.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == (it.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""))){ 
-                    result += child.getOkToRun() ? child.macroResults(0,"","","","")  : child.muteRestrictions ? "" : "You have restrictions on '${child.label}' that prevented it from running. %1%"             
+                    result += child.getOkToRun() ? child.macroResults(0,"","","","","")  : child.muteRestrictions ? "" : "You have restrictions on '${child.label}' that prevented it from running. %1%"             
                     runCount++
                     if (result.endsWith("%")) result = result[0..-4]
                 }
@@ -1296,7 +1329,7 @@ def processMacroGroup(macroList, msg, append, noMsg, macLabel,macFeed,macFeedDat
         def extraTxt = runCount > 1 ? "extensions" : "extension"
         if (runCount == macroList.size()) {
             if (!noMsg) {
-                msg = replaceVoiceVar(msg,"","",macroType,app.label,0)
+                msg = replaceVoiceVar(msg,"","",macroType,app.label,0,"")
                 if (msg && append) result += msg
                 if (msg && !append) result = msg
                 if (append && !msg) result += "I ran ${runCount} ${extraTxt} in this extension group. "
@@ -1342,10 +1375,28 @@ def processMQ() {
     String outputTxt = ""
 	def children = getAAMQ(), count = children.count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == queue}
     if (count==0 && queue=~/primary/) count = 1
-    if (count==0 && queue !="undefined" ) outputTxt="I could not find a message queue named '${queue}'. Please check the message queue name in your SmartApp. %1%"
+    if (count==0 && queue !="undefined" && queue !="null" ) outputTxt="I could not find a message queue named '${queue}'. Please check the message queue name in your SmartApp. %1%"
     else if (count<2) outputTxt = msgQueueReply(cmd,queue)
     else outputTxt ="You have multiple message queues named '${queue}'. Please check your SmartApp to fix this conflict. %1%"
     sendJSON(outputTxt,"mailbox") 
+}
+//External Message Queue Input
+def extMQ(){
+	def queue = params.queue		//Queue name
+    def msg = params.msg			//Message to send	
+    def source = params.source		//Sending source
+    if (queue && msg && source){
+    	if (queue == "Primary Message Queue") msgPMQ (new Date(now()), msg, "", source, false, 0, false, false, false)
+        else if (getAAMQ().find{it.label == queue}){
+        	def qNameRun = getAAMQ().find{it.label == queue}
+            if (qNameRun) qNameRun.msgHandler(new Date(now()), msg, "", source, false, 0, false, false, false)
+    	}
+        else log.debug "An external source, '${source}', attempted to send a message to an invalid message queue name."
+	} 
+    else log.debug "An exteranl source attempted to send a message but did not have the correct parameters."
+}
+def getExtAddr(name){
+	return "${getApiServerUrl()}/api/smartapps/installations/${app.id}/mq?queue=${name}&msg={Message to send}&source={Name of what is sending the message}&access_token=${state.accessToken}"
 }
 //Message Queue Reply
 def msgQueueReply(cmd,queue){
@@ -1357,7 +1408,7 @@ def msgQueueReply(cmd,queue){
     if (validQueue) result=validQueue.msgQueueReply(cmd)
     else {
         def msgCount = state.msgQueue ? state.msgQueue.size() : 0, msgS= msgCount==0 || msgCount>1 ? " messages" : " message"
-        if (cmd =~/play|open|undefined/){
+        if (cmd =~/play|open|undefined|null/){
             if (msgCount==0) result = "You don't have any messages in the primary message queue. %M%"
             else {
                 result = "You have " + msgCount + msgS + " in your primary message queue: "
@@ -1408,11 +1459,11 @@ def processSchedule(schedule,cmd, cancel){
     log.debug "Schedule Command: " + cmd
     log.debug "Schedule Cancel Delete: ${cancel=="9999" ? "True" : "False"}"
     def sd = getSCHD().find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == schedule}, outputTxt
-    if (cmd==~/status|list|undefined/ && cancel != "9999"  ) outputTxt = sd.getSchdDesc()
+    if (cmd==~/status|list|undefined|null/ && cancel != "9999"  ) outputTxt = sd.getSchdDesc()
     else if (cmd==~/toggle/) outputTxt = sd.toggle()
     else if (cmd==~/on|off/) outputTxt = sd.onOff(cmd)
     else if (cmd=="delete") outputTxt = sd.deleteSch()
-    else if (cmd=="undefined" && cancel == "9999") outputTxt = sd.notDeleteSch()
+    else if (cmd==~/undefined|null/ && cancel == "9999") outputTxt = sd.notDeleteSch()
 	else outputTxt="I did not understand what you wanted to do the the schedule, '${schedule}'. You may query this schedule, delete it, or toggle its 'on' and 'off' state. %1%"
     return outputTxt
 }
@@ -1424,8 +1475,7 @@ def processMacro() {
     def cmd = params.Cmd													//Group Command
     def param = params.Param												//Parameter
     def mPW = params.MPW													//Macro Password
-    //------------------------------------------------------
-    String outputTxt = ""
+    def xParam = params.xParam												//WebCoRE parameters
     def count = 0, macCount=0, wrCount=0, vrCount=0, sdCount, macAlias
     macCount = getAskAlexa().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
     wrCount = getWR().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
@@ -1468,22 +1518,23 @@ def processMacro() {
     if (!count) outputTxt = "I could not find a macro, alias or any extension named '${mac}'. %1%"
     if (outputTxt) sendJSON(outputTxt,"caution")
     else {
-    	if (macCount) processMacroAction(mac, mNum, cmd, param, mPW, false)
+    	if (macCount) processMacroAction(mac, mNum, cmd, param, mPW, false,xParam)
         else if (wrCount) sendJSON(processWeatherReport(mac),"weather")
         else if (vrCount) sendJSON(processVoiceReport(mac),"voice")
         else if (sdCount) sendJSON(processSchedule(mac,cmd,mNum),"schedule")
 	}        
 }
-def processMacroAction(mac, mNum, cmd, param, mPW, followup){
+def processMacroAction(mac, mNum, cmd, param, mPW, followup,xParam){
     log.debug "Macro Name: " + mac
     log.debug "mNum: " + mNum
     log.debug "Cmd: " + cmd
     log.debug "Param: " + param
     log.debug "mPW: " + mPW
-    if (mNum == "0" && cmd=="undefined" && param == "undefined") cmd="off"
-    def num = mNum == "undefined" || mNum =="?" || !mNum  ? 0 : mNum as int
+    log.debug "xParam: " + xParam
+    if (mNum == "0" && cmd==~/undefined|null/ && param ==~/undefined|null/) cmd="off"
+    def num = mNum ==~/undefined|null|\?/ || !mNum  ? 0 : mNum as int
     String outputTxt = ""
-    def macroType="", colorData, err=false, playContMsg
+    def macroType="", colorData, err=false, playContMsg, suppressContMsg
     if (cmd ==~/low|medium|high/){
         if (cmd=="low" && dimmerLow) num = dimmerLow else if (cmd=="low" && !dimmerLow) err=true 
 		if (cmd=="medium" && dimmerMed) num = dimmerMed else if (cmd=="medium" && !dimmerMed) err=true 
@@ -1500,13 +1551,13 @@ def processMacroAction(mac, mNum, cmd, param, mPW, followup){
         if (child.usePW && pwNeeded && password && mPW != password && ((child.macroType == "Group" && child.groupType == "lock") || child.macroType == "GroupM" ||
 			(child.macroType == "Group" && child.groupType == "doorControl") || child.macroType == "Control" || child.macroType == "CoRE")){
 			macProceed = false
-			def pwExtra = mPW=="undefined" ? "a" : "the proper"
+			def pwExtra = mPW==~/undefined|null/ ? "a" : "the proper"
 			if (child.macroType == "Group" && child.groupType == "lock") outputTxt = "To lock or unlock this group, you must use ${pwExtra} password. %P%"
 			if (child.macroType == "Group" && child.groupType == "doorControl") outputTxt = "To open or close this group, you must use ${pwExtra} password. %P%"
 			if (child.macroType == "CoRE") outputTxt = "To activate this WebCore Trigger, you must use ${pwExtra} password. %P%"
 			if (child.macroType == "Control") outputTxt = "To activate this Control Macro, you must use ${pwExtra} password. %P%"             
 			if (child.macroType == "GroupM") outputTxt = "To activate this Group Macro, you must use ${pwExtra} password. %P%" 
-			state.cmdFollowup=[return: "macroAction", mac:mac, mNum:mNum, cmd:cmd, param:param, mPW:0 ]
+			state.cmdFollowup=[return: "macroAction", mac:mac, mNum:mNum, cmd:cmd, param:param, mPW:0,xParam:xParam ]
 		}
 		if (child.macroType != "Group" && child.macroType != "GroupM" && cmd=="list" && macProceed) { outputTxt = "You can not use the list command with this type of macro. %1%"; macProceed = false }
 		else if (child.macroType == "GroupM" && cmd=="list" && macProceed) {
@@ -1516,13 +1567,15 @@ def processMacroAction(mac, mNum, cmd, param, mPW, followup){
 		}
 		if (macProceed){
 			playContMsg = child.overRideMsg ? false : true
+            suppressContMsg = child.suppressCont && !child.overRideMsg && contMacro
 			def fullMacroName = [GroupM: "Extension Group",CoRE: "WebCoRE Trigger", Control:"Control Macro", Group:"Device Group"][child.macroType] ?: child.macroType
-			if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param, mNum) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
-			else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label, child.noteFeed, child.noteFeedData)   
+			if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param, mNum,xParam) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
+			else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label)   
         }
     }
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
-    if (outputTxt && !outputTxt.endsWith("%") && playContMsg) outputTxt += "%4%"
+    if (outputTxt && !outputTxt.endsWith("%") && playContMsg && !suppressContMsg ) outputTxt += "%4%"
+    else if (outputTxt && !outputTxt.endsWith("%") && suppressContMsg ) outputTxt += "%X%"
     if (followup) return outputTxt 
     else sendJSON(outputTxt,"macro")
 }
@@ -1536,10 +1589,10 @@ def processSmartHome() {
     log.debug "Param: " + param
     log.debug "Num: " + num
     String outputTxt = ""
-    if (cmd =="undefined") {
+    if (cmd ==~/undefined|null/) {
     	if (param=="off") outputTxt="Be sure to specify a device, or the word 'security', when using the 'off' command. %1%"
         if (listModes?.find{it.toLowerCase()==param} && param != currMode) cmd = "mode"
-    	if (param==~/list|arm|undefined/) cmd = "security"
+    	if (param==~/list|arm|undefined|null/) cmd = "security"
         def phrases = location.helloHome?.getPhrases()*.label
         if (phrases.find{it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()==param}) cmd = "routine"
     }
@@ -1554,13 +1607,13 @@ def processSmartHome() {
 private changeMode(cmd, num, param){
     String outputTxt = ""
     def currMode = location.mode.toLowerCase()
-	if (param == "undefined") outputTxt ="The current SmartThings mode is set to, '${currMode}'. %2%"
-	if (listModes && param !="undefined"){
-        if (modesPW && pwNeeded && password && num == "undefined") {
+	if (param ==~/undefined|null/) outputTxt ="The current SmartThings mode is set to, '${currMode}'. %2%"
+	if (listModes && param !="undefined" && param !="null"){
+        if (modesPW && pwNeeded && password && num ==~/undefined|null/) {
             outputTxt = "You must use a password to change your SmartThings mode. %P%"
             state.cmdFollowup=[return: "changeMode", cmd: cmd, num: num, param: param]
         }
-        if (modesPW && pwNeeded && password && num!="undefined" && num != password) outputTxt="I did not hear the correct password to change your SmartThings mode. %1%"
+        if (modesPW && pwNeeded && password && num!="undefined" && num!="null" && num != password) outputTxt="I did not hear the correct password to change your SmartThings mode. %1%"
         if (!modesPW || !pwNeeded || (modesPW && pwNeeded && num == password)){
             if (listModes?.find{it.toLowerCase()==param} && param != currMode) {
                 def newMode=listModes.find{it.toLowerCase()==param}
@@ -1579,13 +1632,13 @@ private changeSHM(cmd, num, param){
     def SHMstatus = location.currentState("alarmSystemStatus")?.value
 	def SHMFullStat = [off : "disarmed", away: "armed away", stay: "armed home"][SHMstatus] ?: SHMstatus
 	def newSHM = "", SHMNewStat = "" 
-	if (param=="undefined") outputTxt ="The Smart Home Monitor is currently set to, '${SHMFullStat}'. %2%"
-		if (listSHM && param != "undefined"){
-			if (shmPW && pwNeeded && password && num == "undefined") {
+	if (param==~/undefined|null/) outputTxt ="The Smart Home Monitor is currently set to, '${SHMFullStat}'. %2%"
+		if (listSHM && param != "undefined" && param != "null"){
+			if (shmPW && pwNeeded && password && num ==~ /undefined|null/) {
             	outputTxt = "You must use a password to change the Smart Home Monitor. %P%"
                 state.cmdFollowup=[return: "changeSHM", cmd: cmd, num:num, param: param]
             }
-            if (shmPW && pwNeeded && password && num!="undefined" && num != password) outputTxt="I did not hear the correct password to change the Smart Home Monitor. %1%"
+            if (shmPW && pwNeeded && password && num!="undefined" && num!="null" && num != password) outputTxt="I did not hear the correct password to change the Smart Home Monitor. %1%"
             if (!shmPW || !pwNeeded || (shmPW && pwNeeded && num == password)){
                 if (param==~/arm|armed/ && (listSHM.find{it =="Armed (Away)"} || listSHM.find{it =="Armed (Home)"})) outputTxt ="I did not understand how you want me to arm the Smart Home Monitor. Be sure to say, 'armed home' or 'armed away', to properly change the setting. %1%"   
                 if ((param ==~/off|disarm/) && listSHM.find{it =="Disarmed" }) newSHM="off"
@@ -1604,14 +1657,14 @@ private changeSHM(cmd, num, param){
 }
 private runRoutine(cmd, num, param){
     String outputTxt = ""
-    if (param != "undefined") {
+    if (param != "undefined" && param != "null") {
         def whichRoutine = listRoutines.find{it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()==param}
             if (whichRoutine) {
-                if (routinesPW && pwNeeded && password && num == "undefined") {
+                if (routinesPW && pwNeeded && password && num ==~ /undefined|null/) {
                     outputTxt = "You must use a password to run SmartThings routines. %P%"
                     state.cmdFollowup=[return: "runRoutine", cmd: cmd, num:num, param: param]
                 }
-                if (routinesPW && pwNeeded && password && num!="undefined" && num != password) outputTxt="I did not hear the correct password to run the SmartThings routines. %1%"
+                if (routinesPW && pwNeeded && password && num!="undefined" && num!="null" && num != password) outputTxt="I did not hear the correct password to run the SmartThings routines. %1%"
                 if (!routinesPW || !pwNeeded || (routinesPW && pwNeeded && num == password)){
                     location.helloHome?.execute(whichRoutine)
                     outputTxt="I am executing the '${param}' routine. %3%"
@@ -1669,9 +1722,9 @@ def getReply(devices, type, STdeviceName, op, num, param){
             result = "The ${STdeviceName} temperature reading is currently ${temp} degrees"
             if (otherStatus){
                 def humidity = STdevice.currentValue("humidity"), opMode = STdevice.currentValue("thermostatMode")
-                def heat = opMode=="heat" || opMode =="auto" || stelproCMD ? STdevice.currentValue("heatingSetpoint") : ""
+                def heat = opMode==~/heat|auto/ || stelproCMD ? STdevice.currentValue("heatingSetpoint") : ""
                 if (heat) heat = roundValue(heat)
-                def cool = opMode=="cool" || opMode =="auto" ?  STdevice.currentValue("coolingSetpoint") : "" 
+                def cool = opMode==~/cool|auto/ ?  STdevice.currentValue("coolingSetpoint") : "" 
                 if (cool) cool = roundValue(cool)
                 result += opMode ? ", and the thermostat's mode is: '${opMode}'. " : ". "
                 result += humidity ? " The relative humidity reading is ${humidity}%. " : ""
@@ -1725,7 +1778,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                             if (STdevice.currentValue(attribute)) result = "My Ecobee's current tip number ${tipNum} is '" + STdevice.currentValue(attribute) + "'. %2%"
                             else result ="Tip number is unavailable at this time for the ${STdeviceName}. Try erasing the tips, then issue the 'GET TIPS' command and try again. %1%"
                         }
-                        else if (op==~/play|give/ || (op=="tip" && param=="undefined")) { 
+                        else if (op==~/play|give/ || (op=="tip" && param==~/undefined|null/)) { 
                             def tipNum= state.tipCount>0 ? state.tipCount : 1                    
                             def attribute="tip${tipNum}Text"
                             if (!(STdevice.currentValue(attribute))) {
@@ -1756,7 +1809,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                     else result = "You do not have the Ecobee tips functionality enabled in your SmartApp. %1%"
                 }
                 else {                   
-                    if (param == "undefined") param = tstatCool ? "cool" : tstatHeat ? "heat" : param
+                    if (param == ~/undefined|null/) param = tstatCool ? "cool" : tstatHeat ? "heat" : param
                     if ((op ==~/increase|raise|up|decrease|down|lower/)){
                          def newValues = upDown(STdevice, type, op, num, STdeviceName)  
                          num = newValues.newLevel
@@ -1768,9 +1821,9 @@ def getReply(devices, type, STdeviceName, op, num, param){
                     if (op =="maximum" && tstatHighLimit) num = tstatHighLimit
                     if (op =="minimum" && tstatLowLimit) num = tstatLowLimit
                     def ecobeeCustomRegEx = MyEcobeeCMD && ecobeeCMD ? getEcobeeCustomRegEx(STdevice) : null
-                    if ((param==~/heat|heating|cool|cooling|auto|automatic|eco|AC|comfort|home|away|sleep|resume program/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && num == 0 && op=="undefined") op="on" 
+                    if ((param==~/heat|heating|cool|cooling|auto|automatic|eco|AC|comfort|home|away|sleep|resume program/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && num == 0 && op==~/undefined|null/) op="on" 
                     if (op ==~/on|off/) {
-                        if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdeviceName} on. %1%"
+                        if (param == ~/undefined|null/ && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdeviceName} on. %1%"
                         if (param =~/heat/) {result="I am setting the ${STdeviceName} to 'heating' mode. "; STdevice.heat()}
                         if (param =~/cool|AC/) {result="I am setting the ${STdeviceName} to 'cooling' mode. "; STdevice.cool()}
                         if (param =~/auto/) {result="I am setting the ${STdeviceName} to 'auto' mode. Please note, to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; STdevice.auto()}
@@ -1794,7 +1847,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                         if (result=="null") result = "The NST Manager returned no results for the ${STdeviceName}. Please check your settings within your smartapp. %1%"
                     }
                     else {
-                        if (param == "undefined"){ 
+                        if (param == ~/undefined|null/ ){ 
                             if (STdevice.currentValue("thermostatMode")=="heat") param = "heat"
                             else if (STdevice.currentValue("thermostatMode")=="cool") param = "cool"
                             else result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature. The thermostat will not accept a generic setpoint in its current mode. "+
@@ -1814,8 +1867,8 @@ def getReply(devices, type, STdeviceName, op, num, param){
                             result="I am setting the cooling setpoint of the ${STdeviceName} to ${num} degrees. "
                             STdevice.setCoolingSetpoint(num)
                         }
-                        if (param != "undefined" && tstatHighLimit && num >= tstatHighLimit) result += "This is the maximum temperature I can set for this device. %1%"
-                        if (param != "undefined" && tstatLowLimit && num <= tstatLowLimit) result += "This is the minimum temperature I can set for this device. %1%"
+                        if (param != "undefined" && param != "null" && tstatHighLimit && num >= tstatHighLimit) result += "This is the maximum temperature I can set for this device. %1%"
+                        if (param != "undefined" && param != "null" && tstatLowLimit && num <= tstatLowLimit) result += "This is the minimum temperature I can set for this device. %1%"
                     }
             	}
             }
@@ -1837,7 +1890,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                     if (num==0) overRideMsg = "You don't have a default value set up for the '${op}' level. I am not making any changes to the ${STdeviceName}. %1%"
                 }
                 if ((type == "switch") || (type ==~ /color|level|kTemp/ && num==0 )){
-                    if (type ==~ /color|level|kTemp/ && num==0 && op=="undefined" && param=="undefined") op="off"
+                    if (type ==~ /color|level|kTemp/ && num==0 && op== ~/undefined|null/  && param== ~/undefined|null/ ) op="off"
                     if (op==~/on|off/){
                 		STdevice."$op"() 
                         result = overRideMsg ? overRideMsg: "I am turning the ${STdeviceName} ${op}. "
@@ -1852,7 +1905,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 	STdevice.setLevel(num)
                     result = overRideMsg ? overRideMsg : num==100 ? "I am setting the ${STdeviceName} to its maximum value. " : "I am setting the ${STdeviceName} to ${num}%. "                    
 				}
-                if (type == "color" && param !="undefined" && supportedCaps.name.contains("Color Control")){
+                if (type == "color" && param !="undefined" && param !="null" && supportedCaps.name.contains("Color Control")){
                     def getColorData = STColors().find {it.name.toLowerCase()==param}
                     if (getColorData){
                         def hueColor = Math.round (getColorData.h / 3.6), satLevel = getColorData.s,newLevel = num > 0 ? num : STdevice.currentValue("level")
@@ -1863,7 +1916,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                         result += num>0 ? ", at a brightness level of ${num}%. " : ". "
                 	}
                 }
-                if (type == "kTemp" && param !="undefined" && supportedCaps.name.contains("Color Temperature")){
+                if (type == "kTemp" && param !="undefined" && param !="null" && supportedCaps.name.contains("Color Temperature")){
                 	def sWhite = kSoftWhite ? kSoftWhite as int : 2700, wWhite= kWarmWhite ? kWarmWhite as int: 3500, cWhite= kCoolWhite ? kCoolWhite as int: 4500, dWhite= kDayWhite ? kDayWhite as int: 6500
                     def kelvin = param=="soft white" ? sWhite : param=="warm white" ? wWhite : param=="cool white" ? cWhite : param=="daylight white" ? dWhite : 9999
                     if (kelvin <9999){
@@ -1888,11 +1941,11 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 }
                 if ((num != 0 && speakerHighLimit && num > speakerHighLimit)|| (op=="maximum" && speakerHighLimit)) num = speakerHighLimit    
                 if (op==~/off|stop/) { STdevice.stop(); result = "I am turning off the ${STdeviceName}. " }
-                else if (op ==~/play|on/ && param=="undefined") { 
+                else if (op ==~/play|on/ && param== ~/undefined|null/) { 
                 	STdevice.play()
                     result = "I am playing the ${STdeviceName}. " 
                 }
-                else if (op ==~/play|on|undefined/  && param!="undefined") { 
+                else if (op ==~/play|on|undefined|null/  && param!="undefined" && param!="null") { 
                 	if (sonosCMD && sonosMemoryCount){
                         def memCount = sonosMemoryCount as int, song = ""
         				for (int i=1; i<memCount+1; i++){ 
@@ -1964,7 +2017,8 @@ def getReply(devices, type, STdeviceName, op, num, param){
     else if (op!="status" && result && !result.endsWith("%")) result += batteryWarnTxt + "%3%"
     if (result.endsWith("%3%") && briefReply) {
     	def reply = briefReplyTxt && briefReplyTxt !="No reply spoken" ? briefReplyTxt : ""
-        result = reply ? reply + ". " + batteryWarnTxt +"%3%" : batteryWarnTxt + " %3%"
+        if (briefReplyTxt=="User-defined" && briefReplyCustom) reply = briefReplyCustom
+        result = reply ? reply + ". " + batteryWarnTxt + "%7%" : batteryWarnTxt + "%7%"
     }
     if (!result) result = "I had a problem understanding your request. %1%"
     return result
@@ -1973,12 +2027,11 @@ def displayData(display){
 	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/></head><body style="margin: 0;">${display}</body></html>"""
 }
 //Child code pieces here---Macro Handler-------------------------------------
-def macroResults(num, cmd, colorData, param,mNum){ 
+def macroResults(num, cmd, colorData, param, mNum,xParam){ 
     String result="", feedData=""   
     if (macroType == "Control") result = controlResults(num)
-    if (macroType == "Group" && cmd!="status") result = groupResults(num, cmd, colorData, param, mNum)
-    else if (macroType == "Group" && cmd=="status") result = "You can not get the status of items in a device group. It is recommended you use a voice report for this functionality. %1%"
-	if (macroType == "CoRE") result = WebCoREResults(num)
+    if (macroType == "Group") result = groupResults(num, cmd, colorData, param, mNum)
+	if (macroType == "CoRE") result = WebCoREResults(num, xParam)
     else if (macroType =="Group") {
     	def data = result ? result.endsWith("%") ? [alexaOutput: result[0..-4]] : [alexaOutput: result] : [alexaOutput: "No Output"]
         sendLocationEvent(name: "askAlexa", value: app.id, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa activated '${app.label}' macro.")
@@ -1990,15 +2043,21 @@ def groupResults(num, op, colorData, param, mNum){
     def grpType = [switch:"switch", switchLevel:"dimmer", colorTemperature: "temperature light", colorControl:"colored light", windowShade:"window shade", doorControl: "door"][groupType]?:groupType
     String result = ""
     try {
-        def noun= settings."groupDevice${groupType}".size()==1 ? grpType : grpType+"s"
-        if (grpType=="switch" && settings."groupDevice${groupType}".size()>1) noun = "switches"
-        def verb=settings."groupDevice${groupType}".size()==1 ? "is" : "are"
-        String valueWord, proNoun = settings."groupDevice${groupType}".size()==1 ? "its" : "their"
-        if (op == "list") result = "The following ${noun} ${verb} in the '${app.label}' device group: "+ getList(settings."groupDevice${groupType}") +". "
+        def noun= settings."groupDevice${groupType}"?.size()==1 ? grpType : grpType+"s"
+        if (grpType=="switch" && settings."groupDevice${groupType}"?.size()>1) noun = "switches"
+        def verb=settings."groupDevice${groupType}"?.size()==1 ? "is" : "are"
+        String valueWord, proNoun = settings."groupDevice${groupType}"?.size()==1 ? "its" : "their"
+        if (!settings."groupDevice${groupType}"?.size()) result = "There are no devices present in the device group, '${app.label}. %1%"
+        else if (op == "list") result = "The following ${noun} ${verb} in the '${app.label}' device group: "+ getList(settings."groupDevice${groupType}") +". "
         else if (groupType=="switch"){
-            if (op ==~/on|off/) { settings."groupDevice${groupType}"?."$op"();result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) : noAck ? " " : "I am turning ${op} the ${noun} in the group named '${app.label}'. " }
-            else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost && !noAck? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " } 
-            else result = "For a switch group, be sure to give an 'on', 'off' or 'toggle' command. %1%"
+            if (op ==~/on|off/) { settings."groupDevice${groupType}"?."$op"();result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am turning ${op} the ${noun} in the group named '${app.label}'. " }
+            else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost && !noAck? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " } 
+            else if (op==~/undefined|status|null/) {
+				if (!settings."groupDevice${groupType}"?.currentValue("switch").contains("off")) result = "All of the switches in the device group, '${app.label}', are on. "
+                else if (!settings."groupDevice${groupType}"?.currentValue("switch").contains("on")) result = "All of the switches in the device group, '${app.label}', are off. "
+                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue('switch')}. " }
+            }
+            else result = "For a switch device group, be sure to give an 'on', 'off', 'toggle' or 'status' command. %1%" 
         }
         else if (groupType==~/switchLevel|colorControl|colorTemperature/){
             num = num < 0 ? 0 : num >99 ? 100 : num
@@ -2006,11 +2065,14 @@ def groupResults(num, op, colorData, param, mNum){
             else if (op==~/low|medium|high/ && groupType=="switchLevel") { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
             else if (op==~/low|medium|high/ && groupType==~/colorControl|colorTemperature/ && !colorData ) { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
             else valueWord = "${num}%"
-            if (num==0 && op=="undefined" && param=="undefined" && mNum!="undefined") op="off"
-            if (op ==~/on|off/){ settings."groupDevice${groupType}"?."$op"();result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) : noAck ? " " :  "I am turning ${op} the ${noun} in the group named '${app.label}'. "}
-            else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " }
-            else if (groupType=="switchLevel" && num > 0 && op =="undefined") { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) : noAck ? " " : "I am setting the ${noun} in the group named '${app.label}' to ${valueWord}. " }
-            else if (groupType==~/colorControl|colorTemperature/ && num > 0 && !colorData && op =="undefined") { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) :  noAck ? " " :"I am setting the ${noun} in the '${app.label}' group to ${valueWord}. " }
+            if (num==0 && op== ~/undefined|null/ && param== ~/undefined|null/ && mNum!="undefined" && mNum!="null") op="off"
+            if (op ==~/on|off/){ 
+            	settings."groupDevice${groupType}"?."$op"()
+                result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am turning ${op} the ${noun} in the group named '${app.label}'. "
+            }
+            else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " }
+            else if (groupType=="switchLevel" && num > 0 && op ==~/undefined|null/) { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am setting the ${noun} in the group named '${app.label}' to ${valueWord}. " }
+            else if (groupType==~/colorControl|colorTemperature/ && num > 0 && !colorData && op ==~/undefined|null/) { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") :  noAck ? " " :"I am setting the ${noun} in the '${app.label}' group to ${valueWord}. " }
             else if (groupType=="colorControl" && colorData && param) {
                 colorData = [hue:colorData.hue, saturation: colorData.saturation]
                 settings."groupDevice${groupType}"?.setColor(colorData)
@@ -2020,10 +2082,10 @@ def groupResults(num, op, colorData, param, mNum){
                     result += num ==100 ? " and ${proNoun} maximum brightness" : num>0 ? ", at a brightness level of ${num}%" : ""
                     result += ". "
                 }
-                else if (voicePost && !noAck)  result = parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) 
+                else if (voicePost && !noAck)  result = parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") 
                 else result = " "
             }
-            else if (groupType=="colorTemperature" && param !="undefined") {
+            else if (groupType=="colorTemperature" && param !="undefined" && param !="null") {
             	def sWhite = parent.kSoftWhite ? parent.kSoftWhite as int : 2700, wWhite= parent.kWarmWhite ? parent.kWarmWhite as int: 3500, 
                 	cWhite= parent.kCoolWhite ? parent.kCoolWhite as int: 4500, dWhite= parent.kDayWhite ? parent.kDayWhite as int: 6500
                 def kelvin = param=="soft white" ? sWhite : param=="warm white" ? wWhite : param=="cool white" ? cWhite : param=="daylight white" ? dWhite : 9999
@@ -2036,7 +2098,7 @@ def groupResults(num, op, colorData, param, mNum){
 					}
                 }
                 else if (kelvin ==9999) result = "I didn't understand the temperature you wanted to set the '${app.label}' device group. Valid temperatures are soft white, warm white, cool white and daylight white. %1%"
-                else if (voicePost && !noAck)  result = parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) 
+                else if (voicePost && !noAck)  result = parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") 
                 else result = " "
             }
             else if (op ==~/increase|raise|up|brighten|decrease|down|lower|dim/){
@@ -2060,25 +2122,47 @@ def groupResults(num, op, colorData, param, mNum){
                 }
                 else result = "The default increase or decrease value is set to zero within the SmartApp. I am taking no action. %1%"
             }
-            else if (groupType=="switchLevel") result = "For a dimmer group, be sure to use an 'on', 'off', 'toggle' or brightness level setting. %1%" 
-            else if (groupType=="colorControl") result = "For a colored light group, be sure to give me an 'on', 'off', 'toggle', brightness level or color command. %1%"
-            else if (groupType=="colorTemperature") result = "For a temperature control light group, be sure to give me an 'on', 'off', 'toggle', brightness level or temperature command. %1%"
+            else if (op==~/undefined|status|null/){
+            	def grpCtl = groupType=="switchLevel" ? "dimmer" : groupType=="colorControl" ? "colored light" : "temperature control light"
+                if (!settings."groupDevice${groupType}"?.currentValue("switch").contains("off")) result = "All of the ${grpCtl}s in the device group, '${app.label}', are on. "
+                else if (!settings."groupDevice${groupType}"?.currentValue("switch").contains("on")) result = "All of the ${grpCtl}s in the device group, '${app.label}', are off. "
+                else settings."groupDevice${groupType}".each{ 
+                	result += "The ${it.label} is ${it.currentValue('switch')}"
+                    result += it.currentValue('switch')=="on" ? " and set to ${it.currentValue('level')}. " : ". "
+                }
+            }
+            else {
+                if (groupType=="switchLevel") result = "For a dimmer group, be sure to use an 'on', 'off', 'toggle', 'status' or brightness level setting. %1%" 
+                else if (groupType=="colorControl") result = "For a colored light group, be sure to give me an 'on', 'off', 'toggle', 'status', brightness level or color command. %1%"
+                else if (groupType=="colorTemperature") result = "For a temperature control light group, be sure to give me an 'on', 'off', 'toggle', 'status', brightness level or temperature command. %1%"
+        	}
         }
         else if (groupType=="lock"){
             noun=settings."groupDevice${groupType}".size()==1 ? "device" : "devices"
             if (op ==~ /lock|unlock/){         
                 settings."groupDevice${groupType}"?."$op"()
-                result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) : noAck ? " " : "I am ${op}ing the ${noun} in the group named '${app.label}'. " 
+                result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am ${op}ing the ${noun} in the group named '${app.label}'. " 
             }
-            else result = "For a lock group, you must use a 'lock' or 'unlock' command. %1%" 
+            else if (op==~/undefined|status|null/) {
+				if (!settings."groupDevice${groupType}"?.currentValue("lock").contains("locked")) result = "All of the locks in the device group, '${app.label}', are unlocked. "
+                else if (!settings."groupDevice${groupType}"?.currentValue("lock").contains("unlocked")) result = "All of the locks in the device group, '${app.label}', are locked. "
+                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue('lock')}. " }
+            }
+            else result = "For a lock device group, you must use a 'lock', 'unlock' or 'status' command. %1%" 
         }
         else if (groupType==~/doorControl|windowShade/){
             if (op ==~ /open|close/){
                 settings."groupDevice${groupType}"?."$op"()
                 def condition = op=="close" ? "closing" : "opening"
-                result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
+                result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
             }
-            else result = "For a ${grpType} group, you must use an 'open' or 'close' command. %1%"
+            else if (op==~/undefined|status|null/) {
+				def grpCtl = groupType=="doorControl" ? "door" : "shade"
+                if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("open")) result = "All of the ${grpCtl}s in the device group, '${app.label}', are closed. "
+                else if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("closed")) result = "All of the ${grpCtl}s in the device group, '${app.label}', are open. "
+                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue(grpCtl)}. " }
+            }
+            else result = "For a ${grpCtl} device group, you must use an 'open', 'close' or 'status' command. %1%" 
         }
         else if (groupType=="thermostat"){
             noun=settings."groupDevice${groupType}".size()==1 ? "thermostat in the group named '${app.label}'" : "thermostats in the group named '${app.label}'"
@@ -2091,7 +2175,7 @@ def groupResults(num, op, colorData, param, mNum){
             def ecobeeCustomRegEx = parent.MyEcobeeCMD && parent.ecobeeCMD ? getEcobeeCustomRegEx(settings."groupDevice${groupType}") : null
             if ((param==~/heat|heating|cool|cooling|auto|automatic|eco|AC|comfort|home|away|sleep|resume program/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && num == 0 && op=="undefined") op="on"
             if (op ==~/on|off/) {
-                if (param == "undefined" && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning on a thermostat group. %1%"
+                if (param ==~/undefined|null/ && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning on a thermostat group. %1%"
                 if (param =~/heat/) {result="I am setting the ${noun} to 'heating' mode. "; settings."groupDevice${groupType}"?.heat()}
                 if (param =~/cool|AC/) {result="I am setting the ${noun} to 'cooling' mode. "; settings."groupDevice${groupType}"?.cool()}
                 if (param =~/auto/) {result="I am setting the ${noun} to 'auto' mode. Please note, to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; settings."groupDevice${groupType}"?.auto()}
@@ -2120,10 +2204,11 @@ def groupResults(num, op, colorData, param, mNum){
                     parent.MyEcobeeCMD ? settings."groupDevice${groupType}"?.resumeThisTstat() : settings."groupDevice${groupType}"?.resumeProgram()
                 } 
             }
-            else if (op ==~/increase|raise|up|decrease|down|lower/) result = "Increase and decrease commands are not yet compatible with thermostat group macros. %1%"
+            else if (op ==~/increase|raise|up|decrease|down|lower/) result = "Increase and decrease commands are not yet compatible with thermostat device group macros. %1%"
+            else if (op==~/undefined|status|null/ && param ==~ /undefined|null/) settings."groupDevice${groupType}".each{ result += "The ${it.label} is reading ${it.currentValue('temperature')} degrees. " }
             else {
-                param = tstatDefaultCool && param == "undefined" ? "cool" : tstatDefaultHeat && param == "undefined" ? "heat" : param
-                if (param == "undefined") result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature of a thermostat group. %1%"
+                param = tstatDefaultCool && param ==~/undefined|null/ ? "cool" : tstatDefaultHeat && param ==~ /undefined|null/ ? "heat" : param
+                if (param  ==~ /undefined|null/) result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature of a thermostat device group. %1%"
                 if ((op =="maximum" && !parent.getTstatLimits().hi) || (op =="minimum" && !parent.getTstatLimits().lo)) {
                     result = "You do not have a ${op} thermostat setpoint defined within your SmartApp. %1%"
                     param = "undefined"
@@ -2137,37 +2222,47 @@ def groupResults(num, op, colorData, param, mNum){
                     result="I am setting the cooling setpoint of the ${noun} to ${num} degrees. "
                     settings."groupDevice${groupType}"?.setCoolingSetpoint(num)
                 }
-                if (param !="undefined" && parent.getTstatLimits().hi && num >= parent.getTstatLimits().hi) result += "This is the maximum temperature I can set for this device group. "
-                if (param !="undefined" && parent.getTstatLimits().lo && num <= parent.getTstatLimits().lo) result += "This is the minimum temperature I can set for this device group. "
+                if (param !="undefined" && param !="null" && parent.getTstatLimits().hi && num >= parent.getTstatLimits().hi) result += "This is the maximum temperature I can set for this device group. "
+                if (param !="undefined" && param !="null"  && parent.getTstatLimits().lo && num <= parent.getTstatLimits().lo) result += "This is the minimum temperature I can set for this device group. "
             }
         }
-        result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0) : noAck ? " " : result
+        result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : result
 	}
     catch(e) { result = "There was a problem controlling the device group named '${app.label}'. Be sure it is configured correctly within the SmartApp. %1%" }
     return result
 }
 //WebCoRE Handler-----------------------------------------------------------
-def WebCoREResults(sDelay){	
+def WebCoREResults(sDelay,xParam){	
 	String result = ""
-    def delay
+    state.xParam = (xParam !="undefined" && xParam!="?" && pxParam !="null" ) ? xParam : ""
+    def xParamLog = state.xParam ? " with the extra parameter: ${state.xParam}" : "", delay
     if (cDelay>0 || sDelay>0) delay = sDelay==0 ? cDelay as int : sDelay as int
-	result = (!delay || delay == 0) ? "I am triggering the WEBCORE macro named '${app.label}'. " : delay==1 ? "I'll trigger the '${app.label}' WEBCORE macro in ${delay} minute. " : "I'll trigger the '${app.label}' WEBCORE macro in ${delay} minutes. "
-		if (sDelay == 9999) { 
-		result = "I am cancelling all scheduled executions of the WEBCORE macro, '${app.label}'. "  
-		state.scheduled = false
-		unschedule() 
+    if (!advWebCore || (advWebCore && state.xParam)){
+        result = (!delay || delay == 0) ? "I am triggering the WEBCORE macro named '${app.label}'${xParamLog}. " : delay==1 ? "I'll trigger the '${app.label}' WEBCORE macro in ${delay} minute. " : "I'll trigger the '${app.label}' WEBCORE macro in ${delay} minutes. "
+            if (sDelay == 9999) { 
+            result = "I am cancelling all scheduled executions of the WEBCORE macro, '${app.label}'. "  
+            state.scheduled = false
+            unschedule() 
+        }
+        if (!state.scheduled) {
+            def xParamVar = state.xParam
+            if (!delay || delay == 0) WebCoREHandler() 
+            else if (delay < 9999) { runIn(delay*60, WebCoREHandler, [overwrite: true]) ; state.scheduled=true }
+            if (delay < 9999) result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost, delay,"",macroType,app.label, 0, xParamVar) : noAck ? " " : result
+        }
+        else result = "The WEBCORE macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. %1%"
+    }
+    else {
+    	if (advWebCore && voicePostAdv) result = parent.replaceVoiceVar(voicePostAdv, delay,"",macroType,app.label, 0, xParamVar)
+        else result = "I did not hear the required additional parameter required to execute the macro, '${app.label}'. The execution was aborted. %1%"
 	}
-	if (!state.scheduled) {
-		if (!delay || delay == 0) WebCoREHandler() 
-		else if (delay < 9999) { runIn(delay*60, WebCoREHandler, [overwrite: true]) ; state.scheduled=true }
-		if (delay < 9999) result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost, delay,"",macroType,app.label,0) : noAck ? " " : result
-	}
-	else result = "The WEBCORE macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. %1%"
-	return result
+    return result
 }
 def WebCoREHandler(){ 
 	state.scheduled = false
-    parent.webCoRE_execute(CoREName)
+    def data = state.xParam ? [xParam : state.xParam] : null
+    parent.webCoRE_execute(CoREName,data)
+    state.xParam=""
 }
 //Control Handler-----------------------------------------------------------
 def controlResults(sDelay){	
@@ -2184,7 +2279,7 @@ def controlResults(sDelay){
 		if (!state.scheduled) {
         	if (!delay || delay == 0) controlHandler() 
             else if (delay < 9999) { runIn(delay*60, controlHandler, [overwrite: true]) ; state.scheduled=true }
-            if (delay < 9999) result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost, delay,"",macroType,app.label,0) : noAck ? "" : result
+            if (delay < 9999) result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost, delay,"",macroType,app.label,0,"") : noAck ? "" : result
 		}
         else result = "The control macro, '${app.label}', is already scheduled to run. You must cancel the execution or wait until it runs before you can run it again. %1%"
     }
@@ -2585,7 +2680,7 @@ def getHTTPDesc(){
     else if (extInt == "1" && param.ip && param.port && param.cmd) result += "http://${param.ip}:${param.port}/${param.cmd}"
     return result ? result : "Status: UNCONFIGURED - Tap to configure"
 }
-private replaceVoiceVar(msg, delay, filter, type, name, age) {
+private replaceVoiceVar(msg, delay, filter, type, name, age, xParam) {
 	def df = new java.text.SimpleDateFormat("EEEE")
 	location.timeZone ? df.setTimeZone(location.timeZone) : df.setTimeZone(TimeZone.getTimeZone("America/New_York"))
 	def day = df.format(new Date()), time = parseDate("","h:mm a"), month = parseDate("","MMMM"), year = parseDate("","yyyy"), dayNum = parseDate("","d")
@@ -2606,6 +2701,7 @@ private replaceVoiceVar(msg, delay, filter, type, name, age) {
     msg = msg.replace('%people%', "${people}")
     msg = msg.replace('%delay%',"${delayMin}")
     msg = msg.replace('%age%',"${age}")
+    msg = msg.replace('%xParam%',"${xParam}")
     if (msg.contains("%random")){
     	def randomList = [], selectRand
         if ((random1A || random1B || random1C) && msg.contains("%random1%")){
@@ -2615,9 +2711,23 @@ private replaceVoiceVar(msg, delay, filter, type, name, age) {
         	selectRand = randomList[Math.abs(new Random().nextInt() % randomList.size() as int)]
         	msg = msg.replace('%random1%',"${selectRand}")
     	}
+        if ((random2A || random2B || random2C) && msg.contains("%random2%")){
+        	if (random2A) randomList << random2A 
+        	if (random2B) randomList << random2B
+        	if (random2C) randomList << random2C 
+        	selectRand = randomList[Math.abs(new Random().nextInt() % randomList.size() as int)]
+        	msg = msg.replace('%random2%',"${selectRand}")
+    	}
+        if ((random3A || random3B || random3C) && msg.contains("%random3%")){
+        	if (random3A) randomList << random3A 
+        	if (random3B) randomList << random3B
+        	if (random3C) randomList << random3C 
+        	selectRand = randomList[Math.abs(new Random().nextInt() % randomList.size() as int)]
+        	msg = msg.replace('%random3%',"${selectRand}")
+    	}
     }
     if (getWR().size()){	
-        getWR().each{
+        getWR().each{2
         	def wrName = "%" + it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") + "%"
             if (msg.contains(wrName)) msg = msg.replace(wrName,processWeatherReport(it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""))[0..-4])	
         }
@@ -2766,22 +2876,22 @@ def memoryDesc(){
 def getMacroList(type,exclude){
     def result=[]
     if (type ==~/all|other/) {
-    	if (type =="all") getAskAlexa().each{ if (it.macroType !="GroupM" && it.macroType!="Group") result << ["${it.label}": "${it.label} (${it.macroType} Macro)"] }
-		getVR().each{ if (it.label != exclude) result << ["${it.label}": "${it.label} (Voice Report)"]}
-		getWR().each{ result << ["${it.label}": "${it.label} (Weather Report)"]} 
-        if (type=="other") getAAMQ().each{ result << ["${it.label}": "${it.label} (Message Queue)"]} 
+    	if (type =="all") getAskAlexa().each{ if (it.label && it.macroType !="GroupM" && it.macroType!="Group") result << ["${it.label}": "${it.label} (${it.macroType} Macro)"] }
+		getVR().each{ if (it.label && it.label != exclude) result << ["${it.label}": "${it.label} (Voice Report)"]}
+		getWR().each{ if (it.label) result << ["${it.label}": "${it.label} (Weather Report)"]} 
+        if (type=="other") getAAMQ().each{ if (it.label) result << ["${it.label}": "${it.label} (Message Queue)"]} 
     }
     else if (type =~/sched/){
-    	if (type =="schedV") getVR().each{result << "${it.label}"}
-        else if (type =="schedW") getWR().each{result << "${it.label}"}	
-        else if (type=="schedM") getAskAlexa().each{ if (it.macroType!="Group") result << ["${it.label}": "${it.label} (${it.macroType=="GroupM"?"Extension Group":it.macroType} Macro)"] }
+    	if (type =="schedV") getVR().each{ if (it.label) result << "${it.label}"}
+        else if (type =="schedW") getWR().each{ if (it.label) result << "${it.label}"}	
+        else if (type=="schedM") getAskAlexa().each{ if (it.macroType!="Group" && it.label) result << ["${it.label}": "${it.label} (${it.macroType=="GroupM"?"Extension Group":it.macroType} Macro)"] }
     }
     else if (type == "flash"){
     	getAskAlexa().each{ if (it.macroType =="GroupM") result << ["${it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")}%M%":"${it.label} (Extension Group)"] }
     	result<<["undefined%Q%": "Primary Message Queue"]
-        getAAMQ().each{ result<< ["${it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")}%Q%": it.label +" (Message Queue)"]}
-        getVR().each{ result<< ["${it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")}%V%": it.label +" (Voice Report)"]}
-        getWR().each{ result<< ["${it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")}%W%": it.label +" (Weather Report)"]}
+        getAAMQ().each{ if (it.label) result<< ["${it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")}%Q%": it.label +" (Message Queue)"]}
+        getVR().each{ if (it.label) result<< ["${it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")}%V%": it.label +" (Voice Report)"]}
+        getWR().each{ if (it.label) result<< ["${it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")}%W%": it.label +" (Weather Report)"]}
     }
     return result	
 }
@@ -3084,8 +3194,8 @@ def flash(){
         else if (flash && flashRPT && flashRPT.endsWith("%V%")) outputTxt=processVoiceReport(flashRPT[0..-4])
         else if (flash && flashRPT && flashRPT.endsWith("%M%")){
             def child = getAskAlexa().find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == flashRPT[0..-4]}
-            if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults("", "", "", "", "") : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
-            else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label, child.noteFeed, child.noteFeedData) 
+            if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults("", "", "", "", "","") : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
+            else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label) 
         }
         else outputTxt = "You do not have the flash briefing option enabled in your Ask Alexa Smart App, or you don't have any output selected for the briefing output. Go to Settings in your SmartApp to fix this. "
     } catch (e) { outputTxt ="There was an error producing the flash briefing report. Check your settings and try again." }
@@ -3204,6 +3314,7 @@ def setupData(){
     MQ.unique().each {result += it + "<br>" }
     result += "<br><b>LIST_OF_MQCMD</b><br><br>"
     msgVoc().each{result +=it + "<br>" }
+    result +="<br><b>LIST_OF_WCP</b><br><br>This is an advanced feature. If you use WebCoRE pistons, add your extra parameters to this slot. Otherwise, just add the word 'none' to this slot"
 	result += "<br><hr><br><i><b>URL of this setup page:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}<br><br><hr>"
 	result += "<br><i><b>Lastest version of the Lambda code:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Node.js'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Node.js</a><br><br><hr>"
     result += "<br><i><b>Lastest version of the Sample Utterances:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Sample%20Utterances'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Sample%20Utterances</a><br><br><hr>"
@@ -3216,7 +3327,8 @@ def fillTypeList(){
         "motion sensor", "motion sensors", "door sensor", "door sensors", "window sensor", "window sensors", "open close sensors","colored light", "events","macro", "macros", "group", "groups", "voice reports", 
         "voice report", "device group", "device groups","control macro", "control macros","control", "controls","extension group","extension groups","device macros","device macro","device group macro","device group macros",
         "core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases",
-        "temperature light","temperature lights","kelvin light","kelvin lights","message queue","queue","message queues","queues","weather", "weather report", "weather reports","schedule","schedules"] 
+        "temperature light","temperature lights","kelvin light","kelvin lights","message queue","queue","message queues","queues","weather", "weather report", "weather reports","schedule","schedules","webcore","webcore trigger","webcore macro",
+        "webcore macros","webcore triggers"] 
 }
 def getURLs(){
 	def mName = params.mName, url = formatURL("${getApiServerUrl()}/api/smartapps/installations/${app.id}/m?Macro=${mName}&access_token=${state.accessToken}")
@@ -3358,13 +3470,13 @@ private textVersion() {
     return "${version}${lambdaVersion}${aaMQVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
 }
 private versionInt(){ return 228 }
-private LambdaReq() { return 128 }
-private mqReq() { return 103 }
-private wrReq()  { return 103 }
-private vrReq()  { return 103 }
-private schReq()  { return 102 }
-private versionLong(){ return "2.2.8" }
-private versionDate(){ return "06/26/17" }
+private LambdaReq() { return 129 }
+private mqReq() { return 104 }
+private wrReq()  { return 104 }
+private vrReq()  { return 104 }
+private schReq()  { return 103 }
+private versionLong(){ return "2.2.9" }
+private versionDate(){ return "07/13/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+

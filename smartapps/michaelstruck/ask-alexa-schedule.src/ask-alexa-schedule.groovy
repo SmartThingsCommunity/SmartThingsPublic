@@ -2,11 +2,12 @@
  *  Ask Alexa Schedules Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.2 6/15/17
+ *  Version 1.0.3 7/6/17
  * 
  *  Version 1.0.0 (6/1/17) - Initial release
  *  Version 1.0.1 (6/8/17) - Fixed custom schedule issue. Added %age% variable for birthdays/anniversaries
  *  Version 1.0.2 (6/15/17) - Added %age% variable for any text field
+ *  Version 1.0.3 (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -354,13 +355,13 @@ def remindFirstTime(){
 }
 def doAction(){
     if (getStatus()=="On" && ((schType==~/complex|custom/ && getOkToRun()) || schType==~/simple|single|bd/) ){
-		def outputTxt
+		String outputTxt
         if (schAction=="msg") {
         	outputTxt = schAppendPre ? schAppendPre + " ": ""
             outputTxt += schAppendPost ? schMsgTxt + schAppendPost: schMsgTxt
             sendMsg(outputTxt)
         }
-        if (schAction=="macro") parent.processMacroAction(schMacro.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""), 0, "undefined", "undefined", "undefined", false)
+        if (schAction=="macro") parent.processMacroAction(schMacro.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""), 0, "undefined", "undefined", "undefined", false,"")
         if (schAction=="VR") {
         	outputTxt = schAppendPre ? schAppendPre + " " : ""
             outputTxt += parent.processOtherRpt(schVR)
@@ -527,27 +528,30 @@ def scheduleRemindTime(){
 }
 //Actions
 def sendMsg(outputTxt){
-	def msgTxt = parent.replaceVoiceVar(outputTxt, "", "", "Schedules", app.label,ageCalc())
-    def expireMin=schMQExpire ? schMQExpire as int : 0, expireSec=expireMin*60
-    def overWrite =!schMQNotify && !schMQExpire && schMQOverwrite
-    sendLocationEvent(
-    	name: "AskAlexaMsgQueue", 
-        value: "Ask Alexa Schedule, '${app.label}'",
-        unit: "${app.id}",
-        isStateChange: true, 
-        descriptionText: msgTxt, 
-        data:[
-        	queues:schMsgQue,
-            overwrite: overWrite,
-            notifyOnly: schMQNotify,
-            expires: expireSec,
-            suppressTimeDate:schSuppressTD   
-        ]
-    )
+	if (outputTxt){
+        def msgTxt = parent.replaceVoiceVar(outputTxt, "", "", "Schedules", app.label,ageCalc(),"")
+        def expireMin=schMQExpire ? schMQExpire as int : 0, expireSec=expireMin*60
+        def overWrite =!schMQNotify && !schMQExpire && schMQOverwrite
+        sendLocationEvent(
+            name: "AskAlexaMsgQueue", 
+            value: "Ask Alexa Schedule, '${app.label}'",
+            unit: "${app.id}",
+            isStateChange: true, 
+            descriptionText: msgTxt, 
+            data:[
+                queues:schMsgQue,
+                overwrite: overWrite,
+                notifyOnly: schMQNotify,
+                expires: expireSec,
+                suppressTimeDate:schSuppressTD   
+            ]
+        )
+	}
+    else log.info "The scheduled task produced no output. Nothing sent to the message queue(s)."
 }
 def sendReminder(outputTxt){
 	if (!schRemindFollow || (schRemindFollow && (getStatus()=="On" && ((schType==~/complex|custom/ && getOkToRun()) || schType==~/simple|single|bd/)))){
-        def msgTxt = parent.replaceVoiceVar(outputTxt, "", "", "Schedules", app.label,ageCalc())
+        def msgTxt = parent.replaceVoiceVar(outputTxt, "", "", "Schedules", app.label,ageCalc(),"")
         def expireMin=schMQExpireRemind ? schMQExpireRemind as int : 0, expireSec=expireMin*60
         def overWrite =!schMQNotifyRemind && !schMQExpireRemind && schMQOverwriteRemind
         def remindMQ = schMsgQueRemind ?: schMsgQue
@@ -894,6 +898,6 @@ def translateMQid(mqIDList){
     return parent.getList(result)
 }
 //Versions
-private versionInt(){ return 102 }
+private versionInt(){ return 103 }
 private def textAppName() { return "Ask Alexa Schedules" }	
-private def textVersion() { return "Schedules Version: 1.0.2 (06/15/2017)" }
+private def textVersion() { return "Schedules Version: 1.0.3 (07/06/2017)" }
