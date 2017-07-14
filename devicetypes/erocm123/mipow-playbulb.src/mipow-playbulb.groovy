@@ -271,7 +271,7 @@ def setColor(value) {
 		sendEvent("name":"level", "value": value.level)
     } 
 
-    if (value.hue == 23 && value.saturation == 56) {
+    if (value.hue == 5 && value.saturation == 4) {
        log.debug "setting color Soft White"
        def whiteLevel = getWhite(value.level)
        if (state.previousEffect != "00000000") {
@@ -281,7 +281,7 @@ def setColor(value) {
        }
        state.previousColor = "${whiteLevel}000000"
     }
-    else if (value.hue == 52 && value.saturation == 19) {
+    else if (value.hue == 79 && value.saturation == 7) {
        log.debug "setting color White"
        def whiteLevel = getWhite(value.level)
        if (state.previousEffect != "00000000") {
