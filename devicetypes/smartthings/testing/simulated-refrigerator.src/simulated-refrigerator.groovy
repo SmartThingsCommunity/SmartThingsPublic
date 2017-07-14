@@ -25,8 +25,8 @@ metadata {
 
 	tiles(scale: 2) {
 		standardTile("contact", "device.contact", width: 4, height: 4) {
-			state("closed", label:'${name}', icon:"st.fridge.fridge-closed", backgroundColor:"#79b821")
-			state("open", label:'${name}', icon:"st.fridge.fridge-open", backgroundColor:"#ffa81e")
+			state("closed", label:'${name}', icon:"st.fridge.fridge-closed", backgroundColor:"#00A0DC")
+			state("open", label:'${name}', icon:"st.fridge.fridge-open", backgroundColor:"#e86d13")
 		}
 		childDeviceTile("freezerDoor", "freezerDoor", height: 2, width: 2, childTileName: "freezerDoor")
 		childDeviceTile("mainDoor", "mainDoor", height: 2, width: 2, childTileName: "mainDoor")

@@ -62,8 +62,8 @@ metadata {
 			state "off", label: '${name}', action: "on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
         }
         standardTile("contact", "device.contact", inactiveLabel: false) {
-			state "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+			state "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
+			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
 		}
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"

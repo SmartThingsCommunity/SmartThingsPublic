@@ -61,8 +61,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState "active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#53a7c0"
-				attributeState "inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#ffffff"
+				attributeState "active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC"
+				attributeState "inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#cccccc"
 			}
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
@@ -111,6 +111,8 @@ def parse(String description) {
 				def value = descMap.value.endsWith("01") ? "active" : "inactive"
 				log.debug "Doing a read attr motion event"
 				map = getMotionResult(value)
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
+				map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
 			}
 		}
 	} else if (map.name == "temperature") {
@@ -135,6 +137,10 @@ def parse(String description) {
 private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
+	translateZoneStatus(zs)
+}
+
+private Map translateZoneStatus(ZoneStatus zs) {
 	// Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
 	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
 }
@@ -200,7 +206,8 @@ def refresh() {
 	log.debug "refresh called"
 
 	def refreshCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)
+			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
 	return refreshCmds + zigbee.enrollResponse()
 }

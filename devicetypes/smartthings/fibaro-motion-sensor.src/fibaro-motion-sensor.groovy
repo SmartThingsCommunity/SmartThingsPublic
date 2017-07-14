@@ -107,8 +107,8 @@
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
         standardTile("acceleration", "device.acceleration") {
-			state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'still', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+			state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#00a0dc")
+			state("inactive", label:'still', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc")
 		}
 
 

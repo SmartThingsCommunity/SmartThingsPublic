@@ -1,3 +1,5 @@
+//DEPRECATED. INTEGRATION MOVED TO SUPER LAN CONNECT
+
 /**
  *  Hue Service Manager
  *
@@ -1083,7 +1085,6 @@ def on(childDevice) {
 	log.debug "Executing 'on'"
 	def id = getId(childDevice)
 	updateInProgress()
-	createSwitchEvent(childDevice, "on")
 	put("lights/$id/state", [on: true])
 	return "Bulb is turning On"
 }
@@ -1092,7 +1093,6 @@ def off(childDevice) {
 	log.debug "Executing 'off'"
 	def id = getId(childDevice)
 	updateInProgress()
-	createSwitchEvent(childDevice, "off")
 	put("lights/$id/state", [on: false])
 	return "Bulb is turning Off"
 }
@@ -1107,8 +1107,6 @@ def setLevel(childDevice, percent) {
 		level = 1
 	else
 		level = Math.min(Math.round(percent * 254 / 100), 254)
-
-	createSwitchEvent(childDevice, level > 0, percent)
 
 	// For Zigbee lights, if level is set to 0 ST just turns them off without changing level
 	// that means that the light will still be on when on is called next time
@@ -1128,7 +1126,6 @@ def setSaturation(childDevice, percent) {
 	// 0 - 254
 	def level = Math.min(Math.round(percent * 254 / 100), 254)
 	// TODO should this be done by app only or should we default to on?
-	createSwitchEvent(childDevice, "on")
 	put("lights/$id/state", [sat: level, on: true])
 	return "Setting saturation to $percent"
 }
@@ -1140,7 +1137,6 @@ def setHue(childDevice, percent) {
 	// 0 - 65535
 	def level = Math.min(Math.round(percent * 65535 / 100), 65535)
 	// TODO should this be done by app only or should we default to on?
-	createSwitchEvent(childDevice, "on")
 	put("lights/$id/state", [hue: level, on: true])
 	return "Setting hue to $percent"
 }
@@ -1151,7 +1147,6 @@ def setColorTemperature(childDevice, huesettings) {
 	updateInProgress()
 	// 153 (6500K) to 500 (2000K)
 	def ct = hueSettings == 6500 ? 153 : Math.round(1000000 / huesettings)
-	createSwitchEvent(childDevice, "on")
 	put("lights/$id/state", [ct: ct, on: true])
 	return "Setting color temperature to $ct"
 }
@@ -1210,7 +1205,6 @@ def setColor(childDevice, huesettings) {
 	if (huesettings.switch == "off")
 		value.on = false
 
-	createSwitchEvent(childDevice, value.on ? "on" : "off")
 	put("lights/$id/state", value)
 	return "Setting color to $value"
 }
@@ -1320,32 +1314,6 @@ private Boolean hasAllHubsOver(String desiredFirmware) {
 
 private List getRealHubFirmwareVersions() {
 	return location.hubs*.firmwareVersionString.findAll { it }
-}
-
-/**
- * Sends appropriate turningOn/turningOff state events depending on switch or level changes.
- *
- * @param childDevice device to send event for
- * @param setSwitch The new switch state, "on" or "off"
- * @param setLevel Optional, switchLevel between 0-100, used if you set level to 0 for example since
- * 				  that should generate "off" instead of level change
- */
-private void createSwitchEvent(childDevice, setSwitch, setLevel = null) {
-
-	if (setLevel == null) {
-		setLevel = childDevice.device?.currentValue("level")
-	}
-	// Create on, off, turningOn or turningOff event as necessary
-	def currentState = childDevice.device?.currentValue("switch")
-	if ((currentState == "off" || currentState == "turningOff")) {
-		if (setSwitch == "on" || setLevel > 0) {
-			childDevice.sendEvent(name: "switch", value: "turningOn", displayed: false)
-		}
-	} else if ((currentState == "on" || currentState == "turningOn")) {
-		if (setSwitch == "off" || setLevel == 0) {
-			childDevice.sendEvent(name: "switch", value: "turningOff", displayed: false)
-		}
-	}
 }
 
 /**
