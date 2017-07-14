@@ -42,7 +42,7 @@
 		
         attribute   "needUpdate", "string"
         
-		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A,0x5A" // 1.07 & 1.08 Secure
+        fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A,0x5A" // 1.07 & 1.08 Secure
         fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A" // 1.07 & 1.08
         
         fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A" // 1.06
@@ -430,7 +430,7 @@ def configure() {
 def updated()
 {
     state.enableDebugging = settings.enableDebugging
-    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     logging("updated() is being called")
     if(settings."101" != null && settings."101" == "240") { 
         sendEvent(name:"batteryTile", value: "USB Powered", displayed:false)
