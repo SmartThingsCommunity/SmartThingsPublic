@@ -200,22 +200,6 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
     }
 }
 
-private updateStatus(){
-
-    String statusText = ""
-
-    if(device.currentValue('power') != null)
-        statusText = "${device.currentValue('power')} W - "
-    
-    if(device.currentValue('energy') != null)
-        statusText = statusText + "${device.currentValue('energy')} kWh - "
-        
-    if (statusText != ""){
-        statusText = statusText.substring(0, statusText.length() - 2)
-        sendEvent(name:"statusText", value: statusText, displayed:false)
-    }
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) 
 {
     //log.debug "multichannelv3.MultiChannelCapabilityReport $cmd"
@@ -411,7 +395,7 @@ private encap(cmd, endpoint) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x32: 1, 0x25: 1, 0x98: 1, 0x70: 2, 0x85: 2, 0x9B: 1, 0x90: 1, 0x73: 1, 0x30: 1, 0x28: 1, 0x2B: 1]) // can specify command class versions here like in zwave.parse
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x32: 3, 0x25: 1, 0x98: 1, 0x70: 2, 0x85: 2, 0x9B: 1, 0x90: 1, 0x73: 1, 0x30: 1, 0x28: 1, 0x2B: 1]) // can specify command class versions here like in zwave.parse
 	if (encapsulatedCommand) {
 		return zwaveEvent(encapsulatedCommand)
 	} else {
