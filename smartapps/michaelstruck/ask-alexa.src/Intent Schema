@@ -46,6 +46,10 @@
         {
           "name": "MPW",
           "type": "AMAZON.NUMBER"
+        },
+        {
+          "name": "xParam",
+          "type": "LIST_OF_WCP"
         }
       ],
       "intent": "MacroOperation"
