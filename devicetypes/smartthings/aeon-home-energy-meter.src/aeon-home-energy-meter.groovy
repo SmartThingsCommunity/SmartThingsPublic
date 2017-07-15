@@ -23,6 +23,11 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 
+	    	attribute "ManufacturerCode", "string"
+		attribute "ProductCode", "string"
+		attribute "ProduceTypeCode", "string"
+		attribute "WirelessConfig", "string"
+
 		command "reset"
 
 		fingerprint deviceId: "0x2101", inClusters: " 0x70,0x31,0x72,0x86,0x32,0x80,0x85,0x60"
@@ -109,10 +114,28 @@ def configure() {
 		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4).format(),   // combined power in watts
 		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
 		zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8).format(),   // combined energy in kWh
-		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
+		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 1200).format(), // every 20 min
 		zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0).format(),    // no third report
 		zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format() // every 5 min
 	])
 	log.debug cmd
 	cmd
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+	def result = []
+
+	def manufacturerCode = String.format("%04X", cmd.manufacturerId)
+	def productCode = String.format("%04X", cmd.productId)
+	def produceTypeCode = String.format("%04X", cmd.productTypeId)
+	def wirelessConfig = "ZWA"
+	
+	sendEvent(name: "ManufacturerCode", value: manufacturerCode)
+	sendEvent(name: "ProductCode", value: productCode)
+	sendEvent(name: "ProduceTypeCode", value: produceTypeCode)
+	sendEvent(name: "WirelessConfig", value: wirelessConfig)
+	
+	result << createEvent(descriptionText: "$device.displayName", isStateChange: false)
+
+	return result
 }
