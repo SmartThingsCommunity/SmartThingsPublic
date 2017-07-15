@@ -140,4 +140,3 @@ private hasBeenRecentMotion()
 	}
 	isActive
 }
-
