@@ -161,7 +161,6 @@ def parse(String description)
             result << response(zwave.batteryV1.batteryGet().format())
             result << response(zwave.versionV1.versionGet().format())
             result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-            result << response(zwave.firmwareUpdateMdV2.firmwareMdGet().format())
             result << response(configure())
         break
         default:
@@ -344,31 +343,11 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
     }
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport cmd){
-    logging("Firmware Report ${cmd.toString()}")
-    def firmwareVersion
-    switch(cmd.checksum){
-       case "35235":
-          firmwareVersion = "1.06"
-       break;
-       case "65307":
-          firmwareVersion = "1.07"
-       break;
-       case "42699":
-          firmwareVersion = "1.08"
-       break;
-       case "11942":
-          firmwareVersion = "1.06EU"
-       break;
-       case "14569":
-          firmwareVersion = "1.07EU"
-       break;
-       default:
-          firmwareVersion = cmd.checksum
-    }
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+	def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}${location.getTemperatureScale() == 'C' ? 'EU':''}"
     state.needfwUpdate = "false"
-    updateDataValue("firmware", firmwareVersion.toString())
-    createEvent(name: "currentFirmware", value: firmwareVersion)
+    updateDataValue("firmware", firmware)
+    createEvent(name: "currentFirmware", value: firmware)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -390,7 +369,7 @@ def refresh() {
                 request << zwave.configurationV1.configurationGet(parameterNumber: "${it.@index}".toInteger())
             }
         } 
-        request << zwave.firmwareUpdateMdV2.firmwareMdGet()
+        request << zwave.versionV1.versionGet()
         request << zwave.wakeUpV1.wakeUpIntervalGet()
     } else {
         request << zwave.batteryV1.batteryGet()
@@ -575,7 +554,7 @@ def update_needed_settings()
     
     if(!state.needfwUpdate || state.needfwUpdate == ""){
        logging("Requesting device firmware version")
-       cmds << zwave.firmwareUpdateMdV2.firmwareMdGet()
+       cmds << zwave.versionV1.versionGet()
     }    
 
     if(state.wakeInterval == null || state.wakeInterval != getAdjustedWake()){
