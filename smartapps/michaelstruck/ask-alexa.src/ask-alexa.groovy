@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.9b - 7/13/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.9c - 7/13/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.9 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.2.9b (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
+ *  Version 2.2.9c (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1477,6 +1477,7 @@ def processMacro() {
     def param = params.Param												//Parameter
     def mPW = params.MPW													//Macro Password
     def xParam = params.xParam												//WebCoRE parameters
+    String outputTxt = ""
     def count = 0, macCount=0, wrCount=0, vrCount=0, sdCount, macAlias
     macCount = getAskAlexa().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
     wrCount = getWR().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
@@ -3476,7 +3477,7 @@ private mqReq() { return 104 }
 private wrReq()  { return 104 }
 private vrReq()  { return 104 }
 private schReq()  { return 103 }
-private versionLong(){ return "2.2.9b" }
+private versionLong(){ return "2.2.9c" }
 private versionDate(){ return "07/13/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
