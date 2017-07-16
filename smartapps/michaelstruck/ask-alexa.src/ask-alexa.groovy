@@ -1810,7 +1810,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                     else result = "You do not have the Ecobee tips functionality enabled in your SmartApp. %1%"
                 }
                 else {                   
-                    if (param == ~/undefined|null/) param = tstatCool ? "cool" : tstatHeat ? "heat" : param
+                    if (param ==~/undefined|null/) param = tstatCool ? "cool" : tstatHeat ? "heat" : param
                     if ((op ==~/increase|raise|up|decrease|down|lower/)){
                          def newValues = upDown(STdevice, type, op, num, STdeviceName)  
                          num = newValues.newLevel
@@ -1824,7 +1824,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                     def ecobeeCustomRegEx = MyEcobeeCMD && ecobeeCMD ? getEcobeeCustomRegEx(STdevice) : null
                     if ((param==~/heat|heating|cool|cooling|auto|automatic|eco|AC|comfort|home|away|sleep|resume program/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && num == 0 && op==~/undefined|null/) op="on" 
                     if (op ==~/on|off/) {
-                        if (param == ~/undefined|null/ && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdeviceName} on. %1%"
+                        if (param ==~/undefined|null/ && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning the ${STdeviceName} on. %1%"
                         if (param =~/heat/) {result="I am setting the ${STdeviceName} to 'heating' mode. "; STdevice.heat()}
                         if (param =~/cool|AC/) {result="I am setting the ${STdeviceName} to 'cooling' mode. "; STdevice.cool()}
                         if (param =~/auto/) {result="I am setting the ${STdeviceName} to 'auto' mode. Please note, to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; STdevice.auto()}
@@ -1848,7 +1848,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                         if (result=="null") result = "The NST Manager returned no results for the ${STdeviceName}. Please check your settings within your smartapp. %1%"
                     }
                     else {
-                        if (param == ~/undefined|null/ ){ 
+                        if (param ==~/undefined|null/ ){ 
                             if (STdevice.currentValue("thermostatMode")=="heat") param = "heat"
                             else if (STdevice.currentValue("thermostatMode")=="cool") param = "cool"
                             else result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature. The thermostat will not accept a generic setpoint in its current mode. "+
@@ -1891,7 +1891,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                     if (num==0) overRideMsg = "You don't have a default value set up for the '${op}' level. I am not making any changes to the ${STdeviceName}. %1%"
                 }
                 if ((type == "switch") || (type ==~ /color|level|kTemp/ && num==0 )){
-                    if (type ==~ /color|level|kTemp/ && num==0 && op== ~/undefined|null/  && param== ~/undefined|null/ ) op="off"
+                    if (type ==~ /color|level|kTemp/ && num==0 && op==~/undefined|null/  && param==~/undefined|null/ ) op="off"
                     if (op==~/on|off/){
                 		STdevice."$op"() 
                         result = overRideMsg ? overRideMsg: "I am turning the ${STdeviceName} ${op}. "
@@ -1935,6 +1935,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 }
             }
             if (type == "music"){             
+                log.debug param==~/undefined|null/
                 if ((op ==~/increase|raise|up|decrease|down|lower/)){
                      def newValues = upDown(STdevice, type, op, num,STdeviceName) 
                      num = newValues.newLevel
@@ -1942,8 +1943,8 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 }
                 if ((num != 0 && speakerHighLimit && num > speakerHighLimit)|| (op=="maximum" && speakerHighLimit)) num = speakerHighLimit    
                 if (op==~/off|stop/) { STdevice.stop(); result = "I am turning off the ${STdeviceName}. " }
-                else if (op ==~/play|on/ && param== ~/undefined|null/) { 
-                	STdevice.play()
+                else if (op ==~/play|on/ && param==~/undefined|null/) { 
+                    STdevice.play()
                     result = "I am playing the ${STdeviceName}. " 
                 }
                 else if (op ==~/play|on|undefined|null/  && param!="undefined" && param!="null") { 
@@ -2065,7 +2066,7 @@ def groupResults(num, op, colorData, param, mNum){
             else if (op==~/low|medium|high/ && groupType=="switchLevel") { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
             else if (op==~/low|medium|high/ && groupType==~/colorControl|colorTemperature/ && !colorData ) { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
             else valueWord = "${num}%"
-            if (num==0 && op== ~/undefined|null/ && param== ~/undefined|null/ && mNum!="undefined" && mNum!="null") op="off"
+            if (num==0 && op==~/undefined|null/ && param==~/undefined|null/ && mNum!="undefined" && mNum!="null") op="off"
             if (op ==~/on|off/){ 
             	settings."groupDevice${groupType}"?."$op"()
                 result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am turning ${op} the ${noun} in the group named '${app.label}'. "
