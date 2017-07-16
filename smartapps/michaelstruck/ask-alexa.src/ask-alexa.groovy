@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.9a - 7/13/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.9b - 7/13/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.9 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.2.9a (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
+ *  Version 2.2.9b (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1098,12 +1098,13 @@ def processBegin(){
     return ["OOD":OOD, "continue":contOption,"personality":persType, "SmartAppVer": versionLong(),"IName":invocationName,"pName":pName,"whisper": enableWhisper,"speed":speed, "pitch":pitch ]
 }
 def sendJSON(outputTxt, icon){
-    if (outputTxt && msgQueueNotify && mqCounts(msgQueueNotify) && outputTxt[-3..-1] != "%M%") {
+    if (outputTxt && msgQueueNotify && mqCounts(msgQueueNotify) && outputTxt.endsWith("%") && outputTxt[-3..-1] != "%M%") {
         def ending= outputTxt[-3..-1]
         outputTxt = outputTxt.replaceAll("${ending}", "Please note: ${mqCounts(msgQueueNotify)}. ${ending}")
     }
+    else if (outputTxt && msgQueueNotify && mqCounts(msgQueueNotify) && !outputTxt.endsWith("%")) outputTxt = outputTxt + "Please note: ${mqCounts(msgQueueNotify)}"
     if (outputTxt && outputTxt[-3..-1] == "%M%") outputTxt = outputTxt.replaceAll("%M%","%3%")
-    if (outputTxt) log.debug outputTxt[0..-4]
+    if (outputTxt && outputTxt.endsWith("%")) log.debug outputTxt[0..-4]
     if (state.cmdFollowup && outputTxt && outputTxt[-3..-1] != "%P%") state.cmdFollowup=""
     if (state.cmdFollowup && outputTxt && outputTxt[-3..-1] == "%P%") runIn(30, clearFollowup)
     def showIcon = icon ? icon :"AskAlexa"
@@ -1977,19 +1978,18 @@ def getReply(devices, type, STdeviceName, op, num, param){
             	else if (type == "shade" && STdevice.currentValue("windowShade")==op || STdevice.currentValue("windowShade")=="closed" && op=="close"){
 					 result = "The ${STdeviceName} is already ${currentShadeState}. %1%"
                 }
-                else {
-                	STdevice."$op"(); result =  "I am ${op}ing the ${STdeviceName}. "
-                }
+                else STdevice."$op"(); result =  "I am ${op}ing the ${STdeviceName}. "
             }    
             if (type == "presence" && vPresenceCMD){
+            	log.debug param
             	def currentState = STdevice.currentValue(type)
-                if (((op=="on" || param=~/home|present|check in|arrive/) && currentState=="present") || ((op=="off" || param=~/away|not present|checkout|depart|gone/) && currentState=="not present")) result = "The '${STdeviceName}' presence sensor is already set to '${currentState}'. %1%"
+                if (((op=="on" || param=~/home|present|check in|checkin|arrive/) && currentState=="present") || ((op=="off" || param=~/away|not present|check out|checkout|depart|gone/) && currentState=="not present")) result = "The '${STdeviceName}' presence sensor is already set to '${currentState}'. %1%"
                 else if ((op=="on" || param=~/home|present|check in|arrive/) && (currentState=="not present" || !currentState)) {
 					if (supportedCMDs.name.contains("present")) STdevice.present() 
                     if (supportedCMDs.name.contains("arrived")) STdevice.arrived()
                     result = (supportedCMDs.find{it.name==~/present|arrived/}) ? "I am setting the presence of, '${STdeviceName}, to 'present'. ":""
                 }
-                else if ((op=="off" || param=~/away|not present|checkout|depart|gone/) && (currentState=="present" || !currentState)) {
+                else if ((op=="off" || param=~/away|not present|check out|checkout|depart|gone/) && (currentState=="present" || !currentState)) {
                     if (supportedCMDs.name.contains("away")) STdevice.away() 
                     if (supportedCMDs.name.contains("departed")) STdevice.departed()
                     result = (supportedCMDs.find{it.name==~/away|departed/})  ? "I am setting the presence of, '${STdeviceName}, to 'away'. " :""
@@ -3475,7 +3475,7 @@ private mqReq() { return 104 }
 private wrReq()  { return 104 }
 private vrReq()  { return 104 }
 private schReq()  { return 103 }
-private versionLong(){ return "2.2.9a" }
+private versionLong(){ return "2.2.9b" }
 private versionDate(){ return "07/13/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
