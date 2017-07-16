@@ -5,6 +5,7 @@ DeviceOperation {Device} to {Num}
 DeviceOperation {Device} to {Num} degrees
 DeviceOperation {Device} to {Num} percent
 DeviceOperation {Device} {Param}
+DeviceOperation {Param} {Device}
 DeviceOperation {Device} to {Param}
 DeviceOperation {Device} to {Param} mode
 DeviceOperation {Device} {Param} to {Num}
