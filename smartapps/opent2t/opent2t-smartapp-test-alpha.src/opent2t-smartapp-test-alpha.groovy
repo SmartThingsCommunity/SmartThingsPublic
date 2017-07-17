@@ -3,7 +3,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 
 definition(
-    name: "Microsoft SmartApp",
+    name: "OpenT2T SmartApp Test",
 		namespace: "opent2t",
 		author: "Microsoft",
 		description: "SmartApp for end to end SmartThings scenarios via OpenT2T",
