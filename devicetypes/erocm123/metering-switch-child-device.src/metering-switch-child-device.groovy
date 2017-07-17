@@ -21,6 +21,8 @@ metadata {
         capability "Energy Meter"
         capability "Power Meter"
         capability "Refresh"
+        
+        command "reset"
 	}
 
 	tiles {
@@ -41,6 +43,9 @@ metadata {
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		    state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
+        standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		    state "default", label:'reset kWh', action:"reset"
+	    }
 	}
 }
 
@@ -54,4 +59,8 @@ void off() {
 
 void refresh() {
 	parent.childRefresh(device.deviceNetworkId)
+}
+
+void reset() {
+	parent.childReset(device.deviceNetworkId)
 }
