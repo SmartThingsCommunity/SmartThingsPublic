@@ -18,23 +18,22 @@
  */
  
 metadata {
-definition (name: "Fibaro Single Switch 2 FGS-213", namespace: "erocm123", author: "Eric Maycock") {
-capability "Switch"
-capability "Polling"
-capability "Configuration"
-capability "Refresh"
-capability "Energy Meter"
-capability "Power Meter"
-capability "Health Check"
-capability "Button"
-capability "Holdable Button"
+    definition (name: "Fibaro Single Switch 2 FGS-213", namespace: "erocm123", author: "Eric Maycock") {
+    capability "Switch"
+    capability "Polling"
+    capability "Configuration"
+    capability "Refresh"
+    capability "Energy Meter"
+    capability "Power Meter"
+    capability "Health Check"
+    capability "Button"
+    capability "Holdable Button"
 
-command "reset"
+    command "reset"
 
-fingerprint mfr: "010F", prod: "0403", model: "2000", deviceJoinName: "Fibaro Single Switch 2"
+    fingerprint mfr: "010F", prod: "0403", model: "2000", deviceJoinName: "Fibaro Single Switch 2"
 
-fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x98,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
-
+    fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x98,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
 }
 
 simulator {
@@ -51,12 +50,12 @@ tiles(scale: 2){
            		attributeState "statusText", label:'${currentValue}'       		
             }
 	}
-	valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
+    valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 	}
     valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
-	}
+	}	
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
     }
@@ -70,7 +69,7 @@ tiles(scale: 2){
     
     main(["switch"])
     details(["switch",
-             "energy","power","reset",
+             "power","energy","reset",
              "refresh","configure"])
 
 }
@@ -166,6 +165,14 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 def refresh() {
 	def cmds = []
     cmds << zwave.switchBinaryV1.switchBinaryGet()
+    cmds << zwave.meterV2.meterGet(scale: 0)
+    cmds << zwave.meterV2.meterGet(scale: 2)
+	secureSequence(cmds, 1000)
+}
+
+def reset() {
+	def cmds = []
+    cmds << zwave.meterV2.meterReset()
     cmds << zwave.meterV2.meterGet(scale: 0)
     cmds << zwave.meterV2.meterGet(scale: 2)
 	secureSequence(cmds, 1000)
