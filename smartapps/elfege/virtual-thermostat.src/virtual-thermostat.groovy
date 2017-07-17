@@ -89,25 +89,30 @@ def settings(){
         }
         section("Allow Manual Override"){
             input "override", "bool", title: "Override by user", default: false, required: false, submitOnChange: true
-            if(override){
+            if(override && mode == "heat"){
                 input "timer", "number", title: "If I override and turned on the outlets, then turn them back off within this time", 
                     required: true, range: "1..60", description: "time in minutes" 
-                input "safety", "decimal", title: "unless temperature rises above this threshold:", required: true, range: "1..90", description: "mandatory precaution"
-                paragraph "Be advised that this threshold also applies to normal operation, so in any case your room's temp will never rise above it"
+                input "safetyTooHot", "decimal", title: "But turned it back off immediately if temperature rises above this threshold:", required: true, range: "60..90", description: "mandatory precaution"
+                paragraph "Be advised that this threshold also applies to normal operation, so in any case your room's temperature will never rise above this value"
+            }
+            else  if(override && mode == "cool"){
+                input "timer", "number", title: "If I override and turned on the outlets, then turn them back off within this time", 
+                    required: true, range: "1..60", description: "time in minutes" 
+                input "safetyTooCold", "decimal", title: "But turned it back off immediately if temperature falls below this threshold:", required: true, range: "50..80", description: "mandatory precaution"
+                paragraph "Be advised that this threshold also applies to normal operation, so in any case your room's temperature will never fall below this value"
             }
         }
         section("Contacts Sensor"){
-            input(name: "contacts", type: "capability.contactSensor", tilte: "Optional: turn off all switches when these contact sensors are opened", required: false, multiple: true)
+            input(name: "contacts", type: "capability.contactSensor", title: "Optional: turn off all switches when these contact sensors are opened", required: false, multiple: true, submitOnChange: true)
         }
-        section("EMERGENCY HEAT"){
-            input(name: "emergency", type: "number", tilte: "In any case, do not allow the room's temperature to go below this threshold", required: false, default: 50)
-            paragraph 
-            """this fonction applies litterally in all cases and therefore triggers the override features, even if did not select them 
+        section("EMERGENCY"){
+            input(name: "emergency", type: "number", title: "In any case, do not allow the room's temperature to go below this threshold", required: false, default: 50, submitOnChange: true)
+            paragraph """this fonction applies litterally in all cases and therefore triggers the override features, even if did not select them 
 and even when location is not in the operating modes. You can, however, make the entire app to not run at all 
-when outside of specified modes by using the built-in smartthings mode selector below, but beware of the risks described there"""
+when outside of specified modes by using the built-in smartthings mode selector (home page of this app), but beware of the risks described there"""
 
-            input(name: "EmergTimer", type: "number" , title:"for how long?", description: "set a time in minutes", required: false)
-            paragraph: "Recommended, especially if you selected modes in the first main setup page"
+            input(name: "EmergTimer", type: "number" , title:"for how long should I apply emergency override?", description: "set a time in minutes", required: false)
+            paragraph "Recommended, especially if you selected modes in the first main setup page"
 
         }
     }
@@ -149,13 +154,14 @@ def TemperaturesByMode(){
                 input "desireTempMode5", "decimal", title: "Desired Temp in $Mode5 mode"
             }
         }
+        section("If This contact Sensor is closed, in any case keep room at this temperature:"){
+            input "KeepWithContact", "bool", title: "true?", default: false, required: false, submitOnChange: true
+            if(KeepWithContact){
+                input "ExceptionContact", "capability.contactSensor", title: "Select a Sensor", required: true, submitOnChange: true, multiple: true
+                input "ExceptionTemp", "decimal", title: "Desired Temp for when $ExceptionContact is closed"
+            }
+        }
     }
-    /*section("experimental section"){
-// create as many input fields than there are selected Modes// ??? :D
-
-
-
-}*/
 }
 
 def installed(){
@@ -178,6 +184,11 @@ def init(){
     if(contacts){
         subscribe(contacts, "contact.open", contactHandler)
         subscribe(contacts, "contact.closed", contactHandler)
+
+        if(KeepWithContact){
+            subscribe(ExceptionContact, "contact.open", ExceptionContactHandler)
+            subscribe(ExceptionContact, "contact.closed", ExceptionContactHandler)
+        }
         log.debug "subscribed to contact events"
     }
     if (motion) {
@@ -187,7 +198,7 @@ def init(){
     atomicState.HandlerIsScheduled = false
     atomicState.override = false
     atomicState.ByApp = true
-    atomicState.Closed = true
+
 
     def scheduledTime = 1
     atomicState.HandlerIsScheduled = true
@@ -217,6 +228,58 @@ def init(){
 
     temperatureHandler()
 
+}
+
+def ExceptionContactHandler(evt){
+    log.info "$evt.device is $evt.value (Exception Contact)"  
+
+    atomicState.overrideWhileWindowsOpen = false
+    atomicState.override = false
+
+    desiredTemp()
+
+}
+def ExceptionContactClosed(){
+
+    if(KeepWithContact){
+        def Closed = false
+        def CurrentContacts = ExceptionContact.latestValue("contact")
+        def ClosedContacts = CurrentContacts.findAll { AllcontactsClosed ->
+            AllcontactsClosed == "closed" ? true : false
+        }
+        log.debug "${ClosedContacts.size()} windows/doors out of ${contacts.size()} are closed"
+
+        Closed = ClosedContacts.size() == ExceptionContact.size()
+        log.debug "Exception Contact Closed?($Closed)"
+
+        atomicState.ExceptionClosed = ExceptionClosed
+    }
+    else {
+        Closed = false
+    }
+    return Closed
+}
+def contactHandler(evt){
+
+    log.info "$evt.device is $evt.value"  
+
+
+    atomicState.overrideWhileWindowsOpen = false
+    atomicState.override = false
+    Switches()
+}
+def AllClosed(){
+    def AllClosed = true
+    def CurrentContacts = contacts.latestValue("contact")
+    def ClosedContacts = CurrentContacts.findAll { AllcontactsClosed ->
+        AllcontactsClosed == "closed" ? true : false
+    }
+    log.debug "${ClosedContacts.size()} windows/doors out of ${contacts.size()} are closed"
+
+    AllClosed = ClosedContacts.size() == contacts.size()
+    log.debug "All Closed?($AllClosed)"
+
+    return AllClosed
 }
 
 def ChangedModeHandler(evt){
@@ -258,7 +321,7 @@ def switchHandler(evt){
     def ModeOk = CurrMode in Modes
     def desiredTemp = desiredTemp()
 
-    def AllClosed = atomicState.Closed
+    def AllClosed = AllClosed 
 
     // is this an override action? (manual push of a button)
     if(override){
@@ -338,24 +401,42 @@ def temperatureHandler(evt){
 
     def CurrMode = location.currentMode
 
-    atomicState.currentTemp = sensor.currentTemperature as double
-        //log.debug "$sensor event is $evt.value" // this handler run according to a schedule so evt.value would return an error
-        log.debug "Current Temperature is ${atomicState.currentTemp}°F"
+    def CurrTemp = sensor.currentValue("temperature") as double
+        atomicState.currentTemp = CurrTemp
+    //log.debug "$sensor event is $evt.value" // this handler run according to a schedule so evt.value would return an error
+    log.debug "Current Temperature is ${atomicState.currentTemp}°F"
 
     Switches()
 
-    if(atomicState.currenTemp > safety){
-        log.debug "EMERGENCY SHUT DOWN"
+    if(mode == "heat" && CurrTemp > safetyTooHot){
+        log.debug "Current Temperature is: $CurrTemp. EMERGENCY SHUT DOWN"
+        OffOutSideOfMode()  
+    }
+    else if(mode == "cool" && CurrTemp < safetyTooCold){
+        log.debug "Current Temperature is: $CurrTem. EMERGENCY SHUT DOWN"
         OffOutSideOfMode()  
     }
     if(emergency){
-        if(atomicState.currentTemp < emergency){
-            outlets?.on()
-            atomicState.override = true
-            if(EmergTimer){
-                def timer = EmergTimer * 60
-                runIn(timer, justshutoff)
+        if(mode == "heat"){
+            if(atomicState.currentTemp < emergency){
+                outlets?.on()
+                atomicState.override = true
+                if(EmergTimer){
+                    def timer = EmergTimer * 60
+                    runIn(timer, justshutoff)
+                }
             }
+        }
+        else  if(mode == "cool"){
+            if(atomicState.currentTemp < emergency){
+                outlets?.off()
+                atomicState.override = true
+                if(EmergTimer){
+                    def timer = EmergTimer * 60
+                    runIn(timer, justTurnOn)
+                }
+            }
+
         }
     }
     //testloop()
@@ -383,27 +464,11 @@ def motionHandler(evt){
         }
     }
 }
-def contactHandler(evt){
 
-    log.info "$evt.device is $evt.value"  
-    def CurrentContacts = contacts.latestValue("contact")
-    def ClosedContacts = CurrentContacts.findAll { AllcontactsClosed ->
-        AllcontactsClosed == "closed" ? true : false
-    }
-    log.debug "${ClosedContacts.size()} windows/doors out of ${contacts.size()} are closed"
-
-    def AllClosed = ClosedContacts.size() == contacts.size()
-    log.debug "All Closed?($AllClosed)"
-
-    atomicState.Closed = AllClosed
-    atomicState.overrideWhileWindowsOpen = false
-    atomicState.override = false
-    Switches()
-}
 def Switches(){
 
     def CurrMode = location.currentMode
-
+    def AllClosed = AllClosed
     def desiredTemp = desiredTemp()
 
     OnSwitches() 
@@ -415,7 +480,7 @@ def Switches(){
         atomicState.motion = true
     }
 
-    if(atomicState.Closed == true){
+    if(AllClosed){
         if(CurrMode in Modes){
             if(atomicState.motion == true){
                 if (mode == "cool") {
@@ -576,6 +641,10 @@ def OffOutSideOfMode(){
 
 }
 def desiredTemp(){
+    def ExceptClosed = ExceptionContactClosed()
+
+
+    def AllClosed = AllClosed()
 
     def CurrMode = location.currentMode
 
@@ -585,37 +654,52 @@ def desiredTemp(){
 
     log.info "Current temperature is $CurrTemp"
 
-    if(CurrMode in Modes[0]){
-        desiredTemp = desireTempMode0
-        log.debug "Desired temp is now : $desiredTemp ----a-----"
-    } 
-    else if(CurrMode in Modes[1]){
-        desiredTemp = desireTempMode1
-        log.debug "Desired temp is now : $desiredTemp ----b-----"
-    } 
-    else if(CurrMode in  Modes[2]){
-        desiredTemp = desireTempMode2
-        log.debug "Desired temp is now : $desiredTemp -----c----"
-    } 
-    else if(CurrMode in  Modes[3]){
-        desiredTemp = desireTempMode3
-        log.debug "Desired temp is now : $desiredTemp ----d-----"
-    } 
-    else if(CurrMode in  Modes[4]){
-        desiredTemp = desireTempMode4
-        log.debug "Desired temp is now : $desiredTemp ---e------"
-    } 
-    else if(CurrMode in  Modes[5]){
-        desiredTemp = desireTempMode5
-        log.debug "Desired temp is now : $desiredTemp ---f------"
+
+    if(ExceptClosed){
+        desiredTemp = ExceptionTemp
+        log.debug "Keeping Temperature at $ExceptionTemp despite mode change because $ExceptionContact is CLOSED"
     }
-    else { 
-        log.debug "Home is not in any of the modes selected by user"
+    else {
+
+        if(CurrMode in Modes[0]){
+            desiredTemp = desireTempMode0
+            log.debug "Desired temp is now : $desiredTemp ----a-----"
+        } 
+        else if(CurrMode in Modes[1]){
+            desiredTemp = desireTempMode1
+            log.debug "Desired temp is now : $desiredTemp ----b-----"
+        } 
+        else if(CurrMode in  Modes[2]){
+            desiredTemp = desireTempMode2
+            log.debug "Desired temp is now : $desiredTemp -----c----"
+        } 
+        else if(CurrMode in  Modes[3]){
+            desiredTemp = desireTempMode3
+            log.debug "Desired temp is now : $desiredTemp ----d-----"
+        } 
+        else if(CurrMode in  Modes[4]){
+            desiredTemp = desireTempMode4
+            log.debug "Desired temp is now : $desiredTemp ---e------"
+        } 
+        else if(CurrMode in  Modes[5]){
+            desiredTemp = desireTempMode5
+            log.debug "Desired temp is now : $desiredTemp ---f------"
+        }
+        else { 
+            log.debug "Home is not in any of the modes selected by user"
+        }
     }
     return desiredTemp
 }
 def justshutoff(){
     outlets?.off()
+    atomicState.overrideWhileWindowsOpen = false
+    atomicState.override = false
+    atomicState.ByApp = true
+
+}
+def justTurnOn(){
+    outlets?.on()
     atomicState.overrideWhileWindowsOpen = false
     atomicState.override = false
     atomicState.ByApp = true
