@@ -83,7 +83,6 @@ Algorithmic: save less money but be even more comfortable"""
         }
     }
 }
-
 def settings() {
 
     def pageName = "settings"
@@ -423,24 +422,29 @@ allows for it, instead of only when cooling is required (see below)"""
             }
         }
         section("Micro Location"){
+
             input(name: "MotionSensor_1", type: "capability.motionSensor", title: "Use this motion sensor to lower $Thermostat_1 settings when inactive", description: "Select a motion sensor", required: false)
             if(MotionSensor_1){
                 input(name: "MotionModesT1", type: "mode", title: "Use $MotionSensor_1 only if home is in these modes", multiple: true, description: "select a mode", required: true)
                 input(name: "AddDegreesMotion1", type: "decimal", title: "Add this amount of degrees to $Thermostat_1 heat setting", required: true)
                 input(name: "SubDegreesMotion1", type: "decimal", title: "Substract this amount of degrees to $Thermostat_1 cooling setting", required: true)   
             }
-            input(name: "MotionSensor_2", type: "capability.motionSensor", title: "Use this motion sensor to lower $Thermostat_2 settings when inactive", description: "Select a motion sensor", required: false)
-            if(MotionSensor_2){
-                input(name: "MotionModesT2", type: "mode", title: "Use $MotionSensor_2 only if home is in these modes", multiple: true, description: "select a mode", required: true)
-                input(name: "AddDegreesMotion2", type: "decimal", title: "Add this amount of degrees to $Thermostat_2 heat setting", required: true)
-                input(name: "SubDegreesMotion2", type: "decimal", title: "Substract this amount of degrees to $Thermostat_2 cooling setting", required: true)      
+            if(HowMany > 1) {
+                input(name: "MotionSensor_2", type: "capability.motionSensor", title: "Use this motion sensor to lower $Thermostat_2 settings when inactive", description: "Select a motion sensor", required: false)
+                if(MotionSensor_2){
+                    input(name: "MotionModesT2", type: "mode", title: "Use $MotionSensor_2 only if home is in these modes", multiple: true, description: "select a mode", required: true)
+                    input(name: "AddDegreesMotion2", type: "decimal", title: "Add this amount of degrees to $Thermostat_2 heat setting", required: true)
+                    input(name: "SubDegreesMotion2", type: "decimal", title: "Substract this amount of degrees to $Thermostat_2 cooling setting", required: true)      
+                }
             }
-            input(name: "MotionSensor_3", type: "capability.motionSensor", title: "Use this motion sensor to lower $Thermostat_3 settings when inactive", description: "Select a motion sensor", required: false)
-            if(MotionSensor_3){
-                input(name: "MotionModesT3", type: "mode", title: "Use $MotionSensor_3 only if home is in these modes", multiple: true, description: "select a mode", required: true)
-                input(name: "AddDegreesMotion3", type: "decimal", title: "Add this amount of degrees to $Thermostat_3 heat setting", required: true)
-                input(name: "SubDegreesMotion3", type: "decimal", title: "Substract this amount of degrees to $Thermostat_3 cooling setting", required: true)      
-            }       
+            if(HowMany > 2) {
+                input(name: "MotionSensor_3", type: "capability.motionSensor", title: "Use this motion sensor to lower $Thermostat_3 settings when inactive", description: "Select a motion sensor", required: false)
+                if(MotionSensor_3){
+                    input(name: "MotionModesT3", type: "mode", title: "Use $MotionSensor_3 only if home is in these modes", multiple: true, description: "select a mode", required: true)
+                    input(name: "AddDegreesMotion3", type: "decimal", title: "Add this amount of degrees to $Thermostat_3 heat setting", required: true)
+                    input(name: "SubDegreesMotion3", type: "decimal", title: "Substract this amount of degrees to $Thermostat_3 cooling setting", required: true)      
+                }  
+            }
             input (name:"minutesMotion", type:"number", title: "For how long there must be no motion for those settings to apply? ", 
                    range: "2..999", 
                    description: "time in minutes",
@@ -461,6 +465,9 @@ def installed() {
     //log.debug "atomicState.humidity is $atomicState.humidity (updated() loop)"
     atomicState.wind = 4
     atomicState.FeelsLike = OutsideSensor.currentValue("temperature")
+
+    atomicState.OpenByApp = true
+    atomicState.ClosedByApp = true
 
     init()
 }
@@ -684,8 +691,7 @@ def Evaluate(){
 
     def doorsOk = AllContactsAreClosed()
 
-
-    if(!AllContactsAreClosed){
+    if(!doorsOk){
         TurnOffThermostats()
     }
 
@@ -808,7 +814,6 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
 
             while(loopValue < atomicState.ThermsInvolved){
                 log.trace "MAIN LOOP RUNNING"
-
 
                 loopValue++
                     atomicState.loopValue = loopValue 
@@ -1054,7 +1059,7 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                         log.debug "Heating SetPoint already set to $HSPSet for $ThermSet"
                     }
                     def ThisIsExceptionTherm =  false
-                    if(ContactException){
+                    if(NoTurnOffOnContact){
                         ThisIsExceptionTherm = "${ThermSet}" == "${Thermostat_1}"
 
                     }
@@ -1067,8 +1072,8 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
 ThisIsExceptionTherm is: $ThisIsExceptionTherm (${ThermSet} == ${Thermostat_1})
 ContactExceptionIsClosed = $ContactExceptionIsClosed"""
 
-                    /////////////////////////MODIFICATIONS//////////////////////////
-
+                    /////////////////////////MODIFICATIONS//////////////////////////yh
+log.debug "doorsOk = $doorsOk"
                     if(doorsOk || (ContactExceptionIsClosed && ThisIsExceptionTherm)){
 
                         //log.debug "AltSensor =  $AltSensor (loopValue = $loopValue)"
@@ -2018,10 +2023,6 @@ def TurnOffThermostats(){
 
 def CheckWindows(){
 
-    if(!AllContactsAreClosed){
-        TurnOffThermostats()
-    }
-
 
     def MessageMinutes = 60*60000 as Long
     def MessageTimeDelay = now() > atomicState.LastTimeMessageSent + MessageMinutes
@@ -2290,7 +2291,7 @@ OkToOpen?($result)
 """
 
     /// FOR TESTS 
-   // result = false
+    // result = false
 
 
     return result
