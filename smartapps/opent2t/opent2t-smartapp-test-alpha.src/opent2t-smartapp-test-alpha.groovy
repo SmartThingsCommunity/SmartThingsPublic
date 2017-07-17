@@ -3,10 +3,10 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 
 definition(
-    name: "OpenT2T SmartApp Test",
+    name: "Microsoft SmartApp",
 		namespace: "opent2t",
-		author: "OpenT2T",
-		description: "Test app to test end to end SmartThings scenarios via OpenT2T",
+		author: "Microsoft",
+		description: "SmartApp for end to end SmartThings scenarios via OpenT2T",
 		category: "SmartThings Labs",
 		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
 		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -40,7 +40,7 @@ definition(
 
 //Device Inputs
 preferences {
-	section("Allow OpenT2T to control these things...") {
+	section("Allow Microsoft to control these things...") {
 		input "contactSensors", "capability.contactSensor", title: "Which Contact Sensors", multiple: true, required: false, hideWhenEmpty: true
 		input "garageDoors", "capability.garageDoorControl", title: "Which Garage Doors?", multiple: true, required: false, hideWhenEmpty: true
  		input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false, hideWhenEmpty: true
@@ -176,7 +176,10 @@ def registerDeviceChange() {
 				state.deviceSubscriptionMap.put(deviceId, [subscriptionEndpt])
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			} else if (!state.deviceSubscriptionMap[deviceId].contains(subscriptionEndpt)){
-				state.deviceSubscriptionMap[deviceId] << subscriptionEndpt
+				// state.deviceSubscriptionMap[deviceId] << subscriptionEndpt
+                // For now, we will only have one subscription endpoint per device
+				state.deviceSubscriptionMap.remove(deviceId)
+				state.deviceSubscriptionMap.put(deviceId, [subscriptionEndpt])
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			}
             
@@ -308,10 +311,10 @@ def deviceEventHandler(evt) {
 		params.uri = "${it}"
         if(state.verificationKeyMap[it] != null ){
         	def key = state.verificationKeyMap[it]
-            params.header = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
+            params.headers = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
         }
 		log.trace "POST URI: ${params.uri}"
-        log.trace "Header: ${params.header}"
+        log.trace "Headers: ${params.headers}"
 		log.trace "Payload: ${params.body}"
 		try{
 			httpPostJson(params) { resp ->
@@ -341,10 +344,10 @@ def locationEventHandler(evt) {
                 params.uri = "${it}"
                 if(state.verificationKeyMap[it] != null ){
                     def key = state.verificationKeyMap[it]
-                    params.header = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
+                    params.headers = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
                 }
                 log.trace "POST URI: ${params.uri}"
-				log.trace "Header: ${params.header}"
+				log.trace "Headers: ${params.headers}"
                 log.trace "Payload: ${params.body}"
                 try{
                     httpPostJson(params) { resp ->
