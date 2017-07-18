@@ -454,9 +454,7 @@ def pageWeather() {
         log.debug wrCount && (aaWRVer < wrReq())
         if (duplicates || (wrCount && (aaWRVer < wrReq()))){
         	section ("Warning"){
-            	        log.debug aaWRVer
-        log.debug wrReq()
-        		if (duplicates) paragraph "You have two or more weather reports with the same name. Please ensure each report has a unique name and also does not conflict with device names or other extensions.", image: imgURL() + "caution.png"
+			if (duplicates) paragraph "You have two or more weather reports with the same name. Please ensure each report has a unique name and also does not conflict with device names or other extensions.", image: imgURL() + "caution.png"
         		if (wrCount && (aaWRVer < wrReq())) paragraph "You are using an outdated version of the weather report extension. Please update the software and try again.", image: imgURL() + "caution.png" 
         	}
         }
