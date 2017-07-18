@@ -40,6 +40,9 @@ preferences {
 	section("Choose whether you wish to do cooling or heating."){
 		input "mode", "enum", title: "Heating or cooling?", options: ["cool": "Cooling","heat": "Heating"]
 	}
+    section("Enable this application?  App will be enabled by default"){
+    	input name: "appenabled", type: "bool", title: "Application enabled?", description: "Enter boolean", required: false, defaultValue: "true"
+    }
 }
 
 def installed()
@@ -57,26 +60,32 @@ def updated()
 
 def temperatureHandler(evt)
 {
-	if (presence.currentPresence == "present") {
-		evaluate(evt.doubleValue,setpoint)
-	}
-	else {
-		outlets.off()
-	}
-}
-
-def presenceHandler(evt)
-{
-	if (evt.value == "present") {
-		def lastTemp = sensor.currentTemperature
-		if (lastTemp != null) {
-			evaluate(lastTemp, setpoint)
+log.debug "$appenabled"
+	if (appenabled){
+    
+		if (presence.currentPresence == "present") {
+			evaluate(evt.doubleValue,setpoint)
 		}
-	} else {
+		else {
 			outlets.off()
 		}
+	}
 }
+def presenceHandler(evt)
+{
+log.debug "$appenabled"
+	if (appenabled){
 
+        if (evt.value == "present") {
+            def lastTemp = sensor.currentTemperature
+            if (lastTemp != null) {
+                evaluate(lastTemp, setpoint)
+            }
+        } else {
+                outlets.off()
+            }
+	}
+}
 private evaluate(currentTemp, desiredTemp)
 {
 	log.debug "EVALUATE($currentTemp, $desiredTemp) $mode"
