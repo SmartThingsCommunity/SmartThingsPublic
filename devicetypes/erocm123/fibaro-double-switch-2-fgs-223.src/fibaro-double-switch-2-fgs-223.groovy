@@ -22,6 +22,8 @@
  
 metadata {
 definition (name: "Fibaro Double Switch 2 FGS-223", namespace: "erocm123", author: "Eric Maycock") {
+    capability "Sensor"
+    capability "Actuator"
     capability "Switch"
     capability "Polling"
     capability "Configuration"
@@ -47,8 +49,10 @@ tiles(scale: 2){
 
     multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
-				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			   attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+			   attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
            		attributeState "statusText", label:'${currentValue}'       		

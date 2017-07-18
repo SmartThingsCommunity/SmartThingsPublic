@@ -19,6 +19,8 @@
  
 metadata {
     definition (name: "Fibaro Single Switch 2 FGS-213", namespace: "erocm123", author: "Eric Maycock") {
+    capability "Sensor"
+    capability "Actuator"
     capability "Switch"
     capability "Polling"
     capability "Configuration"
@@ -43,8 +45,10 @@ tiles(scale: 2){
 
     multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
-				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			   attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+			   attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			   attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 			}
             tileAttribute ("statusText", key: "SECONDARY_CONTROL") {
            		attributeState "statusText", label:'${currentValue}'       		
@@ -164,6 +168,11 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 def refresh() {
 	def cmds = []
+    cmds << zwave.associationV2.associationGet(groupingIdentifier:1)
+    cmds << zwave.associationV2.associationGet(groupingIdentifier:2)
+    cmds << zwave.associationV2.associationGet(groupingIdentifier:3)
+    cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
+    cmds << zwave.associationV2.associationGet(groupingIdentifier:5)
     cmds << zwave.switchBinaryV1.switchBinaryGet()
     cmds << zwave.meterV2.meterGet(scale: 0)
     cmds << zwave.meterV2.meterGet(scale: 2)
@@ -344,6 +353,13 @@ def update_needed_settings()
      
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
+    
+    if(!state.association1){
+       logging("Setting association group 1")
+       cmds << zwave.associationV2.associationRemove(groupingIdentifier: 1, nodeId: [])
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:1)
+    }
     
     sendEvent(name:"numberOfButtons", value:"5")
     
