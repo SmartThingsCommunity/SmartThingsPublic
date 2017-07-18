@@ -274,7 +274,7 @@ private Map getBatteryResult(rawValue) {
 			result.value = pct
 		} else {
 			def minVolts = 2.1
-			def maxVolts = 3.0
+			def maxVolts = 2.7
 			def pct = (volts - minVolts) / (maxVolts - minVolts)
 			def roundedPct = Math.round(pct * 100)
 			if (roundedPct <= 0)

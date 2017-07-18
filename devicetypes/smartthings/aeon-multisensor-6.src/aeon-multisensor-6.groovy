@@ -130,13 +130,13 @@ metadata {
 }
 
 def installed(){
-// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {
-// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	log.debug "Updated with settings: ${settings}"
 	log.debug "${device.displayName} is now ${device.latestValue("powerSupply")}"
 
