@@ -14,8 +14,8 @@
  */
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Simulated Test Lock", namespace: "smartthings/testing", author: "SmartThings") {
-    	capability "Actuator"
+	definition (name: "New Simulated Lock", namespace: "smartthings/testing", author: "SmartThings") {
+		capability "Actuator"
 		capability "sensor"
 
 		capability "Lock"
@@ -33,7 +33,7 @@ metadata {
 			tileAttribute ("device.lock", key: "PRIMARY_CONTROL") {
 				attributeState "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00A0DC", nextState:"unlocking"
 				attributeState "unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#FFFFFF", nextState:"locking"
-				attributeState "unknown", label:"unknown", action:"lock.lock", icon:"st.samsung_sds.sub_door_status_unknown", backgroundColor:"#E86D13"
+				attributeState "unknown", label:'jammed', action:"lock.lock", icon:"st.secondary.activity", backgroundColor:"#E86D13"
 				attributeState "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#00A0DC"
 				attributeState "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#FFFFFF"
 			}
@@ -42,34 +42,39 @@ metadata {
 			}
 		}
 
-		standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
 			state "default", label:'lock', action:"lock.lock", icon: "st.locks.lock.locked"
 		}
-		standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
 			state "default", label:'unlock', action:"lock.unlock", icon: "st.locks.lock.unlocked"
 		}
-		standardTile("jam", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'jam', action:"jam", icon: "st.locks.lock.unknown"
+		valueTile("jamLabel", "device.id", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "default", label:"Tap button to simulate a jam now.\nUse Lock or Unlock to clear jam."
 		}
-		standardTile("blank", "device.id", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:''
+		standardTile("jam", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "default", label:'', action:"jam", nextState: "unknown", backgroundColor:"#CCCCCC", defaultState: true
+			state "unknown", label:'jammed', backgroundColor:"#E86D13"   
 		}
-		standardTile("jamToggle", "device.doesNextOperationJam", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "false", label:'jam next', action:"setJamNextOperation", backgroundColor:"#DDDDDD", defaultState: true
-			state "true", label:'jam next', action:"clearJamNextOperation", backgroundColor:"#FFA81E"
+		valueTile("jamToggleLabel", "device.doesNextOperationJam", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+			state "default", label: "When button is active, lock will\nsimulate a jam on the next operation.", defaultState: true
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		standardTile("jamToggle", "device.doesNextOperationJam", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "false", label:'', action: "setJamNextOperation", backgroundColor:"#CCCCCC", defaultState: true
+			state "true", label:'', action: "clearJamNextOperation", backgroundColor:"#E86D13"
+		}
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 			state "battery", label:'battery ${currentValue}%', unit:"%"
 		}
 		controlTile("batterySliderControl", "device.battery", "slider",
-					height: 2, width: 4, range:"(1..100)") {
+					height: 1, width: 4, range:"(1..100)") {
 			state "battery", action:"setBatteryLevel"
 		}
 
 		main "toggle"
 		details(["toggle",
-			"lock", "unlock", "blank",
-			"jam", "jamToggle", "blank",
+			"lock", "unlock", 
+			"jamLabel", "jam",
+			"jamToggleLabel", "jamToggle",
 			"battery", "batterySliderControl" ])
 	}
 }
@@ -84,7 +89,7 @@ def installed() {
 
 def updated() {
 	log.trace "updated()"
-	processPreferences()
+	// processPreferences()
 	initialize()
 }
 
