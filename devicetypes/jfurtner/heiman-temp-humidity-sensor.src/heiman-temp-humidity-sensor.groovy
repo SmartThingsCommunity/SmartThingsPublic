@@ -30,8 +30,8 @@ metadata {
 		//fingerprint endpointId: "01", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003"
         //fingerprint /*endpointId: "01", inClusters: "0000,0003,0402,0001,0009", outClusters: "0019",*/ manufacturer: "Heiman", model: "TH-T_V14"
         //fingerprint profileId: "0104", endpointId: "0302", inClusters: "0000,0003,0402,0001,0009", outClusters: "0019", manufacturer: "Heiman", model: "TH-T_V14"
-        fingerprint endpointId: "01", profileId: "0104", inClusters: "0000,0001,0003,0009,0402", outClusters: "0019", manufacturer:"Heiman",model:"TH-T_V14" // temperature
-        fingerprint endpointId: "02", profileId:"0104", inClusters: "0000,0003,0405", outClusters: "0019", manufacturer:"Heiman",model:"TH-T_V14" // humidity
+        //fingerprint endpointId: "01", profileId: "0104", inClusters: "0000,0001,0003,0009,0402", outClusters: "0019", manufacturer:"Heiman",model:"TH-T_V14" // temperature
+        //fingerprint endpointId: "02", profileId:"0104", inClusters: "0000,0003,0405", outClusters: "0019", manufacturer:"Heiman",model:"TH-T_V14" // humidity
 	}
 
 	simulator {
