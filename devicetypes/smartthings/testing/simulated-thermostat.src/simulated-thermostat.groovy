@@ -574,15 +574,15 @@ private evaluateOperatingState(Map overrides) {
 		if (heatingSetpoint - currentTemp >= THRESHOLD_DEGREES) {
 			isHeating = true
 			setOperatingState(OP_STATE.HEATING)
-			sendEvent(name: "thermostatSetpoint", value: heatingSetpoint)
 		} 
+		sendEvent(name: "thermostatSetpoint", value: heatingSetpoint)
 	}
 	if (tsMode in COOL_ONLY_MODES + DUAL_SETPOINT_MODES && !isHeating) {
 		if (currentTemp - coolingSetpoint >= THRESHOLD_DEGREES) {
 			isCooling = true
 			setOperatingState(OP_STATE.COOLING)
-			sendEvent(name: "thermostatSetpoint", value: coolingSetpoint)
 		}
+		sendEvent(name: "thermostatSetpoint", value: coolingSetpoint)
 	}
 	else {
 		sendEvent(name: "thermostatSetpoint", value: heatingSetpoint)
