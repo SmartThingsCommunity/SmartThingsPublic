@@ -1,12 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.9d - 7/13/17 Copyright © 2017 Michael Struck
+ *  Version 2.2.9e - 7/13/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.9 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.2.9d (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
+ *  Version 2.2.9e (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2151,16 +2151,16 @@ def groupResults(num, op, colorData, param, mNum){
             else result = "For a lock device group, you must use a 'lock', 'unlock' or 'status' command. %1%" 
         }
         else if (groupType==~/doorControl|windowShade/){
-            if (op ==~ /open|close/){
-                settings."groupDevice${groupType}"?."$op"()
-                def condition = op=="close" ? "closing" : "opening"
-                result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
-            }
+		def grpCtl = groupType=="doorControl" ? "door" : "windowShade", grpName = groupType=="doorControl" ? "door" : "shade"
+		if (op ==~ /open|close/){
+                	settings."groupDevice${groupType}"?."$op"()
+                	def condition = op=="close" ? "closing" : "opening"
+                	result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
+            	}
             else if (op==~/undefined|status|null/) {
-				def grpCtl = groupType=="doorControl" ? "door" : "shade"
-                if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("open")) result = "All of the ${grpCtl}s in the device group, '${app.label}', are closed. "
-                else if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("closed")) result = "All of the ${grpCtl}s in the device group, '${app.label}', are open. "
-                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue(grpCtl)}. " }
+                if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("open") && !settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("Open")) result = "All of the ${grpName}s in the device group, '${app.label}', are closed. "
+                else if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("closed") && !settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("Closed")) result = "All of the ${grpName}s in the device group, '${app.label}', are open. "
+                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue(grpCtl).toLowerCase()}. " }
             }
             else result = "For a ${grpCtl} device group, you must use an 'open', 'close' or 'status' command. %1%" 
         }
@@ -3475,7 +3475,7 @@ private mqReq() { return 104 }
 private wrReq()  { return 104 }
 private vrReq()  { return 104 }
 private schReq()  { return 103 }
-private versionLong(){ return "2.2.9d" }
+private versionLong(){ return "2.2.9e" }
 private versionDate(){ return "07/13/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
