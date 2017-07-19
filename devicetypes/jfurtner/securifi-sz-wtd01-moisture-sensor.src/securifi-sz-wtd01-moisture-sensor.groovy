@@ -4,7 +4,7 @@ metadata {
 		capability "Water Sensor"
 		capability "Sensor"
         capability "Configuration"
-        capability "Speech Recognition"
+        //capability "Speech Recognition"
         capability "Tamper Alert"
 
         //attribute "tamperSwitch","ENUM",["open","closed"]
@@ -71,7 +71,7 @@ def enrollResponse() {
 
 def logDebug(String message) {
 	log.debug(message)
-    sendEvent(name: 'phraseSpoken', value: message)
+    //sendEvent(name: 'phraseSpoken', value: message)
 }
 
 // Parse incoming device messages to generate events
