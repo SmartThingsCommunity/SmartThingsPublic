@@ -3,7 +3,7 @@ metadata {
     
     capability "Configuration"
     capability "Button"
-    capability "Speech Recognition"
+    //capability "Speech Recognition"
     
     attribute 'logEvent', 'string'
     attribute 'lastButtonPushed', 'number'
@@ -105,6 +105,6 @@ def configure(){
 
 def logDebug(String message) {
 	log.debug(message)
-    sendEvent(name: 'phraseSpoken', value: message)
+    //sendEvent(name: 'phraseSpoken', value: message)
     sendEvent(name: 'logEvent', value: message)
 }
