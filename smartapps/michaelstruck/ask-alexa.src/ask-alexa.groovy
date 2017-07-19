@@ -2160,7 +2160,7 @@ def groupResults(num, op, colorData, param, mNum){
             else if (op==~/undefined|status|null/) {
                 if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("open") && !settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("Open")) result = "All of the ${grpName}s in the device group, '${app.label}', are closed. "
                 else if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("closed") && !settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("Closed")) result = "All of the ${grpName}s in the device group, '${app.label}', are open. "
-                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue(grpCtl).toLowerCase()}. " }
+                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue(grpCtl).toLowerCase()}. "
             }
             else result = "For a ${grpCtl} device group, you must use an 'open', 'close' or 'status' command. %1%" 
         }
