@@ -2151,16 +2151,16 @@ def groupResults(num, op, colorData, param, mNum){
             else result = "For a lock device group, you must use a 'lock', 'unlock' or 'status' command. %1%" 
         }
         else if (groupType==~/doorControl|windowShade/){
-		def grpCtl = groupType=="doorControl" ? "door" : "windowShade", grpName = groupType=="doorControl" ? "door" : "shade"
-		if (op ==~ /open|close/){
-                	settings."groupDevice${groupType}"?."$op"()
-                	def condition = op=="close" ? "closing" : "opening"
-                	result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
-            	}
+        	def grpCtl = groupType=="doorControl" ? "door" : "windowShade", grpName = groupType=="doorControl" ? "door" : "shade"
+            if (op ==~ /open|close/){
+                settings."groupDevice${groupType}"?."$op"()
+                def condition = op=="close" ? "closing" : "opening"
+                result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
+            }
             else if (op==~/undefined|status|null/) {
                 if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("open") && !settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("Open")) result = "All of the ${grpName}s in the device group, '${app.label}', are closed. "
                 else if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("closed") && !settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("Closed")) result = "All of the ${grpName}s in the device group, '${app.label}', are open. "
-                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue(grpCtl).toLowerCase()}. "
+                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue(grpCtl).toLowerCase()}. " }
             }
             else result = "For a ${grpCtl} device group, you must use an 'open', 'close' or 'status' command. %1%" 
         }
