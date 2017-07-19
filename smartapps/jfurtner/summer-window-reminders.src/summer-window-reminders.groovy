@@ -13,8 +13,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-import groovy.time.TimeCategory
-
 definition(
     name: "Summer window reminders",
     namespace: "jfurtner",
@@ -66,7 +64,7 @@ def updated() {
 
 def initialize() {
 	log.debug 'smartapp init'
-	runEvery1Minute(checkTemperature)
+	runEvery15Minutes(checkTemperature)
     if (state.lastNotificationOutLTIn == null) {
     	state.lastNotificationOutLTIn = initDate()
     }
@@ -128,19 +126,19 @@ def checkTemperature(evt) {
     log.debug "Checking temperatures: o:${outside} i:${inside} n:${nowDate}"
     if (outside < inside)
     {
-        log.debug 'Outside < inside'
+        log.debug 'Outside LT inside'
         last = state.lastNotificationOutLTIn
         msg = "Open windows, outside temperature (${outside}) lower than inside (${inside})"
     }
     else if (inside < outside)
     {    
-        log.debug 'Inside < outside'
+        log.debug 'Inside LT outside'
         last = state.lastNotificationInLTOut
         msg = "Close windows, outside temperature (${outside}) higher than inside (${inside})"
 
     }
 
-    log.debug "tests complete: m:${msg} l:${last}"
+    //log.debug "tests complete: m:${msg} l:${last}"
 
     def addHours = hoursBetweenUpdates*3600000
     log.debug "Adding seconds: ${addHours}"

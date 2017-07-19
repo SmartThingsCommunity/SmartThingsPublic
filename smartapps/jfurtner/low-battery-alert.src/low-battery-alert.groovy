@@ -44,7 +44,7 @@ def updated() {
 
 def initialize() {
     //Second Minute Hour DayOfMonth Month DayOfWeek Year
-    schedule("0 0 10am 1-31 * ?", check_batteries)
+    schedule("0 0 10 1-31 * ?", check_batteries)
     check_batteries()
 }
 
