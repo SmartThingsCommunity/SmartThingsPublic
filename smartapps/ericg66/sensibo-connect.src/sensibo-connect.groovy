@@ -20,9 +20,9 @@ definition(
     author: "Eric Gosselin",
     description: "Connect your Sensibo Pod to SmartThings.",
     category: "Green Living",
-    iconUrl: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_sm.png",
-    iconX2Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large2x.png",
-    iconX3Url: "http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large3x.png",
+    iconUrl: "https://image.ibb.co/f8gMFQ/on_color_large_sm.png",
+    iconX2Url: "https://image.ibb.co/eOwA9k/on_color_large2x.png",
+    iconX3Url: "https://image.ibb.co/cq9V9k/on_color_large3x.png",
     singleInstance: true) 
 
 {
@@ -447,8 +447,8 @@ def initialize() {
                 	"label" : "Pod ${name.value}",
                     "name" : "Pod ${name.value}"
                     ])
-                d.setIcon("on","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large_on.png")
-                d.setIcon("off","on","http://i130.photobucket.com/albums/p242/brutalboy_photos/on_color_large.png")
+                d.setIcon("on","on","https://image.ibb.co/bz9K25/on_color_large_on.png")
+                d.setIcon("off","on","https://image.ibb.co/k5S6h5/on_color_large.png")
                 d.save()              
                 
 				log.debug "created ${d.displayName} with id $dni"
