@@ -155,17 +155,17 @@ metadata {
            )
         }
         
-        valueTile("firmwareVersion", "device.firmwareVersion", width: 2, height: 2) {
+        valueTile("firmwareVersion", "device.firmwareVersion", width: 1, height: 1) {
 			state("version", label:'Firmware: ${currentValue}',backgroundColors:[])
 		}
         
-        valueTile("productModel", "device.productModel", width: 2, height: 2) {
+        valueTile("productModel", "device.productModel", width: 1, height: 1) {
 			state("mains", label:'Model: ${currentValue}',backgroundColors:[])
 		}
         
-        valueTile("powerSource", "device.powerSource", width: 2, height: 2) {
-			state("mains", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/cable-power-cord-plug-circle-512.png", label:'Source: ${currentValue}',backgroundColors:[])
-            state("battery", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/battery.jpg", label:'Source: ${currentValue}',backgroundColors:[])
+        valueTile("powerSource", "device.powerSource", width: 1, height: 1) {
+			state("mains", icon:"https://image.ibb.co/inKcN5/cable_power_cord_plug_circle_512.png", label:'Source: ${currentValue}',backgroundColors:[])
+            state("battery", icon:"https://image.ibb.co/gFUNpk/battery.jpg", label:'Source: ${currentValue}',backgroundColors:[])
 		}
         
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
@@ -174,18 +174,18 @@ metadata {
 		}
         
         standardTile("fanLevel", "device.fanLevel", width: 2, height: 2) {
-            state "low", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_low_2.png", nextState:"medium"
-            state "medium", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_medium_2.png", nextState:"high"
-            state "high", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_high_2.png", nextState:"auto"
-            state "auto", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fan_auto_2.png" , nextState:"low"
+            state "low", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/gZxHpk/fan_low_2.png", nextState:"medium"
+            state "medium", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/cUa3Uk/fan_medium_2.png", nextState:"high"
+            state "high", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/fcfFaQ/fan_high_2.png", nextState:"auto"
+            state "auto", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/m8oq9k/fan_auto_2.png" , nextState:"low"
         }
         
         standardTile("mode", "device.thermostatMode",  width: 2, height: 2) {
-            state "heat", action:"switchMode", backgroundColor:"#e86d13", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/sun.png", nextState:"cool"
-            state "cool", action:"switchMode", backgroundColor:"#00a0dc", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/cold.png", nextState:"fan"
-            state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/status_message_fan.png", nextState:"dry"
-            state "dry", action:"switchMode", backgroundColor:"#e8e3d8", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/dry_mode.png", nextState:"heat"
-            //state "auto", action:"switchMode", backgroundColor:"#e8e3d8", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/auto_mode.png", nextState:"heat"               
+            state "heat", action:"switchMode", backgroundColor:"#e86d13", icon:"https://image.ibb.co/c7Grh5/sun.png", nextState:"cool"
+            state "cool", action:"switchMode", backgroundColor:"#00a0dc", icon:"https://image.ibb.co/bZ56FQ/cold.png", nextState:"fan"
+            state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/n1dhpk/status_message_fan.png", nextState:"dry"
+            state "dry", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/k2ZNpk/dry_mode.png", nextState:"heat"
+            //state "auto", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/dwaRh5/auto_mode.png", nextState:"heat"               
         }
         
         standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
@@ -197,16 +197,16 @@ metadata {
 		}
         
        standardTile("swing", "device.swing",  width: 2, height: 2) {
-            state "stopped", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/stopped.png", nextState:"fixedTop"
-            state "fixedTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedTop.png", nextState:"fixedMiddleTop"
-            state "fixedMiddleTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedMiddleTop.png", nextState:"fixedMiddle"
-            state "fixedMiddle", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedMiddle.png", nextState:"fixedMiddleBottom"
-            state "fixedMiddleBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedMiddleBottom.png", nextState:"fixedBottom"
-            state "fixedBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/fixedBottom.png", nextState:"rangeTop"
-            state "rangeTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/rangeTop.png", nextState:"rangeMiddle"
-            state "rangeMiddle", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/rangeMiddle.png", nextState:"rangeBottom"
-            state "rangeBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/rangeBottom.png", nextState:"rangeFull"
-            state "rangeFull", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"http://i130.photobucket.com/albums/p242/brutalboy_photos/rangeFull.png", nextState:"stopped"
+            state "stopped", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/iWhvaQ/stopped.png", nextState:"fixedTop"
+            state "fixedTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/nbV3Uk/fixedTop.png", nextState:"fixedMiddleTop"
+            state "fixedMiddleTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/chbcpk/fixed_Middle_Top.png", nextState:"fixedMiddle"
+            state "fixedMiddle", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/dxDe25/fixed_Middle.png", nextState:"fixedMiddleBottom"
+            state "fixedMiddleBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/ebZmh5/fixed_Middle_Bottom.png", nextState:"fixedBottom"
+            state "fixedBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/n2tCN5/fixed_Bottom.png", nextState:"rangeTop"
+            state "rangeTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/gYQsN5/rangeTop.png", nextState:"rangeMiddle"
+            state "rangeMiddle", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/dC1XN5/range_Middle.png", nextState:"rangeBottom"
+            state "rangeBottom", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/csTOUk/range_Bottom.png", nextState:"rangeFull"
+            state "rangeFull", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/hHK8vQ/range_Full.png", nextState:"stopped"
         }
         
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -214,7 +214,7 @@ metadata {
 		}
 		       
 		main (["switch"])
-		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","powerSource","firmwareVersion","productModel","refresh"])    
+		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh","powerSource","firmwareVersion","productModel"])    
 	}
 }
 
