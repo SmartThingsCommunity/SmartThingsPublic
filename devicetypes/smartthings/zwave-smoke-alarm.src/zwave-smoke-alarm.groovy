@@ -57,6 +57,13 @@ metadata {
 def installed() {
 // Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	response(delayBetween([
+		zwave.alarmV2.alarmGet(alarmType: physicalgraph.zwave.commands.alarmv2.AlarmGet.ZWAVE_ALARM_TYPE_SMOKE),
+		zwave.alarmV2.alarmGet(alarmType: physicalgraph.zwave.commands.alarmv2.AlarmGet.ZWAVE_ALARM_TYPE_CO),
+		zwave.batteryV1.batteryGet(),
+		zwave.wakeUpV1.wakeUpNoMoreInformation()
+	], 500))
 }
 
 def updated() {
@@ -145,6 +152,13 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
 			// Clear smoke in case they pulled batteries and we missed the clear msg
 			if(device.currentValue("smoke") != "clear") {
 				createSmokeOrCOEvents("smokeClear", results)
+			}
+
+			if (device.currentValue("carbonMonoxide") != "clear") {
+				def zwMap = getZwaveInfo()
+				if (zwMap && zwMap.mfr == "0138" && zwMap.prod == "0001" && zwMap.model == "0002") {
+					createSmokeOrCOEvents("carbonMonoxideClear", results)
+				}
 			}
 			
 			// Check battery if we don't have a recent battery event
