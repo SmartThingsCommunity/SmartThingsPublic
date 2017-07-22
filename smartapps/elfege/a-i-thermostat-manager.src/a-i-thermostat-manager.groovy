@@ -4,7 +4,7 @@ definition(
     author: "ELFEGE",
 
     description: """Manage one or more thermostats in parallel with several other features such as: 
-- Home location mode (up to 5 sets of modes)
+- Home location mode (up to 5 modes)
 - open/close windows and/or turn on/off fans instead of AC
 - contact sensors 
 - humidity measurment
@@ -45,7 +45,7 @@ def pageSetup() {
 
         section("""Manage one or more thermostats in parallel with several other features such as:
 
-- Home location mode (up to 5 sets of modes)
+- Home location mode (up to 5 modes)
 - open/close windows and/or turn on/off fans instead of AC
 - contact sensors 
 - humidity measurment
@@ -91,7 +91,7 @@ def settings() {
         name:       "settings",
         title:      "Thermostats and other devices",
         nextPage:   "pageSetup",
-        install: false,
+        install: true,
         uninstall: true
     ]
 
@@ -100,7 +100,7 @@ def settings() {
         section("how many thermostats do you want to control?") { 
             input(name: "HowMany", type: "number", range: "1..4", title: "set a value between 1 and 4", description: null, submitOnChange: true)
             if(HowMany >= 1) {
-                input(name: "Thermostat_1", type: "capability.thermostat", title: "Thermostat 1 is $Thermostat_1", required: false, multiple: false, description: null, submitOnChange: true)
+                input(name: "Thermostat_1", type: "capability.thermostat", title: "Thermostat 1 is $Thermostat_1", required: false, multiple: false, description: null, submitOnChange: true, uninstall: true)
                 input(name: "AltSensor_1", type: "bool", title: "Control this thermostat's states using a third party sensor", required: false, default: false, submitOnChange: true)
                 if(AltSensor_1){
                     input(name: "Sensor_1", type: "capability.temperatureMeasurement", title: "Select a third party sensor to control $Thermostat_1", required: true, multiple: false, description: null, uninstall: true)
@@ -109,7 +109,7 @@ def settings() {
 
             }
             if(HowMany >= 2) {
-                input(name: "Thermostat_2", type: "capability.thermostat", title: "Thermostat 2 is $Thermostat_2", required: false, multiple: false, description: null, submitOnChange: true)
+                input(name: "Thermostat_2", type: "capability.thermostat", title: "Thermostat 2 is $Thermostat_2", required: false, multiple: false, description: null, submitOnChange: true, uninstall: true)
                 input(name: "AltSensor_2", type: "bool", title: "Control this thermostat's states using a third party sensor", required: false, default: false, submitOnChange: true)
                 if(AltSensor_2){
                     input(name: "Sensor_2", type: "capability.temperatureMeasurement", title: "Select a third party sensor to control $Thermostat_2", required: true, multiple: false, description: null, uninstall: true)
@@ -118,7 +118,7 @@ def settings() {
 
             }
             if(HowMany >= 3) {
-                input(name: "Thermostat_3", type: "capability.thermostat", title: "Thermostat 3 is $Thermostat_3", required: false, multiple: false, description: null, submitOnChange: true)
+                input(name: "Thermostat_3", type: "capability.thermostat", title: "Thermostat 3 is $Thermostat_3", required: false, multiple: false, description: null, submitOnChange: true, uninstall: true)
                 input(name: "AltSensor_3", type: "bool", title: "Control this thermostat's states using a third party sensor", required: false, default: false, submitOnChange: true)
                 if(AltSensor_3){
                     input(name: "Sensor_3", type: "capability.temperatureMeasurement", title: "Select a third party sensor to control $Thermostat_3", required: true, multiple: false, description: null, uninstall: true)
@@ -126,7 +126,7 @@ def settings() {
 
             }
             if(HowMany == 4) {
-                input(name: "Thermostat_4", type: "capability.thermostat", title: "Thermostat 4 is $Thermostat_4", required: false, multiple: false, description: null, submitOnChange: true)
+                input(name: "Thermostat_4", type: "capability.thermostat", title: "Thermostat 4 is $Thermostat_4", required: false, multiple: false, description: null, submitOnChange: true, uninstall: true)
             }
 
 
@@ -661,8 +661,7 @@ subscribe(Thermostat_4, "Switch", ThermostatSwitchHandler)
 
     atomicState.locationModeChange = true 
 
-    atomicState.WhileMax = 50 // max iteration for while loops
-
+/*
     def Therm = ["0", "$Thermostat_1", "$Thermostat_2","$Thermostat_3", "$Thermostat_4"]
     def NullThermFind = Therm.findAll { val ->
         val == "null" ? true : false
@@ -670,8 +669,9 @@ subscribe(Thermostat_4, "Switch", ThermostatSwitchHandler)
     def ThermsInvolved = Therm.size() - NullThermFind.size() - 1 
     // -1 because of index 0
     ThermsInvolved = ThermsInvolved.toInteger()
-    atomicState.ThermsInvolved = ThermsInvolved
-    //log.debug "Number of Thermostats Selected by User : $ThermsInvolved [init]"
+    */
+   
+    log.debug "Number of Thermostats Selected by User : $HowMany [init]"
 
 
 
@@ -696,7 +696,7 @@ def Evaluate(){
     }
 
     def ContactExceptionIsClosed = ExcepContactsClosed()
-    //log.debug "doorsOk?($doorsOk), ContactExceptionIsClosed?($ContactExceptionIsClosed)"
+    log.debug "doorsOk?($doorsOk), ContactExceptionIsClosed?($ContactExceptionIsClosed)"
 
     def CurrMode = location.currentMode
     def Outside = OutsideSensor?.currentValue("temperature") 
@@ -782,6 +782,7 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
             // thermostats list 
             def Therm = [null, Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4]
             def ThermSet = 0
+            log.debug "Therm list = $Therm"
 
             def ThermDeviceList = ["null", Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4]
             def CurrTempList = [0, CurrTemp1, CurrTemp2, CurrTemp3, CurrTemp4]
@@ -807,17 +808,24 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
             def OutsideTempHighThres = ExceptACModes()
 
             def loopValue = 0
-            def ThermsInvolved = atomicState.ThermsInvolved
-
+           
+			def ThermsInvolved = HowMany
+            
             def CurrTempDevice = 0
 
 
-            while(loopValue < atomicState.ThermsInvolved){
-                log.trace "MAIN LOOP RUNNING"
+            while(loopValue < ThermsInvolved){
+             loopValue++
+                    atomicState.loopValue = loopValue
+            
+                log.trace """WHILE LOOP 
+                
+                log.debug ThermsInvolved = $ThermsInvolved 
+                loop($loopValue) 
+                atomicState.loopValue = $atomicState.loopValue"""
 
-                loopValue++
-                    atomicState.loopValue = loopValue 
-                log.info "loop($loopValue) and atomicState.loopValue = $atomicState.loopValue"
+               
+                log.info ""
 
                 log.debug "000"
 
@@ -1066,17 +1074,17 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                     else {
                         ThisIsExceptionTherm =  false
 
-                        log.debug "No exception contact selected by user, values set to false by default"
+                        log.debug "No exception contact selected by user, ThisIsExceptionTherm set to false by default"
                     }
                     log.trace """
 ThisIsExceptionTherm is: $ThisIsExceptionTherm (${ThermSet} == ${Thermostat_1})
 ContactExceptionIsClosed = $ContactExceptionIsClosed"""
 
                     /////////////////////////MODIFICATIONS//////////////////////////yh
-log.debug "doorsOk = $doorsOk"
+                    log.debug "doorsOk = $doorsOk"
                     if(doorsOk || (ContactExceptionIsClosed && ThisIsExceptionTherm)){
 
-                        //log.debug "AltSensor =  $AltSensor (loopValue = $loopValue)"
+                        log.debug "turnOffWhenReached =  $turnOffWhenReached"
                         if(!ShouldCoolWithAC && !ShouldHeat && ThermState != "off" ){
                             if(AltSensor && (!turnOffWhenReached || turnOffWhenReached) && ThermState != "off"){ 
                                 if(ThermState != "off"){
@@ -1129,7 +1137,9 @@ log.debug "doorsOk = $doorsOk"
                         } 
 
                     }
+                    else {
                     log.debug "Not evaluating for $ThermSet because some windows are open"
+                    }
                 }
                 else {
                     log.debug "${ThermSet} in OVERRIDE MODE, doing nothing"   
@@ -1882,27 +1892,24 @@ def MainContactsClosed(){
     return MainContactsAreClosed
 }
 def ExcepContactsClosed(){
-    def ContactsExepClosed = false
 
-    // //log.debug "Maincontacts are $Maincontacts"
+    def ContactsExepClosed = true
+    if(ContactException){
+        def CurrentContactsExept = ContactException.currentValue("contact")    
+        def ClosedContactsExpt = CurrentContactsExept.findAll { AllcontactsExeptAreClosed ->
+            AllcontactsExeptAreClosed == "closed" ? true : false
+        }
+        ContactsExepClosed = ClosedContactsExpt.size() == ContactException.size() 
+        // //log.debug "${ClosedContactsExpt.size()} windows/doors out of ${ContactException.size()} are closed SO ContactsExepClosed = $ContactsExepClosed"
 
-    // //log.debug "ContactException are $ContactException"
-
-    def CurrentContactsExept = ContactException.currentValue("contact")    
-    def ClosedContactsExpt = CurrentContactsExept.findAll { AllcontactsExeptAreClosed ->
-        AllcontactsExeptAreClosed == "closed" ? true : false
+        def CurrTherMode = Thermostat_1.currentValue("thermostatMode") as String
+        // //log.debug "Current Mode for $Thermostat_1 is $CurrTherMode"
+        if(CurrTherMode != "off" && !ContactsExepClosed){
+            // //log.debug "$Thermostat_1 is on, should be off. Turning it off" 
+            Thermostat_1.setThermostatMode("off") 
+            atomicState.LatestThermostatMode_T1 = "off"
+        }
     }
-    ContactsExepClosed = ClosedContactsExpt.size() == ContactException.size() 
-    // //log.debug "${ClosedContactsExpt.size()} windows/doors out of ${ContactException.size()} are closed SO ContactsExepClosed = $ContactsExepClosed"
-
-    def CurrTherMode = Thermostat_1.currentValue("thermostatMode") as String
-    // //log.debug "Current Mode for $Thermostat_1 is $CurrTherMode"
-    if(CurrTherMode != "off" && !ContactsExepClosed){
-        // //log.debug "$Thermostat_1 is on, should be off. Turning it off" 
-        Thermostat_1.setThermostatMode("off") 
-        atomicState.LatestThermostatMode_T1 = "off"
-    }
-
     return ContactsExepClosed
 
 }
