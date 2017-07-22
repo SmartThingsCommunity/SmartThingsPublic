@@ -240,23 +240,19 @@ def ExceptionContactHandler(evt){
 
 }
 def ExceptionContactClosed(){
-
+    def Closed = false
     if(KeepWithContact){
-        def Closed = false
+
         def CurrentContacts = ExceptionContact.latestValue("contact")
         def ClosedContacts = CurrentContacts.findAll { AllcontactsClosed ->
             AllcontactsClosed == "closed" ? true : false
         }
-        log.debug "${ClosedContacts.size()} windows/doors out of ${contacts.size()} are closed"
+        log.debug "${ClosedContacts.size()} exception contact out of ${ExceptionContact.size()} are closed"
 
         Closed = ClosedContacts.size() == ExceptionContact.size()
         log.debug "Exception Contact Closed?($Closed)"
+    }
 
-        atomicState.ExceptionClosed = ExceptionClosed
-    }
-    else {
-        Closed = false
-    }
     return Closed
 }
 def contactHandler(evt){
@@ -338,42 +334,44 @@ def switchHandler(evt){
         }
 
         // override while modes ok
-        if(ModeOk){
-            if(evt.value == "on" && atomicState.override == false && atomicState.ByApp == false){
+        if(override){
+            if(ModeOk){
+                if(evt.value == "on" && atomicState.override == false && atomicState.ByApp == false){
 
-                log.debug "OVERRIDE MODE $outlets will turn off in $timer minutes"
-                atomicState.override = true
+                    log.debug "OVERRIDE MODE $outlets will turn off in $timer minutes"
+                    atomicState.override = true
 
-                log.debug "atomicState.override = $atomicState.override"
-                log.debug "atomicState.ByApp = $atomicState.ByApp"
-                def timer = timer * 60
-                runIn(timer, justshutoff)
+                    log.debug "atomicState.override = $atomicState.override"
+                    log.debug "atomicState.ByApp = $atomicState.ByApp"
+                    def timer = timer * 60
+                    runIn(timer, justshutoff)
+                }
+                else if(evt.value == "off" && atomicState.override == true){
+
+                    atomicState.override = false
+                    log.debug "END OF OVERRIDE"
+                }
             }
-            else if(evt.value == "off" && atomicState.override == true){
+            /// outside of modes
 
-                atomicState.override = false
-                log.debug "END OF OVERRIDE"
+            else {
+                if(evt.value == "off" && atomicState.override == true){
+
+                    atomicState.override = false
+                    log.debug "END OF OVERRIDE"
+                }
+
+                else if(evt.value == "on" && atomicState.override == false && atomicState.ByApp == false){
+                    // this is an on override. Keep on but turn off on schedule"
+                    atomicState.overrideWhileOutOfMode = true
+                    log.debug "atomicState.overrideWhileOutOfMode = $atomicState.overrideWhileOutOfMode"
+                    log.info "OVERRIDE OUTSIDE OF MODE... $outlets will turn off in $timer minutes"
+                    def timer = timer * 60
+                    runIn(timer, OffOutSideOfMode)
+
+                }       
+
             }
-        }
-        /// outside of modes
-
-        else {
-            if(evt.value == "off" && atomicState.override == true){
-
-                atomicState.override = false
-                log.debug "END OF OVERRIDE"
-            }
-
-            else if(evt.value == "on" && atomicState.override == false && atomicState.ByApp == false){
-                // this is an on override. Keep on but turn off on schedule"
-                atomicState.overrideWhileOutOfMode = true
-                log.debug "atomicState.overrideWhileOutOfMode = $atomicState.overrideWhileOutOfMode"
-                log.info "OVERRIDE OUTSIDE OF MODE... $outlets will turn off in $timer minutes"
-                def timer = timer * 60
-                runIn(timer, OffOutSideOfMode)
-
-            }       
-
         }
     } 
     else { 
@@ -466,34 +464,38 @@ def motionHandler(evt){
 }
 
 def Switches(){
-
+    polls()
     def CurrMode = location.currentMode
-    def AllClosed = AllClosed
+    def AllClosed = AllClosed()
+    def ExceptionContactClosed = ExceptionContactClosed()
     def desiredTemp = desiredTemp()
+    def CurrTemp = sensor.currentValue("temperature") as double
+        def TotalOnSwitches = OnSwitches()
+        def AllOff = TotalOnSwitches == 0
 
-    OnSwitches() 
-    def switchVal = atomicState.switchVal
-    def totalOutlets = atomicState.totalOutlets
-    log.info "switchVal = $switchVal ; totalOutlets = $totalOutlets"
+        def totalOutlets = outlets.size()
+        log.info "TotalOnSwitches = $TotalOnSwitches ; totalOutlets = $totalOutlets && Current Temperature = $CurrTemp"
 
     if(!motion){
         atomicState.motion = true
     }
 
     if(AllClosed){
-        if(CurrMode in Modes){
+        if(CurrMode in Modes || ExceptionContactClosed){
             if(atomicState.motion == true){
                 if (mode == "cool") {
                     // air conditioner
                     log.debug "evaluating cool. Desired temperature is $desiredTemp"    
-                    if (atomicState.currentTemp > desiredTemp) {
+                    if (CurrTemp > desiredTemp) {
                         if(atomicState.override == false){
-                            if(switchVal != totalOutlets){
+                            if(TotalOnSwitches != totalOutlets){
                                 // if just out of override the app needs to know that not all outlets were turned back on, so it turns back on the remaining ones
                                 atomicState.ByApp = true
                                 log.debug "atomicState.ByApp = $atomicState.ByApp"
-                                outlets?.on()
+
+                                outlclosedets?.on()
                                 log.debug "$outlets turned ON"
+
                             }
                             else {
                                 log.debug "outlets already on, so doing nothing" 
@@ -506,8 +508,13 @@ def Switches(){
                         if(atomicState.override == false){
                             atomicState.ByApp = true
                             log.debug "atomicState.ByApp = $atomicState.ByApp"
-                            outlets?.off()                   
-                            log.debug "$outlets turned OFF"
+                            if(!AllOff){
+                                outlets?.off()                   
+                                log.debug "$outlets turned OFF"
+                            }
+                            else {
+                                log.debug "$outlets ALREADY turned OFF"
+                            }
                         }
                         else {
                             log.debug "App in override mode, doing nothing"
@@ -517,7 +524,7 @@ def Switches(){
                 else {
                     // heater
                     log.debug "evaluating heat. Desired temperature is $desiredTemp"
-                    if (atomicState.currentTemp < desiredTemp) {
+                    if (CurrTemp < desiredTemp) {
                         if(atomicState.override == false){
 
 
@@ -542,8 +549,13 @@ def Switches(){
                             if(switchVal != 0){
                                 atomicState.ByApp = true
                                 log.debug "atomicState.ByApp = $atomicState.ByApp"
-                                outlets?.off()
-                                log.debug "$outlets turned OFF"
+                                if(!AllOff){
+                                    outlets?.off()                   
+                                    log.debug "$outlets turned OFF"
+                                }
+                                else {
+                                    log.debug "$outlets ALREADY turned OFF"
+                                }
                             }
                             else {
                                 log.debug "$outlets ALREADY OFF"
@@ -642,7 +654,7 @@ def OffOutSideOfMode(){
 }
 def desiredTemp(){
     def ExceptClosed = ExceptionContactClosed()
-
+    log.debug "ExceptClosed?($ExceptClosed)"
 
     def AllClosed = AllClosed()
 
@@ -658,6 +670,7 @@ def desiredTemp(){
     if(ExceptClosed){
         desiredTemp = ExceptionTemp
         log.debug "Keeping Temperature at $ExceptionTemp despite mode change because $ExceptionContact is CLOSED"
+        atomicState.override = false
     }
     else {
 
@@ -750,4 +763,21 @@ def ResetValues(){
     log.debug "RESET"
     atomicState.ByApp = false
 
+}
+
+def polls(){
+
+    def poll = sensor.hasCommand("poll")
+    def refresh = sensor.hasCommand("refresh")
+    if(poll){
+        sensor.poll()
+        log.debug "polling $sensor"
+    }
+    else if(refresh){
+        sensor.refresh()
+        log.debug "refreshing $sensor"
+    }
+    else { 
+        log.debug "$Thermostat_2 does not support either poll() nor refresh() commands"
+    }
 }
