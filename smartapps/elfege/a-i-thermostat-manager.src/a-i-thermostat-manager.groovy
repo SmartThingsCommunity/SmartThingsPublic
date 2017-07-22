@@ -661,16 +661,16 @@ subscribe(Thermostat_4, "Switch", ThermostatSwitchHandler)
 
     atomicState.locationModeChange = true 
 
-/*
-    def Therm = ["0", "$Thermostat_1", "$Thermostat_2","$Thermostat_3", "$Thermostat_4"]
-    def NullThermFind = Therm.findAll { val ->
-        val == "null" ? true : false
-    }
-    def ThermsInvolved = Therm.size() - NullThermFind.size() - 1 
-    // -1 because of index 0
-    ThermsInvolved = ThermsInvolved.toInteger()
-    */
-   
+    /*
+def Therm = ["0", "$Thermostat_1", "$Thermostat_2","$Thermostat_3", "$Thermostat_4"]
+def NullThermFind = Therm.findAll { val ->
+val == "null" ? true : false
+}
+def ThermsInvolved = Therm.size() - NullThermFind.size() - 1 
+// -1 because of index 0
+ThermsInvolved = ThermsInvolved.toInteger()
+*/
+
     log.debug "Number of Thermostats Selected by User : $HowMany [init]"
 
 
@@ -808,23 +808,23 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
             def OutsideTempHighThres = ExceptACModes()
 
             def loopValue = 0
-           
-			def ThermsInvolved = HowMany
-            
+
+            def ThermsInvolved = HowMany
+
             def CurrTempDevice = 0
 
 
             while(loopValue < ThermsInvolved){
-             loopValue++
+                loopValue++
                     atomicState.loopValue = loopValue
-            
-                log.trace """WHILE LOOP 
-                
-                log.debug ThermsInvolved = $ThermsInvolved 
-                loop($loopValue) 
-                atomicState.loopValue = $atomicState.loopValue"""
 
-               
+                log.trace """WHILE LOOP 
+
+log.debug ThermsInvolved = $ThermsInvolved 
+loop($loopValue) 
+atomicState.loopValue = $atomicState.loopValue"""
+
+
                 log.info ""
 
                 log.debug "000"
@@ -883,77 +883,37 @@ Current Temperature Inside = $Inside
 //log.debug "ShouldHeat = $ShouldHeat
 """
 
-                if(ExceptionSW && ThermSet == "$Thermostat_1" && SwitchesOn){
-                    HSPSet = HSPSet + AddDegrees
-                    CSPSet = CSPSet + SubDegrees
+                //modify with presence/motion in the room
 
-                    //log.debug "$ThermSet SetPoints ExceptionSW active"                                
-                }
-                if(AppMgt){
-                    log.info "NO OVERRIDE for $ThermSet -- EVALUATING"     
-                    atomicState.withinApp = true
+                def defaultCSPSet = CSPSet // recording this default value so if linear equation brings setpoint too low, it'll be recovered
+                def defaultHSPSet = HSPSet // same but with heat
 
-                    //modify with presence/motion in the room
+                if(adjustments == "Yes, use a linear variation"){
+                    // linear function for Cooling
+                    def xa = 75	//outside temp a
+                    def ya = CSPSet // desired cooling temp a 
 
-                    def defaultCSPSet = CSPSet // recording this default value so if linear equation brings setpoint too low, it'll be recovered
-                    def defaultHSPSet = HSPSet // same but with heat
+                    def xb = 100 		//outside temp b
+                    def yb = CSPSet + 5  // desired cooling temp b  
 
-                    if(adjustments == "Yes, use a linear variation"){
-                        // linear function for Cooling
-                        def xa = 75	//outside temp a
-                        def ya = CSPSet // desired cooling temp a 
+                    // take humidity into account
+                    // if outside humidity is higher than .... 
+                    if(TooHumid){
+                        xa = 75				//outside temp a LESS VARIATION WHEN HUMID
+                        ya = CSPSet	   // desired cooling temp a 
+                        xb = 100 //outside temp b
+                        yb = CSPSet + 2 // desired cooling temp b  LESS VARIATION WHEN HUMID
+                    }
 
-                        def xb = 100 		//outside temp b
-                        def yb = CSPSet + 5  // desired cooling temp b  
+                    def coef = (yb-ya)/(xb-xa)
 
-                        // take humidity into account
-                        // if outside humidity is higher than .... 
-                        if(TooHumid){
-                            xa = 75				//outside temp a LESS VARIATION WHEN HUMID
-                            ya = CSPSet	   // desired cooling temp a 
-                            xb = 100 //outside temp b
-                            yb = CSPSet + 2 // desired cooling temp b  LESS VARIATION WHEN HUMID
-                        }
+                    def b = ya - coef * xa // solution to ya = coef*xa + b // CSPSet = coef*outsideTemp + b
 
-                        def coef = (yb-ya)/(xb-xa)
+                    //CSPSet - (coef * outsideTemp) 
+                    log.info "b is: $b ---------------------------------------"
+                    CSPSet = coef*outsideTemp + b as double
 
-                        def b = ya - coef * xa // solution to ya = coef*xa + b // CSPSet = coef*outsideTemp + b
-
-                        //CSPSet - (coef * outsideTemp) 
-                        log.info "b is: $b ---------------------------------------"
-                        CSPSet = coef*outsideTemp + b as double
-
-                            //CSPSet = CSPSet.toInteger()
-
-                            // no lower than defaultCSPSet 
-                            if(CSPSet <= defaultCSPSet){
-
-                                log.info """CurrTemp at ${ThermSet} is: $CurrTemp. CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp
-But because CSPSet is $CSPSet and thus lower than default value ($defaultCSPSet), default settings are restored"""
-                                CSPSet = defaultCSPSet
-                            }
-                        else {
-
-                            log.info "CurrTemp at ${ThermSet} is: $CurrTemp  CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
-                        }
-
-                    } 
-                    else if(adjustments == "Yes, but use a logarithmic variation"){
-                        // logarithmic treatment 
-
-                        /* concept: x = log(72)75   to what power (that is to say "x") do I have to raise 72, to get to 75?
-
-logb(n) = loge(n) / loge(b)
-Where log can be a logarithm function in any base, n is the number and b is the base. For example, in Java this will find the base-2 logarithm of 256:
-
-Math.log(256) / Math.log(2)
-=> 8.0
-*/
-                        //outsideTemp = 90 // for test only MUST BE DELETED
-                        CSPSet = (Math.log(outsideTemp) / Math.log(CSPSet)) * CSPSet
-                        CSPSet = Math.round(CSPSet)
-
-                        //log.debug "Logarithmic CSPSet = $CSPSet"
+                        //CSPSet = CSPSet.toInteger()
 
                         // no lower than defaultCSPSet 
                         if(CSPSet <= defaultCSPSet){
@@ -962,96 +922,112 @@ Math.log(256) / Math.log(2)
 But because CSPSet is $CSPSet and thus lower than default value ($defaultCSPSet), default settings are restored"""
                             CSPSet = defaultCSPSet
                         }
-                        else {
+                    else {
 
-                            log.info "CurrTemp at ${ThermSet} is: $CurrTemp  CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
-                        }
+                        log.info "CurrTemp at ${ThermSet} is: $CurrTemp  CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
                     }
-                    // end of algebraic adjustments        
 
-                    // motion? 
-                    def InMotionModes = CurrMode in MotionModes  
-                    def AccountForMotion = MotionSensor != null 
+                } 
+                else if(adjustments == "Yes, but use a logarithmic variation"){
+                    // logarithmic treatment 
 
-                    if(AccountForMotion && InMotionModes ){
+                    /* concept: x = log(72)75   to what power (that is to say "x") do I have to raise 72, to get to 75?
 
-                        if(Inactive){
-                            // record algebraic CSPSet for debug purpose
-                            def algebraicCSPSet = CSPSet 
-                            // log.info "$ThermSet default Cool: $CSPSet and default heat: $HSPSet "
-                            CSPSet = CSPSet + AddDegreesMotion 
-                            HSPSetDefault
-                            HSPSet = HSPSet - SubDegreesMotion
+logb(n) = loge(n) / loge(b)
+Where log can be a logarithm function in any base, n is the number and b is the base. For example, in Java this will find the base-2 logarithm of 256:
 
-                            log.trace "NO MOTION so $ThermSet CSP, which was $defaultCSPSet, then (if algebra) $algebraicCSPSet, is now set to $CSPSet and HSP was $defaultHSPSet and is now set to $HSPSet"
+Math.log(256) / Math.log(2)
+=> 8.0
+*/
+                    //outsideTemp = 90 // for test only MUST BE DELETED
+                    CSPSet = (Math.log(outsideTemp) / Math.log(CSPSet)) * CSPSet
+                    CSPSet = Math.round(CSPSet)
 
-                        }
-                        else {
+                    //log.debug "Logarithmic CSPSet = $CSPSet"
 
-                            //log.debug "There's motion in ${ThermSet}'s room (main loop)"
-                        }
+                    // no lower than defaultCSPSet 
+                    if(CSPSet <= defaultCSPSet){
+
+                        log.info """CurrTemp at ${ThermSet} is: $CurrTemp. CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp
+But because CSPSet is $CSPSet and thus lower than default value ($defaultCSPSet), default settings are restored"""
+                        CSPSet = defaultCSPSet
                     }
-                    log.trace """
-InMotionModes?($InMotionModes)
-AccountForMotion?($AccountForMotion)
-Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
-FINAL CSPSet for $ThermSet = $CSPSet
-"""
+                    else {
 
-                    // for false overrides prevention
-                    // and for back to normal action
-                    // if user sets unit back to its currently calculated 
-                    // value, then the app will end the override
+                        log.info "CurrTemp at ${ThermSet} is: $CurrTemp  CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
+                    }
+                }
+                // end of algebraic adjustments        
 
-                    if(loopValue == 1){
-                        atomicState.newValueT1CSP = CSPSet as double
-                            atomicState.newValueT1HSP = HSPSet as double
+                // motion? 
+                def InMotionModes = CurrMode in MotionModes  
+                def AccountForMotion = MotionSensor != null 
 
-                            }    
-                    if(loopValue == 2){
-                        atomicState.newValueT2CSP = CSPSet as double
-                            atomicState.newValueT2HSP = HSPSet as double
+                if(AccountForMotion && InMotionModes ){
 
-                            }
-                    if(loopValue == 3){
-                        atomicState.newValueT3CSP = CSPSet as double
-                            atomicState.newValueT3HSP = HSPSet as double  
+                    if(Inactive){
+                        // record algebraic CSPSet for debug purpose
+                        def algebraicCSPSet = CSPSet 
+                        // log.info "$ThermSet default Cool: $CSPSet and default heat: $HSPSet "
+                        CSPSet = CSPSet + AddDegreesMotion 
+                        HSPSetDefault
+                        HSPSet = HSPSet - SubDegreesMotion
 
-                            }
-                    if(loopValue == 4){
-                        atomicState.newValueT4CSP = CSPSet as double
-                            atomicState.newValueT4HSP = HSPSet as double  
+                        log.trace "NO MOTION so $ThermSet CSP, which was $defaultCSPSet, then (if algebra) $algebraicCSPSet, is now set to $CSPSet and HSP was $defaultHSPSet and is now set to $HSPSet"
 
-                            }
+                    }
+                    else {
 
-                    // evaluate needs
+                        //log.debug "There's motion in ${ThermSet}'s room (main loop)"
+                    }
+                }
 
-                    def ShouldCoolWithAC = CurrTemp > CSPSet
-                    def ShouldHeat = outsideTemp < OutsideTempLowThres && CurrTemp <= HSPSet && !ShouldCoolWithAC
-                    atomicState.ShouldCoolWithAC = ShouldCoolWithAC
-                    atomicState.ShouldHeat = ShouldHeat
-                    log.debug "ShouldCoolWithAC if $CurrTemp >= $CSPSet (loop $loopValue)"
+                // for false overrides prevention
+                // and for back to normal action
+                // if user sets unit back to its currently calculated 
+                // value, then the app will end the override
 
-                    // Now, before finally setting temperatures, pull current setpoint and compare to avoid redundencies
+                if(loopValue == 1){
+                    atomicState.newValueT1CSP = CSPSet as double
+                        atomicState.newValueT1HSP = HSPSet as double
 
-                    def CurrentCoolingSetPoint = ThermSet.currentValue("coolingSetpoint") 
-                    def CurrentHeatingSetPoint = ThermSet.currentValue("heatingSetpoint") 
+                        }    
+                if(loopValue == 2){
+                    atomicState.newValueT2CSP = CSPSet as double
+                        atomicState.newValueT2HSP = HSPSet as double
 
-                    //log.debug "loading updated $CurrMode Cooling and Heating Set Points for $ThermSet"     
-                    atomicState.withinApp = true
+                        }
+                if(loopValue == 3){
+                    atomicState.newValueT3CSP = CSPSet as double
+                        atomicState.newValueT3HSP = HSPSet as double  
+
+                        }
+                if(loopValue == 4){
+                    atomicState.newValueT4CSP = CSPSet as double
+                        atomicState.newValueT4HSP = HSPSet as double  
+
+                        }
+
+                // evaluate needs
+
+                def ShouldCoolWithAC = CurrTemp > CSPSet
+                def ShouldHeat = outsideTemp < OutsideTempLowThres && CurrTemp <= HSPSet && !ShouldCoolWithAC
+                atomicState.ShouldCoolWithAC = ShouldCoolWithAC
+                atomicState.ShouldHeat = ShouldHeat
+                log.debug "ShouldCoolWithAC if $CurrTemp >= $CSPSet (loop $loopValue)"
+
+                // Now, before finally setting temperatures, pull current setpoint and compare to avoid redundencies
+
+                def CurrentCoolingSetPoint = ThermSet.currentValue("coolingSetpoint") 
+                def CurrentHeatingSetPoint = ThermSet.currentValue("heatingSetpoint") 
+
+                //log.debug "loading updated $CurrMode Cooling and Heating Set Points for $ThermSet"     
+                atomicState.withinApp = true
 
 
-                    log.trace """($ThermSet: 
-ShouldCoolWithAC = $ShouldCoolWithAC, 
-ShouldHeat = $ShouldHeat
-Current setpoint for $ThermSet is $CurrentCoolingSetPoint, 
-Current Heating setpoint is $CurrentHeatingSetPoint,
-Final CSPSet is $CSPSet
-Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:CurrentHeatingSetPoint 
-"""
-
-                    // finally set devices' temperatures..
-                    atomicState.withinApp = true
+                // finally set devices' temperatures..
+                atomicState.withinApp = true
+                if(AppMgt){
                     if(CurrentCoolingSetPoint != CSPSet){
                         ThermSet.setCoolingSetpoint(CSPSet)
                     }
@@ -1066,19 +1042,46 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                     { 
                         log.debug "Heating SetPoint already set to $HSPSet for $ThermSet"
                     }
-                    def ThisIsExceptionTherm =  false
-                    if(NoTurnOffOnContact){
-                        ThisIsExceptionTherm = "${ThermSet}" == "${Thermostat_1}"
+                }
+                else { 
+                    log.debug "IN OVERRIDE MODE not sending CSP command"
+                }
 
-                    }
-                    else {
-                        ThisIsExceptionTherm =  false
+                def ThisIsExceptionTherm =  false
+                if(NoTurnOffOnContact){
+                    ThisIsExceptionTherm = "${ThermSet}" == "${Thermostat_1}"
 
-                        log.debug "No exception contact selected by user, ThisIsExceptionTherm set to false by default"
-                    }
-                    log.trace """
+                }
+                else {
+                    ThisIsExceptionTherm =  false
+
+                    log.debug "No exception contact selected by user, ThisIsExceptionTherm set to false by default"
+                }
+                log.trace """
+InMotionModes?($InMotionModes)
+AccountForMotion?($AccountForMotion)
+Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
+FINAL CSPSet for $ThermSet = $CSPSet
 ThisIsExceptionTherm is: $ThisIsExceptionTherm (${ThermSet} == ${Thermostat_1})
-ContactExceptionIsClosed = $ContactExceptionIsClosed"""
+ContactExceptionIsClosed = $ContactExceptionIsClosed
+($ThermSet: 
+ShouldCoolWithAC = $ShouldCoolWithAC, 
+ShouldHeat = $ShouldHeat
+Current setpoint for $ThermSet is $CurrentCoolingSetPoint, 
+Current Heating setpoint is $CurrentHeatingSetPoint,
+Final CSPSet is $CSPSet
+Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:CurrentHeatingSetPoint 
+"""
+                if(ExceptionSW && ThermSet == "$Thermostat_1" && SwitchesOn){
+                    HSPSet = HSPSet + AddDegrees
+                    CSPSet = CSPSet + SubDegrees
+
+                    //log.debug "$ThermSet SetPoints ExceptionSW active"                                
+                }
+                if(AppMgt){
+                    log.info "NO OVERRIDE for $ThermSet -- EVALUATING"     
+                    atomicState.withinApp = true
+
 
                     /////////////////////////MODIFICATIONS//////////////////////////yh
                     log.debug "doorsOk = $doorsOk"
@@ -1138,17 +1141,24 @@ ContactExceptionIsClosed = $ContactExceptionIsClosed"""
 
                     }
                     else {
-                    log.debug "Not evaluating for $ThermSet because some windows are open"
+                        log.debug "Not evaluating for $ThermSet because some windows are open"
                     }
                 }
                 else {
-                    log.debug "${ThermSet} in OVERRIDE MODE, doing nothing"   
+                    //def CurrSP = ThermSet.currentValue("coolingSetpoint")
+                    log.debug """
+                    ${ThermSet} in OVERRIDE MODE, doing nothing 
+                    INFO : 
+                    CSP should be : $CSPSet current CSP: $CurrentCoolingSetPoint
+                    HSP should be : $HSPSet current HSP: $CurrentHeatingSetPoint
+                    """
+                    
                 }
 
                 log.trace " END OF WHILE $loopValue" 
 
             }   
-
+            withinAppFALSE()
             // true end of while loop
 
         }
@@ -1159,8 +1169,6 @@ ContactExceptionIsClosed = $ContactExceptionIsClosed"""
     else {
         log.debug "HANDLERS NOT DONE YET"
     }
-
-    withinAppFALSE()
 }
 
 //shoulds
