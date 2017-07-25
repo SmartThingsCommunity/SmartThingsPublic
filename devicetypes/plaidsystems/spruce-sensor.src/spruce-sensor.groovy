@@ -73,7 +73,7 @@ metadata {
 					[value: 64, color: "#44B621"],
 					[value: 80, color: "#3D79D9"],
 					[value: 96, color: "#0A50C2"]
-				]
+				], icon:"st.Weather.weather12"
 		}
         
         valueTile("maxHum", "device.maxHum", canChangeIcon: false, canChangeBackground: false) {
