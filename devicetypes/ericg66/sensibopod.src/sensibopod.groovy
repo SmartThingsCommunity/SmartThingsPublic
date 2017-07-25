@@ -111,7 +111,7 @@ metadata {
                 attributeState("cool", label:'${name}')    			
                 attributeState("fan", label:'${name}')
                 attributeState("dry", label:'${name}')
-    			//attributeState("auto", label:'${name}')
+    			attributeState("auto", label:'${name}')
   			}            
             tileAttribute("device.swing", key: "swing") {
     			attributeState("stopped", label:'${name}')
@@ -184,8 +184,8 @@ metadata {
             state "heat", action:"switchMode", backgroundColor:"#e86d13", icon:"https://image.ibb.co/c7Grh5/sun.png", nextState:"cool"
             state "cool", action:"switchMode", backgroundColor:"#00a0dc", icon:"https://image.ibb.co/bZ56FQ/cold.png", nextState:"fan"
             state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/n1dhpk/status_message_fan.png", nextState:"dry"
-            state "dry", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/k2ZNpk/dry_mode.png", nextState:"heat"
-            //state "auto", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/dwaRh5/auto_mode.png", nextState:"heat"               
+            state "dry", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/k2ZNpk/dry_mode.png", nextState:"auto"
+            state "auto", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/dwaRh5/auto_mode.png", nextState:"heat"               
         }
         
         standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
@@ -700,7 +700,8 @@ def switchMode() {
 			returnCommand = modeDry()
 			break
         case "dry":
-			returnCommand = modeHeat()
+			//returnCommand = modeHeat()
+            returnCommand = modeAuto()
 			break
         case "auto":
 			returnCommand = modeHeat()
@@ -950,14 +951,17 @@ def GetNextMode(mode, modes)
             	if (modes.remoteCapabilities.containsKey("cool")) return "cool"
                 if (modes.remoteCapabilities.containsKey("fan")) return "fan"
                 if (modes.remoteCapabilities.containsKey("dry")) return "dry"
+                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
                 break
         	case "cool":
             	if (modes.remoteCapabilities.containsKey("fan")) return "fan"
                 if (modes.remoteCapabilities.containsKey("dry")) return "dry"
-                if (modes.remoteCapabilities.containsKey("heat")) return "heat"
+                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
+                if (modes.remoteCapabilities.containsKey("heat")) return "heat"                
                 break
         	case "dry":
             	log.debug "ici"
+                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
             	if (modes.remoteCapabilities.containsKey("heat")) return "heat"
                 if (modes.remoteCapabilities.containsKey("cool")) return "cool"
                 if (modes.remoteCapabilities.containsKey("fan")) return "fan"
@@ -965,8 +969,15 @@ def GetNextMode(mode, modes)
                 break
         	case "fan":
             	if (modes.remoteCapabilities.containsKey("dry")) return "dry"
+                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
                 if (modes.remoteCapabilities.containsKey("heat")) return "heat"
                 if (modes.remoteCapabilities.containsKey("cool")) return "cool"
+                break
+            case "auto":
+            	if (modes.remoteCapabilities.containsKey("heat")) return "heat"
+                if (modes.remoteCapabilities.containsKey("cool")) return "cool"
+                if (modes.remoteCapabilities.containsKey("fan")) return "fan"
+                if (modes.remoteCapabilities.containsKey("dry")) return "dry"
                 break
         }
     }    
@@ -979,7 +990,6 @@ def NextMode(sMode)
     	switch (sMode)
         {
          	case "heat":
-            	log.debug "la"
             	modeHeat()
             	break
             case "cool":
