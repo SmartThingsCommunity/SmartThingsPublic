@@ -87,7 +87,7 @@ metadata {
 		}
 
 		valueTile("colorIndicator", "device.colorIndicator", width: 4, height: 2) {
-			state("colorIndicator", label: '',
+			state("colorIndicator", label: 'Virtual Bulb',
 					// value is simply the color temp in kelvin for color temperature
 					// for color, value is an offset plus the saturation pct plus the  hue pct * 1000
 					// Hues are represented evey 5% from 0-100

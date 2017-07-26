@@ -122,11 +122,11 @@ metadata {
 			state "bulbValue", label: '${currentValue}'
 		}
 
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "default", label: "", action: "refresh", icon: "st.secondary.refresh"
 		}
 
-		valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+		valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "default", label: "Reset", action: "configure"
 		}
 
