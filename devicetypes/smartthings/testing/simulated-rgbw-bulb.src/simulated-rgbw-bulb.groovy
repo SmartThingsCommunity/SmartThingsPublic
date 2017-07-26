@@ -87,7 +87,7 @@ metadata {
 		}
 
 		valueTile("colorIndicator", "device.colorIndicator", width: 4, height: 2) {
-			state("colorIndicator", label: 'Virtual Bulb',
+			state("colorIndicator", label: '',
 					// value is simply the color temp in kelvin for color temperature
 					// for color, value is an offset plus the saturation pct plus the  hue pct * 1000
 					// Hues are represented evey 5% from 0-100
@@ -246,8 +246,8 @@ metadata {
 			)
 		}
 
-		valueTile("colorTempControlLabel", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-			state "default", label: "White Color Temperature" 
+		valueTile("colorTempControlLabel", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "default", label: 'White Color Temp.\n${currentValue}K' 
 		}
 
 		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 1, inactiveLabel: false, range: "(2200..7000)") {
@@ -258,11 +258,11 @@ metadata {
 			state "bulbValue", label: '${currentValue}'
 		}
 
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "default", label: "", action: "refresh", icon: "st.secondary.refresh"
 		}
 
-		valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+		valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "default", label: "Reset", action: "configure"
 		}
 
