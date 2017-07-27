@@ -14,12 +14,14 @@
  */
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "New Simulated Lock", namespace: "smartthings/testing", author: "SmartThings") {
+	definition (name: "Simulated Lock", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Actuator"
-		capability "sensor"
+		capability "Sensor"
+		capability "Health Check"
 
 		capability "Lock"
 		capability "Battery"
+		capability "Refresh"
 		command "jam"
 		command "setBatteryLevel"
 		command "setJamNextOperation"
@@ -95,6 +97,7 @@ def updated() {
 
 def initialize() {
 	log.trace "initialize()"
+	sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
 	clearJamNextOperation()
 }
 
@@ -118,6 +121,15 @@ private processPreferences() {
 	if (prefJamImmediately) {
 		jam()
 	}
+}
+
+def refresh() {
+	sendEvent(name: "lock", value: device.currentValue("lock"))
+	sendEvent(name: "battery", value: device.currentValue("battery"))
+}
+
+def ping() {
+	refresh()
 }
 
 def lock() {
