@@ -281,6 +281,14 @@ void raiseTemperature() {
         case "cool":
         	setCoolingSetpoint(Setpoint)
             break;
+        case "fan":
+            setHeatingSetpoint(Setpoint)
+        	setCoolingSetpoint(Setpoint)
+        	break;
+         case "dry":
+            setHeatingSetpoint(Setpoint)
+        	setCoolingSetpoint(Setpoint)
+        	break;
         case "auto":
             setHeatingSetpoint(Setpoint)
         	setCoolingSetpoint(Setpoint)
@@ -307,6 +315,14 @@ void lowerTemperature() {
         case "cool":
         	setCoolingSetpoint(Setpoint)
             break;
+        case "fan":
+            setHeatingSetpoint(Setpoint)
+        	setCoolingSetpoint(Setpoint)
+        	break;
+         case "dry":
+            setHeatingSetpoint(Setpoint)
+        	setCoolingSetpoint(Setpoint)
+        	break;
         case "auto":
             setHeatingSetpoint(Setpoint)
         	setCoolingSetpoint(Setpoint)
