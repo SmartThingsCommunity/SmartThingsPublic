@@ -595,7 +595,13 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
     def OnOff = (on == "on") ? true : false
     if (swingM == null) swingM = "stopped"
     
-   	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '","temperatureUnit": "' + sUnit + '"}}'
+    log.debug "Target Temperature :" + targetTemperature
+    
+	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '","temperatureUnit": "' + sUnit + '"}}'
+    
+    if (targetTemperature == 0) {
+    	jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + ',"swing": "' + swingM + '"}}'
+    }
     
     log.debug "Mode Request Body = ${jsonRequestBody}"
 	debugEvent ("Mode Request Body = ${jsonRequestBody}")
@@ -741,12 +747,12 @@ def getACState(PodUid)
                         stat.acState.on = OnOff
 						
 						def stemp 
-						if (stat.acState.mode=="fan"){
-							stemp = stat.device.measurements.temperature.toInteger()
-						}
-						else {
+						//if (stat.acState.mode=="fan"){
+						//	stemp = stat.device.measurements.temperature.toInteger()
+						//}
+						//else {
 							stemp = stat.acState.targetTemperature.toInteger()
-						}					
+						//}					
 					
                         def tMode                        
                         if (OnOff=="off") {
