@@ -89,7 +89,7 @@ metadata {
 	}
 }
 private getAPIKey() {
-    return "eyJhbGciOiJIUzI1NiJ9.eyJncmFudGVlIjoibWF0dEBmcmVlc3RvbmVmYW1pbHkuY29tIiwiaWF0IjoxNDg1ODgyMjI2LCJ2YWxpZGl0eSI6LTEsImp0aSI6ImU4ZGE5MTRhLTRkNzktNGJjOC05MTJmLWJhNjc5MWM2YTJhMSIsInBlcm1pc3Npb25zIjpbInVzZXI6cmVhZCIsImRldmljZTpyZWFkIl0sInF1b3RhIjoyMDAsInJhdGVMaW1pdCI6NX0.JJIiFSl9uiOBUpMkrbHSxOCNnAkAQhONEXQxe85Yt_4";
+    return "ADD YOUR API KEY HERE";
 }
 def parse(String description) {
 	log.debug "Parsing '${description}'"
