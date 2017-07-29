@@ -258,7 +258,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 			map.value = "auto"
 			break
 	}
-	sendEvent(map) 
+	sendEvent(map)
 	updateThermostatSetpoint(null, null)
 }
 
