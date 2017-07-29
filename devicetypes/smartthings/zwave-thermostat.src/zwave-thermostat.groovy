@@ -375,11 +375,11 @@ def alterSetpoint(raise, setpoint) {
 	// also, as runIn's have to overwrite and user can change heating/cooling setpoint separately separate runIn's have to be used
 	if (data.targetHeatingSetpoint) {
 		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, deviceScale),
-				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE")//, displayed: false)
+				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	if (data.targetCoolingSetpoint) {
 		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, deviceScale),
-				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE")//, displayed: false)
+				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	if (data.targetHeatingSetpoint && data.targetCoolingSetpoint) {
 		runIn(5, "updateHeatingSetpoint", [data: data, overwrite: true])
