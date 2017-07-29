@@ -147,7 +147,7 @@ def parse(String description)
 		}
 	}
 	if (!result) {
-		return [null]
+		return []
 	}
 	return [result]
 }
