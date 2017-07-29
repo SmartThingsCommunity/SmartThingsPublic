@@ -523,7 +523,6 @@ def switchFanMode() {
 	if (supportedFanModes) {
 		def next = { supportedFanModes[supportedFanModes.indexOf(it) + 1] ?: supportedFanModes[0] }
 		def nextMode = next(currentMode)
-		setThermostatFanMode(nextMode)
 		runIn(2, "setThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
 	} else {
 		log.warn "supportedFanModes not defined"
