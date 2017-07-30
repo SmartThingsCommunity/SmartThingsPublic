@@ -2,9 +2,10 @@
  *  Foobot Air Quality Monitor DTH
  *
  *  Copyright 2017 Michael Struck
- *  Version 2.0.0 7/28/17
+ *  Version 2.0.0 7/30/17
  *
- *  Version 2.0.0 Re-engineered release by Michael Struck to work with Ask Alexa. Added C/F adjustment, cleaned up code, used the standard 'carbonDioxide' variable instead of CO2
+ *  Version 2.0.0 Re-engineered release by Michael Struck to work with Ask Alexa. Added C/F adjustment, cleaned up code and interface, adding a repoll timer, removed username
+ *  used the standard 'carbonDioxide' variable instead of CO2, GPIstate instead of GPIState
  *
  *  Uses code from Adam K (V2. Updated 6/2/2017 - Updated Region so it works in UK & US)
  *
@@ -19,11 +20,12 @@
  *
  */
  preferences {
-        input("username", "text", title: "Username", description: "Your Foobot username (usually an email address)")
-        input("uuid", "text", title: "UUID", description: "The UUID of the exact Foobot that you would like information for")
+        input("uuid", "text", title: "UUID", description: "The UUID of the Foobot device")
         def myOptions = ["EU", "US"]
         input "region", "enum", title: "Select your region (For API access)", defaultValue: "EU", required: true, options: myOptions, displayDuringSetup: true
-        input "CF", "enum", title: "Select your temperature type", defaultValue: "°C", required: true, options: ["°C","°F"], displayDuringSetup: true
+        input "CF", "enum", title: "Temperature units", defaultValue: "°C", required: true, options: ["°C","°F"], displayDuringSetup: true
+        input "refreshRate", "enum", title: "Data refresh rate", defaultValue: 0, options:[0:"Never",10: "Every 10 Minutes", 30: "Every 1/2 hour", 60 : "Every Hour", 240 :"Every 4 hours",
+        	360: "Every 6 hours", 720: "Every 12 hours", 1440: "Once a day"], displayDuringSetup: true
 }
 metadata {
 	definition (name: "Foobot Air Quality Monitor", namespace: "MichaelStruck", author: "Michael Struck") {
@@ -37,7 +39,7 @@ metadata {
      	attribute "pollution", "number"
         attribute "particle", "number"
         attribute "voc", "number"
-        attribute "GPIState", "String"
+        attribute "GPIstate", "String"
         attribute "carbonDioxide", "number"       
 	}
 
@@ -55,8 +57,11 @@ metadata {
                     [value: 100, color: "#d62d20"]
                 ])
   			}
-            tileAttribute("device.GPIState", key: "SECONDARY_CONTROL") {
-           		attributeState("GPIState", label:'${currentValue}')
+            tileAttribute("device.GPIstate", key: "SECONDARY_CONTROL") {
+           		attributeState("GPIstate", label:'${currentValue}')
+            }
+            tileAttribute("lastUpdated", key: "MARQUEE") {
+           		attributeState("lastUpdated", label:'${currentValue}')
             }
        }
         valueTile("carbonDioxide", "device.carbonDioxide", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
@@ -68,28 +73,44 @@ metadata {
         valueTile("particle", "device.particle", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
             state "particle", label:'${currentValue} µg/m³', unit:"µg/m³ PM2.5"
         }
+         valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+            state "temperature", label:'${currentValue}°', unit:"°", backgroundColors:[
+							// Celsius
+							[value: 0, color: "#153591"],
+							[value: 7, color: "#1e9cbb"],
+							[value: 15, color: "#90d2a7"],
+							[value: 23, color: "#44b621"],
+							[value: 28, color: "#f1d801"],
+							[value: 35, color: "#d04e00"],
+							[value: 37, color: "#bc2323"],
+							// Fahrenheit
+							[value: 40, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+					]
+		}
         valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
             state "humidity", label:'${currentValue}% humidty', unit:"%"
-        }
-        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
-            state "temperature", label:'${currentValue}°', unit:"°"
         }
         standardTile("refresh", "device.refresh", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
             state "refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
-        standardTile("spacerlastUpdatedLeft", "spacerTile", decoration: "flat", width: 1, height: 1) {
- 		}
         valueTile("lastUpdated", "device.lastUpdated", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
 			state "lastUpdated", label:'Last updated:\n${currentValue}'
 		}
-        standardTile("spacerlastUpdatedRight", "spacerTile", decoration: "flat", width: 1, height: 1) {
- 		}
+        valueTile("refreshes", "device.refreshes", inactiveLable: false, decoration: "flat", width: 2, height: 1) {
+			state "refreshes", label:'Refreshes Remaining Today:\n${currentValue}'
+		}
         main "pollution"
-        details(["pollution","carbonDioxide","voc","particle","humidity", "temperature", "refresh", "spacerlastUpdatedLeft", "lastUpdated", "spacerlastUpdatedRight"])
+        details(["pollution","carbonDioxide","voc","particle","temperature", "humidity", "refresh", "lastUpdated", "refreshes"])
 	}
 }
 private getAPIKey() {
-    return "ADD YOUR API KEY HERE";
+    return "ENTER YOUR API KEY HERE (KEEP THE QUOTATION MARKS)"
 }
 def parse(String description) {
 	log.debug "Parsing '${description}'"
@@ -98,7 +119,13 @@ def refresh() {
 	poll()
 }
 // handle commands
-def poll() {   
+def poll() {
+    def refreshTime =  refreshRate ? (refreshRate as int) * 60 : 0
+	if (refreshTime > 0) {
+    	runIn (refreshTime, poll)
+     	log.debug "Data will repoll every ${refreshRate} minutes"   
+    }
+    else log.debug "Data will never repoll" 
     def start = new Date(Calendar.instance.time.time-1800000).format("yyyy-MM-dd'T'HH:MM':00'");
     def stop = new Date(Calendar.instance.time.time+1800000).format("yyyy-MM-dd'T'HH:MM':00'");
     
@@ -114,6 +141,9 @@ def poll() {
         httpGet(params) {resp ->
 			resp.headers.each {
            		log.debug "${it.name} : ${it.value}"
+                if (it.name=="X-API-KEY-LIMIT-REMAINING"){
+                	sendEvent(name: "refreshes", value:it.value)	
+                }
         	}
             // get an array of all headers with the specified key
         	def theHeaders = resp.getHeaders("Content-Length")
@@ -143,10 +173,10 @@ def poll() {
             log.debug "allpollu: ${resp.data.datapoints[-1][6]}"
             def allpollu = resp.data.datapoints[-1][6]
             sendEvent(name: "pollution", value: resp.data.datapoints[-1][6] as Integer, unit: "%")
-            if (allpollu < 25) sendEvent(name: "GPIState", value: "Great", isStateChange: true)
-            else if (allpollu < 50) sendEvent(name: "GPIState", value: "Good", isStateChange: true)
-            else if (allpollu < 75) sendEvent(name: "GPIState", value: "Fair", isStateChange: true)
-            else if (allpollu > 75) sendEvent(name: "GPIState", value: "Poor", isStateChange: true)
+            if (allpollu < 25) sendEvent(name: "GPIstate", value: "Great", isStateChange: true)
+            else if (allpollu < 50) sendEvent(name: "GPIstate", value: "Good", isStateChange: true)
+            else if (allpollu < 75) sendEvent(name: "GPIstate", value: "Fair", isStateChange: true)
+            else if (allpollu > 75) sendEvent(name: "GPIstate", value: "Poor", isStateChange: true)
             def now = new Date().format("EEE, d MMM yyyy HH:mm:ss",location.timeZone)
             sendEvent(name:"lastUpdated", value: now, displayed: false)
         }
