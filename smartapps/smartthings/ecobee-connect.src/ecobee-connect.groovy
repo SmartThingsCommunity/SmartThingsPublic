@@ -279,7 +279,7 @@ def getEcobeeThermostats() {
 
 Map sensorsDiscovered() {
 	def map = [:]
-	log.info "list ${atomicState.remoteSensors}"
+	log.debug "list ${atomicState.remoteSensors}"
 	atomicState.remoteSensors.each { sensors ->
 		sensors.each {
 			if (it.type != "thermostat") {
@@ -440,7 +440,7 @@ def pollChild() {
 			if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")) {
 				if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
 					def tData = atomicState.thermostats[child.device.deviceNetworkId]
-					log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
+					log.debug "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
 					child.generateEvent(tData.data) //parse received message from parent
 				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
 					log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
@@ -449,7 +449,7 @@ def pollChild() {
 			}
 		}
 	} else {
-		log.info "ERROR: pollChildren()"
+		log.error "ERROR: pollChildren()"
 		return null
 	}
 
