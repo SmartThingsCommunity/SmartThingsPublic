@@ -87,7 +87,7 @@ def authPage() {
 
 def oauthInit() {
 	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote_control:all", response_type: "code" ]
-	log.info("Redirecting user to OAuth setup")
+	log.debug("Redirecting user to OAuth setup")
 	redirect(location: "https://cloud.lifx.com/oauth/authorize?${toQueryString(oauthParams)}")
 }
 
@@ -265,7 +265,7 @@ def updated() {
 }
 
 def uninstalled() {
-	log.info("Uninstalling, removing child devices...")
+	log.debug("Uninstalling, removing child devices...")
 	unschedule('updateDevices')
 	removeChildDevices(getChildDevices())
 }
@@ -305,8 +305,8 @@ Map apiRequestHeaders() {
 // Requests
 
 def logResponse(response) {
-	log.info("Status: ${response.status}")
-	log.info("Body: ${response.data}")
+	log.debug("Status: ${response.status}")
+	log.debug("Body: ${response.data}")
 }
 
 // API Requests
@@ -428,7 +428,7 @@ def updateDevices() {
 		state.devices[device.id] = [online: device.connected]
 	}
 	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
-		log.info("Deleting ${it.deviceNetworkId}")
+		log.debug("Deleting ${it.deviceNetworkId}")
 		if (state.devices[it.deviceNetworkId])
 			state.devices[it.deviceNetworkId] = null
 		// The reason the implementation is trying to delete this bulb is because it is not longer connected to the LIFX location.
