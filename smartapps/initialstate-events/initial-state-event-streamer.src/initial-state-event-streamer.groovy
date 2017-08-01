@@ -18,6 +18,8 @@
  *  Privacy Policy for Initial State can be found here: https://www.initialstate.com/terms
  */
 
+include 'asynchttp_v1'
+
 definition(
     name: "Initial State Event Streamer",
     namespace: "initialstate.events",
@@ -350,27 +352,16 @@ def tryShipEvents(event) {
 		return
 	}
 
-	def eventPost = [
-		uri: "https://${grokerSubdomain}.initialstate.com/api/events",
-		headers: [
-			"Content-Type": "application/json",
-			"X-IS-BucketKey": "${bucketKey}",
-			"X-IS-AccessKey": "${accessKey}",
-			"Accept-Version": "0.0.2"
-		],
-		body: event
-	]
+def eventPost = [
+    uri: "https://${grokerSubdomain}.initialstate.com/api/events",
+    headers: [
+      "Content-Type": "application/json",
+      "X-IS-BucketKey": "${bucketKey}",
+      "X-IS-AccessKey": "${accessKey}",
+      "Accept-Version": "0.0.2"
+    ],
+    body: event
+  ]
 
-	try {
-		// post the events to initial state
-		httpPostJson(eventPost) { resp ->
-			log.debug "shipped events and got ${resp.status}"
-			if (resp.status >= 400) {
-				log.error "shipping failed... ${resp.data}"
-			}
-		}
-	} catch (e) {
-		log.error "shipping events failed: $e"
-	}
-
+  asynchttp_v1.post(null, eventPost)
 }
