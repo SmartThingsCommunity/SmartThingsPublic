@@ -1,10 +1,12 @@
-# Smartsense Motion Sensor
+# Samsung SmartThings Motion Sensor
 
 Local Execution on V2 Hubs
 
 Works with: 
 
 * [Samsung SmartThings Motion Sensor](https://shop.smartthings.com/#!/products/samsung-smartthings-motion-sensor)
+* SmartSense Motion Sensor (2014 model)
+* SmartSense Motion Sensor (original model)
 
 ## Table of contents
 
@@ -35,13 +37,12 @@ One CR2477 (for Samsung SmartThings Motion Sensor) / CR123A (SmartSense Motion S
 
 ## Troubleshooting
 
-If the device doesn't pair when trying from the SmartThings mobile app, it is possible that the sensor is out of range.
-Pairing needs to be tried again by placing the sensor closer to the hub.
-Instructions related to pairing, resetting and removing the different motion sensors from SmartThings can be found in the following links
-for the different models:
-* [SmartSense Motion Sensor (original model) Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/200903280-SmartSense-Motion-Sensor-original-model-)
-* [SmartSense Motion Sensor (2014 model) Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/203077520-SmartSense-Motion-Sensor-2014-model-)
+If the Samsung SmartThings Motion Sensor didn't connect to the Hub when you removed the pull-tab, it might be out of range. 
+Bring the sensor closer to the Hub and attempt to connect it again.
+Instructions related to pairing, resetting and removing the different motion sensors from SmartThings can be found in the following links for the different models:
 * [Samsung SmartThings Motion Sensor (2015 model) Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/205957580-Samsung-SmartThings-Motion-Sensor-2015-model-)
 Other troubleshooting tips are listed as follows:
 * [Troubleshooting: Samsung SmartThings Motion Sensor is stuck showing "Motion Detected" or "No Motion"](https://support.smartthings.com/hc/en-us/articles/200961130-Troubleshooting-Samsung-SmartThings-Motion-Sensor-is-stuck-showing-Motion-Detected-or-No-Motion-)
 * [Troubleshooting: Samsung SmartThings Motion Sensor won’t pair after removing pull-tab](https://support.smartthings.com/hc/en-us/articles/204966616-Troubleshooting-Samsung-SmartThings-device-won-t-pair-after-removing-pull-tab)
+* [SmartSense Motion Sensor (original model) Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/200903280-SmartSense-Motion-Sensor-original-model-)
+* [SmartSense Motion Sensor (2014 model) Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/203077520-SmartSense-Motion-Sensor-2014-model-)
