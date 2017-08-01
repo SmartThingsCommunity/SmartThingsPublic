@@ -88,19 +88,21 @@ import physicalgraph.zwave.commands.usercodev1.*
 def installed() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	try {
+		if (!state.init) {
+			state.init = true
+			// Wait long enough for behind-the-scenes z-wave magic to finish, but be quick enough before hub goes back into inclusion and blocks us
+			response(["delay 2000"] + secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()], 2200))
+		}
+	} catch (e) {
+		log.warn "installed() threw $e"
+	}
 }
 
 def updated() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	try {
-		if (!state.init) {
-			state.init = true
-			response(secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()]))
-		}
-	} catch (e) {
-		log.warn "updated() threw $e"
-	}
 }
 
 def parse(String description) {
