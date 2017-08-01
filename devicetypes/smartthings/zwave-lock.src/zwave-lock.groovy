@@ -88,11 +88,22 @@ import physicalgraph.zwave.commands.usercodev1.*
 def installed() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	// First generation Schlage locks send lock events to assoc group 2 and only BasicSet to group 1
+	if (zwaveInfo.mfr == "003B" && zwaveInfo.prod == "634B") {
+		def cmds = [
+			new physicalgraph.device.HubAction(zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId).format()),
+			new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()),
+			new physicalgraph.device.HubAction(zwave.associationV1.associationGet(groupingIdentifier:2).format())
+		]
+		sendHubCommand(cmds, 1200)
+	}
 }
 
 def updated() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	try {
 		if (!state.init) {
 			state.init = true
@@ -459,7 +470,7 @@ def zwaveEvent(physicalgraph.zwave.commands.timev1.TimeGet cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	// The old Schlage locks use group 1 for basic control - we don't want that, so unsubscribe from group 1
-	def result = [ createEvent(name: "lock", value: cmd.value ? "unlocked" : "locked") ]
+	def result = createEvent(name: "lock", value: cmd.value ? "unlocked" : "locked")
 	def cmds = [
 			zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId).format(),
 			"delay 1200",
