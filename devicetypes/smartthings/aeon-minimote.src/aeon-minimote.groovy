@@ -111,7 +111,6 @@ def configure() {
 	return cmds
 }
 
-
 def installed() {
 	initialize()
 }
@@ -121,7 +120,7 @@ def updated() {
 }
 
 def initialize() {
-	// Arrival sensors only goes OFFLINE when Hub is off
-	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+	// Device only goes OFFLINE when Hub is off
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 	sendEvent(name: "numberOfButtons", value: 4)
 }
