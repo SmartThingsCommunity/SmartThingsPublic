@@ -74,8 +74,8 @@ metadata {
 
 	tiles {
 		// Using standardTile instead of valueTile as it renders the icon better
-		standardTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label:'${currentValue}°', icon: "st.thermostat.ac.air-conditioning",
+		valueTile("temperature", "device.temperature", width: 3, height: 3) {
+			state "temperature", label:'${currentValue}°', 
 				backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
@@ -84,10 +84,21 @@ metadata {
 					[value: 84, color: "#f1d801"],
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
-				]
-			)
+		]
 		}
-		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
+		valueTile("humidity", "device.humidity", inactiveLabel: false) {
+			state "humidity", label:'${currentValue}%', unit:"",
+              icon: "http://cdn.device-icons.smartthings.com/Weather/weather12-icn@2x.png",
+               backgroundColors : [
+                    [value: 01, color: "#724529"],
+                    [value: 11, color: "#724529"],
+                    [value: 21, color: "#724529"],
+                    [value: 35, color: "#44b621"],
+                    [value: 49, color: "#44b621"],
+                    [value: 50, color: "#1e9cbb"]
+         ]
+         }
+         standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
 			state "off", action:"switchMode", nextState:"to_heat", icon: "st.thermostat.heating-cooling-off"
 			state "heat", action:"switchMode", nextState:"to_cool", icon: "st.thermostat.heat"
 			state "cool", action:"switchMode", nextState:"...", icon: "st.thermostat.cool"
@@ -119,7 +130,7 @@ metadata {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		main "temperature"
-		details(["temperature", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh"])
+		details(["temperature", "humidity", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh"])
 	}
 }
 
@@ -582,4 +593,3 @@ def fanCirculate() {
 private getStandardDelay() {
 	1000
 }
-
