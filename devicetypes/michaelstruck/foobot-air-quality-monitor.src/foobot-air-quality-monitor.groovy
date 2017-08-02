@@ -4,7 +4,7 @@
  *  Copyright 2017 Michael Struck
  *  Version 3.0.0 8/1/17
  *
- *  Version 2.0.0 (6/2/17) AdamK Release: Updated Region so it works in UK & US
+ *  Version 2.0.0 (6/2/17) AdamV Release: Updated Region so it works in UK & US
  *  Version 3.0.0 (8/1/17) Re-engineered release by Michael Struck. Added C/F temperature units, cleaned up code and interface, adding a repoll timer, removed username
  *  used the standard 'carbonDioxide' variable instead of CO2, GPIstate instead of GPIState (for the activity log), set colors for Foobot recommended levels of attributes.
  *
