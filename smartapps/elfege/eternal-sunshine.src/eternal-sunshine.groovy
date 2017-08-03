@@ -106,7 +106,7 @@ def Options() {
                 }
             }
         }
-       
+
     }
 }
 
@@ -115,7 +115,7 @@ def installed() {
     initialize()
 }
 def updated() {
-	
+
     log.debug "Updated with settings: ${settings}"
     unsubscribe()
     unschedule()
@@ -124,9 +124,9 @@ def updated() {
 }
 def initialize() {
 
-    state.messageSent = false
+    atomicState.messageSent = false
 
-    state.StopTheApp = 0
+    atomicState.StopTheApp = 0
 
     subscribe(lightSensor, "illuminance", illuminanceHandler)
     subscribe(dimmer, "switch.on", SwitchHandler)
@@ -137,57 +137,58 @@ def initialize() {
 schedule("0 0/$runTime * * * ?", doubleCheck)
 log.debug "doubleCheck Scheduled to run every $runTime minutes"
 */
-    state.luxvalue = 0 
-    state.donotOverride = true
+    atomicState.luxvalue = 0 
+    atomicState.donotOverride = true
     //atomicState.LevelShouldBe = dimmer.currentValue("switchLevel")
     //log.info "Current Dimmer's Value is: $atomicState.LevelShouldBe"
 }
 def switchSetLevelHandler(evt) {
+log.debug "The source of this event is: ${evt.source}"
     log.debug "dimmer set to $evt.integerValue   ----------------------------"
-    log.debug "state.StopTheApp value is currently $state.StopTheApp" 
-    
+    log.debug "atomicState.StopTheApp value is currently $atomicState.StopTheApp" 
+
     def shouldBe = atomicState.LevelShouldBe
     shouldBe = shouldBe.toInteger()
-    def DonotOverride = state.donotOverride
-    
+    def DonotOverride = atomicState.donotOverride
+
     if(!DonotOverride && atomicState.LevelShouldBe == evt.integerValue){
-    state.donotOverride = false // this is temporary until I get how to read current level dimmer and set it as shouldBe value at initialization. 
-    log.debug "NO OVERRIDE"
-    atomicState.LevelSetByApp = true 
+        atomicState.donotOverride = false // this is temporary until I get how to read current level dimmer and set it as shouldBe value at initialization. 
+        log.debug "NO OVERRIDE"
+        atomicState.LevelSetByApp = true 
     }
     else {
-    log.debug "MANUAL OVERRIDE. RESET VALUE IS : $shouldBe"
-    // need to send reset value as a push message. 
-    atomicState.LevelSetByApp = true 
+        log.debug "MANUAL OVERRIDE. RESET VALUE IS : $shouldBe"
+        // need to send reset value as a push message. 
+        atomicState.LevelSetByApp = true 
     }
 }
 def SwitchHandler(evt){ 
     log.debug "$dimmer currentSwitch evt value is $evt.value "
     log.debug "$dimmer status value is $dimmer.currentSwitch "
 
-    log.debug "so far state.StopTheApp value was $state.StopTheApp" 
+    log.debug "so far atomicState.StopTheApp value was $atomicState.StopTheApp" 
 
     if(evt.value == "on"){
-        state.StopTheApp = 0 
-        log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
-        state.dimmerSW = 1
+        atomicState.StopTheApp = 0 
+        log.debug "Now atomicState.StopTheApp value set to $atomicState.StopTheApp" 
+        atomicState.dimmerSW = 1
         if(atomicState.LevelSetByApp == false){ 
-        atomicState.LevelSetByApp = true
-        log.debug "LEVEL OVERRIDE CANCELED"
+            atomicState.LevelSetByApp = true
+            log.debug "LEVEL OVERRIDE CANCELED"
         }
-        
+
     }
     else if(evt.value == "off"){
-        if(state.dim != 0) { 
-            state.StopTheApp = 1
-            state.dimmerSW = 0
-            log.debug "Now state.StopTheApp value set to $state.StopTheApp" 
+        if(atomicState.dim != 0) { 
+            atomicState.StopTheApp = 1
+            atomicState.dimmerSW = 0
+            log.debug "Now atomicState.StopTheApp value set to $atomicState.StopTheApp" 
             log.debug "SWITCH TURNED OFF BY USER"
             log.debug "Double check in 5 seconds"
-            runIn(5, doubleCheck) // sometimes state.dim value didn't refresh on time so double check whether and make sure it was not a manual shut off
+            runIn(5, doubleCheck) // sometimes atomicState.dim value didn't refresh on time so double check whether and make sure it was not a manual shut off
 
         }
-        else if(state.dim == 0){ 
+        else if(atomicState.dim == 0){ 
             log.debug "SWITCH TURNED OFF WITHOUT USER INTERVENTITON"
 
         }
@@ -196,16 +197,16 @@ def SwitchHandler(evt){
 def illuminanceHandler(evt){
     log.debug "illuminance is $evt.integerValue"
 
-    log.debug "state.dimmerSW value is $state.dimmerSW" 
+    log.debug "atomicState.dimmerSW value is $atomicState.dimmerSW" 
 
-    state.luxvalue = evt.integerValue
-    
-     if(OnlyIfNotOff){
-        if(state.StopTheApp == 0 && atomicState.LevelSetByApp == true ) {
+    atomicState.luxvalue = evt.integerValue
+
+    if(OnlyIfNotOff){
+        if(atomicState.StopTheApp == 0 && atomicState.LevelSetByApp == true ) {
             DIM()
             log.debug """Dimming. 
-            state.StopTheApp = $state.StopTheApp
-            atomicState.LevelSetByApp = $atomicState.LevelSetByApp"""
+atomicState.StopTheApp = $atomicState.StopTheApp
+atomicState.LevelSetByApp = $atomicState.LevelSetByApp"""
 
         }
         else { 
@@ -221,21 +222,21 @@ def illuminanceHandler(evt){
 }
 def doubleCheck() { 
 
-    if(state.dim == 0) {
-        state.StopTheApp = 0
-        log.debug "state.StopTheApp RESET because state.dim = $state.dim (verif: should be 0)" 
+    if(atomicState.dim == 0) {
+        atomicState.StopTheApp = 0
+        log.debug "atomicState.StopTheApp RESET because atomicState.dim = $atomicState.dim (verif: should be 0)" 
 
         Evaluate()
     } 
-    else if( state.dimmerSW != 1) { 
+    else if( atomicState.dimmerSW != 1) { 
         log.debug "Manual Intervention CONFIRMED"
     }
     log.debug "DOUBLE CHECK OK"
-    log.debug "state.luxvalue is $state.luxvalue"
+    log.debug "atomicState.luxvalue is $atomicState.luxvalue"
 
 }
 def DIM(){
-    log.debug "state.luxvalue is $state.luxvalue"
+    log.debug "atomicState.luxvalue is $atomicState.luxvalue"
 
     def latest = lightSensor.currentState("illuminance")
 
@@ -257,13 +258,13 @@ def DIM(){
         log.debug "lux is the measurment unit"
         log.debug "maxlux set as ${maxlux}$latest.unit"
 
-        if(state.luxvalue != 0){
-            ProportionLux = maxlux / state.luxvalue
+        if(atomicState.luxvalue != 0){
+            ProportionLux = maxlux / atomicState.luxvalue
             log.debug "calculating proportionLux multiplier as: $ProportionLux"
         }
         else{
             ProportionLux = 100
-            log.debug "ProportionLux set to 100 because lux = $state.luxvalue"
+            log.debug "ProportionLux set to 100 because lux = $atomicState.luxvalue"
         }
 
         log.debug "ProportionLux value returns $ProportionLux"
@@ -271,17 +272,17 @@ def DIM(){
         if ( ProportionLux == 1) {
             // this is the case when lux is maxed 
 
-            state.dim = 0
+            atomicState.dim = 0
             log.debug "ProportionLux is 1 so dim set to 0"
         }
         else {
-            state.dim = (ProportionLux * DimIncrVal)
-            log.debug "calculating state.dim"
+            atomicState.dim = (ProportionLux * DimIncrVal)
+            log.debug "calculating atomicState.dim"
             // example 1000 / 500 = 2 so dim = 2 * 5 light will be dimmed down or up? by 10%
             // example 1000 / 58 = 17.xxx so dim = 17 * 5 so if lux is 58 then light will be set to 85%.
         }
-        if(state.dim > 100){
-            state.dim = 100
+        if(atomicState.dim > 100){
+            atomicState.dim = 100
         } 
     }
     else { 
@@ -289,7 +290,7 @@ def DIM(){
         maxlux = 100
         log.debug "percentage is the measurment unit"    
         log.debug "maxlux set as ${maxlux}$latest.unit"
-        state.dim = 100 - state.luxvalue       
+        atomicState.dim = 100 - atomicState.luxvalue       
     }
 
     // max values
@@ -300,43 +301,43 @@ def DIM(){
             log.debug "exceptionMode eval"
             if(CurrMode == ExceptionMode){
                 log.debug "currentMode eval"
-                if(state.dim >= SetPartvalue){
-                    state.dim = SetPartvalue
-                    log.debug "state.dim value is: $state.dim (SetPartvalue)"
+                if(atomicState.dim >= SetPartvalue){
+                    atomicState.dim = SetPartvalue
+                    log.debug "atomicState.dim value is: $atomicState.dim (SetPartvalue)"
                 }
             } 
             else if(CurrMode == ExceptionMode2){
-                if(state.dim >= SetPartvalue2){
-                    state.dim = SetPartvalue2
-                    log.debug "state.dim value is: $state.dim (SetPartvalue2)"
+                if(atomicState.dim >= SetPartvalue2){
+                    atomicState.dim = SetPartvalue2
+                    log.debug "atomicState.dim value is: $atomicState.dim (SetPartvalue2)"
                 }
             }
         }
         else {
             log.debug "Just PartValue eval (not depending on location mode)"
             if(Partvalue){
-                if(state.dim >= SetPartvalue){
-                    state.dim = SetPartvalue
-                    log.debug "state.dim value is: $state.dim (SetPartvalue alone)"
+                if(atomicState.dim >= SetPartvalue){
+                    atomicState.dim = SetPartvalue
+                    log.debug "atomicState.dim value is: $atomicState.dim (SetPartvalue alone)"
                 }
             }
         }
     }
-    if(state.luxvalue < maxluxOFF){     
-        state.StopTheApp = 0
+    if(atomicState.luxvalue < maxluxOFF){     
+        atomicState.StopTheApp = 0
         SetDimmers()
     }
     else {
-        state.dim = 0          
+        atomicState.dim = 0          
         log.debug "light set to 0 % because illuminance is high"
-        state.StopTheApp = 0
+        atomicState.StopTheApp = 0
         SetDimmers()
     }
 }
 def SetDimmers(){
 
-    dimmer.setLevel(state.dim) 
-    atomicState.LevelShouldBe = state.dim 
+    dimmer.setLevel(atomicState.dim) 
+    atomicState.LevelShouldBe = atomicState.dim 
     atomicState.LevelSetByApp = true 
 }
 private send(msg) {
