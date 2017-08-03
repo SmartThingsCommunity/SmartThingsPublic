@@ -79,10 +79,11 @@ def settings(){
             input "mode", "enum", title: "Heating or cooling?", options: ["heat","cool"]
         }
         section("Run only when there's been movement from (optional, leave blank to not require motion)..."){
-            input "motion", "capability.motionSensor", title: "Motion", required: false
-        }
-        section("Within this number of minutes..."){
-            input "minutes", "number", title: "Minutes", required: false
+            input "motion", "capability.motionSensor", title: "Motion", required: false, submitOnChange: true
+
+            if(motion){
+                input "minutes", "number", title: "Minutes", required: true, description: "write 0 if no required"
+            }
         }
         section(""){
             input "Modes", "mode", title: "Run this app only in these modes", required: true, multiple: true, submitOnChange: true
@@ -474,7 +475,7 @@ def Switches(){
         def AllOff = TotalOnSwitches == 0
 
         def totalOutlets = outlets.size()
-        log.info "TotalOnSwitches = $TotalOnSwitches ; totalOutlets = $totalOutlets && Current Temperature = $CurrTemp"
+        log.info "TotalOnSwitches = $TotalOnSwitches ; totalOutlets = $totalOutlets && Current Temperature = $CurrTemp && atomicState.ByApp = $atomicState.ByApp"
 
     if(!motion){
         atomicState.motion = true
@@ -493,7 +494,7 @@ def Switches(){
                                 atomicState.ByApp = true
                                 log.debug "atomicState.ByApp = $atomicState.ByApp"
 
-                                outlclosedets?.on()
+                                outlets?.on()
                                 log.debug "$outlets turned ON"
 
                             }
@@ -629,20 +630,21 @@ def Switches(){
 }
 def hasBeenRecentMotion(){
     def isActive = false
+
     if (motion && minutes) {
-        def deltaMinutes = minutes as Long
-        if (deltaMinutes) {
-            def motionEvents = motion.eventsSince(new Date(now() - (60000 * deltaMinutes)))
-            log.trace "Found ${motionEvents?.size() ?: 0} events in the last $deltaMinutes minutes"
-            if (motionEvents.find { it.value == "active" }) {
-                isActive = true
-            }
+        def deltaMinutes = minutes * 60000 as Long
+
+        def motionEvents = motion.eventsSince(new Date(now() - deltaMinutes))
+        log.trace "Found ${motionEvents?.size() ?: 0} events in the last $minutes minutes"
+        if (motionEvents.find { it.value == "active" }) {
+            isActive = true
+
         }
     }
     else {
         isActive = true
     }
-    isActive
+    return isActive
 }
 def OffOutSideOfMode(){
     atomicState.overrideWhileOutOfMode = false
@@ -705,17 +707,19 @@ def desiredTemp(){
     return desiredTemp
 }
 def justshutoff(){
-    outlets?.off()
+
     atomicState.overrideWhileWindowsOpen = false
     atomicState.override = false
     atomicState.ByApp = true
+    outlets?.off()
 
 }
 def justTurnOn(){
-    outlets?.on()
     atomicState.overrideWhileWindowsOpen = false
     atomicState.override = false
     atomicState.ByApp = true
+    outlets?.on()
+
 
 }
 def testloop(){
