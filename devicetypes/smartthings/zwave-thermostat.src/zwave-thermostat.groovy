@@ -264,13 +264,13 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanMod
 	def map = [name: "thermostatFanMode", data:[supportedThermostatFanModes: state.supportedFanModes]]
 	switch (cmd.fanMode) {
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_AUTO_LOW:
-			map.value = "auto" // "fanAuto"
+			map.value = "auto"
 			break
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_LOW:
-			map.value = "on" // "fanOn"
+			map.value = "on"
 			break
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_CIRCULATION:
-			map.value = "circulate" // "fanCirculate"
+			map.value = "circulate"
 			break
 	}
 	sendEvent(map)
@@ -381,9 +381,9 @@ def alterSetpoint(raise, setpoint) {
 	}
 	if (data.targetHeatingSetpoint && data.targetCoolingSetpoint) {
 		runIn(5, "updateHeatingSetpoint", [data: data, overwrite: true])
-	} else if (setpoint == "heatingSetpoint") {
+	} else if (setpoint == "heatingSetpoint" && data.targetHeatingSetpoint) {
 		runIn(5, "updateHeatingSetpoint", [data: data, overwrite: true])
-	} else if (setpoint == "coolingSetpoint") {
+	} else if (setpoint == "coolingSetpoint" && data.targetCoolingSetpoint) {
 		runIn(5, "updateCoolingSetpoint", [data: data, overwrite: true])
 	}
 }
@@ -424,20 +424,37 @@ def enforceSetpointLimits(setpoint, data) {
 
 def setHeatingSetpoint(degrees) {
 	if (degrees) {
-		def data = enforceSetpointLimits("heatingSetpoint",
-				[targetValue: getTempInDeviceScale(degrees.toDouble(), getTemperatureScale()),
-					heatingSetpoint: getTempInDeviceScale("heatingSetpoint"), coolingSetpoint: getTempInDeviceScale("coolingSetpoint")])
-		updateSetpoints(data)
+		state.heatingSetpoint = degrees.toDouble()
+		runIn(2, "updateSetpoints", [overwrite: true])
 	}
 }
 
 def setCoolingSetpoint(degrees) {
 	if (degrees) {
-		def data = enforceSetpointLimits("coolingSetpoint",
-				[targetValue: getTempInDeviceScale(degrees.toDouble(), getTemperatureScale()),
-					heatingSetpoint: getTempInDeviceScale("heatingSetpoint"), coolingSetpoint: getTempInDeviceScale("coolingSetpoint")])
-		updateSetpoints(data)
+		state.coolingSetpoint = degrees.toDouble()
+		runIn(2, "updateSetpoints", [overwrite: true])
 	}
+}
+
+def updateSetpoints() {
+	def deviceScale = (state.scale == 1) ? "F" : "C"
+	def data = [targetHeatingSetpoint: null, targetCoolingSetpoint: null]
+	def heatingSetpoint = getTempInLocalScale("heatingSetpoint")
+	def coolingSetpoint = getTempInLocalScale("coolingSetpoint")
+	if (state.heatingSetpoint) {
+		data = enforceSetpointLimits("heatingSetpoint", [targetValue: state.heatingSetpoint,
+				heatingSetpoint: heatingSetpoint, coolingSetpoint: coolingSetpoint])
+	}
+	if (state.coolingSetpoint) {
+		heatingSetpoint = data.targetHeatingSetpoint ? getTempInLocalScale(data.targetHeatingSetpoint, deviceScale) : heatingSetpoint
+		coolingSetpoint = data.targetCoolingSetpoint ? getTempInLocalScale(data.targetCoolingSetpoint, deviceScale) : coolingSetpoint
+		data = enforceSetpointLimits("coolingSetpoint", [targetValue: state.coolingSetpoint,
+				heatingSetpoint: heatingSetpoint, coolingSetpoint: coolingSetpoint])
+		data.targetHeatingSetpoint = data.targetHeatingSetpoint ?: heatingSetpoint
+	}
+	state.heatingSetpoint = null
+	state.coolingSetpoint = null
+	updateSetpoints(data)
 }
 
 def updateSetpoints(data) {
