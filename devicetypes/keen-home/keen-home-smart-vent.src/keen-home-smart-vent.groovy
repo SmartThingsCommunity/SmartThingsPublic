@@ -11,6 +11,7 @@ metadata {
         capability "Sensor"
         capability "Temperature Measurement"
         capability "Battery"
+        capability "Health Check"
 
         command "getLevel"
         command "getOnOff"
@@ -20,10 +21,7 @@ metadata {
         command "setZigBeeIdTile"
         command "clearObstruction"
 
-        fingerprint endpoint: "1",
-        profileId: "0104",
-        inClusters: "0000,0001,0003,0004,0005,0006,0008,0020,0402,0403,0B05,FC01,FC02",
-        outClusters: "0019"
+        fingerprint endpoint: "1", profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0006,0008,0020,0402,0403,0B05,FC01,FC02", outClusters: "0019"
     }
 
     // simulator metadata
@@ -40,10 +38,10 @@ metadata {
     // UI tile definitions
     tiles {
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-            state "on", action: "switch.off", icon: "st.vents.vent-open-text", backgroundColor: "#53a7c0"
+            state "on", action: "switch.off", icon: "st.vents.vent-open-text", backgroundColor: "#00a0dc"
             state "off", action: "switch.on", icon: "st.vents.vent-closed", backgroundColor: "#ffffff"
-            state "obstructed", action: "clearObstruction", icon: "st.vents.vent-closed", backgroundColor: "#ff0000"
-            state "clearing", action: "", icon: "st.vents.vent-closed", backgroundColor: "#ffff33"
+            state "obstructed", action: "clearObstruction", icon: "st.vents.vent-closed", backgroundColor: "#e86d13"
+            state "clearing", action: "", icon: "st.vents.vent-closed", backgroundColor: "#ffffff"
         }
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
             state "level", action:"switch level.setLevel"
@@ -274,6 +272,7 @@ private Map makeTemperatureResult(value) {
         name: 'temperature',
         value: "" + value,
         descriptionText: "${linkText} is ${value}°${temperatureScale}",
+        unit: temperatureScale
     ]
 }
 
@@ -465,15 +464,27 @@ def refresh() {
     getBattery()
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+    return refresh()
+}
+
 def configure() {
     log.debug "CONFIGURE"
+
+    // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     // get ZigBee ID by hidden tile because that's the only way we can do it
     setZigBeeIdTile()
 
     def configCmds = [
         // bind reporting clusters to hub
-        "zdo bind 0x${device.deviceNetworkId} 1 1 0x0006 {${device.zigbeeId}} {}", "delay 500",
+            //commenting out switch cluster bind as using wrapper onOffConfig of zigbee class
+        //"zdo bind 0x${device.deviceNetworkId} 1 1 0x0006 {${device.zigbeeId}} {}", "delay 500",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0008 {${device.zigbeeId}} {}", "delay 500",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0402 {${device.zigbeeId}} {}", "delay 500",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0403 {${device.zigbeeId}} {}", "delay 500",
@@ -509,5 +520,5 @@ def configure() {
         // "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
     ]
 
-    return configCmds + refresh()
+    return configCmds + zigbee.onOffConfig() + refresh()
 }

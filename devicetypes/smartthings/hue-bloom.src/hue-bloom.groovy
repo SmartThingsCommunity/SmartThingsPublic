@@ -1,3 +1,5 @@
+//DEPRECATED. INTEGRATION MOVED TO SUPER LAN CONNECT
+
 /**
  *  Hue Bloom
  *
@@ -16,6 +18,8 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
+		capability "Light"
 
 		command "setAdjustedColor"
         command "reset"
@@ -29,9 +33,9 @@ metadata {
 	tiles (scale: 2){
 		multiAttributeTile(name:"rich-control", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -43,7 +47,7 @@ metadata {
 		}
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
+			state "default", label:"Reset To White", action:"reset", icon:"st.lights.philips.hue-single"
 		}
 
 		standardTile("refresh", "device.refresh", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -51,8 +55,22 @@ metadata {
 		}
 
 		main(["rich-control"])
-		details(["rich-control", "colorTempSliderControl", "colorTemp", "reset", "refresh"])
+		details(["rich-control", "reset", "refresh"])
 	}
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
+}
+
+void installed() {
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 // parse events into attributes
@@ -75,118 +93,78 @@ def parse(description) {
 // handle commands
 void on() {
 	log.trace parent.on(this)
-	sendEvent(name: "switch", value: "on")
 }
 
 void off() {
 	log.trace parent.off(this)
-	sendEvent(name: "switch", value: "off")
-}
-
-void nextLevel() {
-	def level = device.latestValue("level") as Integer ?: 0
-	if (level <= 100) {
-		level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
-	}
-	else {
-		level = 25
-	}
-	setLevel(level)
 }
 
 void setLevel(percent) {
     log.debug "Executing 'setLevel'"
     if (verifyPercent(percent)) {
-        parent.setLevel(this, percent)
-        sendEvent(name: "level", value: percent, descriptionText: "Level has changed to ${percent}%")
-        sendEvent(name: "switch", value: "on")
+	    log.trace parent.setLevel(this, percent)
     }
 }
 
 void setSaturation(percent) {
     log.debug "Executing 'setSaturation'"
     if (verifyPercent(percent)) {
-        parent.setSaturation(this, percent)
-        sendEvent(name: "saturation", value: percent, displayed: false)
+	    log.trace parent.setSaturation(this, percent)
     }
 }
 
 void setHue(percent) {
     log.debug "Executing 'setHue'"
     if (verifyPercent(percent)) {
-        parent.setHue(this, percent)
-        sendEvent(name: "hue", value: percent, displayed: false)
+	    log.trace parent.setHue(this, percent)
     }
 }
 
 void setColor(value) {
-    log.debug "setColor: ${value}, $this"
     def events = []
     def validValues = [:]
 
     if (verifyPercent(value.hue)) {
-        events << createEvent(name: "hue", value: value.hue, displayed: false)
         validValues.hue = value.hue
     }
     if (verifyPercent(value.saturation)) {
-        events << createEvent(name: "saturation", value: value.saturation, displayed: false)
         validValues.saturation = value.saturation
     }
     if (value.hex != null) {
         if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
-            events << createEvent(name: "color", value: value.hex)
             validValues.hex = value.hex
         } else {
             log.warn "$value.hex is not a valid color"
         }
     }
     if (verifyPercent(value.level)) {
-        events << createEvent(name: "level", value: value.level, descriptionText: "Level has changed to ${value.level}%")
         validValues.level = value.level
     }
     if (value.switch == "off" || (value.level != null && value.level <= 0)) {
-        events << createEvent(name: "switch", value: "off")
         validValues.switch = "off"
     } else {
-        events << createEvent(name: "switch", value: "on")
         validValues.switch = "on"
     }
-    if (!events.isEmpty()) {
-        parent.setColor(this, validValues)
-    }
-    events.each {
-        sendEvent(it)
+    if (!validValues.isEmpty()) {
+	    log.trace parent.setColor(this, validValues)
     }
 }
 
 void reset() {
     log.debug "Executing 'reset'"
-    def value = [level:100, saturation:56, hue:23]
-    setAdjustedColor(value)
-    parent.poll()
+	def value = [hue:20, saturation:2]
+	setAdjustedColor(value)
 }
 
 void setAdjustedColor(value) {
     if (value) {
         log.trace "setAdjustedColor: ${value}"
         def adjusted = value + [:]
-        adjusted.hue = adjustOutgoingHue(value.hue)
         // Needed because color picker always sends 100
         adjusted.level = null
-        setColor(adjusted)
+	    setColor(adjusted)
     } else {
-        log.warn "Invalid color input"
-    }
-}
-
-void setColorTemperature(value) {
-    if (value) {
-        log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value)
-        sendEvent(name: "colorTemperature", value: value)
-        sendEvent(name: "switch", value: "on")
-    } else {
-        log.warn "Invalid color temperature"
+        log.warn "Invalid color input $value"
     }
 }
 
@@ -195,22 +173,6 @@ void refresh() {
     parent.manualRefresh()
 }
 
-def adjustOutgoingHue(percent) {
-	def adjusted = percent
-	if (percent > 31) {
-		if (percent < 63.0) {
-			adjusted = percent + (7 * (percent -30 ) / 32)
-		}
-		else if (percent < 73.0) {
-			adjusted = 69 + (5 * (percent - 62) / 10)
-		}
-		else {
-			adjusted = percent + (2 * (100 - percent) / 28)
-		}
-	}
-	log.info "percent: $percent, adjusted: $adjusted"
-	adjusted
-}
 
 def verifyPercent(percent) {
     if (percent == null)
@@ -222,3 +184,4 @@ def verifyPercent(percent) {
         return false
     }
 }
+

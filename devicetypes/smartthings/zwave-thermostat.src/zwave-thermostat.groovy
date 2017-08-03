@@ -15,11 +15,11 @@ metadata {
 	definition (name: "Z-Wave Thermostat", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Temperature Measurement"
-		capability "Relative Humidity Measurement"
 		capability "Thermostat"
 		capability "Configuration"
-		capability "Polling"
+		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 		
 		attribute "thermostatFanState", "string"
 
@@ -30,6 +30,7 @@ metadata {
 
 		fingerprint deviceId: "0x08"
 		fingerprint inClusters: "0x43,0x40,0x44,0x31"
+		fingerprint mfr:"0039", prod:"0011", model:"0001", deviceJoinName: "Honeywell Z-Wave Thermostat"
 	}
 
 	// simulator metadata
@@ -40,9 +41,9 @@ metadata {
 		status "auto"			: "command: 4003, payload: 03"
 		status "emergencyHeat"	: "command: 4003, payload: 04"
 
-		status "fanAuto"		: "command: 4403, payload: 00"
-		status "fanOn"			: "command: 4403, payload: 01"
-		status "fanCirculate"	: "command: 4403, payload: 06"
+		status "auto"			: "command: 4403, payload: 00" // "fanAuto"
+		status "on"				: "command: 4403, payload: 01" // "fanOn"
+		status "circulate"		: "command: 4403, payload: 06" // "fanCirculate
 
 		status "heat 60"        : "command: 4303, payload: 01 09 3C"
 		status "heat 68"        : "command: 4303, payload: 01 09 44"
@@ -72,8 +73,9 @@ metadata {
 	}
 
 	tiles {
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label:'${currentValue}°',
+		// Using standardTile instead of valueTile as it renders the icon better
+		standardTile("temperature", "device.temperature", width: 2, height: 2) {
+			state("temperature", label:'${currentValue}°', icon: "st.thermostat.ac.air-conditioning",
 				backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
@@ -86,19 +88,20 @@ metadata {
 			)
 		}
 		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
-			state "off", label:'${name}', action:"switchMode", nextState:"to_heat"
-			state "heat", label:'${name}', action:"switchMode", nextState:"to_cool"
-			state "cool", label:'${name}', action:"switchMode", nextState:"..."
-			state "auto", label:'${name}', action:"switchMode", nextState:"..."
-			state "emergency heat", label:'${name}', action:"switchMode", nextState:"..."
-			state "to_heat", label: "heat", action:"switchMode", nextState:"to_cool"
-			state "to_cool", label: "cool", action:"switchMode", nextState:"..."
+			state "off", action:"switchMode", nextState:"to_heat", icon: "st.thermostat.heating-cooling-off"
+			state "heat", action:"switchMode", nextState:"to_cool", icon: "st.thermostat.heat"
+			state "cool", action:"switchMode", nextState:"...", icon: "st.thermostat.cool"
+			state "auto", action:"switchMode", nextState:"...", icon: "st.thermostat.auto"
+			state "emergency heat", action:"switchMode", nextState:"...", icon: "st.thermostat.emergency-heat"
+			state "to_heat", action:"switchMode", nextState:"to_cool", icon: "st.thermostat.heat"
+			state "to_cool", action:"switchMode", nextState:"...", icon: "st.thermostat.cool"
 			state "...", label: "...", action:"off", nextState:"off"
 		}
 		standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
-			state "fanAuto", label:'${name}', action:"switchFanMode"
-			state "fanOn", label:'${name}', action:"switchFanMode"
-			state "fanCirculate", label:'${name}', action:"switchFanMode"
+			state "auto", action:"switchFanMode", nextState:"...", icon: "st.thermostat.fan-auto" // "fanAuto"
+			state "on", action:"switchFanMode", nextState:"...", icon: "st.thermostat.fan-on" // "fanOn"
+			state "circulate", action:"switchFanMode", nextState:"...", icon: "st.thermostat.fan-circulate" // "fanCirculate"
+			state "...", label: "...", nextState:"..."
 		}
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
 			state "setHeatingSetpoint", action:"quickSetHeat", backgroundColor:"#d04e00"
@@ -113,14 +116,28 @@ metadata {
 			state "cool", label:'${currentValue}° cool', backgroundColor:"#ffffff"
 		}
 		standardTile("refresh", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
-			state "default", action:"polling.poll", icon:"st.secondary.refresh"
-		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
-			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
+			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		main "temperature"
-		details(["temperature", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh", "configure"])
+		details(["temperature", "mode", "fanMode", "heatSliderControl", "heatingSetpoint", "coolSliderControl", "coolingSetpoint", "refresh"])
 	}
+}
+
+def installed(){
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format()))
+	initialize()
+}
+
+def updated(){
+	initialize()
+}
+
+def initialize() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	unschedule()
+	runEvery5Minutes("refresh")
+	refresh()
 }
 
 def parse(String description)
@@ -138,6 +155,7 @@ def parse(String description)
 		]
 		if (map.name == "thermostatMode") {
 			state.lastTriedMode = map.value
+			map.data = [supportedThermostatModes:state.supportedThermostatModes]
 			if (map.value == "cool") {
 				map2.value = device.latestValue("coolingSetpoint")
 				log.info "THERMOSTAT, latest cooling setpoint = ${map2.value}"
@@ -161,6 +179,7 @@ def parse(String description)
 		}
 	} else if (map.name == "thermostatFanMode" && map.isStateChange) {
 		state.lastTriedFanMode = map.value
+		map.data = [supportedThermostatFanModes: state.supportedThermostatFanModes]
 	}
 	log.debug "Parse returned $result"
 	result
@@ -279,13 +298,13 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanMod
 	def map = [:]
 	switch (cmd.fanMode) {
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_AUTO_LOW:
-			map.value = "fanAuto"
+			map.value = "auto" // "fanAuto"
 			break
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_LOW:
-			map.value = "fanOn"
+			map.value = "on" // "fanOn"
 			break
 		case physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeReport.FAN_MODE_CIRCULATION:
-			map.value = "fanCirculate"
+			map.value = "circulate" // "fanCirculate"
 			break
 	}
 	map.name = "thermostatFanMode"
@@ -294,23 +313,27 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanMod
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSupportedReport cmd) {
-	def supportedModes = ""
-	if(cmd.off) { supportedModes += "off " }
-	if(cmd.heat) { supportedModes += "heat " }
-	if(cmd.auxiliaryemergencyHeat) { supportedModes += "emergency heat " }
-	if(cmd.cool) { supportedModes += "cool " }
-	if(cmd.auto) { supportedModes += "auto " }
+	def supportedModes = []
+	if(cmd.off) { supportedModes << "off" }
+	if(cmd.heat) { supportedModes << "heat" }
+	if(cmd.cool) { supportedModes << "cool" }
+	if(cmd.auto) { supportedModes << "auto" }
+	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" }
 
-	state.supportedModes = supportedModes
+	state.supportedThermostatModes = supportedModes
+	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
+	return [:]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanModeSupportedReport cmd) {
-	def supportedFanModes = ""
-	if(cmd.auto) { supportedFanModes += "fanAuto " }
-	if(cmd.low) { supportedFanModes += "fanOn " }
-	if(cmd.circulation) { supportedFanModes += "fanCirculate " }
+	def supportedFanModes = []
+	if(cmd.auto) { supportedFanModes << "auto" } // "fanAuto "
+	if(cmd.circulation) { supportedFanModes << "circulate" } // "fanCirculate"
+	if(cmd.low) { supportedFanModes << "on" } // "fanOn"
 
-	state.supportedFanModes = supportedFanModes
+	state.supportedThermostatFanModes = supportedFanModes
+	sendEvent(name: "supportedThermostatFanModes", value: supportedFanModes, displayed: false)
+	return [:]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -322,15 +345,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 // Command Implementations
-def poll() {
-	delayBetween([
-		zwave.sensorMultilevelV3.sensorMultilevelGet().format(), // current temperature
-		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1).format(),
-		zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2).format(),
-		zwave.thermostatModeV2.thermostatModeGet().format(),
-		zwave.thermostatFanModeV3.thermostatFanModeGet().format(),
-		zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format()
-	], 2300)
+def refresh() {
+	def cmds = []
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeGet().format())
+	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV2.sensorMultilevelGet().format()) // current temperature
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format())
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1).format())
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2).format())
+	sendHubCommand(cmds)
 }
 
 def quickSetHeat(degrees) {
@@ -393,22 +418,22 @@ def setCoolingSetpoint(Double degrees, Integer delay = 30000) {
 	], delay)
 }
 
-def configure() {
-	delayBetween([
-		zwave.thermostatModeV2.thermostatModeSupportedGet().format(),
-		zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format(),
-		zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
-	], 2300)
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	log.debug "ping() called"
+	poll()
 }
 
 def modes() {
-	["off", "heat", "cool", "auto", "emergency heat"]
+	return state.supportedThermostatModes
 }
 
 def switchMode() {
 	def currentMode = device.currentState("thermostatMode")?.value
-	def lastTriedMode = state.lastTriedMode ?: currentMode ?: "off"
-	def supportedModes = getDataByName("supportedModes")
+	def lastTriedMode = state.lastTriedMode ?: currentMode ?: ["off"]
+	def supportedModes = getDataByName("supportedThermostatModes")
 	def modeOrder = modes()
 	def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
 	def nextMode = next(lastTriedMode)
@@ -425,7 +450,7 @@ def switchMode() {
 }
 
 def switchToMode(nextMode) {
-	def supportedModes = getDataByName("supportedModes")
+	def supportedModes = getDataByName("supportedThermostatModes")
 	if(supportedModes && !supportedModes.contains(nextMode)) log.warn "thermostat mode '$nextMode' is not supported"
 	if (nextMode in modes()) {
 		state.lastTriedMode = nextMode
@@ -437,27 +462,27 @@ def switchToMode(nextMode) {
 
 def switchFanMode() {
 	def currentMode = device.currentState("thermostatFanMode")?.value
-	def lastTriedMode = state.lastTriedFanMode ?: currentMode ?: "off"
-	def supportedModes = getDataByName("supportedFanModes") ?: "fanAuto fanOn"
-	def modeOrder = ["fanAuto", "fanCirculate", "fanOn"]
+	def lastTriedMode = state.lastTriedFanMode ?: currentMode ?: ["off"]
+	def supportedModes = getDataByName("supportedThermostatFanModes") ?: ["auto", "on"]
+	def modeOrder = state.supportedThermostatFanModes
 	def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
 	def nextMode = next(lastTriedMode)
-	while (!supportedModes?.contains(nextMode) && nextMode != "fanAuto") {
+	while (!supportedModes?.contains(nextMode) && nextMode != "auto") { // "fanAuto"
 		nextMode = next(nextMode)
 	}
 	switchToFanMode(nextMode)
 }
 
 def switchToFanMode(nextMode) {
-	def supportedFanModes = getDataByName("supportedFanModes")
+	def supportedFanModes = getDataByName("supportedThermostatFanModes")
 	if(supportedFanModes && !supportedFanModes.contains(nextMode)) log.warn "thermostat mode '$nextMode' is not supported"
 
 	def returnCommand
-	if (nextMode == "fanAuto") {
+	if (nextMode == "auto") { // "fanAuto"
 		returnCommand = fanAuto()
-	} else if (nextMode == "fanOn") {
+	} else if (nextMode == "on") { // "fanOn"
 		returnCommand = fanOn()
-	} else if (nextMode == "fanCirculate") {
+	} else if (nextMode == "circulate") { // "fanCirculate"
 		returnCommand = fanCirculate()
 	} else {
 		log.debug("no fan mode '$nextMode'")

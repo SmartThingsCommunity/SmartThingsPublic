@@ -22,6 +22,8 @@ metadata {
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Temperature Measurement"
+		capability "Health Check"
+		capability "Sensor"
 
 		command "enrollResponse"
 
@@ -40,8 +42,8 @@ metadata {
 
 	tiles {
     	standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
 		}
 
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
@@ -180,22 +182,17 @@ private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
 
-    def result = [
-    	name: 'battery'
-    ]
+    def result = [:]
 
-	def volts = rawValue / 10
-	def descriptionText
-	if (volts > 3.5) {
-		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
-	}
-	else {
+	if (!(rawValue == 0 || rawValue == 255)) {
+		def volts = rawValue / 10
 		def minVolts = 2.1
-    	def maxVolts = 3.0
+		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		def roundedPct = Math.round(pct * 100)
 		result.value = Math.min(100, roundedPct)
 		result.descriptionText = "${linkText} battery was ${result.value}%"
+		result.name = 'battery'
 	}
 
 	return result
@@ -213,7 +210,8 @@ private Map getTemperatureResult(value) {
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+		unit: temperatureScale
 	]
 }
 
@@ -228,44 +226,42 @@ private Map getContactResult(value) {
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	return zigbee.readAttribute(0x0402, 0x0000) // Read the Temperature Cluster
+}
+
 def refresh()
 {
 	log.debug "Refreshing Temperature and Battery"
-	[
+	def refreshCmds = [
 
         "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
 		"st rattr 0x${device.deviceNetworkId} 1 1 0x20"
 
 	]
+
+	return refreshCmds + enrollResponse()
 }
 
 def configure() {
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 		log.debug "Configuring Reporting, IAS CIE, and Bindings."
-	def configCmds = [
+	def enrollCmds = [
     	"delay 1000",
 
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 
-        "zcl global send-me-a-report 1 0x20 0x20 600 3600 {01}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-        "zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-
         //"raw 0x500 {01 23 00 00 00}", "delay 200",
         //"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}",
-
-        "delay 500"
 	]
-    return configCmds + enrollResponse() + refresh() // send refresh cmds as part of config
+    return enrollCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {

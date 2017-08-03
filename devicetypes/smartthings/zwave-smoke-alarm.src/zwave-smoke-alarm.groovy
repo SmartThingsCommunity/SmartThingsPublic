@@ -17,10 +17,11 @@ metadata {
 		capability "Carbon Monoxide Detector"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		attribute "alarmState", "string"
 
-		fingerprint deviceId: "0xA100", inClusters: "0x20,0x80,0x70,0x85,0x71,0x72,0x86"
+		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)"
 	}
 
 	simulator {
@@ -51,6 +52,20 @@ metadata {
 	}
 }
 
+def installed() {
+// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	def cmds = []
+	createSmokeOrCOEvents("allClear", cmds) // allClear to set inital states for smoke and CO
+	cmds.each { cmd -> sendEvent(cmd) }
+}
+
+def updated() {
+// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def parse(String description) {
 	def results = []
 	if (description.startsWith("Err")) {
@@ -64,7 +79,6 @@ def parse(String description) {
 	log.debug "'$description' parsed to ${results.inspect()}"
 	return results
 }
-
 
 def createSmokeOrCOEvents(name, results) {
 	def text = null
@@ -91,6 +105,12 @@ def createSmokeOrCOEvents(name, results) {
 		case "carbonMonoxideClear":
 			text = "$device.displayName carbon monoxide is clear"
 			results << createEvent(name: "carbonMonoxide", value: "clear", descriptionText: text, displayed: false)
+			name = "clear"
+			break
+		case "allClear":
+			text = "$device.displayName all clear"
+			results << createEvent(name: "smoke",          value: "clear", descriptionText: text, displayed: false)
+			results << createEvent(name: "carbonMonoxide", value: "clear", displayed: false)
 			name = "clear"
 			break
 		case "testClear":

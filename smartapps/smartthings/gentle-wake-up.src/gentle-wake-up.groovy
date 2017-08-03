@@ -454,17 +454,23 @@ def sendStopEvent(source) {
 		eventData.value += "cancelled"
 	}
 
+	// send 100% completion event
+	sendTimeRemainingEvent(100)
+
+	// send a non-displayed 0% completion to reset tiles
+	sendTimeRemainingEvent(0, false)
+
+	// send sessionStatus event last so the event feed is ordered properly
 	sendControllerEvent(eventData)
-	sendTimeRemainingEvent(0)
 }
 
-def sendTimeRemainingEvent(percentComplete) {
+def sendTimeRemainingEvent(percentComplete, displayed = true) {
 	log.trace "sendTimeRemainingEvent(${percentComplete})"
 
 	def percentCompleteEventData = [
 			name: "percentComplete",
 			value: percentComplete as int,
-			displayed: true,
+			displayed: displayed,
 			isStateChange: true
 	]
 	sendControllerEvent(percentCompleteEventData)
@@ -474,7 +480,7 @@ def sendTimeRemainingEvent(percentComplete) {
 	def timeRemainingEventData = [
 			name: "timeRemaining",
 			value: displayableTime(timeRemaining),
-			displayed: true,
+			displayed: displayed,
 			isStateChange: true
 	]
 	sendControllerEvent(timeRemainingEventData)
@@ -608,8 +614,6 @@ private completion() {
 	handleCompletionMessaging()
 
 	handleCompletionModesAndPhrases()
-
-	sendTimeRemainingEvent(100)
 }
 
 private handleCompletionSwitches() {
@@ -761,7 +765,7 @@ String displayableTime(timeRemaining) {
 		return "${minutes}:00"
 	}
 	def fraction = "0.${parts[1]}" as double
-	def seconds = "${60 * fraction as int}".padRight(2, "0")
+	def seconds = "${60 * fraction as int}".padLeft(2, "0")
 	return "${minutes}:${seconds}"
 }
 

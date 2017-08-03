@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 		capability "Switch"
 		capability "Polling"
 		capability "Power Meter"
@@ -25,10 +25,13 @@ metadata {
 		capability "Switch Level"
 		capability "Sensor"
 		capability "Actuator"
+		capability "Health Check"
+		capability "Light"
 
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x32"
+		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeon Labs Micro Smart Dimmer 2E"
 	}
 
 	simulator {
@@ -56,9 +59,9 @@ metadata {
 
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#79b821"
+			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#00A0DC"
 			state "turningOff", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ffffff"
 		}
 		valueTile("power", "device.power") {
@@ -82,11 +85,21 @@ metadata {
 	details(["switch", "power", "energy", "levelSliderControl", "refresh", "reset"])
 }
 
+def getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x26: 3,  // SwitchMultilevel
+		0x56: 1,  // Crc16Encap
+		0x70: 1,  // Configuration
+		0x32: 3,  // Meter
+	]
+}
+
 // parse events into attributes
 def parse(String description) {
 	def result = null
 	if (description != "updated") {
-		def cmd = zwave.parse(description, [0x20: 1, 0x26: 3, 0x70: 1, 0x32:3])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 	        log.debug("'$description' parsed to $result")
@@ -97,7 +110,15 @@ def parse(String description) {
     result
 }
 
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	response(refresh())
 }
 
@@ -111,6 +132,21 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
 	dimmerEvents(cmd)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = commandClassVersions
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	[:]
 }
 
 def dimmerEvents(physicalgraph.zwave.Command cmd) {
@@ -160,6 +196,14 @@ def poll() {
 		zwave.meterV2.meterGet(scale: 0).format(),
 		zwave.meterV2.meterGet(scale: 2).format(),
 	], 1000)
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	log.debug "ping() called"
+	refresh()
 }
 
 def refresh() {

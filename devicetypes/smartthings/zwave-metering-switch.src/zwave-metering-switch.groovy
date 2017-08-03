@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
@@ -21,10 +21,13 @@ metadata {
 		capability "Refresh"
 		capability "Configuration"
 		capability "Sensor"
+		capability "Light"
+		capability "Health Check"
 
 		command "reset"
 
 		fingerprint inClusters: "0x25,0x32"
+		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeon Labs Micro Smart Switch"
 	}
 
 	// simulator metadata
@@ -50,7 +53,7 @@ metadata {
 	// tile definitions
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
 			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 		}
 		valueTile("power", "device.power") {
@@ -71,7 +74,14 @@ metadata {
 	}
 }
 
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	try {
 		if (!state.MSR) {
 			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
@@ -79,10 +89,19 @@ def updated() {
 	} catch (e) { log.debug e }
 }
 
+def getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x32: 1,  // SwitchMultilevel
+		0x56: 1,  // Crc16Encap
+		0x72: 2,  // ManufacturerSpecific
+	]
+}
+
 def parse(String description) {
 	def result = null
-	if(description == "updated") return 
-	def cmd = zwave.parse(description, [0x20: 1, 0x32: 1, 0x72: 2])
+	if(description == "updated") return
+	def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
@@ -147,6 +166,16 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	result
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = commandClassVersions
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "$device.displayName: Unhandled: $cmd"
 	[:]
@@ -176,6 +205,14 @@ def poll() {
 		zwave.meterV2.meterGet(scale: 0).format(),
 		zwave.meterV2.meterGet(scale: 2).format()
 	])
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	log.debug "ping() called"
+	refresh()
 }
 
 def refresh() {

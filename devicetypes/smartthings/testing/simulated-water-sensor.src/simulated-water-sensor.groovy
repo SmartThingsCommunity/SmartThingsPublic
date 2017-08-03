@@ -15,6 +15,7 @@ metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Water Sensor", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Water Sensor"
+		capability "Sensor"
         
         command "wet"
         command "dry"
@@ -28,7 +29,7 @@ metadata {
 	tiles {
 		standardTile("water", "device.water", width: 2, height: 2) {
 			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff", action: "wet"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0", action: "dry"
+			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC", action: "dry"
 		}
 		standardTile("wet", "device.water", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'Wet', action:"wet", icon: "st.alarm.water.wet"

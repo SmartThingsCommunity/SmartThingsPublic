@@ -30,6 +30,7 @@ metadata {
 
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A"
+		fingerprint mfr:"0086", prod:"0102", model:"0064", deviceJoinName: "Aeon Labs MultiSensor 6"
 	}
 
 	simulator {
@@ -83,8 +84,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC"
+				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 			}
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
@@ -104,7 +105,7 @@ metadata {
 		}
 
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
-			state "illuminance", label:'${currentValue} ${unit}', unit:"lux"
+			state "illuminance", label:'${currentValue} lux', unit:""
 		}
 
 		valueTile("ultravioletIndex", "device.ultravioletIndex", inactiveLabel: false, width: 2, height: 2) {
@@ -128,7 +129,14 @@ metadata {
 	}
 }
 
+def installed(){
+// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def updated() {
+// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	log.debug "Updated with settings: ${settings}"
 	log.debug "${device.displayName} is now ${device.latestValue("powerSupply")}"
 
@@ -327,10 +335,14 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: cmd.toString(), isStateChange: false)
 }
 
-def configure() {
-	// allow device user configured or default 16 min to check in; double the periodic reporting interval
-	sendEvent(name: "checkInterval", value: 2* (timeOptionValueMap[reportInterval] ?: (2*8*60)), displayed: false)
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	secure(zwave.batteryV1.batteryGet())
+}
 
+def configure() {
 	// This sensor joins as a secure device if you double-click the button to include it
 	log.debug "${device.displayName} is configuring its settings"
 	def request = []
