@@ -18,6 +18,7 @@ metadata {
         capability "Sensor"
         capability "Smoke Detector" //attributes: smoke ("detected","clear","tested")
         capability "Temperature Measurement" //attributes: temperature
+        capability "Health Check"
         attribute "tamper", "enum", ["detected", "clear"]
         attribute "heatAlarm", "enum", ["overheat detected", "clear", "rapid temperature rise", "underheat detected"]
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x9C, 0x98, 0x7A", outClusters: "0x20, 0x8B"
@@ -339,6 +340,8 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def configure() {
+    // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+    sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 // This sensor joins as a secure device if you tripple-click the button to include it
     log.debug "configure() >> isSecured() : ${isSecured()}"
     if (!isSecured()) {
