@@ -1,12 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.2.9e - 7/13/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.0 - 8/3/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.9 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.2.9e (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
+ *  Version 2.3.0 (8/3/17) GUI optimizations-Removed device specific commands (under Settings) and move them to the device areas and grouped any device voice settings, added Foobot Air Quality Monitor options
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -40,7 +41,7 @@ preferences {
         	page name:"pageMsgDelete"    
         page name:"pageSwitches"
         page name:"pageDoors"
-        page name:"pageTemps"
+        page name:"pageEnviro"
         page name:"pageSpeakers"
         	page name: "pageMemorySlots"
             	page name: "pageSONOSReset"
@@ -55,18 +56,17 @@ preferences {
         	page name:"pageMacros"
             page name:"pageMsgQue"
             	page name:"pagePriQueue"
-                page name:"pageMQURL"
             page name:"pageWeather"
             page name:"pageVoiceRPT"
             page name:"pageSchdr"
             	page name: "pageSchdList"
         page name:"pageSettings"
+        	page name:"pageDeviceVoice"
             page name:"pageReset"
             	page name:"pageConfirmation"
                 page name:"pageContCommands"
             page name:"pageDefaultValue"
             page name:"pageCustomColor"
-            page name:"pageCustomDevices"
             page name:"pageLimitValue"
             page name:"pageGlobalVariables"
         page name:"pageAbout"
@@ -95,9 +95,9 @@ def mainPageParent() {
         }
         if (msgQueueGUI && mqCounts(msgQueueGUI)) section ("Message Queues"){ href "pageMQGUI", title: "Message Queue", description: mqCounts(msgQueueGUI) + " - Tap to read", state: "complete", image:imgURL() + "mailbox.png" }            
         section("Items to interface to Alexa") {
-            href "pageSwitches", title: "Switches/Dimmers/Colored Lights", description:getDesc(switchesSel() || dimmersSel() || cLightsSel() || cLightsKSel()), state: switchesSel() || dimmersSel() || cLightsSel() || cLightsKSel() ? "complete" : null, image:imgURL() + "power.png"
+            href "pageSwitches", title: "Lighting/Switches", description:getDesc(switchesSel() || dimmersSel() || cLightsSel() || cLightsKSel()), state: switchesSel() || dimmersSel() || cLightsSel() || cLightsKSel() ? "complete" : null, image:imgURL() + "power.png"
             href "pageDoors", title: "Doors/Windows/Locks", description: getDesc(doorsSel() || locksSel() || ocSensorsSel() || shadesSel()), state: doorsSel() || locksSel() || ocSensorsSel() || shadesSel() ? "complete" : null, image: imgURL() + "lock.png"
-            href "pageTemps", title: "Thermostats/Temperature/Humidity", description:getDesc(tstatsSel() || tempsSel() || humidSel()), state: tstatsSel() || tempsSel() || humidSel() ? "complete" : null, image: imgURL() + "temp.png"
+            href "pageEnviro", title: "Environmentals", description:getDesc(tstatsSel() || tempsSel() || humidSel() || fooBotSel()), state: tstatsSel() || tempsSel() || humidSel() || fooBotSel() ? "complete" : null, image: imgURL() + "temp.png"
             href "pageSpeakers", title: "Connected Speakers", description: getDesc(speakersSel()), state: speakersSel() ? "complete" : null, image:imgURL() + "speaker.png"     
             href "pageSensors", title: "Other Sensors", description:getDesc(waterSel() || presenceSel() || motionSel() || accelerationSel()), state: waterSel() || presenceSel() || motionSel() || accelerationSel() ? "complete" : null, image: imgURL() + "sensor.png"
             href "pageHomeControl", title: "Modes/SHM/Routines", description:getDesc(listModes || listRoutines || listSHM), state: (listModes|| listRoutines|| listSHM ? "complete" : null), image: imgURL() + "modes.png"
@@ -213,24 +213,29 @@ def pageSchdList() {
 }
 def pageSwitches(){
     dynamicPage(name: "pageSwitches", install: false, uninstall: false) {
-        section { paragraph "Switches/Dimmers/Colored lights", image: imgURL() + "power.png"} 
+        section { paragraph "Lighting/Switches", image: imgURL() + "power.png"} 
         section("Choose the devices to interface", hideWhenEmpty: true) {
             input "switches", "capability.switch", title: "Choose Switches (On/Off/Toggle/Status)", multiple: true, required: false
             input "dimmers", "capability.switchLevel", title: "Choose Dimmers (On/Off/Toggle/Level/Status)", multiple: true, required: false
-            input "cLights", "capability.colorControl", title: "Choose Colored Lights (On/Off/Toggle/Level/Color/Status)", multiple: true, required: false
+            input "cLights", "capability.colorControl", title: "Choose Colored Lights (On/Off/Toggle/Level/Color/Status)", multiple: true, required: false, submitOnChange: true
             input "cLightsK", "capability.colorTemperature", title: "Choose Temperature (Kelvin) Lights (On/Off/Toggle/Level/Temperature/Status)", multiple: true, required: false, submitOnChange: true
         }
         if (deviceAlias){
             section("Devices that can have aliases", hideWhenEmpty: true) {
                 input "switchesAlias", "capability.switch", title: "Choose Switches", multiple: true, required: false
                 input "dimmersAlias", "capability.switchLevel", title: "Choose Dimmers", multiple: true, required: false
-                input "cLightsAlias", "capability.colorControl", title: "Choose Colored Lights", multiple: true, required: false
+                input "cLightsAlias", "capability.colorControl", title: "Choose Colored Lights", multiple: true, required: false, submitOnChange: true
                 input "cLightsKAlias", "capability.colorTemperature", title: "Choose Temperature (Kelvin) Lights", multiple: true, required: false, submitOnChange: true
             }
         }
         if (cLightsKSel()){
         	section ("Notes on Temperature (Kelvin) Lights"){
             	paragraph "The following color temperatures are valid:\nSoft White, Warm White, Cool White, Daylight White", image: imgURL() + "info.png"
+            }
+        }
+        if (cLightsSel()){
+        	section ("Colored Light model specific commands"){
+            	input "osramCMD", "bool", title: "OSRAM Specialized Device Handeler (Loop/Pulse)", defaultValue: false
             }
         }
 	}
@@ -269,28 +274,40 @@ def pageDoors() {
         }
 	}    
 }
-def pageTemps(){
-    dynamicPage(name: "pageTemps",  install: false, uninstall: false) {
-        section {paragraph "Thermostats/Temperature/Humidity", image: imgURL() + "temp.png"}
+def pageEnviro(){
+    dynamicPage(name: "pageEnviro",  install: false, uninstall: false) {
+        section {paragraph "Environmentals", image: imgURL() + "temp.png"}
         section("Choose the devices to interface", hideWhenEmpty: true) {
             input "tstats", "capability.thermostat", title: "Choose Thermostats (Temperature Setpoint/Status)", multiple: true, required: false, submitOnChange:true 
             input "temps", "capability.temperatureMeasurement", title: "Choose Temperature Devices (Status)", multiple: true, required: false
         	input "humid", "capability.relativeHumidityMeasurement", title: "Choose Humidity Devices (Status)", multiple: true, required: false
+            input "fooBot", "capability.carbonDioxideMeasurement", title: "Choose Foobot Air Quality Monitor (Status)", multiple: true, required: false, submitOnChange:true 
         }
         if (deviceAlias){
             section("Devices that can have aliases", hideWhenEmpty: true) {
             	input "tstatsAlias", "capability.thermostat", title: "Choose Thermostats", multiple: true, required: false, submitOnChange:true
             	input "tempsAlias", "capability.temperatureMeasurement", title: "Choose Temperature Devices", multiple: true, required: false
         		input "humidAlias", "capability.relativeHumidityMeasurement", title: "Choose Humidity Devices", multiple: true, required: false
+                input "fooBotAlias", "capability.carbonDioxideMeasurement", title: "Choose Foobot Air Quality Monitor", multiple: true, required: false, submitOnChange: true
             }
         }
         if (tstatsSel()){
-        	section("Default Thermostat Commands"){
+            section("Default Thermostat Commands"){
             	if (!tstatCool) input "tstatHeat", "bool", title: "Set Heating Setpoint By Default", defaultValue:false, submitOnChange:true
             	if (!tstatHeat) input "tstatCool", "bool", title: "Set Cooling Setpoint By Default", defaultValue:false, submitOnChange:true
     		}
+            section("Thermostat model specific commands"){
+                input "ecobeeCMD", "bool", title: "Ecobee Specific Thermostat Modes\n(Home/Away/Sleep/Resume Program)", defaultValue: false, submitOnChange: true
+                if (ecobeeCMD) input "MyEcobeeCMD", "bool", title: "MyEcobee Specific Tips\n(Get Tips/Play Tips/Erase Tips)", defaultValue: false             
+                input "nestCMD", "bool", title: "Nest-Specific Thermostat Presence Commands (Home/Away)", defaultValue: false, submitOnChange: true
+                if (nestCMD) input "nestMGRCMD", "bool", title: "NST Manager Specific Reports (Report)", defaultValue: false
+                input "stelproCMD", "bool", title: "Stelpro Baseboard\nThermostat Modes (Eco/Comfort)", defaultValue:false
+            }
     	}
-    }
+        if (fooBotSel()) {
+        	section("Foobot Refresh"){ input "fooBotPoll", "bool", title: "Refresh Foobot Data Before Speaking Status", defaultValue: false }
+    	}
+	}
 }
 def pageSpeakers(){
     dynamicPage(name: "pageSpeakers",  install: false, uninstall: false) {
@@ -298,7 +315,17 @@ def pageSpeakers(){
         section("Choose the devices to interface", hideWhenEmpty: true) { input "speakers", "capability.musicPlayer", title: "Choose Speakers (Speaker Control, Status)", multiple: true, required: false, submitOnChange: true }
         if (deviceAlias) section("Devices that can have aliases", hideWhenEmpty: true) { input "speakersAlias", "capability.musicPlayer", title: "Choose Speakers", multiple: true, required: false, submitOnChange: true }
         if (sonosCMD && speakersSel() && sonosMemoryCount) section("Memory slots"){ href "pageMemorySlots", title: "SONOS Memory Slots", description: memoryDesc(), state: memoryState() } 
-    }
+    	if (speakersSel()){
+        	section("Speaker model specific commands"){
+            	input "sonosCMD", "bool", title: "SONOS Options (Memory Slots)", defaultValue: false, submitOnChange: true
+                if (sonosCMD) {
+                    input "sonosMemoryCount", "enum", title: "Maximum number of SONOS memory slots", options: optionCount(2,10), defaultValue: 2, required: false 
+                    href "pageSONOSReset", title: "Reset Song Database", description: "Tap reset the songs database", image: imgURL() + "warning.png" 
+                    paragraph "It is recommended you reset the song database ONLY if you are having issues playing the songs in the list. The database will be rebuilt from the recently played songs from the speakers upon exiting the SmartApp."
+				}
+            }
+    	}
+	}
 }
 def pageMemorySlots(){
     dynamicPage(name: "pageMemorySlots") {
@@ -318,15 +345,20 @@ def pageSensors(){
         section("Choose the devices to interface", hideWhenEmpty: true) {
             input "acceleration", "capability.accelerationSensor", title: "Choose Acceleration Sensors (Status)", multiple: true, required: false
             input "motion", "capability.motionSensor", title: "Choose Motion Sensors (Status)", multiple: true, required: false
-            input "presence", "capability.presenceSensor", title: vPresenceCMD ? "Choose Presence Sensors (Status/Home/Away)" : "Choose Presence Sensors (Status)", multiple: true, required: false
+            input "presence", "capability.presenceSensor", title: vPresenceCMD ? "Choose Presence Sensors (Status/Home/Away)" : "Choose Presence Sensors (Status)", multiple: true, required: false, submitOnChange: true
             input "water", "capability.waterSensor", title: "Choose Water Sensors (Status)", multiple: true, required: false   
         }
         if (deviceAlias){
             section("Devices that can have aliases", hideWhenEmpty: true) {
             	input "accelerationAlias", "capability.accelerationSensor", title: "Choose Acceleration Sensors", multiple: true, required: false
             	input "motionAlias", "capability.motionSensor", title: "Choose Motion Sensors", multiple: true, required: false
-            	input "presenceAlias", "capability.presenceSensor", title: "Choose Presence Sensors", multiple: true, required: false
+            	input "presenceAlias", "capability.presenceSensor", title: "Choose Presence Sensors", multiple: true, required: false, submitOnChange: true
             	input "waterAlias", "capability.waterSensor", title: "Choose Water Sensors", multiple: true, required: false
+            }
+		}
+        if (presenceSel()){
+        	section("Presence sensor specific commands"){
+            	input "vPresenceCMD", "bool", title: "Virtual Presence (Home/Away)", defaultValue: false, submitOnChange: true
             }
 		}
     }
@@ -429,9 +461,6 @@ def pageAliasDelFinal(){
 def pageVoiceRPT() {
     dynamicPage(name: "pageVoiceRPT", install: false, uninstall: false) {
         section{ paragraph "Voice Reports", image: imgURL() + "voice.png" }
-        section ("Voice reports global options"){
-        	input "advReportOutput", "bool", title: "Advanced Voice Report Filters", defaultValue: false, submitOnChange: true
-        }
         def children = getVR(), vrCount = children.size(), duplicates = children.label.findAll{children.label.count(it)>1}.unique(), aaVRVer
         if (vrCount) children.each { aaVRVer=it.versionInt()}   
 		if (duplicates || (vrCount && (aaVRVer < vrReq()))){
@@ -450,11 +479,10 @@ def pageWeather() {
     dynamicPage(name: "pageWeather", install: false, uninstall: false) {
         section{ paragraph "Weather Reports", image: imgURL() + "weather.png" }
         def children = getWR(), wrCount = children.size(), duplicates = children.label.findAll{children.label.count(it)>1}.unique(), aaWRVer
-        if (wrCount) children.each { aaWRVer=it.versionInt()}
-        log.debug wrCount && (aaWRVer < wrReq())
+        if (wrCount) children.each { aaWRVer=it.versionInt() }
         if (duplicates || (wrCount && (aaWRVer < wrReq()))){
         	section ("Warning"){
-			if (duplicates) paragraph "You have two or more weather reports with the same name. Please ensure each report has a unique name and also does not conflict with device names or other extensions.", image: imgURL() + "caution.png"
+        		if (duplicates) paragraph "You have two or more weather reports with the same name. Please ensure each report has a unique name and also does not conflict with device names or other extensions.", image: imgURL() + "caution.png"
         		if (wrCount && (aaWRVer < wrReq())) paragraph "You are using an outdated version of the weather report extension. Please update the software and try again.", image: imgURL() + "caution.png" 
         	}
         }
@@ -467,9 +495,6 @@ def pageWeather() {
 def pageMacros() {
     dynamicPage(name: "pageMacros", install: false, uninstall: false) {
         section{ paragraph "Macros", image: imgURL() + "speak.png" }
-        section("Global macro options"){
-			input "showURLs", "bool", title: "Display REST URL For Control and Extension Group Macros", defaultValue: false, submitOnChange: true
-        }
         def children = getAskAlexa(), macroCount = children.size()
         if (macroCount) section(macroCount==1 ? "One macro configured" : macroCount + " macros configured" ){}
         def duplicates = children.label.findAll{children.label.count(it)>1}.unique()
@@ -484,7 +509,7 @@ def pageMacros() {
 def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true) {
         section { paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/AskAlexa@2x.png" }
-        section ("Version numbers", hideable: true, hidden: true) { paragraph "${textVersion()}" } 
+        section ("Version numbers") { paragraph "${textVersion()}" } 
         section (title: "Access token / Application ID", hideable: true, hidden: true){
             if (!state.accessToken) OAuthToken()
             def msg = state.accessToken != null ? state.accessToken : "Could not create Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
@@ -503,18 +528,11 @@ def pageAbout(){
 def pageSettings(){
     dynamicPage(name: "pageSettings", uninstall: false){
         section { paragraph "Settings", image: imgURL() + "settings.png" }
-        section ("Additional voice settings"){ 
-        	input "briefReply", "bool", title: "Give 'Brief' Device Action Reply", defaultValue: false, submitOnChange: true            
-            if (briefReply) input "briefReplyTxt", "enum", title: "Brief Reply", options: ["No reply spoken", "Ok", "Done", "User-defined"], required:false, multiple:false, defaultValue: "Ok", submitOnChange: true
-            if (briefReply && briefReplyTxt=="User-defined") input "briefReplyCustom", "text", title:"User-defined Brief Reply", description:"Enter your brief reply", required: false
-            input "flash", "bool", title: "Enable Flash Briefing", defaultValue: false, submitOnChange: true            
-            if (flash) input "flashRPT", "enum", title: "Choose Flash Briefing Output", options: getMacroList("flash",""), required: false, multiple: false
-            input "otherStatus", "bool", title: "Speak Additional Device Status Attributes", defaultValue: false
-            input "healthWarn", "bool", title: "Speak Device Health When Offline", defaultValue: false
-            input "batteryWarn", "bool", title: "Speak Battery Level When Below Threshold", defaultValue: false, submitOnChange: true
-            if (batteryWarn) input "batteryThres", "enum", title: "Battery Status Threshold", required: false, defaultValue: 20, options: battOptions()
-        	input "eventCt", "enum", title: "Default Number Of Past Events to Report", options: optionCount(1,9), required: false, defaultValue: 1
-            href "pageContCommands", title: "Personalization", description: "Tap to personalize your voice experience", image: imgURL() + "personality.png"
+        section ("Additional voice settings"){
+        	href "pageDeviceVoice", title: "Device/Event Voice Settings", description: "Tap to configure your device or event voice settings", image: imgURL() + "smartthings.png"
+			input "flash", "bool", title: "Enable Flash Briefing", defaultValue: false, submitOnChange: true          
+            if (flash) input "flashRPT", "enum", title: "Choose Flash Briefing Output", options: getMacroList("flash",""), required: false, multiple: false,image:imgURL() + "flash.png"
+            href "pageContCommands", title: "Personalization", description: "Tap to personalize your overall voice experience", image: imgURL() + "personality.png"
         }
         section ("Other values / variables"){
         	href "pageDefaultValue", title: "Default Command Values (Dimmers, Volume, etc.)", description: "", state: "complete"
@@ -531,12 +549,28 @@ def pageSettings(){
             if (pwNeeded) input "password", "num", title: "Numeric Password (PIN)", description: "Enter a short numeric PIN (i.e. 1234)", required: false
 		}
         section ("Advanced") {
-            href "pageCustomDevices", title: "Device Specific Commands", description: none, state: (nestCMD || stelproCMD || sonosCMD || ecobeeCMD ||vPresenceCMD ? "complete" : null)
             input "deviceAlias", "bool", title: "Allow Device Aliases", defaultValue: false
-            label title:"Rename App (For Multi Room Setup)", required:false, defaultValue: "Ask Alexa"
+            label title:"SmartApp Name", required:false, defaultValue: "Ask Alexa"
         }
     }
 }
+def pageDeviceVoice(){
+    dynamicPage(name: "pageDeviceVoice", install: false, uninstall: false) {
+    	section { paragraph "Device/Event Voice Settings", image: imgURL() + "smartthings.png" }
+        section ("Device Settings") {
+        	input "briefReply", "bool", title: "Give 'Brief' Device Action Reply", defaultValue: false, submitOnChange: true            
+            if (briefReply) input "briefReplyTxt", "enum", title: "Brief Reply", options: ["No reply spoken", "Ok", "Done", "User-defined"], required:false, multiple:false, defaultValue: "Ok", submitOnChange: true
+            if (briefReply && briefReplyTxt=="User-defined") input "briefReplyCustom", "text", title:"User-defined Brief Reply", description:"Enter your brief reply", required: false
+            input "otherStatus", "bool", title: "Speak Additional Device Status Attributes", defaultValue: false
+            input "healthWarn", "bool", title: "Speak Device Health When Offline", defaultValue: false
+            input "batteryWarn", "bool", title: "Speak Battery Level When Below Threshold", defaultValue: false, submitOnChange: true
+            if (batteryWarn) input "batteryThres", "enum", title: "Battery Status Threshold", required: false, defaultValue: 20, options: battOptions()
+        }
+        section ("Event Settings"){
+        	input "eventCt", "enum", title: "Default Number Of Past Events to Report", options: optionCount(1,9), required: false, defaultValue: 1
+		}
+    }
+} 
 def pagePriQueue(){
     dynamicPage(name: "pagePriQueue", uninstall: false){
     	def children = getAAMQ(), mqCount = children.size()
@@ -589,19 +623,11 @@ def pagePriQueue(){
             }
         }
         section ("REST URL for this message queue", hideable: true, hidden:true){
-        	href "pageMQURL", title:"Tap To Send REST URL For This Message Queue To Live Logging", description: none, image:imgURL()+"info.png"
+        	href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/u?qName=Primary Message Queue&access_token=${state.accessToken}", style:"embedded", required:false, 
+				title:"REST URL", description: "Tap to display the REST URL / send it to Live Logging", image: imgURL() + "network.png"
         }
     }
 }
-def pageMQURL(){
-    dynamicPage(name: "pageMQURL", install: false, uninstall: false) {
-    	section{
-        	paragraph "Please check your Live Logging to copy this URL to your messaging application", image: imgURL()+"info.png"
-         	paragraph "${getExtAddr("Primary Message Queue")}"
-        	log.info "Message Queue URL: " + getExtAddr("Primary Message Queue")
-		}
-	}
-}   
 def pageMsgQue() {
     dynamicPage(name: "pageMsgQue", install: false, uninstall: false) {
         section{ paragraph "Message Queues", image: imgURL() + "mailbox.png" }
@@ -683,26 +709,6 @@ page(name: "timeIntervalInputWhisper", title: "Whisper Only During These Times..
 		input "timeEndWhisper", "time", title: "Ending", required: false
 	}
 }
-def pageCustomDevices(){
-    dynamicPage(name: "pageCustomDevices", uninstall: false){
-		section("Device specific commands"){
-            input "ecobeeCMD", "bool", title: "Ecobee Specific Thermostat Modes\n(Home/Away/Sleep/Resume Program)", defaultValue: false, submitOnChange: true
-            if (ecobeeCMD) input "MyEcobeeCMD", "bool", title: "MyEcobee Specific Tips\n(Get Tips/Play Tips/Erase Tips)", defaultValue: false             
-            input "nestCMD", "bool", title: "Nest-Specific Thermostat Presence Commands (Home/Away)", defaultValue: false, submitOnChange: true
-            if (nestCMD) input "nestMGRCMD", "bool", title: "NST Manager Specific Reports (Report)", defaultValue: false
-            input "osramCMD", "bool", title: "OSRAM Specific Commands (Loop/Pulse)", defaultValue: false
-            input "stelproCMD", "bool", title: "Stelpro Baseboard\nThermostat Modes (Eco/Comfort)", defaultValue:false
-            input "sonosCMD", "bool", title: "SONOS Options (Memory Slots)", defaultValue: false, submitOnChange: true
-            if (sonosCMD) {
-				input "sonosMemoryCount", "enum", title: "Maximum number of SONOS memory slots", options: optionCount(2,10), defaultValue: 2, required: false 
-                paragraph "To reset the database of SONOS songs listed in the memory slots, tap the area below. It is recommended you do this ONLY if you are having issues playing the songs in the list. " +
-                "The database will be rebuilt from the recently played songs from the speakers upon exiting the SmartApp."
-            	href "pageSONOSReset", title: "Reset Song Database", description: "Tap to reset database", image: imgURL() + "warning.png"
-			}
-            input "vPresenceCMD", "bool", title: "Virtual Presence (Home/Away)", defaultValue: false
-        }
-	}
-}
 def pageSONOSReset(){
     dynamicPage(name: "pageSONOSReset",title: "Song Database Reset", uninstall: false){
 		state.songLoc = []
@@ -729,7 +735,7 @@ def pageGlobalVariables(){
             if ((voiceTempVar && voiceTempVar.size()>1) || (voiceHumidVar && voiceHumidVar.size()>1)) paragraph "Please note: When multiple temperature/humidity devices are selected above, the variable output will be an average of the device readings"
         }
         section ("People"){ input "voicePresenceVar", "capability.presenceSensor", title: "Presence Sensor Variable (%people%)", multiple: true, required: false }
-        section ("Random Responses"){
+        section ("Random responses"){
         	href "pageRandom1", title: "Random Responses 1 (%random1%)", description: getRandDesc(1), state: random1A || random1B|| random1C? "complete" : null
             href "pageRandom2", title: "Random Responses 2 (%random2%)", description: getRandDesc(2), state: random2A || random2B|| random2C? "complete" : null
             href "pageRandom2", title: "Random Responses 3 (%random3%)", description: getRandDesc(3), state: random3A || random3B|| random3C? "complete" : null
@@ -750,7 +756,6 @@ def pageGlobalVariables(){
     	}
     }
 }
-
 page(name: "pageRandom1", title: "Random Responses 1"){
 	section{
         input "random1A", "text", title: "Random Response", required: false, capitalization: "sentences"
@@ -821,11 +826,15 @@ def mainPageChild(){
                 	input "overRideMsg", "bool", title: "Override Continuation Commands (Except Errors)", defaultValue: false, submitOnChange: true
                     if (!overRideMsg) input "suppressCont", "bool", title:"Suppress Continuation Messages (But Still Allow Continuation Commands)", defaultValue: false 
                 }
-                if (parent.showURLs && macroType==~/Control|GroupM/ &&  macroTypeDesc() !="Status: UNCONFIGURED - Tap to configure macro" && app.label !="Ask Alexa") {
-                    href url:"${getApiServerUrl()}/api/smartapps/installations/${parent.app.id}/u?mName=${app.label}&access_token=${parent.state.accessToken}", style:"embedded", required:false, title:"Show REST URL For This Macro", description: none
-				}
-            }
-        }
+			}
+		}
+		if (macroType && macroType==~/Control|GroupM/ &&  macroTypeDesc() !="Status: UNCONFIGURED - Tap to configure macro" && app.label !="Ask Alexa") {
+			def secTxt = macroType=="Control" ? "Control Macro" : "Extension Group"
+			section ("REST URL for this ${secTxt}", hideable: true, hidden:true){
+				href url:"${getApiServerUrl()}/api/smartapps/installations/${parent.app.id}/u?mName=${app.label}&access_token=${parent.state.accessToken}", style:"embedded", required:false, 
+					title:"REST URL", description: "Tap to display the REST URL / send it to Live Logging", image: parent.imgURL() + "network.png"
+			}
+		}
         if (macroType && macroType !="GroupM" && macroType !="Group"){
             section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: imgURL() + "calendar.png"
@@ -1240,6 +1249,7 @@ def processList(){
     if (listType =~/device/) outputTxt = parseMacroLists("Group","device group","control")
     if (listType =~/schedule/) outputTxt = parseMacroLists("Schedule","schedule","")
     if (listType =~/control/) outputTxt = parseMacroLists("Control","control macro","run")
+    if (listType =~/pollution|air|quality/) { outputTxt = fooBot && fooBot.size()>1 ? "#Foobot air quality monitors#" : fooBot && fooBot.size()==1 ? "@Foobot air quality monitor@" : "%Foobot air quality monitors%"; devices=fooBot; aliasType="pollution" }
     if (listType =~/core|webcore|trigger/) outputTxt = parseMacroLists("CoRE","WEBCORE trigger","run")
     if (listType =~/extension group|group extention/) outputTxt = parseMacroLists("GroupM","extension group","run")
     if (listType =~/weather/) outputTxt = parseMacroLists("Weather","weather report","play")
@@ -1392,10 +1402,7 @@ def extMQ(){
     	}
         else log.debug "An external source, '${source}', attempted to send a message to an invalid message queue name."
 	} 
-    else log.debug "An exteranl source attempted to send a message but did not have the correct parameters."
-}
-def getExtAddr(name){
-	return "${getApiServerUrl()}/api/smartapps/installations/${app.id}/mq?queue=${name}&msg={Message to send}&source={Name of what is sending the message}&access_token=${state.accessToken}"
+    else log.debug "An external source attempted to send a message but did not have the correct parameters."
 }
 //Message Queue Reply
 def msgQueueReply(cmd,queue){
@@ -1515,7 +1522,8 @@ def processMacro() {
     count = macCount + wrCount + vrCount + sdCount
     if (count == 1 && macAlias) mac = macAlias
     if (count > 1) outputTxt ="You have duplicate macros, aliases, or extensions named '${mac}'. Please check your SmartApp to fix this conflict. %1%"
-    if (!count) outputTxt = "I could not find a macro, alias or any extension named '${mac}'. %1%"
+    if (!count && mac!="null" && mac) outputTxt = "I could not find a macro, alias or any extension named '${mac}'. %1%"
+    else if (!count && (mac=="null" || !mac)) outputTxt = "I could not understand what you are attempting to do. Be sure you have populated the developer section with the device and extension names. %1%"
     if (outputTxt) sendJSON(outputTxt,"caution")
     else {
     	if (macCount) processMacroAction(mac, mNum, cmd, param, mPW, false,xParam)
@@ -1682,29 +1690,53 @@ def getReply(devices, type, STdeviceName, op, num, param){
         def supportedCaps = STdevice.capabilities
         def supportedCMDs = STdevice.getSupportedCommands()
         if (op=="status") {
-            if (type == "temperature"){
-                def temp = roundValue(STdevice.currentValue(type))
-                result = "The temperature of the ${STdeviceName} is ${temp} degrees"
-                if (otherStatus) {
-                    def humidity = STdevice.currentValue("humidity"), wet=STdevice.currentValue("water") ,contact=STdevice.currentValue("contact")
-                    result += humidity ? ", and the relative humidity is ${humidity}%. " : ". "
-                    result += wet ? "Also, this device is a leak sensor, and it is currently ${wet}. " : ""
-                    result += contact ? "This device is also a contact sensor sensor, and it is currently reading ${contact}. " : ""
-                }
-                else result += ". "
+            if (type == "temperature"){ 
+                if (STdevice.currentValue(type)) {
+                	def temp = roundValue(STdevice.currentValue(type))
+                	result = "The temperature of the ${STdeviceName} is ${temp} degrees"
+                	if (otherStatus) {
+                        def humidity = STdevice.currentValue("humidity"), wet=STdevice.currentValue("water"), contact=STdevice.currentValue("contact"), pollution = STdevice.currentValue("pollution")
+                        result += humidity ? ", and the relative humidity is ${humidity}%. " : ". "
+                        result += wet ? "Also, this device is a leak sensor, and it is currently ${wet}. " : ""
+                        result += contact ? "This device is also a contact sensor sensor, and it is currently reading ${contact}. " : ""
+                        result += pollution ? "This device is also an air quality monitor reading: '${STdevice.currentValue("GPIstate")}',with a Global Pollution Index of ${pollution}%. " : ""
+                    }
+                    else result += ". "
+            	}
+                else result ="The temperature of the ${STdeviceName} is reading null, which may indicate an issue with the device. %1%"
             }
+            else if (type == "pollution") {
+                if (fooBotPoll) STdevice.poll()
+                if (STdevice.currentValue("GPIstate") || STdevice.currentValue(type)){
+                    result = "The Foobot air quality monitor, '${STdeviceName}', is reading: '${STdevice.currentValue("GPIstate")}', with a Global Pollution Index of ${STdevice.currentValue(type)}"
+                    if (otherStatus){
+                    	result += ". The carbon dioxide level is ${STdevice.currentValue("carbonDioxide")} parts per million, the volatile organic compounds reading is ${STdevice.currentVoc} parts per billion"
+                        result += ", the particulate matter level reading is ${STdevice.currentParticle} µg/m³"
+                    	result += STdevice.currentValue("humidity") ? ", and the relative humidity is ${STdevice.currentValue("humidity")}%" : ". " 
+                    }
+                    result += ". "
+           		}
+                else result ="The Foobot air quality monitor, '${STdeviceName}', is reading null, which may indicate an issue with the device. %1%" 
+           }
             else if (type == "presence") result = "The presence sensor, ${STdeviceName}, is showing ${STdevice.currentValue(type)}. "
             else if (type ==~/acceleration|motion/){
             	def currVal =STdevice.currentValue(type), motionStat=[active : "movement", inactive: "no movement"][currVal] ?: currVal
             	result = "The ${type} sensor, ${STdeviceName}, is currently reading '${motionStat}'. "
             }
             else if (type == "humidity"){
-                result = "The relative humidity at the ${STdeviceName} is ${STdevice.currentValue(type)}%"
-                if (otherStatus) {
-                    def temp =roundValue(STdevice.currentValue("temperature"))
-                    result += temp ? ", and the temperature is ${temp} degrees. " : ". "
-				}
-                else result += ". "
+                if (STdevice.currentValue(type)) {
+                	result = "The relative humidity at the ${STdeviceName} is ${STdevice.currentValue(type)}%" 
+                	if (otherStatus) {
+                    	def temp
+                        if (STdevice.currentValue("temperature")) {
+                        	temp = roundValue(STdevice.currentValue("temperature"))
+                    		result += temp ? ", and the temperature is ${temp} degrees. " : ". "
+                        }
+                        else result = "The temperature of the ${STdeviceName} is reading null, which may indicate an issue with the device. %1%" 
+					}
+                	else result += ". "
+                }
+                else result ="The humidity reading of the '${STdeviceName}' is null, which may indicate an issue with the device. %1%"
             }
             else if (type ==~ /level|color|switch|kTemp/) {
                 def onOffStatus = STdevice.currentValue("switch")
@@ -1861,7 +1893,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                             result="I am setting the heating setpoint of the ${STdeviceName} to ${num} degrees. "
                             STdevice.setHeatingSetpoint(num) 
                             try { if (stelproCMD) STdevice.applyNow() }
-                            catch (e){ log.warn "An error was encountered when attempting to send the 'applyNow()' command to the '${STdeviceName}'. If you don't have any stelPro devices please disable this feature in the Settings>>Device Specific Commands."}     
+                            catch (e){ log.warn "An error was encountered when attempting to send the 'applyNow()' command to the '${STdeviceName}'. If you don't have any stelPro devices please disable this feature in the thermostat selection area."}     
                         }
                         if ((param =~/cool|AC/) && num > 0) {
                             result="I am setting the cooling setpoint of the ${STdeviceName} to ${num} degrees. "
@@ -1981,7 +2013,6 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 else STdevice."$op"(); result =  "I am ${op}ing the ${STdeviceName}. "
             }    
             if (type == "presence" && vPresenceCMD){
-            	log.debug param
             	def currentState = STdevice.currentValue(type)
                 if (((op=="on" || param=~/home|present|check in|checkin|arrive/) && currentState=="present") || ((op=="off" || param=~/away|not present|check out|checkout|depart|gone/) && currentState=="not present")) result = "The '${STdeviceName}' presence sensor is already set to '${currentState}'. %1%"
                 else if ((op=="on" || param=~/home|present|check in|arrive/) && (currentState=="not present" || !currentState)) {
@@ -2375,7 +2406,7 @@ private getEcobeeCustomRegEx(myEcobeeGroup){
     	getEcobeeCustomList(myEcobeeGroup).each { myCustomClimate += "|${it}" } 
     	myCustomClimate = myCustomClimate[1..myCustomClimate.length() - 1] 
 	}
-    catch (e){ log.warn "An error was encountered when attempting to send commands to the '${myEcobeeGroup}'. If you don't have any Ecobee devices please disable these features in the Settings>>Device Specific Commands."}                        
+    catch (e){ log.warn "An error was encountered when attempting to send commands to the '${myEcobeeGroup}'. If you don't have any Ecobee devices please disable these features in the thermostat selection area."}                        
     return myCustomClimate 
 }
 //Parent Code Access (from Child)-----------------------------------------------------------
@@ -2732,7 +2763,7 @@ private replaceVoiceVar(msg, delay, filter, type, name, age, xParam) {
             if (msg.contains(wrName)) msg = msg.replace(wrName,processWeatherReport(it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""))[0..-4])	
         }
     }
-    if (advReportOutput && filter) {
+    if (filter) {
     	def textFilter=filter.toLowerCase().tokenize(",")
     	textFilter.each{ msg = msg.toLowerCase().replace("${it}","") }
     } 
@@ -2759,7 +2790,7 @@ private setColoredLights(switches, color, level){
     def isOsram = parent ? parent.osramCMD : osramCMD
     if (isOsram){
     	try {  switches?.loopOff() } 
-    	catch (e) { log.warn "You have attempted a command that is not compatible with the the device handler you are using. Try to turn off the Osram functions in Settings>Device Specific Commands"  }  
+    	catch (e) { log.warn "You have attempted a command that is not compatible with the the device handler you are using. Try to turn off the Osram functions in colored lights selection area."  }  
     }
     switches?.setColor(newValue)
     switches?.setLevel(newLevel as int)
@@ -2807,6 +2838,7 @@ private shadesSel() { return shades || (deviceAlias && shadesAlias) }
 private tstatsSel() { return tstats || (deviceAlias && tstatsAlias) }
 private tempsSel() { return temps || (deviceAlias && tempsAlias) }
 private humidSel() { return humid || (deviceAlias && humidAlias) }
+private fooBotSel() { return fooBot || (deviceAlias && fooBotAlias) }
 private speakersSel() { return speakers || (deviceAlias && speakersAlias) }
 private waterSel() { return water || (deviceAlias && waterAlias) }
 private presenceSel() { return presence || (deviceAlias && presenceAlias) }
@@ -3119,6 +3151,7 @@ def mapDevices(isAlias){
 	if (settings."motion${ext}") result << [devices: settings."motion${ext}", type : "motion",fullListName:"Motion Sensor", cmd: motionVoc()]
 	if (settings."presence${ext}") result << [devices: settings."presence${ext}", type : "presence",fullListName:"Presence Sensor", cmd: presenceVoc()]
 	if (settings."acceleration${ext}") result << [devices: settings."acceleration${ext}", type : "acceleration",fullListName:"Acceleration Sensor", cmd: accelVoc()]
+    if (settings."fooBot${ext}") result << [devices: settings."fooBot${ext}", type : "pollution", fullListName:"Foobot Air Quality Monitor", cmd: fooBotVoc()]
     return result
 }
 def basicVoc(){return ["status","event","events"]}
@@ -3136,6 +3169,7 @@ def motionVoc(){return basicVoc()}
 def tempVoc(){return basicVoc()}
 def humidVoc(){return basicVoc()}
 def contactVoc(){return basicVoc()}
+def fooBotVoc(){return basicVoc()}
 def speakerVoc(){return basicVoc()+["play","pause","stop","next track","previous track","off","mute","on","unmute","status","low","medium","high","maximum","increase","raise","up","decrease","down","lower"]}
 def tstatVoc(){
 	def result =["increase","raise","up","decrease","down","lower","maximum","minimum","off"]
@@ -3239,7 +3273,7 @@ def setupData(){
     if (tstatsSel() && ecobeeCMD) PARAMS<<"sleep"<<"resume program"
 	if (tstats && MyEcobeeCMD){  getEcobeeCustomList(tstats).each { PARAMS<<"${it}" } }     
     if (tstatsSel() && ecobeeCMD && MyEcobeeCMD) PARAMS<<"tips"<<"tip"
-    if (vPresenceCMD) PARAMS<<"check in"<<"check out"<<"arrive"<<"depart"<<"not present"<<"gone"
+    if (presenceSel() && vPresenceCMD) PARAMS<<"check in"<<"check out"<<"arrive"<<"depart"<<"not present"<<"gone"
     if (sonosCMD && speakersSel() && sonosMemoryCount){
     	def memCount = sonosMemoryCount as int
     	for (int i=1; i<memCount+1; i++){
@@ -3328,12 +3362,22 @@ def fillTypeList(){
         "voice report", "device group", "device groups","control macro", "control macros","control", "controls","extension group","extension groups","device macros","device macro","device group macro","device group macros",
         "core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases",
         "temperature light","temperature lights","kelvin light","kelvin lights","message queue","queue","message queues","queues","weather", "weather report", "weather reports","schedule","schedules","webcore","webcore trigger","webcore macro",
-        "webcore macros","webcore triggers"] 
+        "webcore macros","webcore triggers","pollution","air quality"] 
 }
 def getURLs(){
-	def mName = params.mName, url = formatURL("${getApiServerUrl()}/api/smartapps/installations/${app.id}/m?Macro=${mName}&access_token=${state.accessToken}")
-    def result = "<div style='padding:10px'>Copy the URL below and paste it to your control application.</div><div style='padding:10px'>Click '<' above to return to the Ask Alexa SmartApp.</div>"
-	result += "<div style='padding:10px;'><b>Macro REST URL:</b></div><textarea rows='5' style='width: 99%'>${url}</textarea><hr>"
+	def mName = params.mName, qName = params.qName, url, result
+    if (mName){
+    	url = formatURL("${getApiServerUrl()}/api/smartapps/installations/${app.id}/m?Macro=${mName}&access_token=${state.accessToken}")
+    	result = "<div style='padding:10px'>Copy the URL below and paste it to your control application. This URL also appears in your Live Logging</div><div style='padding:10px'>Click '<' above to return to the Ask Alexa SmartApp.</div>"
+		result += "<div style='padding:10px;'><b>Macro REST URL:</b></div><textarea rows='5' style='width: 99%'>${url}</textarea><hr>"
+        log.info "Macro/Extension URL: " + url
+    } 
+    else if (qName){
+        url = "${getApiServerUrl()}/api/smartapps/installations/${app.id}/mq?queue=${qName}&msg={Message to send}&source={Name of what is sending the message}&access_token=${state.accessToken}"
+        result = "<div style='padding:10px'>Copy the URL below and paste it to your control application. Be sure to edit the information between the {brackets}. This URL also appears in your Live Logging</div><div style='padding:10px'>Click '<' above to return to the Ask Alexa SmartApp.</div>"
+        result += "<div style='padding:10px;'><b>Message Queue REST URL:</b></div><textarea rows='5' style='width: 99%'>${url}</textarea><hr>"
+        log.info "Message Queue URL: " + url
+    }
     displayData(result)
 }
 def getCheatDisplayList(type){
@@ -3381,6 +3425,8 @@ private cheat(){
     if (getCheatDisplayList("temperature") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("temperature") +"<br>" }
     if (humidSel()) { result += "<h2><u>Humidity Sensors (Valid Commands: <b>"+ getList(humidVoc()) +"</b>)</u></h2>"; humid.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("humidity") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("humidity") +"<br>" }
+    if (fooBotSel()) { result += "<h2><u>Foobot Air Quality Monitor (Valid Commands: <b>"+ getList(fooBotVoc()) +"</b>)</u></h2>"; fooBot.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("pollution") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("pollution") +"<br>" }
     if (speakersSel()) { result += "<h2><u>Speakers (Valid Commands: <b>{volume level}, "+ getList(speakerVoc()+basicVoc()) +"</b>)</u></h2>"; speakers.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("music") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("music") +"<br>" }
     if (speakersSel() && sonosCMD && sonosMemoryCount){
@@ -3463,20 +3509,20 @@ private webCoRE_handle(){ return'webCoRE' }
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {  
     def version = "SmartApp Version: ${versionLong()} (${versionDate()})", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : "", aaMQVer ="", aaWRVer ="", aaVRVer="", aaSCHVer=""
-    if (getAAMQ().size()) getAAMQ().each { aaMQVer="\n"+it.textVersion() }
-    if (getWR().size()) getWR().each { aaWRVer="\n"+it.textVersion() }
-    if (getVR().size()) getVR().each { aaVRVer="\n"+it.textVersion() }
-    if (getSCHD().size()) getSCHD().each { aaSCHVer="\n"+it.textVersion() }
+    if (getAAMQ().size()) aaMQVer="\n"+ getAAMQ()[0].textVersion() 
+    if (getWR().size()) aaWRVer="\n"+ getWR()[0].textVersion() 
+    if (getVR().size()) aaVRVer="\n"+getVR()[0].textVersion()
+    if (getSCHD().size()) aaSCHVer="\n"+getSCHD()[0].textVersion()
     return "${version}${lambdaVersion}${aaMQVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
 }
-private versionInt(){ return 229 }
+private versionInt(){ return 230 }
 private LambdaReq() { return 129 }
-private mqReq() { return 104 }
-private wrReq()  { return 104 }
-private vrReq()  { return 104 }
+private mqReq() { return 105 }
+private wrReq()  { return 105 }
+private vrReq()  { return 105 }
 private schReq()  { return 103 }
-private versionLong(){ return "2.2.9e" }
-private versionDate(){ return "07/13/17" }
+private versionLong(){ return "2.3.0" }
+private versionDate(){ return "08/03/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+

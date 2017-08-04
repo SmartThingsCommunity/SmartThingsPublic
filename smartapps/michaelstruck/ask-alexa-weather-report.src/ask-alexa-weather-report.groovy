@@ -3,13 +3,14 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.4 7/11/17
+ *  Version 1.0.5 8/03/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
  *  Version 1.0.2a (6/17/17) - Deprecated send to notification feed. Will add message queue functionality if feedback is given
  *  Version 1.0.3 - (6/28/17) Replaced notifications with Message Queue
  *  Version 1.0.4 - (7/11/17) Allow suppression of continuation messages.
+ *  Version 1.0.5 - (8/3/17) Fixed issue due to changes in Weather Undergroud API
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -528,21 +529,22 @@ def weatherAlerts(){
 }
 private tideInfo() {
 	String msg = ""
-    Map wdata = getWeatherFeature("tide/astronomy", zipcode)
-    if ((wdata == null) || wdata.response.containsKey('error')) return "There was an error in the tide data received Weather Underground. "
-	def tideSite = wdata.tide.tideInfo.tideSite.join(",").replaceAll(',', '' )
+    Map tData = getWeatherFeature("tide", zipcode)
+    Map aData = getWeatherFeature("astronomy", zipcode)
+    if (tData == null || aData == null || tData.response.containsKey('error') || aData.response.containsKey('error')) return "There was an error in the tide data received Weather Underground. "
+	def tideSite = tData.tide.tideInfo.tideSite.join(",").replaceAll(',', '' )
 	if (tideSite == "") {
 		msg = "No tide station found near this location"
 		if (zipCode) msg += " (${zipCode}). " else msg+= '. '
 		return msg
 	}        
-	Integer cur_hour = wdata.moon_phase.current_time.hour.toInteger()				// get time at requested location
-	Integer cur_minute = wdata.moon_phase.current_time.minute.toInteger()			// may not be the same as the SmartThings hub location
+	Integer cur_hour = aData.moon_phase.current_time.hour.toInteger()				// get time at requested location
+	Integer cur_minute = aData.moon_phase.current_time.minute.toInteger()			// may not be the same as the SmartThings hub location
 	Integer cur_mins = (cur_hour * 60) + cur_minute
-	String timeZoneTxt = wdata.tide.tideSummary[0].date.pretty.replaceAll(/\d+:\d+ .{2} (.{3}) .*/, /$1/)
+	String timeZoneTxt = tData.tide.tideSummary[0].date.pretty.replaceAll(/\d+:\d+ .{2} (.{3}) .*/, /$1/)
 	Integer count = 0, index = 0
 	while (count < 4) {	
-		def tide = wdata.tide.tideSummary[index]
+		def tide = tData.tide.tideSummary[index]
         index ++
 		if ((tide.data.type == 'High Tide') || (tide.data.type == 'Low Tide')) {
 			count ++
@@ -598,6 +600,6 @@ private tideInfo() {
     return msg		
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 104 }
+private versionInt(){ return 105 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.4 (07/11/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.5 (08/03/2017)" }

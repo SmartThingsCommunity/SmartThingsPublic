@@ -2,13 +2,14 @@
  *  Ask Alexa Voice Report Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.4 7/11/17
+ *  Version 1.0.5 8/3/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restricitions 
  *  Version 1.0.2a - (6/17/17) - Small bug fixes, deprecated send to notification feed. Will add message queue functionality if feedback is given
  *  Version 1.0.3 - (6/28/17) - Added device health report, replaced notifications with Message Queue
  *  Version 1.0.4 - (7/11/17) - Added code for additional text field variables, allow suppression of continuation messages.
+ *  Version 1.0.5 - (8/3/17) - Added support for Foobot Air Quality Monitor, permanently enabled voice filters
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -34,6 +35,7 @@ definition(
 preferences {
     page name:"mainPage"
     	page name:"pageTempReport"
+        page name:"pageAirReport"
 		page name:"pageHomeReport"
 		page name:"pageOtherReport"
     	page name:"pageBatteryReport"
@@ -57,6 +59,7 @@ def mainPage() {
             href "pageSwitchReport", title: "Switch/Dimmer Report", description: getDesc("switch"), state: (voiceSwitch || voiceDimmer ? "complete" : null), image: parent.imgURL() + "power.png"
             href "pageDoorReport", title: "Door/Window/Lock Report", description: getDesc("door"), state: (voiceDoorSensors || voiceDoorControls || voiceDoorLocks || voiceWindowShades ? "complete": null), image: parent.imgURL() + "lock.png"
             href "pageTempReport", title: "Temperature/Humidity/Thermostat Report", description: getDesc("temp"), state:(voiceTemperature || voiceTempSettings || voiceHumidity? "complete" : null),image: parent.imgURL() + "temp.png"
+            href "pageAirReport", title: "Foobot Air Quality Report", description: getDesc("pollution"), state:(fooBot ? "complete" : null), image: parent.imgURL() + "pollution.png"
             href "pageSpeakerReport", title: "Speaker Report", description: getDesc("speaker"), state: (voiceSpeaker ? "complete": null), image: parent.imgURL() + "speaker.png"
             href "pagePresenceReport", title: "Presence Report", description:  getDesc("presence"), state:(voicePresence ? "complete": null), image : parent.imgURL() + "people.png"    
             href "pageOtherReport", title: "Other Sensors Report", description: getDesc("sensor"), state: (voiceWater|| voiceMotion|| voicePower || voiceAccel  ? "complete" :null), image: parent.imgURL() + "sensor.png"
@@ -74,6 +77,10 @@ def mainPage() {
                     if (!overRideMsg) input "suppressCont", "bool", title:"Suppress Continuation Messages (But Still Allow Continuation Commands)", defaultValue: false 
             }
         }
+       	section("Advanced voice report filters", hideable: true, hidden: !(voiceRepFilter || voiceEvtTimeDate)){
+            input "voiceRepFilter", "text", title: "Filter Report Output", description: "Delimit items with comma (ex. xxxxx,yyyyy,zzzzz)", required: false, capitalization: "sentences"
+			input "voiceEvtTimeDate", "bool", title: "Speak Only Time/Date During Event Reports", defaultValue: false
+		}
         section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
 			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
 			href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png", submitOnChange: true
@@ -81,13 +88,7 @@ def mainPage() {
             input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
 			if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
             input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
-        }
-        if (parent.advReportOutput){
-        	section("Advanced voice report filters"){
-            	input "voiceRepFilter", "text", title: "Filter Report Output", description: "Delimit items with comma (ex. xxxxx,yyyyy,zzzzz)", required: false, capitalization: "sentences"
-                input "voiceEvtTimeDate", "bool", title: "Speak Only Time/Date During Event Reports", defaultValue: false
-			}
-    	}
+        } 
         section("Tap below to remove this message queue"){ }
 	}
 }
@@ -116,6 +117,22 @@ page(name: "pageExtAliases", title: "Enter alias names for this voice report"){
     	for (int i = 1; i < extAliasCount()+1; i++){
         	input "extAlias${i}", "text", title: "Voice Report Alias Name ${i}", required: false
 		}
+    }
+}
+def pageAirReport(){
+    dynamicPage(name: "pageAirReport", install: false, uninstall: false){
+        section { paragraph "Foobot Air Quality Report", image: parent.imgURL() + "pollution.png" }
+        section(" ") {
+            input "fooBot", "capability.carbonDioxideMeasurement", title: "Choose Foobot Air Quality Monitors", multiple: true, required: false, submitOnChange: true 
+            if (fooBot){
+            	input "fooBotPoll", "bool", title:"Refresh Foobot Data Before Reporting", defaultValue:false
+            	input "fooBotCO2", "bool", title: "Include Carbon Dioxide", defaultValue:false
+                input "fooBotVOC", "bool", title: "Include Volatile Organic Compounds", defaultValue:false
+                input "fooBotPart", "bool", title: "Include Particulate Count", defaultValue:false
+            	input "fooBotTemp", "bool", title: "Include Temperature", defaultValue:false
+                input "fooBotHum", "bool", title: "Include Humidity", defaultValue:false
+            }
+        }
     }
 }
 def pagePresenceReport(){
@@ -223,7 +240,7 @@ def pageSpeakerReport(){
             input "voiceSpeaker", "capability.musicPlayer", title: "Speakers To Report Status...", description: "Tap to choose devices", multiple: true, required: false, submitOnChange:true
         	if (voiceSpeaker) input "voiceSpeakerOn", "bool", title: "Report Only Speakers That Are Playing", defaultValue:false
         }
-        section("Please Note"){ paragraph "There may be up to a 5 minute delay before SmartThings refreshes the current speaker status. This may cause the report to produce inaccurate results." }
+        section("Please Note"){ paragraph "There may be up to a 5 minute delay before SmartThings refreshes the current speaker status. This may cause the report to produce inaccurate results.", image: parent.imgURL()+"info.png" }
     }
 }
 def pageBatteryReport(){
@@ -300,6 +317,7 @@ def getOutput(){
         else if (voiceHumidity  && voiceHumidity.size() > 1 && voiceHumidAvg) outputTxt += "The average of the monitored humidity devices is " + parent.getAverage(voiceHumidity, "humidity") + "%. "
         if (voiceTempSettingSummary && voiceTempSettingsType && voiceTempSettingsType !="autoAll") outputTxt += voiceTempSettings ? thermostatSummary(): ""
         else outputTxt += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
+        outputTxt += fooBot ? airReport() : ""
         outputTxt += voiceSpeaker ? speakerReport() : ""
         outputTxt += voicePresence ? presenceReport() : ""
         outputTxt += voiceWater && waterReport() ? waterReport() : "" 
@@ -320,7 +338,7 @@ def getOutput(){
     def playContMsg = overRideMsg ? false : true
     def suppressContMsg = suppressCont && !overRideMsg && parent.contMacro
     if (!outputTxt && !allowNullRpt) outputTxt = "The voice report, '${app.label}', did not produce any output. Please check the configuration of the report within the SmartApp. %1%"  
-    if ((parent.advReportOutput && voiceRepFilter) || voicePre || voicePost) outputTxt = parent.replaceVoiceVar(outputTxt,"",voiceRepFilter,"Voice",app.label,0,"")
+    if (voiceRepFilter || voicePre || voicePost) outputTxt = parent.replaceVoiceVar(outputTxt,"",voiceRepFilter,"Voice",app.label,0,"")
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     if (outputTxt && !outputTxt.endsWith("%") && playContMsg && !suppressContMsg ) outputTxt += "%4%"
     else if (outputTxt && !outputTxt.endsWith("%") && suppressContMsg ) outputTxt += "%X%"   
@@ -393,7 +411,7 @@ private getLastEvt(devGroup, evtTxt, searchVal, devTxt){
         evtLog.reverse(true)
         def msgData= parent.timeDate(evtLog.time[0])
         def voiceDay = msgData.msgDay=="Today"? msgData.msgDay : "On " + msgData.msgDay
-        if (voiceEvtTimeDate && parent.advReportOutput) lastEvt = "${voiceDay} at ${msgData.msgTime}. "
+        if (voiceEvtTimeDate) lastEvt = "${voiceDay} at ${msgData.msgTime}. "
         else {
         	def multipleTxt = devGroup.size() >1 ? "within the monitored group was the ${evtLog.device[0]} ${devTxt}" : "was"
         	lastEvt = "The last ${evtTxt} event ${multipleTxt} ${voiceDay} at ${msgData.msgTime}. "
@@ -621,12 +639,12 @@ def doorWindowReport(){
 }
 def batteryReport(){
     String result = ""
-    def batteryThresholdLevel = batteryThreshold as int, batList = voiceBattery.findAll{it.latestValue("battery")< batteryThresholdLevel}
+    def batteryThresholdLevel = batteryThreshold as int, batList = voiceBattery.findAll{(it.latestValue("battery") as int)< batteryThresholdLevel}
     if (batList) {
-        for (deviceName in batList){	
-			if (deviceName.latestValue("battery")>1) result += "The '${deviceName}' battery is at ${deviceName.latestValue("battery")}%. "
-			else if (deviceName.latestValue("battery")!=0 && deviceName.latestValue("battery")==null) result += "The '${deviceName}' battery is reading null, which may indicate an issue with the device. "
-			else if (deviceName.latestValue("battery")<1) result +="The '${deviceName}' battery is at ${deviceName.latestValue("battery")}%; time to change this battery. "
+        batList.each{	
+			if ((it.latestValue("battery") as int) > 1) result += "The '${it.label}' battery is at ${it.latestValue("battery")}%. "
+			else if ((it.latestValue("battery") as int) !=0 && it.latestValue("battery") == null) result += "The '${it.label}' battery is reading null, which may indicate an issue with the device. "
+			else if ((it.latestValue("battery") as int) <=1) result +="The '${it.label}' battery is at ${it.latestValue("battery")}%; time to change this battery. "
         }
 	}
     return result
@@ -634,19 +652,35 @@ def batteryReport(){
 def healthReport(){
     String result = ""
     def healthList = healthOffline? voiceHealth.findAll{it.status==~/OFFLINE|INACTIVE/} : voiceHealth
-    if (healthList) {
-        for (deviceName in healthList){	
-			result += "'${deviceName}' is ${deviceName.status}. "
-        }
-	}
+    if (healthList) healthList.each{ result += "'${it.label}' is ${it.status}. " }
     if (healthSummary && !result.contains("OFFLINE") && !result.contains("INACTIVE") && !healthOffline) result ="All of the monitored devices are online. "
     return result
 }
 def waterReport(){
     String result = ""
     def wetList = voiceWater.findAll{it.latestValue("water") != "dry"}
-	if (!voiceWetOnly) for (deviceName in voiceWater) { result += "The ${deviceName} is ${deviceName.latestValue("water")}. " }
-	else if (wetList) for (deviceName in wetList){ result += "The ${deviceName} is sensing water is present. " }
+	if (!voiceWetOnly) voiceWater.each { result += "The ${it.label} is ${it.latestValue("water")}. " }
+	else if (wetList) wetList.each { result += "The ${it.label} is sensing water is present. " }
+    return result
+}
+def airReport(){
+	if (fooBotPoll) fooBot.poll()
+    String result = ""
+    fooBot.each{
+		result = "The Foobot air quality monitor, '${it.label}', is reading: '${it.currentValue("GPIstate")}', with a Global Pollution Index of ${it.currentValue("pollution")}"
+		if (fooBotCO2 || fooBoVOC || fooBotPart){
+			result += ". In addition, "
+            result += fooBotCO2 ? "the carbon dioxide reading is ${it.currentValue("carbonDioxide")} parts per million" : "" 
+            result += fooBoVOC && fooBotCO2 && !fooBotPart ? " and " : fooBoVOC && !fooBotCO2 && !fooBotPart ? ". " : fooBoVOC && fooBotCO2 && fooBotPart ? ", " : ""
+            result += fooBoVOC ? "the volatile organic compounds is reading ${it.currentVoc} parts per billion" : ""
+			result += (fooBoVOC || fooBotCO2) && fooBotPart ? "and the particulate matter reading is ${it.currentParticle} µg/m³" : !(fooBoVOC || fooBotCO2) && fooBotPart ? "the particulate matter reading is ${it.currentParticle} µg/m³" : ""   
+        	if ((fooBotCO2 || fooBoVOC || fooBotPart) && (fooBotTemp || fooBotHum)) result +=". Finally, "
+        	else if ((fooBotTemp || fooBotHum) && !(fooBotCO2 || fooBoVOC || fooBotPart)) result += ". In addition, "
+            result += fooBotTemp ? "the temperature reading at this device is ${it.currentValue("temperature")} degrees" : ""
+            result += fooBotTemp && fooBotHum ? " and the relative humidity is ${it.currentValue("humidity")}%" : !fooBotTemp && fooBotHum ? "the relative humidity reading at this device is ${it.currentValue("humidity")}%" : ""
+        }
+        result += ". "
+    }
     return result
 }
 //Main Menu Items
@@ -731,8 +765,9 @@ def getDesc(type){
             }
             break
 		case "battery":
-        	if (voiceBattery && batteryThreshold) result = voiceBattery.size()>1 ? "Batteries report when level < ${batteryThreshold}%" : "One battery reports when level < ${batteryThreshold}%"
-    		break
+        	if (voiceBattery && batteryThreshold && batteryThreshold !="101") result = voiceBattery.size()>1 ? "Batteries report when level < ${batteryThreshold}%" : "One battery reports when level < ${batteryThreshold}%"
+    		if (voiceBattery && batteryThreshold && batteryThreshold =="101") result = voiceBattery.size()>1 ? "Batteries report their levels" : "One battery reports its level"
+            break
         case "health":
         	if (voiceHealth) result = voiceHealth.size()>1 ? "Devices report health" : "One device reports health"
     		if (result && healthOffline) result += " when not online"
@@ -750,12 +785,23 @@ def getDesc(type){
     		else if (voiceSpeaker && !voiceSpeakerOn) result = voiceSpeaker.size()>1 ? "Speakers" : "One speaker"
     		if (voiceSpeaker) result += voiceSpeaker.size()>1 ? " report status" : " reports status"
     		break
+        case "pollution":
+            if (fooBot){
+				result = fooBot.size()>1 ? "The Foobot devices report Global Pollution Index " : "The Foobot device reports Global Pollution Index"
+				result += fooBotCO2 && !(fooBotTemp || fooBotHum || fooBotPart ||fooBotVOC) ? " & carbon dioxide" : fooBotCO2 && (fooBotTemp || fooBotHum || fooBotPart ||fooBotVOC) ? ", carbon dioxide" : "" 
+				result += fooBotPart && !(fooBotTemp || fooBotHum ||fooBotVOC) ? " & particulate count" : fooBotCO2 && fooBotPart && (fooBotTemp || fooBotHum ||fooBotVOC) ? ", particulate count" : ""
+				result += fooBotVOC && !(fooBotTemp || fooBotHum) ? " & volatile organic compounds" : fooBotVOC && (fooBotTemp || fooBotHum) ? ", volatile organic compounds" : ""
+				result += fooBotTemp && !fooBotHum ? " & temperature" : fooBotTemp && fooBotHum ? ", temperature" : ""
+				if (fooBotHum)  result += " &  humidity" 
+				if (fooBotPoll) result += ". Data refreshed before report"
+            }
+            break
     	case "other":
         	if (otherReportsList) result = "Includes the following report(s):\n" + parent.getList(otherReportsList)	
     }
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 104}
+private versionInt(){ return 105}
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.4 (07/11/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.5 (08/3/2017)" }
