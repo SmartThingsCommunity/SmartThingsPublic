@@ -622,38 +622,8 @@ subscribe(Thermostat_4, "Switch", ThermostatSwitchHandler)
     atomicState.T3_AppMgt = true
     atomicState.T4_AppMgt = true
 
-    atomicState.T1_AppMgtSP = true
-    atomicState.T2_AppMgtSP = true
-    atomicState.T3_AppMgtSP = true
-    atomicState.T4_AppMgtSP = true
-
-
-    // motion sensor handler default start values
-    atomicState.isInActive1 = false
-    atomicState.isInActive2 = false
-    atomicState.isInActive3 = false
-
     atomicState.messageOkToOpenCausesSent = 0
     atomicState.LastTimeMessageSent = now()
-
-
-
-
-    // first default values to be set to any suitable value
-
-
-
-    // same idea but for therm modes and temps
-    atomicState.currentTemperatureT1 = Thermostat_1?.currentState("temperature")?.value 
-    atomicState.currentThermModeT1 = Thermostat_1?.currentState("thermostatMode")?.value 
-    atomicState.currentTemperatureT2 = Thermostat_2?.currentState("temperature")?.value 
-    atomicState.currentThermModeT2 = Thermostat_2?.currentState("thermostatMode")?.value 
-    atomicState.currentTemperatureT3 = Thermostat_3?.currentState("temperature")?.value 
-    atomicState.currentThermModeT3 = Thermostat_3?.currentState("thermostatMode")?.value 
-    atomicState.currentTemperatureT4  = Thermostat_4?.currentState("temperature")?.value  
-    atomicState.currentThermModeT4 = Thermostat_4?.currentState("thermostatMode")?.value 
-
-    atomicState.AllowToRunMainLoop = true // for motion handler 
 
     atomicState.ThisIsManual = false
 
@@ -676,9 +646,6 @@ ThermsInvolved = ThermsInvolved.toInteger()
 */
 
     log.debug "Number of Thermostats Selected by User : $HowMany [init]"
-
-
-
 
     runIn(10, resetLocationChangeVariable)
 
@@ -715,7 +682,7 @@ def Evaluate(){
     def TooHumid = humidity > HumidityTolerance && Outside > Inside
 
     //log.debug "humidity is $humidity && TooHumid is $TooHumid"
-    if(atomicState.handlerrunning == false && atomicState.Motionhandlerrunning == false){
+    if(atomicState.handlerrunning == false){
         if(doorsOk || ContactExceptionIsClosed ){
 
 
@@ -808,9 +775,7 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
             def HeatNoMotionVal = 0
             def CoolNoMotionList  = [0, CoolNoMotion1, CoolNoMotion2, CoolNoMotion3]
             def CoolNoMotionVal = 0
-            //def InactiveList = [null, atomicState.isInActive1, atomicState.isInActive2, atomicState.isInActive3] 
-            //log.debug "InactiveList = $InactiveList"
-            //def Inactive = 0
+            
 
             def OutsideTempHighThres = ExceptACModes()
 
@@ -869,15 +834,13 @@ atomicState.loopValue = $atomicState.loopValue"""
 
                 HeatNoMotionVal = HeatNoMotionList[loopValue]
                 CoolNoMotionVal = CoolNoMotionList[loopValue]
-                def ActiveList = motionSensorHandler() 
+                def ActiveList = MotionTest() 
                 def Active = ActiveList[loopValue]
                 log.debug """
 ActiveList = $ActiveList
 MotionSensorList = $MotionSensorList
 Active?(from List) for $ThermSet && $MotionSensor = $Active
 """
-
-                def Inactive = !Active
 
                 HSPSet = HSP[loopValue]
                 HSPSet = HSPSet.toInteger()            
@@ -980,7 +943,7 @@ But, because CSPSet is lower than default value ($defaultCSPSet), default settin
 
                 if(AccountForMotion && InMotionModes ){
 
-                    if(Inactive){
+                    if(!Active){
                         // record algebraic CSPSet for debug purpose
                         def algebraicCSPSet = CSPSet 
                         // log.info "$ThermSet default Cool: $CSPSet and default heat: $HSPSet "
@@ -995,7 +958,7 @@ But, because CSPSet is lower than default value ($defaultCSPSet), default settin
                         log.debug "There's motion in ${ThermSet}'s room (main loop)"
                     }
 
-                    if(TooHumid && !Inactive){
+                    if(TooHumid && Active){
                         CSPSet = CSPSet - 2 
                     }
                 }
@@ -1078,7 +1041,7 @@ But, because CSPSet is lower than default value ($defaultCSPSet), default settin
                 log.trace """
 InMotionModes?($InMotionModes)
 AccountForMotion?($AccountForMotion)
-Motion at $MotionSensor inactive for the past $minutesMotion minutes?($Inactive)
+Motion at $MotionSensor Active for the past $minutesMotion minutes?($Active)
 FINAL CSPSet for $ThermSet = $CSPSet
 ThisIsExceptionTherm is: $ThisIsExceptionTherm (${ThermSet} == ${Thermostat_1})
 ContactExceptionIsClosed = $ContactExceptionIsClosed
@@ -1269,55 +1232,8 @@ atomicState.LatestThermostatMode_T4 = LatestThermostatMode
 
 // A.I. and micro location evt management
 def motionSensorHandler(evt){
-    atomicState.Motionhandlerrunning = true
 
-    def deltaMinutes = minutesMotion * 60000 as Long
-
-
-    def motionEvents1 = MotionSensor_1?.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
-    def motionEvents2 = MotionSensor_2?.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
-    def motionEvents3 = MotionSensor_3?.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
-
-
-    log.debug """
-motionEvents1 = $motionEvents1
-motionEvents2 = $motionEvents2
-motionEvents3 = $motionEvents3
-
-"""
-
-    def Active1 = motionEvents1?.size() != 0
-    def Active2 = motionEvents2?.size() != 0
-    def Active3 = motionEvents3?.size() != 0
-
-    if(atomicState.T1_AppMgt == false && !Active1){
-        Active1 = true
-    }
-    if(atomicState.T2_AppMgt == false  && !Active2){
-        Active2 = true
-    }
-    if(atomicState.T3_AppMgt == false  && !Active3){
-        Active3 = true
-    }
-    //$evt.value motion @ $evt.device
-    log.trace """
-
-deltaMinutes = $deltaMinutes
-Found ${motionEvents1?.size() ?: 0} events in the last $minutesMotion minutes at $MotionSensor_1
-Found ${motionEvents2?.size() ?: 0} events in the last $minutesMotion minutes at $MotionSensor_2
-Found ${motionEvents3?.size() ?: 0} events in the last $minutesMotion minutes at $MotionSensor_3
-
-$MotionSensor_1 is ACTIVE = $Active1
-$MotionSensor_2 is ACTIVE = $Active2
-$MotionSensor_3 is ACTIVE = $Active3
-"""
-
-    if(atomicState.notcalledfromEval != false) {
-        Evaluate()   
-    }
-    atomicState.Motionhandlerrunning = false
-
-    return [null, Active1, Active2, Active3]
+    Evaluate()
 
 }
 def HumidityHandler(evt){
@@ -1377,7 +1293,7 @@ def contactExceptionHandlerClosed(evt) {
     log.debug "$evt.device is now $evt.value (Contact Exception), Resuming Evaluation for $thermostats_1"
 
 
-    AppMgtTrue()
+    //AppMgtTrue()
     Evaluate()
 }
 
@@ -1397,21 +1313,6 @@ def temperatureHandler(evt) {
 current temperature value for $evt.device is $evt.value
 Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $currentTemp
 """
-
-    if(evt.device in Thermostat_1) {
-
-        atomicState.currentTemperatureT1 = evt.value 
-    }
-    else if(evt.device in Thermostat_2) {
-        atomicState.currentTemperatureT2 = evt.value 
-    }
-    else if(evt.device in Thermostat_3) {
-        atomicState.currentTemperatureT3 = evt.value 
-    }
-    else if(evt.device in Thermostat_4) {
-        atomicState.currentTemperatureT4 = evt.value 
-    }
-
 
     if(currentTemp <= CriticalTemp) {
         log.info "EMERGENCY HEATING - TEMPERATURE IS TOO LOW!" 
@@ -1495,11 +1396,11 @@ def contactHandlerClosed(evt) {
             message = "WINDOWS MANUALY CLOSED they will not open again until you open them yourself"
             log.info message
             send(message)
-            AppMgtTrue()
+            updated()
 
         }
     }
-    updated()
+
 } 
 def contactHandlerOpen(evt) {
     //log.debug "$evt.device is now $evt.value, Turning off all thermostats in $TimeBeforeClosing seconds"
@@ -1676,8 +1577,6 @@ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should hav
                 def message = "user set temperature manually on $evt.device"
                 log.info message
 
-
-
             }
             //     
             if(evt.displayName == "${Thermostat_1}")
@@ -1687,17 +1586,12 @@ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should hav
                     //let's first make sure there's not already an override for that one
                     if(atomicState.T1_AppMgt != false) {
                         atomicState.T1_AppMgt = false
-                        atomicState.T1_AppMgtSP = false
+
                         log.info "atomicState.T1_AppMgt set to $atomicState.T1_AppMgt"
                     }
                     else { 
                         log.debug "OVERRIDE ALREADY SET FOR $Thermostat_1"
                     }
-                }
-                else {
-                    atomicState.T1_AppMgt = true
-                    atomicState.T1_AppMgtSP = true
-                    log.info "atomicState.T1_AppMgt set to $atomicState.T1_AppMgt"
                 }
 
             }
@@ -1707,18 +1601,11 @@ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should hav
                     //let's first make sure there's not already an override for that one
                     if(atomicState.T2_AppMgt != false) {
                         atomicState.T2_AppMgt = false
-                        atomicState.T2_AppMgtSP = false
-
                         log.info "atomicState.T2_AppMgt set to $atomicState.T2_AppMgt"
                     }
                     else { 
                         log.debug "OVERRIDE ALREADY SET FOR $Thermostat_2"
                     }
-                }
-                else {
-                    atomicState.T2_AppMgt = true
-                    atomicState.T2_AppMgtSP = true
-                    log.info "atomicState.T2_AppMgt set to $atomicState.T2_AppMgt"
                 }
             }
             else if(evt.displayName == "${Thermostat_3}")
@@ -1727,17 +1614,11 @@ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should hav
                     //let's first make sure there's not already an override for that one
                     if(atomicState.T3_AppMgt != false) {
                         atomicState.T3_AppMgt = false
-                        atomicState.T3_AppMgtSP = false
                         log.info "atomicState.T3_AppMgt set to $atomicState.T3_AppMgt"
                     }
                     else { 
                         log.debug "OVERRIDE ALREADY SET FOR $Thermostat_3"
                     }
-                }
-                else {
-                    atomicState.T3_AppMgt = true
-                    atomicState.T3_AppMgtSP = true
-                    log.info "atomicState.T3_AppMgt set to $atomicState.T3_AppMgt"
                 }
             }
             else if(evt.displayName == "${Thermostat_4}")
@@ -1746,17 +1627,11 @@ SetPoint Change was Manual? ($atomicState.ThisIsManual) if false then should hav
                     //let's first make sure there's not already an override for that one
                     if(atomicState.T4_AppMgt != false) {
                         atomicState.T4_AppMgt = false
-                        atomicState.T4_AppMgtSP = false
                         log.info "atomicState.T4_AppMgt set to $atomicState.T4_AppMgt"
                     }
                     else { 
                         log.debug "OVERRIDE ALREADY SET FOR $Thermostat_4"
                     }
-                }
-                else {
-                    atomicState.T4_AppMgt = true
-                    atomicState.T4_AppMgtSP = true
-                    log.info "atomicState.T4_AppMgt set to $atomicState.T4_AppMgt"
                 }
             }   
 
@@ -1815,12 +1690,7 @@ thisIsWindowMgt?($thisIsWindowMgt)
 """
 
             if(evt.displayName == "${Thermostat_1}" ){
-                if(!ThereWasChange){
-                    // manual override deactivated
-                    log.debug "NO MANUAL ON/OFF OVERRIDE for $Thermostat_1"
-                    atomicState.T1_AppMgt = true
-                }
-                else { 
+                if(ThereWasChange){
                     //let's first make sure there's not already an override for that one
                     if(atomicState.T1_AppMgt != false) {
                         // command did not come from app so manual or set point is manual override is on
@@ -1833,12 +1703,7 @@ thisIsWindowMgt?($thisIsWindowMgt)
                 }       
             }
             else if(evt.displayName == "${Thermostat_2}"){
-                if(!ThereWasChange){
-                    // manual override deactivated
-                    log.debug "NO MANUAL ON/OFF OVERRIDE for $Thermostat_2"
-                    atomicState.T2_AppMgt = true
-                }
-                else {
+                if(ThereWasChange){     
                     //let's first make sure there's not already an override for that one
                     if(atomicState.T2_AppMgt != false) {
                         // command did not come from app so manual override is on
@@ -1851,12 +1716,7 @@ thisIsWindowMgt?($thisIsWindowMgt)
                 }
             } 
             else if(evt.displayName == "${Thermostat_3}"){
-                if(!ThereWasChange){
-                    // manual override deactivated
-                    log.debug "NO ON/OFF MANUAL OVERRIDE for $Thermostat_3"
-                    atomicState.T3_AppMgt = true
-                }
-                else {
+                if(ThereWasChange){
                     //let's first make sure there's not already an override for that one
                     if(atomicState.T3_AppMgt != false) {
                         // command did not come from app so manual override is on
@@ -1870,12 +1730,7 @@ thisIsWindowMgt?($thisIsWindowMgt)
                 } 
             }
             else if(evt.displayName == "${Thermostat_4}"){
-                if(!ThereWasChange){
-                    // manual override deactivated
-                    //log.debug "NO ON/OFF MANUAL OVERRIDE for $Thermostat_4"
-                    atomicState.T4_AppMgt = true
-                }
-                else {
+                if(ThereWasChange){
                     //let's first make sure there's not already an override for that one
                     if(atomicState.T4_AppMgt != false) {
                         // command did not come from app so manual override is on
@@ -1945,7 +1800,7 @@ def resetLocationChangeVariable(){
     //log.debug "atomicState.locationModeChange reset to FALSE"
 }
 
-// contacts and windows management
+// contacts and windows management and motion bool tests
 def MainContactsClosed(){
 
     def MainContactsAreClosed = true // has to be true by default in case no contacts selected
@@ -2097,6 +1952,45 @@ def TurnOffThermostats(){
 
 
     }
+}
+def MotionTest(){
+    def deltaMinutes = minutesMotion * 60000 as Long
+    def motionEvents1 = MotionSensor_1?.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
+    def motionEvents2 = MotionSensor_2?.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
+    def motionEvents3 = MotionSensor_3?.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
+Ffoi
+    def Active1 = motionEvents1?.size() != 0
+    def Active2 = motionEvents2?.size() != 0
+    def Active3 = motionEvents3?.size() != 0
+
+    if(atomicState.T1_AppMgt == false && !Active1){
+        Active1 = true
+    }
+    if(atomicState.T2_AppMgt == false  && !Active2){
+        Active2 = true
+    }
+    if(atomicState.T3_AppMgt == false  && !Active3){
+        Active3 = true
+    }
+    //$evt.value motion @ $evt.device
+    log.trace """
+
+deltaMinutes = $deltaMinutes
+Found ${motionEvents1?.size() ?: 0} events in the last $minutesMotion minutes at $MotionSensor_1
+Found ${motionEvents2?.size() ?: 0} events in the last $minutesMotion minutes at $MotionSensor_2
+Found ${motionEvents3?.size() ?: 0} events in the last $minutesMotion minutes at $MotionSensor_3
+
+$MotionSensor_1 is ACTIVE = $Active1
+$MotionSensor_2 is ACTIVE = $Active2
+$MotionSensor_3 is ACTIVE = $Active3
+"""
+
+    if(atomicState.notcalledfromEval != false) {
+        Evaluate()   
+    }
+    atomicState.Motionhandlerrunning = false
+
+    return [null, Active1, Active2, Active3]
 }
 
 def CheckWindows(){
