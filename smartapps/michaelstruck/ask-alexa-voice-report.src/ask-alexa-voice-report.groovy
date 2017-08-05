@@ -804,4 +804,4 @@ def getDesc(type){
 //Version/Copyright/Information/Help
 private versionInt(){ return 105}
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.5 (08/3/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.5 (08/03/2017)" }
