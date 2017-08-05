@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.0 - 8/3/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.0a - 8/3/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.2.9 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.2.9e (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
- *  Version 2.3.0 (8/3/17) GUI optimizations-Removed device specific commands (under Settings) and move them to the device areas and grouped any device voice settings, added Foobot Air Quality Monitor options
+ *  Version 2.3.0a (8/3/17) GUI optimizations-Removed device specific commands (under Settings) and move them to the device areas and grouped any device voice settings, added Foobot Air Quality Monitor options
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -119,7 +119,7 @@ def pageExtensions(){
             duplicates +=getWR().label.findAll{getWR().label.count(it)>1}.unique()
             duplicates +=getVR().label.findAll{getVR().label.count(it)>1}.unique()
             duplicates +=getAAMQ().label.findAll{getAAMQ().label.count(it)>1}.unique()
-            duplicates +=getSCHD().label.findAll{getSCHD().lable.count(it)>1}.unique()
+            duplicates +=getSCHD().label.findAll{getSCHD().label.count(it)>1}.unique()
             if (duplicates) paragraph "You have two or more extensions that have the same name. Please ensure each extension has a unique name and also does not conflict with device or other extension names.", image: imgURL() + "caution.png" 
         	href "pageMacros", title: "Macros", description: macroDesc(macroCount), state: (macroCount ? "complete" : null), image: imgURL() + "speak.png" 
      		href "pageMsgQue", title: "Message Queues", description: mqDesc(mqCount), state: "complete", image: imgURL() + "mailbox.png"
@@ -1699,7 +1699,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                         result += humidity ? ", and the relative humidity is ${humidity}%. " : ". "
                         result += wet ? "Also, this device is a leak sensor, and it is currently ${wet}. " : ""
                         result += contact ? "This device is also a contact sensor sensor, and it is currently reading ${contact}. " : ""
-                        result += pollution ? "This device is also an air quality monitor reading: '${STdevice.currentValue("GPIstate")}',with a Global Pollution Index of ${pollution}%. " : ""
+                        result += pollution ? "This device is also an air quality monitor that is currently reading: '${STdevice.currentValue("GPIstate")}', with a Global Pollution Index of ${pollution}%. " : ""
                     }
                     else result += ". "
             	}
@@ -3521,7 +3521,7 @@ private mqReq() { return 105 }
 private wrReq()  { return 105 }
 private vrReq()  { return 105 }
 private schReq()  { return 103 }
-private versionLong(){ return "2.3.0" }
+private versionLong(){ return "2.3.0a" }
 private versionDate(){ return "08/03/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
