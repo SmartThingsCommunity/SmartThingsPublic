@@ -72,7 +72,7 @@ def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 def poll() {
 	if (secondsPast(state.lastbatt, 36*60*60)) {
-		return zwave.batteryV1.batteryGet().format
+		return zwave.batteryV1.batteryGet().format()
 	} else {
 		return null
 	}

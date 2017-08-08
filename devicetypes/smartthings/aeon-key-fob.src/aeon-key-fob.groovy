@@ -133,8 +133,8 @@ def updated() {
 }
 
 def initialize() {
-	// Arrival sensors only goes OFFLINE when Hub is off
-	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+	// Device only goes OFFLINE when Hub is off
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 
 	def zwMap = getZwaveInfo()
 	def buttons = 4 // Default for Key Fob

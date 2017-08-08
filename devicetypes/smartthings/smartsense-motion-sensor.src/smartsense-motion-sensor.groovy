@@ -111,6 +111,8 @@ def parse(String description) {
 				def value = descMap.value.endsWith("01") ? "active" : "inactive"
 				log.debug "Doing a read attr motion event"
 				map = getMotionResult(value)
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
+				map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
 			}
 		}
 	} else if (map.name == "temperature") {
@@ -135,6 +137,10 @@ def parse(String description) {
 private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
+	translateZoneStatus(zs)
+}
+
+private Map translateZoneStatus(ZoneStatus zs) {
 	// Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
 	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
 }
@@ -165,13 +171,29 @@ private Map getBatteryResult(rawValue) {
 			def pct = batteryMap[volts]
 			result.value = pct
 		} else {
-			def minVolts = 2.1
-			def maxVolts = 3.0
-			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			def roundedPct = Math.round(pct * 100)
-			if (roundedPct <= 0)
-				roundedPct = 1
-			result.value = Math.min(100, roundedPct)
+			def minVolts = 2.4
+			def maxVolts = 2.7
+			// Get the current battery percentage as a multiplier 0 - 1
+			def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
+			// Find the corresponding voltage from our range
+			curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
+			// Round to the nearest 10th of a volt
+			curValVolts = Math.round(10 * curValVolts) / 10.0
+			// Only update the battery reading if we don't have a last reading,
+			// OR we have received the same reading twice in a row
+			// OR we don't currently have a battery reading
+			// OR the value we just received is at least 2 steps off from the last reported value
+			if(state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+				def pct = (volts - minVolts) / (maxVolts - minVolts)
+				def roundedPct = Math.round(pct * 100)
+				if (roundedPct <= 0)
+					roundedPct = 1
+				result.value = Math.min(100, roundedPct)
+			} else {
+				// Don't update as we want to smooth the battery values
+				result = null
+			}
+			state.lastVolts = volts
 		}
 	}
 
@@ -200,7 +222,8 @@ def refresh() {
 	log.debug "refresh called"
 
 	def refreshCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)
+			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
 	return refreshCmds + zigbee.enrollResponse()
 }
