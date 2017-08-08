@@ -12,7 +12,17 @@ metadata {
     definition (name: "DSC Stay Panel", author: "Jordan <jordan@xeron.cc>", namespace: 'dsc') {
         capability "Switch"
         capability "Refresh"
-
+        attribute "status", "string"
+        attribute "trouble", "string"
+        attribute "chime", "string"
+        attribute "ledready", "string"
+        attribute "ledarmed", "string"
+        attribute "ledmemory", "string"
+        attribute "ledbypass", "string"
+        attribute "ledtrouble", "string"
+        attribute "ledprogram", "string"
+        attribute "ledfire", "string"
+        attribute "ledbacklight", "string"
         command "away"
         command "autobypass"
         command "bypassoff"
