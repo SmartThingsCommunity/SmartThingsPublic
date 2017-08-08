@@ -11,7 +11,11 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  An enhanced virtual lock that allows for testing failure modes
+ *  Author: SmartThings
+ *  Date: 2017-08-07
+ *
  */
+
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Simulated Lock", namespace: "smartthings/testing", author: "SmartThings") {
@@ -81,12 +85,17 @@ metadata {
 	}
 }
 
+def parse(String description) {
+	log.trace "parse $description"
+	def pair = description.split(":")
+	createEvent(name: pair[0].trim(), value: pair[1].trim())
+}
+
 def installed() {
 	log.trace "installed()"
 	setBatteryLevel(94)
 	unlock()
 	initialize()
-
 }
 
 def updated() {
