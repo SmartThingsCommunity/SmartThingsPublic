@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  Author: SmartThings
- *  Date: 2017-05-25
+ *  Date: 2017-08-07
  *
  */
 import groovy.transform.Field
@@ -44,7 +44,7 @@ import groovy.transform.Field
 
 metadata {
 	definition (name: "Simulated RGBW Bulb", namespace: "smartthings/testing", author: "SmartThings") {
-        capability "Health Check"
+		capability "Health Check"
 		capability "Actuator"
 		capability "Light"
 
@@ -55,12 +55,12 @@ metadata {
 		capability "Refresh"
 		capability "Configuration"
 
-		attribute  "colorTemperatureMin", "number"
-		attribute  "colorTemperatureMax", "number"
+		attribute  "colorTemperatureRange", "VECTOR3"
 
-		attribute  "bulbMode", "enum", ["Color", "White", "Off"]
-		attribute  "bulbValue", "string"
-		attribute  "colorIndicator", "number"
+		attribute  "bulbMode", "ENUM", ["Color", "White", "Off"]
+		attribute  "bulbValue", "STRING"
+		attribute  "colorIndicator", "NUMBER"
+		
 		command    "simulateBulbState"
 	}
 
@@ -277,8 +277,11 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-	log.debug "Parsing '${description}'"
+	log.trace "parse $description"
+	def pair = description.split(":")
+	def event = createEvent(name: pair[0].trim(), value: pair[1].trim())
 	done()
+	return event
 }
 
 def installed() {
@@ -296,7 +299,7 @@ def updated() {
 //
 
 def ping() {
-    refresh()
+	refresh()
 }
 
 def refresh() {
@@ -414,8 +417,7 @@ private initialize() {
 	log.trace "Executing 'initialize'"
 	sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
 
-	sendEvent(name: "colorTemperatureMin", value: COLOR_TEMP_RANGE.getFrom())
-	sendEvent(name: "colorTemperatureMax", value: COLOR_TEMP_RANGE.getTo())
+	sendEvent(name: "colorTemperatureRange", value: COLOR_TEMP_RANGE)
 	sendEvent(name: "colorTemperature", value: COLOR_TEMP_DEFAULT)
 
 	sendEvent(name: "hue", value: 0)

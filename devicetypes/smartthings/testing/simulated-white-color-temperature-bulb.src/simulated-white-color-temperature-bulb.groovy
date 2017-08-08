@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  Author: SmartThings
- *  Date: 2017-05-25
+ *  Date: 2017-08-07
  *
  */
 import groovy.transform.Field
@@ -46,12 +46,11 @@ metadata {
 		capability "Refresh"
 		capability "Configuration"
 
-		attribute  "colorTemperatureMin", "number"
-		attribute  "colorTemperatureMax", "number"
+		attribute "colorTemperatureRange" "VECTOR3"
 
-		attribute  "bulbMode", "enum", ["White", "Off"]
-		attribute  "bulbValue", "string"
-		attribute  "colorIndicator", "number"
+		attribute  "bulbMode", "ENUM", ["White", "Off"]
+		attribute  "bulbValue", "STRING"
+		attribute  "colorIndicator", "NUMBER"
 		command    "simulateBulbState"
 	}
 
@@ -225,8 +224,7 @@ def setColorTemperature(kelvin) {
  */
 private initialize() {
 	log.trace "Executing 'initialize'"
-	sendEvent(name: "colorTemperatureMin", value: COLOR_TEMP_RANGE.getFrom())
-	sendEvent(name: "colorTemperatureMax", value: COLOR_TEMP_RANGE.getTo())
+	sendEvent(name: "colorTemperatureRange", value: COLOR_TEMP_RANGE)
 	sendEvent(name: "colorTemperature", value: COLOR_TEMP_DEFAULT)
 
 	sendEvent(name: "level", value: 100)
