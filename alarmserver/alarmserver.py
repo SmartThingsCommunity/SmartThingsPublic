@@ -687,7 +687,10 @@ class AlarmServer(asyncore.dispatcher):
             try:
                 zones = str(query_array['zone'][0]).split(',')
                 for zone in zones:
-                    partition = str(self._config.ZONES[int(zone)]['partition'])
+                    if str(zone) == '0':
+                      partition = part
+                    else:
+                      partition = str(self._config.ZONES[int(zone)]['partition'])
                     if len(zone) == 1: zone = '0' + zone
                     alarmserver_logger("request to bypass zone %s on partition %s" % (zone, partition))
                     channel.pushok(json.dumps({'response' : 'Request to bypass zone received'}))
