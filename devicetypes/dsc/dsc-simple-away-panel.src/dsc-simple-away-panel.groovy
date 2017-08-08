@@ -209,7 +209,7 @@ def autobypass() {
 }
 
 def bypassoff() {
-  parent.sendUrl("bypass?zone=0")
+  parent.sendUrl("bypass?zone=0&part=${device.deviceNetworkId[-1]}")
 }
 
 def disarm() {
