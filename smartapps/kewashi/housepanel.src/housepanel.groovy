@@ -33,6 +33,9 @@ preferences {
     section("Switches...") {
         input "myswitches", "capability.switch", multiple: true, required: false
     }
+    section("Bulbs...") {
+        input "mybulbs", "capability.bulb", multiple: true, required: false
+    }
     section("Dimmer switches...") {
         input "mydimmers", "capability.switchLevel", multiple: true, required: false
     }
@@ -57,8 +60,8 @@ preferences {
     section ("Weather...") {
     	input "myweathers", "device.smartweatherStationTile", title: "Weather tile", multiple: true, required: false
     }
-    section ("Cameras...") {
-    	input "mycameras", "capability.imageCapture", multiple: true, required: false
+    section ("Presences...") {
+    	input "mypresences", "capability.presenceSensor", multiple: true, required: false
     }
     section ("Water Sensors...") {
     	input "mywaters", "capability.waterSensor", multiple: true, required: false
@@ -72,6 +75,12 @@ mappings {
   path("/switches") {
     action: [
       POST: "getSwitches"
+    ]
+  }
+  
+  path("/bulbs") {
+    action: [
+      POST: "getBulbs"
     ]
   }
   
@@ -117,9 +126,9 @@ mappings {
     ]
   }
     
-  path("/cameras") {
+  path("/presences") {
     action: [
-      POST: "getCameras"
+      POST: "getPresences"
     ]
   }
     
@@ -146,6 +155,12 @@ mappings {
       POST: "getModes"
     ]
   }
+    
+  path("/pistons") {
+    action: [
+      POST: "getPistons"
+    ]
+  }
   
   path("/doaction") {
      action: [
@@ -169,11 +184,13 @@ mappings {
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-    // subscribe(weathers, "device.smartweatherStationTile", getWeatherInfo)
+    // activate connector for webCoRE
+    webCoRE_init()
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
+    webCoRE_init()
 }
 
 def getWeatherInfo(evt) {
@@ -186,6 +203,12 @@ def getWeatherInfo(evt) {
 def getSwitch(swid, item=null) {
     item = item ? item : myswitches.find {it.id == swid }
     def resp = item ? [switch: item.currentValue("switch")] : false
+    return resp
+}
+
+def getBulb(swid, item=null) {
+    item = item ? item : mybulbs.find {it.id == swid }
+    def resp = item ? [switch: item.currentValue("bulb")] : false
     return resp
 }
 
@@ -248,9 +271,13 @@ def getThermostat(swid, item=null) {
     return resp
 }
 
-def getCamera(swid, item=null) {
-    item = item ? item : mycameras.find {it.id == swid }
-    def resp = item ? [image: item.currentValue("image")] : false
+// use absent instead of "not present" for absence state
+def getPresence(swid, item=null) {
+    item = item ? item : mypresences.find {it.id == swid }
+    def resp = false
+    if (item) {
+  		resp = item.currentValue("presence")=="present" ? "present" : "absent";
+    }
     return resp
 }
 
@@ -307,12 +334,30 @@ def getMode(swid=0, item=null) {
 // this is done so we can treat this like any other set of tiles
 def getModes() {
     def resp = []
-    log.debug "Getting the mode tile"
+    // log.debug "Getting the mode tile"
     def val = getMode()
     resp << [name: "Mode 1x1", id: "mode1x1", value: val, type: "mode"]
     resp << [name: "Mode 1x2", id: "mode1x2", value: val, type: "mode"]
     resp << [name: "Mode 2x1", id: "mode2x1", value: val, type: "mode"]
     resp << [name: "Mode 2x2", id: "mode2x2", value: val, type: "mode"]
+    return resp
+}
+
+def getPiston(swid, item=null) {
+    item = item ? item : webCoRE_list().find {it.id == swid}
+    def resp = [webcore: "webCoRE piston", pistonName: item.name]
+    return resp
+}
+
+def getPistons() {
+    def resp = []
+    def plist = webCoRE_list()
+    log.debug "Number of pistons = " + plist?.size() ?: 0
+    plist?.each {
+        def val = getPiston(it.id, it)
+        resp << [name: it.name, id: it.id, value: val, type: "piston"]
+        // log.debug "webCoRE piston retrieved: name = ${it.name} with id = ${it.id} and ${it}"
+    }
     return resp
 }
 
@@ -322,6 +367,16 @@ def getSwitches() {
     myswitches?.each {
         def val = getSwitch(it.id, it)
         resp << [name: it.displayName, id: it.id, value: val, type: "switch"]
+    }
+    return resp
+}
+
+def getBulbs() {
+    def resp = []
+    log.debug "Number of bulbs = " + mybulbs?.size() ?: 0
+    mybulbs?.each {
+        def val = getBulb(it.id, it)
+        resp << [name: it.displayName, id: it.id, value: val, type: "bulb"]
     }
     return resp
 }
@@ -399,13 +454,12 @@ def getThermostats() {
     return resp
 }
 
-def getCameras() {
+def getPresences() {
     def resp = []
-    log.debug "Number of cameras = " + mycameras?.size() ?: 0
-    mycameras?.each {
-        def val = getCamera(it.id, it)
-        it.take();
-        resp << [name: it.displayName, id: it.id, value: val, type: "image"]
+    log.debug "Number of presence sensors = " + mypresences?.size() ?: 0
+    mypresences?.each {
+        def val = getPresence(it.id, it)
+        resp << [name: it.displayName, id: it.id, value: val, type: "presence"]
     }
     return resp
 }
@@ -459,7 +513,7 @@ def getGenerals(mygens, gentype) {
              mymusics?.find {it.id == thatid } ||
              mythermostats?.find {it.id == thatid} ||
              myweathers?.find {it.id == thatid} ||
-             mycameras?.find {it.id == thatid}
+             mypresences?.find {it.id == thatid}
             )
         
         if ( !inlist ) {
@@ -502,6 +556,10 @@ def doAction() {
       	 cmdresult = setSwitch(swid, cmd, swattr)
          break
          
+      case "bulb" :
+      	 cmdresult = setBulb(swid, cmd, swattr)
+         break
+         
       case "switchlevel" :
          cmdresult = setDimmer(swid, cmd, swattr)
          break
@@ -521,14 +579,17 @@ def doAction() {
       case "music" :
          cmdresult = setMusic(swid, cmd, swattr)
          break
-         
-      case "image" :
-      	 cmdresult = setCamera(swid, cmd, swattr)
-         break
 
       case "mode" :
          cmdresult = setMode(swid, cmd, swattr)
          break
+
+      case "piston" :
+         webCoRE_execute(swid)
+         // set the result to piston information (could be false)
+         cmdresult = getPiston(swid)
+         log.debug "Executed webCoRE piston: $cmdresult"
+         break;
       
     }
    
@@ -546,6 +607,10 @@ def doQuery() {
     switch(swtype) {
     case "switch" :
       	cmdresult = getSwitch(swid)
+        break
+         
+    case "bulb" :
+      	cmdresult = getBulb(swid)
         break
          
     case "switchlevel" :
@@ -575,9 +640,9 @@ def doQuery() {
     case "music" :
         cmdresult = getMusic(swid)
         break
-         
-    case "image" :
-        cmdresult = getCamera(swid)
+        
+    case "presence" :
+    	cmdresult = getPresence(swid)
         break
          
     case "water" :
@@ -602,75 +667,6 @@ def doQuery() {
     return cmdresult
 }
 
-def getHistory() {
-    def swtype = params.swtype
-    def swid = params.swid
-    def actionitems = myswitches
-    def hstatus = "switch"
-    
-    // log.debug "called getHistory with thing of type = " + swtype + " id = " + swid
-    
-    switch (swtype) {
-      case "switch" :
-         actionitems = myswitches
-         hstatus = "switch"
-         break
-      case "switchlevel" :
-         actionitems = mydimmers
-         hstatus = "level"
-         break
-      case "momentary" :
-         actionitems = mymomentaries
-         hstatus = "switch"
-         break
-      case "motion" :
-         actionitems = mysensors
-         hstatus = "motion"
-         break
-      case "contact" :
-         actionitems = mydoors
-         hstatus = "contact"
-         break
-      case "music" :
-         actionitems = mymusics
-         hstatus = "status"
-         break
-      case "lock" :
-         actionitems = mylocks
-         hstatus = "lock"
-         break
-      case "thermostat" :
-      	 actionitems = mythermostats
-         hstatus = "temperature"
-        break
-      case "image" :
-      	 actionitems = mycameras
-         hstatus = "image"
-         break
-      case "water" :
-      	 actionitems = mywaters
-         hstatus = "water"
-         break
-        
-      default :
-         actionitems = null
-         break
-    }
-    
-    def resp = []
-    def item  = actionitems?.find {it.id == swid }
-    if (item) {
-        def startDate = new Date() - 5
-        def endDate = new Date()
-        resp = item.statesBetween(swtype, startDate, endDate, [max: 10])
-        // log.debug "history found for thing = " + item.displayName + " items= " + theHistory.size()
-    } else {
-        httpError(400, "History not available for thing with id= $swid and type= $swtype");
-    }
-
-    return resp
-}
-
 // changed these to just return values of entire tile
 def setSwitch(swid, cmd, swattr) {
     def resp = false
@@ -682,6 +678,21 @@ def setSwitch(swid, cmd, swattr) {
         item.currentSwitch=="off" ? item.on() : item.off()
         resp = [switch: newsw]
         // resp = [name: item.displayName, value: newsw, id: swid, type: swtype]
+    }
+    return resp
+    
+}
+
+// changed these to just return values of entire tile
+def setBulb(swid, cmd, swattr) {
+    def resp = false
+    def newsw = cmd
+    def item  = mybulbs.find {it.id == swid }
+    
+    if (item) {
+        newsw = item.currentBulb=="off" ? "on" : "off"
+        item.currentBulb=="off" ? item.on() : item.off()
+        resp = [bulb: newsw]
     }
     return resp
     
@@ -971,16 +982,56 @@ def setMusic(swid, cmd, swattr) {
     return resp
 }
 
-def setCamera(swid, cmd, swattr) {
-    def resp = false
- 
-    def item  = mycameras.find {it.id == swid }
-    if (item) {
-          log.debug "takeImage command = $cmd for id = $swid"
-          item.take()
-          resp = [image: item.image]
-          // resp = [name: item.displayName, value: item.image, id: swid, type: swtype]
-    }
-    return resp
-
+/*************************************************************************/
+/* webCoRE Connector v0.2                                                */
+/*************************************************************************/
+/*  Copyright 2016 Adrian Caramaliu <ady624(at)gmail.com>                */
+/*                                                                       */
+/*  This program is free software: you can redistribute it and/or modify */
+/*  it under the terms of the GNU General Public License as published by */
+/*  the Free Software Foundation, either version 3 of the License, or    */
+/*  (at your option) any later version.                                  */
+/*                                                                       */
+/*  This program is distributed in the hope that it will be useful,      */
+/*  but WITHOUT ANY WARRANTY; without even the implied warranty of       */
+/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the         */
+/*  GNU General Public License for more details.                         */
+/*                                                                       */
+/*  You should have received a copy of the GNU General Public License    */
+/*  along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
+/*************************************************************************/
+/*  Initialize the connector in your initialize() method using           */
+/*     webCoRE_init()                                                    */
+/*  Optionally, pass the string name of a method to call when a piston   */
+/*  is executed:                                                         */
+/*     webCoRE_init('pistonExecutedMethod')                              */
+/*************************************************************************/
+/*  List all available pistons by using one of the following:            */
+/*     webCoRE_list() - returns the list of id/name pairs                */
+/*     webCoRE_list('id') - returns the list of piston IDs               */
+/*     webCoRE_list('name') - returns the list of piston names           */
+/*************************************************************************/
+/*  Execute a piston by using the following:                             */
+/*     webCoRE_execute(pistonIdOrName)                                   */
+/*  The execute method accepts either an id or the name of a             */
+/*  piston, previously retrieved by webCoRE_list()                       */
+/*************************************************************************/
+private webCoRE_handle(){return'webCoRE'}
+private webCoRE_init(pistonExecutedCbk)
+{
+    state.webCoRE=(state.webCoRE instanceof Map?state.webCoRE:[:])+(pistonExecutedCbk?[cbk:pistonExecutedCbk]:[:]);
+    subscribe(location,"${webCoRE_handle()}.pistonList",webCoRE_handler);
+    if(pistonExecutedCbk)subscribe(location,"${webCoRE_handle()}.pistonExecuted",webCoRE_handler);webCoRE_poll();
 }
+private webCoRE_poll(){sendLocationEvent([name: webCoRE_handle(),value:'poll',isStateChange:true,displayed:false])}
+public  webCoRE_execute(pistonIdOrName,Map data=[:]){def i=(state.webCoRE?.pistons?:[]).find{(it.name==pistonIdOrName)||(it.id==pistonIdOrName)}?.id;if(i){sendLocationEvent([name:i,value:app.label,isStateChange:true,displayed:false,data:data])}}
+public  webCoRE_list(mode)
+{
+	def p=state.webCoRE?.pistons;
+    if(p)p.collect{
+		mode=='id'?it.id:(mode=='name'?it.name:[id:it.id,name:it.name])
+        // log.debug "Reading piston: ${it}"
+	}
+    return p
+}
+public  webCoRE_handler(evt){switch(evt.value){case 'pistonList':List p=state.webCoRE?.pistons?:[];Map d=evt.jsonData?:[:];if(d.id&&d.pistons&&(d.pistons instanceof List)){p.removeAll{it.iid==d.id};p+=d.pistons.collect{[iid:d.id]+it}.sort{it.name};state.webCoRE = [updated:now(),pistons:p];};break;case 'pistonExecuted':def cbk=state.webCoRE?.cbk;if(cbk&&evt.jsonData)"$cbk"(evt.jsonData);break;}}
