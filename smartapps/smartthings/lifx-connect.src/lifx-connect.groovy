@@ -19,8 +19,15 @@ definition(
 		singleInstance: true) {
 	appSetting "clientId"
 	appSetting "clientSecret"
+	appSetting "serverUrl" // See note below
 }
 
+// NOTE regarding OAuth settings. On NA01 (i.e. graph.api), NA01S, and NA01D the serverUrl app setting can be left
+// Blank. For other shards is should be set to the callback URL registered with LIFX, which is:
+//
+// Production  -- https://graph.api.smartthings.com
+// Staging     -- https://graph-na01s-useast1.smartthingsgdev.com
+// Development -- https://graph-na01d-useast1.smartthingsgdev.com
 
 preferences {
 	page(name: "Credentials", title: "LIFX", content: "authPage", install: true)
@@ -35,11 +42,12 @@ mappings {
 	path("/test") { action: [ GET: "oauthSuccess" ] }
 }
 
-def getServerUrl()               { return "https://graph.api.smartthings.com" }
-def getCallbackUrl()             { return "https://graph.api.smartthings.com/oauth/callback"}
+def getServerUrl()               { return  appSettings.serverUrl ?: apiServerUrl }
+def getCallbackUrl()             { return "${getServerUrl()}/oauth/callback" }
 def apiURL(path = '/') 			 { return "https://api.lifx.com/v1${path}" }
 def getSecretKey()               { return appSettings.secretKey }
 def getClientId()                { return appSettings.clientId }
+private getVendorName() { "LIFX" }
 
 def authPage() {
 	log.debug "authPage test1"
@@ -64,11 +72,12 @@ def authPage() {
 		log.debug "have LIFX access token"
 
 		def options = locationOptions() ?: []
-		def count = options.size()
+		def count = options.size().toString()
 
 		return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
 			section("Select your location") {
 				input "selectedLocationId", "enum", required:true, title:"Select location ({{count}} found)", messageArgs: [count: count], multiple:false, options:options, submitOnChange: true
+				paragraph "Devices will be added automatically from your ${vendorName} account. To add or delete devices please use the Official ${vendorName} App."
 			}
 		}
 	}

@@ -1,5 +1,7 @@
+import groovy.json.JsonOutput
+
 /**
- *  Copyright 2016 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -19,6 +21,7 @@ metadata {
         capability "Sensor"
         capability "Battery"
         capability "Configuration"
+        capability "Health Check"
 
         fingerprint inClusters: "0000,0001,0003,000F,0020", outClusters: "0003,0019",
                         manufacturer: "SmartThings", model: "tagv4", deviceJoinName: "Arrival Sensor"
@@ -58,8 +61,13 @@ def updated() {
     startTimer()
 }
 
+def installed() {
+    // Arrival sensors only goes OFFLINE when Hub is off
+    sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+}
+
 def configure() {
-    def cmds = zigbee.batteryConfig(20, 20, 0x01)
+    def cmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(20, 20, 0x01)
     log.debug "configure -- cmds: ${cmds}"
     return cmds
 }

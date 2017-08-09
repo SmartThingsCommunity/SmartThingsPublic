@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee Dimmer Power", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Dimmer Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
@@ -70,19 +70,27 @@ def parse(String description) {
         else {
             sendEvent(event)
         }
-    }
-    else {
-        def cluster = zigbee.parse(description)
-        if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
-            if (cluster.data[0] == 0x00){
+    } else {
+        def descMap = zigbee.parseDescriptionAsMap(description)
+        if (descMap && descMap.clusterInt == 0x0006 && descMap.commandInt == 0x07) {
+            if (descMap.data[0] == "00") {
                 log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
                 sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-            }
-            else {
+            } else {
                 log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
             }
-        }
-        else {
+        } else if (device.getDataValue("manufacturer") == "sengled" && descMap && descMap.clusterInt == 0x0008 && descMap.attrInt == 0x0000) {
+            // This is being done because the sengled element touch incorrectly uses the value 0xFF for the max level.
+            // Per the ZCL spec for the UINT8 data type 0xFF is an invalid value, and 0xFE should be the max.  Here we
+            // manually handle the invalid attribute value since it will be ignored by getEvent as an invalid value.
+            // We also set the level of the bulb to 0xFE so future level reports will be 0xFE until it is changed by
+            // something else.
+            if (descMap.value.toUpperCase() == "FF") {
+                descMap.value = "FE"
+            }
+            sendHubCommand(zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, 0x00, "FE0000").collect { new physicalgraph.device.HubAction(it) }, 0)
+            sendEvent(zigbee.getEventFromAttrData(descMap.clusterInt, descMap.attrInt, descMap.encoding, descMap.value))
+        } else {
             log.warn "DID NOT PARSE MESSAGE for description : $description"
             log.debug zigbee.parseDescriptionAsMap(description)
         }
@@ -114,9 +122,17 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-
+    def cmds = []
+    if (device.getDataValue("manufacturer") == "sengled") {
+        def startLevel = 0xFE
+        if ((device.currentState("level")?.value != null)) {
+            startLevel = Math.round(Integer.parseInt(device.currentState("level").value) * 0xFE / 100)
+        }
+        // Level Control Cluster, command Move to Level, level start level, transition time 0
+        cmds << zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, 0x00, sprintf("%02X0000", startLevel))
+    }
     // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
     // enrolls with default periodic reporting until newer 5 min interval is confirmed
     sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-    refresh()
+    cmds + refresh()
 }

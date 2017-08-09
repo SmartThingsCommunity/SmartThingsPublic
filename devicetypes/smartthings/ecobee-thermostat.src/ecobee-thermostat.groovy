@@ -32,7 +32,7 @@ metadata {
 		command "switchMode"
 		command "switchFanMode"
 
-		attribute "thermostatSetpoint", "number"
+		attribute "displayThermostatSetpoint", "string" // Added to be able to show "Auto"/"Off" keeping attribute thermostatSetpoint a number
 		attribute "thermostatStatus", "string"
 		attribute "maxHeatingSetpoint", "number"
 		attribute "minHeatingSetpoint", "number"
@@ -43,8 +43,8 @@ metadata {
 	}
 
 	tiles {
-		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state("temperature", label:'${currentValue}°', unit:"F",
+		standardTile("temperature", "device.temperature", width: 2, height: 2, decoration: "flat") {
+			state("temperature", label:'${currentValue}°', unit:"F", icon: "st.thermostat.ac.air-conditioning",
 					backgroundColors:[
 							// Celsius
 							[value: 0, color: "#153591"],
@@ -70,7 +70,7 @@ metadata {
 			state "heat", action:"switchMode",  nextState: "updating", icon: "st.thermostat.heat"
 			state "cool", action:"switchMode",  nextState: "updating", icon: "st.thermostat.cool"
 			state "auto", action:"switchMode",  nextState: "updating", icon: "st.thermostat.auto"
-			state "auxHeatOnly", action:"switchMode", icon: "st.thermostat.emergency-heat"
+			state "auxheatonly", action:"switchMode", icon: "st.thermostat.emergency-heat"
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 		standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
@@ -81,8 +81,8 @@ metadata {
 		standardTile("upButtonControl", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.thermostat-up"
 		}
-		valueTile("thermostatSetpoint", "device.thermostatSetpoint", width: 1, height: 1, decoration: "flat") {
-			state "thermostatSetpoint", label:'${currentValue}'
+		valueTile("displayThermostatSetpoint", "device.displayThermostatSetpoint", width: 1, height: 1, decoration: "flat") {
+			state "displayThermostatSetpoint", label:'${currentValue}'
 		}
 		valueTile("currentStatus", "device.thermostatStatus", height: 1, width: 2, decoration: "flat") {
 			state "thermostatStatus", label:'${currentValue}', backgroundColor:"#ffffff"
@@ -113,7 +113,7 @@ metadata {
 			state "humidity", label:'${currentValue}%'
 		}
 		main "temperature"
-		details(["temperature", "upButtonControl", "thermostatSetpoint", "currentStatus", "downButtonControl", "mode", "fanMode","humidity", "resumeProgram", "refresh"])
+		details(["temperature", "upButtonControl", "displayThermostatSetpoint", "currentStatus", "downButtonControl", "mode", "fanMode","humidity", "resumeProgram", "refresh"])
 	}
 
 	preferences {
@@ -156,41 +156,48 @@ void poll() {
 def generateEvent(Map results) {
 	log.debug "parsing data $results"
 	if(results) {
-		results.each { name, value ->
 
 			def linkText = getLinkText(device)
-			def isChange = false
-			def isDisplayed = true
+		def supportedThermostatModes = ["off"]
+		def thermostatMode = null
+
+		results.each { name, value ->
 			def event = [name: name, linkText: linkText, descriptionText: getThermostatDescriptionText(name, value, linkText),
 						 handlerName: name]
 
 			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint" ) {
 				def sendValue =  location.temperatureScale == "C"? roundC(convertFtoC(value.toDouble())) : value.toInteger()
-				isChange = isTemperatureStateChange(device, name, value.toString())
-				isDisplayed = isChange
-				event << [value: sendValue, unit: temperatureScale, isStateChange: isChange, displayed: isDisplayed]
+				event << [value: sendValue, unit: temperatureScale]
 			}  else if (name=="maxCoolingSetpoint" || name=="minCoolingSetpoint" || name=="maxHeatingSetpoint" || name=="minHeatingSetpoint") {
 				def sendValue =  location.temperatureScale == "C"? roundC(convertFtoC(value.toDouble())) : value.toInteger()
 				event << [value: sendValue, unit: temperatureScale, displayed: false]
 			}  else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
-				isChange = isStateChange(device, name, value.toString())
-				event << [value: value.toString(), isStateChange: isChange, displayed: false]
+				if (value == true) {
+					supportedThermostatModes << ((name == "auxHeatMode") ? "auxheatonly" : name - "Mode")
+				}
+				return // as we don't want to send this event here, proceed to next name/value pair
 			}  else if (name=="thermostatFanMode"){
-				isChange = isStateChange(device, name, value.toString())
-				event << [value: value.toString(), isStateChange: isChange, displayed: false]
+				sendEvent(name: "supportedThermostatFanModes", value: fanModes(), displayed: false)
+				event << [value: value.toString(), data:[supportedThermostatFanModes: fanModes()]]
 			}  else if (name=="humidity") {
-				isChange = isStateChange(device, name, value.toString())
-				event << [value: value.toString(), isStateChange: isChange, displayed: false, unit: "%"]
+				event << [value: value.toString(), displayed: false, unit: "%"]
 			} else if (name == "deviceAlive") {
-				isChange = isStateChange(device, name, value.toString())
-				event['isStateChange'] = isChange
 				event['displayed'] = false
+			} else if (name == "thermostatMode") {
+				thermostatMode = value.toLowerCase()
+				return // as we don't want to send this event here, proceed to next name/value pair
 			} else {
-				isChange = isStateChange(device, name, value.toString())
-				isDisplayed = isChange
-				event << [value: value.toString(), isStateChange: isChange, displayed: isDisplayed]
+				event << [value: value.toString()]
 			}
 			sendEvent(event)
+		}
+		if (state.supportedThermostatModes != supportedThermostatModes) {
+			state.supportedThermostatModes = supportedThermostatModes
+			sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
+		}
+		if (thermostatMode) {
+			sendEvent(name: "thermostatMode", value: thermostatMode, data:[supportedThermostatModes:state.supportedThermostatModes], linkText: linkText,
+					descriptionText: getThermostatDescriptionText("thermostatMode", thermostatMode, linkText), handlerName: "thermostatMode")
 		}
 		generateSetpointEvent ()
 		generateStatusEvent ()
@@ -317,15 +324,7 @@ void resumeProgram() {
 }
 
 def modes() {
-	if (state.modes) {
-		log.debug "Modes = ${state.modes}"
-		return state.modes
-	}
-	else {
-		state.modes = parent.availableModes(this)
-		log.debug "Modes = ${state.modes}"
-		return state.modes
-	}
+	return state.supportedThermostatModes
 }
 
 def fanModes() {
@@ -408,11 +407,13 @@ def setThermostatFanMode(String mode) {
 }
 
 def generateModeEvent(mode) {
-	sendEvent(name: "thermostatMode", value: mode, descriptionText: "$device.displayName is in ${mode} mode", displayed: true)
+	sendEvent(name: "thermostatMode", value: mode, data:[supportedThermostatModes: state.supportedThermostatModes],
+			descriptionText: "$device.displayName is in ${mode} mode")
 }
 
 def generateFanModeEvent(fanMode) {
-	sendEvent(name: "thermostatFanMode", value: fanMode, descriptionText: "$device.displayName fan is in ${fanMode} mode", displayed: true)
+	sendEvent(name: "thermostatFanMode", value: fanMode, data:[supportedThermostatFanModes: fanModes()],
+			descriptionText: "$device.displayName fan is in ${fanMode} mode")
 }
 
 def generateOperatingStateEvent(operatingState) {
@@ -448,14 +449,14 @@ def heat() {
 }
 
 def emergencyHeat() {
-	auxHeatOnly()
+	auxheatonly()
 }
 
-def auxHeatOnly() {
-	log.debug "auxHeatOnly"
+def auxheatonly() {
+	log.debug "auxheatonly()"
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 	if (parent.setMode ("auxHeatOnly", deviceId))
-		generateModeEvent("auxHeatOnly")
+		generateModeEvent("auxheatonly")
 	else {
 		log.debug "Error setting new mode."
 		def currentMode = device.currentState("thermostatMode")?.value
@@ -574,17 +575,23 @@ def generateSetpointEvent() {
 	sendEvent("name":"heatingSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
 	sendEvent("name":"coolingSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale)
 
+	def averageSetpoint = roundC((heatingSetpoint + coolingSetpoint) / 2)
 	if (mode == "heat") {
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
+		sendEvent("name":"displayThermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale, displayed: false)
 	}
 	else if (mode == "cool") {
 		sendEvent("name":"thermostatSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale)
+		sendEvent("name":"displayThermostatSetpoint", "value":coolingSetpoint, "unit":location.temperatureScale, displayed: false)
 	} else if (mode == "auto") {
-		sendEvent("name":"thermostatSetpoint", "value":"Auto")
+		sendEvent("name":"thermostatSetpoint", "value":averageSetpoint, "unit":location.temperatureScale)
+		sendEvent("name":"displayThermostatSetpoint", "value":"Auto", displayed: false)
 	} else if (mode == "off") {
-		sendEvent("name":"thermostatSetpoint", "value":"Off")
-	} else if (mode == "auxHeatOnly") {
+		sendEvent("name":"thermostatSetpoint", "value":averageSetpoint, "unit":location.temperatureScale)
+		sendEvent("name":"displayThermostatSetpoint", "value":"Off", displayed: false)
+	} else if (mode == "auxheatonly") {
 		sendEvent("name":"thermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale)
+		sendEvent("name":"displayThermostatSetpoint", "value":heatingSetpoint, "unit":location.temperatureScale, displayed: false)
 	}
 }
 
@@ -621,13 +628,14 @@ void raiseSetpoint() {
 		targetvalue = thermostatSetpoint ? thermostatSetpoint : 0
 		targetvalue = location.temperatureScale == "F"? targetvalue + 1 : targetvalue + 0.5
 
-		if ((mode == "heat" || mode == "auxHeatOnly") && targetvalue > maxHeatingSetpoint) {
+		if ((mode == "heat" || mode == "auxheatonly") && targetvalue > maxHeatingSetpoint) {
 			targetvalue = maxHeatingSetpoint
 		} else if (mode == "cool" && targetvalue > maxCoolingSetpoint) {
 			targetvalue = maxCoolingSetpoint
 		}
 
 		sendEvent("name":"thermostatSetpoint", "value":targetvalue, "unit":location.temperatureScale, displayed: false)
+		sendEvent("name":"displayThermostatSetpoint", "value":targetvalue, "unit":location.temperatureScale, displayed: false)
 		log.info "In mode $mode raiseSetpoint() to $targetvalue"
 
 		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
@@ -666,13 +674,14 @@ void lowerSetpoint() {
 		targetvalue = thermostatSetpoint ? thermostatSetpoint : 0
 		targetvalue = location.temperatureScale == "F"? targetvalue - 1 : targetvalue - 0.5
 
-		if ((mode == "heat" || mode == "auxHeatOnly") && targetvalue < minHeatingSetpoint) {
+		if ((mode == "heat" || mode == "auxheatonly") && targetvalue < minHeatingSetpoint) {
 			targetvalue = minHeatingSetpoint
 		} else if (mode == "cool" && targetvalue < minCoolingSetpoint) {
 			targetvalue = minCoolingSetpoint
 		}
 
 		sendEvent("name":"thermostatSetpoint", "value":targetvalue, "unit":location.temperatureScale, displayed: false)
+		sendEvent("name":"displayThermostatSetpoint", "value":targetvalue, "unit":location.temperatureScale, displayed: false)
 		log.info "In mode $mode lowerSetpoint() to $targetvalue"
 
 		runIn(3, "alterSetpoint", [data: [value:targetvalue], overwrite: true]) //when user click button this runIn will be overwrite
@@ -706,7 +715,7 @@ void alterSetpoint(temp) {
 		}
 
 		//step1: check thermostatMode, enforce limits before sending request to cloud
-		if (mode == "heat" || mode == "auxHeatOnly"){
+		if (mode == "heat" || mode == "auxheatonly"){
 			if (temp.value > coolingSetpoint){
 				targetHeatingSetpoint = temp.value
 				targetCoolingSetpoint = temp.value
@@ -735,15 +744,18 @@ void alterSetpoint(temp) {
 
 		if (parent.setHold(heatingValue, coolingValue, deviceId, sendHoldType)) {
 			sendEvent("name": "thermostatSetpoint", "value": temp.value, displayed: false)
+			sendEvent("name": "displayThermostatSetpoint", "value": temp.value, displayed: false)
 			sendEvent("name": "heatingSetpoint", "value": targetHeatingSetpoint, "unit": location.temperatureScale)
 			sendEvent("name": "coolingSetpoint", "value": targetCoolingSetpoint, "unit": location.temperatureScale)
 			log.debug "alterSetpoint in mode $mode succeed change setpoint to= ${temp.value}"
 		} else {
 			log.error "Error alterSetpoint()"
-			if (mode == "heat" || mode == "auxHeatOnly"){
+			if (mode == "heat" || mode == "auxheatonly"){
 				sendEvent("name": "thermostatSetpoint", "value": heatingSetpoint.toString(), displayed: false)
+				sendEvent("name": "displayThermostatSetpoint", "value": heatingSetpoint.toString(), displayed: false)
 			} else if (mode == "cool") {
 				sendEvent("name": "thermostatSetpoint", "value": coolingSetpoint.toString(), displayed: false)
+				sendEvent("name": "displayThermostatSetpoint", "value": heatingSetpoint.toString(), displayed: false)
 			}
 		}
 
@@ -759,6 +771,7 @@ def generateStatusEvent() {
 	def coolingSetpoint = device.currentValue("coolingSetpoint")
 	def temperature = device.currentValue("temperature")
 	def statusText
+	def operatingState = "idle"
 
 	log.debug "Generate Status Event for Mode = ${mode}"
 	log.debug "Temperature = ${temperature}"
@@ -766,28 +779,36 @@ def generateStatusEvent() {
 	log.debug "Cooling set point = ${coolingSetpoint}"
 	log.debug "HVAC Mode = ${mode}"
 
-	if (mode == "heat") {
-		if (temperature >= heatingSetpoint)
+	if (mode == "heat" || mode == "auxheatonly") {
+		if (temperature >= heatingSetpoint) {
 			statusText = "Right Now: Idle"
-		else
+		} else {
 			statusText = "Heating to ${heatingSetpoint} ${location.temperatureScale}"
+			operatingState = "heating"
+		}
 	} else if (mode == "cool") {
-		if (temperature <= coolingSetpoint)
+		if (temperature <= coolingSetpoint) {
 			statusText = "Right Now: Idle"
-		else
+		} else {
 			statusText = "Cooling to ${coolingSetpoint} ${location.temperatureScale}"
+			operatingState = "cooling"
+		}
 	} else if (mode == "auto") {
 		statusText = "Right Now: Auto"
+		if (temperature < heatingSetpoint) {
+			operatingState = "heating"
+		} else if (temperature > coolingSetpoint) {
+			operatingState = "cooling"
+		}
 	} else if (mode == "off") {
 		statusText = "Right Now: Off"
-	} else if (mode == "auxHeatOnly") {
-		statusText = "Emergency Heat"
 	} else {
 		statusText = "?"
 	}
 
 	log.debug "Generate Status Event = ${statusText}"
 	sendEvent("name":"thermostatStatus", "value":statusText, "description":statusText, displayed: true)
+	sendEvent("name":"thermostatOperatingState", "value":operatingState, "description":operatingState, displayed: false)
 }
 
 def generateActivityFeedsEvent(notificationMessage) {

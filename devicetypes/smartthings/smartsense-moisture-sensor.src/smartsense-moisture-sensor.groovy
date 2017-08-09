@@ -33,6 +33,7 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-Seu", deviceJoinName: "Water Leak Sensor"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-L", deviceJoinName: "Iris Smart Water Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-G", deviceJoinName: "Centralite Water Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor"
 	}
 
@@ -58,7 +59,7 @@ metadata {
 		multiAttributeTile(name: "water", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.water", key: "PRIMARY_CONTROL") {
 				attributeState "dry", label: "Dry", icon: "st.alarm.water.dry", backgroundColor: "#ffffff"
-				attributeState "wet", label: "Wet", icon: "st.alarm.water.wet", backgroundColor: "#53a7c0"
+				attributeState "wet", label: "Wet", icon: "st.alarm.water.wet", backgroundColor: "#00A0DC"
 			}
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
@@ -104,6 +105,8 @@ def parse(String description) {
 				} else {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
+				map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
 			}
 		}
 	} else if (map.name == "temperature") {
@@ -128,6 +131,10 @@ def parse(String description) {
 private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
+	translateZoneStatus(zs)
+}
+
+private Map translateZoneStatus(ZoneStatus zs) {
 	return zs.isAlarm1Set() ? getMoistureResult('wet') : getMoistureResult('dry')
 }
 
@@ -196,7 +203,8 @@ def ping() {
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
 	return refreshCmds + zigbee.enrollResponse()
 }

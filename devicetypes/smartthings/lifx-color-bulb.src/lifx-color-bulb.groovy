@@ -5,7 +5,7 @@
  *
  */
 metadata {
-	definition (name: "LIFX Color Bulb", namespace: "smartthings", author: "LIFX") {
+	definition (name: "LIFX Color Bulb", namespace: "smartthings", author: "LIFX", ocfDeviceType: "oic.d.light") {
 		capability "Actuator"
 		capability "Color Control"
 		capability "Color Temperature"
@@ -64,8 +64,18 @@ metadata {
 	}
 }
 
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"cloud\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device?.hub?.hardwareID}\"}", displayed: false)
+}
+
 void installed() {
-	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"cloud\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device?.hub?.hardwareID}\"}")
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 // handle commands
@@ -190,7 +200,7 @@ def off() {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	
+
 	def resp = parent.apiGET("/lights/${selector()}")
 	if (resp.status == 404) {
 		state.online = false

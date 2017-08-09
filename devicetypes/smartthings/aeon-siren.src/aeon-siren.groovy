@@ -16,7 +16,7 @@
  *	Date: 2014-07-15
  */
 metadata {
- definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings") {
+ definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 	capability "Actuator"
 	capability "Alarm"
 	capability "Switch"
@@ -56,6 +56,13 @@ metadata {
 	main "alarm"
 	details(["alarm", "test", "off"])
  }
+}
+
+def installed() {
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	response(secure(zwave.basicV1.basicGet()))
 }
 
 def updated() {

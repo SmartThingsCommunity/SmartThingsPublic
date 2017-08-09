@@ -15,7 +15,7 @@
  */
 
 metadata {
-    definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 
         capability "Actuator"
         capability "Configuration"

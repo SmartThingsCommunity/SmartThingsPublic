@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZLL RGBW Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZLL RGBW Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 
         capability "Actuator"
         capability "Color Control"
@@ -70,6 +70,7 @@ private getATTRIBUTE_HUE() { 0x0000 }
 private getATTRIBUTE_SATURATION() { 0x0001 }
 private getHUE_COMMAND() { 0x00 }
 private getSATURATION_COMMAND() { 0x03 }
+private getMOVE_TO_HUE_AND_SATURATION_COMMAND() { 0x06 }
 private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
 private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 
@@ -88,11 +89,11 @@ def parse(String description) {
 
         if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
-                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 360)
+                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
                 sendEvent(name: "hue", value: hueValue, displayed:false)
             }
             else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
-                def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
+                def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
                 sendEvent(name: "saturation", value: saturationValue, displayed:false)
             }
         }
@@ -124,11 +125,16 @@ def configure() {
 }
 
 def configureAttributes() {
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, DataType.UINT8, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, DataType.UINT8, 1, 3600, 0x01)
+    zigbee.onOffConfig() +
+    zigbee.levelConfig()
 }
 
 def refreshAttributes() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+    zigbee.onOffRefresh() +
+    zigbee.levelRefresh() +
+    zigbee.colorTemperatureRefresh() +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
 def setColorTemperature(value) {
@@ -139,17 +145,32 @@ def setLevel(value) {
     zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()        //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
+private getScaledHue(value) {
+    zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
+}
+
+private getScaledSaturation(value) {
+    zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
+}
+
 def setColor(value){
     log.trace "setColor($value)"
-    zigbee.on() + setHue(value.hue) + ["delay 300"] + setSaturation(value.saturation) + ["delay 2000"] + refreshAttributes()
+    zigbee.on() +
+    zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
+        getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
+    zigbee.onOffRefresh() +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
 def setHue(value) {
-    def scaledHueValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
-    zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, scaledHueValue, "00", "0500") + ["delay 1500"] + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)       //payload-> hue value, direction (00-> shortest distance), transition time (1/10th second) (0500 in U16 reads 5)
+    //payload-> hue value, direction (00-> shortest distance), transition time (1/10th second)
+    zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, getScaledHue(value), "00", "0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
 }
 
 def setSaturation(value) {
-    def scaledSatValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
-    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500") + ["delay 1500"] + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)      //payload-> sat value, transition time
+    //payload-> sat value, transition time
+    zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, getScaledSaturation(value), "0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }

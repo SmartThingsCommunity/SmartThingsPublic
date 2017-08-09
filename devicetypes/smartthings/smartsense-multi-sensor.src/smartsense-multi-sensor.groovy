@@ -87,8 +87,8 @@ metadata {
 			state("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
-			state("active", label: 'Active', icon: "st.motion.acceleration.active", backgroundColor: "#53a7c0")
-			state("inactive", label: 'Inactive', icon: "st.motion.acceleration.inactive", backgroundColor: "#ffffff")
+			state("active", label: 'Active', icon: "st.motion.acceleration.active", backgroundColor: "#00a0dc")
+			state("inactive", label: 'Inactive', icon: "st.motion.acceleration.inactive", backgroundColor: "#cccccc")
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label: '${currentValue}°',
@@ -134,8 +134,9 @@ def parse(String description) {
 				} else {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
+				maps += translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
 			} else {
-
 				maps += handleAcceleration(descMap)
 			}
 		}
@@ -178,7 +179,7 @@ private List<Map> handleAcceleration(descMap) {
 			result += parseAxis(descMap.additionalAttrs)
 		}
 	} else if (descMap.clusterInt == 0xFC02 && descMap.attrInt == 0x0012) {
-		def addAttrs = descMap.additionalAttrs
+		def addAttrs = descMap.additionalAttrs ?: []
 		addAttrs << ["attrInt": descMap.attrInt, "value": descMap.value]
 		result += parseAxis(addAttrs)
 	}
@@ -190,6 +191,10 @@ private List<Map> parseAxis(List<Map> attrData) {
 	def x = hexToSignedInt(attrData.find { it.attrInt == 0x0012 }?.value)
 	def y = hexToSignedInt(attrData.find { it.attrInt == 0x0013 }?.value)
 	def z = hexToSignedInt(attrData.find { it.attrInt == 0x0014 }?.value)
+
+	if ([x, y ,z].any { it == null }) {
+		return []
+	}
 
 	def xyzResults = [:]
 	if (device.getDataValue("manufacturer") == "SmartThings") {
@@ -225,6 +230,11 @@ private List<Map> parseAxis(List<Map> attrData) {
 
 private List<Map> parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
+
+	translateZoneStatus(zs)
+}
+
+private List<Map> translateZoneStatus(ZoneStatus zs) {
 	List<Map> results = []
 
 	if (garageSensor != "Yes") {
@@ -264,12 +274,28 @@ private Map getBatteryResult(rawValue) {
 			result.value = pct
 		} else {
 			def minVolts = 2.1
-			def maxVolts = 3.0
-			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			def roundedPct = Math.round(pct * 100)
-			if (roundedPct <= 0)
-				roundedPct = 1
-			result.value = Math.min(100, roundedPct)
+			def maxVolts = 2.7
+			// Get the current battery percentage as a multiplier 0 - 1
+			def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
+			// Find the corresponding voltage from our range
+			curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
+			// Round to the nearest 10th of a volt
+			curValVolts = Math.round(10 * curValVolts) / 10.0
+			// Only update the battery reading if we don't have a last reading,
+			// OR we have received the same reading twice in a row
+			// OR we don't currently have a battery reading
+			// OR the value we just received is at least 2 steps off from the last reported value
+			if(state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+				def pct = (volts - minVolts) / (maxVolts - minVolts)
+				def roundedPct = Math.round(pct * 100)
+				if (roundedPct <= 0)
+					roundedPct = 1
+				result.value = Math.min(100, roundedPct)
+			} else {
+				// Don't update as we want to smooth the battery values
+				result = null
+			}
+			state.lastVolts = volts
 		}
 	}
 
@@ -309,7 +335,7 @@ def refresh() {
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 			zigbee.readAttribute(0xFC02, 0x0010, [mfgCode: manufacturerCode]) +
-			zigbee.enrollResponse()
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
 
 	return refreshCmds
 }
@@ -371,6 +397,10 @@ def updated() {
 }
 
 private hexToSignedInt(hexVal) {
+	if (!hexVal) {
+		return null
+	}
+
 	def unsignedVal = hexToInt(hexVal)
 	unsignedVal > 32767 ? unsignedVal - 65536 : unsignedVal
 }

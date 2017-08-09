@@ -1,5 +1,5 @@
 /**
- *  Copyright 2015 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -45,9 +45,9 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -70,6 +70,11 @@ metadata {
         details(["switch", "colorTempSliderControl", "colorName", "refresh"])
     }
 }
+
+// Globals
+private getMOVE_TO_COLOR_TEMPERATURE_COMMAND() { 0x0A }
+private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
+private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
@@ -123,7 +128,11 @@ def ping() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.colorTemperatureConfig()
+    zigbee.onOffRefresh() +
+    zigbee.levelRefresh() +
+    zigbee.colorTemperatureRefresh() +
+    zigbee.onOffConfig(0, 300) +
+    zigbee.levelConfig()
 }
 
 def configure() {
@@ -138,7 +147,12 @@ def configure() {
 
 def setColorTemperature(value) {
     setGenericName(value)
-    zigbee.setColorTemperature(value)
+	value = value as Integer
+    def tempInMired = (1000000 / value) as Integer
+    def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
+
+    zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
 }
 
 //Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
