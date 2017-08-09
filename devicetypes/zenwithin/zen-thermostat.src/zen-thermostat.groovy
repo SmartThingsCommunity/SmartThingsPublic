@@ -29,7 +29,15 @@ metadata {
   }
 
   // simulator metadata
-  simulator { }
+  simulator {
+    status "temperature20": "read attr - cluster:0201, attrId: 0000, value:7D0"
+    status "temperature21.5": "read attr - cluster:0201, attrId: 0000, value:866"
+    status "temperature18.3": "read attr - cluster:0201, attrId: 0000, value:726"
+  	status "coolingSetpoint16": "read attr - cluster:0201, attrId: 0011, value:640"
+    status "coolingSetpoint15.3": "read attr - cluster:0201, attrId: 0011, value:5FA"
+    status "heatingSetpoint25": "read attr - cluster:0201, attrId: 0012, value:9C4"
+    status "heatingSetpoint26.5": "read attr - cluster:0201, attrId: 0012, value:A5A"
+  }
 
   tiles {
         valueTile("frontTile", "device.temperature", width: 1, height: 1) {
@@ -128,7 +136,7 @@ def parse(String description) {
             map.name = "coolingSetpoint"
             map.value = getTemperature(descMap.value)
             if (device.currentState("thermostatMode")?.value == "cool") {
-            	activeSetpoint = map.value
+            	activeSetpoint = (getTemperatureScale() == "C") ? roundC(map.value) : map.value
                 log.debug "Active set point value: $activeSetpoint"
             	sendEvent("name":"thermostatSetpoint", "value":activeSetpoint)
             }
@@ -139,7 +147,7 @@ def parse(String description) {
             map.name = "heatingSetpoint"
             map.value = getTemperature(descMap.value)
             if (device.currentState("thermostatMode")?.value == "heat") {
-            	activeSetpoint = map.value
+            	activeSetpoint = (getTemperatureScale() == "C") ? roundC(map.value) : map.value
             	sendEvent("name":"thermostatSetpoint", "value":activeSetpoint)
            }
         }
@@ -218,41 +226,31 @@ def getTemperature(value)
 {
     def decimalFormat = new java.text.DecimalFormat("#")
     def celsius = Integer.parseInt(value, 16) / 100.0 as Double
+    def temperatureScale = getTemperatureScale()
     def returnValue
     
     // Format to support decimal with one or two 
-    decimalFormat.setMaximumFractionDigits(2)
-    decimalFormat.setMinimumFractionDigits(1)
+    if(temperatureScale == "F"){ 
+    	returnValue = decimalFormat.format(Math.round(celsiusToFahrenheit(celsius)*10)/10)
+        log.debug "Temperature value in F: $returnValue"
+    } else {
+    	decimalFormat.setMaximumFractionDigits(2)
+    	decimalFormat.setMinimumFractionDigits(1)
+        returnValue = decimalFormat.format(celsius);
+        log.debug "Temperature value in C: $returnValue"
+     }
+     return returnValue  
+ }
 
-	returnValue = decimalFormat.format(celsius);
 
-    log.debug "Temperature value in C: $returnValue"
-  
-  if(getTemperatureScale() == "F"){
-    returnValue = decimalFormat.format(Math.round(celsiusToFahrenheit(celsius)*10)/10.0)
-
-    log.debug "Temperature value in F: $returnValue"
-  }
-  
-  return returnValue
+def roundC (tempC) {
+	return (Math.round(tempC.toDouble() * 2))/2
 }
 
-
-
-// =============== Setpoints ===============
-def setpointUp()
-{
-    def currentMode = device.currentState("thermostatMode")?.value
-    def currentUnit = getTemperatureScale()
-    
-    // check if heating or cooling setpoint needs to be changed
-    double nextLevel = device.currentValue("thermostatSetpoint") + 1.0
-	log.debug "Next level: $nextLevel"
-
-    // check the limits
-    if(currentUnit == "C")
-    {
-    	if (currentMode == "cool")
+def nextCelsiusUp(currentMode, currentValue){
+     double nextLevel = roundC(currentValue + 0.5)  
+     log.debug "Next Celsius level: $nextLevel"     
+     if (currentMode == "cool")
         {
             if(nextLevel > 36.0)
             {
@@ -264,11 +262,14 @@ def setpointUp()
             {
                 nextLevel = 32.0
             }
-        }
-    }
-    else //in degF unit
-    {
-    	if (currentMode == "cool")
+        } 
+        return nextLevel
+}
+
+def nextFahrenheitUp(currentMode, currentValue){
+     double nextLevel = roundC(currentValue + 1.0)  
+     log.debug "Next Celsius level: $nextLevel"     
+	 if (currentMode == "cool")
         {
             if(nextLevel > 96.0)
             {
@@ -281,24 +282,13 @@ def setpointUp()
                 nextLevel = 89.0
             }        	
         }
-    }
-    
-    log.debug "setpointUp() - mode: ${currentMode}  unit: ${currentUnit}  value: ${nextLevel}"
-    
-    setSetpoint(nextLevel)
-} 
+        return nextLevel
+}
 
-def setpointDown()
-{
-    def currentMode = device.currentState("thermostatMode")?.value
-    def currentUnit = getTemperatureScale()
-    
-    // check if heating or cooling setpoint needs to be changed
-    double nextLevel = device.currentValue("thermostatSetpoint") - 1.0
-    
-    // check the limits
-    if (currentUnit == "C")
-    {
+def nextCelsiusDown(currentMode, currentValue){
+     double nextLevel = roundC(currentValue - 0.5)  
+     log.debug "Next Celsius level: $nextLevel"
+     
     	if (currentMode == "cool")
         {
             if(nextLevel < 8.0)
@@ -312,9 +302,12 @@ def setpointDown()
                 nextLevel = 10.0
             }
         }
-    }
-    else  //in degF unit
-    {
+        return nextLevel
+}
+
+def nextFahrenheitDown(currentMode, currentValue){
+     double nextLevel = roundC(currentValue - 1.0)  
+     log.debug "Next Celsius level: $nextLevel"     
       	if (currentMode == "cool")
         {
             if (nextLevel < 47.0)
@@ -328,40 +321,49 @@ def setpointDown()
                 nextLevel = 50.0
             }
         }
-    }
+        return nextLevel
+}
 
+// =============== Setpoints ===============
+def setpointUp()
+{
+    def currentMode = device.currentState("thermostatMode")?.value
+    def currentValue = device.currentValue("thermostatSetpoint") as Double
+    def currentUnit = getTemperatureScale()
+    double nextLevel = (currentUnit == "C") ? nextCelsiusUp(currentMode, currentValue) : nextFahrenheitUp(currentMode, currentValue)  
+    log.debug "setpointUp() - mode: ${currentMode}  unit: ${currentUnit}  value: ${nextLevel}"    
+    setSetpoint(nextLevel, currentMode, currentUnit)
+} 
+
+def setpointDown()
+{
+    def currentMode = device.currentState("thermostatMode")?.value
+    def currentValue = device.currentValue("thermostatSetpoint") as Double
+    def currentUnit = getTemperatureScale()
+    double nextLevel = (currentUnit == "C") ? nextCelsiusDown(currentMode, currentValue) : nextFahrenheitDown(currentMode, currentValue)   
     log.debug "setpointDown() - mode: ${currentMode}  unit: ${currentUnit}  value: ${nextLevel}"
-    
-    setSetpoint(nextLevel)
+    setSetpoint(nextLevel, currentMode, currentUnit)    
 } 
 
 
-def setSetpoint(degrees) 
-{
-	def temperatureScale = getTemperatureScale()
-    def currentMode = device.currentState("thermostatMode")?.value
-	
-    def degreesDouble = degrees as Double
-	sendEvent("name":"thermostatSetpoint", "value":degreesDouble)
-    log.debug "New set point: $degreesDouble"
-	
-	def celsius = (getTemperatureScale() == "C") ? degreesDouble : (fahrenheitToCelsius(degreesDouble) as Double).round(1)
+def setSetpoint(degrees, currentMode, currentUnit) 
+{	
+	sendEvent("name":"thermostatSetpoint", "value": (currentUnit == "C") ? degrees : degrees as Integer)
+    log.debug "New set point: $degrees"	
+	def celsius = (currentUnit == "C") ? degrees : (fahrenheitToCelsius(degrees) as Double).round(1)
 	if (currentMode == "cool") {
     	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x11 0x29 {" + hex(celsius*100.0) + "}"
     }
-    else if (currentMode == "heat") {
-    	
+    else if (currentMode == "heat") {    	
    		"st wattr 0x${device.deviceNetworkId} 1 0x201 0x12 0x29 {" + hex(celsius*100.0) + "}"
 	}    
 }
 
 def setHeatingSetpoint(degrees) {
-	def temperatureScale = getTemperatureScale()
-	
+	def temperatureScale = getTemperatureScale()	
 	def degreesDouble = degrees as Double
 	log.debug "setHeatingSetpoint({$degreesDouble} ${temperatureScale})"
-	sendEvent("name":"heatingSetpoint", "value":degreesDouble)
-	
+	sendEvent("name":"heatingSetpoint", "value":degreesDouble)	
 	def celsius = (temperatureScale == "C") ? degreesDouble : (fahrenheitToCelsius(degreesDouble) as Double).round(1)
 	"st wattr 0x${device.deviceNetworkId} 1 0x201 0x12 0x29 {" + hex(celsius*100.0) + "}"
 }
