@@ -18,6 +18,7 @@ metadata {
 		command "raiseHeatingSetpoint"
 		command "lowerCoolSetpoint"
 		command "raiseCoolSetpoint"
+		command "poll"
 
 		fingerprint deviceId: "0x08", inClusters: "0x43,0x40,0x44,0x31,0x80,0x85,0x60"
 		fingerprint mfr:"0098", prod:"6401", model:"0107", deviceJoinName: "2Gig CT100 Programmable Thermostat"
@@ -122,7 +123,7 @@ def initialize() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	// Poll device for additional data that will be updated by refresh tile
-	poll()
+	pollDevice()
 }
 
 def parse(String description)
@@ -386,6 +387,11 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	}
 }
 
+def poll() {
+	// Call refresh which will cap the polling to once every 2 minutes
+	refresh()
+}
+
 def refresh() {
 	// Only allow refresh every 2 minutes to prevent flooding the Zwave network
 	def timeNow = now()
@@ -394,11 +400,11 @@ def refresh() {
 		// refresh will request battery, prevent multiple request by setting lastbatt now
 		state.lastbatt = timeNow
 		// use runIn with overwrite to prevent multiple DTH instances run before state.refreshTriggeredAt has been saved
-		runIn(2, "poll", [overwrite: true])
+		runIn(2, "pollDevice", [overwrite: true])
 	}
 }
 
-def poll() {
+def pollDevice() {
 	def cmds = []
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
