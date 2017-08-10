@@ -28,6 +28,7 @@ metadata {
 		command "raiseHeatingSetpoint"
 		command "lowerCoolSetpoint"
 		command "raiseCoolSetpoint"
+		command "poll"
 
 		fingerprint deviceId: "0x08"
 		fingerprint inClusters: "0x43,0x40,0x44,0x31"
@@ -128,7 +129,7 @@ def initialize() {
 	if (getDataValue("manufacturer") != "Honeywell") {
 		runEvery5Minutes("poll")  // This is not necessary for Honeywell Z-wave, but could be for other Z-wave thermostats
 	}
-	poll()
+	pollDevice()
 }
 
 def parse(String description)
@@ -318,17 +319,22 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 // Command Implementations
+def poll() {
+	// Call refresh which will cap the polling to once every 2 minutes
+	refresh()
+}
+
 def refresh() {
 	// Only allow refresh every 2 minutes to prevent flooding the Zwave network
 	def timeNow = now()
 	if (!state.refreshTriggeredAt || (2 * 60 * 1000 < (timeNow - state.refreshTriggeredAt))) {
 		state.refreshTriggeredAt = timeNow
 		// use runIn with overwrite to prevent multiple DTH instances run before state.refreshTriggeredAt has been saved
-		runIn(2, "poll", [overwrite: true])
+		runIn(2, "pollDevice", [overwrite: true])
 	}
 }
 
-def poll() {
+def pollDevice() {
 	def cmds = []
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
