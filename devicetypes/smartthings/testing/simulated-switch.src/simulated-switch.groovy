@@ -13,9 +13,9 @@
  */
 metadata {
 
-    definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob") {
+	definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob") {
 		capability "Switch"
-        capability "Relay Switch"
+		capability "Relay Switch"
 		capability "Sensor"
 		capability "Actuator"
 
@@ -34,7 +34,7 @@ metadata {
 		standardTile("off", "device.switch", decoration: "flat") {
 			state "default", label: 'Off', action: "offPhysical", backgroundColor: "#ffffff"
 		}
-        main "switch"
+		main "switch"
 		details(["switch","on","off"])
 	}
 }

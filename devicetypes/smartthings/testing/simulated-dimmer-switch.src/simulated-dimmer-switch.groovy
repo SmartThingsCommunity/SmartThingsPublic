@@ -80,9 +80,19 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-	log.trace "Executing 'parse' ${description}"
-	def pair = description.split(":")
-	createEvent(name: pair[0].trim(), value: pair[1].trim())
+	log.trace "parse $description"
+	def parsedEvents
+	def pair = description?.split(":")
+	if (!pair || pair.length < 2) {
+		log.warn "parse() could not extract an event name and value from '$description'"
+	} else {
+		String name = pair[0]?.trim()
+		if (name) {
+			name = name.replaceAll(~/\W/, "_").replaceAll(~/_{2,}?/, "_")
+		}
+		parsedEvents = createEvent(name: name, value: pair[1]?.trim())
+	}
+	return parsedEvents
 }
 
 def installed() {
