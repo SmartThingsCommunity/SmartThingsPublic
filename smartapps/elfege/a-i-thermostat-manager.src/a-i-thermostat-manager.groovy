@@ -491,6 +491,7 @@ def updated() {
     unsubscribe()
     unschedule()
 
+    OverrideReset()
     init()
 }
 def init() {
@@ -643,7 +644,7 @@ state.T2_AppMgt = true
 state.T3_AppMgt = true
 state.T4_AppMgt = true */
 
-    state.AppMgtList = [true, true, true, true, true]
+
 
     state.messageOkToOpenCausesSent = 0
     state.LastTimeMessageSent = now()
@@ -682,10 +683,9 @@ ThermsInvolved = ThermsInvolved.toInteger()
 
 // MAIN LOOP
 def Evaluate(){
-    state.EndEval = false
+    EndEvalFALSE()
     def CurrMode = location.currentMode
     log.debug "Home is in $CurrMode"
-    state.notcalledfromEval = false
 
     def doorsOk = AllContactsAreClosed()
 
@@ -694,15 +694,7 @@ def Evaluate(){
     def outsideTemp = OutsideSensor?.currentState("temperature")?.value //as double
     outsideTemp = Double.parseDouble(outsideTemp)
     def Outside = outsideTemp
-    def Inside = XtraTempSensor?.currentState("temperature")?.value //as double
-    Inside = Double.parseDouble(Inside)
-    state.Inside = Inside
-    def humidity = state.humidity
-    humidity = humidity.toInteger()
-    def TooHumid = humidity > HumidityTolerance && Outside > Inside
-    def INSIDEhumidity = state.INSIDEhumidity
-    INSIDEhumidity = INSIDEhumidity.toInteger()
-    def TooHumidINSIDE =  INSIDEhumidity > HumidityTolerance
+
 
     if(state.handlerrunning == false){
         if(doorsOk || ContactExceptionIsClosed ){
@@ -807,18 +799,32 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
             def ThermsInvolved = HowMany
 
             def CurrTempDevice = 0
-
+            ///// WHILE LOOP
             while(loopValue < ThermsInvolved){
+
                 loopValue++
-                    state.loopValue = loopValue
+                    log.debug "WHILE LOOP $loopValue"
+
                 def AppMgt = state.AppMgtList[loopValue]
                 ThermState = ThermStateList[loopValue]
                 ThermSet = Therm[loopValue]
 
-                log.trace """WHILE LOOP        
+                def Inside = ThermSet.currentState("temperature")?.value
+                Inside = Double.parseDouble(Inside)
+                //Inside = Inside.toInteger()
+                state.Inside = Inside
+                def humidity = OutsideSensor?.latestValue("humidity")
+                //humidity = humidity.toInteger()
+
+                def TooHumid = humidity > HumidityTolerance && Outside > Inside + 3
+
+                def INSIDEhumidity = ThermSet.latestValue("humidity")   
+                //INSIDEhumidity = INSIDEhumidity?.toInteger()
+                def TooHumidINSIDE =  INSIDEhumidity > HumidityTolerance
+
+                log.trace """        
 ThermsInvolved = $ThermsInvolved 
 loop($loopValue) 
-state.loopValue = $state.loopValue
 AppMgtList = $state.AppMgtList
 AppMgt = $AppMgt
 """        
@@ -959,7 +965,7 @@ But, because CSPSet is lower than default value ($defaultCSPSet), default settin
                 def InMotionModes = CurrMode in MotionModes  
                 def AccountForMotion = MotionSensor != null 
 
-                if(AccountForMotion && InMotionModes ){
+                if(AccountForMotion && InMotionModes && AppMgt){
 
                     if(!Active){
                         // record algebraic CSPSet for debug purpose
@@ -977,15 +983,15 @@ But, because CSPSet is lower than default value ($defaultCSPSet), default settin
                     }
                 }
 
-                if(TooHumid && outsideTemp >= Inside && Active){
-                    CSPSet = CSPSet - 2 
+                if(TooHumid && Inside - 2 >= outsideTemp && Active){
+                    CSPSet = CSPSet - 1 
                     log.debug "Substracting 2 to new CSP because it is too humid OUTSIDE"
                 }
                 else {
                     log.debug "not too humid outside"
                 }
 
-                if(TooHumidINSIDE && outsideTemp >= Inside && Active){
+                if(TooHumidINSIDE && Inside - 2 >= outsideTemp && Active){
                     CSPSet = CSPSet - 1 
                     log.debug "Substracting 1 to new CSP because it is too humid INSIDE"
                 }
@@ -1021,13 +1027,17 @@ But, because CSPSet is lower than default value ($defaultCSPSet), default settin
 
                 // evaluate needs
 
-                def ShouldCoolWithAC = CurrTemp > CSPSet && outsideTemp >= CSPSet - 1
+                def ShouldCoolWithAC = CurrTemp > CSPSet && outsideTemp >= CSPSet - 1 
+                if(CurrTemp + 3 > CSPSet || tooHumidINSIDE){
+                    ShouldCoolWithAC = true
+                }
                 def ShouldHeat = outsideTemp < OutsideTempLowThres && CurrTemp <= HSPSet && !ShouldCoolWithAC
                 state.ShouldCoolWithAC = ShouldCoolWithAC
                 state.ShouldHeat = ShouldHeat
                 log.debug "ShouldCoolWithAC if $CurrTemp >= $CSPSet (loop $loopValue)"
 
                 def ThisIsExceptionTherm =  false
+
                 if(NoTurnOffOnContact){
                     ThisIsExceptionTherm = "${ThermSet}" == "${Thermostat_1}"
 
@@ -1101,40 +1111,43 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                 log.debug "doorsOk = $doorsOk"
                 if(doorsOk || (ContactExceptionIsClosed && ThisIsExceptionTherm)){
                     log.debug "turnOffWhenReached =  $turnOffWhenReached"
+
                     if(!ShouldCoolWithAC && !ShouldHeat && ThermState != "off" ){
-                        if(AltSensor && (!turnOffWhenReached || turnOffWhenReached) && ThermState != "off"){ 
-                            if(ThermState != "off"){
-                                state.LatestThermostatMode = "off"   
-                                // that's a "should be" value used to compare eventual manual setting to what "should be"
-                                // that's why it must be recoreded even during override mode
-                                state.AppMgtList[loopValue] = true //override test value
-                                if(AppMgt){
+                        if(AppMgt){
+                            if(AltSensor && (!turnOffWhenReached || turnOffWhenReached) && ThermState != "off"){ 
+                                if(ThermState != "off"){
+                                    state.LatestThermostatMode = "off"   
+                                    // that's a "should be" value used to compare eventual manual setting to what "should be"
+                                    // that's why it must be recoreded even during override mode
+                                    state.AppMgtList[loopValue] = true //override test value
+
                                     log.debug "$ThermSet TURNED OFF"  
                                     ThermSet.setThermostatMode("off") 
                                 }
                                 else {
-                                    log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
+                                    log.debug "$ThermSet already set to off"
                                 }
                             }
-                            else {
-                                log.debug "$ThermSet already set to off"
-                            }
-                        }
-                        else if(turnOffWhenReached && !AltSensor && ThermState != "off"){
-                            if(ThermState != "off"){
-                                state.LatestThermostatMode = "off"                
-                                state.AppMgtList[loopValue] = true
-                                if(AppMgt){
-                                    log.debug "$ThermSet TURNED OFF" 
-                                    ThermSet.setThermostatMode("off")   
+                            else if(turnOffWhenReached && !AltSensor && ThermState != "off"){
+                                if(ThermState != "off"){
+                                    state.LatestThermostatMode = "off"                
+                                    state.AppMgtList[loopValue] = true
+                                    if(AppMgt){
+                                        log.debug "$ThermSet TURNED OFF" 
+                                        ThermSet.setThermostatMode("off")   
+                                    }
+                                    else {
+                                        log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
+                                    }
                                 }
                                 else {
-                                    log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
+                                    log.debug "$ThermSet already set to off"
                                 }
                             }
-                            else {
-                                log.debug "$ThermSet already set to off"
-                            }
+                        }
+                        else {
+                            log.debug "$ThermSet in OVERRIDE MODE, Setting it to AUTO"
+                            ThermSet.setThermostatMode("auto") 
                         }
                     }
                     else if(ShouldCoolWithAC){
@@ -1175,6 +1188,22 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                 }
                 else {
                     log.debug "Not evaluating for $ThermSet because some windows are open"
+                    // check that therms are off  
+                    def AllTherms = [Thermostat_1, Thermostat_2, Thermostat_3, Thermostat_4] 
+
+                    if(NoTurnOffOnContact){
+                        AllTherms = [Thermostat_2, Thermostat_3, Thermostat_4] 
+                    }
+                    def AnyON = AllTherms.findAll{ it?.currentState("thermostatMode")?.value != "off"}
+                    log.debug "there are ${AnyON.size()} untis that are still running: $AnyON"
+                    def count = 0
+                    while(count <= AnyON.size()){
+                        AnyON[count]?.setThermostatMode("off") 
+                        def ON = AnyON[count]
+                        count++
+                            log.debug "$ON TURNED OFF BECAUSE SOME CONTACTS ARE OPEN"
+                        //TurnOffThermostats()
+                    }
                 }
 
 
@@ -1196,6 +1225,7 @@ HSP should be : $HSPSet current HSP: $CurrentHeatingSetPoint
         }
         else { 
             log.debug "not evaluating because some windows are open" 
+
         }
     }
     else {
@@ -1206,8 +1236,15 @@ HSP should be : $HSPSet current HSP: $CurrentHeatingSetPoint
         state.thisIsWindowMgt = false
     }
 
-    state.notcalledfromEval = true
+    EndEvalTRUE()
+}
+def EndEvalTRUE(){
     state.EndEval = true
+    log.info "state.EndEval = $state.EndEval"
+}
+def EndEvalFALSE(){
+    state.EndEval = false
+    log.info "state.EndEval = $state.EndEval"
 }
 
 //shoulds
@@ -1274,12 +1311,12 @@ def motionSensorHandler(evt){
 }
 def HumidityHandler(evt){
 
-    log.info "humidity value is ${evt.value}%"
+    log.info "humidity value is ${evt?.value}%"
     state.humidity = evt.value
 
 }
 def InsideHumidityHandler(evt){
-    log.info "INSIDE humidity value is ${evt.value}%"
+    log.info "INSIDE humidity value at $evt.device is ${evt.value}%"
     state.INSIDEhumidity = evt.value
 }
 def WindHandler(evt){
@@ -1309,7 +1346,7 @@ def switchHandler(evt){
     Evaluate()
 }
 def contactExceptionHandlerOpen(evt) {
-
+    handlerrunningTRUE()
     state.thisIsWindowMgt = true
 
     state.ThermOff = false
@@ -1321,6 +1358,7 @@ def contactExceptionHandlerOpen(evt) {
     else{
         TurnOffThermostats()
     }
+    handlerrunningFALSE()
     runIn(5, thisIsWindowMgtFALSE)
 }
 def contactExceptionHandlerClosed(evt) {
@@ -1335,7 +1373,8 @@ def contactExceptionHandlerClosed(evt) {
 // Main events management0
 def temperatureHandler(evt) {
 
-    state.handlerrunning = true
+    handlerrunningTRUE()
+
     def doorsOk = AllContactsAreClosed()
 
     if(evt.device == XtraTempSensor) {
@@ -1396,7 +1435,7 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
 
         state.TheresBeenCriticalEvent = false
     } 
-    state.handlerrunning = false
+    handlerrunningFALSE()
     Evaluate()
 }
 def contactHandlerClosed(evt) {
@@ -1477,6 +1516,15 @@ def ChangedModeHandler(evt) {
 
 //override management
 
+def handlerrunningTRUE(){
+    state.handlerrunning = true
+    log.info "handlerrunning($state.handlerrunning)"
+}
+def handlerrunningFALSE(){
+    state.handlerrunning = false
+    log.info "handlerrunning($state.handlerrunning)"
+}
+
 def setpointHandler(evt){
     log.trace """
 $evt.device set to $evt.value (setpointHandler)
@@ -1484,7 +1532,7 @@ $evt.device set to $evt.value (setpointHandler)
 The source of this event was: $evt.source"
 """
 
-    state.handlerrunning = true
+    handlerrunningTRUE()
 
     // declare an integer value for the thermostat which has had its values modified
     def MapModesThermostats = ["${Thermostat_1}": "1" , "${Thermostat_2}": 2, "${Thermostat_3}": "3", 
@@ -1620,12 +1668,11 @@ state.AppMgtList = $state.AppMgtList
         log.debug "$evt.device already in OVERRIDE MODE, not checking SETPOINT override"
     }
 
-
-    state.handlerrunning = false
+    handlerrunningFALSE()
 }
 def ThermostatSwitchHandler(evt){
 
-    state.handlerrunning = true
+    handlerrunningTRUE()
 
     log.trace """$evt.device set to $evt.value (ThermostatSwitchHandler)
 """
@@ -1684,7 +1731,7 @@ state.thisIsWindowMgt?($state.thisIsWindowMgt)
         log.debug "CRITICAL MODE. NOT EVALUATING OVERRIDES" 
     }
 
-    state.handlerrunning = false
+    handlerrunningFALSE()
 }
 def thisIsWindowMgtFALSE(){
     log.debug "state.thisIsWindowMgt = $state.thisIsWindowMgt"
@@ -1702,6 +1749,12 @@ def thisIsWindowMgtFALSE(){
         state.attempts = state.attempts + 1
         runIn(15, thisIsWindowMgtFALSE)
     }
+}
+def OverrideReset(){
+    def status = false
+    state.AppMgtList = [true, true, true, true, true]
+    status = true
+    return status
 }
 
 def resetLocationChangeVariable(){
@@ -2175,7 +2228,7 @@ ItfeelsLike ${ItfeelsLike}F
 Wind = ${WindValue}mph
 HumidityTolerance($HumidityTolerance)
 Too Humid?($TooHumid)
-Humidity is: $humidity
+Outside Humidity is: $humidity
 OutsideFeelsHotter?($OutsideFeelsHotter)
 OkToOpen?($result)
 """
