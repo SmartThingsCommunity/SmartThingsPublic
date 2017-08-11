@@ -16,6 +16,7 @@
  * but it has morphed into a full blown smart panel web application
  * it displays and enables interaction with switches, dimmers, locks, etc
  * 
+ * Adding a comment to confirm the repository is working correctly
  */
 definition(
     name: "House Panel",
