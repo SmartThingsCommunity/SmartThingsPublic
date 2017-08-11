@@ -1,11 +1,11 @@
 /**
- *  LIFX Color Bulb
+ *  LIFX Plus Bulb
  *
- *  Copyright 2015 LIFX
+ *  Copyright 2017 LIFX
  *
  */
 metadata {
-	definition (name: "LIFX Color Bulb", namespace: "smartthings", author: "LIFX", ocfDeviceType: "oic.d.light") {
+	definition(name: "LIFX Plus Bulb", namespace: "smartthings", author: "LIFX") {
 		capability "Actuator"
 		capability "Color Control"
 		capability "Color Temperature"
@@ -14,6 +14,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Infrared Level"
 		capability "Light"
 	}
 
@@ -55,12 +56,20 @@ metadata {
 			state "colorTemp", action: "color temperature.setColorTemperature"
 		}
 
+		controlTile("irSliderControl", "device.infraredLevel", "slider", height: 2, width: 4, inactiveLabel: false, range: "(0..100)") {
+			state "infraredLevel", action: "infrared level.setInfraredLevel", label: "IR"
+		}
+
+		valueTile("infraredLabel", "device.ir", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "infraredLevel", label: 'Infrared'
+		}
+
 		valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", height: 2, width: 2) {
 			state "colorTemp", label: '${currentValue}K'
 		}
 
 		main "switch"
-		details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
+		details(["switch", "colorTempSliderControl", "colorTemp", "irSliderControl", "infraredLabel", "refresh"])
 	}
 }
 
@@ -76,6 +85,18 @@ void installed() {
 def updated() {
 	log.debug "updated()"
 	initialize()
+}
+
+def setInfraredLevel(level) {
+	log.debug "setInfraredLevel $level"
+	parent.logErrors(logObject: log) {
+		def resp = parent.apiPUT("/lights/${selector()}/state", ["infrared": level / 100])
+		if (resp.status < 300) {
+			sendEvent(name: "infraredLevel", value: level)
+		} else {
+			log.error("Bad setInfraredLevel result: [${resp.status}] ${resp.data}")
+		}
+	}
 }
 
 // handle commands
@@ -213,6 +234,7 @@ def refresh() {
 	}
 	def data = resp.data[0]
 
+	sendEvent(name: "infraredLevel", value: Float.parseFloat(data.infrared) * 100 as int)
 	sendEvent(name: "label", value: data.label)
 	sendEvent(name: "level", value: Math.round((data.brightness ?: 1) * 100))
 	sendEvent(name: "switch.setLevel", value: Math.round((data.brightness ?: 1) * 100))

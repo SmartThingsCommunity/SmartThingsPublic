@@ -34,12 +34,30 @@ preferences {
 }
 
 mappings {
-	path("/receivedToken") { action: [ POST: "oauthReceivedToken", GET: "oauthReceivedToken"] }
-	path("/receiveToken") { action: [ POST: "oauthReceiveToken", GET: "oauthReceiveToken"] }
-	path("/hookCallback") { action: [ POST: "hookEventHandler", GET: "hookEventHandler"] }
-	path("/oauth/callback") { action: [ GET: "oauthCallback" ] }
-	path("/oauth/initialize") { action: [ GET: "oauthInit"] }
-	path("/test") { action: [ GET: "oauthSuccess" ] }
+	path("/receivedToken") {
+		action:
+		[POST: "oauthReceivedToken", GET: "oauthReceivedToken"]
+	}
+	path("/receiveToken") {
+		action:
+		[POST: "oauthReceiveToken", GET: "oauthReceiveToken"]
+	}
+	path("/hookCallback") {
+		action:
+		[POST: "hookEventHandler", GET: "hookEventHandler"]
+	}
+	path("/oauth/callback") {
+		action:
+		[GET: "oauthCallback"]
+	}
+	path("/oauth/initialize") {
+		action:
+		[GET: "oauthInit"]
+	}
+	path("/test") {
+		action:
+		[GET: "oauthSuccess"]
+	}
 }
 
 def getServerUrl()               { return  appSettings.serverUrl ?: apiServerUrl }
@@ -59,13 +77,14 @@ def authPage() {
 			state.accessToken = createAccessToken() // predefined method
 		}
 		def description = "Tap to enter LIFX credentials"
-		def redirectUrl = "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" // this triggers oauthInit() below
+		def redirectUrl = "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}"
+		// this triggers oauthInit() below
 		// def redirectUrl = "${apiServerUrl}"
 		// log.debug "app id: ${app.id}"
 		// log.debug "redirect url: ${redirectUrl}"s
-		return dynamicPage(name: "Credentials", title: "Connect to LIFX", nextPage: null, uninstall: true, install:true) {
+		return dynamicPage(name: "Credentials", title: "Connect to LIFX", nextPage: null, uninstall: true, install: true) {
 			section {
-				href(url:redirectUrl, required:true, title:"Connect to LIFX", description:"Tap here to connect your LIFX account")
+				href(url: redirectUrl, required: true, title: "Connect to LIFX", description: "Tap here to connect your LIFX account")
 			}
 		}
 	} else {
@@ -74,7 +93,7 @@ def authPage() {
 		def options = locationOptions() ?: []
 		def count = options.size().toString()
 
-		return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
+		return dynamicPage(name: "Credentials", title: "", nextPage: "", install: true, uninstall: true) {
 			section("Select your location") {
 				input "selectedLocationId", "enum", required:true, title:"Select location ({{count}} found)", messageArgs: [count: count], multiple:false, options:options, submitOnChange: true
 				paragraph "Devices will be added automatically from your ${vendorName} account. To add or delete devices please use the Official ${vendorName} App."
@@ -86,7 +105,7 @@ def authPage() {
 // OAuth
 
 def oauthInit() {
-	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote_control:all", response_type: "code" ]
+	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote_control:all", response_type: "code"]
 	log.info("Redirecting user to OAuth setup")
 	redirect(location: "https://cloud.lifx.com/oauth/authorize?${toQueryString(oauthParams)}")
 }
@@ -123,10 +142,11 @@ def oauthCallback() {
 def oauthReceiveToken(redirectUrl = null) {
 	// Not sure what redirectUrl is for
 	log.debug "receiveToken - params: ${params}"
-	def oauthParams = [ client_id: "${appSettings.clientId}", client_secret: "${appSettings.clientSecret}", grant_type: "authorization_code", code: params.code, scope: params.scope ] // how is params.code valid here?
+	def oauthParams = [client_id: "${appSettings.clientId}", client_secret: "${appSettings.clientSecret}", grant_type: "authorization_code", code: params.code, scope: params.scope]
+	// how is params.code valid here?
 	def params = [
-			uri: "https://cloud.lifx.com/oauth/token",
-			body: oauthParams,
+			uri    : "https://cloud.lifx.com/oauth/token",
+			body   : oauthParams,
 			headers: [
 					"User-Agent": "SmartThings Integration"
 			]
@@ -290,15 +310,15 @@ private setupDeviceWatch() {
 	def hub = location.hubs[0]
 	// Make sure that all child devices are enrolled in device watch
 	getChildDevices().each {
-		it.sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${hub?.hub?.hardwareID}\"}")
+		it.sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${hub?.hub?.hardwareID}\"}", displayed: false)
 	}
 }
 
 Map apiRequestHeaders() {
 	return ["Authorization": "Bearer ${state.lifxAccessToken}",
-			"Accept": "application/json",
-			"Content-Type": "application/json",
-			"User-Agent": "SmartThings Integration"
+	        "Accept"       : "application/json",
+	        "Content-Type" : "application/json",
+	        "User-Agent"   : "SmartThings Integration"
 	]
 }
 
@@ -329,7 +349,7 @@ def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
 
 def apiGET(path) {
 	try {
-		httpGet(uri: apiURL(path), headers: apiRequestHeaders()) {response ->
+		httpGet(uri: apiURL(path), headers: apiRequestHeaders()) { response ->
 			logResponse(response)
 			return response
 		}
@@ -342,14 +362,15 @@ def apiGET(path) {
 def apiPUT(path, body = [:]) {
 	try {
 		log.debug("Beginning API PUT: ${path}, ${body}")
-		httpPutJson(uri: apiURL(path), body: new groovy.json.JsonBuilder(body).toString(), headers: apiRequestHeaders(), ) {response ->
+		httpPutJson(uri: apiURL(path), body: new groovy.json.JsonBuilder(body).toString(), headers: apiRequestHeaders(),) { response ->
 			logResponse(response)
 			return response
 		}
 	} catch (groovyx.net.http.HttpResponseException e) {
 		logResponse(e.response)
 		return e.response
-	}}
+	}
+}
 
 def devicesList(selector = '') {
 	logErrors([]) {
@@ -391,18 +412,30 @@ def updateDevices() {
 		def childDevice = getChildDevice(device.id)
 		selectors.add("${device.id}")
 		if (!childDevice) {
-			// log.info("Adding device ${device.id}: ${device.product}")
-			if (device.product.capabilities.has_color) {
+			log.info "Adding device ${device.id}: ${device.product}"
+			if (device.product.capabilities.has_ir && device.product.capabilities.has_color) {
+				childDevice = addChildDevice(app.namespace, "LIFX Plus Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+			} else if (device.product.capabilities.has_color) {
 				childDevice = addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, ["label": device.label, "completedSetup": true])
 			} else {
 				childDevice = addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, ["label": device.label, "completedSetup": true])
 			}
+		} else if (device.product.capabilities.has_ir && device.product.capabilities.has_color && childDevice.getTypeName() == "LIFX Color Bulb") {
+			log.debug "Retype existing color bulb to plus bulb"
+			childDevice.setDeviceType("LIFX Plus Bulb")
 		}
 
+		if (device.product.capabilities.has_ir) {
+			Float ir = 0
+			if (device.infrared != null) {
+				ir = Float.parseFloat(device.infrared)
+			}
+			childDevice.sendEvent(name: "infraredLevel", value: (ir * 100)  as int)
+		}
 		if (device.product.capabilities.has_color) {
 			childDevice.sendEvent(name: "color", value: colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int))
-			childDevice.sendEvent(name: "hue", value: device.color.hue / 3.6)
-			childDevice.sendEvent(name: "saturation", value: device.color.saturation * 100)
+			childDevice.sendEvent(name: "hue", value: (device.color.hue / 3.6) as int)
+			childDevice.sendEvent(name: "saturation", value: (device.color.saturation * 100) as int)
 		}
 		childDevice.sendEvent(name: "label", value: device.label)
 		childDevice.sendEvent(name: "level", value: Math.round((device.brightness ?: 1) * 100))
@@ -441,3 +474,4 @@ def updateDevices() {
 		}
 	}
 }
+

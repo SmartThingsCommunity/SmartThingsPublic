@@ -29,21 +29,21 @@ metadata {
 				attributeState "turningOff", label:'Turning off', action:"switch.on", icon:"http://hosted.lifx.co/smartthings/v1/196xOff.png", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 
-			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-				attributeState "level", action:"switch level.setLevel"
+			tileAttribute("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action: "switch level.setLevel"
 			}
 		}
 
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
 		valueTile("null", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "default", label:''
+			state "default", label: ''
 		}
 
-		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", height: 2, width: 4, inactiveLabel: false, range:"(2700..9000)") {
-			state "colorTemp", action:"color temperature.setColorTemperature"
+		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", height: 2, width: 4, inactiveLabel: false, range: "(2700..9000)") {
+			state "colorTemp", action: "color temperature.setColorTemperature"
 		}
 
 		valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", height: 2, width: 2) {
@@ -78,8 +78,8 @@ def setLevel(percentage) {
 	if (percentage == 0) {
 		return off() // if the brightness is set to 0, just turn it off
 	}
-	parent.logErrors(logObject:log) {
-		def resp = parent.apiPUT("/lights/${selector()}/state", [brightness: percentage / 100, power: "on"])
+	parent.logErrors(logObject: log) {
+		def resp = parent.apiPUT("/lights/${selector()}/state", ["brightness": percentage / 100, "power": "on"])
 		if (resp.status < 300) {
 			sendEvent(name: "level", value: percentage)
 			sendEvent(name: "switch.setLevel", value: percentage)
