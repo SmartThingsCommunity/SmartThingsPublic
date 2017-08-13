@@ -165,37 +165,7 @@ def Modes(){
             }
         }
 
-        section("Modify setpoints with a switch on/off status"){  
-            input(name: "ExceptionSW", type : "bool", title: "Apply different settings for $Thermostat_1 when a switch is on", 
-                  defaut: false, submitOnChange: true)
-            if(ExceptionSW){  
-                input(name: "warmerorcooler", type : "enum", title: "Have this room Warmer or cooler", 
-                      required: true, options: ["warmer", "cooler", "more heating, cooler cooling"], submitOnChange: true)
-                input(name: "CtrlSwt", type: "capability.switch", title: "Adjust $Thermostat_1 settings When this switch is on", required: true, submitOnChange: true)
-
-
-                if(warmerorcooler == "more heating, cooler cooling"){
-                    input(name: "AddDegrees", type: "decimal", title: "Add this value to $Thermostat_1 heat setting When $CtrlSwt is on", required: true, range: "1..5")
-                    input(name: "SubDegrees", type: "decimal", title: "Substract this value to $Thermostat_1 cooling setting When $CtrlSwt is on", required: true, range: "1..5")                     
-                }
-                else if(warmerorcooler == "warmer"){
-                    input(name: "AddDegrees", type: "decimal", title: "Add this value to $Thermostat_1 for both cooling and heating settings When $CtrlSwt is on", required: true, submitOnChange: true, range: "1..5")
-                    def set = AddDegrees?.toInteger()
-                    input(name: "SubDegrees", type: "decimal", title:"Enter the same value", description: "enter here the same value than above", required: true, defaultValue: set, range: "1..5")  
-                    if(AddDegrees){
-                        log.info "SubDegrees = $SubDegrees"
-                    }
-                }
-                else if(warmerorcooler == "cooler"){        
-                    input(name: "SubDegrees", type: "decimal", title: "Substract this value to $Thermostat_1 for both cooling and heating settings When $CtrlSwt is on", required: true, submitOnChange: true, range: "1..5")
-                    def set = SubDegrees?.toInteger()
-                    input(name: "AddDegrees", type: "decimal", title:"Enter the same value", description: "enter here the same value than above", required: true, defaultValue: set, range: "1..5")  
-                    if(AddDegrees){
-                        log.info "AddDegrees = $AddDegrees"
-                    }
-                }
-            }
-        }
+        
 
         section("Thermostats temperatures for $Home Mode"){
             if(HowMany >= 1) {
@@ -410,6 +380,37 @@ It is highly recommended to select another device or this app will not be capabl
                 input(name: "CSPSetBedSensor", type: "decimal", title: "Set Cooling temperature", required: true)
             }
             input "falseAlarmThreshold", "decimal", title: "False alarm threshold", required: false, description: "Number of minutes (default is 2 min)"
+        }
+        section("Modify setpoints with a switch on/off status"){  
+            input(name: "ExceptionSW", type : "bool", title: "Apply different settings for $Thermostat_1 when a switch is on", 
+                  defaut: false, submitOnChange: true)
+            if(ExceptionSW){  
+                input(name: "warmerorcooler", type : "enum", title: "Have this room Warmer or cooler?", 
+                      required: true, options: ["warmer", "cooler", "more heating, cooler cooling"], submitOnChange: true)
+                input(name: "CtrlSwt", type: "capability.switch", title: "Adjust $Thermostat_1 settings When this switch is on", required: true, submitOnChange: true)
+
+
+                if(warmerorcooler == "more heating, cooler cooling"){
+                    input(name: "AddDegrees", type: "decimal", title: "Add this value to $Thermostat_1 heat setting When $CtrlSwt is on", required: true, range: "1..5")
+                    input(name: "SubDegrees", type: "decimal", title: "Substract this value to $Thermostat_1 cooling setting When $CtrlSwt is on", required: true, range: "1..5")                     
+                }
+                else if(warmerorcooler == "warmer"){
+                    input(name: "AddDegrees", type: "decimal", title: "Add this value to $Thermostat_1 for both cooling and heating settings When $CtrlSwt is on", required: true, submitOnChange: true, range: "1..5")
+                    def set = AddDegrees?.toInteger()
+                    input(name: "SubDegrees", type: "decimal", title:"Enter here the same value than above", description: "enter here the same value than above", required: true, defaultValue: set, range: "1..5")  
+                    if(AddDegrees){
+                        log.info "SubDegrees = $SubDegrees"
+                    }
+                }
+                else if(warmerorcooler == "cooler"){        
+                    input(name: "SubDegrees", type: "decimal", title: "Substract this value to $Thermostat_1 for both cooling and heating settings When $CtrlSwt is on", required: true, submitOnChange: true, range: "1..5")
+                    def set = SubDegrees?.toInteger()
+                    input(name: "AddDegrees", type: "decimal", title:"Enter the same value", description: "enter here the same value than above", required: true, defaultValue: set, range: "1..5")  
+                    if(AddDegrees){
+                        log.info "AddDegrees = $AddDegrees"
+                    }
+                }
+            }
         }
         section("Save power by turning on some fans or by opening some windows when outside's temperature is nice"){
             paragraph "this section is optimized for windows management but can also be used with fans"
@@ -948,19 +949,6 @@ Current Temperature Inside = $Inside
                         log.info "b is: $b ---------------------------------------"
                         CSPSet = coef*outsideTemp + b as double
 
-                            //CSPSet = CSPSet.toInteger()
-
-                            // no lower than defaultCSPSet 
-                            if(CSPSet <= defaultCSPSet){
-
-                                log.info """CurrTemp at ${ThermSet} is: $CurrTemp. CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp
-But because CSPSet is $CSPSet and thus lower than default value ($defaultCSPSet), default settings are restored"""
-                                CSPSet = defaultCSPSet
-                            }
-                        else {
-
-                            log.info "CurrTemp at ${ThermSet} is: $CurrTemp  CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
-                        }
 
                     } 
                     else if(adjustments == "Yes, but use a logarithmic variation"){
@@ -974,11 +962,12 @@ Where log can be a logarithm function in any base, n is the number and b is the 
 Math.log(256) / Math.log(2)
 => 8.0
 */
-                        //outsideTemp = 90 // for test only MUST BE DELETED
+                        //outsideTemp = 90 // for test only 
                         CSPSet = (Math.log(outsideTemp) / Math.log(CSPSet)) * CSPSet
+                        log.debug "Logarithmic CSPSet = $CSPSet"
                         CSPSet = Math.round(CSPSet)
 
-                        log.debug "Logarithmic CSPSet = $CSPSet"
+                        log.debug "rounded CSPSet = $CSPSet"
 
 
                         // end of algebraic adjustments        
@@ -1022,7 +1011,7 @@ Math.log(256) / Math.log(2)
                         }
 
                         // no lower than defaultCSPSet 
-                        log.debug "Calculated CSPSet = $CSPSet, defaultCSPSet = $defaultCSPSet"
+                        log.debug "Calculated CSPSet = $CSPSet, defaultCSPSet = $defaultCSPSet (loop $loopValue)"
                         if(CSPSet < defaultCSPSet){
 
                             log.info """CurrTemp at ${ThermSet} is: $CurrTemp. CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp
@@ -1075,7 +1064,7 @@ WarmInside = $WarmInside
                         HSPSet = HSPSet + AddDegrees
                         CSPSet = CSPSet + SubDegrees
 
-                        //log.debug "$ThermSet SetPoints ExceptionSW active"                                
+                        log.debug "$ThermSet SetPoints ExceptionSW active"                                
                     }
 
 
@@ -1136,7 +1125,7 @@ ContactExceptionIsClosed = $ContactExceptionIsClosed
 Too Humid INSIDE?($TooHumidINSIDE : ${INSIDEhumidity}%)
 
 Too Humid OUTSIDE?($TooHumid : $humidity)
-ShouldCoolWithAC = $ShouldCoolWithAC, 
+ShouldCoolWithAC = $ShouldCoolWithAC (loop $loopValue), 
 ShouldHeat = $ShouldHeat
 Current setpoint for $ThermSet is $CurrentCoolingSetPoint, 
 Current Heating setpoint is $CurrentHeatingSetPoint,
@@ -1194,6 +1183,7 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                             if(AppMgt){
                                 if(CurrentCoolingSetPoint != CSPSet){
                                     ThermSet.setCoolingSetpoint(CSPSet)
+                                    log.debug "$ThermSet CSP set to $CSPSet" 
                                 }
                                 else{
                                     log.debug "Cooling SetPoint already set to $CSPSet for $ThermSet ($CSPSet == $CurrentCoolingSetPoint)"
