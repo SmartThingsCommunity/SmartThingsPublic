@@ -1,0 +1,2 @@
+git remote add origin https://github.com/teemacvee/Ask-Alexa.git
+git push -u origin master
