@@ -151,16 +151,16 @@ def Modes(){
     dynamicPage(pageProperties) {
 
         section("Main Mode") {
-            input(name: "Home", type : "mode", title: "Select modes for when you're at home", multiple: false, required: false)
+            input(name: "Home", type : "mode", title: "Select modes for when you're at home", multiple: false, required: false, submitOnChange: true)
         }
         section("Other Modes"){
-            input(name: "Night", type : "mode", title: "Select Night mode", multiple: false, required: true)
-            input(name: "Away", type : "mode", title: "Select away mode", multiple: false, required: true)
+            input(name: "Night", type : "mode", title: "Select Night mode", multiple: false, required: true, submitOnChange: true)
+            input(name: "Away", type : "mode", title: "Select away mode", multiple: false, required: true, submitOnChange: true)
         }
         section("MoreModes"){ 
             input(name: "Moremodes", type: "bool", title: "add more modes", required: false, defaut: false, submitOnChange: true)
             if(Moremodes){
-                input(name: "CustomMode1", type : "mode", title: "Select mode", multiple: false, required: true)
+                input(name: "CustomMode1", type : "mode", title: "Select mode", multiple: false, required: true, submitOnChange: true)
                 input(name: "CustomMode2", type : "mode", title: "Select mode", multiple: false, required: true, submitOnChange: true)
             }
         }
