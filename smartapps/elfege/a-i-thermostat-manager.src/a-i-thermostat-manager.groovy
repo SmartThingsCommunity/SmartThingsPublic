@@ -161,7 +161,7 @@ def Modes(){
             input(name: "Moremodes", type: "bool", title: "add more modes", required: false, defaut: false, submitOnChange: true)
             if(Moremodes){
                 input(name: "CustomMode1", type : "mode", title: "Select mode", multiple: false, required: true)
-                input(name: "CustomMode2", type : "mode", title: "Select mode", multiple: false, required: false, submitOnChange: true)
+                input(name: "CustomMode2", type : "mode", title: "Select mode", multiple: false, required: true, submitOnChange: true)
             }
         }
 
