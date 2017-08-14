@@ -46,6 +46,7 @@ metadata {
     definition (name: "Simulated RGBW Bulb", namespace: "smartthings/testing", author: "SmartThings") {
         capability "Health Check"
         capability "Actuator"
+        capability "Sensor"
         capability "Light"
 
         capability "Switch"
@@ -423,6 +424,8 @@ def setColor(Map colorHSMap) {
 
 private initialize() {
     log.trace "Executing 'initialize'"
+
+    // for HealthCheck
     sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
 
     sendEvent(name: "colorTemperatureRange", value: COLOR_TEMP_RANGE)

@@ -36,6 +36,7 @@ import groovy.transform.Field
 
 metadata {
     definition (name: "Simulated White Color Temperature Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+        capability "HealthCheck"
         capability "Actuator"
         capability "Sensor"
         capability "Light"
@@ -172,6 +173,10 @@ def updated() {
 // command methods
 //
 
+def ping() {
+    refresh()
+}
+
 def refresh() {
     log.trace "Executing 'refresh'"
     String currentMode = device.currentValue("bulbMode")
@@ -232,6 +237,10 @@ def setColorTemperature(kelvin) {
  */
 private initialize() {
     log.trace "Executing 'initialize'"
+
+    // for HealthCheck
+    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
+
     sendEvent(name: "colorTemperatureRange", value: COLOR_TEMP_RANGE)
     sendEvent(name: "colorTemperature", value: COLOR_TEMP_DEFAULT)
 
