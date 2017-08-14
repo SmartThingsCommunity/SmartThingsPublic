@@ -37,6 +37,7 @@ import groovy.transform.Field
 
 metadata {
     definition (name: "Simulated RGB Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+        capability "HealthCheck"
         capability "Actuator"
         capability "Sensor"
         capability "Light"
@@ -257,6 +258,10 @@ def updated() {
 // command methods
 //
 
+def ping() {
+    refresh()
+}
+
 def refresh() {
     log.trace "Executing 'refresh'"
     String currentMode = device.currentValue("bulbMode")
@@ -361,6 +366,9 @@ def setColor(Map colorHSMap) {
 
 private initialize() {
     log.trace "Executing 'initialize'"
+
+    // for HealthCheck
+    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
 
     sendEvent(name: "hue", value: 0)
     sendEvent(name: "saturation", value: 0)

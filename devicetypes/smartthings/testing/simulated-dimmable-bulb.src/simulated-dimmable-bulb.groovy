@@ -15,6 +15,7 @@
  */
 metadata {
     definition (name: "Simulated Dimmable Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+        capability "Health Check"
         capability "Actuator"
         capability "Sensor"
         capability "Light"
@@ -87,9 +88,14 @@ def updated() {
 //
 // command methods
 //
+def ping() {
+    refresh()
+}
+
 def refresh() {
     log.trace "Executing 'refresh'"
-    // ummm.... not much to do here without a physical device
+    sendEvent(name: "switch", value: getSwitch())
+    sendEvent(buildSetLevelEvent(getLevel()))
 }
 
 def configure() {
@@ -122,6 +128,16 @@ def setLevel(value) {
 def setLevel(value, duration) {
     log.trace "Executing setLevel $value (ignoring duration)"
     setLevel(value)
+}
+
+private String getSwitch() {
+    def switchState = device.currentState("switch")
+    return switchState ? switchState.getStringValue() : "off"
+}
+
+private Integer getLevel() {
+    def levelState = device.currentState("level")
+    return levelState ? levelState.getIntegerValue() : 100
 }
 
 private initialize() {

@@ -85,10 +85,12 @@ metadata {
     definition (name: "Simulated Thermostat", namespace: "smartthings/testing", author: "SmartThings") {
         capability "Sensor"
         capability "Actuator"
+        capability "Health Check"
 
         capability "Thermostat"
         capability "Relative Humidity Measurement"
         capability "Configuration"
+        capability "Refresh"
 
         command "tempUp"
         command "tempDown"
@@ -257,6 +259,10 @@ def configure() {
 
 private initialize() {
     log.trace "Executing 'initialize'"
+
+    // for HealthCheck
+    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
+
     sendEvent(name: "temperature", value: DEFAULT_TEMPERATURE, unit: "°F")
     sendEvent(name: "humidity", value: DEFAULT_HUMIDITY, unit: "%")
     sendEvent(name: "heatingSetpoint", value: DEFAULT_HEATING_SETPOINT, unit: "°F")
@@ -292,6 +298,22 @@ def parse(String description) {
         parsedEvents = createEvent(name: name, value: pair[1]?.trim())
     }
     return parsedEvents
+}
+
+
+def ping() {
+    refresh()
+}
+
+def refresh() {
+    sendEvent(name: "thermostatMode", value: getThermostatMode())
+    sendEvent(name: "thermostatFanMode", value: getFanMode())
+    sendEvent(name: "thermostatOperatingState", value: getOperatingState())
+    sendEvent(name: "thermostatSetpoint", value: getThermostatSetpoint(), unit: "°F")
+    sendEvent(name: "coolingSetpoint", value: getCoolingSetpoint(), unit: "°F")
+    sendEvent(name: "heatingSetpoint", value: getHeatingSetpoint(), unit: "°F")
+    sendEvent(name: "temperature", value: getTemperature(), unit: "°F")
+    sendEvent(name: "humidity", value: getHumidityPercent(), unit: "%")
 }
 
 // Thermostat mode
@@ -369,6 +391,11 @@ private setOperatingState(String operatingState) {
 }
 
 // setpoint
+private Integer getThermostatSetpoint() {
+    def ts = device.currentState("thermostatSetpoint")
+    return ts ? ts.getIntegerValue() : DEFAULT_THERMOSTAT_SETPOINT
+}
+
 private Integer getHeatingSetpoint() {
     def hs = device.currentState("heatingSetpoint")
     return hs ? hs.getIntegerValue() : DEFAULT_HEATING_SETPOINT
@@ -492,6 +519,11 @@ private setHumidityPercent(Integer humidityValue) {
     } else {
         log.warn "Could not set measured huimidity to $humidityValue%"
     }
+}
+
+private getHumidityPercent() {
+    def hp = device.currentState("humidity")
+    return hp ? hp.getIntegerValue() : DEFAULT_HUMIDITY
 }
 
 /**
