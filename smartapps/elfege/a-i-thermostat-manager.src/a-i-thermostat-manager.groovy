@@ -165,7 +165,7 @@ def Modes(){
             }
         }
 
-        
+
 
         section("Thermostats temperatures for $Home Mode"){
             if(HowMany >= 1) {
@@ -737,7 +737,7 @@ def Evaluate(){
 
 
                 log.trace """
-Override modes list: $state.AppMgtList
+Override (AppMgt) modes list: $state.AppMgtList
 Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2, ThermState3: $ThermState3, ThermState4: $ThermState4"""
 
 
@@ -832,6 +832,7 @@ Current Thermostats Modes: ThermState1: $ThermState1, ThermState2: $ThermState2,
                         log.debug "WHILE LOOP $loopValue"
 
                     def AppMgt = state.AppMgtList[loopValue]
+                    log.debug "AppMgt = $AppMgt"
                     ThermState = ThermStateList[loopValue]
                     ThermSet = Therm[loopValue]
 
@@ -950,7 +951,7 @@ Current Temperature Inside = $Inside
                         CSPSet = coef*outsideTemp + b as double
 
 
-                    } 
+                            } 
                     else if(adjustments == "Yes, but use a logarithmic variation"){
                         // logarithmic treatment 
 
@@ -965,9 +966,9 @@ Math.log(256) / Math.log(2)
                         //outsideTemp = 90 // for test only 
                         CSPSet = (Math.log(outsideTemp) / Math.log(CSPSet)) * CSPSet
                         log.debug "Logarithmic CSPSet = $CSPSet"
-                        CSPSet = Math.round(CSPSet)
-
-                        log.debug "rounded CSPSet = $CSPSet"
+                        //CSPSet = Math.round(CSPSet)
+                        CSPSet = CSPSet.toInteger()
+                        log.debug "Integer CSPSet = $CSPSet"
 
 
                         // end of algebraic adjustments        
@@ -1030,20 +1031,20 @@ But, because CSPSet is lower than default value ($defaultCSPSet), default settin
                     def WarmOutside = outsideTemp >= (CSPSet - 1)
                     def WarmInside = CurrTemp > CSPSet
                     def ShouldCoolWithAC = WarmInside && WarmOutside
-                    log.debug "ShouldCoolWithAC = $ShouldCoolWithAC (before other criteria)"
+                    log.debug "ShouldCoolWithAC = $ShouldCoolWithAC (before other criteria loop $loopValue)"
 
                     def ShouldHeat = outsideTemp < OutsideTempLowThres && CurrTemp <= HSPSet
 
                     if((CurrTemp - 1 > CSPSet || tooHumidINSIDE) && !ShouldHeat){
                         ShouldCoolWithAC = true
-                        log.debug "ShouldCoolWithAC set to true"
+                        log.debug "ShouldCoolWithAC set to true loop $loopValue"
                     }
                     state.ShouldCoolWithAC = ShouldCoolWithAC
                     state.ShouldHeat = ShouldHeat
 
                     log.debug """
-ShouldCoolWithAC = $ShouldCoolWithAC ==> $CurrTemp > $CSPSet && $outsideTemp >= $CSPSet - 1
-ShouldHeat = $ShouldHeat ==> $outsideTemp < $OutsideTempLowThres && $CurrTemp <= $HSPSet
+ShouldCoolWithAC = $ShouldCoolWithAC 
+ShouldHeat = $ShouldHeat 
 WarmOutside = $WarmOutside 
 WarmInside = $WarmInside
 """       
@@ -1052,6 +1053,7 @@ WarmInside = $WarmInside
 
                     if(NoTurnOffOnContact){
                         ThisIsExceptionTherm = "${ThermSet}" == "${Thermostat_1}"
+                        log.debug "This is Exception Thermostat"
 
                     }
                     else {
@@ -1079,6 +1081,8 @@ WarmInside = $WarmInside
                             log.debug "$BedSensor closed, applying settings accordingly"     
                             CSPSet = CSPSetBedSensor
                             HSPSet = HSPSetBedSensor
+
+
                         }
                     }
 
@@ -1135,11 +1139,18 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
 
 
                     /////////////////////////MODIFICATIONS//////////////////////////yh
-                    log.debug "doorsOk = $doorsOk"
+
+
+                    def CSPok = CurrentCoolingSetPoint == CSPSet
+                    def HSPok = CurrentHeatingSetPoint == HSPSet
+
+                    log.debug "doorsOk = $doorsOk, CSPok = $CSPok, HSPok = $HSPok"
+
                     if(doorsOk || (ContactExceptionIsClosed && ThisIsExceptionTherm)){
                         log.debug "turnOffWhenReached = $turnOffWhenReached"
                         def inAutoOrOff = ThermState in ["auto","off"]
-                        if(!ShouldCoolWithAC && !ShouldHeat){
+
+                        if(!ShouldCoolWithAC && !ShouldHeat && turnOffWhenReached){
 
                             if(AltSensor && (!turnOffWhenReached || turnOffWhenReached)){ 
                                 if(ThermState != "off"){
@@ -1178,29 +1189,43 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                                 }
                             }
                         }
-                        else if(ShouldCoolWithAC){
+
+                        else if(ShouldCoolWithAC || !CSPok){
+                            // it may happen that old settings get stuck if estimate of shouldcool is false 
+                            // so if no override but discrepancy between current csp and what should be
+                            // go on
+                            log.debug """ShouldCoolWithAC EVAL $loopValue AppMgt = $AppMgt
+CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
+
                             state.LatestThermostatMode = "cool"
                             if(AppMgt){
-                                if(CurrentCoolingSetPoint != CSPSet){
+                                log.debug " $CurrentCoolingSetPoint == $CSPSet {CurrentCoolingSetPoint == CSPSet}?"
+                                if(!CSPok){
                                     ThermSet.setCoolingSetpoint(CSPSet)
                                     log.debug "$ThermSet CSP set to $CSPSet" 
                                 }
                                 else{
                                     log.debug "Cooling SetPoint already set to $CSPSet for $ThermSet ($CSPSet == $CurrentCoolingSetPoint)"
                                 }                   
-                                if(ThermState != "cool"){                                       
+                                if(ShouldCoolWithAC && ThermState != "cool"){  
+                                    // ShouldCoolWithAC has to be rechecked here otherwise !CSPok might trigger heat while no need
                                     log.debug "$ThermSet set to cool"
                                     ThermSet.setThermostatMode("cool") 
                                 }
                                 else {
-                                    log.debug "$ThermSet already set to cool"
+                                    if(!ShouldCoolWithAC){
+                                        log.debug "no need to cool at $ThermSet"
+                                    }
+                                    else{
+                                        log.debug "$ThermSet already set to cool"
+                                    }
                                 }
                             }
                             else {
                                 log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
                             }
                         }
-                        else if(ShouldHeat){
+                        else if(ShouldHeat || !HSPok){
                             state.LatestThermostatMode = "heat"
                             if(AppMgt){
                                 //state.AppMgtList[loopValue] = true
@@ -1212,13 +1237,19 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                                     log.debug "Heating SetPoint already set to $HSPSet for $ThermSet"
                                 }
 
-                                if(ThermState != "heat"){
+                                if(ShouldHeat && ThermState != "heat"){
+                                    // ShouldHeat has to be rechecked here otherwise !HSPok might trigger heat while no need
 
                                     log.debug "$ThermSet set to Heat"
                                     ThermSet.setThermostatMode("heat")  
                                 }
                                 else {
-                                    log.debug "$ThermSet already set to heat"
+                                    if(!ShouldHeat){
+                                        log.debug "no need to heat at $ThermSet"
+                                    }
+                                    else{
+                                        log.debug "$ThermSet already set to heat"
+                                    }
                                 }
                             }
                             else {
@@ -1247,10 +1278,10 @@ Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating:
                         }
                     }
                     //def CurrSP = ThermSet.currentValue("coolingSetpoint")
-                    log.debug """
+                    log.info """
 INFO : 
-CSP should be : $CSPSet current CSP: $CurrentCoolingSetPoint
-HSP should be : $HSPSet current HSP: $CurrentHeatingSetPoint
+$ThermSet CSP should be : $CSPSet current CSP: $CurrentCoolingSetPoint
+$ThermSet HSP should be : $HSPSet current HSP: $CurrentHeatingSetPoint
 """
                     log.trace " END OF WHILE $loopValue" 
                 }   
@@ -1636,14 +1667,18 @@ $evt.device set to $evt.value (setpointHandler)
 
 The source of this event was: $evt.source"
 """
-
     handlerrunningTRUE()
+   def Endeval = state.EndEval
+    while(Endeval != true){
+    Endeval = state.EndEval
+        log.debug "waiting"
+    }
 
     // declare an integer value for the thermostat which has had its values modified
     def MapModesThermostats = ["${Thermostat_1}": "1" , "${Thermostat_2}": 2, "${Thermostat_3}": "3", 
                                "${Thermostat_4}": "4"]
     def KeyValueForThisTherm = MapModesThermostats.find { it.key == "$evt.device"}
-    log.info "device is ------------------- $KeyValueForThisTherm.value"
+    log.info "device is ------------------- $KeyValueForThisTherm.key"
     def ThermNumber = KeyValueForThisTherm.value
     ThermNumber = KeyValueForThisTherm.value.toInteger()
 
@@ -1652,7 +1687,7 @@ The source of this event was: $evt.source"
 
     def AppMgt = state.AppMgtList[ThermNumber]
 
-    log.trace """AppMgt at SetpointHandler for $ThermNumber is $AppMgt
+    log.trace """AppMgt at SetpointHandler for $ThermNumber ($KeyValueForThisTherm.key) is $AppMgt
 
 """
 
@@ -1749,16 +1784,16 @@ OVERRIDE? if true then should have $reference != $Value
 """
 
         def doorsOk = AllContactsAreClosed()
-
         if(Value == reference || ThisIsModeChange ||  (!doorsOk && !thisIsExceptionTemp) && !AppMgt)
         {  
             log.debug "NO SETPOINT OVERRIDE for $evt.device"
         }
         else {
-
-            state.AppMgtList[ThermNumber] = false // As of here this value won't change until location mode change or closing windows
-
-            log.debug """
+            
+                state.AppMgtList[ThermNumber] = false // As of here this value won't change until location mode change or closing windows
+            
+            log.debug """AppMgt now is $AppMgt, override list: $state.AppMgtList
+            
 MANUAL SETPOINT OVERRIDE for $evt.device
 state.AppMgtList = $state.AppMgtList
 """
@@ -1774,10 +1809,17 @@ state.AppMgtList = $state.AppMgtList
     }
 
     handlerrunningFALSE()
+
 }
 def ThermostatSwitchHandler(evt){
 
     handlerrunningTRUE()
+
+def Endeval = state.EndEval
+    while(Endeval != true){
+    Endeval = state.EndEval
+        log.debug "waiting"
+    }
 
     log.trace """$evt.device set to $evt.value (ThermostatSwitchHandler)
 """
@@ -1837,6 +1879,7 @@ state.thisIsWindowMgt?($state.thisIsWindowMgt)
     }
 
     handlerrunningFALSE()
+
 }
 def thisIsWindowMgtFALSE(){
     log.debug "state.thisIsWindowMgt = $state.thisIsWindowMgt"
