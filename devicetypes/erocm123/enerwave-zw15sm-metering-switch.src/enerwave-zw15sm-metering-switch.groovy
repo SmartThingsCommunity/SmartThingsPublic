@@ -217,8 +217,8 @@ def ping() {
 	log.debug "ping() called"
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
-		//zwave.meterV2.meterGet(scale: 0).format(),
-		//zwave.meterV2.meterGet(scale: 2).format()
+		zwave.meterV2.meterGet(scale: 0).format(),
+		zwave.meterV2.meterGet(scale: 2).format()
 	])
 }
 
