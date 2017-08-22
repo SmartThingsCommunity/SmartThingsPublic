@@ -508,7 +508,7 @@ def switchMode() {
 	def currentMode = device.currentValue("thermostatMode")
 	def supportedModes = state.supportedModes
 	// Old version of supportedModes was as string, make sure it gets updated
-	if (supportedModes && supportedModes[0].size() > 1) {
+	if (supportedModes && supportedModes.size() && supportedModes[0].size() > 1) {
 		def next = { supportedModes[supportedModes.indexOf(it) + 1] ?: supportedModes[0] }
 		def nextMode = next(currentMode)
 		runIn(2, "setGetThermostatMode", [data: [nextMode: nextMode], overwrite: true])
@@ -521,7 +521,7 @@ def switchMode() {
 def switchToMode(nextMode) {
 	def supportedModes = state.supportedModes
 	// Old version of supportedModes was as string, make sure it gets updated
-	if (supportedModes && supportedModes[0].size() > 1) {
+	if (supportedModes && supportedModes.size() && supportedModes[0].size() > 1) {
 		if (supportedModes.contains(nextMode)) {
 			runIn(2, "setGetThermostatMode", [data: [nextMode: nextMode], overwrite: true])
 		} else {
@@ -543,7 +543,7 @@ def switchFanMode() {
 	def currentMode = device.currentValue("thermostatFanMode")
 	def supportedFanModes = state.supportedFanModes
 	// Old version of supportedFanModes was as string, make sure it gets updated
-	if (supportedFanModes && supportedFanModes[0].size() > 1) {
+	if (supportedFanModes && supportedFanModes.size() && supportedFanModes[0].size() > 1) {
 		def next = { supportedFanModes[supportedFanModes.indexOf(it) + 1] ?: supportedFanModes[0] }
 		def nextMode = next(currentMode)
 		runIn(2, "setGetThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
@@ -556,7 +556,7 @@ def switchFanMode() {
 def switchToFanMode(nextMode) {
 	def supportedFanModes = state.supportedFanModes
 	// Old version of supportedFanModes was as string, make sure it gets updated
-	if (supportedFanModes && supportedFanModes[0].size() > 1) {
+	if (supportedFanModes && supportedFanModes.size() && supportedFanModes[0].size() > 1) {
 		if (supportedFanModes.contains(nextMode)) {
 			runIn(2, "setGetThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
 		} else {
