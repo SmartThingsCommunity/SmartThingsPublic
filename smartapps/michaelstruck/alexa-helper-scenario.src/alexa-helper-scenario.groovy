@@ -2,10 +2,10 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2017 Michael Struck
- *  Version 3.0.0a 2/28/17
+ *  Version 3.0.0b 2/28/17
  * 
  *  Version 2.9.9e - Minor GUI changes to accomodate new mobile app structure
- *  Version 3.0.0a - Added OSRAM loop/pulse function (thanks @bbmcgee)
+ *  Version 3.0.0b - Added OSRAM loop/pulse function (thanks @bbmcgee)
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -74,10 +74,10 @@ def pageControl() {
 	dynamicPage(name: "pageControl", title: "Control Scenario Settings", install: false, uninstall: false) {
         section {
 			input "AlexaSwitch", "capability.switch", title: "Control Switch (On/Off, Momentary)", multiple: false, required: true
-    		input "showOptions", "enum", title: "Switch States To React To...", options: ["":"On/Off", "1":"On Only", "2":"Off Only"] , required: false, submitOnChange:true, defaultValue: ""
+    		input "showOptions", "enum", title: "Switch States To React To...", options: ["0":"On/Off", "1":"On Only", "2":"Off Only"] , required: false, submitOnChange:true, defaultValue:"0"
         }
-        if (!showOptions || showOptions == "1") controlOnOff("on")
-        if (!showOptions || showOptions == "2") controlOnOff("off")
+	if (!showOptions || showOptions == "1" || showOptions == "0") controlOnOff("on")
+        if (!showOptions || showOptions == "2" || showOptions == "0") controlOnOff("off")
     }
 }
 def controlOnOff(type){
@@ -1038,5 +1038,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 3.0.0a (02/28/2017)"}
+private def textVersion() {return "Child App Version: 3.0.0b (02/28/2017)"}
 private def versionInt() {return 300}
