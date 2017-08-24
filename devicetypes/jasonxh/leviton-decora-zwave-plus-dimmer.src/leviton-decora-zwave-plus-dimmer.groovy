@@ -183,29 +183,27 @@ def parse(String description) {
 }
 
 def on() {
+    short duration = fadeOnTime == null ? 255 : fadeOnTime
     delayBetween([
-            zwave.switchMultilevelV1.switchMultilevelSet(value: 0xFF).format(),
+            zwave.switchMultilevelV2.switchMultilevelSet(value: 0xFF, dimmingDuration: duration).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
-    ], 1000)
+    ], (durationToSeconds(duration) + 1) * 1000)
 }
 
 def off() {
+    short duration = fadeOffTime == null ? 255 : fadeOffTime
     delayBetween([
-            zwave.switchMultilevelV1.switchMultilevelSet(value: 0x00).format(),
+            zwave.switchMultilevelV2.switchMultilevelSet(value: 0x00, dimmingDuration: duration).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
-    ], 1000)
+    ], (durationToSeconds(duration) + 1) * 1000)
 }
 
 def setLevel(value, durationSeconds = null) {
     log.debug "setLevel >> value: $value, durationSeconds: $durationSeconds"
     def level = toDisplayLevel(value as short)
-    def dimmingDuration = 255
-    def getStatusDelay = 1000
-    if (durationSeconds != null) {
-        durationSeconds = Math.max(Math.min(durationSeconds as int, 127 * 60), 0)
-        dimmingDuration = durationSeconds < 128 ? durationSeconds : 127 + Math.round(durationSeconds / 60)
-        getStatusDelay += 1000 * (durationSeconds < 128 ? durationSeconds : Math.round(durationSeconds / 60) * 60)
-    }
+    short dimmingDuration = durationSeconds == null ? 255 : secondsToDuration(durationSeconds as int)
+    int getStatusDelay = (durationToSeconds(dimmingDuration) + 1) * 1000
+
     sendEvent(name: "level", value: level, unit: "%")
     sendEvent(name: "switch", value: level > 0 ? "on" : "off")
     delayBetween([
@@ -344,7 +342,8 @@ private zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.Manufactu
 }
 
 private zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
-    createEvent(name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false)
+    [createEvent(name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false),
+     response(poll())]
 }
 
 private zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -387,6 +386,30 @@ private short toDisplayLevel(short level) {
 
 private short toZwaveLevel(short level) {
     Math.max(0, Math.min(99, level))
+}
+
+private int durationToSeconds(short duration) {
+    if (duration >= 0 && duration <= 127) {
+        duration
+    } else if (duration >= 128 && duration <= 254) {
+        (duration - 127) * 60
+    } else if (duration == 255) {
+        2   // factory default
+    } else {
+        log.error "Bad duration $duration"
+        0
+    }
+}
+
+private short secondsToDuration(int seconds) {
+    if (seconds >= 0 && seconds <= 127) {
+        seconds
+    } else if (seconds >= 128 && seconds <= 127 * 60) {
+        127 + Math.round(seconds / 60)
+    } else {
+        log.error "Bad seconds $seconds"
+        255
+    }
 }
 
 private configurationCommand(param, value) {
