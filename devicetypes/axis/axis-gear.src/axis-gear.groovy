@@ -1,13 +1,11 @@
-//DO NOT EDIT main file - Create a copy to modify and enhance. New files within the repo will be reviewed and merge to the main file on request.
-
 metadata {
     definition (name: "AXIS Gear", namespace: "axis", author: "AXIS Labs") {  
         capability "Actuator"
         capability "Switch"
         capability "Switch Level"
-        //capability "Sensor"        
-        //capability "Battery"
-        //capability "Temperature Measurement"
+        capability "Refresh"        
+        capability "Battery"
+        capability "HealthCheck"
         capability "Window Shade"
 		
         //Custom Commandes to achieve 25% increment control
@@ -15,10 +13,10 @@ metadata {
         command "ShadesDown"
         
                 
-        fingerprint profileId: "0200", inClusters: "0000, 0004, 0005, 0006, 0008, 0100, 0102", manufacturer: "AXIS", model: "GR-ZB01-W", deviceJoinName: "AXIS Gear"
+        fingerprint profileId: "0200", inClusters: "0000, 0001, 0004, 0005, 0006, 0008, 0100, 0102", manufacturer: "AXIS", model: "GR-ZB01-W", deviceJoinName: "AXIS Gear"
         //ClusterIDs: 0000 - Basic; 0004 - Groups; 0005 - Scenes; 0006 - On/Off; 0008 - Level Control; 0100 - Shade Configuration; 0102 - Window Covering;
-        //Updated 2017-06-30 - With Axis Share Dev
-        //Updated 2017-06-30 - Ping Device-Watch
+        //Updated 2017-06-21
+        //Updated 2017-08-24 - added power cluster 0001 - added battery, level, reporting, & health check 
     }
    
 	tiles(scale: 2) {
@@ -42,17 +40,30 @@ metadata {
 	 	controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: true) {
             state("level", action:"setLevel")
         }
-        //Version 1: Placeholder for reporting battery level
-        valueTile("integerFloat", "device.integerFloat", width:6, height: 2) {
-			state "val", label:'${currentValue}% Battery'
+        
+        valueTile("battery", "device.battery", inactiveLabel:false, decoration:"flat", width:4, height:2) {
+			state "battery", label:'${currentValue}% battery', unit:""
+		}
+        
+		standardTile("refresh", "device.refresh", inactiveLabel:false, decoration:"flat", width:2, height:2) {
+			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
         main(["main"])
-        details(["shade", "levelSliderControl","integerFloat"])
+        details(["shade", "levelSliderControl","battery", "refresh"])
         //details('shade', 'levelSliderControl')
         //details('levelSliderControl', 'otherTile', 'anotherTile') //adjustment and order of tiles
 	}
 
+}
+
+private getCLUSTER_POWER() {0x0001}
+private getCLUSTER_LEVEL() {0x0008}
+private getLEVEL_ATTR_LEVEL() {0x0000}
+private getPOWER_ATTR_BATTERY() {0x0021}
+
+def installed (){
+	configure()
 }
 
 def ShadesUp(){
@@ -89,22 +100,14 @@ def on() {
 }
 
 def off() {
-	//sendEvent(name:"level", value: 100, displayed:true)
-    setLevel(100)
+	setLevel(100)
     //zigbee.off()
 }
 
 def setLevel(value) {
-	sendEvent(name: "integerFloat", value: 47.0)
+	//sendEvent(name: "integerFloat", value: 47.0)
 	sendEvent(name:"level", value: value, displayed:true)
-    
-    if ((value>0)&&(value<100)){
-    	sendEvent(name:"windowShade", value: "partial", displayed:true)
-    } else if (value == 100){
-    	sendEvent(name:"windowShade", value: "closed", displayed:true)
-    }else{
-    	sendEvent(name:"windowShade", value: "open", displayed:true)
-    }
+    setWindowShade(value)
 	zigbee.setLevel(value)
 }
 
@@ -116,21 +119,74 @@ def close() {
 	off()
 }
 
-/*
-def ping() {
-    return zigbee.onOffRefresh()
+def ping(){
+	zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) 
+    zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL)
+    log.debug "Ping() "
+    
 }
+
+def setWindowShade(value){
+ if ((value>0)&&(value<100)){
+    	sendEvent(name:"windowShade", value: "partial", displayed:true)
+    } else if (value == 100){
+    	sendEvent(name:"windowShade", value: "closed", displayed:true)
+    }else{
+    	sendEvent(name:"windowShade", value: "open", displayed:true)
+    }
+}
+
 def refresh() {
-    return zigbee.readAttribute(0x0006, 0x0000) +
-        zigbee.readAttribute(0x0008, 0x0000) +
-        zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) +
-        zigbee.configureReporting(0x0008, 0x0000, 0x20, 1, 3600, 0x01)
+    def cmds = 
+    	zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
+    	zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL) 	
+    return cmds 
 }
+
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    return zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null) +
-        zigbee.configureReporting(0x0008, 0x0000, 0x20, 1, 3600, 0x01) +
-        zigbee.readAttribute(0x0006, 0x0000) +
-        zigbee.readAttribute(0x0008, 0x0000)
+    sendEvent(name: "checkInterval", value: 120, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    def cmds = 
+    	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 0, 60, 0x01) +
+        zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 0, 60, 0x01)
+        log.info "configure() --- cmds: $cmds"
+    return refresh + cmds
 }
-*/
+
+def parse(String description) {
+    log.trace "parse() --- description: $description"
+
+    Map map = [:]
+    if (description?.startsWith('read attr -')) {
+        map = parseReportAttributeMessage(description)
+    }
+
+    def result = map ? createEvent(map) : null
+    log.debug "parse() --- returned: $result"
+    return result
+}
+
+private Map parseReportAttributeMessage(String description) {
+    Map descMap = zigbee.parseDescriptionAsMap(description)
+    Map resultMap = [:]
+    if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY) {
+        resultMap.name = "battery"
+        def batteryValue = Math.round(Integer.parseInt(descMap.value, 16))
+        log.debug "parseDescriptionAsMap() --- Battery: $batteryValue"
+        if ((batteryValue >= 0)&&(batteryValue <= 100)){
+        	resultMap.value = batteryValue
+        }
+        
+    }
+    else if (descMap.clusterInt == CLUSTER_LEVEL && descMap.attrInt == LEVEL_ATTR_LEVEL) {
+        resultMap.name = "level"
+        def levelValue = Math.round(Integer.parseInt(descMap.value, 16))
+        //Set icon based on device feedback for the  open, closed, & partial configuration
+        setWindowShade(levelValue)
+        resultMap.value = levelValue 
+    }
+    else {
+        log.debug "parseReportAttributeMessage() --- ignoring attribute"
+    }
+    return resultMap
+}
