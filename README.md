@@ -1,3 +1,5 @@
+# Cloned - jfurtner custom
+
 # SmartThings Public GitHub Repo
 
 An official list of SmartApps and Device Types from SmartThings.
