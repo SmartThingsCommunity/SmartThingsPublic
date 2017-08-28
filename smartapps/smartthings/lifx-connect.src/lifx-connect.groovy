@@ -5,6 +5,7 @@
  *
  */
 include 'localization'
+include 'cirrus'
 
 definition(
 		name: "LIFX (Connect)",
@@ -36,7 +37,7 @@ preferences {
 mappings {
 	path("/receivedToken") { action: [ POST: "oauthReceivedToken", GET: "oauthReceivedToken"] }
 	path("/receiveToken") { action: [ POST: "oauthReceiveToken", GET: "oauthReceiveToken"] }
-	path("/hookCallback") { action: [ POST: "hookEventHandler", GET: "hookEventHandler"] }
+	path("/webhookCallback") { action: [ POST: "webhookCallback"] }
 	path("/oauth/callback") { action: [ GET: "oauthCallback" ] }
 	path("/oauth/initialize") { action: [ GET: "oauthInit"] }
 	path("/test") { action: [ GET: "oauthSuccess" ] }
@@ -265,23 +266,27 @@ def updated() {
 }
 
 def uninstalled() {
-	log.debug("Uninstalling, removing child devices...")
-	unschedule('updateDevices')
-	removeChildDevices(getChildDevices())
-}
-
-private removeChildDevices(devices) {
-	devices.each {
-		deleteChildDevice(it.deviceNetworkId) // 'it' is default
-	}
+	cirrus.unregisterServiceManager()
 }
 
 // called after Done is hit after selecting a Location
 def initialize() {
 	log.debug "initialize"
-	updateDevices()
-	// Check for new devices and remove old ones every 3 hours
-	runEvery5Minutes('updateDevices')
+
+	if (cirrusEnabled) {
+		// Create the devices
+		updateDevicesFromResponse(devicesInLocation())
+
+		// Sync with Cirrus once per day to ensure consistency and maintain polling by Gadfly
+		runDaily(new Date(), registerWithCirrus)
+	}
+	else {
+		// Create the devices and generate events for their initial state
+		updateDevices()
+
+		// Check for new devices and remove old ones every 3 hours
+		runEvery5Minutes('updateDevices')
+	}
 	setupDeviceWatch()
 }
 
@@ -377,8 +382,58 @@ def devicesInLocation() {
 	return devicesList("location_id:${settings.selectedLocationId}")
 }
 
-// ensures the devices list is up to date
-def updateDevices() {
+def webhookCallback() {
+	log.debug "webhookCallback"
+	def data = request.JSON
+	log.debug data
+	if (data) {
+		updateDevicesFromResponse(data)
+		[status: "ok", source: "smartApp"]
+	}
+	else {
+		[status: "operation not defined", source: "smartApp"]
+	}
+}
+
+// Cirrus version that only creates and deletes devices, since Cirrus and Gadfly are responsible for updating
+void updateDevicesFromResponse(devices) {
+	log.debug("updateDevicesFromResponse(${devices.size()})")
+	def changed = false
+	def deviceIds = []
+	def children = getChildDevices()
+	devices.each { device ->
+		deviceIds << device.id
+		def childDevice = children.find {it.deviceNetworkId == device.id}
+		if (!childDevice) {
+			log.trace "adding child device $device.label"
+			if (device.product.capabilities.has_color) {
+				addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+			} else {
+				addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+			}
+			changed = true
+		}
+	}
+
+	children.findAll { !deviceIds.contains(it.deviceNetworkId) }.each {
+		log.trace "deleting child device $it.label"
+		deleteChildDevice(it.deviceNetworkId, true)
+		changed = true
+	}
+
+	if (changed) {
+		// Run in a separate sandbox instance because caching issues can prevent children from being picked up
+		runIn(1, registerWithCirrus)
+	}
+}
+
+// Non-Cirrus version that updates devices and generates events
+void updateDevices() {
+	if (cirrusEnabled) {
+		switchToCirrus()
+		return
+	}
+
 	if (!state.devices) {
 		state.devices = [:]
 	}
@@ -440,4 +495,24 @@ def updateDevices() {
 			log.debug("Can't remove this device because it's being used by an SmartApp")
 		}
 	}
+}
+
+boolean getCirrusEnabled() {
+	def result = cirrus.enabled("smartthings.cdh.handlers.LifxLightHandler")
+	log.debug "cirrusEnabled=$result"
+	result
+}
+
+void switchToCirrus() {
+	log.info "Switching to cirrus"
+	registerWithCirrus()
+	unschedule()
+	runDaily(new Date(), registerWithCirrus)
+}
+
+def registerWithCirrus() {
+	cirrus.registerServiceManager("smartthings.cdh.handlers.LifxLightHandler", [
+			remoteAuthToken: state.lifxAccessToken,
+			lifxLocationId: settings.selectedLocationId,
+	])
 }
