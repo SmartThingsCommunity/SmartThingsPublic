@@ -42,30 +42,72 @@ metadata {
 		attribute "deviceAlive", "enum", ["true", "false"]
 	}
 
-	tiles {
-		standardTile("temperature", "device.temperature", width: 2, height: 2, decoration: "flat") {
-			state("temperature", label:'${currentValue}°', unit:"F", icon: "st.thermostat.ac.air-conditioning",
-					backgroundColors:[
-							// Celsius
-							[value: 0, color: "#153591"],
-							[value: 7, color: "#1e9cbb"],
-							[value: 15, color: "#90d2a7"],
-							[value: 23, color: "#44b621"],
-							[value: 28, color: "#f1d801"],
-							[value: 35, color: "#d04e00"],
-							[value: 37, color: "#bc2323"],
-							// Fahrenheit
-							[value: 40, color: "#153591"],
-							[value: 44, color: "#1e9cbb"],
-							[value: 59, color: "#90d2a7"],
-							[value: 74, color: "#44b621"],
-							[value: 84, color: "#f1d801"],
-							[value: 95, color: "#d04e00"],
-							[value: 96, color: "#bc2323"]
-					]
-			)
+tiles(scale: 2) {
+		multiAttributeTile(name: "thermostatFull", type: "thermostat", width: 6, height: 4) {
+      			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+			    attributeState "temperature", label:'${currentValue}°', unit:"dF", icon: "st.thermostat.ac.air-conditioning",
+				backgroundColors:[
+					// Celsius
+					[value: 0, color: "#153591"],
+					[value: 7, color: "#1e9cbb"],
+					[value: 15, color: "#90d2a7"],
+					[value: 23, color: "#44b621"],
+					[value: 28, color: "#f1d801"],
+					[value: 35, color: "#d04e00"],
+					[value: 37, color: "#bc2323"],
+					// Fahrenheit
+					[value: 40, color: "#153591"],
+					[value: 44, color: "#1e9cbb"],
+					[value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
+				  ]
+			} /*
+			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
+        			attributeState("VALUE_UP", action: "tempUp")
+        			attributeState("VALUE_DOWN", action: "tempDown")
+    			} */
+   			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
+   				     attributeState("humidity", label:'${currentValue}%', unit:"%", defaultState: true)
+   			}
+  			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+				attributeState("idle", backgroundColor:"#cccccc")
+                		attributeState("fan only", backgroundColor:"#66cc00")
+				attributeState("heating", backgroundColor:"#ff9c14")
+				attributeState("cooling", backgroundColor:"#2db9e7")
+				attributeState('offline', backgroundColor:"#ff4d4d")
+				attributeState('default', label: '${currentValue}', backgroundColor:"#d28de0")
+			}
+			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+				attributeState "off", action:"switchMode", nextState: "updating", icon: "st.thermostat.heating-cooling-off"
+				attributeState "heat", action:"switchMode",  nextState: "updating", icon: "st.thermostat.heat"
+				attributeState "cool", action:"switchMode",  nextState: "updating", icon: "st.thermostat.cool"
+				attributeState "auto", action:"switchMode",  nextState: "updating", icon: "st.thermostat.auto"
+				attributeState "auxheatonly", action:"switchMode", icon: "st.thermostat.emergency-heat"
+				attributeState "updating", label:"Working", icon: "st.secondary.secondary"
+		    	}
+			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+        			attributeState("heatingSetpoint", label:'${currentValue}', unit:"dF", defaultState: true)
+    			}
+    			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+        			attributeState("coolingSetpoint", label:'${currentValue}', unit:"dF", defaultState: true)
+    			}
 		}
-		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
+    		standardTile("upButtonControl", "device.thermostatSetpoint", inactiveLabel: false, width: 2, height: 2) {
+			state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.thermostat-up"
+		}
+		standardTile("thermostatStatus", "device.thermostatStatus", width: 2, height: 2) {
+			state "thermostatStatus", label:'${currentValue}'
+		}
+		valueTile("displayThermostatSetpoint", "device.displayThermostatSetpoint", width: 2, height: 2, decoration: "flat") {
+			state "displayThermostatSetpoint", label:" Currently set to " + '${currentValue}°'
+		}
+		standardTile("downButtonControl", "device.thermostatSetpoint", inactiveLabel: false, width: 2, height: 2) {
+			state "setpoint", action:"lowerSetpoint", icon:"st.thermostat.thermostat-down"
+		}
+		standardTile("mode", "device.thermostatMode", inactiveLabel: false, width: 2, height: 2) {
 			state "off", action:"switchMode", nextState: "updating", icon: "st.thermostat.heating-cooling-off"
 			state "heat", action:"switchMode",  nextState: "updating", icon: "st.thermostat.heat"
 			state "cool", action:"switchMode",  nextState: "updating", icon: "st.thermostat.cool"
@@ -73,47 +115,33 @@ metadata {
 			state "auxheatonly", action:"switchMode", icon: "st.thermostat.emergency-heat"
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
-		standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
+		standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, width: 2, height: 2) {
 			state "auto", action:"switchFanMode", nextState: "updating", icon: "st.thermostat.fan-auto"
 			state "on", action:"switchFanMode", nextState: "updating", icon: "st.thermostat.fan-on"
+			state "off", action:"switchFanMode", nextState: "updating", icon: "st.thermostat.fan-off"
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
-		standardTile("upButtonControl", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.thermostat-up"
-		}
-		valueTile("displayThermostatSetpoint", "device.displayThermostatSetpoint", width: 1, height: 1, decoration: "flat") {
-			state "displayThermostatSetpoint", label:'${currentValue}'
-		}
-		valueTile("currentStatus", "device.thermostatStatus", height: 1, width: 2, decoration: "flat") {
-			state "thermostatStatus", label:'${currentValue}', backgroundColor:"#ffffff"
-		}
-		standardTile("downButtonControl", "device.thermostatSetpoint", inactiveLabel: false, decoration: "flat") {
-			state "setpoint", action:"lowerSetpoint", icon:"st.thermostat.thermostat-down"
-		}
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false) {
 			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00"
 		}
-		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
+		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false,  width: 2, height: 2, decoration: "flat") {
 			state "heat", label:'${currentValue}° heat', unit:"F"
 		}
-		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false) {
 			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
 		}
-		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
+		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false,  width: 2, height: 2, decoration: "flat") {
 			state "cool", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
 		}
-		standardTile("refresh", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.thermostatMode", inactiveLabel: false,  width: 2, height: 2, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		standardTile("resumeProgram", "device.resumeProgram", inactiveLabel: false, decoration: "flat") {
+		standardTile("resumeProgram", "device.resumeProgram", inactiveLabel: false,  width: 2, height: 2, decoration: "flat") {
 			state "resume", action:"resumeProgram", nextState: "updating", label:'Resume', icon:"st.samsung.da.oven_ic_send"
 			state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
-		valueTile("humidity", "device.humidity", decoration: "flat") {
-			state "humidity", label:'${currentValue}%'
-		}
-		main "temperature"
-		details(["temperature", "upButtonControl", "displayThermostatSetpoint", "currentStatus", "downButtonControl", "mode", "fanMode","humidity", "resumeProgram", "refresh"])
+		main "thermostatFull"
+		details(["thermostatFull", "upButtonControl", "thermostatStatus", "downButtonControl", "mode", "fanMode", "resumeProgram", "refresh"])
 	}
 
 	preferences {
