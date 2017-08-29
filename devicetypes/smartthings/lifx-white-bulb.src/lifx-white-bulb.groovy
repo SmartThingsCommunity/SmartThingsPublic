@@ -5,7 +5,7 @@
  *
  */
 metadata {
-	definition (name: "LIFX White Bulb", namespace: "smartthings", author: "LIFX", ocfDeviceType: "oic.d.light") {
+	definition (name: "LIFX White Bulb", namespace: "smartthings", author: "LIFX", ocfDeviceType: "oic.d.light", cloudDeviceHandler: "smartthings.cdh.handlers.LifxLightHandler") {
 		capability "Actuator"
 		capability "Color Temperature"
 		capability "Switch"

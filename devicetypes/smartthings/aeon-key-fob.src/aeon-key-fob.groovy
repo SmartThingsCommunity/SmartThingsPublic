@@ -38,29 +38,25 @@ metadata {
 		status "wakeup":  "command: 8407, payload: "
 	}
 	tiles {
-		standardTile("button", "device.button", width: 2, height: 2) {
-			state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-			state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
-			state "button 2 pushed", label: "pushed #2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
-			state "button 3 pushed", label: "pushed #3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
-			state "button 4 pushed", label: "pushed #4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
-			state "button 1 held", label: "held #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
-			state "button 2 held", label: "held #2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
-			state "button 3 held", label: "held #3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
-			state "button 4 held", label: "held #4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
+
+		multiAttributeTile(name: "rich-control") {
+			tileAttribute("device.button", key: "PRIMARY_CONTROL") {
+				attributeState "default", label: ' ', action: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		standardTile("battery", "device.battery", inactiveLabel: false, width: 6, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		main "button"
-		details(["button", "battery"])
+		childDeviceTiles("outlets")
 	}
+
 }
+
 
 def parse(String description) {
 	def results = []
 	if (description.startsWith("Err")) {
-	    results = createEvent(descriptionText:description, displayed:true)
+		results = createEvent(descriptionText:description, displayed:true)
 	} else {
 		def cmd = zwave.parse(description, [0x2B: 1, 0x80: 1, 0x84: 1])
 		if(cmd) results += zwaveEvent(cmd)
@@ -84,9 +80,16 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 
 def buttonEvent(button, held) {
 	button = button as Integer
+	String childDni = "${device.deviceNetworkId}/${button}"
+	def child = childDevices.find{it.deviceNetworkId == childDni}
+	if (!child) {
+		log.error "Child device $childDni not found"
+	}
 	if (held) {
+		child?.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
 		createEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
+		child?.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
 		createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
@@ -130,6 +133,17 @@ def installed() {
 
 def updated() {
 	initialize()
+	if (!childDevices) {
+		createChildDevices()
+	}
+	else if (device.label != state.oldLabel) {
+		childDevices.each {
+			def segs = it.deviceNetworkId.split("/")
+			def newLabel = "${device.displayName} button ${segs[-1]}"
+			it.setLabel(newLabel)
+		}
+		state.oldLabel = device.label
+	}
 }
 
 def initialize() {
@@ -143,5 +157,15 @@ def initialize() {
 	if (zwMap && zwMap.mfr == "0086" && zwMap.prod == "0001" && zwMap.model == "0026") {
 		buttons = 1
 	}
+	createChildDevices(buttons)
 	sendEvent(name: "numberOfButtons", value: buttons)
+}
+
+private void createChildDevices(def num) {
+	state.oldLabel = device.label
+	for (i in num) {
+		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
+				[completedSetup: true, label: "${device.displayName} button ${i}",
+				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+	}
 }
