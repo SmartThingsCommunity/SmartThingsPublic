@@ -27,6 +27,7 @@ definition(
 preferences {
 	section('Virtual devices') {
         input "kornerHubDevice", "capability.contactSensor", multiple: false, required: true, title:'Kornersafe hub device'
+        input "updateFrequency", "number", required:true, range: "0-14400", title:"Frequency of updates"
 	}
 }
 mappings {
@@ -52,7 +53,43 @@ def updated() {
 
 def initialize() {
 	logTrace('INIT initialize')
-    runEvery1Minute(scheduledUpdate)
+    logTrace("Setting update frequency to $updateFrequency")
+    switch (updateFrequency)
+    {
+    	case 0:
+        	logTrace('Auto-updating disabled')
+        	break
+        case 1:
+        	logTrace('Auto-updating runEvery1Minute')
+        	runEvery1Minute(scheduledUpdate)
+            break
+        case 5:
+        	logTrace('Auto-updating runEvery5Minutes')
+            runEvery5Minutes(scheduledUpdate)
+            break
+        case 15:
+        	logTrace('Auto-updating runEvery15Minutes')
+        	runEvery15Minutes(scheduledUpdate)
+            break
+        case 30:
+        	logTrace('Auto-updating runEvery30Minutes')
+            runEvery30Minutes(scheduledUpdate)
+            break
+        case 60:
+        	logTrace('Auto-updating runEvery1Hour')
+            runEvery1Hour(scheduledUpdate)
+            break
+        case 180:
+        	logTrace('Auto-updating runEvery3Hours')
+        	runEvery3Hours(scheduledUpdate)
+        	break
+        default:
+        	def freq = updateFrequency * 60
+        	logTrace("Auto-updating runin freq")
+        	runIn(freq, scheduledUpdateRunIn)
+        	break
+    }
+    
     updateDeviceEndpoints();
 }
 
@@ -69,6 +106,11 @@ def scheduledUpdate() {
 	logTrace('INIT scheduledUpdate')
 	updateDeviceEndpoints()
 	kornerHubDevice.poll()
+}
+
+def scheduledUpdateRunIn() {
+	scheduledUpdate()
+    runIn(updateFrequency*60, scheduledUpdateRunIn)
 }
 
 def updateStatus() {
