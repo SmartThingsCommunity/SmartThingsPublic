@@ -48,6 +48,7 @@ def updated() {
 	logTrace("Updated with settings: ${settings}")
 
 	unsubscribe()
+    unschedule()
 	initialize()
 }
 
@@ -85,7 +86,7 @@ def initialize() {
         	break
         default:
         	def freq = updateFrequency * 60
-        	logTrace("Auto-updating runin freq")
+        	logTrace("Auto-updating runin $freq")
         	runIn(freq, scheduledUpdateRunIn)
         	break
     }
@@ -109,8 +110,11 @@ def scheduledUpdate() {
 }
 
 def scheduledUpdateRunIn() {
+	logTrace('INIT scheduledUpdateRunIn')
 	scheduledUpdate()
-    runIn(updateFrequency*60, scheduledUpdateRunIn)
+    def freq = updateFrequency*60
+    logTrace("Scheduling in $freq seconds")
+    runIn(freq, scheduledUpdateRunIn)
 }
 
 def updateStatus() {
