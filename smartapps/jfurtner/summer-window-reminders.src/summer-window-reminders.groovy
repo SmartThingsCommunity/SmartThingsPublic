@@ -49,21 +49,21 @@ preferences {
 }
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
+	logDebug( "Installed with settings: ${settings}")
 
 	initialize()
 }
 
 def updated() {
-	log.debug 'smartapp updated'
-	log.debug "Updated with settings: ${settings}"
+	logDebug( 'smartapp updated')
+	logDebug( "Updated with settings: ${settings}")
 
 	unsubscribe()
 	initialize()
 }
 
 def initialize() {
-	log.debug 'smartapp init'
+	logDebug( 'smartapp init')
 	runEvery15Minutes(checkTemperature)
     if (state.lastNotificationOutLTIn == null) {
     	state.lastNotificationOutLTIn = initDate()
@@ -88,7 +88,7 @@ def inValidMode() {
     }
     if (!inValidMode)
     {
-    	log.debug "Mode '${curModeName}' is not a valid mode. Valid modes:${modes}"
+    	logDebug( "Mode '${curModeName}' is not a valid mode. Valid modes:${modes}")
         return false
     }
     
@@ -98,13 +98,13 @@ def inValidMode() {
 def validPersonPresent() {
     for (person in people) {
         if (person.currentPresence == "present") {
-        	log.debug "${person} present"
+        	logDebug( "${person} present")
         	return true
         }
     }
     if (!anyonePresent)
     {
-        log.debug 'Not sending alert: no people present'
+        logDebug( 'Not sending alert: no people present')
         return false
     }
 }
@@ -116,34 +116,34 @@ def checkTemperature(evt) {
     if (!validPersonPresent) {
     	return
     }
-    log.debug 'Initialization'
+    logDebug( 'Initialization')
     def msg = ''
     def outside = outsideTemperature.currentTemperature
     def inside = insideTemperature.currentTemperature
     def last = 0
     def lastStr = ''
     def nowDate = now()
-    log.debug "Checking temperatures: o:${outside} i:${inside} n:${nowDate}"
+    logDebug( "Checking temperatures: o:${outside} i:${inside} n:${nowDate}")
     if (outside < inside)
     {
-        log.debug 'Outside LT inside'
+        logDebug( 'Outside LT inside')
         last = state.lastNotificationOutLTIn
         msg = "Open windows, outside temperature (${outside}) lower than inside (${inside})"
     }
     else if (inside < outside)
     {    
-        log.debug 'Inside LT outside'
+        logDebug( 'Inside LT outside')
         last = state.lastNotificationInLTOut
         msg = "Close windows, outside temperature (${outside}) higher than inside (${inside})"
 
     }
 
-    //log.debug "tests complete: m:${msg} l:${last}"
+    //logDebug( "tests complete: m:${msg} l:${last}")
 
     def addHours = hoursBetweenUpdates*3600000
-    log.debug "Adding seconds: ${addHours}"
+    logDebug( "Adding seconds: ${addHours}")
     last = last + addHours
-    log.debug "times: l:${last} n:${nowDate}"
+    logDebug( "times: l:${last} n:${nowDate}")
     if (msg != null && nowDate >= last)
     {
     	if (outside < inside)
@@ -156,7 +156,12 @@ def checkTemperature(evt) {
             state.lastNotificationInLTOut = nowDate
             state.lastNotificationOutLTIn = initDate()
         }
-        log.debug 'Sending message'
+        logDebug( 'Sending message')
         sendPushMessage(msg)
     }
+}
+
+def logDebug(msg)
+{
+	// log.debug msg
 }
