@@ -52,9 +52,10 @@ definition (name: "KornerSafe Alarm", namespace: "jfurtner", author: "Jamie Furt
         standardTile('refresh', 'device.refresh', width:2, height:2) {
         	state 'refresh', label: 'Refresh', action: 'refresh', icon: 'st.secondary.refresh'
         }        
-        valueTile('contactSensor', 'device.contact', width:2, height:2){
+        valueTile('contactSensor', "device.contact", width:2, height:2){
+        	//state 'contact', label: '${currentValue}'
+            state 'closed', label: 'Ok', icon: 'st.alarm.beep.beep', backgroundColor: '#44ff44'
         	state 'open', label: 'Alarm', icon: 'st.alarm.alarm.alarm', backgroundColor: '#ff4444'
-            state 'closed', label: 'Ok', icon: ' st.alarm.alarm.alarm', backgroundColor: '#44ff44'
         }
         valueTile('message', 'device.message', width:6, height:2) {
         	state 'message', label:'${currentValue}'
@@ -68,13 +69,20 @@ def updated() {
 	logDebug("Network ID: ${device.networkId}")
 }
 
-def setAPIEndpoints(String newAppUrl, String newToken)
+def logState()
+{
+	logDebug "NetworkId: ${device.networkId}"
+    logDebug "appUrl: ${state.appUrl}"
+    logDebug "appToken: ${state.appToken}"
+}
+
+def setAPIEndpoints(String newAppUrl, String newAppToken)
 {
 	logTrace('INIT setAPIEndpoints')
-	logTrace("URL: ${appUrl}")
-    logTrace("Token: ${token}")
 	state.appUrl = newAppUrl
-    state.token = newToken
+    state.appToken = newAppToken
+	logTrace("URL: ${state.appUrl}")
+    logTrace("Token: ${state.appToken}")
 }
 
 def parse(msg) {
@@ -106,8 +114,7 @@ def off() {
 }
 
 def refresh() {
-	logTrace "INIT refresh"
-    
+	logTrace "INIT refresh"    
     return hubAction('status')
 }
 
@@ -150,8 +157,14 @@ private def sendMessage(msg)
 
 private def setContact(String openClosed)
 {
+	logTrace('INIT setContact')
+	sendEvent(getContactEvent(openClosed))
+}
+
+private def getContactEvent(String openClosed)
+{
 	logTrace('INIT getContactEvent')
-	sendEvent(createEvent(name: "contact", value: openClosed))
+    return createEvent(name: "contact", value: openClosed)
 }
 
 private def setSwitch(String onOff)
@@ -166,12 +179,12 @@ def hubAction(String action) {
     
     def jsonBody = new groovy.json.JsonBuilder([
     	"appUrl":"${state.appUrl}",
-        "appToken":"${state.token}"
+        "appToken":"${state.appToken}"
         ])
     
 	def hubAction = new physicalgraph.device.HubAction(
     	method: "POST",
-        path: devicePage + "?" + action,
+        path: "$devicePage?$action",
         headers: [
         	HOST: "$deviceIP:$devicePort",
             'Content-Type':'application/json'
@@ -193,23 +206,31 @@ def logTrace(msg)
 	log.trace msg
 }
 
+private updateDNI() { 
+if (state.dni != null && state.dni != "" && device.deviceNetworkId != state.dni) {
+   device.deviceNetworkId = state.dni
+}
+}
 private setDeviceNetworkId(ip,port){
 	logTrace('INIT setDeviceNetworkId')
     logTrace("IP: $ip port:$port")
   	def iphex = convertIPtoHex(ip)
   	def porthex = convertPortToHex(port)
-  	device.deviceNetworkId = "$iphex:$porthex"
-  	logDebug "Device Network Id set to ${iphex}:${porthex}"
+    if (device.deviceNetworkId != "$iphex:$porthex")
+    {
+        device.deviceNetworkId = "$iphex:$porthex"
+        logDebug "Device Network Id set to ${iphex}:${porthex}"
+    }
 }
 
 private String convertIPtoHex(ipAddress) { 
-    String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
+    String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02X', it.toInteger() ) }.join()
     //logTrace "IP address entered is $ipAddress and the converted hex code is $hex"
     return hex
 }
 
 private String convertPortToHex(port) {
-	String hexport = port.toString().format( '%04x', port.toInteger() )
+	String hexport = port.toString().format( '%04X', port.toInteger() )
     //logTrace "Port entered is $port and the converted hex code is $hexport"
     return hexport
 }
