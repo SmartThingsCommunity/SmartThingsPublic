@@ -1,6 +1,7 @@
 metadata {
     definition (name: "AXIS Gear", namespace: "axis", author: "AXIS Labs") {  
         capability "Actuator"
+        capability "Configuration"
         capability "Switch"
         capability "Switch Level"
         capability "Refresh"        
@@ -22,9 +23,10 @@ metadata {
 	tiles(scale: 2) {
         multiAttributeTile(name:"shade", type: "lighting", width: 6, height: 6) {
             tileAttribute("device.windowShade", key: "PRIMARY_CONTROL") {
-                attributeState("open", label:'Open', action:"close", icon:"http://i.imgur.com/VQrJVYH.png", backgroundColor:"#ffcc33", nextState: "closed")
-                attributeState("partial", label: 'Partial', icon:"http://i.imgur.com/MkY1eRD.png", backgroundColor:"#ffcc33", nextState: "closed")
-                attributeState("closed", label:'Closed', action:"open", icon:"http://i.imgur.com/WwptfpQ.png", backgroundColor:"#bbbbdd", nextState: "open")
+                attributeState("open",  icon:"http://i.imgur.com/4TbsR54.png", backgroundColor:"#ffcc33", nextState: "closed")
+                attributeState("partial",  icon:"http://i.imgur.com/vBA17WL.png", backgroundColor:"#ffcc33", nextState: "closed")
+                attributeState("closed",  icon:"http://i.imgur.com/mtHdMse.png", backgroundColor:"#bbbbdd", nextState: "open")
+             //label:'Open', label: 'Partial', label:'Closed'
              }
                 tileAttribute ("device.level", key: "VALUE_CONTROL") {
               		attributeState("VALUE_UP", action: "ShadesUp")
@@ -33,9 +35,10 @@ metadata {
    		}
         //Added a "doubled" state to toggle states between positions
         standardTile("main", "device.windowShade"){
-        	state("open", label:'Open', action:"close", icon:"http://i.imgur.com/VQrJVYH.png", backgroundColor:"#ffcc33", nextState: "closed")
-            state("partial", label:'Partial',  icon:"http://i.imgur.com/MkY1eRD.png", backgroundColor:"#ffcc33", nextState: "closed")
-            state("closed", label:'Closed', action:"open", icon:"http://i.imgur.com/WwptfpQ.png", backgroundColor:"#bbbbdd", nextState: "open")
+        	state("open", label:'Open', icon:"http://i.imgur.com/St7oRQl.png", backgroundColor:"#ffcc33", nextState: "closed")
+            state("partial", label:'Partial',  icon:"http://i.imgur.com/y0ZpmZp.png", backgroundColor:"#ffcc33", nextState: "closed")
+            state("closed", label:'Closed', icon:"http://i.imgur.com/SAiEADI.png", backgroundColor:"#bbbbdd", nextState: "open")
+            //action:"close",action:"open"
         }
 	 	controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: true) {
             state("level", action:"setLevel")
@@ -62,9 +65,6 @@ private getCLUSTER_LEVEL() {0x0008}
 private getLEVEL_ATTR_LEVEL() {0x0000}
 private getPOWER_ATTR_BATTERY() {0x0021}
 
-def installed (){
-	configure()
-}
 
 def ShadesUp(){
 	def shadeValue = device.latestValue("level") as Integer ?: 0 
@@ -109,6 +109,7 @@ def setLevel(value) {
 	sendEvent(name:"level", value: value, displayed:true)
     setWindowShade(value)
 	zigbee.setLevel(value)
+    //refresh()
 }
 
 def open() {
@@ -120,8 +121,7 @@ def close() {
 }
 
 def ping(){
-	zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) 
-    zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL)
+	refresh
     log.debug "Ping() "
     
 }
@@ -145,7 +145,7 @@ def refresh() {
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    sendEvent(name: "checkInterval", value: 120, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 30, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     def cmds = 
     	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 0, 60, 0x01) +
         zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 0, 60, 0x01)
