@@ -22,14 +22,10 @@ Works with:
 
 ## Device Health
 
-FortrezZ Siren Strobe Alarm is polled by the hub.
-As of hubCore version 0.14.38 the hub sends up reports every 15 minutes regardless of whether the state changed.
-Device-Watch allows 2 check-in misses from device plus some lag time. So Check-in interval = (2*15 + 2)mins = 32 mins.
-Not to mention after going OFFLINE when the device is plugged back in, it might take a considerable amount of time for
-the device to appear as ONLINE again. This is because if this listening device does not respond to two poll requests in a row,
-it is not polled for 5 minutes by the hub. This can delay up the process of being marked ONLINE by quite some time.
+FortrezZ Siren Strobe Alarm Z-Wave Sleepy device that wakes up every 4 hours.
 
-* __32min__ checkInterval
+
+* __8hr 2min__ checkInterval
 
 ## Troubleshooting
 
