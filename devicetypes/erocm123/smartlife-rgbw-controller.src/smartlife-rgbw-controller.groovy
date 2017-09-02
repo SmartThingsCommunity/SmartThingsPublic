@@ -272,6 +272,10 @@ def parse(description) {
     }
     if (result.containsKey("rgb")) {
        events << createEvent(name:"color", value:"#$result.rgb")
+       def rgb = hexToRgb("#$result.rgb") 
+       def hsv = rgbwToHSV(rgb)
+       events << createEvent(name:"hue", value:hsv.hue)
+       events << createEvent(name:"saturation", value:hsv.saturation)
 
        // only store the previous value if the response did not come from a power-off command
        if (result.power != "off")
@@ -506,7 +510,7 @@ def setColor(value) {
        // A valid color was not chosen. Setting to white
        uri = "/w1?value=ff"
     }
-    
+
     if (uri != null && validValue != false) getAction("$uri&channels=$channels&transition=$transition")
 
 }
@@ -597,6 +601,43 @@ def huesatToRGB(float hue, float sat) {
         case 4: return [xm, zm, cm]
         case 5: return [cm, zm, xm]
 	}   	
+}
+
+private rgbwToHSV(Map colorMap) {
+    log.debug "rgbwToHSV(): colorMap: ${colorMap}"
+
+    if (colorMap.containsKey("r") & colorMap.containsKey("g") & colorMap.containsKey("b")) { 
+
+        float r = colorMap.r / 255f
+        float g = colorMap.g / 255f
+        float b = colorMap.b / 255f
+        float w = (colorMap.white) ? colorMap.white / 255f : 0.0
+        float max = [r, g, b].max()
+        float min = [r, g, b].min()
+        float delta = max - min
+
+        float h,s,v = 0
+
+        if (delta) {
+            s = delta / max
+            if (r == max) {
+                h = ((g - b) / delta) / 6
+            } else if (g == max) {
+                h = (2 + (b - r) / delta) / 6
+            } else {
+                h = (4 + (r - g) / delta) / 6
+            }
+            while (h < 0) h += 1
+            while (h >= 1) h -= 1
+        }
+
+        v = [max,w].max() 
+
+        return colorMap << [ hue: h * 100, saturation: s * 100, level: Math.round(v * 100) ]
+    }
+    else {
+        log.error "rgbwToHSV(): Cannot obtain color information from colorMap: ${colorMap}"
+    }
 }
 
 private hex(value, width=2) {
