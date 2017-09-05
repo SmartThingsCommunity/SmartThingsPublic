@@ -1,5 +1,5 @@
 /**
- *  Sony Android TV Smartthings Integration, Currently testing on: KDL-75W850C
+ *  Sony Android TV Smartthings Integration, Currently testing on: KD-75X8500C
  *  
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -26,17 +26,89 @@
  *  the TV shows as on.
  *
  */
- 
+
+def getDefaultTheme(){
+    def userDefaultThemeMap = [:]
+    //v1.2 START
+    //ICONS
+    userDefaultThemeMap.themeName = "Default"
+    userDefaultThemeMap.iconStop = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/stop-icon.png"
+    userDefaultThemeMap.iconShutdown = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/power-icon.png"
+    userDefaultThemeMap.iconUp = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/up-icon.png"
+    userDefaultThemeMap.iconDown = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/down-icon.png"
+    userDefaultThemeMap.iconLeft = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/left-icon.png"
+    userDefaultThemeMap.iconRight = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/right-icon.png"
+    userDefaultThemeMap.iconBack = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/back-icon.png"
+    userDefaultThemeMap.iconInfo = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/info-icon.png"
+    userDefaultThemeMap.iconSkipFwd = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/small-fwd-icon.png"
+    userDefaultThemeMap.iconSkipRwd = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/small-rwd-icon.png"
+    userDefaultThemeMap.iconNext = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/next-icon.png"
+    userDefaultThemeMap.iconPrevious = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/prev-icon.png"
+    userDefaultThemeMap.iconMenu = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/menu-icon.png"
+    userDefaultThemeMap.iconHome = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/home-icon.png"
+    userDefaultThemeMap.iconPgUp = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/pg-up-icon.png"
+    userDefaultThemeMap.iconPgDown = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/themes/default/pg-down-icon.png"
+    //COLOURS
+    userDefaultThemeMap.colMainWaiting = "#ffffff"     //White
+    userDefaultThemeMap.colMainStartup = "#90d2a7"     //Light Green
+    userDefaultThemeMap.colMainPlaying = "#79b821"     //Green
+    userDefaultThemeMap.colMainStopped = "#153591"     //Blue
+    userDefaultThemeMap.colMainPaused = "#e86d13"      //Orange
+    userDefaultThemeMap.colMainShutdown = "#e84e4e"    //Red
+    //v1.2 END
+    //v1.3 START
+    //v1.3 END
+    //Return
+    return userDefaultThemeMap
+}
+
+def getUserPref(pref){
+    def prefsMap = [:]
+    //Main Icon
+    prefsMap.iconMain = "https://raw.githubusercontent.com/north3221/north3221SmartThings/master/resources/main-icon.png"
+    //Select Colour
+    prefsMap.colSelectActive = "#22a3ec"    //Blue
+    prefsMap.colSelectInactive = "#ffffff"  //White
+    //DECORATION
+    prefsMap.decPush = "ring"
+    prefsMap.decStop = "ring"
+    prefsMap.decShutdown = "flat"
+    prefsMap.decUp = "flat"
+    prefsMap.decDown = "flat"
+    prefsMap.decLeft = "flat"
+    prefsMap.decRight = "flat"
+    prefsMap.decBack = "flat"
+    prefsMap.decInfo = "ring"
+    prefsMap.decSkipF = "flat"
+    prefsMap.decSkipB = "flat"
+    prefsMap.decNext = "flat"
+    prefsMap.decPrev = "flat"
+    prefsMap.decMenu = "flat"
+    prefsMap.decHome = "flat"
+    prefsMap.decPup = "flat"
+    prefsMap.decPdown = "flat"
+    //CATEGORY SETTINGS
+    prefsMap.movieLabels = "cinema, movie, film"
+    prefsMap.sportLabels = "sport"
+    prefsMap.tvLabels = "bbc, itv, channel, sky, amc, fox"
+    prefsMap.minMovieRuntime = 4200
+    return prefsMap[pref]
+}
+
+
 metadata {
   definition (name: "Sony Android TV", namespace: "ericyew", author: "Eric Yew") {
     capability "Switch"
     capability "Polling"
     capability "Refresh"
+    capability "Media Controller"
+	capability "Music Player"
+    capability "Switch Level"
+	capability "TV"
     
     command "sendremotecommand"
     command "digital"
-    command "picoff"
-    
+    command "picoff"    
     command "tv_source"
     command "hdmi1"
     command "hdmi2"
@@ -53,13 +125,14 @@ metadata {
     command "epg"
     command "favorites"
     command "display"
-    command "options"
+    command "actionMenu"
     command "retu"
     command "up"
     command "down"
     command "right"
     command "left"
     command "confirm"
+	command "red"
     command "green"
     command "yellow"
     command "blue"
@@ -88,7 +161,6 @@ metadata {
     command "Exit"
     command "Analog2"
     command "AD"
-    command "Digital"
     command "Analogg"
     command "BS"
     command "CS"
@@ -100,7 +172,6 @@ metadata {
     command "SEN"
     command "InternetWidgets"
     command "InternetVideo"
-    command "Netflix"
     command "SceneSelect"
     command "Mode3D"
     command "iManual"
@@ -139,27 +210,54 @@ metadata {
     command "OneTouchStop"
     command "DUX"
     command "FootballMode"
-    command "Social"
-    
+    command "SyncMenu"
   }
 
   simulator {
     status "on": "on/off: 1"
     status "off": "on/off: 0"
   }
-
-  tiles(scale:2) {
-    standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-      state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-      state "on", label: 'ON', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+  
+tiles(scale: 2) {
+    multiAttributeTile(name: "TVMulti", type:"generic", width:6, height:2) {
+        tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+			attributeState "on", label:'ON', backgroundColor:"#00A0DC", nextState:"turningOff"
+        	attributeState "off", label:'${name}', backgroundColor:"#ffffff", nextState:"turningOn"
+        	attributeState "turningOn", label:'${name}', backgroundColor:"#79b821", nextState:"turningOff"
+        	attributeState "turningOff", label:'${name}', backgroundColor:"#ffffff", nextState:"turningOn"
+        }
+        tileAttribute("device.switch", key: "SECONDARY_CONTROL") {
+            attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
+            attributeState "off", label:'${name}', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
+            attributeState "turningOn", label:'…', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+            attributeState "turningOff", label:'…', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
     }
-
+        tileAttribute("device.level", key: "VALUE_CONTROL") {
+            attributeState "VALUE_UP", action: "volumeup"
+        	attributeState "VALUE_DOWN", action: "volumedown"
+        }
+	}
+	standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+      state "off", label: '${name}', action: "switch.on", icon: "st.thermostat.heating-cooling-off", backgroundColor: "#ffffff"
+      state "on", label: 'ON', action: "switch.off", icon: "st.thermostat.heating-cooling-on", backgroundColor: "#79b821"
+    }
+    
+    standardTile("power", "device.switch", width: 1, height: 1, canChangeIcon: false) {
+        state "off", label: '', action: "on", icon:"st.thermostat.heating-cooling-off", backgroundColor: "#ffffff"//, nextState: "on"
+		state "on", label: '', action: "off", icon:"st.thermostat.heating-cooling-off", backgroundColor: "#79b821"//, nextState: "off"
+    }  
+    standardTile("on", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+      state "default", label:"On", action:"on", icon:""
+    }  
+    standardTile("off", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+      state "default", label:"off", action:"off", icon:""
+    }
     standardTile("digital", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
       state "default", label:"Digital", action:"digital", icon:""
     }
     
     standardTile("picoff", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-      state "default", label:"PicOff", action:"picoff", icon:""
+      state "default", label:"Pic Off", action:"picoff", icon:""
     }
     
     standardTile("refresh", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
@@ -187,15 +285,15 @@ metadata {
     }
     
    standardTile("hdmi4", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-      state "default", label:"HDMI 4", action:"hdmi4", icon:""
+      state "default", label:"Yamaha", action:"hdmi4", icon:""
     }    
 
    standardTile("netflix", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-      state "default", label:"Netflix", action:"netflix", icon:""
+      state "default", label:"Apps", action:"netflix", icon:""
     }
     
    standardTile("home", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-      state "default", label:"HOME", action:"home", icon:""
+      state "default", label:"", action:"home", icon:"${getUserTheme('default','iconHome')}"
     }
 
    standardTile("mute", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
@@ -204,382 +302,271 @@ metadata {
     
     standardTile("gguide", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
    state "default", label:"gguide", action:"gguide", icon:""
-} 
-
-standardTile("epg", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"epg", action:"epg", icon:""
-} 
-
-standardTile("favorites", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"favorites", action:"favorites", icon:""
-} 
-
-standardTile("display", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"display", action:"display", icon:""
-} 
-
-standardTile("options", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"options", action:"options", icon:""
-} 
-
-standardTile("retu", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"return", action:"retu", icon:""
-} 
-
-standardTile("up", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"up", action:"up", icon:""
-} 
-
-standardTile("down", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"down", action:"down", icon:""
-} 
-
-standardTile("right", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"right", action:"right", icon:""
-} 
-
-standardTile("left", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"left", action:"left", icon:""
-} 
-
-standardTile("confirm", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"confirm", action:"confirm", icon:""
-} 
-
-standardTile("green", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"green", action:"green", icon:""
-} 
-
-standardTile("yellow", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"yellow", action:"yellow", icon:""
-} 
-
-standardTile("blue", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"blue", action:"blue", icon:""
-} 
-
-standardTile("num1", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num1", action:"num1", icon:""
-} 
-
-standardTile("num2", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num2", action:"num2", icon:""
-} 
-
-standardTile("num3", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num3", action:"num3", icon:""
-} 
-
-standardTile("num4", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num4", action:"num4", icon:""
-} 
-
-standardTile("num5", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num5", action:"num5", icon:""
-} 
-
-standardTile("num6", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num6", action:"num6", icon:""
-} 
-
-standardTile("num7", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num7", action:"num7", icon:""
-} 
-
-standardTile("num8", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num8", action:"num8", icon:""
-} 
-
-standardTile("num9", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num9", action:"num9", icon:""
-} 
-
-standardTile("num0", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num0", action:"num0", icon:""
-} 
-
-standardTile("num11", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num11", action:"num11", icon:""
-} 
-
-standardTile("num12", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"num12", action:"num12", icon:""
-} 
-
-standardTile("volumeup", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"volumeup", action:"volumeup", icon:""
-} 
-
-standardTile("volumedown", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"volumedown", action:"volumedown", icon:""
-} 
-
-standardTile("ChannelUp", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"ChannelUp", action:"ChannelUp", icon:""
-}
-
-standardTile("ChannelDown", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"ChannelDown", action:"ChannelDown", icon:""
-}
- 
-standardTile("SubTitle", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"SubTitle", action:"SubTitle", icon:""
-} 
-
-standardTile("ClosedCaption", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"ClosedCaption", action:"ClosedCaption", icon:""
-} 
-
-standardTile("Enter", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Enter", action:"Enter", icon:""
-} 
-
-standardTile("DOT", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"DOT", action:"DOT", icon:""
-} 
-
-standardTile("Analog", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Analog", action:"Analog", icon:""
-} 
-
-standardTile("Teletext", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Teletext", action:"Teletext", icon:""
-} 
-
-standardTile("Exit", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Exit", action:"Exit", icon:""
-} 
-
-standardTile("Analog2", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Analog2", action:"Analog2", icon:""
-} 
-
-standardTile("AD", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"*AD", action:"AD", icon:""
-} 
-
-standardTile("Digital", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Digital", action:"Digital", icon:""
-} 
-
-standardTile("Analogg", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Analog?", action:"Analogg", icon:""
-} 
-
-standardTile("BS", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"BS", action:"BS", icon:""
-} 
-
-standardTile("CS", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"CS", action:"CS", icon:""
-} 
-
-standardTile("BSCS", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"BSCS", action:"BSCS", icon:""
-} 
-
-standardTile("Ddata", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Ddata", action:"Ddata", icon:""
-} 
-
-standardTile("Tv_Radio", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Tv_Radio", action:"Tv_Radio", icon:""
-} 
-standardTile("Theater", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Theater", action:"Theater", icon:""
-} 
-
-standardTile("SEN", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"SEN", action:"SEN", icon:""
-} 
-
-standardTile("InternetWidgets", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"InternetWidgets", action:"InternetWidgets", icon:""
-} 
-
-standardTile("InternetVideo", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"InternetVideo", action:"InternetVideo", icon:""
-} 
-
-standardTile("SceneSelect", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"SceneSelect", action:"SceneSelect", icon:""
-} 
-
-standardTile("Mode3D", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Mode3D", action:"Mode3D", icon:""
-} 
-
-standardTile("iManual", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"iManual", action:"iManual", icon:""
-} 
-
-standardTile("Audio", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Audio", action:"Audio", icon:""
-} 
-
-standardTile("Wide", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Wide", action:"Wide", icon:""
-} 
-
-standardTile("Jump", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Jump", action:"Jump", icon:""
-} 
-
-standardTile("PAP", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"PAP", action:"PAP", icon:""
-} 
-
-standardTile("MyEPG", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"MyEPG", action:"MyEPG", icon:""
-} 
-
-standardTile("ProgramDescription", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"ProgramDescription", action:"ProgramDescription", icon:""
-}
-
-standardTile("WriteChapter", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"WriteChapter", action:"WriteChapter", icon:""
-} 
-
-standardTile("TrackID", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"TrackID", action:"TrackID", icon:""
-} 
-
-standardTile("TenKey", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"TenKey", action:"TenKey", icon:""
-} 
-
-standardTile("AppliCast", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"AppliCast", action:"AppliCast", icon:""
-} 
-
-standardTile("DeleteVideo", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"DeleteVideo", action:"DeleteVideo", icon:""
-} 
-
-standardTile("PhotoFrame", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"PhotoFrame", action:"PhotoFrame", icon:""
-} 
-
-standardTile("TvPause", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"TvPause", action:"TvPause", icon:""
-} 
-
-standardTile("KeyPad", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"KeyPad", action:"KeyPad", icon:""
-}
-
-standardTile("Media", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Media", action:"Media", icon:""
-} 
-
-standardTile("SyncMenu", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"SyncMenu", action:"SyncMenu", icon:""
-} 
-
-standardTile("Forward", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Forward", action:"Forward", icon:""
-} 
-
-standardTile("Play", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Play", action:"Play", icon:""
-} 
-
-standardTile("Rewind", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Rewind", action:"Rewind", icon:""
-} 
-
-standardTile("Prev", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Prev", action:"Prev", icon:""
-} 
-
-standardTile("Stop", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Stop", action:"Stop", icon:""
-} 
-
-standardTile("Next", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Next", action:"Next", icon:""
-} 
-
-standardTile("Rec", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Rec", action:"Rec", icon:""
-} 
-
-standardTile("Pause", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Pause", action:"Pause", icon:""
-}
-
-standardTile("Eject", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Eject", action:"Eject", icon:""
-} 
-
-standardTile("FlashPlus", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"FlashPlus", action:"FlashPlus", icon:""
-} 
-
-standardTile("FlashMinus", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"FlashMinus", action:"FlashMinus", icon:""
-} 
-
-standardTile("TopMenu", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"TopMenu", action:"TopMenu", icon:""
-} 
-
-standardTile("PopUpMenu", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"PopUpMenu", action:"PopUpMenu", icon:""
-} 
-
-standardTile("RakurakuStart", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"RakurakuStart", action:"RakurakuStart", icon:""
-} 
-
-standardTile("OneTouchView", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"OneTouchView", action:"OneTouchView", icon:""
-} 
-
-standardTile("OneTouchTimeRec", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"OneTouchTimeRec", action:"OneTouchTimeRec", icon:""
-} 
-
-standardTile("OneTouchRec", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"OneTouchRec", action:"OneTouchRec", icon:""
-} 
-
-standardTile("OneTouchStop", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"OneTouchStop", action:"OneTouchStop", icon:""
-} 
-
-standardTile("DUX", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"DUX", action:"DUX", icon:""
-} 
-
-standardTile("FootballMode", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"FootballMode", action:"FootballMode", icon:""
-} 
-
-standardTile("Social", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
-   state "default", label:"Social", action:"Social", icon:""
-} 
+	} 
+    
+    standardTile("epg", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Guide", action:"epg", icon:""
+    } 
+
+    standardTile("favorites", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"favorites", action:"favorites", icon:""
+    } 
+
+    standardTile("display", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"", action:"display", icon:"${getUserTheme('default', 'iconInfo')}"
+    } 
+
+    standardTile("actionMenu", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"", action:"actionMenu", icon:"${getUserTheme('default', 'iconMenu')}"
+    } 
+
+    standardTile("confirm", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "${getUserPref('decPush')}") {
+       state "default", label:"Select", action:"confirm", backgroundColor:"${getUserPref('colSelectActive')}"
+    } 
+
+    standardTile("up", "device.switch", inactiveLabel: false, height: 1, width: 2, decoration: "flat") {
+       state "default", label:"", action:"up", icon:"${getUserTheme('default','iconUp')}"
+    } 
+
+    standardTile("retu", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"return", action:"retu", icon:""
+    } 
+	
+    standardTile("red", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"red", action:"red", icon:"", backgroundColor: "#ff0000"
+    }
+	
+    standardTile("green", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Freeview", action:"green", icon:"", backgroundColor: "#008000"
+    } 
+
+    standardTile("yellow", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"yellow", action:"yellow", icon:"", backgroundColor: "#ffff00"
+    } 
+
+    standardTile("down", "device.switch", inactiveLabel: false, height: 1, width: 2, decoration: "flat") {
+       state "default", label:"", action:"down", icon:"${getUserTheme('default','iconDown')}"
+    } 
+
+    standardTile("right", "device.switch", inactiveLabel: false, height: 2, width: 1, decoration: "flat") {
+       state "default", label:"", action:"right", icon:"${getUserTheme('default','iconRight')}"
+    } 
+
+    standardTile("left", "device.switch", inactiveLabel: false, height: 2, width: 1, decoration: "flat") {
+       state "default", label:"", action:"left", icon:"${getUserTheme('default','iconLeft')}"
+    } 
+
+    standardTile("blue", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"blue", action:"blue", icon:"", backgroundColor: "#0000ff"
+    } 
+
+    standardTile("num1", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num1", action:"num1", icon:""
+    } 
+
+    standardTile("num2", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num2", action:"num2", icon:""
+    } 
+
+    standardTile("num3", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num3", action:"num3", icon:""
+    } 
+
+    standardTile("num4", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num4", action:"num4", icon:""
+    } 
+
+    standardTile("num5", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num5", action:"num5", icon:""
+    } 
+
+    standardTile("num6", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num6", action:"num6", icon:""
+    } 
+
+    standardTile("num7", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num7", action:"num7", icon:""
+    } 
+
+    standardTile("num8", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num8", action:"num8", icon:""
+    } 
+
+    standardTile("num9", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num9", action:"num9", icon:""
+    } 
+
+    standardTile("num0", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num0", action:"num0", icon:""
+    } 
+
+    standardTile("num11", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num11", action:"num11", icon:""
+    } 
+
+    standardTile("num12", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"num12", action:"num12", icon:""
+    } 
+
+    standardTile("volumeup", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Vol", action:"volumeup", icon:"${getUserTheme('default','iconUp')}"
+    } 
+
+    standardTile("volumedown", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Vol", action:"volumedown", icon:"${getUserTheme('default','iconDown')}"
+    } 
+
+    standardTile("ChannelUp", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Channel", action:"ChannelUp", icon:"${getUserTheme('default','iconUp')}"
+    }
+
+    standardTile("ChannelDown", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Channel", action:"ChannelDown", icon:"${getUserTheme('default','iconDown')}"
+    }
+
+    standardTile("SubTitle", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"SubTitle", action:"SubTitle", icon:""
+    } 
+
+    standardTile("ClosedCaption", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"ClosedCaption", action:"ClosedCaption", icon:""
+    } 
+
+    standardTile("Enter", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Enter", action:"Enter", icon:""
+    } 
+
+    standardTile("DOT", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"DOT", action:"DOT", icon:""
+    } 
+
+    standardTile("Analog", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Analog", action:"Analog", icon:""
+    } 
+
+    standardTile("Teletext", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Teletext", action:"Teletext", icon:""
+    } 
+
+    standardTile("Exit", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Exit", action:"Exit", icon:""
+    } 
+
+    standardTile("Mode3D", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"3D", action:"Mode3D", icon:""
+    } 
+
+    standardTile("iManual", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Help", action:"iManual", icon:""
+    } 
+
+    standardTile("Audio", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Audio", action:"Audio", icon:""
+    } 
+
+    standardTile("Wide", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Aspect Ratio", action:"Wide", icon:""
+    } 
+
+    standardTile("Jump", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Jump", action:"Jump", icon:""
+    } 
+
+    standardTile("PAP", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"PIP", action:"PAP", icon:""
+    } 
+
+    standardTile("PhotoFrame", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Recorded", action:"PhotoFrame", icon:""
+    } 
+
+    standardTile("Media", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Streaming", action:"Media", icon:""
+    } 
+
+    standardTile("SyncMenu", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Sync Menu", action:"SyncMenu", icon:""
+    } 
+
+    standardTile("Forward", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Forward", action:"Forward", icon:""
+    } 
+
+    standardTile("Play", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Play", action:"Play", icon:""
+    } 
+
+    standardTile("Rewind", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Rewind", action:"Rewind", icon:""
+    } 
+
+    standardTile("Prev", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Prev", action:"Prev", icon:""
+    } 
+
+    standardTile("Stop", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Stop", action:"Stop", icon:""
+    } 
+
+    standardTile("Next", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Next", action:"Next", icon:""
+    } 
+
+    standardTile("Rec", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Rec", action:"Rec", icon:""
+    } 
+
+    standardTile("Pause", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Pause", action:"Pause", icon:""
+    }
+
+    standardTile("Eject", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Eject", action:"Eject", icon:""
+    } 
+
+    standardTile("OneTouchView", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"OneTouchView", action:"OneTouchView", icon:""
+    } 
+
+    standardTile("OneTouchTimeRec", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"OneTouchTimeRec", action:"OneTouchTimeRec", icon:""
+    } 
+
+    standardTile("OneTouchRec", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"OneTouchRec", action:"OneTouchRec", icon:""
+    } 
+
+    standardTile("OneTouchStop", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"OneTouchStop", action:"OneTouchStop", icon:""
+    } 
+
+    standardTile("DUX", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Discovery", action:"DUX", icon:""
+    } 
+
+    standardTile("FootballMode", "device.switch", inactiveLabel: false, height: 1, width: 1, decoration: "flat") {
+       state "default", label:"Football Mode", action:"FootballMode", icon:""
+    } 
+    
+    controlTile("volume", "device.level", "slider", height: 1,width: 2) {
+    	state "level", action:"switch level.setLevel"
+	}
 
     /**uncomment any extra buttons you need from the lines below*/
     main "switch"
-    details(["switch", "digital", "picoff", "tv_source", "hdmi1", "hdmi2", "hdmi3", "hdmi4", "Netflix", "home", "mute", "refresh", "gguide", "epg", "favorites", "display", "options", "retu", "up", "down", "right", "left", "confirm", "Forward", "Play", "Rewind", "Prev", "Stop", "Next", "Rec", "Pause", "Eject", "volumeup", "volumedown", "ChannelUp", "ChannelDown",/** "green", "yellow", "blue", "num1", "num2", "num3", "num4", "num5", "num6", "num7", "num8", "num9", "num0", "num11", "num12", "SubTitle", "ClosedCaption", "Enter", "DOT", "Analog", "Teletext", "Exit", "Analog2", "AD", "Digital", "Analogg", "BS", "CS", "BSCS", "Ddata", "PicOff", "Tv_Radio", "Theater", "SEN", "InternetWidgets", "InternetVideo", "SceneSelect", "Mode3D", "iManual", "Audio", "Wide", "Jump", "PAP", "MyEPG", "ProgramDescription", "WriteChapter", "TrackID", "TenKey", "AppliCast", "acTVila", "DeleteVideo", "PhotoFrame", "TvPause", "KeyPad", "Media", "FlashPlus", "FlashMinus", "TopMenu", "RakurakuStart", "OneTouchTimeRec", "OneTouchView", "OneTouchRec", "OneTouchStop", "DUX", "FootballMode", "Social",*/ "WOLC"])
+    details(["hdmi1", "hdmi2", "hdmi3", "hdmi4", "switch", "tv_source", "netflix", "Media", "digital", "picoff", "display", "up", "epg", "DUX", "ChannelUp", "left", "confirm", "right", "volumeup", "ChannelDown", "volumedown", "refresh", "actionMenu", "down", "home", "mute", "red", "green", "yellow", "blue", "SyncMenu", "Forward", "Play", "Rewind", "Prev", "Stop", "Next", "Rec", "Pause", "Eject", "retu", "power", "on", "off", "num1", "num2", "num3", "num4", "num5", "num6", "num7", "num8", "num9", "num0", "num11", "num12", "SubTitle", "ClosedCaption", "Enter", "DOT", "Analog", "Teletext", "Exit", "Mode3D", "iManual", "Audio", "Wide", "Jump", "PAP", "MyEPG", "ProgramDescription", "WriteChapter", "TrackID", "TenKey", "AppliCast", "acTVila", "DeleteVideo", "PhotoFrame", "TvPause", "KeyPad", "Media", "FlashPlus", "FlashMinus", "TopMenu", "RakurakuStart", "OneTouchTimeRec", "OneTouchView", "OneTouchRec", "OneTouchStop", "DUX", "gguide", "FootballMode", "Social", "WOLC"])
   }
 
 
-
-  preferences {
-
+preferences {
 		input name: "ipadd1", type: "number", range: "0..254", required: true, title: "Ip address part 1", displayDuringSetup: true
 		input name: "ipadd2", type: "number", range: "0..254", required: true, title: "Ip address part 2", displayDuringSetup: true
 		input name: "ipadd3", type: "number", range: "0..254", required: true, title: "Ip address part 3", displayDuringSetup: true
 		input name: "ipadd4", type: "number", range: "0..254", required: true, title: "Ip address part 4", displayDuringSetup: true
 		input name: "tv_port", type: "number", range: "0..9999", required: true, title: "Port Usually: 80", displayDuringSetup: true
-		input name: "tv_psk", type: "text", title: "PSK Passphrase Set on your TV", description: "Enter passphrase", required: true, displayDuringSetup: true
-	
+		input name: "tv_psk", type: "text", title: "PSK Passphrase Set on your TV", description: "Enter passphrase", required: true, displayDuringSetup: true	
 	}
 }
-
 
 
 def updated(){
@@ -588,7 +575,6 @@ def updated(){
 	ipaddress()
 	iphex()
 	refresh()
-	
 }
 
 def ipaddress(){
@@ -602,7 +588,6 @@ def iphex(){
 	//create a Hex of the IP this will need to be set as the Network ID
 	//TO DO Set the Network IP automatically or Show the user the Value to set manually
 	log.debug( "Creating Hex of IP: ${state.tv_ip}")
-
 	
 	String tvipstring = state.tv_ip
 	String tv_ip_hex = tvipstring.tokenize( '.' ).collect {
@@ -614,7 +599,6 @@ def iphex(){
 	log.debug ("IP Hex stored Globaly as '${state.ip_hex}'")
 
 	log.debug( "Creating Hex of Port: ${tv_port}")
-
 
     String tvportstring = tv_port
     String tv_port_hex = tvportstring.tokenize( '.' ).collect {
@@ -666,31 +650,12 @@ private sendJsonRpcCommand(json) {
   )
 
   result
+
 }
 
 def installed() {
   log.debug "Executing 'installed'"
-
   poll()
-}
-
-def on() {
-  log.debug "Executing 'on'"
-  
-  if (state.tv == "polling"){
-  	  WOLC()
-  } else {
-  	  def json = "{\"method\":\"setPowerStatus\",\"version\":\"1.0\",\"params\":[{\"status\":true}],\"id\":102}"
-  	  def result = sendJsonRpcCommand(json)
-  }
-}
-
-def off() {
-  log.debug "Executing 'off'"
-
-  def json = "{\"method\":\"setPowerStatus\",\"version\":\"1.0\",\"params\":[{\"status\":false}],\"id\":102}"
-  def result = sendJsonRpcCommand(json)
-
 }
 
 def refresh() {
@@ -715,12 +680,29 @@ def poll() {
 /**-------------------------------------------------------
 All remote Functions Assigned below
 --------------------------------------------------------*/
+def setLevel(vol) { state.remotecommand = "*SCVOLU0000000000000" + String.format('%03d',vol) }
 
+def on() {
+  log.debug "Executing 'on'"
+  if (state.tv == "polling"){
+  	  WOLC()
+  } else {
+  	  def json = "{\"method\":\"setPowerStatus\",\"version\":\"1.0\",\"params\":[{\"status\":true}],\"id\":102}"
+  	  def result = sendJsonRpcCommand(json)
+  }
+}
+
+def off() {
+  log.debug "Executing 'off'"
+  def json = "{\"method\":\"setPowerStatus\",\"version\":\"1.0\",\"params\":[{\"status\":false}],\"id\":102}"
+  def result = sendJsonRpcCommand(json)
+  
+}
 
 def digital(){
 	//Set Remote command to send
 	state.remotecommand = "AAAAAgAAAJcAAAAyAw=="
-	state.button = "Digital"
+	state.button = "digital"
 	sendremotecommand()
 }
 
@@ -730,10 +712,6 @@ def picoff(){
 	state.button = "Pic Off"
 	sendremotecommand()
 }
-
-
-
-
 
 def gguide(){
 	//Set Remote command to send
@@ -770,10 +748,10 @@ def home(){
 	sendremotecommand()
 }
 
-def options(){
+def actionMenu(){
 	//Set Remote command to send
 	state.remotecommand = "AAAAAgAAAJcAAAA2Aw=="
-	state.button = "options"
+	state.button = "actionMenu"
 	sendremotecommand()
 }
 
@@ -816,6 +794,13 @@ def confirm(){
 	//Set Remote command to send
 	state.remotecommand = "AAAAAQAAAAEAAABlAw=="
 	state.button = "confirm"
+	sendremotecommand()
+}
+
+def red(){
+	//Set Remote command to send
+	state.remotecommand = "AAAAAgAAAJcAAAAlAw=="
+	state.button = "red"
 	sendremotecommand()
 }
 
@@ -1015,13 +1000,6 @@ def AD(){
 	sendremotecommand()
 }
 
-def Digital(){
-	//Set Remote command to send
-	state.remotecommand = "AAAAAgAAAJcAAAAyAw=="
-	state.button = "Digital"
-	sendremotecommand()
-}
-
 def Analogg(){
 	//Set Remote command to send
 	state.remotecommand = "AAAAAgAAAJcAAAAuAw=="
@@ -1092,8 +1070,8 @@ def InternetVideo(){
 	sendremotecommand()
 }
 
-def Netflix(){
-	//Set Remote command to Netflixd
+def netflix(){
+	//Set Remote command to Netflix
 	state.remotecommand = "AAAAAgAAABoAAAB8Aw=="
 	state.button = "Netflix"
 	sendremotecommand()
@@ -1487,4 +1465,31 @@ def WOLC() {
     	[secureCode: "111122223333"]
 	)
 	return result
+}
+
+def getUserTheme(index){
+    return getUserTheme(inputTheme ?: state?.theme ?: "default", index)
+}
+
+//Themes
+def getUserTheme(theme, index){
+    switch (theme){
+        case "glyphs":
+            if (!state?.glyphsTheme){
+                return glyphsTheme[index]
+            }
+            return state.glyphsTheme[index]
+            break;
+        case "mayssam":
+            if (!state?.mayssamTheme){
+                return mayssamTheme[index]
+            }
+            return state.mayssamTheme[index]
+            break;
+        default:
+            if (!state?.defaultTheme){
+                return defaultTheme[index]
+            }
+            return state.defaultTheme[index]
+    }
 }
