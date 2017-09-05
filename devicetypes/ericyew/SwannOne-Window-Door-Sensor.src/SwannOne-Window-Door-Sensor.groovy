@@ -1,5 +1,5 @@
 /**
- *  SwannOne Window/Door Sensor
+ *  SwannOne Window Door Sensor
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition(name: "SwannOne Window/Door Sensor", namespace: "ericyew", author: "Eric Yew") {
+	definition(name: "SwannOne Window Door Sensor", namespace: "ericyew", author: "Eric Yew") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
