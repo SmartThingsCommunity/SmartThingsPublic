@@ -404,6 +404,7 @@ MacroOperation {Macro} to {MParam} and {MNum}
 MacroOperation {Macro} to {MParam} and {MNum} percent
 MacroOperation {MParam} of {Macro} to {MNum}
 MacroOperation {MParam} of {Macro} to {MNum} degrees
+MacroOperation set {Macro} to {MNum} degrees {MParam}
 MacroOperation set {Macro} to {MNum}
 MacroOperation set {Macro} to {MNum} degrees
 MacroOperation set {Macro} to {MNum} percent
