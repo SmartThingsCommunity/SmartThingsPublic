@@ -31,8 +31,6 @@
  *  ---------------------+----------------+--------------------------+------------------------------------
  */
 
-include 'asynchttp_v1'
-
 definition(
     name: "IFTTT",
     namespace: "smartthings",
@@ -251,7 +249,9 @@ def deviceHandler(evt) {
 	def deviceInfo = state[evt.deviceId]
 	if (deviceInfo) {
 		try {
-			asynchttp_v1.post([uri: deviceInfo.callbackUrl, path: '',  body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]])
+			httpPostJson(uri: deviceInfo.callbackUrl, path: '',  body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]) {
+				log.debug "[PROD IFTTT] Event data successfully posted"
+			}
 		} catch (groovyx.net.http.ResponseParseException e) {
 			log.debug("Error parsing ifttt payload ${e}")
 		}
