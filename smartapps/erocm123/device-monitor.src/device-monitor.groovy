@@ -207,7 +207,7 @@ def pageExclusions() {
         def batteryExclude = [:]
         
         [motiondevices, humiditydevices, leakdevices, thermodevices, tempdevices, contactdevices,
-            lockdevices, alarmdevices, switchdevices, presencedevices, smokedevices, buttondevices, hubdevices].each { n ->
+            lockdevices, alarmdevices, switchdevices, presencedevices, smokedevices, buttondevices, valvedevices, hubdevices].each { n ->
                 if (n != null){ 
                    allDevices += n
                 }
@@ -262,6 +262,7 @@ def pageStatus(params) {
         settings.alarmdevices == null &&
         settings.switchdevices == null &&
         settings.smokedevices == null &&
+        settings.valvedevices == null &&
         settings.buttondevices == null &&
         settings.hubdevices == null &&
         settings.presencedevices == null) {
@@ -390,7 +391,7 @@ def doCheck() {
         def batteryDevices = []
 
         [motiondevices, humiditydevices, leakdevices, thermodevices, tempdevices, contactdevices,
-            lockdevices, alarmdevices, switchdevices, presencedevices, smokedevices, buttondevices].each { n ->
+            lockdevices, alarmdevices, switchdevices, presencedevices, smokedevices, valvedevices, buttondevices].each { n ->
                 if (n != null){ 
                    allDevices += n
                 }
@@ -752,6 +753,7 @@ def pageConfigure() {
     def inputSwitchDevices = [name: "switchdevices", type: "capability.switch", title: "Which switches?", multiple: true, required: false]
     def inputPresenceDevices = [name: "presencedevices", type: "capability.presenceSensor", title: "Which presence sensors?", multiple: true, required: false]
     def inputSmokeDevices = [name: "smokedevices", type: "capability.smokeDetector", title: "Which Smoke/CO2 detectors?", multiple: true, required: false]
+    def inputValveDevices = [name: "valvedevices", type: "capability.valve", title: "Which valves?", multiple: true, required: false]
     def inputButtonDevices = [name: "buttondevices", type: "capability.button", title: "Which Button Devices?", multiple: true, required: false]
     def inputHubDevices = [name: "hubdevices", type: "hub", title: "Which SmartThings Hubs?", multiple: true, required: false]
 
@@ -776,6 +778,7 @@ def pageConfigure() {
             input inputSwitchDevices
             input inputPresenceDevices
             input inputSmokeDevices
+            input inputValveDevices
             input inputButtonDevices
             //input inputHubDevices
         }
@@ -999,6 +1002,7 @@ def subscribeDevices() {
     subscribe(switchdevices, "switch", eventCheck, [filterEvents: false])
     subscribe(presencedevices, "presence", eventCheck, [filterEvents: false])
     subscribe(smokedevices, "smokeDetector", eventCheck, [filterEvents: false])
+    subscribe(valvedevices, "valve", eventCheck, [filterEvents: false])
     subscribe(buttondevices, "button", eventCheck, [filterEvents: false])
     subscribe(location.hubs, "hubInfo", eventCheck, [filterEvents: false])
     subscribe(location, eventCheck)
