@@ -537,6 +537,10 @@ def pollChild( child )
 		atomicState.lastPollMillis = currentTime
 
 		def tData = atomicState.sensibo[child.device.deviceNetworkId]
+        
+        if (tData == null) return
+        
+        log.debug  "DEBUG - TDATA" + tData
         debugEvent ("Error in Poll ${tData.data.Error}",false)
         //tData.Error = false
         //tData.data.Error = "Failed"
@@ -901,8 +905,17 @@ def pollChildren(PodUid)
 			}
 
 			if(resp.status == 200) {
-				log.debug "poll results returned"
-				def setTemp = getACState(thermostatIdsString)
+				log.debug "poll results returned"                                
+
+                log.debug "DEBUG DATA RESULT" + resp.data.result
+                
+                if (resp.data.result == null || resp.data.result.empty) 
+                {
+                	log.debug "Cannot get measurement from the API, should ask Sensibo Support Team"
+                	debugEvent ("Cannot get measurement from the API, should ask Sensibo Support Team",true)
+                }
+                
+                def setTemp = getACState(thermostatIdsString)
                 if (setTemp.Error != "Failed") {
                 
 				 atomicState.sensibo = resp.data.result.inject([:]) { collector, stat ->
