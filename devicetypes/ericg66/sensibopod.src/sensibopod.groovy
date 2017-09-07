@@ -228,9 +228,10 @@ def temperatureDown(temp)
     else values = capabilities.remoteCapabilities.temperatures.C.values
     
     def found = values.findAll{number -> number < temp}
+       
 	log.debug "Values retrieved : " + found
     
-    if (found == null) found = values.first()
+    if (found == null || found.empty) found = values.first()
     else found = found.last()
         
     log.debug "Temp before : " + temp               
@@ -253,7 +254,7 @@ def temperatureUp(temp)
     def found = values.findAll{number -> number > temp}
 
     log.debug "Values retrieved : " + found
-    if (found == null) found = values.last()
+    if (found == null || found.empty) found = values.last()
     else found = found.first()
 
     log.debug "Temp before : " + temp               
