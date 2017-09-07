@@ -87,6 +87,7 @@ def updated(){
             indicatorWhenOn()
             break
     }
+    sendHubCommand(new physicalgraph.device.HubAction(zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()))
 }
 
 def getCommandClassVersions() {
@@ -187,7 +188,7 @@ def poll() {
   * PING is used by Device-Watch in attempt to reach the Device
 **/
 def ping() {
-		refresh()
+    zwave.switchBinaryV1.switchBinaryGet().format()
 }
 
 def refresh() {
