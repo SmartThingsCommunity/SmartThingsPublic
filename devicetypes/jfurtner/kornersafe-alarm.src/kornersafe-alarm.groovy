@@ -28,7 +28,7 @@ definition (name: "KornerSafe Alarm", namespace: "jfurtner", author: "Jamie Furt
         command "setOn"
         command "setOpen"
         command "setClosed"
-        attribute "message", "string"
+        //attribute "message", "string"
         command "setAPIEndpoints", ["string", "string"]
 	}
     
@@ -38,28 +38,30 @@ definition (name: "KornerSafe Alarm", namespace: "jfurtner", author: "Jamie Furt
     
     preferences{
     	input("deviceIP", "string", title:"IP Address", required:true, displayDuringSetup:true)
-        input("devicePort", "number", title:"HTTP Port", required:true, displayDuringSetup:true, default:80)
-        input("devicePage", "string", title:"HTTP endpoint", required:true, displayDuringSetup:true, default:"/kornersafe.php")
+        input("devicePort", "number", title:"HTTP Port (i.e. 80 - HTTP only supported)", required:true, displayDuringSetup:true)
+        input("devicePage", "string", title:"HTTP endpoint (i.e. '/kornersafe.php')", required:true, displayDuringSetup:true)
+        input("debugOutput", "bool", title: "Enable debug logging?", defaultValue: true, required: false)
+        input("traceOutput", "bool", title: "Enable trace logging?", defaultValue: false, required: false)
     }
 
 	tiles(scale:2) {
     	standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-        	state 'off', label: 'Disarmed', action: 'on', icon: 'st.locks.lock.unlocked', backgroundColor: '#44ff44',nextState:"turningOn"
-            state "turningOn", label:'Arming', icon:'st,locks.lock.locking', backgroundColor: '#D59226', nextState:'turningOff'
-            state 'on', label: 'Armed', action: 'off', icon: 'st.locks.lock.locked', backgroundColor: '#ff4444',nextState:'turningOff'
-            state "turningOff", label:'Disarming', icon:'st.locks.lock.unlocking',backgroundColor: '#D59226',nextState: 'turningOn'
+        	state 'off', label: 'Disarmed', action: 'on', icon: 'st.locks.lock.unlocked', backgroundColor: '#ffffff',nextState:"turningOn"
+            state "turningOn", label:'Arming', icon:'st,locks.lock.locking', backgroundColor: '#62bbdb', nextState:'turningOff' // 55% of on
+            state 'on', label: 'Armed', action: 'off', icon: 'st.locks.lock.locked', backgroundColor: '#00a0dc',nextState:'turningOff'
+            state "turningOff", label:'Disarming', icon:'st.locks.lock.unlocking',backgroundColor: '#92c8db',nextState: 'turningOn' // 33% of on
         }
         standardTile('refresh', 'device.refresh', width:2, height:2) {
         	state 'refresh', label: 'Refresh', action: 'refresh', icon: 'st.secondary.refresh'
         }        
         valueTile('contactSensor', "device.contact", width:2, height:2){
-        	//state 'contact', label: '${currentValue}'
-            state 'closed', label: 'Ok', icon: 'st.alarm.beep.beep', backgroundColor: '#44ff44'
-        	state 'open', label: 'Alarm', icon: 'st.alarm.alarm.alarm', backgroundColor: '#ff4444'
+            state 'closed', label: 'Ok', icon: 'st.alarm.beep.beep', backgroundColor: '#d1ffe7'
+        	state 'open', label: 'Alarm', icon: 'st.alarm.alarm.alarm', backgroundColor: '#e86d13'
         }
-        valueTile('message', 'device.message', width:6, height:2) {
+/*        valueTile('message', 'device.message', width:6, height:2) {
         	state 'message', label:'${currentValue}'
         }
+*/
 	}
 }
 
@@ -97,19 +99,16 @@ def parse(msg) {
 // handle commands
 def poll() {
 	logTrace "INIT 'poll'"
-    sendMessage('Polling')
 	return hubAction('status')
 }
 
 def on() {
 	logTrace "INIT 'on'"
-    sendMessage("Arming")
 	return hubAction('arm')
 }
 
 def off() {
 	logTrace "INIT 'off'"
-    sendMessage("Disarming")
 	return hubAction('disarm')
 }
 
@@ -121,44 +120,41 @@ def refresh() {
 // handle smartapp commands
 def setOff() {
 	logTrace('INIT setOff')
-    sendMessage('Disarmed')
-	setSwitch('off')
+    setSwitch('off')
 }
 
 def setOn() {
 	logTrace('INIT setOn')
-    sendMessage('Armed')
-	setSwitch('on')
+    setSwitch('on')
 }
 
 def setOpen()
 {
 	logTrace('INIT setOpen')
-    sendMessage('Alarm!')
     setContact('open')
 }
 
 def setClosed()
 {
 	logTrace('INIT setClosed')
-    sendMessage('OK')
     setContact('closed')
 }
 
-private def sendMessage(msg)
+/*private def sendMessage(msg)
 {
 	logTrace('INIT sendMessage')
 	def dt = new Date()
     def completeMessage = "$dt $msg"
     logTrace("Message: $completeMessage")
 	sendEvent(createEvent(name:"message", value:completeMessage))
-}
+}*/
 
 
 private def setContact(String openClosed)
 {
 	logTrace('INIT setContact')
-	sendEvent(getContactEvent(openClosed))
+    if (currentContact != openClosed)
+		sendEvent(getContactEvent(openClosed))
 }
 
 private def getContactEvent(String openClosed)
@@ -170,7 +166,8 @@ private def getContactEvent(String openClosed)
 private def setSwitch(String onOff)
 {
 	logTrace('INIT setSwitch')
-	sendEvent(createEvent(name: "switch", value: onOff))
+    if (currentSwitch != onOff)
+		sendEvent(createEvent(name: "switch", value: onOff))
 }
 
 def hubAction(String action) {
@@ -198,12 +195,14 @@ def hubAction(String action) {
 
 def logDebug(msg)
 {
-	log.debug msg
+	if (debugOutput)
+        log.debug msg
 }
 
 def logTrace(msg)
 {
-	log.trace msg
+	if (traceOutput)
+		log.trace msg
 }
 
 private updateDNI() { 
@@ -225,12 +224,12 @@ private setDeviceNetworkId(ip,port){
 
 private String convertIPtoHex(ipAddress) { 
     String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02X', it.toInteger() ) }.join()
-    //logTrace "IP address entered is $ipAddress and the converted hex code is $hex"
+    logTrace "IP address entered is $ipAddress and the converted hex code is $hex"
     return hex
 }
 
 private String convertPortToHex(port) {
 	String hexport = port.toString().format( '%04X', port.toInteger() )
-    //logTrace "Port entered is $port and the converted hex code is $hexport"
+    logTrace "Port entered is $port and the converted hex code is $hexport"
     return hexport
 }
