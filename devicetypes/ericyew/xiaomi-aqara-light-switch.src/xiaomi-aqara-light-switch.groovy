@@ -35,12 +35,12 @@ metadata {
 		attribute "batterylevel", "string"
 		attribute "lastCheckin", "string"
         
-    	fingerprint endpointId: "01", inClusters: "0000,FFFF,0006", outClusters: "0000,0004,FFFF", manufacturer: "LUMI", model: "lumi.sensor_switch.aq2"
+    	fingerprint endpointId: "01", inClusters: "0000,FFFF,0006", outClusters: "0000,0004,FFFF"
 	}
     
     simulator {
   	status "button 1 pressed": "on/off: 1"
-      	status "button 1 released": "on/off: 0"
+   //   	status "button 1 released": "on/off: 0"
     }
     
     preferences{
