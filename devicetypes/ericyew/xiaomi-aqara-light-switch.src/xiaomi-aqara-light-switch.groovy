@@ -38,72 +38,74 @@ metadata {
     	fingerprint endpointId: "01", inClusters: "0000,FFFF,0006", outClusters: "0000,0004,FFFF"
 	}
     
-    simulator {
-  	status "button 1 pressed": "on/off: 1"
-   //   	status "button 1 released": "on/off: 0"
-    }
+    	simulator {
+  		status "button 1 pressed": "on/off: 1"
+    	}
     
-    preferences{
-//    	input ("holdTime", "number", title: "Minimum time in seconds for a press to count as \"held\"",
+    	preferences{
+//    		input ("holdTime", "number", title: "Minimum time in seconds for a press to count as \"held\"",
 //        		defaultValue: 4, displayDuringSetup: false)
-    }
+    	}
 
 	tiles(scale: 2) {
-
+		
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-           		attributeState("on", label:' push', action: "momentary.push", backgroundColor:"#53a7c0")
-            	attributeState("off", label:' push', action: "momentary.push", backgroundColor:"#ffffff", nextState: "on")   
+           			attributeState("on", label:' push', action: "momentary.push", backgroundColor:"#53a7c0")
+            			attributeState("off", label:' push', action: "momentary.push", backgroundColor:"#ffffff", nextState: "on")   
  			}
-            tileAttribute("device.lastCheckin", key: "SECONDARY_CONTROL") {
-    			attributeState("default", label:'Last Update: ${currentValue}',icon: "st.Health & Wellness.health9")
-            }
+            		tileAttribute("device.lastCheckin", key: "SECONDARY_CONTROL") {
+    				attributeState("default", label:'Last Update: ${currentValue}',icon: "st.Health & Wellness.health9")
+            		}
 		}        
        
-//        valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-//			state "battery", label:'${currentValue}% battery', unit:""
-//		}
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        	valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
+		}
+		
+        	standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
-//        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        	}
+		
+//        	standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 //			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 //		}
         
 		main (["switch"])
-		details(["switch", "refresh"])//, "battery", "configure"
+			details(["switch", "refresh"]), "battery" //, "configure"
 	}
 }
 
 def parse(String description) {
-  log.debug "Parsing '${description}'"
-//  send event for heartbeat    
-  def now = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
-  sendEvent(name: "lastCheckin", value: now)
+	log.debug "Parsing '${description}'"
+	
+	// Send event for heartbeat    
+  	def now = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
+  	sendEvent(name: "lastCheckin", value: now)
 
-  def results = []
-  if (description?.startsWith('on/off: '))
-        results = parseCustomMessage(description)
-  if (description?.startsWith('catchall:')) 
+ 	def results = []
+  	if (description?.startsWith('on/off: '))
+        	results = parseCustomMessage(description)
+ 	if (description?.startsWith('catchall:')) 
 		results = parseCatchAllMessage(description)
         
-  return results;
+  	return results;
 }
 
 def configure(){
-    [
-    "zdo bind 0x${device.deviceNetworkId} 1 2 0 {${device.zigbeeId}} {}", "delay 5000",
-    "zcl global send-me-a-report 2 0 0x10 1 0 {01}", "delay 500",
-    "send 0x${device.deviceNetworkId} 1 2"
-    ]
+    	[
+    		"zdo bind 0x${device.deviceNetworkId} 1 2 0 {${device.zigbeeId}} {}", "delay 5000",
+    		"zcl global send-me-a-report 2 0 0x10 1 0 {01}", "delay 500",
+    		"send 0x${device.deviceNetworkId} 1 2"
+    	]
 }
 
 def refresh(){
 	"st rattr 0x${device.deviceNetworkId} 1 2 0"
-    "st rattr 0x${device.deviceNetworkId} 1 0 0"
+    	"st rattr 0x${device.deviceNetworkId} 1 0 0"
 	log.debug "refreshing"
-    sendEvent(name: 'numberOfButtons', value: 1)
-    //createEvent([name: 'batterylevel', value: '100', data:[buttonNumber: 1], displayed: false])
+    	sendEvent(name: 'numberOfButtons', value: 1)
+    	//createEvent([name: 'batterylevel', value: '100', data:[buttonNumber: 1], displayed: false])
 }
 
 private Map parseCatchAllMessage(String description) {
@@ -147,7 +149,6 @@ private Map getBatteryResult(rawValue) {
 	if (battValue > maxbatt) {
 				battValue = maxbatt
     }
-   
 
 	def result = [
 		name: 'battery',
@@ -164,7 +165,7 @@ private Map getBatteryResult(rawValue) {
 
 private Map parseCustomMessage(String description) {
 	if (description?.startsWith('on/off: ')) {
-    	if (description == 'on/off: 1') 		//button pressed
+    	if (description == 'on/off: 1') 		//button pushed
     		return push()
 	}
 }
