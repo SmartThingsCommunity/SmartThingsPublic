@@ -15,12 +15,12 @@
  *  change log:
  *  modified to allow button capability
  *
- *  Ver 1.0  -  9-11-2017
- *    Converted to support button presses with Xiaomi Zigbee Light Switch (Single Switch)
+ *  Ver 1.0  -  9-12-2017
+ *    Converted to support button presses with Xiaomi Zigbee Aqara Light Switch (Single Switch)
  *
  */
 metadata {
-	definition (name: "Xiaomi Zigbee Aqara Light Switch", namespace: "ericyew", author: "Eric Yew") {	
+	definition (name: "Xiaomi Aqara Light Switch", namespace: "ericyew", author: "Eric Yew") {	
 //    	capability "Battery"
 		capability "Button"
 //		capability "Holdable Button"
