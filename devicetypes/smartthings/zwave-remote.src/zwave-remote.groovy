@@ -31,16 +31,29 @@ metadata {
 	}
 }
 
+def installed() {
+	if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	}
+}
+
 def parse(String description) {
 	def result = null
 	def cmd = zwave.parse(description)
 	if (cmd) {
-		result = createEvent(zwaveEvent(cmd))
+		result = zwaveEvent(cmd)
 	}
 	return result
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
+	def result = []
+	result << createEvent(descriptionText: "${device.displayName} woke up", isStateChange: true)
+	result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	result
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
-	[:]
+	log.debug "$device.displayName unhandled $cmd"
 }
