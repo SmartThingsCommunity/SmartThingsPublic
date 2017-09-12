@@ -57,10 +57,6 @@ def parse(String description) {
 	return result
 }
 
-def updated() {
-	response(zwave.wakeUpV1.wakeUpNoMoreInformation())
-}
-
 def sensorValueEvent(Short value) {
 	if (value == 0) {
 		createEvent([ name: "sensor", value: "inactive" ])
@@ -219,5 +215,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 
 def configure() {
-	zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+		zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	}
 }

@@ -40,6 +40,12 @@ metadata {
 	}
 }
 
+def installed() {
+	if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	}
+}
+
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
