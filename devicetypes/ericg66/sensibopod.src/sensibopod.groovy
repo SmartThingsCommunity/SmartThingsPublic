@@ -53,6 +53,8 @@ metadata {
         command "raiseTemperature"
         command "lowerTemperature"
         command "switchSwing"
+        command "setThermostatMode"
+       
 	}
 
 	simulator {
@@ -362,6 +364,36 @@ void lowerCoolSetpoint() {
     }
 	generateStatusEvent()
     refresh()
+}
+
+
+void setThermostatMode(modes)
+{ 
+	log.debug "setThermostatMode"
+  	//def currentMode = device.currentState("mode")?.value
+  
+  	log.debug "switching AC mode from current mode: $currentMode"
+
+  	switch (modes) {
+		case "cool":
+			modeCool()
+			break
+		//case "fan":
+		//	returnCommand = modeFan()
+		//	break		
+		//case "dry":
+		//	returnCommand = modeDry()
+		//	break
+        case "auto":
+	        modeAuto()
+			break
+        case "heat":
+			modeHeat()
+			break
+        case "off":
+            off()
+            break
+	}
 }
 
 void raiseCoolSetpoint() {
@@ -1862,7 +1894,7 @@ def parse(String description) {
 	def value = null
     def statusTextmsg = ""   
     def msg = parseLanMessage(description)
-
+        
     def headersAsString = msg.header // => headers as a string
     def headerMap = msg.headers      // => headers as a Map
     def body = msg.body              // => request body as a string
