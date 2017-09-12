@@ -1,5 +1,5 @@
 /**
- * 	Z-Wave Lock
+ *  Yale Z-Wave Lock
  *
  *  Copyright 2015 SmartThings
  *
@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Lock", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Yale Z-Wave Lock", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Lock"
 		capability "Polling"
@@ -25,19 +25,23 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint deviceId: "0x4003", inClusters: "0x98"
-		fingerprint deviceId: "0x4004", inClusters: "0x98"
-		fingerprint mfr:"0090", prod:"0001", model:"0236", deviceJoinName: "KwikSet SmartCode 910 Deadbolt Door Lock"
-		fingerprint mfr:"0090", prod:"0003", model:"0238", deviceJoinName: "KwikSet SmartCode 910 Deadbolt Door Lock"
-		fingerprint mfr:"0090", prod:"0001", model:"0001", deviceJoinName: "KwikSet SmartCode 910 Contemporary Deadbolt Door Lock"
-		fingerprint mfr:"0090", prod:"0003", model:"0339", deviceJoinName: "KwikSet SmartCode 912 Lever Door Lock"
-		fingerprint mfr:"0090", prod:"0003", model:"4006", deviceJoinName: "KwikSet SmartCode 914 Deadbolt Door Lock" //backlit version
-		fingerprint mfr:"0090", prod:"0003", model:"0440", deviceJoinName: "KwikSet SmartCode 914 Deadbolt Door Lock"
-		fingerprint mfr:"0090", prod:"0001", model:"0642", deviceJoinName: "KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock"
-		fingerprint mfr:"0090", prod:"0003", model:"0642", deviceJoinName: "KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock"
-		fingerprint mfr:"003B", prod:"6341", model:"0544", deviceJoinName: "Schlage Camelot Touchscreen Deadbolt Door Lock"
-		fingerprint mfr:"003B", prod:"6341", model:"5044", deviceJoinName: "Schlage Century Touchscreen Deadbolt Door Lock"
-		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Connected Keypad Lever Door Lock"
+		input "audioLevel", "enum", title: "Volume Setting", options: ["Silent", "Low", "High"], defaultValue: getDefaultValueFor("audioLevel"), multiple: false, required: false
+		input "autoLock", "enum", title: "Auto-Lock", options: ["On", "Off"], defaultValue: getDefaultValueFor("autoLock"), multiple: false, required: false
+		input "relockTime", "number", title: "Re-Lock Time (5-180 seconds)", defaultValue: getDefaultValueFor("relockTime"), range: "5..180", displayDuringSetup: false, required: false
+		input "wrongCodeEntryLimit", "number", title: "Wrong Code Entry Limit (3-7 Entries)", defaultValue: getDefaultValueFor("wrongCodeEntryLimit"), range: "3..7", displayDuringSetup: false, required: false
+		input "wrongCodeTimeOut", "number", title: "Wrong Code Time Out (10-180 seconds)", defaultValue: getDefaultValueFor("wrongCodeTimeOut"), range: "10..180", displayDuringSetup: false, required: false
+		input "language", "enum", title: "Language Setting", options: ["English", "Spanish", "French"], defaultValue: getDefaultValueFor("language"), multiple: false, required: false
+		input "operatingMode", "enum", title: "Operating Mode", options: ["Normal", "Vacation", "Privacy"], defaultValue: getDefaultValueFor("operatingMode"), multiple: false, required: false
+		input "oneTouchLocking", "enum", title: "One Touch Locking", options: ["On", "Off"], defaultValue: getDefaultValueFor("oneTouchLocking"), multiple: false, required: false
+		input "privacyButton", "enum", title: "Privacy Mode (Button)", options: ["On", "Off"], defaultValue: getDefaultValueFor("privacyButton"), multiple: false, required: false
+
+		fingerprint mfr:"0129", prod:"0002", model:"0800", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120
+		fingerprint mfr:"0129", prod:"0002", model:"0000", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD220, YRD240
+		fingerprint mfr:"0129", prod:"0002", model:"FFFF", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
+		fingerprint mfr:"0129", prod:"0004", model:"0800", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110
+		fingerprint mfr:"0129", prod:"0004", model:"0000", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD210
+		fingerprint mfr:"0129", prod:"0001", model:"0000", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
+		fingerprint mfr:"0129", prod:"8002", model:"0600", deviceJoinName: "Yale Assure Lock with Bluetooth"
 	}
 
 	simulator {
@@ -80,6 +84,162 @@ import physicalgraph.zwave.commands.doorlockv1.*
 import physicalgraph.zwave.commands.usercodev1.*
 
 /**
+ * Constructs a map of the configurable parameters in a lock
+ *
+ * @return map: The map with key and values for parameter number, size, and allowed values
+ */
+def getLockParams() {
+	// The following is for the Yale ZWave Locks
+	// map is as follows: parameter number, byte size, allowed value choices or number range
+	def map = [
+		audioLevel: 		[ number: 1, size: 1, value: [ "silent": 1, "low": 2, "high": 3 ]],
+		autoLock: 			[ number: 2, size: 1, value: [ "off": 0x00, "on": 0xFF ]],
+		relockTime: 		[ number: 3, size: 1, value: settings.relockTime ],
+		wrongCodeEntryLimit:[ number: 4, size: 1, value: settings.wrongCodeEntryLimit ],
+		language:           [ number: 5, size: 1, value: [ "english": 1, "spanish": 2, "french": 3 ]],
+		wrongCodeTimeOut:   [ number: 7, size: 1, value: settings.wrongCodeTimeOut ],
+		operatingMode:      [ number: 8, size: 1, value: [ "normal": 00, "vacation": 01, "privacy": 02 ]],
+		oneTouchLocking:    [ number: 11, size: 1, value: [ "off": 0x00, "on": 0xFF ]],
+		privacyButton:      [ number: 12, size: 1, value: [ "off": 0x00, "on": 0xFF ]],
+	]
+
+	return map
+}
+
+/**
+ * Returns the default value for the configurable parameters in a lock
+ *
+ * @param settingName: The settings key
+ *
+ * @return The default value based on the settings key
+ */
+def getDefaultValueFor(settingName) {
+	if("audioLevel".equals(settingName)) {
+		return "High"
+	}
+	if("autoLock".equals(settingName)) {
+		return "Off"
+	}
+	if("relockTime".equals(settingName)) {
+		return 5
+	}
+	if("wrongCodeEntryLimit".equals(settingName)) {
+		return 5
+	}
+	if("wrongCodeTimeOut".equals(settingName)) {
+		return 60
+	}
+	if("language".equals(settingName)) {
+		return "English"
+	}
+	if("operatingMode".equals(settingName)) {
+		return "Normal"
+	}
+	if("oneTouchLocking".equals(settingName)) {
+		return "On"
+	}
+	if("privacyButton".equals(settingName)) {
+		return "Off"
+	}
+	return null
+}
+
+/**
+ * Reads the values of the parameters defined in the DTH preferences
+ *
+ * @param settingName: The settings key
+ *
+ * @param param: The map with parameter number, size, and allowed values of the configurable parameters in a lock
+ *
+ * @return configVal: The list of values
+ */
+def getConfigValueFor(settingName, param) {
+	def configVal = []
+	//Audio Level
+	if("audioLevel".equals(settingName)) {
+		if(settings.audioLevel == null) {
+			log.warn "User set audioLevel to null. Using default value ${getDefaultValueFor('audioLevel')}."
+			configVal << param.audioLevel.value[getDefaultValueFor("audioLevel").toLowerCase()]
+		} else {
+			configVal << param.audioLevel.value."${settings.audioLevel.toLowerCase()}"
+		}
+	}
+	//Auto Lock
+	if("autoLock".equals(settingName)) {
+		if(settings.autoLock == null) {
+			log.warn "User set autoLock to null. Using default value ${getDefaultValueFor('autoLock')}."
+			configVal << param.autoLock.value[getDefaultValueFor("autoLock").toLowerCase()]
+		} else {
+			configVal << param.autoLock.value."${settings.autoLock.toLowerCase()}"
+		}
+	}
+	//Relock Time
+	if("relockTime".equals(settingName)) {
+		if(settings.relockTime == null) {
+			log.warn "User set relockTime to null. Using default value ${getDefaultValueFor('relockTime')}."
+			configVal << getDefaultValueFor("relockTime")
+		} else {
+			configVal << param.relockTime.value
+		}
+	}
+	//Wrong Code Entry Limit
+	if("wrongCodeEntryLimit".equals(settingName)) {
+		if(settings.wrongCodeEntryLimit == null) {
+			log.warn "User set wrongCodeEntryLimit to null. Using default value ${getDefaultValueFor('wrongCodeEntryLimit')}."
+			configVal << getDefaultValueFor("wrongCodeEntryLimit")
+		} else {
+			configVal << param.wrongCodeEntryLimit.value
+		}
+	}
+	//Wrong Code Time Out
+	if("wrongCodeTimeOut".equals(settingName)) {
+		if(settings.wrongCodeTimeOut == null) {
+			log.warn "User set wrongCodeTimeOut to null. Using default value ${getDefaultValueFor('wrongCodeTimeOut')}."
+			configVal << getDefaultValueFor("wrongCodeTimeOut")
+		} else {
+			configVal << param.wrongCodeTimeOut.value
+		}
+	}
+	//Language
+	if("language".equals(settingName)) {
+		if(settings.language == null) {
+			log.warn "User set language to null. Using default value ${getDefaultValueFor('language')}."
+			configVal << param.language.value[getDefaultValueFor("language").toLowerCase()]
+		} else {
+			configVal << param.language.value."${settings.language.toLowerCase()}"
+		}
+	}
+	//Operating Mode
+	if("operatingMode".equals(settingName)) {
+		if(settings.operatingMode == null) {
+			log.warn "User set operatingMode to null. Using default value ${getDefaultValueFor('operatingMode')}."
+			configVal << param.operatingMode.value[getDefaultValueFor("operatingMode").toLowerCase()]
+		} else {
+			configVal << param.operatingMode.value."${settings.operatingMode.toLowerCase()}"
+		}
+	}
+	//One Touch Locking
+	if("oneTouchLocking".equals(settingName)) {
+		if(settings.oneTouchLocking == null) {
+			log.warn "User set oneTouchLocking to null. Using default value ${getDefaultValueFor('oneTouchLocking')}."
+			configVal << param.oneTouchLocking.value[getDefaultValueFor("oneTouchLocking").toLowerCase()]
+		} else {
+			configVal << param.oneTouchLocking.value."${settings.oneTouchLocking.toLowerCase()}"
+		}
+	}
+	//Privacy Button
+	if("privacyButton".equals(settingName)) {
+		if(settings.privacyButton == null) {
+			log.warn "User set privacyButton to null. Using default value ${getDefaultValueFor('privacyButton')}."
+			configVal << param.privacyButton.value[getDefaultValueFor("privacyButton").toLowerCase()]
+		} else {
+			configVal << param.privacyButton.value."${settings.privacyButton.toLowerCase()}"
+		}
+	}
+	configVal
+}
+
+/**
  * Called on app installed
  */
 def installed() {
@@ -93,11 +253,15 @@ def installed() {
  * @return hubAction: The commands to be executed
  */
 def updated() {
-	if (device.rawDescription.contains("mfr:0129") && device.getType() != "Yale Z-Wave Lock") {
-		log.trace "[DTH] Setting device type to 'Yale Z-Wave Lock' for device ${device.displayName}"
-		setDeviceType("Yale Z-Wave Lock")
+	// Workaround for ST calling updated twice ---- start
+	if ( state.updatedRan == 0 || state.updatedRan == null ) {
+		state.updatedRan = 1
+		log.trace "[DTH] Executing 'updated()' for device ${this.device.displayName}"
+	} else {
+		state.updatedRan = 0
 		return null
 	}
+	// Workaround for ST calling updated twice ---- end
 	
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -119,6 +283,28 @@ def updated() {
 				cmds << zwave.versionV1.versionGet().format()
 			}
 			hubAction = response(delayBetween(cmds, 4200))
+		} else {
+			def param = getLockParams()
+			// audioLevel
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.audioLevel.number, size: param.audioLevel.size, configurationValue: getConfigValueFor("audioLevel", param)))
+			// autoLock
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.autoLock.number, size: param.autoLock.size, configurationValue: getConfigValueFor("autoLock", param)))
+			// relockTime
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.relockTime.number, size: param.relockTime.size, configurationValue: getConfigValueFor("relockTime", param)))
+			// wrongCodeEntryLimit
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.wrongCodeEntryLimit.number, size: param.wrongCodeEntryLimit.size, configurationValue: getConfigValueFor("wrongCodeEntryLimit", param)))
+			// wrongCodeTimeOut
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.wrongCodeTimeOut.number, size: param.wrongCodeTimeOut.size, configurationValue: getConfigValueFor("wrongCodeTimeOut", param)))
+			// language
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.language.number, size: param.language.size, configurationValue: getConfigValueFor("language", param)))
+			// operatingMode
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.operatingMode.number, size: param.operatingMode.size, configurationValue: getConfigValueFor("operatingMode", param)))
+			// oneTouchLocking
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.oneTouchLocking.number, size: param.oneTouchLocking.size, configurationValue: getConfigValueFor("oneTouchLocking", param)))
+			// privacyButton
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: param.privacyButton.number, size: param.privacyButton.size, configurationValue: getConfigValueFor("privacyButton", param)))
+			log.debug "cmds=$cmds"
+			hubAction = response(delayBetween(cmds, 200))
 		}
 	} catch (e) {
 		log.warn "updated() threw $e"
@@ -144,16 +330,7 @@ def configure() {
 def doConfigure() {
 	log.trace "[DTH] Executing 'doConfigure()' for device ${device.displayName}"
 	state.configured = true
-	if (device.rawDescription.contains("mfr:003B")) {
-		updateDataValue("manufacturer", "Schlage")
-	}
-	def cmds = []
-	cmds << secure(zwave.doorLockV1.doorLockOperationGet())
-	cmds << secure(zwave.batteryV1.batteryGet())
-	if (isSchlageLock()) {
-		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: getSchlageLockParam().codeLength.number))
-	}
-	cmds = delayBetween(cmds, 4200)
+	def cmds = secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()])
 	log.debug "Do configure returning with commands := $cmds"
 	cmds
 }
@@ -190,36 +367,6 @@ def parse(String description) {
 	}
 	log.info "[DTH] parse() - returning result=$result"
 	result
-}
-
-/**
- * Responsible for parsing ConfigurationReport command
- *
- * @param cmd: The ConfigurationReport command to be parsed
- *
- * @return The event(s) to be sent out
- *
- */
-def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd)' with cmd = $cmd"
-	if (isSchlageLock() && cmd.parameterNumber == getSchlageLockParam().codeLength.number) {
-		def result = []
-		def length = cmd.scaledConfigurationValue
-		def deviceName = device.displayName
-		log.trace "[DTH] Executing 'ConfigurationReport' for device $deviceName with code length := $length"
-		def codeLength = device.currentValue("codeLength")
-		if (codeLength && codeLength != length) {
-			log.trace "[DTH] Executing 'ConfigurationReport' for device $deviceName - all codes deleted"
-			result = allCodesDeletedEvent()
-			result << createEvent(name: "codeChanged", value: "all deleted", descriptionText: "All user codes deleted",
-			isStateChange: true, data: [lockName: deviceName, notify: true,
-				notificationText: "All user codes deleted in $deviceName at ${location.name}"])
-			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
-		}
-		result << createEvent(name:"codeLength", value: length, descriptionText: "Code length is $length", displayed: false)
-		return result
-	}
-	return null
 }
 
 /**
@@ -288,24 +435,12 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	if (cmd.doorLockMode == 0xFF) {
 		map.value = "locked"
 		map.descriptionText = "Was locked"
-		if(isSchlageLock()) {
-			// In schlage locks when lock is locked / unlocked from smart app or DTH AlarmReport is not generated. 
-			// Also DoorLockOperationReport is generated only when lock is locked/unlocked from smart app or DTH.
-			// In case a lock is locked / unlocked manually or using lock's keypad only AlarmReport is generated.
-			map.descriptionText = "Was locked remotely"
-		}
 	} else if (cmd.doorLockMode >= 0x40) {
 		map.value = "unknown"
 		map.descriptionText = "Was in unknown state"
 	} else {
 		map.value = "unlocked"
 		map.descriptionText = "Was unlocked"
-		if(isSchlageLock()) {
-			// In schlage locks when lock is locked / unlocked from smart app or DTH AlarmReport is not generated.
-			// Also DoorLockOperationReport is generated only when lock is locked/unlocked from smart app or DTH.
-			// In case a lock is locked / unlocked manually or using lock's keypad only AlarmReport is generated.
-			map.descriptionText = "Was unlocked remotely"
-		}
 		if (state.assoc != zwaveHubNodeId) {
 			result << response(secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)))
 			result << response(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId))
@@ -383,9 +518,6 @@ private def handleAccessAlarmReport(cmd) {
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Was locked with code named '$codeName'"
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
-			} else {
-				// locked by pressing the Schlage button
-				map.descriptionText = "Was locked manually"
 			}
 			break
 		case 6: // Unlocked with keypad
@@ -464,7 +596,7 @@ private def handleAccessAlarmReport(cmd) {
 		case 0x12: // Master code changed
 			codeName = getCodeNameFromState(lockCodes, 0)
 			map = [ name: "codeChanged", value: "0 set", descriptionText: "'$codeName' was set", isStateChange: true ]
-			map.data = [ codeName: codeName, notify: true, notificationText: "'$codeName' was set in $deviceName  at ${location.name}" ]
+			map.data = [ codeName: codeName, notify: true, notificationText: "'$codeName' was set in $deviceName at ${location.name}" ]
 			break
 		case 0xFE:
 			// delegating it to handleAlarmReportUsingAlarmType
@@ -641,7 +773,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			def changeType = getChangeType(lockCodes, codeID)
 			map = [ name: "codeChanged", value: "$codeID $changeType", descriptionText:
 				"Code named '$codeName' was $changeType", isStateChange: true ]
-			map.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was $changeType in $deviceName  at ${location.name}" ]
+			map.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was $changeType in $deviceName at ${location.name}" ]
 			if(!isMasterCode(codeID)) {
 				result << codeSetEvent(lockCodes, codeID, codeName)
 			} else {
@@ -711,79 +843,39 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 def zwaveEvent(UserCodeReport cmd) {
 	log.trace "[DTH] Executing 'zwaveEvent(UserCodeReport)' with userIdentifier: ${cmd.userIdentifier} and status: ${cmd.userIdStatus}"
 	def result = []
+	def code = cmd.code
 	// cmd.userIdentifier seems to be an int primitive type
 	def codeID = cmd.userIdentifier.toString()
 	def lockCodes = loadLockCodes()
 	def map = [ name: "codeChanged", isStateChange: true ]
 	def deviceName = device.displayName
 	def userIdStatus = cmd.userIdStatus
-	
+
 	if (userIdStatus == UserCodeReport.USER_ID_STATUS_OCCUPIED ||
 				(userIdStatus == UserCodeReport.USER_ID_STATUS_STATUS_NOT_AVAILABLE && cmd.user)) {
-				
-		def codeName
-		
-		// Schlage locks sends a blank/empty code during code creation/updation where as it sends "**********" during scanning
-		if (!cmd.code && isSchlageLock()) {
-			// this will be executed when the user tries to create/update a user code through the
-			// smart app or manually on the lock. This is specific to Schlage locks.
-			log.trace "[DTH] User code creation successful for Schlage lock"
-			codeName = getCodeNameFromState(lockCodes, codeID)
-			def changeType = getChangeType(lockCodes, codeID)
-
-			map.value = "$codeID $changeType"
-			map.isStateChange = true
-			map.descriptionText = "Code named '$codeName' was $changeType"
-			map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "Code named '$codeName' was $changeType in ${deviceName}  at ${location.name}" ]
-			if(!isMasterCode(codeID)) {
-				result << codeSetEvent(lockCodes, codeID, codeName)
-			} else {
-				map.descriptionText = "'$codeName' was set"
-				map.data.notificationText = "'$codeName' was set in ${deviceName}"
-				map.data.lockName = deviceName
-			}
+		// We'll land here during scanning of codes
+		def codeName = getCodeName(lockCodes, codeID)
+		if (!lockCodes[codeID]) {
+			map.value = "$codeID set"
+			result << codeSetEvent(lockCodes, codeID, codeName)
 		} else {
-			// We'll land here during scanning of codes
-			codeName = getCodeName(lockCodes, codeID)
-			if (!lockCodes[codeID]) {
-				map.value = "$codeID set"
-				result << codeSetEvent(lockCodes, codeID, codeName)
-			} else {
-				map.value = "$codeID changed"
-				map.isStateChange = false
-			}
-			map.descriptionText = "Code named '$codeName' was set"
-			map.data = [ codeName: codeName, lockName: deviceName ]
+			map.value = "$codeID changed"
+			map.isStateChange = false
 		}
-	} else if(userIdStatus == 254 && isSchlageLock()) {
-		// This is code creation/updation error for Schlage locks.
-		// It should be OK to mark this as duplicate pin code error since in case the batteries are down, or lock is not in range,
-		// or wireless interference is there, the UserCodeReport will anyway not be received.
-		map = [ name: "codeChanged", value: "$codeID failed", descriptionText: "User code is not added", isStateChange: true,
-			data: [ lockName: deviceName, isCodeDuplicate: true] ]
+		map.descriptionText = "Code named '$codeName' was set"
+		map.data = [ codeName: codeName, lockName: deviceName ]
 	} else {
-		if (codeID == "0" && isSchlageLock()) {
-			// all codes deleted for Schlage locks
-			log.trace "[DTH] All user codes deleted for Schlage lock"
-			result << allCodesDeletedEvent()
-			map = [ name: "codeChanged", value: "all deleted", descriptionText: "All user codes deleted", isStateChange: true,
-				data: [ lockName: deviceName, notify: true,
-					notificationText: "All user codes deleted in $deviceName at ${location.name}"] ]
-			lockCodes = [:]
-			result << lockCodesEvent(lockCodes)
+		// code is not set
+		if (lockCodes[codeID]) {
+			def codeName = getCodeName(lockCodes, codeID)
+			map.value = "$codeID deleted"
+			map.descriptionText = "Code named '$codeName' was deleted"
+			map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "Code named '$codeName' was deleted in $deviceName at ${location.name}" ]
+			result << codeDeletedEvent(lockCodes, codeID)
 		} else {
-			// code is not set
-			if (lockCodes[codeID]) {
-				def codeName = getCodeName(lockCodes, codeID)
-				map.value = "$codeID deleted"
-				map.descriptionText = "Code named '$codeName' was deleted"
-				map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "Code named '$codeName' was deleted in $deviceName at ${location.name}" ]
-				result << codeDeletedEvent(lockCodes, codeID)
-			} else {
-				map.value = "$codeID unset"
-				map.isStateChange = false
-				map.data = [ lockName: deviceName ]
-			}
+			map.value = "$codeID unset"
+			map.isStateChange = false
+			map.data = [ lockName: deviceName ]
 		}
 	}
 	
@@ -1162,33 +1254,11 @@ def reloadAllCodes() {
 	state.checkCode = 1
 
 	if (!state.codes) {
-		// BUG: There might be a bug where Schlage does not return the below number of codes
 		return secure(zwave.userCodeV1.usersNumberGet())
 	} else {
 		sendEvent(name: "maxCodes", value: state.codes, displayed: false)
 		return requestCode(1)
 	}
-}
-
-/**
- * API endpoint for setting the user code length on a lock. This is specific to Schlage locks.
- *
- * @param length: The user code length
- *
- * @returns The command fired for writing the code length attribute
- */
-def setCodeLength(length) {
-	if (isSchlageLock()) {
-		length = length.toInteger()
-		if (length >= 4 && length <= 8) {
-			log.trace "[DTH] Executing 'setCodeLength()' by ${device.displayName}"
-			def val = []
-			val << length
-			def param = getSchlageLockParam()
-			return secure(zwave.configurationV2.configurationSet(parameterNumber: param.codeLength.number, size: param.codeLength.size, configurationValue: val))
-		}
-	}
-	return null
 }
 
 /**
@@ -1219,7 +1289,6 @@ def setCode(codeID, code, codeName = null) {
 
 	def strname = (codeName ?: "Code $codeID")
 	state["setname$codeID"] = strname
-	
 	def cmds = validateAttributes()
 	cmds << secure(zwave.userCodeV1.userCodeSet(userIdentifier:codeID, userIdStatus:1, user:code))
 	if(cmds.size() > 1) {
@@ -1236,9 +1305,6 @@ def validateAttributes() {
 	def cmds = []
 	if(!device.currentValue("maxCodes")) {
 		cmds << secure(zwave.userCodeV1.usersNumberGet())
-	}
-	if(!device.currentValue("codeLength") && isSchlageLock()) {
-		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: getSchlageLockParam().codeLength.number))
 	}
 	log.trace "validateAttributes returning commands list: " + cmds
 	cmds
@@ -1477,7 +1543,7 @@ private def codeSetEvent(lockCodes, codeID, codeName) {
  *
  * @return The list of events to be sent out
  */
-private def codeDeletedEvent(lockCodes, codeID) {
+private def codeDeletedEvent(lockCodes,codeID) {
 	lockCodes.remove("$codeID".toString())
 	// not sure if the trigger has done this or not
 	clearStateForSlot(codeID)
@@ -1537,28 +1603,4 @@ private def getChangeType(lockCodes, codeID) {
 def clearStateForSlot(codeID) {
 	state.remove("setname$codeID")
 	state["setname$codeID"] = null
-}
-
-/**
- * Constructs a map of the code length parameter in Schlage lock
- *
- * @return map: The map with key and values for parameter number, and size
- */
-def getSchlageLockParam() {
-	def map = [
-		codeLength: [ number: 16, size: 1]
-	]
-	map
-}
-
-/**
- * Utility function to check if the lock manufacturer is Schlage
- *
- * @return true if the lock manufacturer is Schlage, else false
- */
-def isSchlageLock() {
-	if (device.getDataValue("manufacturer") == "Schlage") {
-		return true
-	}
-	return false
 }
