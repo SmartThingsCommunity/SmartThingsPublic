@@ -248,6 +248,14 @@ def hournotification() {
     }
 }
 
+//def switchesHandler(evt)
+//{
+//  if (evt.value == "on") {
+//        log.debug "switch turned on!"
+//    } else if (evt.value == "off") {
+//        log.debug "switch turned off!"
+//    }
+//}
 
 def eTempUnitHandler(evt)
 {
@@ -614,6 +622,9 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 
 	if (result) {
 		def tData = atomicState.sensibo[child.device.deviceNetworkId]
+        
+        if (tData == null) return false
+        
 		tData.data.fanLevel = fanLevel
         tData.data.thermostatFanMode = fanLevel
         tData.data.on = on
@@ -980,7 +991,7 @@ def pollChildren(PodUid)
                 }
                 
 				log.debug "updated ${atomicState.sensibo[thermostatIdsString].size()} stats: ${atomicState.sensibo[thermostatIdsString]}"
-                debugEvent ("TEST TEST ${atomicState.sensibo[thermostatIdsString]}",false)
+                debugEvent ("updated ${atomicState.sensibo[thermostatIdsString]}",false)
 			}
 			else
 			{
