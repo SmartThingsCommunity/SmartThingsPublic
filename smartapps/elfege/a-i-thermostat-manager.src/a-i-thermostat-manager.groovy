@@ -736,7 +736,7 @@ def Evaluate(){
     def InExceptionContactMode = location.currentMode in DoNotTurnOffModes
     log.debug "InExceptionContactMode = $InExceptionContactMode "
     if(ContactException && FollowException && InExceptionContactMode){
-        contactClosed = ContactExceptionIsClosed()
+        contactClosed = ExcepContactsClosed() 
     }
     else{
         contactClosed = AllContactsAreClosed()
@@ -2256,8 +2256,8 @@ def CheckWindows(){
 
 
     def MessageMinutes = 60*60000 as Long
-
-    def MessageTimeDelay = now() > state.LastTimeMessageSent + MessageMinutes
+def LastTimeMessageSent = state.LastTimeMessageSent as Long
+    def MessageTimeDelay = now() > LastTimeMessageSent + MessageMinutes
 
     // for when it previously failed to turn off thermostats
     def AllContactsClosed = AllContactsAreClosed()
@@ -2480,7 +2480,9 @@ def OkToOpen(){
         state.messageclosed = message
         // send a reminder every X minutes 
         def MessageMinutes = 60*60000 as Long
-        def MessageTimeDelay = now() > state.LastTimeMessageSent + MessageMinutes
+        def LastTimeMessageSent = state.LastTimeMessageSent as Long
+        log.debug "LastTimeMessageSent = $LastTimeMessageSent"
+        def MessageTimeDelay = now() > LastTimeMessageSent + MessageMinutes
 
         if(MessageTimeDelay && ContactsClosed) {
             send(message)
