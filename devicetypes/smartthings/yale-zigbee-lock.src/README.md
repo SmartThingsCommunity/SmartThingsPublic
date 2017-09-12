@@ -4,11 +4,11 @@ Cloud Execution
 
 Works with: 
 
-* KwikSet SmartCode 910 Deadbolt Door Lock
-* KwikSet SmartCode 910 Contemporary Deadbolt Door Lock
-* KwikSet SmartCode 912 Lever Door Lock
-* KwikSet SmartCode 914 Deadbolt Door Lock
-* KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock
+* [Yale Push Button Deadbolt (YRD210-HA)](https://www.smartthings.com/works-with-smartthings/door-locks/yale-push-button-deadbolt-yrd210)
+* [Yale Touchscreen Lever (YRL220-ZB)](https://www.smartthings.com/works-with-smartthings/door-locks/yale-touchscreen-lever-yrl220)
+* [Yale Touchscreen Deadbolt (YRD220-HA))](https://www.smartthings.com/works-with-smartthings/door-locks/yale-touchscreen-deadbolt-yrd220)
+* [Yale Key Free Touchscreen Deadbolt (YRD240-HA)](https://www.smartthings.com/works-with-smartthings/door-locks/yale-key-free-touchscreen-deadbolt-yrd240)
+* [Yale Push Button Lever Lock (YRL210-HA)](https://www.smartthings.com/works-with-smartthings/door-locks/yale-push-button-lever-lock-yrl210)
 
 ## Table of contents
 
@@ -21,6 +21,7 @@ Works with:
 
 * **Actuator** - represents that a Device has commands
 * **Lock** - allows for the control of a lock device
+* **Lock Codes** - allows for the lock code control of a lock device
 * **Refresh** - _refresh()_ command for status updates
 * **Sensor** - detects sensor events
 * **Battery** - defines device uses a battery
