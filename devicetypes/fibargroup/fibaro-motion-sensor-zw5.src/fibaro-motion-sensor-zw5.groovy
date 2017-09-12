@@ -39,8 +39,8 @@ metadata {
             }
 
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
-				attributeState("active", label:'tamper active', backgroundColor:"#00a0dc")
-				attributeState("inactive", label:'tamper inactive', backgroundColor:"#cccccc")
+				attributeState("detected", label:'tampered', backgroundColor:"#00a0dc")
+				attributeState("clear", label:'tamper clear', backgroundColor:"#cccccc")
 			}
         }
 
@@ -67,6 +67,20 @@ metadata {
 
         main "FGMS"
         details(["FGMS","battery","temperature","illuminance"])
+    }
+}
+
+def installed() {
+	sendEvent(name: "tamper", value: "clear", displayed: false)
+}
+
+def updated() {
+	def tamperValue = device.latestValue("tamper")
+    
+    if (tamperValue == "active") {
+    	sendEvent(name: "tamper", value: "detected", displayed: false)
+    } else if (tamperValue == "inactive") {
+    	sendEvent(name: "tamper", value: "clear", displayed: false)
     }
 }
 
@@ -150,26 +164,26 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
         	case 0:
             	if (cmd.eventParameter[0] == 3) {
             		map.name = "tamper"
-                    map.value = "inactive"
-                    map.descriptionText = "${device.displayName}: tamper alarm has been deactivated"
+                    map.value = "clear"
+                    map.descriptionText = "Tamper alert cleared"
             	}
             	if (cmd.eventParameter[0] == 8) {
                 	map.name = "motion"
                     map.value = "inactive"
-                    map.descriptionText = "${device.displayName}: motion has stopped"
+                    map.descriptionText = "${device.displayName} motion has stopped"
                 }
         		break
 
         	case 3:
             	map.name = "tamper"
-                map.value = "active"
-                map.descriptionText = "${device.displayName}: tamper alarm activated"
+                map.value = "detected"
+                map.descriptionText = "Tamper alert: sensor removed or covering opened"
             	break
 
             case 8:
                 map.name = "motion"
                 map.value = "active"
-                map.descriptionText = "${device.displayName}: motion detected"
+                map.descriptionText = "${device.displayName} detected motion"
                 break
         }
     }
@@ -239,6 +253,23 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 	log.info "${device.displayName}: received command: $cmd - device has reset itself"
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
+	def map = [:]
+	map.value = cmd.sensorValue ? "active" : "inactive"
+	map.name = "motion"
+	if (map.value == "active") {
+		map.descriptionText = "${device.displayName} detected motion"
+	}
+	else {
+		map.descriptionText = "${device.displayName} motion has stopped"
+	}
+	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	log.debug "Catchall reached for cmd: $cmd"
+}
+
 def configure() {
 	log.debug "Executing 'configure'"
 	// Device-Watch simply pings if no device events received for 8 hrs & 2 minutes
@@ -247,14 +278,13 @@ def configure() {
     def cmds = []
 
     cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 7200, nodeid: zwaveHubNodeId)//FGMS' default wake up interval
-    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
     cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
-    cmds += zwave.versionV1.versionGet()
     cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
     cmds += zwave.batteryV1.batteryGet()
     cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
     cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
-    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
+    cmds += zwave.sensorBinaryV2.sensorBinaryGet()
+	cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
 
     encapSequence(cmds, 500)
 }
