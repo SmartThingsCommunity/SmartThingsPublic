@@ -350,9 +350,8 @@ void lowerCoolSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-    	//sendEvent(name: 'coolingSetpoint', value: Setpoint, unit: theTemp, displayed: false)
         sendEvent(name: 'coolingSetpoint', value: Setpoint,  displayed: false)
-    	//sendEvent(name: 'heatingSetpoint', value: Setpoint, unit: theTemp, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: Setpoint,  displayed: false)
        
         generateSetTempEvent(Setpoint)
         
@@ -410,7 +409,9 @@ void raiseCoolSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-        sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)    	
+        sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: Setpoint, displayed: false)
+        
         generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -436,7 +437,9 @@ void raiseHeatSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-        sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)    	
+        sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: Setpoint, displayed: false)
+        
         generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -462,7 +465,9 @@ void lowerHeatSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-        sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)    	
+        sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)    
+        sendEvent(name: 'thermostatSetpoint', value: Setpoint, displayed: false)
+        
         generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -494,6 +499,7 @@ def setCoolingSetpoint(temp) {
   		generateModeEvent("cool")
          
     	sendEvent(name: 'coolingSetpoint', value: temp, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	//sendEvent(name: 'heatingSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
     }
@@ -515,6 +521,7 @@ def setHeatingSetpoint(temp) {
     	generateModeEvent("heat")
     	//sendEvent(name: 'coolingSetpoint', value: temp, displayed: false)
     	sendEvent(name: 'heatingSetpoint', value: temp, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
 	}	
     else {
@@ -1712,7 +1719,7 @@ def parseEventData(Map results)
 					isStateChange: isChange,
 					displayed: isDisplayed)
             	}
-            else if (name=="coolingSetpoint" || name== "heatingSetpoint") {           	
+            else if (name=="coolingSetpoint" || name== "heatingSetpoint" || name == "thermostatSetpoint") {           	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = false
                 
