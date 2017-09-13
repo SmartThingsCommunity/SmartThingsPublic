@@ -29,11 +29,8 @@ preferences() {
 	section("Choose thermostat... ") {
 		input "thermostat", "capability.thermostat"
 	}
-	section("Heating setting..." ) {
-		input "heatingSetpoint", "decimal", title: "Degrees"
-	}
-	section("Cooling setting...") {
-		input "coolingSetpoint", "decimal", title: "Degrees"
+	section("Choose threshold...") {
+		input "threshold", "decimal", title: "Degrees"
 	}
 	section("Remote thermostat set point... ") {
 		input "remoteSetpoint", "decimal", title: "Degrees"
@@ -81,7 +78,6 @@ def temperatureHandler(evt)
 private evaluate()
 {
 	if (sensor) {
-		def threshold = 1.0
 		def tm = thermostat.currentThermostatMode
 		def ct = thermostat.currentTemperature
 		def currentTemp = sensor.currentTemperature
@@ -104,7 +100,7 @@ private evaluate()
 				thermostat.setHeatingSetpoint(ct + 2)
 				log.debug "thermostat.setHeatingSetpoint(${ct + 2}), ON"
 			}
-			else if (currentTemp - heatingSetpoint >= threshold) {
+			else if (currentTemp - remoteSetpoint >= threshold) {
 				thermostat.setHeatingSetpoint(ct - 2)
 				log.debug "thermostat.setHeatingSetpoint(${ct - 2}), OFF"
 			}
