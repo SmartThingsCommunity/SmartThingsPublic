@@ -10,9 +10,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Keep Me Cozy II
+ *  Keep Me Cozy II Author: SmartThings
  *
- *  Author: SmartThings
+ *  Keep My Server Cozy Author: Juan Chong - juan@highcurrent.io
  */
 
 definition(
@@ -35,7 +35,7 @@ preferences() {
 	section("Remote thermostat set point... ") {
 		input "remoteSetpoint", "decimal", title: "Degrees"
 	}
-	section("Choose temperature sensor to use instead of the thermostat's... ") {
+	section("Choose temperature sensor to use instead of the thermostat... ") {
 		input "sensor", "capability.temperatureMeasurement", title: "Temp Sensor", required: true
 	}
 }
@@ -82,7 +82,7 @@ private evaluate()
 		def ct = thermostat.currentTemperature
 		def currentTemp = sensor.currentTemperature
 		log.trace("evaluate:, mode: $tm -- temp: $ct, heat: $thermostat.currentHeatingSetpoint, cool: $thermostat.currentCoolingSetpoint -- "  +
-			"sensor: $currentTemp, remote point: $remoteSetpoint, heat: $heatingSetpoint, cool: $coolingSetpoint")
+			"sensor: $currentTemp, remote point: $remoteSetpoint")
 		if (tm in ["cool","auto"]) {
 			// air conditioner
 			if (currentTemp - remoteSetpoint >= threshold) {
@@ -107,8 +107,6 @@ private evaluate()
 		}
 	}
 	else {
-		//thermostat.setHeatingSetpoint(heatingSetpoint)
-		//thermostat.setCoolingSetpoint(coolingSetpoint)
 		thermostat.poll()
 	}
 }
@@ -118,5 +116,5 @@ def coolingSetpointHandler(evt) {
 	log.debug "coolingSetpointHandler()"
 }
 def heatingSetpointHandler (evt) {
-	log.debug "heatingSetpointHandler ()"
+	log.debug "heatingSetpointHandler()"
 }
