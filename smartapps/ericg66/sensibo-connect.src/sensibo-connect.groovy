@@ -639,6 +639,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
         tData.data.targetTemperature = targetTemperature
         tData.data.coolingSetpoint = targetTemperature
         tData.data.heatingSetpoint = targetTemperature
+        tData.data.thermostatSetpoint = targetTemperature
         tData.data.temperatureUnit = sUnit
         tData.data.swing = swingM
         tData.data.Error = "Success"
@@ -791,6 +792,7 @@ def getACState(PodUid)
                             thermostatFanMode : stat.acState.fanLevel,
                             coolingSetpoint : stemp,
                             heatingSetpoint : stemp,
+                            thermostatSetpoint : stemp,
                             temperatureUnit : stat.acState.temperatureUnit,
                             swing : stat.acState.swing,
                             powerSource : battery,
@@ -816,6 +818,7 @@ def getACState(PodUid)
                  thermostatFanMode : "--",
                  coolingSetpoint : "0",
                  heatingSetpoint : "0",
+                 thermostatSetpoint : "0",
                  temperatureUnit : "",
                  swing : "--",
                  powerSource : "",
@@ -844,6 +847,7 @@ def getACState(PodUid)
             thermostatFanMode : "--",
             coolingSetpoint : "0",
             heatingSetpoint : "0",
+            thermostatSetpoint : "0",
             temperatureUnit : "",
             swing : "--",
             powerSource : "",
@@ -972,6 +976,7 @@ def pollChildren(PodUid)
                         thermostatFanMode: setTemp.fanLevel,
                         coolingSetpoint: setTemp.targetTemperature,
                         heatingSetpoint: setTemp.targetTemperature,
+                        thermostatSetpoint: setTemp.targetTemperature,
                         temperatureUnit : setTemp.temperatureUnit,
                         voltage : battVoltage,
                         swing : setTemp.swing,
