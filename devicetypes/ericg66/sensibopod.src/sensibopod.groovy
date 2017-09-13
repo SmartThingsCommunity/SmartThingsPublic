@@ -53,6 +53,8 @@ metadata {
         command "raiseTemperature"
         command "lowerTemperature"
         command "switchSwing"
+        command "setThermostatMode"
+       
 	}
 
 	simulator {
@@ -111,7 +113,7 @@ metadata {
                 attributeState("cool", label:'${name}')    			
                 attributeState("fan", label:'${name}')
                 attributeState("dry", label:'${name}')
-    			//attributeState("auto", label:'${name}')
+    			attributeState("auto", label:'${name}')
   			}            
             tileAttribute("device.swing", key: "swing") {
     			attributeState("stopped", label:'${name}')
@@ -184,8 +186,8 @@ metadata {
             state "heat", action:"switchMode", backgroundColor:"#e86d13", icon:"https://image.ibb.co/c7Grh5/sun.png", nextState:"cool"
             state "cool", action:"switchMode", backgroundColor:"#00a0dc", icon:"https://image.ibb.co/bZ56FQ/cold.png", nextState:"fan"
             state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/n1dhpk/status_message_fan.png", nextState:"dry"
-            state "dry", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/k2ZNpk/dry_mode.png", nextState:"heat"
-            //state "auto", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/dwaRh5/auto_mode.png", nextState:"heat"               
+            state "dry", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/k2ZNpk/dry_mode.png", nextState:"auto"
+            state "auto", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/dwaRh5/auto_mode.png", nextState:"heat"               
         }
         
         standardTile("upCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
@@ -228,9 +230,10 @@ def temperatureDown(temp)
     else values = capabilities.remoteCapabilities.temperatures.C.values
     
     def found = values.findAll{number -> number < temp}
+       
 	log.debug "Values retrieved : " + found
     
-    if (found == null) found = values.first()
+    if (found == null || found.empty) found = values.first()
     else found = found.last()
         
     log.debug "Temp before : " + temp               
@@ -253,7 +256,7 @@ def temperatureUp(temp)
     def found = values.findAll{number -> number > temp}
 
     log.debug "Values retrieved : " + found
-    if (found == null) found = values.last()
+    if (found == null || found.empty) found = values.last()
     else found = found.first()
 
     log.debug "Temp before : " + temp               
@@ -281,6 +284,14 @@ void raiseTemperature() {
         case "cool":
         	setCoolingSetpoint(Setpoint)
             break;
+        case "fan":
+            setHeatingSetpoint(Setpoint)
+        	setCoolingSetpoint(Setpoint)
+        	break;
+         case "dry":
+            setHeatingSetpoint(Setpoint)
+        	setCoolingSetpoint(Setpoint)
+        	break;
         case "auto":
             setHeatingSetpoint(Setpoint)
         	setCoolingSetpoint(Setpoint)
@@ -307,6 +318,14 @@ void lowerTemperature() {
         case "cool":
         	setCoolingSetpoint(Setpoint)
             break;
+        case "fan":
+            setHeatingSetpoint(Setpoint)
+        	setCoolingSetpoint(Setpoint)
+        	break;
+         case "dry":
+            setHeatingSetpoint(Setpoint)
+        	setCoolingSetpoint(Setpoint)
+        	break;
         case "auto":
             setHeatingSetpoint(Setpoint)
         	setCoolingSetpoint(Setpoint)
@@ -331,9 +350,8 @@ void lowerCoolSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-    	//sendEvent(name: 'coolingSetpoint', value: Setpoint, unit: theTemp, displayed: false)
         sendEvent(name: 'coolingSetpoint', value: Setpoint,  displayed: false)
-    	//sendEvent(name: 'heatingSetpoint', value: Setpoint, unit: theTemp, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: Setpoint,  displayed: false)
        
         generateSetTempEvent(Setpoint)
         
@@ -345,6 +363,36 @@ void lowerCoolSetpoint() {
     }
 	generateStatusEvent()
     refresh()
+}
+
+
+void setThermostatMode(modes)
+{ 
+	log.debug "setThermostatMode"
+  	//def currentMode = device.currentState("mode")?.value
+  
+  	log.debug "switching AC mode from current mode: $currentMode"
+
+  	switch (modes) {
+		case "cool":
+			modeCool()
+			break
+		//case "fan":
+		//	returnCommand = modeFan()
+		//	break		
+		//case "dry":
+		//	returnCommand = modeDry()
+		//	break
+        case "auto":
+	        modeAuto()
+			break
+        case "heat":
+			modeHeat()
+			break
+        case "off":
+            off()
+            break
+	}
 }
 
 void raiseCoolSetpoint() {
@@ -361,7 +409,9 @@ void raiseCoolSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-        sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)    	
+        sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: Setpoint, displayed: false)
+        
         generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -387,7 +437,9 @@ void raiseHeatSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-        sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)    	
+        sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: Setpoint, displayed: false)
+        
         generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -413,7 +465,9 @@ void lowerHeatSetpoint() {
     if (result) {
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
-        sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)    	
+        sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)    
+        sendEvent(name: 'thermostatSetpoint', value: Setpoint, displayed: false)
+        
         generateSetTempEvent(Setpoint)
         
     	log.debug "New target Temperature = ${Setpoint}"       
@@ -445,6 +499,7 @@ def setCoolingSetpoint(temp) {
   		generateModeEvent("cool")
          
     	sendEvent(name: 'coolingSetpoint', value: temp, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	//sendEvent(name: 'heatingSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
     }
@@ -466,6 +521,7 @@ def setHeatingSetpoint(temp) {
     	generateModeEvent("heat")
     	//sendEvent(name: 'coolingSetpoint', value: temp, displayed: false)
     	sendEvent(name: 'heatingSetpoint', value: temp, displayed: false)
+        sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
 	}	
     else {
@@ -700,7 +756,8 @@ def switchMode() {
 			returnCommand = modeDry()
 			break
         case "dry":
-			returnCommand = modeHeat()
+			//returnCommand = modeHeat()
+            returnCommand = modeAuto()
 			break
         case "auto":
 			returnCommand = modeHeat()
@@ -950,14 +1007,17 @@ def GetNextMode(mode, modes)
             	if (modes.remoteCapabilities.containsKey("cool")) return "cool"
                 if (modes.remoteCapabilities.containsKey("fan")) return "fan"
                 if (modes.remoteCapabilities.containsKey("dry")) return "dry"
+                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
                 break
         	case "cool":
             	if (modes.remoteCapabilities.containsKey("fan")) return "fan"
                 if (modes.remoteCapabilities.containsKey("dry")) return "dry"
-                if (modes.remoteCapabilities.containsKey("heat")) return "heat"
+                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
+                if (modes.remoteCapabilities.containsKey("heat")) return "heat"                
                 break
         	case "dry":
             	log.debug "ici"
+                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
             	if (modes.remoteCapabilities.containsKey("heat")) return "heat"
                 if (modes.remoteCapabilities.containsKey("cool")) return "cool"
                 if (modes.remoteCapabilities.containsKey("fan")) return "fan"
@@ -965,8 +1025,15 @@ def GetNextMode(mode, modes)
                 break
         	case "fan":
             	if (modes.remoteCapabilities.containsKey("dry")) return "dry"
+                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
                 if (modes.remoteCapabilities.containsKey("heat")) return "heat"
                 if (modes.remoteCapabilities.containsKey("cool")) return "cool"
+                break
+            case "auto":
+            	if (modes.remoteCapabilities.containsKey("heat")) return "heat"
+                if (modes.remoteCapabilities.containsKey("cool")) return "cool"
+                if (modes.remoteCapabilities.containsKey("fan")) return "fan"
+                if (modes.remoteCapabilities.containsKey("dry")) return "dry"
                 break
         }
     }    
@@ -979,7 +1046,6 @@ def NextMode(sMode)
     	switch (sMode)
         {
          	case "heat":
-            	log.debug "la"
             	modeHeat()
             	break
             case "cool":
@@ -1653,7 +1719,7 @@ def parseEventData(Map results)
 					isStateChange: isChange,
 					displayed: isDisplayed)
             	}
-            else if (name=="coolingSetpoint" || name== "heatingSetpoint") {           	
+            else if (name=="coolingSetpoint" || name== "heatingSetpoint" || name == "thermostatSetpoint") {           	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
                 isDisplayed = false
                 
@@ -1835,7 +1901,7 @@ def parse(String description) {
 	def value = null
     def statusTextmsg = ""   
     def msg = parseLanMessage(description)
-
+        
     def headersAsString = msg.header // => headers as a string
     def headerMap = msg.headers      // => headers as a Map
     def body = msg.body              // => request body as a string
