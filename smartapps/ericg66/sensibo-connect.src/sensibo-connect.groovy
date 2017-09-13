@@ -248,6 +248,14 @@ def hournotification() {
     }
 }
 
+//def switchesHandler(evt)
+//{
+//  if (evt.value == "on") {
+//        log.debug "switch turned on!"
+//    } else if (evt.value == "off") {
+//        log.debug "switch turned off!"
+//    }
+//}
 
 def eTempUnitHandler(evt)
 {
@@ -537,6 +545,10 @@ def pollChild( child )
 		atomicState.lastPollMillis = currentTime
 
 		def tData = atomicState.sensibo[child.device.deviceNetworkId]
+        
+        if (tData == null) return
+        
+        log.debug  "DEBUG - TDATA" + tData
         debugEvent ("Error in Poll ${tData.data.Error}",false)
         //tData.Error = false
         //tData.data.Error = "Failed"
@@ -595,7 +607,13 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
     def OnOff = (on == "on") ? true : false
     if (swingM == null) swingM = "stopped"
     
-   	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '","temperatureUnit": "' + sUnit + '"}}'
+    log.debug "Target Temperature :" + targetTemperature
+    
+	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '","temperatureUnit": "' + sUnit + '"}}'
+    
+    if (targetTemperature == 0) {
+    	jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + ',"swing": "' + swingM + '"}}'
+    }
     
     log.debug "Mode Request Body = ${jsonRequestBody}"
 	debugEvent ("Mode Request Body = ${jsonRequestBody}")
@@ -604,6 +622,9 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 
 	if (result) {
 		def tData = atomicState.sensibo[child.device.deviceNetworkId]
+        
+        if (tData == null) return false
+        
 		tData.data.fanLevel = fanLevel
         tData.data.thermostatFanMode = fanLevel
         tData.data.on = on
@@ -618,6 +639,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
         tData.data.targetTemperature = targetTemperature
         tData.data.coolingSetpoint = targetTemperature
         tData.data.heatingSetpoint = targetTemperature
+        tData.data.thermostatSetpoint = targetTemperature
         tData.data.temperatureUnit = sUnit
         tData.data.swing = swingM
         tData.data.Error = "Success"
@@ -646,7 +668,7 @@ def getCapabilities(PodUid, mode)
          if (resp.data) {
          		log.debug "Status : " + resp.status
                 if(resp.status == 200) {
-                	resp.data = [result: [remoteCapabilities: [modes: [heat: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], fan: [swing: ["stopped", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], cool: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: ["C": ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "high", "auto"]]]]]]
+                	//resp.data = [result: [remoteCapabilities: [modes: [heat: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], fan: [swing: ["stopped", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], cool: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: ["C": ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "high", "auto"]]]]]]
                     switch (mode){
                     	case "dry":
                         	data = [
@@ -741,12 +763,12 @@ def getACState(PodUid)
                         stat.acState.on = OnOff
 						
 						def stemp 
-						if (stat.acState.mode=="fan"){
-							stemp = stat.device.measurements.temperature.toInteger()
-						}
-						else {
+						//if (stat.acState.mode=="fan"){
+						//	stemp = stat.device.measurements.temperature.toInteger()
+						//}
+						//else {
 							stemp = stat.acState.targetTemperature.toInteger()
-						}					
+						//}					
 					
                         def tMode                        
                         if (OnOff=="off") {
@@ -770,6 +792,7 @@ def getACState(PodUid)
                             thermostatFanMode : stat.acState.fanLevel,
                             coolingSetpoint : stemp,
                             heatingSetpoint : stemp,
+                            thermostatSetpoint : stemp,
                             temperatureUnit : stat.acState.temperatureUnit,
                             swing : stat.acState.swing,
                             powerSource : battery,
@@ -795,6 +818,7 @@ def getACState(PodUid)
                  thermostatFanMode : "--",
                  coolingSetpoint : "0",
                  heatingSetpoint : "0",
+                 thermostatSetpoint : "0",
                  temperatureUnit : "",
                  swing : "--",
                  powerSource : "",
@@ -823,6 +847,7 @@ def getACState(PodUid)
             thermostatFanMode : "--",
             coolingSetpoint : "0",
             heatingSetpoint : "0",
+            thermostatSetpoint : "0",
             temperatureUnit : "",
             swing : "--",
             powerSource : "",
@@ -895,8 +920,17 @@ def pollChildren(PodUid)
 			}
 
 			if(resp.status == 200) {
-				log.debug "poll results returned"
-				def setTemp = getACState(thermostatIdsString)
+				log.debug "poll results returned"                                
+
+                log.debug "DEBUG DATA RESULT" + resp.data.result
+                
+                if (resp.data.result == null || resp.data.result.empty) 
+                {
+                	log.debug "Cannot get measurement from the API, should ask Sensibo Support Team"
+                	debugEvent ("Cannot get measurement from the API, should ask Sensibo Support Team",true)
+                }
+                
+                def setTemp = getACState(thermostatIdsString)
                 if (setTemp.Error != "Failed") {
                 
 				 atomicState.sensibo = resp.data.result.inject([:]) { collector, stat ->
@@ -942,6 +976,7 @@ def pollChildren(PodUid)
                         thermostatFanMode: setTemp.fanLevel,
                         coolingSetpoint: setTemp.targetTemperature,
                         heatingSetpoint: setTemp.targetTemperature,
+                        thermostatSetpoint: setTemp.targetTemperature,
                         temperatureUnit : setTemp.temperatureUnit,
                         voltage : battVoltage,
                         swing : setTemp.swing,
@@ -961,7 +996,7 @@ def pollChildren(PodUid)
                 }
                 
 				log.debug "updated ${atomicState.sensibo[thermostatIdsString].size()} stats: ${atomicState.sensibo[thermostatIdsString]}"
-                debugEvent ("TEST TEST ${atomicState.sensibo[thermostatIdsString]}",false)
+                debugEvent ("updated ${atomicState.sensibo[thermostatIdsString]}",false)
 			}
 			else
 			{
