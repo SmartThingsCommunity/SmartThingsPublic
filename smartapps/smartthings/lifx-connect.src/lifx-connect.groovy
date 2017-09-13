@@ -4,6 +4,9 @@
  *  Copyright 2015 LIFX
  *
  */
+include 'localization'
+include 'cirrus'
+
 definition(
 		name: "LIFX (Connect)",
 		namespace: "smartthings",
@@ -17,8 +20,15 @@ definition(
 		singleInstance: true) {
 	appSetting "clientId"
 	appSetting "clientSecret"
+	appSetting "serverUrl" // See note below
 }
 
+// NOTE regarding OAuth settings. On NA01 (i.e. graph.api), NA01S, and NA01D the serverUrl app setting can be left
+// Blank. For other shards is should be set to the callback URL registered with LIFX, which is:
+//
+// Production  -- https://graph.api.smartthings.com
+// Staging     -- https://graph-na01s-useast1.smartthingsgdev.com
+// Development -- https://graph-na01d-useast1.smartthingsgdev.com
 
 preferences {
 	page(name: "Credentials", title: "LIFX", content: "authPage", install: true)
@@ -27,17 +37,18 @@ preferences {
 mappings {
 	path("/receivedToken") { action: [ POST: "oauthReceivedToken", GET: "oauthReceivedToken"] }
 	path("/receiveToken") { action: [ POST: "oauthReceiveToken", GET: "oauthReceiveToken"] }
-	path("/hookCallback") { action: [ POST: "hookEventHandler", GET: "hookEventHandler"] }
+	path("/webhookCallback") { action: [ POST: "webhookCallback"] }
 	path("/oauth/callback") { action: [ GET: "oauthCallback" ] }
 	path("/oauth/initialize") { action: [ GET: "oauthInit"] }
 	path("/test") { action: [ GET: "oauthSuccess" ] }
 }
 
-def getServerUrl()               { return "https://graph.api.smartthings.com" }
-def getCallbackUrl()             { return "https://graph.api.smartthings.com/oauth/callback"}
+def getServerUrl()               { return  appSettings.serverUrl ?: apiServerUrl }
+def getCallbackUrl()             { return "${getServerUrl()}/oauth/callback" }
 def apiURL(path = '/') 			 { return "https://api.lifx.com/v1${path}" }
 def getSecretKey()               { return appSettings.secretKey }
 def getClientId()                { return appSettings.clientId }
+private getVendorName() { "LIFX" }
 
 def authPage() {
 	log.debug "authPage test1"
@@ -62,11 +73,12 @@ def authPage() {
 		log.debug "have LIFX access token"
 
 		def options = locationOptions() ?: []
-		def count = options.size()
+		def count = options.size().toString()
 
 		return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
 			section("Select your location") {
-				input "selectedLocationId", "enum", required:true, title:"Select location (${count} found)", multiple:false, options:options, submitOnChange: true
+				input "selectedLocationId", "enum", required:true, title:"Select location ({{count}} found)", messageArgs: [count: count], multiple:false, options:options, submitOnChange: true
+				paragraph "Devices will be added automatically from your ${vendorName} account. To add or delete devices please use the Official ${vendorName} App."
 			}
 		}
 	}
@@ -76,7 +88,7 @@ def authPage() {
 
 def oauthInit() {
 	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote_control:all", response_type: "code" ]
-	log.info("Redirecting user to OAuth setup")
+	log.debug("Redirecting user to OAuth setup")
 	redirect(location: "https://cloud.lifx.com/oauth/authorize?${toQueryString(oauthParams)}")
 }
 
@@ -254,23 +266,27 @@ def updated() {
 }
 
 def uninstalled() {
-	log.info("Uninstalling, removing child devices...")
-	unschedule('updateDevices')
-	removeChildDevices(getChildDevices())
-}
-
-private removeChildDevices(devices) {
-	devices.each {
-		deleteChildDevice(it.deviceNetworkId) // 'it' is default
-	}
+	cirrus.unregisterServiceManager()
 }
 
 // called after Done is hit after selecting a Location
 def initialize() {
 	log.debug "initialize"
-	updateDevices()
-	// Check for new devices and remove old ones every 3 hours
-	runEvery5Minutes('updateDevices')
+
+	if (cirrusEnabled) {
+		// Create the devices
+		updateDevicesFromResponse(devicesInLocation())
+
+		// Sync with Cirrus once per day to ensure consistency and maintain polling by Gadfly
+		runDaily(new Date(), registerWithCirrus)
+	}
+	else {
+		// Create the devices and generate events for their initial state
+		updateDevices()
+
+		// Check for new devices and remove old ones every 3 hours
+		runEvery5Minutes('updateDevices')
+	}
 	setupDeviceWatch()
 }
 
@@ -294,8 +310,8 @@ Map apiRequestHeaders() {
 // Requests
 
 def logResponse(response) {
-	log.info("Status: ${response.status}")
-	log.info("Body: ${response.data}")
+	log.debug("Status: ${response.status}")
+	log.debug("Body: ${response.data}")
 }
 
 // API Requests
@@ -346,7 +362,7 @@ def devicesList(selector = '') {
 		if (resp.status == 200) {
 			return resp.data
 		} else {
-			log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+			log.debug("No response from device list call. ${resp.status} ${resp.data}")
 			return []
 		}
 	}
@@ -366,8 +382,58 @@ def devicesInLocation() {
 	return devicesList("location_id:${settings.selectedLocationId}")
 }
 
-// ensures the devices list is up to date
-def updateDevices() {
+def webhookCallback() {
+	log.debug "webhookCallback"
+	def data = request.JSON
+	log.debug data
+	if (data) {
+		updateDevicesFromResponse(data)
+		[status: "ok", source: "smartApp"]
+	}
+	else {
+		[status: "operation not defined", source: "smartApp"]
+	}
+}
+
+// Cirrus version that only creates and deletes devices, since Cirrus and Gadfly are responsible for updating
+void updateDevicesFromResponse(devices) {
+	log.debug("updateDevicesFromResponse(${devices.size()})")
+	def changed = false
+	def deviceIds = []
+	def children = getChildDevices()
+	devices.each { device ->
+		deviceIds << device.id
+		def childDevice = children.find {it.deviceNetworkId == device.id}
+		if (!childDevice) {
+			log.trace "adding child device $device.label"
+			if (device.product.capabilities.has_color) {
+				addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+			} else {
+				addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+			}
+			changed = true
+		}
+	}
+
+	children.findAll { !deviceIds.contains(it.deviceNetworkId) }.each {
+		log.trace "deleting child device $it.label"
+		deleteChildDevice(it.deviceNetworkId, true)
+		changed = true
+	}
+
+	if (changed) {
+		// Run in a separate sandbox instance because caching issues can prevent children from being picked up
+		runIn(1, registerWithCirrus)
+	}
+}
+
+// Non-Cirrus version that updates devices and generates events
+void updateDevices() {
+	if (cirrusEnabled) {
+		switchToCirrus()
+		return
+	}
+
 	if (!state.devices) {
 		state.devices = [:]
 	}
@@ -417,10 +483,36 @@ def updateDevices() {
 		state.devices[device.id] = [online: device.connected]
 	}
 	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
-		log.info("Deleting ${it.deviceNetworkId}")
-		state.devices[it.deviceNetworkId] = null
-		deleteChildDevice(it.deviceNetworkId)
+		log.debug("Deleting ${it.deviceNetworkId}")
+		if (state.devices[it.deviceNetworkId])
+			state.devices[it.deviceNetworkId] = null
+		// The reason the implementation is trying to delete this bulb is because it is not longer connected to the LIFX location.
+		// Adding "try" will prevent this exception from happening.
+		// Ideally device health would show to the user that the device is not longer accessible so that the user can either force delete it or remove it from the SmartApp.
+		try {
+			deleteChildDevice(it.deviceNetworkId)
+		} catch (Exception e) {
+			log.debug("Can't remove this device because it's being used by an SmartApp")
+		}
 	}
 }
 
+boolean getCirrusEnabled() {
+	def result = cirrus.enabled("smartthings.cdh.handlers.LifxLightHandler")
+	log.debug "cirrusEnabled=$result"
+	result
+}
 
+void switchToCirrus() {
+	log.info "Switching to cirrus"
+	registerWithCirrus()
+	unschedule()
+	runDaily(new Date(), registerWithCirrus)
+}
+
+def registerWithCirrus() {
+	cirrus.registerServiceManager("smartthings.cdh.handlers.LifxLightHandler", [
+			remoteAuthToken: state.lifxAccessToken,
+			lifxLocationId: settings.selectedLocationId,
+	])
+}

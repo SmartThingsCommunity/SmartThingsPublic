@@ -42,7 +42,7 @@
  */
 
 metadata {
-    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 
         capability "Actuator"
         capability "Configuration"
@@ -61,9 +61,9 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00a0dc", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00a0dc", nextState:"turningOff"
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -99,7 +99,7 @@ def parse(String description) {
 
 def poll() {
     def refreshCmds = [
-        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 500"
+        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 2000"
     ]
 
     return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh()
@@ -197,7 +197,7 @@ def off() {
 
 def refresh() {
     def refreshCmds = [
-        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 500"
+        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 2000"
     ]
 
     return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig()

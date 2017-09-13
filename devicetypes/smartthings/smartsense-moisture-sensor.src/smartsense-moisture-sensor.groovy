@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 
 metadata {
-	definition (name: "SmartSense Moisture Sensor",namespace: "smartthings", author: "SmartThings") {
+	definition(name: "SmartSense Moisture Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
@@ -29,9 +29,11 @@ metadata {
 		command "enrollResponse"
 
 
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-S", deviceJoinName: "Water Leak Sensor"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite",  model: "3315-Seu", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-S", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-Seu", deviceJoinName: "Water Leak Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-L", deviceJoinName: "Iris Smart Water Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3315-G", deviceJoinName: "Centralite Water Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "moisturev4", deviceJoinName: "Water Leak Sensor"
 	}
 
@@ -42,10 +44,10 @@ metadata {
 	preferences {
 		section {
 			image(name: 'educationalcontent', multiple: true, images: [
-				"http://cdn.device-gse.smartthings.com/Moisture/Moisture1.png",
-				"http://cdn.device-gse.smartthings.com/Moisture/Moisture2.png",
-				"http://cdn.device-gse.smartthings.com/Moisture/Moisture3.png"
-				])
+					"http://cdn.device-gse.smartthings.com/Moisture/Moisture1.png",
+					"http://cdn.device-gse.smartthings.com/Moisture/Moisture2.png",
+					"http://cdn.device-gse.smartthings.com/Moisture/Moisture3.png"
+			])
 		}
 		section {
 			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter '-5'. If 3 degrees too cold, enter '+3'.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
@@ -54,32 +56,32 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
-				attributeState "dry", label: "Dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-				attributeState "wet", label: "Wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+		multiAttributeTile(name: "water", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.water", key: "PRIMARY_CONTROL") {
+				attributeState "dry", label: "Dry", icon: "st.alarm.water.dry", backgroundColor: "#ffffff"
+				attributeState "wet", label: "Wet", icon: "st.alarm.water.wet", backgroundColor: "#00A0DC"
 			}
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
-			state "temperature", label:'${currentValue}°',
-				backgroundColors:[
-					[value: 31, color: "#153591"],
-					[value: 44, color: "#1e9cbb"],
-					[value: 59, color: "#90d2a7"],
-					[value: 74, color: "#44b621"],
-					[value: 84, color: "#f1d801"],
-					[value: 95, color: "#d04e00"],
-					[value: 96, color: "#bc2323"]
-				]
+			state "temperature", label: '${currentValue}°',
+					backgroundColors: [
+							[value: 31, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+					]
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-			state "battery", label:'${currentValue}% battery', unit:""
+			state "battery", label: '${currentValue}% battery', unit: ""
 		}
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-		main (["water", "temperature"])
+		main(["water", "temperature"])
 		details(["water", "temperature", "battery", "refresh"])
 	}
 }
@@ -87,115 +89,53 @@ metadata {
 def parse(String description) {
 	log.debug "description: $description"
 
-	Map map = [:]
-	if (description?.startsWith('catchall:')) {
-		map = parseCatchAllMessage(description)
-	}
-	else if (description?.startsWith('read attr -')) {
-		map = parseReportAttributeMessage(description)
-	}
-	else if (description?.startsWith('temperature: ')) {
-		map = parseCustomMessage(description)
-	}
-	else if (description?.startsWith('zone status')) {
-		map = parseIasMessage(description)
+	// getEvent will handle temperature and humidity
+	Map map = zigbee.getEvent(description)
+	if (!map) {
+		if (description?.startsWith('zone status')) {
+			map = parseIasMessage(description)
+		} else {
+			Map descMap = zigbee.parseDescriptionAsMap(description)
+			if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
+				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
+				if (descMap.data[0] == "00") {
+					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
+					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+				} else {
+					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
+				}
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
+				map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
+			}
+		}
+	} else if (map.name == "temperature") {
+		if (tempOffset) {
+			map.value = (int) map.value + (int) tempOffset
+		}
+		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
+		map.translatable = true
 	}
 
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : [:]
 
 	if (description?.startsWith('enroll request')) {
-		List cmds = enrollResponse()
+		List cmds = zigbee.enrollResponse()
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
 	return result
 }
 
-private Map parseCatchAllMessage(String description) {
-	Map resultMap = [:]
-	def cluster = zigbee.parse(description)
-	if (shouldProcessMessage(cluster)) {
-		switch(cluster.clusterId) {
-			case 0x0001:
-				// 0x07 - configure reporting
-				if (cluster.command != 0x07) {
-					resultMap = getBatteryResult(cluster.data.last())
-				}
-				break
-
-            case 0x0402:
-				if (cluster.command == 0x07) {
-					if (cluster.data[0] == 0x00){
-						log.debug "TEMP REPORTING CONFIG RESPONSE" + cluster
-						sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-					}
-					else {
-						log.warn "TEMP REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
-					}
-				}
-				else {
-					// temp is last 2 data values. reverse to swap endian
-					String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
-					def value = getTemperature(temp)
-					resultMap = getTemperatureResult(value)
-				}
-                break
-        }
-    }
-
-    return resultMap
-}
-
-private boolean shouldProcessMessage(cluster) {
-	// 0x0B is default response indicating message got through
-	boolean ignoredMessage = cluster.profileId != 0x0104 ||
-		cluster.command == 0x0B ||
-		(cluster.data.size() > 0 && cluster.data.first() == 0x3e)
-	return !ignoredMessage
-}
-
-private Map parseReportAttributeMessage(String description) {
-	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
-		def nameAndValue = param.split(":")
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-	}
-	log.debug "Desc Map: $descMap"
-
-	Map resultMap = [:]
-	if (descMap.cluster == "0402" && descMap.attrId == "0000") {
-		def value = getTemperature(descMap.value)
-		resultMap = getTemperatureResult(value)
-	}
-	else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
-		resultMap = getBatteryResult(Integer.parseInt(descMap.value, 16))
-	}
-
-	return resultMap
-}
-
-private Map parseCustomMessage(String description) {
-	Map resultMap = [:]
-	if (description?.startsWith('temperature: ')) {
-		def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
-		resultMap = getTemperatureResult(value)
-	}
-	return resultMap
-}
-
 private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
-	return zs.isAlarm1Set() ? getMoistureResult('wet') : getMoistureResult('dry')
+	translateZoneStatus(zs)
 }
 
-def getTemperature(value) {
-	def celsius = Integer.parseInt(value, 16).shortValue() / 100
-	if(getTemperatureScale() == "C"){
-		return Math.round(celsius)
-	} else {
-		return Math.round(celsiusToFahrenheit(celsius))
-	}
+private Map translateZoneStatus(ZoneStatus zs) {
+	return zs.isAlarm1Set() ? getMoistureResult('wet') : getMoistureResult('dry')
 }
 
 private Map getBatteryResult(rawValue) {
@@ -238,40 +178,18 @@ private Map getBatteryResult(rawValue) {
 	return result
 }
 
-private Map getTemperatureResult(value) {
-	log.debug 'TEMP'
-	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
-	}
-    def descriptionText
-    if ( temperatureScale == 'C' )
-    	descriptionText = '{{ device.displayName }} was {{ value }}°C'
-    else
-    	descriptionText = '{{ device.displayName }} was {{ value }}°F'
-
-	return [
-		name: 'temperature',
-		value: value,
-		descriptionText: descriptionText,
-		translatable: true,
-		unit: temperatureScale
-	]
-}
-
 private Map getMoistureResult(value) {
 	log.debug "water"
-    def descriptionText
-    if ( value == "wet" )
-    	descriptionText = '{{ device.displayName }} is wet'
-    else
-    	descriptionText = '{{ device.displayName }} is dry'
+	def descriptionText
+	if (value == "wet")
+		descriptionText = '{{ device.displayName }} is wet'
+	else
+		descriptionText = '{{ device.displayName }} is dry'
 	return [
-		name: 'water',
-		value: value,
-		descriptionText: descriptionText,
-        translatable: true
+			name           : 'water',
+			value          : value,
+			descriptionText: descriptionText,
+			translatable   : true
 	]
 }
 
@@ -284,12 +202,11 @@ def ping() {
 
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
-	def refreshCmds = [
-		"st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200"
-	]
+	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
-	return refreshCmds + enrollResponse()
+	return refreshCmds + zigbee.enrollResponse()
 }
 
 def configure() {
@@ -300,43 +217,4 @@ def configure() {
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	return refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
-}
-
-def enrollResponse() {
-	log.debug "Sending enroll response"
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-	[
-		//Resending the CIE in case the enroll request is sent before CIE is written
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-		//Enroll Response
-		"raw 0x500 {01 23 00 00 00}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
-	]
-}
-
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
-}
-
-private hex(value) {
-	new BigInteger(Math.round(value).toString()).toString(16)
-}
-
-private String swapEndianHex(String hex) {
-	reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-	int i = 0;
-	int j = array.length - 1;
-	byte tmp;
-	while (j > i) {
-		tmp = array[j];
-		array[j] = array[i];
-		array[i] = tmp;
-		j--;
-		i++;
-	}
-	return array
 }

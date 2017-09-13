@@ -89,9 +89,9 @@
             state "whiteLevel", action:"setWhiteLevel", label:'White Level'
         }
 		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-        	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821", nextState:"turningOff"
+        	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC", nextState:"turningOff"
             state "off", label:'${name}', action:"switch.on", icon:"st.illuminance.illuminance.dark", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "turningOn", label:'${name}', icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821"
+            state "turningOn", label:'${name}', icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC"
             state "turningOff", label:'${name}', icon:"st.illuminance.illuminance.dark", backgroundColor:"#ffffff"
         }
         valueTile("power", "device.power", decoration: "flat") {
@@ -300,15 +300,21 @@ def setColor(value) {
         value.hex = "#${hex(value.red)}${hex(value.green)}${hex(value.blue)}"
     }
 
-	sendEvent(name: "hue", value: value.hue, displayed: false)
-	sendEvent(name: "saturation", value: value.saturation, displayed: false)
-	sendEvent(name: "color", value: value.hex, displayed: false)
-	if (value.level) {
-		sendEvent(name: "level", value: value.level)
-	}
-	if (value.switch) {
-		sendEvent(name: "switch", value: value.switch)
-	}
+    if(value.hue) {
+        sendEvent(name: "hue", value: value.hue, displayed: false)
+    }
+    if(value.saturation) {
+        sendEvent(name: "saturation", value: value.saturation, displayed: false)
+    }
+    if(value.hex?.trim()) {
+        sendEvent(name: "color", value: value.hex, displayed: false)
+    }
+    if (value.level) {
+        sendEvent(name: "level", value: value.level)
+    }
+    if (value.switch?.trim()) {
+        sendEvent(name: "switch", value: value.switch)
+    }
 
     sendRGB(value.rh, value.gh, value.bh)
 }

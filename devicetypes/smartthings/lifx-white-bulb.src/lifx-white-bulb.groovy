@@ -5,7 +5,7 @@
  *
  */
 metadata {
-	definition (name: "LIFX White Bulb", namespace: "smartthings", author: "LIFX") {
+	definition (name: "LIFX White Bulb", namespace: "smartthings", author: "LIFX", ocfDeviceType: "oic.d.light", cloudDeviceHandler: "smartthings.cdh.handlers.LifxLightHandler") {
 		capability "Actuator"
 		capability "Color Temperature"
 		capability "Switch"
@@ -13,6 +13,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Light"
 	}
 
 	simulator {
@@ -22,9 +23,9 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"http://hosted.lifx.co/smartthings/v1/196xOn.png", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"http://hosted.lifx.co/smartthings/v1/196xOn.png", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"http://hosted.lifx.co/smartthings/v1/196xOff.png", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'Turning on', action:"switch.off", icon:"http://hosted.lifx.co/smartthings/v1/196xOn.png", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'Turning on', action:"switch.off", icon:"http://hosted.lifx.co/smartthings/v1/196xOn.png", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'Turning off', action:"switch.on", icon:"http://hosted.lifx.co/smartthings/v1/196xOff.png", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 
@@ -54,8 +55,18 @@ metadata {
 	}
 }
 
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"cloud\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device?.hub?.hardwareID}\"}", displayed: false)
+}
+
 void installed() {
-	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"cloud\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device?.hub?.hardwareID}\"}")
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 // handle commands
@@ -118,7 +129,7 @@ def off() {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	
+
 	def resp = parent.apiGET("/lights/${selector()}")
 	if (resp.status == 404) {
 		state.online = false

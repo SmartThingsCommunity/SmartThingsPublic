@@ -55,13 +55,13 @@ metadata {
 			state "fanOn", label:'${name}', action:"thermostat.setThermostatFanMode"
 		}
 		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#d04e00"
+			state "setHeatingSetpoint", action:"thermostat.setHeatingSetpoint", backgroundColor:"#e86d13"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "heat", label:'${currentValue}° heat', unit:"F", backgroundColor:"#ffffff"
 		}
 		controlTile("coolSliderControl", "device.coolingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#1e9cbb"
+			state "setCoolingSetpoint", action:"thermostat.setCoolingSetpoint", backgroundColor: "#00a0dc"
 		}
 		valueTile("coolingSetpoint", "device.coolingSetpoint", inactiveLabel: false, decoration: "flat") {
 			state "cool", label:'${currentValue}° cool', unit:"F", backgroundColor:"#ffffff"
@@ -81,49 +81,45 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parse description $description"
-	def map = [:]
-	if (description?.startsWith("read attr -")) {
-		def descMap = parseDescriptionAsMap(description)
-		log.debug "Desc Map: $descMap"
-		if (descMap.cluster == "0201" && descMap.attrId == "0000") {
+	List result = []
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	log.debug "Desc Map: $descMap"
+	List attrData = [[cluster: descMap.cluster ,attrId: descMap.attrId, value: descMap.value]]
+	descMap.additionalAttrs.each {
+	    attrData << [cluster: descMap.cluster, attrId: it.attrId, value: it.value]
+	}
+	attrData.each {
+		def map = [:]
+		if (it.cluster == "0201" && it.attrId == "0000") {
 			log.debug "TEMP"
 			map.name = "temperature"
-			map.value = getTemperature(descMap.value)
+			map.value = getTemperature(it.value)
 			map.unit = temperatureScale
-		} else if (descMap.cluster == "0201" && descMap.attrId == "0011") {
+		} else if (it.cluster == "0201" && it.attrId == "0011") {
 			log.debug "COOLING SETPOINT"
 			map.name = "coolingSetpoint"
-			map.value = getTemperature(descMap.value)
+			map.value = getTemperature(it.value)
 			map.unit = temperatureScale
-		} else if (descMap.cluster == "0201" && descMap.attrId == "0012") {
+		} else if (it.cluster == "0201" && it.attrId == "0012") {
 			log.debug "HEATING SETPOINT"
 			map.name = "heatingSetpoint"
-			map.value = getTemperature(descMap.value)
+			map.value = getTemperature(it.value)
 			map.unit = temperatureScale
-		} else if (descMap.cluster == "0201" && descMap.attrId == "001c") {
+		} else if (it.cluster == "0201" && it.attrId == "001c") {
 			log.debug "MODE"
 			map.name = "thermostatMode"
-			map.value = getModeMap()[descMap.value]
-		} else if (descMap.cluster == "0202" && descMap.attrId == "0000") {
+			map.value = getModeMap()[it.value]
+		} else if (it.cluster == "0202" && it.attrId == "0000") {
 			log.debug "FAN MODE"
 			map.name = "thermostatFanMode"
-			map.value = getFanModeMap()[descMap.value]
+			map.value = getFanModeMap()[it.value]
 		}
+		if (map) {
+			result << createEvent(map)
+		}
+		log.debug "Parse returned $map"
 	}
-
-	def result = null
-	if (map) {
-		result = createEvent(map)
-	}
-	log.debug "Parse returned $map"
 	return result
-}
-
-def parseDescriptionAsMap(description) {
-	(description - "read attr - ").split(",").inject([:]) { map, param ->
-		def nameAndValue = param.split(":")
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-	}
 }
 
 def getModeMap() { [
