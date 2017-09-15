@@ -2,10 +2,10 @@
  *  Alexa Helper-Child
  *
  *  Copyright © 2017 Michael Struck
- *  Version 3.0.0b 2/28/17
+ *  Version 3.0.0c 2/28/17
  * 
  *  Version 2.9.9e - Minor GUI changes to accomodate new mobile app structure
- *  Version 3.0.0b - Added OSRAM loop/pulse function (thanks @bbmcgee)
+ *  Version 3.0.0c - Added OSRAM loop/pulse function (thanks @bbmcgee)
  *  See https://github.com/MichaelStruck/SmartThings/blob/master/Other-SmartApps/AlexaHelper/version%20history.md for additional version history
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -683,8 +683,8 @@ def getOkToRun(module){
 	else log.warn "Alexa Helper scenario '${app.label}', '${module}' not triggered due to scenario restrictions"
     result
 }
-def getOkOnOptions(){def result = (!showOptions || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onTstats || onHTTP || onIP || onSHM || onSMSMsg)}
-def getOkOffOptions(){def result = (!showOptions || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offTstats || offHTTP || offIP || offSHM || offSMSMsg)}
+def getOkOnOptions(){def result = (!showOptions || showOptions=="0" || showOptions == "1") && (onPhrase || onMode || onSwitches || onDimmers || onColoredLights || onLocks || onGarages || onTstats || onHTTP || onIP || onSHM || onSMSMsg)}
+def getOkOffOptions(){def result = (!showOptions || showOptions=="0" || showOptions == "2") && (offPhrase || offMode || offSwitches || offDimmers || offColoredLights || offLocks || offGarages || offTstats || offHTTP || offIP || offSHM || offSMSMsg)}
 def changeMode(newMode) {
     if (location.mode != newMode) {
 		if (location.modes?.find{it.name == newMode}) setLocationMode(newMode)
@@ -701,11 +701,11 @@ def getTimeLabel(start, end){
 def scenarioDesc(){
 	def desc = ""
     if (scenarioType=="Control" && AlexaSwitch){
-		def onOff = !showOptions ? "On and Off" : showOptions && showOptions == "1" ? "On" : "Off"
+		def onOff = !showOptions || (showOptions && showOptions=="0") ? "On and Off" : showOptions && showOptions == "1" ? "On" : "Off"
         def delayTimeOn = onDelay && onDelay>1 ? "${onDelay} minutes" : onDelay && onDelay==1 ? "${onDelay} minute" : "immediately"
 		def delayTimeOff = offDelay && offDelay>1 ? "${offDelay} minutes" : offDelay && offDelay==1 ? "${offDelay} minute" : "immediately"
-        def timing = (!showOptions || showOptions == "1") ? "On scenario activates ${delayTimeOn} after triggered. " : ""
-        timing += (!showOptions || showOptions == "2") ? "Off scenario activates ${delayTimeOff} after triggered." : ""
+        def timing = (!showOptions || showOptions=="0" || showOptions == "1") ? "On scenario activates ${delayTimeOn} after triggered. " : ""
+        timing += (!showOptions || showOptions=="0" || showOptions == "2") ? "Off scenario activates ${delayTimeOff} after triggered." : ""
         desc = "'${AlexaSwitch}' switch (${onOff}) controls the scenario. ${timing}"
     }
     if (scenarioType=="Speaker"){
@@ -1038,5 +1038,5 @@ private parseDate(time, type){
     new Date().parse("yyyy-MM-dd'T'HH:mm:ss.SSSZ", formattedDate).format("${type}", timeZone(formattedDate))
 }
 //Version
-private def textVersion() {return "Child App Version: 3.0.0b (02/28/2017)"}
+private def textVersion() {return "Child App Version: 3.0.0c (02/28/2017)"}
 private def versionInt() {return 300}
