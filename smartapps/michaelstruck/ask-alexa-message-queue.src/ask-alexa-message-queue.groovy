@@ -2,7 +2,7 @@
  *  Ask Alexa Message Queue Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.5 7/21/17
+ *  Version 1.0.6 8/22/17
  * 
  *  Version 1.0.0 (3/31/17) - Initial release
  *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
@@ -11,6 +11,7 @@
  *  Version 1.0.3 (6/12/17) - Added logging feature for added partner usage
  *  Version 1.0.4 (7/8/17) - Added REST URL access to Message Queue
  *  Version 1.0.5 (7/21/17) - Changed REST URL icon and display for consistency
+ *  Version 1.0.6 (8/22/17) - Added voice options to Message Queue
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -55,7 +56,8 @@ def mainPage() {
             if (mqSpeaker) input "mqVolume", "number", title: "Speaker Volume", description: "0-100%", range:"0..100", required: false
             input "mqSynth", "capability.speechSynthesis", title: "Choose Voice Synthesis Devices", multiple: true, required: false, hideWhenEmpty: true
             if (mqSpeaker) input "mqAlertType", "enum", title:"Notification Type...",options:[0: "Verbal Notification and Message", 1: "Verbal Notification Only", 2: "Message Only", 3:"Notification Sound Effect"], defaultValue:0 , submitOnChange: true
-			if (mqSpeaker && mqAlertType != "3") input "mqAppendSound", "bool", title: "Prepend Sound To Verbal Notification", defaultValue: false, submitOnChange: true
+			if (mqSpeaker && mqAlertType !="3") input "mqVoice", "enum", title: "Choose Voice", options: parent.voiceList(), defaultValue: "Salli", required: false
+            if (mqSpeaker && mqAlertType != "3") input "mqAppendSound", "bool", title: "Prepend Sound To Verbal Notification", defaultValue: false, submitOnChange: true
             if (mqSpeaker && (mqAlertType == "3" || mqAppendSound)) input "mqAlertSound", "enum", title: "Sound Effect", required: mqAlertType == "3" ? true : false, options: parent.soundFXList(), submitOnChange: true
             if (mqSpeaker && (mqAlertType == "3" || mqAppendSound) && mqAlertSound=="custom") input "mqAlertCustom", "text", title:"URL/Location Of Custom Sound (Less Than 10 Seconds)...", required: false
             if (mqSpeaker || mqSynth) input "restrictAudio", "bool", title: "Apply Restrictions To Audio Notification", defaultValue: false, submitOnChange: true
@@ -124,7 +126,8 @@ def msgHandler(date, descriptionText, unit, value, overwrite, expires, notifyOnl
 		if (mqAlertType ==~/0|1|2/) {
 			def msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in primary message queue from : " + value : ""
 			if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
-			msgVoice = textToSpeech (msgTxt, true)
+			def outputVoice = mqVoice ?: "Salli"
+            msgVoice = textToSpeech (msgTxt, outputVoice)
 		}
 		if (mqAlertType == "3" || mqAppendSound) msgSFX = parent.sfxLookup(mqAlertSound)
 		mqSpeaker?.setLevel(mqVolume as int)            
@@ -233,6 +236,6 @@ def purgeMQ(){
 //Common Code
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 //Version/Copyright/Information/Help
-private versionInt(){ return 105 }
+private versionInt(){ return 106 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.5 (07/21/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.6 (08/22/2017)" }
