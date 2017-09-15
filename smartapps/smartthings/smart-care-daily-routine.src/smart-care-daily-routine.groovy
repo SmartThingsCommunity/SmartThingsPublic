@@ -20,31 +20,68 @@
  */
 
 definition(
-    name: "Smart Care: Daily Routine",
-    namespace: "smartthings",
-    author: "SmartThings",
-    description: "Stay connected to your loved ones. Get notified if they are not up and moving around by a specified time and/or if they have not opened a cabinet or door according to a set schedule.",
-    category: "Family",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer@2x.png"
+	name: "Smart Care: Daily Routine",
+	namespace: "smartthings",
+	author: "SmartThings",
+	description: "Stay connected to your loved ones. Get notified if they are not up and moving around by a specified time and/or if they have not opened a cabinet or door according to a set schedule.",
+	category: "Family",
+	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer.png",
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer@2x.png"
 )
 
 preferences {
-   if(state?.accept != true){
-    	page(name: "disclaimerPage")
-    } 
-    page(name: "configurationPage")
+	page(name: "configuration", title:"", content: "disclaimerPage", install: false, uninstall: true)
+}
+
+def disclaimerPage() {
+	def disclaimerText = "SMARTTHINGS INC. SMART CARE SUPPLEMENTAL TERMS AND DISCLAIMER\n" +
+			"SmartThings Inc. is not an emergency medical response service of any kind and does not provide " +
+			"medical or health-related advice, which should be obtained from qualified medical personnel. " +
+			"SmartThings Inc., the contents of the app (such as text, graphics, images, videos, data and "+
+			"information contained therein) and such materials obtained from third parties are provided for " +
+			"information purposes only and are not substitutes for professional medical advice, diagnosis, " +
+			"examination, or treatment by a health care provider. If you think you or a loved one has a medical " +
+			"emergency, call your doctor or 911 immediately. Do not rely on electronic communications or " +
+			"communication through this app for immediate, urgent medical needs. " +
+			"THIS APP IS NOT DESIGNED TO FACILITATE OR AID IN MEDICAL EMERGENCIES.\n\n"+ 
+			"If you have any concerns or questions about your health or the health of a loved one, " +
+			"you should always consult with a physician or other health care professional." +
+			"You understand and acknowledge that all users of this app are responsible for their own medical care, " +
+			"treatment, and oversight. You also understand and acknowledge that you should never disregard, " +
+			"avoid, or delay obtaining medical or health-related advice " +
+			"relating to treatment or standard of care because of information contained in or transmitted through the app. "+
+			"RELIANCE ON ANY INFORMATION PROVIDED BY THE APP OR OTHER THIRD-PARTY PLATFORMS IS SOLELY AT YOUR OWN RISK.\n\n" + 
+			"While SmartThings Inc. strives to make the information on the app as timely and accurate as possible, " + 
+			"SmartThings Inc. makes no claims, promises, or guarantees about the accuracy, completeness, " + 
+			"or adequacy of the content or information on the app. SmartThings Inc. expressly disclaims liability for any errors "+
+			"and omissions in content or for the availability of content on the app. " +
+			"SmartThings Inc. will not be liable for any losses, injuries, or damages arising from the display " +
+			"or use of content on the app. SMARTTHINGS INC., ITS OFFICERS, " +
+			"EMPLOYEES AND AGENTS DO NOT ACCEPT LIABILITY HOWEVER ARISING, INCLUDING LIABILITY FOR NEGLIGENCE, " +
+			"FOR ANY LOSS RESULTING FROM THE USE OF OR RELIANCE UPON THE INFORMATION AND/OR SERVICES AT ANY TIME."
+	
+	if (disclaimerResponse && disclaimerResponse == "I agree to these terms") {
+		configurationPage()
+	} else {
+		dynamicPage(name: "configuration", nextPage:null, install: false, uninstall:false) {
+			section(disclaimerText){
+				input "disclaimerResponse", "enum", title: "Accept terms", required: true,
+						options: ["I agree to these terms", "I do not agree to these terms"],
+						submitOnChange: true
+			}
+		}
+	}
 }
 
 def configurationPage(){
-	dynamicPage(name: "configurationPage", install: true, uninstall:true, nextPage: "configurationPage", ) {
+	dynamicPage(name: "configuration", install: true, uninstall:true, nextPage: "configuration") {
 		section("Who are you checking on?") {
 			input "person1", "text", title: "Name?"
 		}
-		section("If there's no movement (optional, leave blank to not require)...") {
+		section("If there’s no movement (optional, leave blank to not require)...") {
 			input "motion1", "capability.motionSensor", title: "Where?", required: false
 		}
-		section("or a door or cabinet hasn't been opened (optional, leave blank to not require)...") {
+		section("or a door or cabinet hasn’t been opened (optional, leave blank to not require)...") {
 			input "contact1", "capability.contactSensor", required: false
 		}
 		section("between these times...") {
@@ -59,44 +96,15 @@ def configurationPage(){
 	}
 }
 
-def disclaimerPage(){
-	def disclaimerText = "SmartThings Inc. is not an emergency medical response service of any kind and does not provide medical or health-related advice,"+
-    	"which should be obtained from qualified medical personnel. SmartThings Inc., the contents of the app (such as text, graphics, images, videos, data and "+
-    	"information contained therein) and such materials obtained from third parties are provided for information purposes only and are not substitutes for "+
-        "professional medical advice, diagnosis, examination, or treatment by a health care provider. If you think you or a loved one has a medical emergency, "+
-        "call your doctor or 911 immediately. Do not rely on electronic communications or communication through this app for immediate, urgent medical needs. \n"+ 
-        "*THIS APP IS NOT DESIGNED TO FACILITATE OR AID IN MEDICAL EMERGENCIES.* "+
-        "\n\n"+ 
-        "If you have any concerns or questions about your health or the health of a loved one, you should always consult with a physician or other health care professional."+
-        "You understand and acknowledge that all users of this app are responsible for their own medical care, treatment, and oversight. "+
-        "You also understand and acknowledge that you should never disregard, avoid, or delay obtaining medical or health-related advice "+
-        "relating to treatment or standard of care because of information contained in or transmitted through the app. "+
-        "* RELIANCE ON ANY INFORMATION PROVIDED BY THE APP OR OTHER THIRD-PARTY PLATFORMS IS SOLELY AT YOUR OWN RISK.*"+
-        "\n\n" + 
-        "While SmartThings Inc. strives to make the information on the app as timely and accurate as possible, SmartThings Inc. makes no claims, promises, "+
-        "or guarantees about the accuracy, completeness, or adequacy of the content or information on the app. SmartThings Inc. expressly disclaims liability for any errors "+
-        "and omissions in content or for the availability of content on the app. SmartThings Inc. will not be liable for any losses, injuries, or damages arising from the display "+
-        "or use of content on the app. *SMARTTHINGS INC., ITS OFFICERS, EMPLOYEES AND AGENTS DO NOT ACCEPT LIABILITY HOWEVER ARISING, INCLUDING LIABILITY FOR NEGLIGENCE, "+
-        "FOR ANY LOSS RESULTING FROM THE USE OF OR RELIANCE UPON THE INFORMATION AND/OR SERVICES AT ANY TIME.*" 
-
-	dynamicPage(name: "disclaimerPage", title:"Tap \"Next\" to accept disclaimer terms", install: false, uninstall:false, nextPage: "configurationPage", ) {
-    	section("SMARTTHINGS INC. SMART CARE SUPPLEMENTAL TERMS AND DISCLAIMER") {
-        		paragraph  "$disclaimerText"
-        }       
-	}
-}
-
 def installed() {
 	log.debug "Installed with settings: ${settings}"
 	schedule(time1, "scheduleCheck")
-    state.accept = true
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
 	unsubscribe() //TODO no longer subscribe like we used to - clean this up after all apps updated
 	unschedule()
-    state.accept = true
 	schedule(time1, "scheduleCheck")
 }
 
@@ -104,7 +112,7 @@ def scheduleCheck()
 {
 	if(noRecentContact() && noRecentMotion()) {
 		def person = person1 ?: "your elder"
-		def msg = "Alert! There has been no activity at ${person}'s place ${timePhrase}"
+		def msg = "Alert! There has been no activity at ${person}‘s place ${timePhrase}"
 		log.debug msg
 
 		if (location.contactBookEnabled) {
@@ -128,10 +136,10 @@ private noRecentMotion()
 		def motionEvents = motion1.eventsSince(sinceTime)
 		log.trace "Found ${motionEvents?.size() ?: 0} motion events"
 		if (motionEvents.find { it.value == "active" }) {
-			log.debug "There have been recent 'active' events"
+			log.debug "There have been recent ‘active’ events"
 			return false
 		} else {
-			log.debug "There have not been any recent 'active' events"
+			log.debug "There have not been any recent ‘active’ events"
 			return true
 		}
 	} else {
@@ -146,10 +154,10 @@ private noRecentContact()
 		def contactEvents = contact1.eventsSince(sinceTime)
 		log.trace "Found ${contactEvents?.size() ?: 0} door events"
 		if (contactEvents.find { it.value == "open" }) {
-			log.debug "There have been recent 'open' events"
+			log.debug "There have been recent ‘open’ events"
 			return false
 		} else {
-			log.debug "There have not been any recent 'open' events"
+			log.debug "There have not been any recent ‘open’ events"
 			return true
 		}
 	} else {
