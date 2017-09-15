@@ -30,7 +30,7 @@ definition(
 )
 
 preferences {
-	page(name: "configuration", title:"", content: "disclaimerPage", install: false, uninstall: true)
+	page(name: "configuration", title:"", content: "disclaimerPage", uninstall: true)
 }
 
 def disclaimerPage() {
@@ -63,7 +63,7 @@ def disclaimerPage() {
 	if (disclaimerResponse && disclaimerResponse == "I agree to these terms") {
 		configurationPage()
 	} else {
-		dynamicPage(name: "configuration", nextPage:null, install: false, uninstall:false) {
+		dynamicPage(name: "configuration", nextPage:null, uninstall: true) {
 			section(disclaimerText){
 				input "disclaimerResponse", "enum", title: "Accept terms", required: true,
 						options: ["I agree to these terms", "I do not agree to these terms"],
