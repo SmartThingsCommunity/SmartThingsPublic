@@ -1,13 +1,12 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.0a - 8/3/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.1 - 9/13/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
- *  Version information prior to 2.2.9 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
+ *  Version information prior to 2.3.1 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.2.9e (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
- *  Version 2.3.0a (8/3/17) GUI optimizations-Removed device specific commands (under Settings) and move them to the device areas and grouped any device voice settings, added Foobot Air Quality Monitor options
+ *  Version 2.3.1 (9/13/17) Added new extention: Rooms/Groups, disabling of Device Groups, add voice to message queue
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -59,6 +58,7 @@ preferences {
             page name:"pageWeather"
             page name:"pageVoiceRPT"
             page name:"pageSchdr"
+            page name:"pageRooms"
             	page name: "pageSchdList"
         page name:"pageSettings"
         	page name:"pageDeviceVoice"
@@ -73,7 +73,6 @@ preferences {
 	//Child Pages
     page name:"mainPageChild"
     	page name:"pageCoRE"
-    	page name:"pageGroup"
         page name:"pageGroupM"
     	page name:"pageControl"
     		page name:"pageSTDevices"
@@ -103,7 +102,7 @@ def mainPageParent() {
             href "pageHomeControl", title: "Modes/SHM/Routines", description:getDesc(listModes || listRoutines || listSHM), state: (listModes|| listRoutines|| listSHM ? "complete" : null), image: imgURL() + "modes.png"
             if (deviceAlias && mapDevices(true)) href "pageAliasMain", title: "Device Aliases", description:getDesc(state.aliasList), state: (state.aliasList ?"complete":null), image: imgURL() + "alias.png"     
         }
-        section("Ask Alexa Extensions") {href "pageExtensions", title: "Ask Alexa Extensions", description: "Tap to add/edit Ask Alexa extensions", state: (macroCount || mqCount ? "complete" : null), image: imgURL() + "exadd.png" }
+        section("Ask Alexa extensions") {href "pageExtensions", title: "Ask Alexa Extensions", description: "Tap to add/edit Ask Alexa extensions", state: (macroCount || mqCount ? "complete" : null), image: imgURL() + "exadd.png" }
         section("Options") {
 			href "pageSettings", title: "Settings", description: "Tap to configure app settings, get setup information or to reset the access token", image: imgURL() + "settings.png"
 			href "pageAbout", title: "About ${textAppName()}", description: "Tap to get version information, license, instructions or to remove the application", image: imgURL() + "info.png"
@@ -112,7 +111,7 @@ def mainPageParent() {
 }
 def pageExtensions(){
     dynamicPage(name: "pageExtensions", install: false, uninstall: false) {
-    	def macroCount = getAskAlexa().size(), mqCount = getAAMQ().size(), wrCount =getWR().size, vrCount=getVR().size, schCount =getSCHD().size()
+    	def macroCount = getAskAlexa().size(), mqCount = getAAMQ().size(), wrCount =getWR().size, vrCount=getVR().size, schCount =getSCHD().size(), rmCount=getRM().size
         section { paragraph "Ask Alexa Extensions", image: imgURL() + "exadd.png" }
         section("Installed extensions"){
         	def duplicates =getAskAlexa().label.findAll{getAskAlexa().label.count(it)>1}.unique()
@@ -120,9 +119,11 @@ def pageExtensions(){
             duplicates +=getVR().label.findAll{getVR().label.count(it)>1}.unique()
             duplicates +=getAAMQ().label.findAll{getAAMQ().label.count(it)>1}.unique()
             duplicates +=getSCHD().label.findAll{getSCHD().label.count(it)>1}.unique()
+            duplicates +=getRM().label.findAll{getRM().label.count(it)>1}.unique()
             if (duplicates) paragraph "You have two or more extensions that have the same name. Please ensure each extension has a unique name and also does not conflict with device or other extension names.", image: imgURL() + "caution.png" 
         	href "pageMacros", title: "Macros", description: macroDesc(macroCount), state: (macroCount ? "complete" : null), image: imgURL() + "speak.png" 
      		href "pageMsgQue", title: "Message Queues", description: mqDesc(mqCount), state: "complete", image: imgURL() + "mailbox.png"
+            href "pageRooms", title: "Rooms/Groups", description: rmDesc(rmCount), state: (rmCount ? "complete" : null), image: imgURL() + "room.png" 
             href "pageSchdr", title: "Schedules",  description: schDesc(schCount), state: (schCount ? "complete" : null), image: imgURL() + "schedule.png"
             href "pageVoiceRPT", title: "Voice Reports",  description:voiceDesc(vrCount), state: (vrCount ? "complete" : null), image: imgURL() + "voice.png"
             href "pageWeather", title: "Weather Reports",  description:weathDesc(wrCount), state: (wrCount ? "complete" : null), image: imgURL() + "weather.png"
@@ -247,8 +248,7 @@ def pageDoors() {
 			input "doors", "capability.doorControl", title: "Choose Door Controls (Open/Close/Status)" , multiple: true, required: false, submitOnChange: true 
             input "shades", "capability.windowShade", title: "Choose Window Shade Controls (Open/Close/Status)", multiple: true, required: false
 			input "ocSensors", "capability.contactSensor", title: "Choose Open/Close Sensors (Status)", multiple: true, required: false
-			input "locks", "capability.lock", title: "Choose Locks (Lock/Unlock/Status)", multiple: true, required: false, submitOnChange: true
-            
+			input "locks", "capability.lock", title: "Choose Locks (Lock/Unlock/Status)", multiple: true, required: false, submitOnChange: true    
         }
         if (deviceAlias){
             section("Devices that can have aliases", hideWhenEmpty: true) {
@@ -506,6 +506,20 @@ def pageMacros() {
         }
 	}
 }
+def pageRooms() {
+    dynamicPage(name: "pageRooms", install: false, uninstall: false) {
+        section{ paragraph "Rooms/Groups", image: imgURL() + "room.png" }
+        def children = getRM(), rmCount = children.size()
+        if (rmCount) section(rmCount==1 ? "One room/group configured" : rmCount + " rooms/groups configured" ){}
+        def duplicates = children.label.findAll{children.label.count(it)>1}.unique()
+        if (duplicates){
+        	section { paragraph "You have two or more rooms/groups with the same name. Please ensure each room/group has a unique name and also does not conflict with device names or other extensions.", image: imgURL() + "caution.png" }
+        }
+        section(" "){
+        	app(name: "childRooms", appName: "Ask Alexa Rooms/Groups", namespace: "MichaelStruck", title: "Create A New Room/Group...", description: "Tap to create a room/group", multiple: true, image: imgURL() + "add.png")
+        }
+	}
+}
 def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true) {
         section { paragraph "${textAppName()}\n${textCopyright()}", image: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/AskAlexa@2x.png" }
@@ -588,7 +602,8 @@ def pagePriQueue(){
             if (mqSpeaker) input "mqVolume", "number", title: "Speaker Volume", description: "0-100%", range:"0..100", required: false
             input "mqSynth", "capability.speechSynthesis", title: "Choose Voice Synthesis Devices", multiple: true, required: false, hideWhenEmpty: true
             if (mqSpeaker) input "mqAlertType", "enum", title:"Notification Type...",options:[0: "Verbal Notification and Message", 1: "Verbal Notification Only", 2: "Message Only", 3:"Notification Sound Effect"], defaultValue:0 , submitOnChange: true
-			if (mqSpeaker && mqAlertType != "3") input "mqAppendSound", "bool", title: "Prepend Sound To Verbal Notification", defaultValue: false, submitOnChange: true
+			if (mqSpeaker && mqAlertType !="3") input "mqVoice", "enum", title: "Choose Voice", options: voiceList(), defaultValue: "Salli", required: false
+            if (mqSpeaker && mqAlertType != "3") input "mqAppendSound", "bool", title: "Prepend Sound To Verbal Notification", defaultValue: false, submitOnChange: true
             if (mqSpeaker && (mqAlertType == "3" || mqAppendSound)) input "mqAlertSound", "enum", title: "Sound Effect", required: mqAlertType == "3" ? true : false, options: soundFXList(), submitOnChange: true
             if (mqSpeaker && (mqAlertType == "3" || mqAppendSound) && mqAlertSound=="custom") input "mqAlertCustom", "text", title:"URL/Location Of Custom Sound (Less Than 10 Seconds)...", required: false
             if (mqSpeaker || mqSynth) input "restrictAudio", "bool", title: "Apply Restrictions To Audio Notification", defaultValue: false, submitOnChange: true
@@ -732,7 +747,7 @@ def pageGlobalVariables(){
         section ("Environmental") {
             input "voiceTempVar", "capability.temperatureMeasurement", title: "Temperature Device Variable (%temp%)",multiple: true, required: false, submitOnChange: true
             input "voiceHumidVar", "capability.relativeHumidityMeasurement", title:"Humidity Device Variable (%humid%)",multiple: true, required: false, submitOnChange: true
-            if ((voiceTempVar && voiceTempVar.size()>1) || (voiceHumidVar && voiceHumidVar.size()>1)) paragraph "Please note: When multiple temperature/humidity devices are selected above, the variable output will be an average of the device readings"
+            if ((voiceTempVar && voiceTempVar.size()>1) || (voiceHumidVar && voiceHumidVar.size()>1)) paragraph "Please note: When multiple temperature/humidity devices are selected above, the variable output will be an average of the device readings", image: imgURL() + "info.png"
         }
         section ("People"){ input "voicePresenceVar", "capability.presenceSensor", title: "Presence Sensor Variable (%people%)", multiple: true, required: false }
         section ("Random responses"){
@@ -742,8 +757,7 @@ def pageGlobalVariables(){
         }
         section ("Built in variables"){
         	paragraph "The following variables are built in:\n\n%time% - Time the variable is called\n%day% - Day of the week\n%date% - Full date\n" +
-            	"%macro% - Macro/Extension name\n%mtype% - Macro/Extension type\n%dtype% - Device group type\n%dtypes% - Device group type (plural)\n%delay% - Control/WebCoRE macro delay"+
-                "\n%age% - Schedules age number\n%xParam% - WebCoRE passed parameter"
+            	"%macro% - Macro/Extension name\n%mtype% - Macro/Extension type\n%delay% - Control/WebCoRE macro delay\n%age% - Schedules age number\n%xParam% - Extra parameter"
         }
         if (getWR().size()){
         	section ("Weather Report"){
@@ -815,11 +829,22 @@ def pageReset(){
 //Child Pages----------------------------------------------------
 def mainPageChild(){
     dynamicPage(name: "mainPageChild", title: "Macro Options", install: true, uninstall: true) {
-    	section {
+    	//Delete in version 2.3.2
+        if (macroType=="Group"){ 
+        	section {
+                def dType=[colorControl: "Colored Light",switchLevel:"Dimmer ",doorControl: "Door",lock:"Lock", switch:"Switch",colorTemperature:"Temperature (Kelvin) Light",thermostat:"Thermostat", windowShade: "Window Shades"][groupType]?:groupType
+                paragraph "Macro Name: ${app.label}\nGroup Type: ${dType}\nDevices: ${settings."groupDevice${groupType}"}\nUse Password: ${usePW ? "Yes" : "No" }"	
+                paragraph "Please note, Device Groups have been deprecated. Use the new Rooms/Groups extension as a replacement. When you are done copying the details of this macro, please delete it.", image: imgURL()+ "info.png"
+            }
+        }
+        else {//Delete in version 2.3.2
+        section {
             label title:"Macro Name (Required)", required: true, image: imgURL() + "speak.png"
             href "pageMacroAliases", title: "Macro Aliases", description: macroAliasDesc(), state: macroAliasState()
-            input "macroType", "enum", title: "Macro Type...", options: [["Control":"Control (Run/Execute)"],["CoRE":"WebCoRE Trigger (Run/Execute)"],["Group":"Device Group (On/Off/Toggle, Lock/Unlock, etc.)"],["GroupM":"Extension Group (Run/Execute)"]], required: false, multiple: false, submitOnChange:true
-            def fullMacroName=[GroupM: "Extension Group",CoRE:"WebCoRE Trigger", Control:"Control", Group:"Device Group"][macroType] ?: macroType
+            if (macroType!="Group"){ //Delete in version 2.3.2
+            	input "macroType", "enum", title: "Macro Type...", options: [["Control":"Control (Run/Execute)"],["CoRE":"WebCoRE Trigger (Run/Execute)"],["GroupM":"Extension Group (Run/Execute)"]], required: false, multiple: false, submitOnChange:true
+            } //Delete in version 2.3.2
+            def fullMacroName=[GroupM: "Extension Group",CoRE:"WebCoRE Trigger", Control:"Control"][macroType] ?: macroType
             if (macroType) {
             	href "page${macroType}", title: "${fullMacroName} Settings", description: macroTypeDesc(), state: greyOutMacro()
                 if (parent.contMacro) {
@@ -835,7 +860,7 @@ def mainPageChild(){
 					title:"REST URL", description: "Tap to display the REST URL / send it to Live Logging", image: parent.imgURL() + "network.png"
 			}
 		}
-        if (macroType && macroType !="GroupM" && macroType !="Group"){
+        if (macroType && macroType ==~/Control|CoRE/){
             section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: imgURL() + "calendar.png"
 				href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: imgURL() + "clock.png"
@@ -845,6 +870,7 @@ def mainPageChild(){
                 input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
             }
         }
+        }//Delete in version 2.3.2
         section("Tap below to remove this macro"){}
     }
 }
@@ -858,30 +884,6 @@ page(name: "pageMacroAliases", title: "Enter alias names for this macro"){
 	section {
     	for (int i = 1; i<macAliasCount()+1; i++){ input "macAlias${i}", "text", title: "Macro Alias Name ${i}", required: false }
     }
-}
-//Device Macro----------------------------------------------------
-def pageGroup() {
-	dynamicPage(name: "pageGroup", install: false, uninstall: false) {
-		section { paragraph "Device Group Settings", image: imgURL() + "folder.png" }
-        section (" ") {
-            input "groupType", "enum", title: "Group Type...", options: [["colorControl": "Colored Light (On/Off/Toggle/Level/Color)"],["switchLevel":"Dimmer (On/Off/Toggle/Level)"],["doorControl": "Door (Open/Close)"],["lock":"Lock (Lock/Unlock)"],
-            	["switch":"Switch (On/Off/Toggle)"],["colorTemperature":"Temperature (Kelvin) Light (On/Off/Toggle/Level/Temperature)"],["thermostat":"Thermostat (Mode/Off/Setpoint)"],["windowShade": "Window Shades (Open/Close)"]],required: false, multiple: false, submitOnChange:true
-    		if (groupType) input "groupDevice${groupType}", "capability.${groupType}", title: "Choose devices...", required: false, multiple: true, submitOnChange:true
-        	if (((groupType == "doorControl" && parent.pwNeeded) || (groupType=="lock" && parent.pwNeeded)) && settings."groupDevice${groupType}" ){
-        		input "usePW", "bool", title: "Require PIN For Actions", defaultValue: false
-        	}	
-        }
-        if (groupType == "thermostat"){
-        	section ("Thermostat group options"){
-                if (!tstatDefaultCool) input "tstatDefaultHeat", "bool", title: "Set Heating Setpoint By Default", defaultValue:false, submitOnChange:true
-            	if (!tstatDefaultHeat) input "tstatDefaultCool", "bool", title: "Set Cooling Setpoint By Default", defaultValue:false, submitOnChange:true
-            }
-        }
-        section("Custom acknowledgment"){
-             if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after macro runs", required: false, capitalization: "sentences"
-             input "noAck", "bool", title: "No Acknowledgment Message", defaultValue: false, submitOnChange: true
-        }
-	}
 }
 //WebCoRE Macro----------------------------------------------------
 def pageCoRE() {
@@ -1152,6 +1154,10 @@ def processFollowup(){
             	devIcon="macro"
                 outputTxt=processMacroAction(state.cmdFollowup.mac, state.cmdFollowup.mNum, state.cmdFollowup.cmd, state.cmdFollowup.param, pw, true, state.cmdFollowup.xParam)
             }
+            else if (state.cmdFollowup.return == "processRoom") {
+            	devIcon="room"
+                outputTxt=processRoom(state.cmdFollowup.room, state.cmdFollowup.mNum, state.cmdFollowup.op, state.cmdFollowup.param, pw,state.cmdFollowup.xParam)
+            }
         }
     }
     else if (data == "?") outputTxt ="I did not understand the device or action you referenced. %1%"
@@ -1246,7 +1252,6 @@ def processList(){
     if (listType=~/routine/) { outputTxt= listRoutines && listRoutines.size()>1 ? "#routines#":listRoutines && listRoutines.size()==1 ? "@routine@" : "%routines%"; devices=listRoutines }
     if (listType=~/water/) { outputTxt= water && water.size()>1 ? "#water sensors#" : water && water.size()==1 ?  "@water sensor@" : "%water sensors%" ; devices=water; aliasType="water" }
     if (listType =~/report|voice/) outputTxt = parseMacroLists("Voice","voice report","play")
-    if (listType =~/device/) outputTxt = parseMacroLists("Group","device group","control")
     if (listType =~/schedule/) outputTxt = parseMacroLists("Schedule","schedule","")
     if (listType =~/control/) outputTxt = parseMacroLists("Control","control macro","run")
     if (listType =~/pollution|air|quality/) { outputTxt = fooBot && fooBot.size()>1 ? "#Foobot air quality monitors#" : fooBot && fooBot.size()==1 ? "@Foobot air quality monitor@" : "%Foobot air quality monitors%"; devices=fooBot; aliasType="pollution" }
@@ -1261,7 +1266,8 @@ def processList(){
     }
     if (listType =~/alias/) outputTxt = "You can not list aliases directly. To hear the aliases that are available, choose a specific device catagory to list. For example, if you list the available switch devices, any switch aliases you created will be listed as well. "
     if (listType ==~/colors|color/) outputTxt = cLights ? "There are too many colors to list. Basic colors like red, blue, and green are availabe. For a full list of colors, it is recommended you print the Ask Alexa cheat sheet. " : "%colored lights%"
-    if (listType ==~/group|groups|macro|macros/) outputTxt ="Please be a bit more specific about which groups or macros you want me to list. You can ask me about 'webcore triggers', 'extension groups', 'device groups', and 'control macros'. %1%"
+    if (listType ==~/macro|macros/) outputTxt ="Please be a bit more specific about which macros you want me to list. You can ask me about 'webcore triggers', 'extension groups' and 'control macros'. %1%"
+    if (listType ==~/group|groups|room|rooms/) outputTxt = parseMacroLists("Rooms/Groups","group","take action")
     if (listType ==~/extension|extensions/) outputTxt ="Please be a bit more specific about which extensions you want me to list. You can ask me about 'voice reports', 'weather reports', 'schedules', and 'message queues'. %1%"
     if (listType ==~/sensor|sensors/) outputTxt ="Please be a bit more specific about what kind of sensors you want me to list. You can ask me to list items like 'water', 'open close', 'presence', 'acceleration, or 'motion sensors'. %1%"
     if (listType ==~/light|lights/) outputTxt ="Please be a bit more specific about what kind of lighting devices you want me to list. You can ask me to list devices like 'switches', 'dimmers' or 'colored lights'. %1%"
@@ -1291,6 +1297,7 @@ def parseMacroLists(type, noun, action){
     else if (type == "Weather") count = getWR().size()
     else if (type == "Voice") count = getVR().size()
     else if (type =="Schedule") count = getSCHD().size()
+    else if (type =="Rooms/Groups") count = getRM().size()
     def extraTxt = (type ==~/Control|CoRE/) && count ? "Please note: You can also delay the execution of ${noun}s by adding the number of minutes after the name. For example, you could say, 'tell ${invocationName} to run the Macro in 5 minutes'. " : ""
 	if (type!="Schedule") macName = count==1 ? "You only have one ${noun} called: " : count> 1 ? "You can ask me to ${action} the following ${noun}s: " : "You don't have any ${noun}s for me to ${action}"
 	else macName = count==1 ? "You only have one ${noun} called: " : count> 1 ? "You can ask me for detail about the following ${noun}s: " : "You don't have any ${noun}s created"
@@ -1305,6 +1312,7 @@ def parseMacroLists(type, noun, action){
 	if (count && type == "Weather") macName += getList(getWR().label)
     if (count && type == "Voice") macName += getList(getVR().label)
     if (count && type == "Schedule") macName += getList(getSCHD().label)
+    if (count && type == "Rooms/Groups") macName += getList(getRM().label)
     return macName + ". " + extraTxt
 }
 //Extension Group
@@ -1473,6 +1481,27 @@ def processSchedule(schedule,cmd, cancel){
 	else outputTxt="I did not understand what you wanted to do the the schedule, '${schedule}'. You may query this schedule, delete it, or toggle its 'on' and 'off' state. %1%"
     return outputTxt
 }
+//Room Reply
+def processRoom(room, mNum, op, param, mPW,xParam){
+    log.debug "Room/Group Name: " + room
+    log.debug "Room/Group Number Command: " + mNum
+    log.debug "Room/Group Command: " + op
+    log.debug "Room/Group Parameter: " + param
+    log.debug "Room/Group Password: " + mPW
+    log.debug "Room/Group xParam: " + xParam
+    def rm = getRM().find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == room}, outputTxt
+    if (pwNeeded && ((op==~/open|close/ && rm.usePWDoor && doors) || (op==~/lock|unlock/ && rm.usePWLock && locks) && mPW !=password)){
+    	def pwExtra = mPW==~/undefined|null/ ? "A" : "The proper"
+        outputTxt = "${pwExtra} password is required to use the ${op} action in this group. %P%"
+    	state.cmdFollowup=[return: "processRoom", room:room, mNum:mNum, op:op, param:param, mPW:0,xParam:xParam]
+    }
+    else {
+    	outputTxt = rm.getOutput (room, mNum, op, param, mPW, xParam)
+        def data = outputTxt ? [alexaOutput: outputTxt[0..-4]] : [alexaOutput: "No Output"] 
+    	sendLocationEvent(name: "askAlexa", value: rm.id, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa triggered '${rm.label}' room/group extension.")
+    }
+    return outputTxt
+}
 //Macro Processing
 def processMacro() {
     log.debug "-Macro/extension command received-"
@@ -1481,14 +1510,15 @@ def processMacro() {
     def cmd = params.Cmd													//Group Command
     def param = params.Param												//Parameter
     def mPW = params.MPW													//Macro Password
-    def xParam = params.xParam												//WebCoRE parameters
+    def xParam = params.xParam												//Additional parameters
     String outputTxt = ""
-    def count = 0, macCount=0, wrCount=0, vrCount=0, sdCount, macAlias
+    def count = 0, macCount=0, wrCount=0, vrCount=0, rmCount=0, sdCount=0, macAlias
     macCount = getAskAlexa().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
     wrCount = getWR().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
     vrCount = getVR().count {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
     sdCount = getSCHD().count{it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
-    count = macCount + wrCount + vrCount + sdCount
+    rmCount = getRM().count{it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
+    count = macCount + wrCount + vrCount + sdCount + rmCount
     if (!count) {    
         getAskAlexa().each{
         	for (int i = 1; i<macAliasCount()+1; i++){
@@ -1519,17 +1549,28 @@ def processMacro() {
         	}	   
     	}
     }
-    count = macCount + wrCount + vrCount + sdCount
+    if (!count && !macCount && !wrCount && !vrCount) {    
+        getRM().each{
+        	for (int i = 1; i<it.extAliasCount()+1; i++){
+            	if (it."extAlias${i}" && it."extAlias${i}".toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")==mac) {
+                	macAlias = it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")
+                	rmCount ++
+        		}
+        	}	   
+    	}
+    }
+    count = macCount + wrCount + vrCount + sdCount + rmCount
     if (count == 1 && macAlias) mac = macAlias
     if (count > 1) outputTxt ="You have duplicate macros, aliases, or extensions named '${mac}'. Please check your SmartApp to fix this conflict. %1%"
-    if (!count && mac!="null" && mac) outputTxt = "I could not find a macro, alias or any extension named '${mac}'. %1%"
-    else if (!count && (mac=="null" || !mac)) outputTxt = "I could not understand what you are attempting to do. Be sure you have populated the developer section with the device and extension names. %1%"
+    if (!count && mac!="null" && mac !="undefined" && mac) outputTxt = "I could not find a macro, alias or any extension named '${mac}'. %1%"
+    else if (!count && (mac==~/undefined|null|\?/  || !mac)) outputTxt = "I could not understand what you are attempting to do. Be sure you have populated the developer section with the device and extension names. %1%"
     if (outputTxt) sendJSON(outputTxt,"caution")
     else {
     	if (macCount) processMacroAction(mac, mNum, cmd, param, mPW, false,xParam)
         else if (wrCount) sendJSON(processWeatherReport(mac),"weather")
         else if (vrCount) sendJSON(processVoiceReport(mac),"voice")
         else if (sdCount) sendJSON(processSchedule(mac,cmd,mNum),"schedule")
+        else if (rmCount) sendJSON(processRoom(mac,mNum,cmd,param, mPW,xParam),"room")
 	}        
 }
 def processMacroAction(mac, mNum, cmd, param, mPW, followup,xParam){
@@ -1556,18 +1597,15 @@ def processMacroAction(mac, mNum, cmd, param, mPW, followup,xParam){
     }
     if (!err){
 		def macProceed= true, children = getAskAlexa(), child = children.find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
-        if (child.usePW && pwNeeded && password && mPW != password && ((child.macroType == "Group" && child.groupType == "lock") || child.macroType == "GroupM" ||
-			(child.macroType == "Group" && child.groupType == "doorControl") || child.macroType == "Control" || child.macroType == "CoRE")){
+        if (child.usePW && pwNeeded && password && mPW != password ){
 			macProceed = false
 			def pwExtra = mPW==~/undefined|null/ ? "a" : "the proper"
-			if (child.macroType == "Group" && child.groupType == "lock") outputTxt = "To lock or unlock this group, you must use ${pwExtra} password. %P%"
-			if (child.macroType == "Group" && child.groupType == "doorControl") outputTxt = "To open or close this group, you must use ${pwExtra} password. %P%"
 			if (child.macroType == "CoRE") outputTxt = "To activate this WebCore Trigger, you must use ${pwExtra} password. %P%"
 			if (child.macroType == "Control") outputTxt = "To activate this Control Macro, you must use ${pwExtra} password. %P%"             
 			if (child.macroType == "GroupM") outputTxt = "To activate this Group Macro, you must use ${pwExtra} password. %P%" 
 			state.cmdFollowup=[return: "macroAction", mac:mac, mNum:mNum, cmd:cmd, param:param, mPW:0,xParam:xParam ]
 		}
-		if (child.macroType != "Group" && child.macroType != "GroupM" && cmd=="list" && macProceed) { outputTxt = "You can not use the list command with this type of macro. %1%"; macProceed = false }
+		if (child.macroType != "GroupM" && cmd=="list" && macProceed) { outputTxt = "You can not use the list command with this type of macro. %1%"; macProceed = false }
 		else if (child.macroType == "GroupM" && cmd=="list" && macProceed) {
 			def gMacros= child.groupMacros.size()==1 ? "extension" : "extensions"
 			outputTxt="You have the following ${gMacros} within the '${child.label}' extension group: " + getList(child.groupMacros) +". "
@@ -1576,7 +1614,7 @@ def processMacroAction(mac, mNum, cmd, param, mPW, followup,xParam){
 		if (macProceed){
 			playContMsg = child.overRideMsg ? false : true
             suppressContMsg = child.suppressCont && !child.overRideMsg && contMacro
-			def fullMacroName = [GroupM: "Extension Group",CoRE: "WebCoRE Trigger", Control:"Control Macro", Group:"Device Group"][child.macroType] ?: child.macroType
+			def fullMacroName = [GroupM: "Extension Group",CoRE: "WebCoRE Trigger", Control:"Control Macro"][child.macroType] ?: child.macroType
 			if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param, mNum,xParam) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
 			else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label)   
         }
@@ -1847,11 +1885,11 @@ def getReply(devices, type, STdeviceName, op, num, param){
                          num = newValues.newLevel
                     }
                     if (num>0) {
-                        if (tstatHighLimit) num = num <= tstatHighLimit ? num : tstatHighLimit 
-                        if (tstatLowLimit) num = num >= tstatLowLimit ? num : tstatLowLimit
+                        if (tstatHighLimit) num = num <= (tstatHighLimit as int) ? num : tstatHighLimit as int
+                        if (tstatLowLimit) num = num >= (tstatLowLimit as int) ? num : tstatLowLimit as int
                     }
-                    if (op =="maximum" && tstatHighLimit) num = tstatHighLimit
-                    if (op =="minimum" && tstatLowLimit) num = tstatLowLimit
+                    if (op =="maximum" && tstatHighLimit) num = tstatHighLimit as int
+                    if (op =="minimum" && tstatLowLimit) num = tstatLowLimit as int
                     def ecobeeCustomRegEx = MyEcobeeCMD && ecobeeCMD ? getEcobeeCustomRegEx(STdevice) : null
                     if ((param==~/heat|heating|cool|cooling|auto|automatic|eco|AC|comfort|home|away|sleep|resume program/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && num == 0 && op==~/undefined|null/) op="on" 
                     if (op ==~/on|off/) {
@@ -1899,8 +1937,8 @@ def getReply(devices, type, STdeviceName, op, num, param){
                             result="I am setting the cooling setpoint of the ${STdeviceName} to ${num} degrees. "
                             STdevice.setCoolingSetpoint(num)
                         }
-                        if (param != "undefined" && param != "null" && tstatHighLimit && num >= tstatHighLimit) result += "This is the maximum temperature I can set for this device. %1%"
-                        if (param != "undefined" && param != "null" && tstatLowLimit && num <= tstatLowLimit) result += "This is the minimum temperature I can set for this device. %1%"
+                        if (param != "undefined" && param != "null" && tstatHighLimit && num >= (tstatHighLimit as int)) result += "This is the maximum temperature I can set for this device. %1%"
+                        if (param != "undefined" && param != "null" && tstatLowLimit && num <= (tstatLowLimit as int)) result += "This is the minimum temperature I can set for this device. %1%"
                     }
             	}
             }
@@ -2010,7 +2048,11 @@ def getReply(devices, type, STdeviceName, op, num, param){
             	else if (type == "shade" && STdevice.currentValue("windowShade")==op || STdevice.currentValue("windowShade")=="closed" && op=="close"){
 					 result = "The ${STdeviceName} is already ${currentShadeState}. %1%"
                 }
-                else STdevice."$op"(); result =  "I am ${op}ing the ${STdeviceName}. "
+                else {
+                	STdevice."$op"()
+                    def verb = op=="close" && type==~/shade|door/ ? "clos" : op
+                    result =  "I am ${verb}ing the ${STdeviceName}. "
+            	}
             }    
             if (type == "presence" && vPresenceCMD){
             	def currentState = STdevice.currentValue(type)
@@ -2061,16 +2103,13 @@ def displayData(display){
 def macroResults(num, cmd, colorData, param, mNum,xParam){ 
     String result="", feedData=""   
     if (macroType == "Control") result = controlResults(num)
-    if (macroType == "Group") result = groupResults(num, cmd, colorData, param, mNum)
 	if (macroType == "CoRE") result = WebCoREResults(num, xParam)
-    else if (macroType =="Group") {
-    	def data = result ? result.endsWith("%") ? [alexaOutput: result[0..-4]] : [alexaOutput: result] : [alexaOutput: "No Output"]
-        sendLocationEvent(name: "askAlexa", value: app.id, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa activated '${app.label}' macro.")
-	}
+    def data = result ? result.endsWith("%") ? [alexaOutput: result[0..-4]] : [alexaOutput: result] : [alexaOutput: "No Output"]
+    sendLocationEvent(name: "askAlexa", value: app.id, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa activated '${app.label}' macro.")
     return result
 }
-//Group Handler
-def groupResults(num, op, colorData, param, mNum){   
+//Group Handler - Remove in version 2.3.2
+/*def groupResults(num, op, colorData, param, mNum){   
     def grpType = [switch:"switch", switchLevel:"dimmer", colorTemperature: "temperature light", colorControl:"colored light", windowShade:"window shade", doorControl: "door"][groupType]?:groupType
     String result = ""
     try {
@@ -2091,7 +2130,7 @@ def groupResults(num, op, colorData, param, mNum){
             else result = "For a switch device group, be sure to give an 'on', 'off', 'toggle' or 'status' command. %1%" 
         }
         else if (groupType==~/switchLevel|colorControl|colorTemperature/){
-            num = num < 0 ? 0 : num >99 ? 100 : num
+            num = num < 1 ? 0 : num >99 ? 100 : num
             if (op == "maximum") { num = 100; op ="undefined"; valueWord= "${proNoun} maximum brightness" }
             else if (op==~/low|medium|high/ && groupType=="switchLevel") { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
             else if (op==~/low|medium|high/ && groupType==~/colorControl|colorTemperature/ && !colorData ) { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
@@ -2262,6 +2301,7 @@ def groupResults(num, op, colorData, param, mNum){
     catch(e) { result = "There was a problem controlling the device group named '${app.label}'. Be sure it is configured correctly within the SmartApp. %1%" }
     return result
 }
+*/
 //WebCoRE Handler-----------------------------------------------------------
 def WebCoREResults(sDelay,xParam){	
 	String result = ""
@@ -2455,6 +2495,7 @@ def getAAMQ() { return findAllChildAppsByNamespaceAndName("MichaelStruck", "Ask 
 def getSCHD() { return findAllChildAppsByNamespaceAndName("MichaelStruck", "Ask Alexa Schedule") }
 def getWR() { return findAllChildAppsByNamespaceAndName("MichaelStruck", "Ask Alexa Weather Report") }
 def getVR() { return findAllChildAppsByNamespaceAndName("MichaelStruck", "Ask Alexa Voice Report") }
+def getRM() { return findAllChildAppsByNamespaceAndName("MichaelStruck", "Ask Alexa Rooms/Groups") }
 def macAliasCount() { return 3 }
 def getList(items){
 	def result = "", itemCount=items.size() as int
@@ -2522,6 +2563,10 @@ def sfxLookup(sfx){
     else if (sfx=="13") result = [uri: "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/media/Tone4.mp3", duration:"3"]
     else if (sfx=="custom") result = [uri:"${mqAlertCustom}",duration:"10"]
  	return result   
+}
+def voiceList(){
+	return ["Amy":"Amy (British)", "Brian":"Brian (British)", "Emma":"Emma (British)","Geraint":"Geraint (Welsh)","Ivy":"Ivy (American)","Justin":"Justin (American)", 
+    "Kimberly":"Kimberly (American)", "Nicole":"Nicole (Australian)", "Raveena":"Raveena (Indian)", "Russell": "Russell(Australian)", "Salli": "Salli (American)"]   			
 }
 //Common Code(Child)-----------------------------------------------------------
 def ctlMQDesc(){
@@ -2618,11 +2663,12 @@ def macroAliasState(){
     return count ? "complete" : null
 }
 def macroTypeDesc(){
-	def desc = "", PIN = (macroType ==~/CoRE|Control|GroupM/ || (macroType == "Group" && groupType == "lock") || (macroType == "Group" && groupType == "doorControl") || desc) && usePW ? " - PIN Required" : ""
+	def desc = "", PIN = (macroType ==~/CoRE|Control|GroupM/ || desc) && usePW ? " - PIN Required" : ""
     def customAck = !noAck && !voicePost ? "; uses standard acknowledgment message" : !noAck  && voicePost ? "; includes a custom acknowledgment message" :  "; there will be no acknowledgment messages"
     if (macroType ==~ /Control|CoRE/) customAck += cDelay>1 ? "; activates ${cDelay} minutes after triggered" : cDelay==1 ? "; activates one minute after triggered" : ""
     if (macroType == "Control" && (phrase || setMode || SHM || getDeviceDesc() != "Status: UNCONFIGURED${PIN} - Tap to configure" || getHTTPDesc() !="Status: UNCONFIGURED - Tap to configure" || ctlMsgQue)) desc= "Control Macro CONFIGURED${customAck}${PIN} - Tap to edit" 
-	if (macroType =="Group" && groupType && settings."groupDevice${groupType}") {
+	//Remove in version 2.3.2
+    /*if (macroType =="Group" && groupType && settings."groupDevice${groupType}") {
     	def groupDesc =[switch:"Switch Group",switchLevel:"Dimmer Group",colorTemperature: "Temperature (Kelvin) Light Group", thermostat:"Thermostat Group",colorControl:"Colored Light Group",lock:"Lock Group",doorControl: "Door Group",windowShade: "Window Shade Group"][groupType] ?: groupType
         def countDesc = settings."groupDevice${groupType}".size() == 1 ? "one device" : settings."groupDevice${groupType}".size() + " devices"
         if (parent.stelproCMD && groupType=="thermostat") customAck = "- Accepts Stelpro baseboard heater commands" + customAck
@@ -2631,7 +2677,7 @@ def macroTypeDesc(){
         if (parent.ecobeeCMD && parent.MyEcobeeCMD && groupType=="thermostat") customAck = "- Accepts My Ecobee 'Get Tips/'Erase Tips' commands" + customAck
         customAck = tstatDefaultHeat && groupType=="thermostat" ? "- Sends heating setpoint by default" + customAck : tstatDefaultCool && groupType=="thermostat" ? "- Sends cooling setpoint by default" + customAck : customAck
         desc = "${groupDesc} CONFIGURED with ${countDesc}${customAck}${PIN} - Tap to edit" 
-    }
+    }*/
     if (macroType =="GroupM" &&  groupMacros) {
         customAck += addPost && !noAck ? " appended to the child macro messages" : noAck ? "" : " replacing the child macro messages"
         def countDesc = groupMacros.size() == 1 ? "one macro" : groupMacros.size() + " macros"
@@ -2720,8 +2766,6 @@ private replaceVoiceVar(msg, delay, filter, type, name, age, xParam) {
     def fullMacroType=[GroupM: "Extension Group", Control:"Control Macro", Group:"Device Group", Voice:"Voice Report"][type] ?: type
 	def fullDeviceType=[colorControl: "Colored Light",switchLevel:"Dimmer" ,doorControl:"Door",lock:"Lock",switch:"Switch",thermostat:"Thermostat"][groupType] ?: groupType
     def delayMin = delay ? delay + " minutes" : "No delay specified"
-    msg = macroType=="Group" ? msg.replace('%dtype%', "${fullDeviceType}") : msg.replace('%dtype%', "")
-    msg = macroType=="Group" && groupType =="switch" ? msg.replace('%dtypes%', "switches") :  macroType=="Group" && groupType !="switch" ? msg.replace('%dtypes%', "${fullDeviceType}s") : msg.replace('%dtypes%', "")
     msg = msg.replace('%mtype%', "${fullMacroType}")
     msg = msg.replace('%macro%', "${name}")
     msg = msg.replace('%day%', day)
@@ -2908,7 +2952,7 @@ def memoryDesc(){
 def getMacroList(type,exclude){
     def result=[]
     if (type ==~/all|other/) {
-    	if (type =="all") getAskAlexa().each{ if (it.label && it.macroType !="GroupM" && it.macroType!="Group") result << ["${it.label}": "${it.label} (${it.macroType} Macro)"] }
+    	if (type =="all") getAskAlexa().each{ if (it.label && it.macroType !="GroupM") result << ["${it.label}": "${it.label} (${it.macroType} Macro)"] }
 		getVR().each{ if (it.label && it.label != exclude) result << ["${it.label}": "${it.label} (Voice Report)"]}
 		getWR().each{ if (it.label) result << ["${it.label}": "${it.label} (Weather Report)"]} 
         if (type=="other") getAAMQ().each{ if (it.label) result << ["${it.label}": "${it.label} (Message Queue)"]} 
@@ -2916,7 +2960,7 @@ def getMacroList(type,exclude){
     else if (type =~/sched/){
     	if (type =="schedV") getVR().each{ if (it.label) result << "${it.label}"}
         else if (type =="schedW") getWR().each{ if (it.label) result << "${it.label}"}	
-        else if (type=="schedM") getAskAlexa().each{ if (it.macroType!="Group" && it.label) result << ["${it.label}": "${it.label} (${it.macroType=="GroupM"?"Extension Group":it.macroType} Macro)"] }
+        else if (type=="schedM") getAskAlexa().each{ if (it.label) result << ["${it.label}": "${it.label} (${it.macroType=="GroupM"?"Extension Group":it.macroType} Macro)"] }
     }
     else if (type == "flash"){
     	getAskAlexa().each{ if (it.macroType =="GroupM") result << ["${it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")}%M%":"${it.label} (Extension Group)"] }
@@ -2975,7 +3019,8 @@ def msgPMQ(date,descriptionText,unit,value,overwrite, expires, notifyOnly, suppr
             if (mqAlertType ==~/0|1|2/) {
             	def msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in primary message queue from : " + value : ""
             	if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
-            	msgVoice = textToSpeech (msgTxt, true)
+            	def outputVoice = mqVoice ?: "Salli"
+                msgVoice = textToSpeech (msgTxt, outputVoice)
             }
             if (mqAlertType == "3" || mqAppendSound) msgSFX = sfxLookup(mqAlertSound)
 			mqSpeaker?.setLevel(mqVolume as int)            
@@ -3080,7 +3125,8 @@ def macroDesc(count){def results = count ? count==1 ? "One Macro Configured" : c
 def mqDesc(count){def results = count ? count==1 ? "Primary + One Addition Message Queue Configured" :  "Primary + " + count + " Message Queues Configured" : "Primary Messsage Queue"}
 def schDesc(count) {def results = count ? count==1 ? "One Schedule Configured" : count + " Schedules Configured" : "No Schedules Configured\nTap to create a new schedule"}
 def voiceDesc(count) {def results = count ? count==1 ? "One Voice Report Configured" : count + " Voice Reports Configured" : "No Voice Reports Configured\nTap to create a new report"}
-def weathDesc(count){def results = count ? count==1 ? "One Weather Report Configured" : count + " Weather Reports Configured" : "No Weather Reports Configured\nTap to create a new report"}
+def weathDesc(count) {def results = count ? count==1 ? "One Weather Report Configured" : count + " Weather Reports Configured" : "No Weather Reports Configured\nTap to create a new report"}
+def rmDesc(count) {def results = count ? count==1 ? "One Room/Group Configured" : count + " Rooms/Groups Configured" : "No Rooms/Groups Configured\nTap to create a new report"}
 def getDesc(param){ return param  ? "Status: CONFIGURED - Tap to edit/view" : "Status: UNCONFIGURED - Tap to configure" }
 def getAliasList(){
 	def result =[]
@@ -3263,6 +3309,7 @@ def setupData(){
     def getDevList=mapDevices(false)
     if (deviceAlias) getDevList+=mapDevices(true)
     basicVoc().each{deviceCMDlist<<it}
+    doorVoc().each{deviceCMDlist<<it}
     getDevList.cmd.each{list->list.each{deviceCMDlist<<it} }
     deviceCMDlist.unique().each{result += it+"<br>"}
     result += "<br><b>LIST_OF_PARAMS</b><br><br>"
@@ -3315,6 +3362,10 @@ def setupData(){
 			for (int i = 1; i<macAliasCount()+1; i++){ if (it."macAlias${i}") MACROS << it."macAlias${i}".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
 		}
     }
+    if (getRM().size()) getRM().each { 
+    	MACROS << it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() 
+    	for (int i = 1; i<it.extAliasCount()+1; i++){ if (it."extAlias${i}") MACROS << it."extAlias${i}".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
+    }
     if (getVR().size()) getVR().each { 
     	MACROS << it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() 
     	for (int i = 1; i<it.extAliasCount()+1; i++){ if (it."extAlias${i}") MACROS << it."extAlias${i}".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
@@ -3359,10 +3410,10 @@ def fillTypeList(){
 	return ["reports","report","switches","switch","dimmers","dimmer","colored lights","color","colors","speakers","speaker","water sensor","water sensors","water","lock","locks","thermostats","thermostat",
     	"temperature sensors","modes","routines","smart home monitor","SHM","security","temperature","door","doors", "humidity", "humidity sensor", "humidity sensors","presence", "presence sensors", "motion", 
         "motion sensor", "motion sensors", "door sensor", "door sensors", "window sensor", "window sensors", "open close sensors","colored light", "events","macro", "macros", "group", "groups", "voice reports", 
-        "voice report", "device group", "device groups","control macro", "control macros","control", "controls","extension group","extension groups","device macros","device macro","device group macro","device group macros",
-        "core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases",
-        "temperature light","temperature lights","kelvin light","kelvin lights","message queue","queue","message queues","queues","weather", "weather report", "weather reports","schedule","schedules","webcore","webcore trigger","webcore macro",
-        "webcore macros","webcore triggers","pollution","air quality"] 
+        "voice report","control macro", "control macros","control", "controls","extension group","extension groups","core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", 
+        "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases","temperature light","temperature lights","kelvin light","kelvin lights","message queue",
+        "queue","message queues","queues","weather", "weather report", "weather reports","schedule","schedules","webcore","webcore trigger", "webcore macro","webcore macros","webcore triggers","pollution","air quality",
+        "room", "rooms"] 
 }
 def getURLs(){
 	def mName = params.mName, qName = params.qName, url, result
@@ -3482,6 +3533,20 @@ private cheat(){
             result += "<br>"
     	} 
     }
+    if (getRM().size() ) { 
+    	result += "<h2><u>Rooms/Groups (Valid Command: <b>(Depending on the setup) on, off, set {brightness level}, lock, unlock, close, etc {room/group name}</b>)</u></h2>"
+        getRM().each { 
+        	result += it.label
+        	def aliases = ""
+            for (int i = 1; i<it.extAliasCount()+1; i++){
+            	if (it."extAlias${i}") aliases += it."extAlias${i}"
+                if (it."extAlias${i+1}") aliases += ", "
+        	}
+            if (aliases) result += " (Aliases: " + aliases +")"
+            result += "<br>"
+		}
+    if (pwNeeded) {result += "<br>* Append '<i>password ${password}</i>' if a room/group has locks/doors that are set up to use a password<br>" }    
+	} 
     if (getSCHD().size()) {
     	result += "<h2><u>Schedules (Valid Command: <b>on, off, list and status {schedule name}</b>)</u></h2>"
         getSCHD().each { result +="${it.label}<br>" } 
@@ -3508,21 +3573,23 @@ private cheat(){
 private webCoRE_handle(){ return'webCoRE' }
 private textAppName() { return "Ask Alexa" }	
 private textVersion() {  
-    def version = "SmartApp Version: ${versionLong()} (${versionDate()})", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : "", aaMQVer ="", aaWRVer ="", aaVRVer="", aaSCHVer=""
+    def version = "SmartApp Version: ${versionLong()} (${versionDate()})", lambdaVersion = state.lambdaCode ? "\n" + state.lambdaCode : "", aaMQVer ="", aaWRVer ="", aaVRVer="", aaSCHVer="", aaRMVer=""
     if (getAAMQ().size()) aaMQVer="\n"+ getAAMQ()[0].textVersion() 
     if (getWR().size()) aaWRVer="\n"+ getWR()[0].textVersion() 
     if (getVR().size()) aaVRVer="\n"+getVR()[0].textVersion()
     if (getSCHD().size()) aaSCHVer="\n"+getSCHD()[0].textVersion()
-    return "${version}${lambdaVersion}${aaMQVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
+    if (getRM().size()) aaRMVer="\n"+getRM()[0].textVersion()
+    return "${version}${lambdaVersion}${aaMQVer}${aaRMVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
 }
 private versionInt(){ return 230 }
 private LambdaReq() { return 129 }
-private mqReq() { return 105 }
+private mqReq() { return 106 }
 private wrReq()  { return 105 }
 private vrReq()  { return 105 }
 private schReq()  { return 103 }
-private versionLong(){ return "2.3.0a" }
-private versionDate(){ return "08/03/17" }
+private rmReq() { return 100 }
+private versionLong(){ return "2.3.1" }
+private versionDate(){ return "09/13/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
