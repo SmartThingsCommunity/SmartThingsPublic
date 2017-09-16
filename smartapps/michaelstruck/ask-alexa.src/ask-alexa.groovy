@@ -3581,7 +3581,7 @@ private textVersion() {
     if (getRM().size()) aaRMVer="\n"+getRM()[0].textVersion()
     return "${version}${lambdaVersion}${aaMQVer}${aaRMVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
 }
-private versionInt(){ return 230 }
+private versionInt(){ return 231 }
 private LambdaReq() { return 129 }
 private mqReq() { return 106 }
 private wrReq()  { return 105 }
