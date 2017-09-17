@@ -184,8 +184,9 @@ def parse(String description) {
 
 def on() {
     short duration = fadeOnTime == null ? 255 : fadeOnTime
+    short level = presetLevel == null || presetLevel == 0 ? 0xFF : toZwaveLevel(presetLevel as short)
     delayBetween([
-            zwave.switchMultilevelV2.switchMultilevelSet(value: 0xFF, dimmingDuration: duration).format(),
+            zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: duration).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
     ], (durationToSeconds(duration) + 1) * 1000)
 }
@@ -200,7 +201,7 @@ def off() {
 
 def setLevel(value, durationSeconds = null) {
     log.debug "setLevel >> value: $value, durationSeconds: $durationSeconds"
-    def level = toDisplayLevel(value as short)
+    short level = toDisplayLevel(value as short)
     short dimmingDuration = durationSeconds == null ? 255 : secondsToDuration(durationSeconds as int)
     int getStatusDelay = (durationToSeconds(dimmingDuration) + 1) * 1000
 
