@@ -91,8 +91,46 @@ metadata {
             state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
         }
 
+        valueTile("loadType", "device.loadType", width: 3, height: 1, decoration: "flat") {
+            state "loadType", label: 'Load Type\n${currentValue}'
+        }
+
+        valueTile("indicatorStatus", "device.indicatorStatus", width: 3, height: 1, decoration: "flat") {
+            state "indicatorStatus", label: 'Indicator Status\n${currentValue}'
+        }
+
+        valueTile("presetLevel", "device.presetLevel", width: 3, height: 1, decoration: "flat") {
+            state "presetLevel", label: 'Preset Level\n${currentValue}'
+        }
+
+        valueTile("minLevel", "device.minLevel", width: 3, height: 1, decoration: "flat") {
+            state "minLevel", label: 'Min Level\n${currentValue}'
+        }
+
+        valueTile("maxLevel", "device.maxLevel", width: 3, height: 1, decoration: "flat") {
+            state "maxLevel", label: 'Max Level\n${currentValue}'
+        }
+
+        valueTile("fadeOnTime", "device.fadeOnTime", width: 3, height: 1, decoration: "flat") {
+            state "fadeOnTime", label: 'Fade-on Time\n${currentValue}'
+        }
+
+        valueTile("fadeOffTime", "device.fadeOffTime", width: 3, height: 1, decoration: "flat") {
+            state "fadeOffTime", label: 'Fade-off Time\n${currentValue}'
+        }
+
+        valueTile("levelIndicatorTimeout", "device.levelIndicatorTimeout", width: 3, height: 1, decoration: "flat") {
+            state "levelIndicatorTimeout", label: 'Level Indicator Timeout\n${currentValue}'
+        }
+
         main("switch")
-        details(["switch", "low", "medium", "high", "level", "refresh"])
+        details(["switch",
+                 "low", "medium", "high",
+                 "level", "refresh",
+                 "loadType", "indicatorStatus",
+                 "minLevel", "maxLevel",
+                 "fadeOnTime", "fadeOffTime",
+                 "presetLevel", "levelIndicatorTimeout"])
     }
 
     preferences {
