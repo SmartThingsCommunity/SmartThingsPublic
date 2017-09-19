@@ -107,8 +107,10 @@ def off() {
 def setLevel(value) {
 	//sendEvent(name: "integerFloat", value: 47.0)
 	sendEvent(name:"level", value: value, displayed:true)
-    setWindowShade(value)
-	zigbee.setLevel(value)
+    def L = Math.round(value);
+    def i = Integer.valueOf(L.intValue());
+    setWindowShade(i)
+	zigbee.setLevel(i)
     //refresh()
 }
 
@@ -121,8 +123,12 @@ def close() {
 }
 
 def ping(){
+<<<<<<< HEAD
 	refresh
     log.debug "Ping() "
+=======
+	log.debug "Ping() "
+>>>>>>> -updated to work with inputs from Alexa through ST. Interesting note, Set level receives a double "0.0", value, while using ST app or Google Home receives integers
     
 }
 
