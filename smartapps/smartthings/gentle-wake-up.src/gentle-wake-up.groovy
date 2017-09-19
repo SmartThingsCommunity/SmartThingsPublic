@@ -370,6 +370,7 @@ public def start(source) {
 	setLevelsInState()
 
 	atomicState.running = true
+	atomicState.runCounter = 0
 
 	atomicState.start = new Date().getTime()
 
@@ -384,6 +385,7 @@ public def stop(source) {
 
 	atomicState.running = false
 	atomicState.start = 0
+	atomicState.runCounter = 0
 
 	unschedule("healthCheck")
 }
@@ -519,14 +521,24 @@ private increment() {
 		return
 	}
 
+	if (atomicState.runCounter == null) {
+		atomicState.runCounter = 1
+	} else {
+		atomicState.runCounter = atomicState.runCounter + 1
+	}
 	def percentComplete = completionPercentage()
 
 	if (percentComplete > 99) {
 		percentComplete = 99
 	}
 
-	updateDimmers(percentComplete)
-
+	if (atomicState.runCounter > 100) {
+		log.error "Force stopping Gentle Wakeup due to too many increments"
+		// If increment has already been called 100 times, then stop regardless of state
+		percentComplete = 100
+	} else {
+		updateDimmers(percentComplete)
+	}
 	if (percentComplete < 99) {
 
 		def runAgain = stepDuration()

@@ -211,9 +211,9 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		if (codeLength && codeLength != length) {
 			log.trace "[DTH] Executing 'ConfigurationReport' for device $deviceName - all codes deleted"
 			result = allCodesDeletedEvent()
-			result << createEvent(name: "codeChanged", value: "all deleted", descriptionText: "All user codes deleted",
+			result << createEvent(name: "codeChanged", value: "all deleted", descriptionText: "Deleted all user codes",
 			isStateChange: true, data: [lockName: deviceName, notify: true,
-				notificationText: "All user codes deleted in $deviceName at ${location.name}"])
+				notificationText: "Deleted all user codes in $deviceName at ${location.name}"])
 			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
 		}
 		result << createEvent(name:"codeLength", value: length, descriptionText: "Code length is $length", displayed: false)
@@ -287,25 +287,13 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	map.data = [ lockName: device.displayName ]
 	if (cmd.doorLockMode == 0xFF) {
 		map.value = "locked"
-		map.descriptionText = "Was locked"
-		if(isSchlageLock()) {
-			// In schlage locks when lock is locked / unlocked from smart app or DTH AlarmReport is not generated. 
-			// Also DoorLockOperationReport is generated only when lock is locked/unlocked from smart app or DTH.
-			// In case a lock is locked / unlocked manually or using lock's keypad only AlarmReport is generated.
-			map.descriptionText = "Was locked remotely"
-		}
+		map.descriptionText = "Locked"
 	} else if (cmd.doorLockMode >= 0x40) {
 		map.value = "unknown"
-		map.descriptionText = "Was in unknown state"
+		map.descriptionText = "Unknown state"
 	} else {
 		map.value = "unlocked"
-		map.descriptionText = "Was unlocked"
-		if(isSchlageLock()) {
-			// In schlage locks when lock is locked / unlocked from smart app or DTH AlarmReport is not generated.
-			// Also DoorLockOperationReport is generated only when lock is locked/unlocked from smart app or DTH.
-			// In case a lock is locked / unlocked manually or using lock's keypad only AlarmReport is generated.
-			map.descriptionText = "Was unlocked remotely"
-		}
+		map.descriptionText = "Unlocked"
 		if (state.assoc != zwaveHubNodeId) {
 			result << response(secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)))
 			result << response(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId))
@@ -362,63 +350,63 @@ private def handleAccessAlarmReport(cmd) {
 	}
 	switch(cmd.zwaveAlarmEvent) {
 		case 1: // Manually locked
-			map.descriptionText = "Was locked manually"
+			map.descriptionText = "Locked manually"
 			map.data = [ method: (cmd.alarmLevel == 2) ? "keypad" : "manual" ]
 			break
 		case 2: // Manually unlocked
-			map.descriptionText = "Was unlocked manually"
+			map.descriptionText = "Unlocked manually"
 			map.data = [ method: "manual" ]
 			break
 		case 3: // Locked by command
-			map.descriptionText = "Was locked remotely"
+			map.descriptionText = "Locked"
 			map.data = [ method: "command" ]
 			break
 		case 4: // Unlocked by command
-			map.descriptionText = "Was unlocked remotely"
+			map.descriptionText = "Unlocked"
 			map.data = [ method: "command" ]
 			break
 		case 5: // Locked with keypad
 			if (cmd.eventParameter || cmd.alarmLevel) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
-				map.descriptionText = "Was locked with code named '$codeName'"
+				map.descriptionText = "\"$codeName\" locked the lock"
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			} else {
 				// locked by pressing the Schlage button
-				map.descriptionText = "Was locked manually"
+				map.descriptionText = "Locked manually"
 			}
 			break
 		case 6: // Unlocked with keypad
 			if (cmd.eventParameter || cmd.alarmLevel) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
-				map.descriptionText = "Was unlocked with code named '$codeName'"
+				map.descriptionText = "\"$codeName\" unlocked the lock"
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 7:
-			map = [ name: "lock", value: "unknown", descriptionText: "Was not locked fully" ]
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
 			map.data = [ method: "manual" ]
 			break
 		case 8:
-			map = [ name: "lock", value: "unknown", descriptionText: "Was not locked fully" ]
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
 			map.data = [ method: "command" ]
 			break
 		case 9: // Auto locked
 			map = [ name: "lock", value: "locked", data: [ method: "auto" ] ]
-			map.descriptionText = "Was auto locked"
+			map.descriptionText = "Auto locked"
 			break
 		case 0xA:
-			map = [ name: "lock", value: "unknown", descriptionText: "Was not autolocked fully" ]
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
 			map.data = [ method: "auto" ]
 			break
 		case 0xB:
-			map = [ name: "lock", value: "unknown", descriptionText: "Was in unknown state" ]
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
 			break
 		case 0xC: // All user codes deleted
 			result = allCodesDeletedEvent()
-			map = [ name: "codeChanged", value: "all deleted", descriptionText: "All user codes deleted", isStateChange: true ]
-			map.data = [notify: true, notificationText: "All user codes deleted in $deviceName at ${location.name}"]
+			map = [ name: "codeChanged", value: "all deleted", descriptionText: "Deleted all user codes", isStateChange: true ]
+			map.data = [notify: true, notificationText: "Deleted all user codes in $deviceName at ${location.name}"]
 			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
 			break
 		case 0xD: // User code deleted
@@ -426,8 +414,8 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
 				map = [ name: "codeChanged", value: "$codeID deleted", isStateChange: true ]
-				map.descriptionText = "Code named '$codeName' was deleted"
-				map.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was deleted in $deviceName at ${location.name}" ]
+				map.descriptionText = "Deleted \"$codeName\""
+				map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 				result << codeDeletedEvent(lockCodes, codeID)
 			}
 			break
@@ -436,13 +424,13 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
 				codeName = getCodeNameFromState(lockCodes, codeID)
 				changeType = getChangeType(lockCodes, codeID)
-				map = [ name: "codeChanged", value: "$codeID $changeType",  descriptionText: "Code named '$codeName' was $changeType", isStateChange: true ]
-				map.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was $changeType in $deviceName at ${location.name}" ]
+				map = [ name: "codeChanged", value: "$codeID $changeType",  descriptionText: "${getStatusForDescription(changeType)} \"$codeName\"", isStateChange: true ]
+				map.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" in $deviceName at ${location.name}" ]
 				if(!isMasterCode(codeID)) {
 					result << codeSetEvent(lockCodes, codeID, codeName)
 				} else {
-					map.descriptionText = "'$codeName' was set"
-					map.data.notificationText = "'$codeName' was set in $deviceName"
+					map.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
+					map.data.notificationText = "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}"
 				}
 			}
 			break
@@ -463,8 +451,8 @@ private def handleAccessAlarmReport(cmd) {
 			break
 		case 0x12: // Master code changed
 			codeName = getCodeNameFromState(lockCodes, 0)
-			map = [ name: "codeChanged", value: "0 set", descriptionText: "'$codeName' was set", isStateChange: true ]
-			map.data = [ codeName: codeName, notify: true, notificationText: "'$codeName' was set in $deviceName  at ${location.name}" ]
+			map = [ name: "codeChanged", value: "0 set", descriptionText: "${getStatusForDescription('set')} \"$codeName\"", isStateChange: true ]
+			map.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}" ]
 			break
 		case 0xFE:
 			// delegating it to handleAlarmReportUsingAlarmType
@@ -570,7 +558,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 	switch(cmd.alarmType) {
 		case 9:
 		case 17:
-			map = [ name: "lock", value: "unknown", descriptionText: "Was in unknown state" ]
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
 			break
 		case 16: // Note: for levers this means it's unlocked, for non-motorized deadbolt, it's just unsecured and might not get unlocked
 		case 19: // Unlocked with keypad
@@ -578,7 +566,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			if (cmd.alarmLevel != null) {
 				codeID = cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
-				map.descriptionText = "Was unlocked with code named '$codeName'"
+				map.descriptionText = "\"$codeName\" unlocked the lock"
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
@@ -586,49 +574,49 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			codeID = cmd.alarmLevel
 			codeName = getCodeName(lockCodes, codeID)
 			map = [ name: "lock", value: "locked" ]
-			map.descriptionText = "Was locked with code named '$codeName'"
+			map.descriptionText = "\"$codeName\" locked the lock"
 			map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			break
 		case 21: // Manually locked
 			map = [ name: "lock", value: "locked", data: [ method: (cmd.alarmLevel == 2) ? "keypad" : "manual" ] ]
-			map.descriptionText = "Was locked manually"
+			map.descriptionText = "Locked manually"
 			break
 		case 22: // Manually unlocked
 			map = [ name: "lock", value: "unlocked", data: [ method: "manual" ] ]
-			map.descriptionText = "Was unlocked manually"
+			map.descriptionText = "Unlocked manually"
 			break
 		case 23:
-			map = [ name: "lock", value: "unknown", descriptionText: "Was not locked fully" ]
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
 			map.data = [ method: "command" ]
 			break
 		case 24: // Locked by command
 			map = [ name: "lock", value: "locked", data: [ method: "command" ] ]
-			map.descriptionText = "Was locked remotely"
+			map.descriptionText = "Locked"
 			break
 		case 25: // Unlocked by command
 			map = [ name: "lock", value: "unlocked", data: [ method: "command" ] ]
-			map.descriptionText = "Was unlocked remotely"
+			map.descriptionText = "Unlocked"
 			break
 		case 26:
-			map = [ name: "lock", value: "unknown", descriptionText: "Was not auto locked fully" ]
+			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
 			map.data = [ method: "auto" ]
 			break
 		case 27: // Auto locked
 			map = [ name: "lock", value: "locked", data: [ method: "auto" ] ]
-			map.descriptionText = "Was auto locked"
+			map.descriptionText = "Auto locked"
 			break
 		case 32: // All user codes deleted
 			result = allCodesDeletedEvent()
-			map = [ name: "codeChanged", value: "all deleted", descriptionText: "All user codes deleted", isStateChange: true ]
-			map.data = [notify: true, notificationText: "All user codes deleted in $deviceName at ${location.name}"]
+			map = [ name: "codeChanged", value: "all deleted", descriptionText: "Deleted all user codes", isStateChange: true ]
+			map.data = [notify: true, notificationText: "Deleted all user codes in $deviceName at ${location.name}"]
 			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
 			break
 		case 33: // User code deleted
 			codeID = cmd.alarmLevel
 			codeName = getCodeName(lockCodes, codeID)
 			map = [ name: "codeChanged", value: "$codeID deleted", isStateChange: true ]
-			map.descriptionText = "Code named '$codeName' was deleted"
-			map.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was deleted in $deviceName at ${location.name}" ]
+			map.descriptionText = "Deleted \"$codeName\""
+			map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 			result << codeDeletedEvent(lockCodes, codeID)
 			break
 		case 38: // Non Access
@@ -640,13 +628,13 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			codeName = getCodeNameFromState(lockCodes, codeID)
 			def changeType = getChangeType(lockCodes, codeID)
 			map = [ name: "codeChanged", value: "$codeID $changeType", descriptionText:
-				"Code named '$codeName' was $changeType", isStateChange: true ]
-			map.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was $changeType in $deviceName  at ${location.name}" ]
+				"${getStatusForDescription(changeType)} \"$codeName\"", isStateChange: true ]
+			map.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" in $deviceName at ${location.name}" ]
 			if(!isMasterCode(codeID)) {
 				result << codeSetEvent(lockCodes, codeID, codeName)
 			} else {
-				map.descriptionText = "'$codeName' was set"
-				map.data.notificationText = "'$codeName' was set in $deviceName"
+				map.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
+				map.data.notificationText = "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}"
 			}
 			break
 		case 34:
@@ -733,13 +721,13 @@ def zwaveEvent(UserCodeReport cmd) {
 
 			map.value = "$codeID $changeType"
 			map.isStateChange = true
-			map.descriptionText = "Code named '$codeName' was $changeType"
-			map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "Code named '$codeName' was $changeType in ${deviceName}  at ${location.name}" ]
+			map.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
+			map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" in $deviceName at ${location.name}" ]
 			if(!isMasterCode(codeID)) {
 				result << codeSetEvent(lockCodes, codeID, codeName)
 			} else {
-				map.descriptionText = "'$codeName' was set"
-				map.data.notificationText = "'$codeName' was set in ${deviceName}"
+				map.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
+				map.data.notificationText = "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}"
 				map.data.lockName = deviceName
 			}
 		} else {
@@ -752,7 +740,7 @@ def zwaveEvent(UserCodeReport cmd) {
 				map.value = "$codeID changed"
 				map.isStateChange = false
 			}
-			map.descriptionText = "Code named '$codeName' was set"
+			map.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
 			map.data = [ codeName: codeName, lockName: deviceName ]
 		}
 	} else if(userIdStatus == 254 && isSchlageLock()) {
@@ -766,9 +754,9 @@ def zwaveEvent(UserCodeReport cmd) {
 			// all codes deleted for Schlage locks
 			log.trace "[DTH] All user codes deleted for Schlage lock"
 			result << allCodesDeletedEvent()
-			map = [ name: "codeChanged", value: "all deleted", descriptionText: "All user codes deleted", isStateChange: true,
+			map = [ name: "codeChanged", value: "all deleted", descriptionText: "Deleted all user codes", isStateChange: true,
 				data: [ lockName: deviceName, notify: true,
-					notificationText: "All user codes deleted in $deviceName at ${location.name}"] ]
+					notificationText: "Deleted all user codes in $deviceName at ${location.name}"] ]
 			lockCodes = [:]
 			result << lockCodesEvent(lockCodes)
 		} else {
@@ -776,8 +764,8 @@ def zwaveEvent(UserCodeReport cmd) {
 			if (lockCodes[codeID]) {
 				def codeName = getCodeName(lockCodes, codeID)
 				map.value = "$codeID deleted"
-				map.descriptionText = "Code named '$codeName' was deleted"
-				map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "Code named '$codeName' was deleted in $deviceName at ${location.name}" ]
+				map.descriptionText = "Deleted \"$codeName\""
+				map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 				result << codeDeletedEvent(lockCodes, codeID)
 			} else {
 				map.value = "$codeID unset"
@@ -1504,8 +1492,8 @@ private def allCodesDeletedEvent() {
 		
 		def codeName = code
 		result << createEvent(name: "codeChanged", value: "$id deleted", data: [ codeName: codeName, lockName: deviceName,
-			notify: true, notificationText: "Code named '$codeName' was deleted in $deviceName at ${location.name}" ],
-		descriptionText: "Code named '$codeName' was deleted",
+			notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ],
+		descriptionText: "Deleted \"$codeName\"",
 		displayed: true, isStateChange: true)
 		clearStateForSlot(id)
 	}
@@ -1527,6 +1515,21 @@ private def getChangeType(lockCodes, codeID) {
 		changeType = "changed"
 	}
 	changeType
+}
+
+/**
+ * Method to obtain status for descriptuion based on change type
+ * @param changeType: Either "set" or "changed"
+ * @return "Added" for "set", "Updated" for "changed", "" otherwise
+ */
+private def getStatusForDescription(changeType) {
+	if("set" == changeType) {
+		return "Added"
+	} else if("changed" == changeType) {
+		return "Updated"
+	}
+	//Don't return null as it cause trouble
+	return ""
 }
 
 /**

@@ -671,16 +671,16 @@ private def parseAttributeResponse(String description) {
 		responseMap.name = "lock"
 		if (value == 0) {
 			responseMap.value = "unknown"
-			responseMap.descriptionText = "Was in unknown state"
+			responseMap.descriptionText = "Unknown state"
 		} else if (value == 1) {
 			responseMap.value = "locked"
-			responseMap.descriptionText = "Was locked"
+			responseMap.descriptionText = "Locked"
 		} else if (value == 2) {
 			responseMap.value = "unlocked"
-			responseMap.descriptionText = "Was unlocked"
+			responseMap.descriptionText = "Unlocked"
 		} else {
 			responseMap.value = "unknown"
-			responseMap.descriptionText = "Was in unknown state"
+			responseMap.descriptionText = "Unknown state"
 		}
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_MIN_PIN_LENGTH && descMap.value) {
 		def minCodeLength = Integer.parseInt(descMap.value, 16)
@@ -739,14 +739,13 @@ private def parseCommandResponse(String description) {
 		responseMap.isStateChange = true
 		
 		def desc = ""
+		def codeName = ""
 		
 		if (eventSource == 0) {
 			def codeID = Integer.parseInt(data[3] + data[2], 16)
-			def codeName = getCodeName(lockCodes, codeID)
-			desc = (codeID == "") ? "using keypad" : "with code named '$codeName'"
+			codeName = getCodeName(lockCodes, codeID)
 			responseMap.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 		} else if (eventSource == 1) {
-			desc = "remotely"
 			responseMap.data = [ method: "command" ]
 		} else if (eventSource == 2) {
 			desc = "manually"
@@ -756,11 +755,19 @@ private def parseCommandResponse(String description) {
 		switch (eventCode) {
 			case 1:
 				responseMap.value = "locked"
-				responseMap.descriptionText = "Was locked ${desc}"
+				if(codeName) {
+					responseMap.descriptionText = "\"$codeName\" locked the lock"
+				} else {
+					responseMap.descriptionText = "Locked ${desc}"
+				}
 				break
 			case 2:
 				responseMap.value = "unlocked"
-				responseMap.descriptionText = "Was unlocked ${desc}"
+				if(codeName) {
+					responseMap.descriptionText = "\"$codeName\" unlocked the lock"
+				} else {
+					responseMap.descriptionText = "Unlocked ${desc}"
+				}
 				break
 			case 3: //Lock Failure Invalid Pin
 				break
@@ -774,16 +781,16 @@ private def parseCommandResponse(String description) {
 			case 8: // locked using the key
 			case 13: // locked using the Thumbturn
 				responseMap.value = "locked"
-				responseMap.descriptionText = "Was locked ${desc}"
+				responseMap.descriptionText = "Locked ${desc}"
 				break
 			case 9: // unlocked using the key
 			case 14: // unlocked using the Thumbturn
 				responseMap.value = "unlocked"
-				responseMap.descriptionText = "Was unlocked ${desc}"
+				responseMap.descriptionText = "Unlocked ${desc}"
 				break
-			case 10:
+			case 10: //Auto lock
 				responseMap.value = "locked"
-				responseMap.descriptionText = "Was auto locked"
+				responseMap.descriptionText = "Auto locked"
 				responseMap.data = [ method: "auto" ]
 				break
 			default:
@@ -815,15 +822,7 @@ private def parseCommandResponse(String description) {
 		// Programming event is generated when the user creates/updates/deletes a code manually on the lock.
 		// Ideally it should be generated even when the user tries to create/update a code through the
 		// SmartApp as well, but that is not the case with Yale locks
-		
-		def eventSourceValue = Integer.parseInt(data[0], 16)
-		def eventSource = ""
-		if (eventSourceValue == 0) {
-			eventSource = "manually"
-		} else if (eventSourceValue == 1) {
-			eventSource = "remotely"
-		}
-		
+
 		responseMap.name = "codeChanged"
 		responseMap.isStateChange = true
 		responseMap.displayed = true
@@ -836,21 +835,21 @@ private def parseCommandResponse(String description) {
 			case 1: // MasterCodeChanged
 				codeName = "Master Code"
 				responseMap.value = "0 set"
-				responseMap.descriptionText = "Master code was set"
-				responseMap.data = [ codeName: codeName, notify: true, notificationText: "'$codeName' was set in $deviceName at ${location.name}" ]
+				responseMap.descriptionText = "${getStatusForDescription('set')} \"Master Code\""
+				responseMap.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}" ]
 				break
 			case 3: // PINCodeDeleted
 				if (codeID == 255) {
 					result = allCodesDeletedEvent()
 					responseMap.value = "all deleted"
-					responseMap.descriptionText = "All user codes deleted"
-					responseMap.data = [notify: true, notificationText: "All user codes deleted in $deviceName at ${location.name}"]
+					responseMap.descriptionText = "Deleted all user codes"
+					responseMap.data = [notify: true, notificationText: "Deleted all user codes in $deviceName at ${location.name}"]
 					result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
 				} else {
 					codeName = getCodeName(lockCodes, codeID)
 					responseMap.value = "$codeID deleted"
-					responseMap.descriptionText = "Code named '$codeName' was deleted"
-					responseMap.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was deleted in $deviceName at ${location.name}" ]
+					responseMap.descriptionText = "Deleted \"$codeName\""
+					responseMap.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 					result << codeDeletedEvent(lockCodes, codeID)
 				}
 				break
@@ -859,8 +858,8 @@ private def parseCommandResponse(String description) {
 				codeName = getCodeNameFromState(lockCodes, codeID)
 				def changeType = getChangeType(lockCodes, codeID)
 				responseMap.value = "$codeID $changeType"
-				responseMap.descriptionText = "Code named '$codeName' was $changeType"
-				responseMap.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was $changeType in $deviceName at ${location.name}" ]
+				responseMap.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
+				responseMap.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" in $deviceName at ${location.name}" ]
 				result << codeSetEvent(lockCodes, codeID, codeName)
 				break
 			default:
@@ -895,8 +894,8 @@ private def parseCommandResponse(String description) {
 					log.debug "Code matches - lock code creation successful"
 					def changeType = getChangeType(lockCodes, codeID)
 					responseMap.value = "$codeID $changeType"
-					responseMap.descriptionText = "Code named '$codeName' was $changeType"
-					responseMap.data = [ codeName: codeName, notify: true, notificationText: "Code named '$codeName' was $changeType in $deviceName at ${location.name}" ]
+					responseMap.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
+					responseMap.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" in $deviceName at ${location.name}" ]
 					result << codeSetEvent(lockCodes, codeID, codeName)
 				} else {
 					// Code update failed
@@ -913,7 +912,8 @@ private def parseCommandResponse(String description) {
 				// Populating the 'lockCodes' attribute after scanning a code slot
 				log.debug "Scanning lock - code $codeID is occupied"
 				responseMap.value = "$codeID set"
-				responseMap.descriptionText = "Code named '$codeName' was set"
+				responseMap.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
+				// We don't show notification for codes that are scanned
 				responseMap.data = [ codeName: codeName ]
 				result << codeSetEvent(lockCodes, codeID, codeName)
 			}
@@ -936,6 +936,7 @@ private def parseCommandResponse(String description) {
 				// Code slot found empty while scanning the lock
 				responseMap.value = "$codeID unset"
 				responseMap.descriptionText = "Code slot $codeID found empty during scanning"
+				//This event will not be generated at all since isStateChange is false
 				responseMap.isStateChange = false
 				responseMap.displayed = false
 			}
@@ -1074,8 +1075,8 @@ private def allCodesDeletedEvent() {
 		def codeName = code
 		result << createEvent(name: "codeChanged", value: "$id deleted",
 		data: [ codeName: codeName, lockName: deviceName,
-			notify: true, notificationText: "Code named '$codeName' was deleted in $deviceName at ${location.name}" ],
-		descriptionText: "Code named '$codeName' was deleted",
+			notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ],
+		descriptionText: "Deleted \"$codeName\"",
 		displayed: true, isStateChange: true)
 		clearStateForSlot(id)
 	}
@@ -1164,6 +1165,21 @@ private def getChangeType(lockCodes, codeID) {
 		changeType = "changed"
 	}
 	changeType
+}
+
+/**
+ * Method to obtain status for descriptuion based on change type
+ * @param changeType: Either "set" or "changed"
+ * @return "Added" for "set", "Updated" for "changed", "" otherwise
+ */
+private def getStatusForDescription(changeType) {
+	if("set" == changeType) {
+		return "Added"
+	} else if("changed" == changeType) {
+		return "Updated"
+	}
+	//Don't return null as it cause trouble
+	return ""
 }
 
 /**
