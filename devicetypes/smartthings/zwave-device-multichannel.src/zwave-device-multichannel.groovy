@@ -163,7 +163,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 			def formatCmd = ([cmd.commandClass, cmd.command] + cmd.parameter).collect{ String.format("%02X", it) }.join()
 			createEvent(name: "epEvent", value: "$cmd.sourceEndPoint:$formatCmd", isStateChange: true, displayed: false, descriptionText: "(fwd to ep $cmd.sourceEndPoint)")
 		} else {
-			zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
+			zwaveEvent(encapsulatedCommand)
 		}
 	}
 }
@@ -173,7 +173,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	if (encapsulatedCommand) {
 		state.sec = 1
 		def result = zwaveEvent(encapsulatedCommand)
-		result = result.collect {
+		result = [result].flatten().collect {
 			if (it instanceof physicalgraph.device.HubAction && !it.toString().startsWith("9881")) {
 				response(cmd.CMD + "00" + it.toString())
 			} else {
