@@ -28,6 +28,7 @@ metadata {
 
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeon Labs Micro Smart Switch"
+		fingerprint mfr:"010F", prod:"0602", model:"1001", deviceJoinName: "Fibaro Wall Plug"
 	}
 
 	// simulator metadata
