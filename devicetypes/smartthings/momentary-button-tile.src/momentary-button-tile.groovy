@@ -32,7 +32,7 @@ metadata {
 	tiles(scale: 2){
 		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4){
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState("off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on")on")
+				attributeState("off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on")
 				attributeState("on", label: 'Push', action: "momentary.push", backgroundColor: "#00a0dc")
 			}	
 		}
