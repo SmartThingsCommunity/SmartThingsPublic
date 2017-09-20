@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Door/Window Sensor 2", namespace: "Fibargroup", author: "Fibar Group S.A.") {	
+	definition (name: "Fibaro Door/Window Sensor 2", namespace: "fibargroup", author: "Fibar Group S.A.") {	
 		capability "Contact Sensor"
 		capability "Tamper Alert"
 		capability "Temperature Measurement"
@@ -22,7 +22,8 @@ metadata {
 		capability "Health Check"
 	
 		attribute "temperatureAlarm", "string"
-	
+		attribute "multiStatus", "string"
+
 		fingerprint mfr: "010F", prod: "0702"
 		fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x22,0x80,0x56,0x7A,0x73,0x98,0x31,0x85,0x70,0x5A,0x72,0x8E,0x71,0x86,0x84"
 		fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x22,0x80,0x56,0x7A,0x73,0x31,0x85,0x70,0x5A,0x72,0x8E,0x71,0x86,0x84"
@@ -40,7 +41,8 @@ metadata {
 		}
 		
 		valueTile("tamper", "device.tamper", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
-			state "tamper", label:'Tamper:\n ${currentValue}'
+			state "detected", label:'tampered'
+			state "clear", label:'tamper clear'
 		}
 		
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
@@ -118,13 +120,26 @@ metadata {
 			)
 		}
 		
-		input ( name: "logging", title: "Logging", type: "boolean", required: false )
+		input ( name: "logging", title: "Logging", type: "boolean", defaultValue: true, required: false )
 	}
 }
 
+def installed() {
+	state.logging = true
+	// Initial states for OCF compatibility
+	sendEvent(name: "tamper", value: "clear", displayed: false)
+	sendEvent(name: "contact", value: "open", displayed: false)
+	sendEvent(name: "checkInterval", value: 21600 * 4 + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def updated() {
-	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-	logging("${device.displayName} - Executing updated()","info")
+	if (settings.logging) {
+		state.logging = settings.logging
+	}
+	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) {
+		return
+	}
+	logging("${device.displayName} - Executing updated()","debug")
 
 	if ( settings.temperatureHigh as Integer == 0 && settings.temperatureLow as Integer == 0 ) { 
 		sendEvent(name: "temperatureAlarm", value: null, displayed: false) 
@@ -148,7 +163,9 @@ private syncStart() {
 	Integer settingValue = null
 	parameterMap().each {
 		if(settings."$it.key" != null || it.num == 54) {
-			if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] } 
+			if (state."$it.key" == null) {
+				state."$it.key" = [value: null, state: "synced"]
+			} 
 			if ( (it.num as Integer) == 54 ) { 
 				settingValue = (((settings."temperatureHigh" as Integer) == 0) ? 0 : 1) + (((settings."temperatureLow" as Integer) == 0) ? 0 : 2)
 			} else if ( (it.num as Integer) in [55,56] ) { 
@@ -165,25 +182,25 @@ private syncStart() {
 	}
 	
 	if(settings.wakeUpInterval != null) {
-		if (state.wakeUpInterval == null) { state.wakeUpInterval = [value: null, state: "synced"] } 
+		if (state.wakeUpInterval == null) {
+			state.wakeUpInterval = [value: null, state: "synced"]
+		} 
 		if (state.wakeUpInterval.value != ((settings.wakeUpInterval as Integer) * 3600)) { 
 			sendEvent(name: "checkInterval", value: (settings.wakeUpInterval as Integer) * 3600 * 4 + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 			state.wakeUpInterval.value = ((settings.wakeUpInterval as Integer) * 3600)
 			state.wakeUpInterval.state = "notSynced"
 			syncNeeded = true
 		}
-	} else {
-		sendEvent(name: "checkInterval", value: 21600 * 4 + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
 	
 	if ( syncNeeded ) { 
-		logging("${device.displayName} - sync needed.", "info")
+		logging("${device.displayName} - sync needed.", "debug")
 		multiStatusEvent("Sync pending. Please wake up the device by pressing the tamper button.", true)
 	}
 }
 
 private syncNext() {
-	logging("${device.displayName} - Executing syncNext()","info")
+	logging("${device.displayName} - Executing syncNext()","debug")
 	def cmds = []
 	for ( param in parameterMap() ) {
 		if ( state."$param.key"?.value != null && state."$param.key"?.state in ["notSynced","inProgress"] ) {
@@ -203,7 +220,7 @@ private syncNext() {
 }
 
 private syncCheck() {
-	logging("${device.displayName} - Executing syncCheck()","info")
+	logging("${device.displayName} - Executing syncCheck()","debug")
 	def failed = []
 	def incorrect = []
 	def notSynced = []
@@ -225,7 +242,9 @@ private syncCheck() {
 		multiStatusEvent("Sync incomplete! Wake up the device again by pressing the tamper button.", true, true)
 	} else {
 		sendHubCommand(response(encap(zwave.wakeUpV1.wakeUpNoMoreInformation())))
-		if (device.currentValue("multiStatus")?.contains("Sync")) { multiStatusEvent("Sync OK.", true, true) }
+		if (device.currentValue("multiStatus")?.contains("Sync")) {
+			multiStatusEvent("Sync OK.", true, true)
+		}
 	}
 }
 
@@ -236,7 +255,7 @@ private multiStatusEvent(String statusValue, boolean force = false, boolean disp
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
-	logging("${device.displayName} woke up", "info")
+	logging("${device.displayName} woke up", "debug")
 	def cmds = []
 	sendEvent(descriptionText: "$device.displayName woke up", isStateChange: true)
 	if ( state.wakeUpInterval?.state == "notSynced" && state.wakeUpInterval?.value != null ) {
@@ -251,7 +270,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	def paramKey = parameterMap().find( {it.num == cmd.parameterNumber } ).key
-	logging("${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state."$paramKey".value, "info")
+	logging("${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state."$paramKey".value, "debug")
 	state."$paramKey".state = (state."$paramKey".value == cmd.scaledConfigurationValue) ? "synced" : "incorrect"
 	syncNext()
 }
@@ -267,46 +286,87 @@ def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationRejec
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
-	logging("${device.displayName} - AlarmReport received, zwaveAlarmType: ${cmd.zwaveAlarmType}, zwaveAlarmEvent: ${cmd.zwaveAlarmEvent}", "info")
-	def lastTime = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
+	def map = [:]
+	logging("${device.displayName} - AlarmReport received, zwaveAlarmType: ${cmd.zwaveAlarmType}, zwaveAlarmEvent: ${cmd.zwaveAlarmEvent}", "debug")
 	switch (cmd.zwaveAlarmType) {
-		case 6: 
-			sendEvent(name: "contact", value: (cmd.zwaveAlarmEvent == 22)? "open":"closed"); 
-			if (cmd.zwaveAlarmEvent == 22) { multiStatusEvent("Contact Open - $lastTime") }
-			break;
-		case 7: 
-			sendEvent(name: "tamper", value: (cmd.zwaveAlarmEvent == 3)? "detected":"clear"); 
-			if (cmd.zwaveAlarmEvent == 3) { multiStatusEvent("Tamper - $lastTime") }
-			break;
+		case 6:
+			map.name = "contact"
+			switch (cmd.zwaveAlarmEvent) {
+				case 22:
+					map.value = "open"
+					map.descriptionText = "${device.displayName} is open"
+					break
+				case 23:
+					map.value = "closed"
+					map.descriptionText = "${device.displayName} is closed"
+					break
+			}
+			break
+		case 7:
+			map.name = "tamper"
+			switch (cmd.zwaveAlarmEvent) {
+				case 0:
+					map.value = "clear"
+					map.descriptionText = "Tamper alert cleared"
+					break
+				case 3:
+					map.value = "detected"
+					map.descriptionText = "Tamper alert: sensor removed or covering opened"
+					break
+			}
+			break
 		case 4:
 			if (device.currentValue("temperatureAlarm")?.value != null) {
+				map.name = "temperatureAlarm"
 				switch (cmd.zwaveAlarmEvent) {
-					case 0: sendEvent(name: "temperatureAlarm", value: "clear"); break;
-					case 2: sendEvent(name: "temperatureAlarm", value: "overheat"); break;
-					case 6: sendEvent(name: "temperatureAlarm", value: "underheat"); break;
-				}; 
-			};
-			break;
-		default: logging("${device.displayName} - Unknown zwaveAlarmType: ${cmd.zwaveAlarmType}","warn");
+					case 0:
+						map.value = "clear"
+						map.descriptionText = "Temperature alert cleared"
+						break
+					case 2:
+						map.value = "overheat"
+						map.descriptionText = "Temperature alert: overheating detected"
+						break
+					case 6:
+						map.value = "underheat"
+						map.descriptionText = "Temperature alert: underheating detected"
+						break
+				}
+			}
+			break
+		default:
+			logging("${device.displayName} - Unknown zwaveAlarmType: ${cmd.zwaveAlarmType}","warn")
+			break
 	}
+	createEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	logging("${device.displayName} - SensorMultilevelReport received, sensorType: ${cmd.sensorType}, scaledSensorValue: ${cmd.scaledSensorValue}", "info")
+	def map = [:]
+	logging("${device.displayName} - SensorMultilevelReport received, sensorType: ${cmd.sensorType}, scaledSensorValue: ${cmd.scaledSensorValue}", "debug")
 	switch (cmd.sensorType) {
 		case 1:
 			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			sendEvent(name: "temperature", unit: getTemperatureScale(), value: convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision), displayed: true)
+
+			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+			map.unit = getTemperatureScale()
+			map.name = "temperature"
+			map.displayed = true
 			break
 		default: 
 			logging("${device.displayName} - Unknown sensorType: ${cmd.sensorType}","warn")
 			break
 	}
+	createEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-	logging("${device.displayName} - BatteryReport received, value: ${cmd.batteryLevel}", "info")
+	logging("${device.displayName} - BatteryReport received, value: ${cmd.batteryLevel}", "debug")
 	sendEvent(name: "battery", value: cmd.batteryLevel.toString(), unit: "%", displayed: true)
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	logging("Catchall reached for cmd: $cmd")
 }
 
 def parse(String description) {
@@ -354,18 +414,18 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 }
 
 private logging(text, type = "debug") {
-	if (settings.logging == "true") {
+	if (state.logging == true) {
 		log."$type" text
 	}
 }
 
 private secEncap(physicalgraph.zwave.Command cmd) {
-	logging("${device.displayName} - encapsulating command using Secure Encapsulation, command: $cmd","info")
+	logging("${device.displayName} - encapsulating command using Secure Encapsulation, command: $cmd","debug")
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
 private crcEncap(physicalgraph.zwave.Command cmd) {
-	logging("${device.displayName} - encapsulating command using CRC16 Encapsulation, command: $cmd","info")
+	logging("${device.displayName} - encapsulating command using CRC16 Encapsulation, command: $cmd","debug")
 	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format() 
 }
 
@@ -375,7 +435,7 @@ private encap(physicalgraph.zwave.Command cmd) {
 	} else if (zwaveInfo.cc.contains("56")){ 
 		crcEncap(cmd)
 	} else {
-		logging("${device.displayName} - no encapsulation supported for command: $cmd","info")
+		logging("${device.displayName} - no encapsulation supported for command: $cmd","debug")
 		cmd.format()
 	}
 }
@@ -460,3 +520,4 @@ private parameterMap() {[
 		descr: "If temperature is lower than set value, low temperature alarm will be triggered."]
 	]
 }
+
