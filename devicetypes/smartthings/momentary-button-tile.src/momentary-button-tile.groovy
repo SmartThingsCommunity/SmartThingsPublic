@@ -29,10 +29,12 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#00A0DC"
+	tiles(scale: 2){
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4){
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState("off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on")
+				attributeState("on", label: 'Push', action: "momentary.push", backgroundColor: "#00a0dc")
+			}	
 		}
 		main "switch"
 		details "switch"
