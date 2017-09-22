@@ -940,6 +940,7 @@ def pollChildren(PodUid)
 					log.debug "updating dni $dni"
                     
                     def stemp = stat.temperature.toDouble().round(1)
+                    def shumidify =  stat.humidity.toDouble().round()
 
                     if (setTemp.temperatureUnit == "F") {
                         stemp = cToF(stemp).round(1)
@@ -966,7 +967,7 @@ def pollChildren(PodUid)
                     
 					def data = [
 						temperature: stemp,
-						humidity: stat.humidity,
+						humidity: shumidify,
                         targetTemperature: setTemp.targetTemperature,
                         fanLevel: setTemp.fanLevel,
                         mode: setTemp.mode,
