@@ -156,7 +156,7 @@ final ArrayList < String[] > getDevices() {
  if (devs == [null, null, null, null, null]) log.info("------No devices configured in $device preferences--------")
  String[] ends = [end1, end2, end3, end4, end5]
  ArrayList < String[] > list = new ArrayList < > ([])
- for (int i = 0; i < 4; i++) {
+ for (int i = 0; i < 5; i++) {
   if (devs[i] != null) {
    list.add([devs[i], ends[i]])
   }
