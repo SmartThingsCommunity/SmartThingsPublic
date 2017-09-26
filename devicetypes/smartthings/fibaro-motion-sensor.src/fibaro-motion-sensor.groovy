@@ -146,7 +146,6 @@ def configure() {
     cmds << response(zwave.batteryV1.batteryGet())
     cmds << response(zwave.versionV1.versionGet().format())
     cmds << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-    cmds << response(zwave.firmwareUpdateMdV2.firmwareMdGet().format())
 
 	delayBetween(cmds, 500)
 }
