@@ -46,13 +46,13 @@
 		capability 	"Illuminance Measurement"
 		capability 	"Sensor"
 		capability 	"Battery"
-		capability  "Health Check"
+		capability  	"Health Check"
 
-        command		"resetParams2StDefaults"
-        command		"listCurrentParams"
-        command		"updateZwaveParam"
-        command		"test"
-        command		"configure"
+        	command		"resetParams2StDefaults"
+        	command		"listCurrentParams"
+        	command		"updateZwaveParam"
+        	command		"test"
+		command		"configure"
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x84,0x85,0x80,0x8F,0x56,0x72,0x86,0x70,0x8E,0x31,0x9C,0xEF,0x30,0x31,0x9C"
 	}
@@ -80,12 +80,14 @@
 		}
 	}
 
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00a0dc"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
-		}
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+	 tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
+				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
+			}
+ 		}
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 			backgroundColors:[
 				[value: 31, color: "#153591"],
@@ -97,20 +99,19 @@
 				[value: 96, color: "#bc2323"]
 			]
 		}
-		valueTile("illuminance", "device.illuminance", inactiveLabel: false) {
+		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
 			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
-        standardTile("acceleration", "device.acceleration") {
+        	standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
 			state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#00a0dc")
 			state("inactive", label:'still', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc")
 		}
-
 
 		main(["motion", "temperature", "acceleration", "illuminance"])
 		details(["motion", "temperature", "acceleration", "battery", "illuminance", "configure"])
@@ -145,7 +146,6 @@ def configure() {
     cmds << response(zwave.batteryV1.batteryGet())
     cmds << response(zwave.versionV1.versionGet().format())
     cmds << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-    cmds << response(zwave.firmwareUpdateMdV2.firmwareMdGet().format())
 
 	delayBetween(cmds, 500)
 }
