@@ -40,17 +40,19 @@ metadata {
 
 	}
 
-	tiles {
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			}
 		}
 
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 

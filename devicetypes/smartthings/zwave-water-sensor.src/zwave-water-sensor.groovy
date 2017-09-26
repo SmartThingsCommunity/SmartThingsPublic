@@ -30,12 +30,14 @@ metadata {
 		status "wet": "command: 3003, payload: FF"
 	}
 
-	tiles {
-		standardTile("water", "device.water", width: 2, height: 2) {
-			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC"
+	tiles(scale:2) {
+		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
+			tileAttribute("device.water", key: "PRIMARY_CONTROL") {
+				attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
+				attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC")
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 

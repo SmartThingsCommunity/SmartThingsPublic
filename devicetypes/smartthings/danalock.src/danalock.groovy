@@ -31,24 +31,26 @@ metadata {
 		reply "988100620100,delay 4200,9881006202": "command: 9881, payload: 00 62 03 00 00 06 FE FE"
 	}
 
-	tiles {
-		standardTile("toggle", "device.lock", width: 2, height: 2) {
-			state "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00a0dc", nextState:"unlocking"
-			state "unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking"
-			state "unknown", label:"unknown", action:"lock.lock", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff", nextState:"locking"
-			state "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#00a0dc"
-			state "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"toggle", type: "generic", width: 6, height: 4){
+			tileAttribute("device.lock", key: "PRIMARY_CONTROL") {
+				attributeState("locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00a0dc", nextState:"unlocking")
+				attributeState("unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking")
+				attributeState("unknown", label:"unknown", action:"lock.lock", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff", nextState:"locking")
+				attributeState("locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#00a0dc")
+				attributeState("unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff")
+			}
 		}
-		standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat") {
+		standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'lock', action:"lock.lock", icon:"st.locks.lock.locked", nextState:"locking"
 		}
-		standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat") {
+		standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'unlock', action:"lock.unlock", icon:"st.locks.lock.unlocked", nextState:"unlocking"
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		standardTile("refresh", "device.lock", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
