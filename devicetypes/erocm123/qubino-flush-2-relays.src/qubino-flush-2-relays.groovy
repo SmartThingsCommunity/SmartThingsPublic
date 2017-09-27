@@ -135,7 +135,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep=null) {
-    logging("SwitchBinaryReport ${cmd}", 2)
+    logging("SwitchBinaryReport ${cmd} , ${ep}", 2)
     if (ep) {
         def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep$ep"}
         if (childDevice)
@@ -386,7 +386,12 @@ def update_needed_settings() {
 
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
-
+    
+    //cmds << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1, nodeId: [0,zwaveHubNodeId,1])
+    //cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
+    cmds << zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
+    cmds << zwave.associationV2.associationGet(groupingIdentifier: 1)
+    
     configuration.Value.each {
         if ("${it.@setting_type}" == "zwave" && it.@disabled != "true") {
             if (currentProperties."${it.@index}" == null) {
