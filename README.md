@@ -54,14 +54,14 @@ For all the device types, make sure publish them. If you're using github, use th
 
 1. Create a new Smartthings App in the IDE. Use the code from DSCIntegration.groovy in the smartapps folder for the new smartapp. Save and publish as needed.
 
-2. Click "Enable OAuth in Smart App" and copy down the generated "OAuth Client ID" and the "OAuth Client Secret", you will need them later to generate an access code.
-   Again make sure you save and apply this before you leave the page, as the oauth information displayed isn't actually applied until you do so.
+2. Click "Enable OAuth in Smart App" Make sure you save and apply this before you leave the page, as the oauth information displayed isn't actually applied until you do so.
 
-3. Now the hard part, we need to authorize this Smarttthings app to be used via the REST API.
-   It's going to take a few steps but all you need is a web browser and your OAuth ID's from the app setup page.
-   Follow the RESTAPISetup.md document in this same repo to finish the setup.
+3. Add/Install the SmartApp on your device and scroll to the bottom section that says "Show SmartApp Token Info". Copy all this information and save it. You can probably email it to yourself so you can easily copy and paste to your Alarmserver config.
 
-4. Once OAuth setup is completed, edit the settings for the DSC Integration app on your phone, and fill in the IP/Port with the correct information for your alarmserver.
+4. Once that is done, locate the following lines in your alarmserver.cfg and fill them in with the app ID and access token: callbackurl_app_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx callbackurl_access_token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+Additionally, you might want to set the "callbackurl_base" line in the cfg file to whatever URL is output in the SmartApp Token info. There have been some cases where smartapps are requiring this URL and won't bind to the regular "https://graph.api.smartthings.com" URL. 
+
+5. Once OAuth setup is completed, edit the settings for the DSC Integration app on your phone, and fill in the IP/Port with the correct information for your alarmserver.
    The port is typically the "httpsport" setting in your alarmserver.cfg, and the IP should be the IP of your alarmserver and not your envisalink device. If need be, setup
    any push notifications here as well. NOTE: THIS MUST BE THE IP ADDRESS! THE CODE DOES NOT RESOLVE HOSTNAMES/DNS AT THIS TIME. See TODO.
 
