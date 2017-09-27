@@ -56,7 +56,7 @@ For all the device types, make sure publish them. If you're using github, use th
 
 2. Click "Enable OAuth in Smart App" Make sure you save and apply this before you leave the page, as the oauth information displayed isn't actually applied until you do so.
 
-3. Go to the SmartApp and scroll to the bottom section that says "Show SmartApp Token Info". Copy all this information and save it. You can probably email it to yourself so you can easily copy and paste to your Alarmserver config.
+3. Add/Install the SmartApp on your device and scroll to the bottom section that says "Show SmartApp Token Info". Copy all this information and save it. You can probably email it to yourself so you can easily copy and paste to your Alarmserver config.
 
 4. Once that is done, locate the following lines in your alarmserver.cfg and fill them in with the app ID and access token: callbackurl_app_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx callbackurl_access_token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
