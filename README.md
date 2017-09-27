@@ -81,6 +81,7 @@ Additionally, you might want to set the "callbackurl_base" line in the cfg file 
 Thanks goes out to the following people, without their previous work none of this would have been possible:
 * juggie
 * Ethomasii
+* blacktirion
 * Rob Fisher <robfish@att.net>
 * Carlos Santiago <carloss66@gmail.com>
 * JTT <aesystems@gmail.com>
