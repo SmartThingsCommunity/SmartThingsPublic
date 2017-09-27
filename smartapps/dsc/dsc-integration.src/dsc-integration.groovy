@@ -21,55 +21,76 @@ definition(
 import groovy.json.JsonBuilder
 
 preferences {
-  section('Alarmserver Setup:') {
-    input('ip', 'text', title: 'IP', description: 'The IP of your alarmserver (required)', required: false)
-    input('port', 'text', title: 'Port', description: 'The port (required)', required: false)
-    input 'shmSync', 'enum', title: 'Smart Home Monitor Sync', required: false,
-      metadata: [
-       values: ['Yes','No']
-      ]
-    input 'shmBypass', 'enum', title: 'SHM Stay/Away Bypass', required: false,
-      metadata: [
-       values: ['Yes','No']
-      ]
-  }
-  section('XBMC Notifications (optional):') {
-    // TODO: put inputs here
-    input 'xbmcserver', 'text', title: 'XBMC IP', description: 'IP Address', required: false
-    input 'xbmcport', 'number', title: 'XBMC Port', description: 'Port', required: false
-  }
-  section('Notifications (optional)') {
-    input 'sendPush', 'enum', title: 'Push Notifiation', required: false,
-      metadata: [
-       values: ['Yes','No']
-      ]
-    input 'phone1', 'phone', title: 'Phone Number', required: false
-  }
-  section('Notification events (optional):') {
-    input 'notifyEvents', 'enum', title: 'Which Events?', description: 'Events to notify on', required: false, multiple: true,
-      options: [
-        'all', 'partition alarm', 'partition armed', 'partition away', 'partition chime', 'partition disarm',
-        'partition duress', 'partition entrydelay', 'partition exitdelay', 'partition forceready',
-        'partition instantaway', 'partition instantstay', 'partition nochime', 'partition notready', 'partition ready',
-        'partition restore', 'partition stay', 'partition trouble', 'partition keyfirealarm', 'partition keyfirerestore',
-        'partition keyauxalarm', 'partition keyauxrestore', 'partition keypanicalarm', 'partition keypanicrestore',
-        'led backlight on', 'led backlight off', 'led fire on', 'led fire off', 'led program on', 'led program off',
-        'led trouble on', 'led trouble off', 'led bypass on', 'led bypass off', 'led memory on', 'led memory off',
-        'led armed on', 'led armed off', 'led ready on', 'led ready off', 'zone alarm', 'zone clear', 'zone closed',
-        'zone fault', 'zone open', 'zone restore', 'zone smoke', 'zone tamper'
-      ]
-  }
+	page(name: "MainSetup")
 }
 
+def MainSetup() {
+    if (!state.accessToken) {
+        createAccessToken()
+    }
+	dynamicPage(name: "MainSetup", title: "DSC Setup", install:true, uninstall:true) {
+	  section('Alarmserver Setup:') {
+		input('ip', 'text', title: 'IP', description: 'The IP of your alarmserver (required)', required: false)
+		input('port', 'text', title: 'Port', description: 'The port (required)', required: false)
+		input 'shmSync', 'enum', title: 'Smart Home Monitor Sync', required: false,
+		  metadata: [
+		   values: ['Yes','No']
+		  ]
+		input 'shmBypass', 'enum', title: 'SHM Stay/Away Bypass', required: false,
+		  metadata: [
+		   values: ['Yes','No']
+		  ]
+	  }
+	  section('XBMC Notifications (optional):') {
+		// TODO: put inputs here
+		input 'xbmcserver', 'text', title: 'XBMC IP', description: 'IP Address', required: false
+		input 'xbmcport', 'number', title: 'XBMC Port', description: 'Port', required: false
+	  }
+	  section('Notifications (optional)') {
+		input 'sendPush', 'enum', title: 'Push Notifiation', required: false,
+		  metadata: [
+		   values: ['Yes','No']
+		  ]
+		input 'phone1', 'phone', title: 'Phone Number', required: false
+	  }
+	  section('Notification events (optional):') {
+		input 'notifyEvents', 'enum', title: 'Which Events?', description: 'Events to notify on', required: false, multiple: true,
+		  options: [
+			'all', 'partition alarm', 'partition armed', 'partition away', 'partition chime', 'partition disarm',
+			'partition duress', 'partition entrydelay', 'partition exitdelay', 'partition forceready',
+			'partition instantaway', 'partition instantstay', 'partition nochime', 'partition notready', 'partition ready',
+			'partition restore', 'partition stay', 'partition trouble', 'partition keyfirealarm', 'partition keyfirerestore',
+			'partition keyauxalarm', 'partition keyauxrestore', 'partition keypanicalarm', 'partition keypanicrestore',
+			'led backlight on', 'led backlight off', 'led fire on', 'led fire off', 'led program on', 'led program off',
+			'led trouble on', 'led trouble off', 'led bypass on', 'led bypass off', 'led memory on', 'led memory off',
+			'led armed on', 'led armed off', 'led ready on', 'led ready off', 'zone alarm', 'zone clear', 'zone closed',
+			'zone fault', 'zone open', 'zone restore', 'zone smoke', 'zone tamper'
+		  ]
+	  }
+	  section() {
+		paragraph "View this SmartApp's API and Token Configuration to use it in the Alarmserver config."
+		href url:"${apiServerUrl("/api/smartapps/installations/${app.id}/config?access_token=${state.accessToken}")}", style:"embedded", required:false, title:"Show Smartapp Token Info", description:"Tap, select, copy, then click \"Done\""
+      }
+    }
+}
 mappings {
   path('/update')            { action: [POST: 'update'] }
   path('/installzones')      { action: [POST: 'installzones'] }
   path('/installpartitions') { action: [POST: 'installpartitions'] }
+if (!params.access_token || (params.access_token && params.access_token != state.accessToken)) {
+  path("/config")                         { action: [GET: "authError"] }
+	
+} else {
+  path("/config")                         { action: [GET: "renderConfig"]  }
+}
 }
 
 def initialize() {
   if (settings.shmSync == 'Yes') {
     subscribe(location, 'alarmSystemStatus', shmHandler)
+  }
+  if(!state.accessToken) {
+	createAccessToken()
   }
 }
 
@@ -277,6 +298,7 @@ def sendUrl(url) {
 
 def installed() {
   log.debug 'Installed!'
+  initialize()
 }
 
 def updated() {
@@ -284,6 +306,26 @@ def updated() {
   unschedule()
   initialize()
   log.debug 'Updated!'
+}
+
+def authError() {
+    [error: "Permission denied"]
+}
+
+def renderConfig() {
+    def configJson = new groovy.json.JsonOutput().toJson([
+        description: "SmartApp Token/AppID",
+        platforms: [
+            [
+                app_url: apiServerUrl("/api/smartapps/installations/"),
+                app_id: app.id,
+                access_token:  state.accessToken
+            ]
+        ],
+    ])
+
+    def configString = new groovy.json.JsonOutput().prettyPrint(configJson)
+    render contentType: "text/plain", data: configString
 }
 
 private update() {
