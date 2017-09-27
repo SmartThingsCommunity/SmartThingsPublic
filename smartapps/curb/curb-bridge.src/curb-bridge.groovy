@@ -57,7 +57,7 @@ def updated() {
     log.debug "Updated with settings: ${settings}"
     removeChildDevices(getChildDevices())
     unsubscribe()
-   initialize()
+    initialize()
 }
 
 def initialize() {
@@ -66,12 +66,7 @@ def initialize() {
     refreshAuthToken()
     updateSelectedLocationId()
     getDevices()
-    runEvery5Minutes(getHistorical)
-    runEvery3Hours(refreshAuthToken)
-    runEvery3Hours(getKwhr)
-    def rate = settings.samplesPerMinute
-    //log.debug("Sampling at ${rate} samples per minute")
-    schedule("* * * * * ?", doPoll, [data: [cycles: rate]])
+    runEvery1Minute(getAllData)
 }
 
 def uninstalled() {
@@ -86,14 +81,7 @@ def authPage() {
     }
 
     if (atomicState.authToken) {
-        return dynamicPage(name: "auth", title: "Connected", nextPage: "", install: true, uninstall: true) {
-            section() {
-                paragraph("You are connected to Curb")
-            }
-            section() {
-                paragraph("If you need more frequent measurements, you may adjust the update rate below. [1-15]")
-                input "samplesPerMinute", "number", required: false, title: "Sample Rate (samples per minute)", defaultValue: 1, range: "1..15"
-            }
+        return dynamicPage(name: "auth", title: "SuccessfullyConnected", nextPage: "", install: true, uninstall: true) {
             section() {
                 paragraph("Select your Curb Location")
                 input(
@@ -120,7 +108,7 @@ def oauthInitUrl() {
         response_type: "code",
         scope: "offline_access",
         audience: "app.energycurb.com/api",
-        client_id: curbClientId,
+        client_id: appSettings.clientId,
         connection: "Users",
         state: atomicState.oauthInitState,
         redirect_uri: callbackUrl
@@ -160,16 +148,6 @@ def callback() {
     }
 }
 
-def doPoll(data) {
-    getUsage()
-    def period = 60.0 / settings.samplesPerMinute
-    def count = data.cycles;
-    count = count - 1;
-    if (count > 0) {
-        runIn(period, doPoll, [data: [cycles: count]])
-    }
-}
-
 private removeChildDevices(delete)
 {
     delete.each {
@@ -192,7 +170,7 @@ def getCurbLocations()
             resp ->
                 def locationNameList = []
                 def locationLookup = []
-                log.debug(resp.data)
+                //log.debug(resp.data)
                 resp.data.each{
                     locationNameList.push(it.name)
                     locationLookup.push(it)
@@ -210,7 +188,7 @@ def getCurbLocations()
 def updateSelectedLocationId()
 {
   atomicState.locationLookup.each{
-      log.debug "location match check: ${it.name} vs selected: ${settings.curbLocation}"
+      // log.debug "location match check: ${it.name} vs selected: ${settings.curbLocation}"
       if(it.name == settings.curbLocation){
           atomicState.location = it.id
           return it.id
@@ -233,20 +211,7 @@ def updateChildDevice(dni, label, values)
 
 def createChildDevice(dni, label)
 {
-  return addChildDevice("curb-v2", "Curb Power Meter", dni, null, [name: "${dni}", label: "${label}"])
-}
-
-def getUsage()
-{
-  log.debug atomicState.authToken
-    log.debug atomicState.location
-    def params = [
-      uri: "https://app.energycurb.com",
-      path: "/api/latest/${atomicState.location}",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
-        requestContentType: 'application/json'
-  ]
-  asynchttp_v1.get(processUsage, params)
+  return addChildDevice("curb", "Curb Power Meter", dni, null, [name: "${dni}", label: "${label}"])
 }
 
 def getDevices()
@@ -260,26 +225,33 @@ def getDevices()
   asynchttp_v1.get(processDevices, params)
 }
 
-def getHistorical()
+def getAllData()
 {
-    def params = [
-      uri: "https://app.energycurb.com",
-      path: "/api/historical/${atomicState.location}/24h/5m",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
-        requestContentType: 'application/json'
-  ]
-  asynchttp_v1.get(processHistorical, params)
-}
-def getKwhr()
-{
-    def params = [
-      uri: "https://app.energycurb.com",
-      path: "/api/aggregate/${atomicState.location}/billing/h",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
-        requestContentType: 'application/json'
-  ]
+  def historicalparams = [
+    uri: "https://app.energycurb.com",
+    path: "/api/historical/${atomicState.location}/24h/5m",
+      headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+      requestContentType: 'application/json'
+    ]
+  asynchttp_v1.get(processHistorical, historicalparams)
 
-  asynchttp_v1.get(processKwhr, params)
+  def kwhrparams = [
+    uri: "https://app.energycurb.com",
+    path: "/api/aggregate/${atomicState.location}/billing/h",
+      headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+      requestContentType: 'application/json'
+    ]
+
+  asynchttp_v1.get(processKwhr, kwhrparams)
+
+  def latestparams = [
+      uri: "https://app.energycurb.com",
+      path: "/api/latest/${atomicState.location}",
+        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        requestContentType: 'application/json'
+    ]
+  asynchttp_v1.get(processUsage, latestparams)
+
 }
 
 def processUsage(resp, data)
@@ -314,7 +286,6 @@ def processUsage(resp, data)
 
 def processDevices(resp, data)
 {
-  log.debug "IN PROCESS DEVICES"
     if (resp.hasError())
     {
         log.error "Error setting up devices: ${resp.getErrorMessage()}"
@@ -328,7 +299,6 @@ def processDevices(resp, data)
         {
           if(!it.main && !it.production)
             {
-            log.debug("Creating Device: ${it.label}")
               device = createChildDevice("${it.id}", "${it.label}")
             }
             if(it.production)
@@ -339,7 +309,7 @@ def processDevices(resp, data)
         createChildDevice("__NET__", "Main")
         if(hasProduction){
           createChildDevice("__PRODUCTION__", "Solar")
-            createChildDevice("__CONSUMPTION__", "Usage")
+          createChildDevice("__CONSUMPTION__", "Usage")
         }
     }
     getKwhr()
@@ -350,7 +320,7 @@ def processHistorical(resp, data)
 {
     if (resp.hasError())
     {
-        log.debug "Historical Response Error: ${resp.getErrorMessage()}"
+        log.error "Historical Response Error: ${resp.getErrorMessage()}"
         return
     }
 
@@ -434,7 +404,7 @@ def processKwhr(resp, data)
 {
     if (resp.hasError())
     {
-        log.debug "Historical Response Error: ${resp.getErrorMessage()}"
+        log.error "Kwhr Response Error: ${resp.getErrorMessage()}"
         return
     }
 
