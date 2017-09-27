@@ -33,11 +33,11 @@ definition(
 
 preferences {
     page(
-    name: "auth",
-    title: "Curb",
-    nextPage: "",
-    content: "authPage",
-    uninstall: true)
+        name: "auth",
+        title: "Curb",
+        nextPage: "",
+        content: "authPage",
+        uninstall: true)
 }
 
 mappings {
@@ -75,7 +75,6 @@ def uninstalled() {
 }
 
 def authPage() {
-    //log.debug "authPage()"
     if (!atomicState.accessToken) {
         atomicState.accessToken = createAccessToken()
     }
@@ -85,11 +84,25 @@ def authPage() {
             section() {
                 paragraph("Select your Curb Location")
                 input(
-                  name: "curbLocation",
-                  type: "enum",
-                  title: "Curb Location",
-                  options: atomicState.locationNames
-                  )
+                    name: "curbLocation",
+                    type: "enum",
+                    title: "Curb Location",
+                    options: atomicState.locationNames
+                )
+                input(
+                    name: "energyInterval",
+                    type: "enum",
+                    title: "Energy Interval",
+                    options: [
+                        "15m",
+                        "30m",
+                        "1h",
+                        "1d",
+                        "1mo",
+                        "billing"
+                    ],
+                    default: "30m"
+                )
             }
         }
     } else {
@@ -131,9 +144,9 @@ def callback() {
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
             resp ->
                 //log.debug "response contentType: ${resp.contentType}"
-            //log.debug("Got POST response: ${resp.data}")
+                //log.debug("Got POST response: ${resp.data}")
 
-            atomicState.refreshToken = resp.data.refresh_token
+                atomicState.refreshToken = resp.data.refresh_token
             atomicState.authToken = resp.data.access_token
 
             getCurbLocations()
@@ -148,15 +161,13 @@ def callback() {
     }
 }
 
-private removeChildDevices(delete)
-{
+private removeChildDevices(delete) {
     delete.each {
         deleteChildDevice(it.deviceNetworkId)
     }
 }
 
-def getCurbLocations()
-{
+def getCurbLocations() {
     //log.debug("Requesting Curb location info");
 
     def params = [
@@ -169,14 +180,14 @@ def getCurbLocations()
         httpGet(params) {
             resp ->
                 def locationNameList = []
-                def locationLookup = []
-                //log.debug(resp.data)
-                resp.data.each{
-                    locationNameList.push(it.name)
-                    locationLookup.push(it)
-                }
-                atomicState.locationNames = locationNameList
-                atomicState.locationLookup = locationLookup
+            def locationLookup = []
+            //log.debug(resp.data)
+            resp.data.each {
+                locationNameList.push(it.name)
+                locationLookup.push(it)
+            }
+            atomicState.locationNames = locationNameList
+            atomicState.locationLookup = locationLookup
 
             //log.debug("Location ID: ${atomicState.location}")
         }
@@ -185,287 +196,172 @@ def getCurbLocations()
     }
 }
 
-def updateSelectedLocationId()
-{
-  atomicState.locationLookup.each{
-      // log.debug "location match check: ${it.name} vs selected: ${settings.curbLocation}"
-      if(it.name == settings.curbLocation){
-          atomicState.location = it.id
-          return it.id
+def updateSelectedLocationId() {
+    atomicState.locationLookup.each {
+        // log.debug "location match check: ${it.name} vs selected: ${settings.curbLocation}"
+        if (it.name == settings.curbLocation) {
+            atomicState.location = it.id
+            return it.id
         }
     }
 }
 
-def updateChildDevice(dni, label, values)
-{
-    try
-    {
+def updateChildDevice(dni, label, values) {
+    try {
         def existingDevice = getChildDevice(dni)
         existingDevice.handleMeasurements(values)
-    }
-    catch (e)
-    {
+    } catch (e) {
         log.error "Error creating or updating device: ${e}"
     }
 }
 
-def createChildDevice(dni, label)
-{
-  return addChildDevice("curb", "Curb Power Meter", dni, null, [name: "${dni}", label: "${label}"])
+def createChildDevice(dni, label) {
+    return addChildDevice("curb", "Curb Power Meter", dni, null, [name: "${dni}", label: "${label}"])
 }
 
-def getDevices()
-{
+def getDevices() {
     def params = [
-      uri: "https://app.energycurb.com",
-      path: "/api/latest/${atomicState.location}",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
-        requestContentType: 'application/json'
-  ]
-  asynchttp_v1.get(processDevices, params)
-}
-
-def getAllData()
-{
-  def historicalparams = [
-    uri: "https://app.energycurb.com",
-    path: "/api/historical/${atomicState.location}/24h/5m",
-      headers: ["Authorization": "Bearer ${atomicState.authToken}"],
-      requestContentType: 'application/json'
-    ]
-  asynchttp_v1.get(processHistorical, historicalparams)
-
-  def kwhrparams = [
-    uri: "https://app.energycurb.com",
-    path: "/api/aggregate/${atomicState.location}/billing/h",
-      headers: ["Authorization": "Bearer ${atomicState.authToken}"],
-      requestContentType: 'application/json'
-    ]
-
-  asynchttp_v1.get(processKwhr, kwhrparams)
-
-  def latestparams = [
-      uri: "https://app.energycurb.com",
-      path: "/api/latest/${atomicState.location}",
+        uri: "https://app.energycurb.com",
+        path: "/api/latest/${atomicState.location}",
         headers: ["Authorization": "Bearer ${atomicState.authToken}"],
         requestContentType: 'application/json'
     ]
-  asynchttp_v1.get(processUsage, latestparams)
+    asynchttp_v1.get(processDevices, params)
+}
+
+def getAllData() {
+
+    def aggregateResolution = "h"
+    if (settings.energyInterval == "30m" || settings.energyInterval == "15m") {
+        aggregateResolution = "s"
+    }
+    if (settings.energyInterval == "1h") {
+        aggregateResolution == "m"
+    }
+
+    def kwhrparams = [
+        uri: "https://app.energycurb.com",
+        path: "/api/aggregate/${atomicState.location}/${settings.energyInterval}/${aggregateResolution}",
+        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        requestContentType: 'application/json'
+    ]
+
+    asynchttp_v1.get(processKwhr, kwhrparams)
+
+    def latestparams = [
+        uri: "https://app.energycurb.com",
+        path: "/api/latest/${atomicState.location}",
+        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        requestContentType: 'application/json'
+    ]
+
+    asynchttp_v1.get(processUsage, latestparams)
 
 }
 
-def processUsage(resp, data)
-{
-    if (resp.hasError())
-    {
+def processUsage(resp, data) {
+    if (resp.hasError()) {
         log.error "Usage Response Error: ${resp.getErrorMessage()}"
         return
     }
     def json = resp.json
-    if(json)
-    {
-    def hasProduction = false
-        json.circuits.each
-        {
-          if(!it.main && !it.production)
-            {
-              updateChildDevice("${it.id}", it.label, it.w)
+    if (json) {
+        def hasProduction = false
+        json.circuits.each {
+            if (!it.main && !it.production) {
+                updateChildDevice("${it.id}", it.label, it.w)
             }
-            if(it.production)
-            {
-              hasProduction = true
+            if (it.production) {
+                hasProduction = true
             }
         }
         updateChildDevice("__NET__", "Main", json.net)
-        if(hasProduction){
+        if (hasProduction) {
             updateChildDevice("__PRODUCTION__", "Solar", json.production)
-          updateChildDevice("__CONSUMPTION__", "Usage", json.consumption)
+            updateChildDevice("__CONSUMPTION__", "Usage", json.consumption)
         }
     }
 }
 
-def processDevices(resp, data)
-{
-    if (resp.hasError())
-    {
+def processDevices(resp, data) {
+    if (resp.hasError()) {
         log.error "Error setting up devices: ${resp.getErrorMessage()}"
         return
     }
     def json = resp.json
-    if(json)
-    {
-    def hasProduction = false
-        json.circuits.each
-        {
-          if(!it.main && !it.production)
-            {
-              device = createChildDevice("${it.id}", "${it.label}")
+    if (json) {
+        def hasProduction = false
+        json.circuits.each {
+            if (!it.main && !it.production) {
+                device = createChildDevice("${it.id}", "${it.label}")
             }
-            if(it.production)
-            {
-              hasProduction = true
+            if (it.production) {
+                hasProduction = true
             }
         }
         createChildDevice("__NET__", "Main")
-        if(hasProduction){
-          createChildDevice("__PRODUCTION__", "Solar")
-          createChildDevice("__CONSUMPTION__", "Usage")
+        if (hasProduction) {
+            createChildDevice("__PRODUCTION__", "Solar")
+            createChildDevice("__CONSUMPTION__", "Usage")
         }
     }
     getKwhr()
-    getHistorical()
 }
 
-def processHistorical(resp, data)
-{
-    if (resp.hasError())
-    {
-        log.error "Historical Response Error: ${resp.getErrorMessage()}"
-        return
-    }
-
-  def json = resp.json
-
-    if(json)
-    {
-        //log.debug "Got Historical Data: ${json}"
-        def total = null
-        def prod = null
-
-        json.each
-        {
-            updateChildDevice("${it.id}", it.label, it.values)
-            if(it.main)
-            {
-                it.values.sort{a,b -> a.t <=> b.t}
-                if(total == null)
-                {
-                    total = it
-                }
-                else
-                {
-                    if(it.values.size() != total.values.size())
-                    {
-                        log.debug("Size mismatch")
-                    }
-                    else
-                    {
-                        for(int i = 0; i < total.values.size(); ++i)
-                        {
-                            if(total.values[i].t != it.values[i].t)
-                            {
-                                log.debug("Time mismatch")
-                            }
-                            else
-                            {
-                                total.values[i].w = (total.values[i].w) + (it.values[i].w)
-                            }
-                        }
-                    }
-                }
-            }
-            if(it.production)
-            {
-                it.values.sort{a,b -> a.t <=> b.t}
-                if(prod == null)
-                {
-                    prod = it
-                }
-                else
-                {
-                    if(it.values.size() != total.values.size())
-                    {
-                        log.debug("Size mismatch")
-                    }
-                    else
-                    {
-                        for(int i = 0; i < total.values.size(); ++i)
-                        {
-                            if(prod.values[i].t != it.values[i].t)
-                            {
-                                log.debug("Time mismatch")
-                            }
-                            else
-                            {
-                                prod.values[i].w = (prod.values[i].w) + (it.values[i].w)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        updateChildDevice("__NET__", "Main", total.values)
-        updateChildDevice("__PRODUCTION__", "Solar", prod.values)
-    }
-}
-
-def processKwhr(resp, data)
-{
-    if (resp.hasError())
-    {
+def processKwhr(resp, data) {
+    if (resp.hasError()) {
         log.error "Kwhr Response Error: ${resp.getErrorMessage()}"
         return
     }
 
-  def json = resp.json
-  def mainkwh = 0.0
+    def json = resp.json
+    def mainkwh = 0.0
     def solarkwh = 0.0
     def usagekwh = 0.0
-    if(json)
-    {
-        json.each
-        {
-            if(it.main)
-            {
-              mainkwh = mainkwh + it.kwhr
+    if (json) {
+        json.each {
+            if (it.main) {
+                mainkwh = mainkwh + it.kwhr
             }
-            try
-        {
+            try {
                 def existingDevice = getChildDevice(it.id)
-                if(existingDevice)
-                {
-                     existingDevice.handleKwhr(it.kwhr)
-                     existingDevice.setAggregate(it)
+                if (existingDevice) {
+                    existingDevice.handleKwhr(it.kwhr)
+                    //existingDevice.setAggregate(it)
                 }
-        }
-            catch (e)
-            {
+            } catch (e) {
                 log.error "Error creating or updating device: ${e}"
             }
         }
         def existingDevice = getChildDevice("__NET__")
-        if (existingDevice)
-        {
+        if (existingDevice) {
             existingDevice.handleKwhr(mainkwh)
         }
     }
 }
 
 def toQueryString(Map m) {
-  return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
+    return m.collect {
+        k, v -> "${k}=${URLEncoder.encode(v.toString())}"
+    }.sort().join("&")
 }
 
 def refreshAuthToken() {
-  //log.debug "refreshing auth token"
+    if (!atomicState.refreshToken) {
+        log.warn "Can not refresh OAuth token since there is no refreshToken stored"
+    } else {
+        def tokenParams = [
+            grant_type: "refresh_token",
+            client_id: appSettings.clientId,
+            client_secret: appSettings.clientSecret,
+            refresh_token: atomicState.refreshToken
+        ]
 
-  if(!atomicState.refreshToken) {
-    log.warn "Can not refresh OAuth token since there is no refreshToken stored"
-  } else {
-    def tokenParams = [
-      grant_type: "refresh_token",
-      client_id : appSettings.clientId,
-      client_secret : appSettings.clientSecret,
-      refresh_token: atomicState.refreshToken
-    ]
-
-    httpPostJson([uri: curbTokenUrl, body: tokenParams]) { resp ->
-      //log.debug "response contentType: ${resp.contentType}"
-            //log.debug("Got POST response: ${resp.data}")
-
-      atomicState.authToken = resp.data.access_token
+        httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
+            resp ->
+                atomicState.authToken = resp.data.access_token
+        }
     }
-  }
 }
 
 //THIS DEFINES THE SCREEN AFTER AUTHORIZATION:
@@ -563,12 +459,28 @@ def connectionStatus(message, redirectUrl = null) {
   render contentType: 'text/html', data: html
 }
 
-def getCurbAuthUrl()         { return "https://energycurb.auth0.com" }
-def getCurbLoginUrl()        { return "${curbAuthUrl}/authorize" }
-def getCurbTokenUrl()        { return "${curbAuthUrl}/oauth/token" }
+        def getCurbAuthUrl() {
+            return "https://energycurb.auth0.com"
+        }
+        def getCurbLoginUrl() {
+            return "${curbAuthUrl}/authorize"
+        }
+        def getCurbTokenUrl() {
+            return "${curbAuthUrl}/oauth/token"
+        }
 
-def getServerUrl()           { return "https://graph.api.smartthings.com" }
-def getShardUrl()            { return getApiServerUrl() }
-def getCallbackUrl()         { return "https://graph.api.smartthings.com/oauth/callback" }
-def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
-def getApiEndpoint()         { return "https://api.energycurb.com" }
+        def getServerUrl() {
+            return "https://graph.api.smartthings.com"
+        }
+        def getShardUrl() {
+            return getApiServerUrl()
+        }
+        def getCallbackUrl() {
+            return "https://graph.api.smartthings.com/oauth/callback"
+        }
+        def getBuildRedirectUrl() {
+            return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}"
+        }
+        def getApiEndpoint() {
+            return "https://api.energycurb.com"
+        }
