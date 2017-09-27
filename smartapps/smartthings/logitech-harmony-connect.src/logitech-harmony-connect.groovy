@@ -366,14 +366,18 @@ Map discoverDevices() {
         def activities = [:]
         def hubs = [:]
         devices.each {
-			def hubkey = it.key
-			def hubname = getHubName(it.key)
-			def hubvalue = "${hubname}"
-			hubs["harmony-${hubkey}"] = hubvalue
-			it.value.response.data.activities.each {
-				def value = "${it.value.name}"
-				def key = "harmony-${hubkey}-${it.key}"
-				activities["${key}"] = value
+			if (it.value.response){
+				def hubkey = it.key
+				def hubname = getHubName(it.key)
+				def hubvalue = "${hubname}"
+				hubs["harmony-${hubkey}"] = hubvalue
+				it.value.response.data?.activities?.each {
+					def value = "${it.value.name}"
+					def key = "harmony-${hubkey}-${it.key}"
+					activities["${key}"] = value
+				}
+			} else {
+				log.trace "Harmony - Device $it.key is no longer available"
 			}
         }
         state.HarmonyHubs = hubs
@@ -638,7 +642,7 @@ def getActivityId(activity,hubId) {
                 }
             }
 		} catch(Exception e) {
-        	log.trace e
+        	log.trace "Harmony - getActivityId() response $e"
 		}
     }
 	return actid
@@ -655,7 +659,7 @@ def getHubName(hubId) {
                 hubname = response.data.data.name
             }
 		} catch(Exception e) {
-        	log.trace e
+        	log.trace "Harmony - getHubName() response $e"
 		}
     }
 	return hubname
