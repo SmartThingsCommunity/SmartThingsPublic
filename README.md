@@ -58,7 +58,7 @@ For all the device types, make sure publish them. If you're using github, use th
 
 3. Go to the SmartApp and scroll to the bottom section that says "Show SmartApp Token Info". Copy all this information and save it. You can probably email it to yourself so you can easily copy and paste to your Alarmserver config.
 
-3.5 Once that is done, locate the following lines in your alarmserver.cfg and fill them in with the app ID and access token:      callbackurl_app_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx callbackurl_access_token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+3.5 Once that is done, locate the following lines in your alarmserver.cfg and fill them in with the app ID and access token: callbackurl_app_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx callbackurl_access_token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 4. Once OAuth setup is completed, edit the settings for the DSC Integration app on your phone, and fill in the IP/Port with the correct information for your alarmserver.
    The port is typically the "httpsport" setting in your alarmserver.cfg, and the IP should be the IP of your alarmserver and not your envisalink device. If need be, setup
