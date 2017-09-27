@@ -12,8 +12,8 @@ definition(
     author: 'Jordan <jordan@xeron.cc>',
     description: 'DSC Integration App',
     category: 'My Apps',
-    iconUrl: 'https://dl.dropboxusercontent.com/u/2760581/dscpanel_small.png',
-    iconX2Url: 'https://dl.dropboxusercontent.com/u/2760581/dscpanel_large.png',
+    iconUrl: 'https://raw.githubusercontent.com/LXXero/DSCAlarm/master/resources/images/dscpanel_small.jpg',
+    iconX2Url: 'https://raw.githubusercontent.com/LXXero/DSCAlarm/master/resources/images/dscpanel_large.jpg',
     oauth: true,
     singleInstance: true
 )
