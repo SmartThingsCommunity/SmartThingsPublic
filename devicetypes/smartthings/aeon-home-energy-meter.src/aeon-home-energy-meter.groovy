@@ -22,6 +22,7 @@ metadata {
 		capability "Power Meter"
 		capability "Configuration"
 		capability "Sensor"
+		capability "Refresh"
 
 		command "reset"
 
