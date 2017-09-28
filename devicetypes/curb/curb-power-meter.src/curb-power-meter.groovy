@@ -72,5 +72,3 @@ String getDataString() {
     }
     return dataString
 }
-
-}
