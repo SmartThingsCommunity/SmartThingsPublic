@@ -67,10 +67,13 @@ def MainSetup() {
 			'zone fault', 'zone open', 'zone restore', 'zone smoke', 'zone tamper'
 		  ]
 	  }
-	  section() {
-		paragraph "View this SmartApp's API and Token Configuration to use it in the Alarmserver config."
+	  section('SmartApp Name:') {
+		label title:"SmartApp Label (optional)", required: false 
+	  }
+	  section('Token Info:') {
+		paragraph "View this SmartApp's AppID, URL and Token Configuration to use it in the Alarmserver config."
 		href url:"${apiServerUrl("/api/smartapps/installations/${app.id}/config?access_token=${state.accessToken}")}", style:"embedded", required:false, title:"Show Smartapp Token Info", description:"Tap, select, copy, then click \"Done\""
-      }
+	  }
     }
 }
 mappings {
@@ -317,7 +320,7 @@ def renderConfig() {
         description: "SmartApp Token/AppID",
         platforms: [
             [
-                app_url: apiServerUrl("/api/smartapps/installations/"),
+                app_url: apiServerUrl("/api/smartapps/installations"),
                 app_id: app.id,
                 access_token:  state.accessToken
             ]
