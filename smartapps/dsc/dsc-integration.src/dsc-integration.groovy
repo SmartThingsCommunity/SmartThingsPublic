@@ -320,7 +320,7 @@ def renderConfig() {
         description: "SmartApp Token/AppID",
         platforms: [
             [
-                app_url: apiServerUrl("/api/smartapps/installations/"),
+                app_url: apiServerUrl("/api/smartapps/installations"),
                 app_id: app.id,
                 access_token:  state.accessToken
             ]
