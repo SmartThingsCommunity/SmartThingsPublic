@@ -599,21 +599,30 @@ def pollChild( child )
 
 def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swingM, sUnit)
 {
-	log.debug "SetACStates ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel - SWING MODE : $swingM"
+	log.debug "SetACStates for $PodUid ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel - SWING MODE : $swingM - UNIT : $sUnit"
     
     //Return false if no values was read from Sensibo API
     if (on == "--") { return false }
     
     def OnOff = (on == "on") ? true : false
-    if (swingM == null) swingM = "stopped"
+    //if (swingM == null) swingM = "stopped"
     
     log.debug "Target Temperature :" + targetTemperature
     
-	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + '","targetTemperature": '+ targetTemperature + ',"swing": "' + swingM + '","temperatureUnit": "' + sUnit + '"}}'
-    
-    if (targetTemperature == 0) {
-    	jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '","fanLevel": "' + fanLevel + ',"swing": "' + swingM + '"}}'
+	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode
+    if (fanLevel != null) {
+       jsonRequestBody += '","fanLevel": "' + fanLevel + '"'
     }
+    
+    if (targetTemperature != 0) {
+    	jsonRequestBody += ',"targetTemperature": '+ targetTemperature + ',"temperatureUnit": "' + sUnit + '"'       
+    }
+    if (swingM != null)
+    {
+        jsonRequestBody += ',"swing": "' + swingM + '"'
+    }
+    
+    jsonRequestBody += '}}'
     
     log.debug "Mode Request Body = ${jsonRequestBody}"
 	debugEvent ("Mode Request Body = ${jsonRequestBody}")
@@ -757,7 +766,7 @@ def getACState(PodUid)
                 	if (stat.status == "Success") {
                     	
                         log.debug "get ACState Success"
-                        log.debug stat.acState
+                        log.debug "PodUID : $PodUid : " + stat.acState
                         
                         def OnOff = stat.acState.on ? "on" : "off"
                         stat.acState.on = OnOff
