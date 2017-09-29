@@ -1,12 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.1 - 9/13/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.2 - 9/22/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.1 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.3.1 (9/13/17) Added new extention: Rooms/Groups, disabling of Device Groups, add voice to message queue
+ *  Version 2.3.2 (9/22/17) Removed device group macro code, added UV index to Environmentals
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -96,7 +97,7 @@ def mainPageParent() {
         section("Items to interface to Alexa") {
             href "pageSwitches", title: "Lighting/Switches", description:getDesc(switchesSel() || dimmersSel() || cLightsSel() || cLightsKSel()), state: switchesSel() || dimmersSel() || cLightsSel() || cLightsKSel() ? "complete" : null, image:imgURL() + "power.png"
             href "pageDoors", title: "Doors/Windows/Locks", description: getDesc(doorsSel() || locksSel() || ocSensorsSel() || shadesSel()), state: doorsSel() || locksSel() || ocSensorsSel() || shadesSel() ? "complete" : null, image: imgURL() + "lock.png"
-            href "pageEnviro", title: "Environmentals", description:getDesc(tstatsSel() || tempsSel() || humidSel() || fooBotSel()), state: tstatsSel() || tempsSel() || humidSel() || fooBotSel() ? "complete" : null, image: imgURL() + "temp.png"
+            href "pageEnviro", title: "Environmentals", description:getDesc(tstatsSel() || tempsSel() || humidSel() || fooBotSel() || uvSel()), state: tstatsSel() || tempsSel() || humidSel() || fooBotSel() || uvSel()? "complete" : null, image: imgURL() + "temp.png"
             href "pageSpeakers", title: "Connected Speakers", description: getDesc(speakersSel()), state: speakersSel() ? "complete" : null, image:imgURL() + "speaker.png"     
             href "pageSensors", title: "Other Sensors", description:getDesc(waterSel() || presenceSel() || motionSel() || accelerationSel()), state: waterSel() || presenceSel() || motionSel() || accelerationSel() ? "complete" : null, image: imgURL() + "sensor.png"
             href "pageHomeControl", title: "Modes/SHM/Routines", description:getDesc(listModes || listRoutines || listSHM), state: (listModes|| listRoutines|| listSHM ? "complete" : null), image: imgURL() + "modes.png"
@@ -281,7 +282,8 @@ def pageEnviro(){
             input "tstats", "capability.thermostat", title: "Choose Thermostats (Temperature Setpoint/Status)", multiple: true, required: false, submitOnChange:true 
             input "temps", "capability.temperatureMeasurement", title: "Choose Temperature Devices (Status)", multiple: true, required: false
         	input "humid", "capability.relativeHumidityMeasurement", title: "Choose Humidity Devices (Status)", multiple: true, required: false
-            input "fooBot", "capability.carbonDioxideMeasurement", title: "Choose Foobot Air Quality Monitor (Status)", multiple: true, required: false, submitOnChange:true 
+            input "fooBot", "capability.carbonDioxideMeasurement", title: "Choose Foobot Air Quality Monitor (Status)", multiple: true, required: false, submitOnChange:true
+            input "UV", "capability.ultravioletIndex", title: "Choose UV Index Devices (Status)", multiple: true, required: false, submitOnChange:true
         }
         if (deviceAlias){
             section("Devices that can have aliases", hideWhenEmpty: true) {
@@ -289,6 +291,7 @@ def pageEnviro(){
             	input "tempsAlias", "capability.temperatureMeasurement", title: "Choose Temperature Devices", multiple: true, required: false
         		input "humidAlias", "capability.relativeHumidityMeasurement", title: "Choose Humidity Devices", multiple: true, required: false
                 input "fooBotAlias", "capability.carbonDioxideMeasurement", title: "Choose Foobot Air Quality Monitor", multiple: true, required: false, submitOnChange: true
+                input "UVAlias", "capability.ultravioletIndex", title: "Choose UV Index Devices (Status)", multiple: true, required: false, submitOnChange:true
             }
         }
         if (tstatsSel()){
@@ -424,7 +427,7 @@ def pageAliasAddFinal(){
 		else if (!aliasName || !aliasType || !aliasDevice) result="You did not enter all of the proper alias parameters. Go back and ensure all fields are filled in."
 		else {
 			def devType = [Switch:"switch", Dimmer:"level", "Colored Light":"color", "Temperature (Kelvin) Light": "kTemp", "Door Control":"door", "Window Shade":"shade", "Open/Close Sensor":"contact", "Temperature Sensor":"temperature", Lock:"lock",
-            	Thermostat:"thermostat", "Humidity Sensor":"humidity", Speaker:"music", "Acceleration Sensor":"acceleration", "Water Sensor":"water", "Motion Sensor":"motion", "Presence Sensor":"presence"][aliasType]?:aliasType
+            	Thermostat:"thermostat", "Humidity Sensor":"humidity", Speaker:"music", "Acceleration Sensor":"acceleration", "Water Sensor":"water", "Motion Sensor":"motion", "Presence Sensor":"presence", "Foobot Air Quality Monitor":"pollution", "UV Index Device":"uvIndex"][aliasType]?:aliasType
 			result = "Alias Name: ${aliasName}\nAlias Device Type: ${devType}\nDevice: ${aliasDevice}"
             state.aliasList<<["aliasName":aliasName,"aliasType":devType,"aliasDevice":"${aliasDevice}", "aliasTypeFull": aliasType, "aliasNameLC":aliasName.toLowerCase()]
 			success = true
@@ -829,21 +832,10 @@ def pageReset(){
 //Child Pages----------------------------------------------------
 def mainPageChild(){
     dynamicPage(name: "mainPageChild", title: "Macro Options", install: true, uninstall: true) {
-    	//Delete in version 2.3.2
-        if (macroType=="Group"){ 
-        	section {
-                def dType=[colorControl: "Colored Light",switchLevel:"Dimmer ",doorControl: "Door",lock:"Lock", switch:"Switch",colorTemperature:"Temperature (Kelvin) Light",thermostat:"Thermostat", windowShade: "Window Shades"][groupType]?:groupType
-                paragraph "Macro Name: ${app.label}\nGroup Type: ${dType}\nDevices: ${settings."groupDevice${groupType}"}\nUse Password: ${usePW ? "Yes" : "No" }"	
-                paragraph "Please note, Device Groups have been deprecated. Use the new Rooms/Groups extension as a replacement. When you are done copying the details of this macro, please delete it.", image: imgURL()+ "info.png"
-            }
-        }
-        else {//Delete in version 2.3.2
-        section {
+		section {
             label title:"Macro Name (Required)", required: true, image: imgURL() + "speak.png"
             href "pageMacroAliases", title: "Macro Aliases", description: macroAliasDesc(), state: macroAliasState()
-            if (macroType!="Group"){ //Delete in version 2.3.2
-            	input "macroType", "enum", title: "Macro Type...", options: [["Control":"Control (Run/Execute)"],["CoRE":"WebCoRE Trigger (Run/Execute)"],["GroupM":"Extension Group (Run/Execute)"]], required: false, multiple: false, submitOnChange:true
-            } //Delete in version 2.3.2
+           	input "macroType", "enum", title: "Macro Type...", options: [["Control":"Control (Run/Execute)"],["CoRE":"WebCoRE Trigger (Run/Execute)"],["GroupM":"Extension Group (Run/Execute)"]], required: false, multiple: false, submitOnChange:true
             def fullMacroName=[GroupM: "Extension Group",CoRE:"WebCoRE Trigger", Control:"Control"][macroType] ?: macroType
             if (macroType) {
             	href "page${macroType}", title: "${fullMacroName} Settings", description: macroTypeDesc(), state: greyOutMacro()
@@ -870,7 +862,6 @@ def mainPageChild(){
                 input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
             }
         }
-        }//Delete in version 2.3.2
         section("Tap below to remove this macro"){}
     }
 }
@@ -1255,6 +1246,7 @@ def processList(){
     if (listType =~/schedule/) outputTxt = parseMacroLists("Schedule","schedule","")
     if (listType =~/control/) outputTxt = parseMacroLists("Control","control macro","run")
     if (listType =~/pollution|air|quality/) { outputTxt = fooBot && fooBot.size()>1 ? "#Foobot air quality monitors#" : fooBot && fooBot.size()==1 ? "@Foobot air quality monitor@" : "%Foobot air quality monitors%"; devices=fooBot; aliasType="pollution" }
+    if (listType =~/uv|index/) { outputTxt = UV && UV.size()>1 ? "#UV Index Devices#" : UV && UV.size()==1 ? "@UV Index Device@" : "%UV Index Devices%"; devices=UV; aliasType="uvIndex" }
     if (listType =~/core|webcore|trigger/) outputTxt = parseMacroLists("CoRE","WEBCORE trigger","run")
     if (listType =~/extension group|group extention/) outputTxt = parseMacroLists("GroupM","extension group","run")
     if (listType =~/weather/) outputTxt = parseMacroLists("Weather","weather report","play")
@@ -1735,7 +1727,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
                 	if (otherStatus) {
                         def humidity = STdevice.currentValue("humidity"), wet=STdevice.currentValue("water"), contact=STdevice.currentValue("contact"), pollution = STdevice.currentValue("pollution")
                         result += humidity ? ", and the relative humidity is ${humidity}%. " : ". "
-                        result += wet ? "Also, this device is a leak sensor, and it is currently ${wet}. " : ""
+                        result += wet ? "Also, this device is a water sensor, and it is currently ${wet}. " : ""
                         result += contact ? "This device is also a contact sensor sensor, and it is currently reading ${contact}. " : ""
                         result += pollution ? "This device is also an air quality monitor that is currently reading: '${STdevice.currentValue("GPIstate")}', with a Global Pollution Index of ${pollution}%. " : ""
                     }
@@ -1828,6 +1820,12 @@ def getReply(devices, type, STdeviceName, op, num, param){
             }
             else if (type == "water") result = "The water sensor, '${STdeviceName}', is currently ${STdevice.currentValue(type)}. "
             else if (type == "shade") result = "The window shade, '${STdeviceName}', is currently " + STdevice.currentValue('windowShade') +". "
+            else if (type == "uvIndex") {
+            	def uvIndex = currValue<3 ? "low" : currValue < 6 && currValue > 2.9 ? "moderate" : 
+        			currValue < 8 && currValue > 5.9 ? "high" : currValue < 11 && currValue > 7.9 ? "very high" :
+            		"extreme"
+            	result = "The ${STdeviceName} is reading '${uvIndex}', with a UV index of ${STdevice.currentValue("ultravioletIndex")}. "
+            }
             else result = "The ${STdeviceName} is currently ${STdevice.currentValue(type)}. "
         }
         else if (op =~/event/) {	
@@ -2070,8 +2068,12 @@ def getReply(devices, type, STdeviceName, op, num, param){
             }
         }
         if (otherStatus && op=="status"){
-            def temp = STdevice.currentValue("temperature"), accel=STdevice.currentValue("acceleration"), motion=STdevice.currentValue("motion"), lux =STdevice.currentValue("illuminance") 
+            def temp = STdevice.currentValue("temperature"), accel=STdevice.currentValue("acceleration"), motion=STdevice.currentValue("motion"), lux =STdevice.currentValue("illuminance"), 
+            	uv=STdevice.currentValue("ultravioletIndex"), pressure=STdevice.currentPressure, humidity=STdevice.currentValue("humidity")
             result += lux ? "The illuminance at this device's location is ${lux} lux. " : ""
+            if (uv && type !="uvIndex") result += "The UV Index at this device's location is '${uvIndexReading(uv)}' with a reading of ${uv}. "
+            if (pressure) result += "This device is also reading a barometric pressure of ${pressure}. "
+            if (humidity && type !="humidity" && type !="temperature") result +="And the relative humdity at this location is ${humidity} percent. "
             result += temp && type != "thermostat" && type != "humidity" && type != "temperature" ? "In addition, the temperature reading from this device is ${roundValue(temp)} degrees. " : ""
 			result += motion == "active" && type != "motion" ? "This device is also a motion sensor, and it is currently reading movement. " : ""
  			result += accel == "active" ? "This device has a vibration sensor, and it is currently reading movement. " : ""
@@ -2108,200 +2110,6 @@ def macroResults(num, cmd, colorData, param, mNum,xParam){
     sendLocationEvent(name: "askAlexa", value: app.id, data: data, displayed: true, isStateChange: true, descriptionText: "Ask Alexa activated '${app.label}' macro.")
     return result
 }
-//Group Handler - Remove in version 2.3.2
-/*def groupResults(num, op, colorData, param, mNum){   
-    def grpType = [switch:"switch", switchLevel:"dimmer", colorTemperature: "temperature light", colorControl:"colored light", windowShade:"window shade", doorControl: "door"][groupType]?:groupType
-    String result = ""
-    try {
-        def noun= settings."groupDevice${groupType}"?.size()==1 ? grpType : grpType+"s"
-        if (grpType=="switch" && settings."groupDevice${groupType}"?.size()>1) noun = "switches"
-        def verb=settings."groupDevice${groupType}"?.size()==1 ? "is" : "are"
-        String valueWord, proNoun = settings."groupDevice${groupType}"?.size()==1 ? "its" : "their"
-        if (!settings."groupDevice${groupType}"?.size()) result = "There are no devices present in the device group, '${app.label}. %1%"
-        else if (op == "list") result = "The following ${noun} ${verb} in the '${app.label}' device group: "+ getList(settings."groupDevice${groupType}") +". "
-        else if (groupType=="switch"){
-            if (op ==~/on|off/) { settings."groupDevice${groupType}"?."$op"();result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am turning ${op} the ${noun} in the group named '${app.label}'. " }
-            else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost && !noAck? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " } 
-            else if (op==~/undefined|status|null/) {
-				if (!settings."groupDevice${groupType}"?.currentValue("switch").contains("off")) result = "All of the switches in the device group, '${app.label}', are on. "
-                else if (!settings."groupDevice${groupType}"?.currentValue("switch").contains("on")) result = "All of the switches in the device group, '${app.label}', are off. "
-                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue('switch')}. " }
-            }
-            else result = "For a switch device group, be sure to give an 'on', 'off', 'toggle' or 'status' command. %1%" 
-        }
-        else if (groupType==~/switchLevel|colorControl|colorTemperature/){
-            num = num < 1 ? 0 : num >99 ? 100 : num
-            if (op == "maximum") { num = 100; op ="undefined"; valueWord= "${proNoun} maximum brightness" }
-            else if (op==~/low|medium|high/ && groupType=="switchLevel") { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
-            else if (op==~/low|medium|high/ && groupType==~/colorControl|colorTemperature/ && !colorData ) { valueWord="${op}, or a value of ${num}%"; op ="undefined" }
-            else valueWord = "${num}%"
-            if (num==0 && op==~/undefined|null/ && param==~/undefined|null/ && mNum!="undefined" && mNum!="null") op="off"
-            if (op ==~/on|off/){ 
-            	settings."groupDevice${groupType}"?."$op"()
-                result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am turning ${op} the ${noun} in the group named '${app.label}'. "
-            }
-            else if (op == "toggle") { toggleState(settings."groupDevice${groupType}");result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am toggling the ${noun} in the group named '${app.label}'. " }
-            else if (groupType=="switchLevel" && num > 0 && op ==~/undefined|null/) { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am setting the ${noun} in the group named '${app.label}' to ${valueWord}. " }
-            else if (groupType==~/colorControl|colorTemperature/ && num > 0 && !colorData && op ==~/undefined|null/) { settings."groupDevice${groupType}"?.setLevel(num); result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") :  noAck ? " " :"I am setting the ${noun} in the '${app.label}' group to ${valueWord}. " }
-            else if (groupType=="colorControl" && colorData && param) {
-                colorData = [hue:colorData.hue, saturation: colorData.saturation]
-                settings."groupDevice${groupType}"?.setColor(colorData)
-                if (num>0) settings."groupDevice${groupType}"?.setLevel(num)
-                if (!voicePost && !noAck){
-                    result ="I am setting the ${noun} in the '${app.label}' group to ${param}"
-                    result += num ==100 ? " and ${proNoun} maximum brightness" : num>0 ? ", at a brightness level of ${num}%" : ""
-                    result += ". "
-                }
-                else if (voicePost && !noAck)  result = parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") 
-                else result = " "
-            }
-            else if (groupType=="colorTemperature" && param !="undefined" && param !="null") {
-            	def sWhite = parent.kSoftWhite ? parent.kSoftWhite as int : 2700, wWhite= parent.kWarmWhite ? parent.kWarmWhite as int: 3500, 
-                	cWhite= parent.kCoolWhite ? parent.kCoolWhite as int: 4500, dWhite= parent.kDayWhite ? parent.kDayWhite as int: 6500
-                def kelvin = param=="soft white" ? sWhite : param=="warm white" ? wWhite : param=="cool white" ? cWhite : param=="daylight white" ? dWhite : 9999
-                if (kelvin <9999){
-					settings."groupDevice${groupType}"?.setColorTemperature(kelvin)
-					if (!voicePost && !noAck){
-                    	result = "I am setting the temperature of the ${noun} in the '${app.label}' group to ${param}, or ${kelvin} degrees Kelvin"
-						result += num ==100 ? " and ${proNoun} maximum brightness" : num>0 ? ", at a brightness level of ${num}%" : ""
-                        result += ". "
-					}
-                }
-                else if (kelvin ==9999) result = "I didn't understand the temperature you wanted to set the '${app.label}' device group. Valid temperatures are soft white, warm white, cool white and daylight white. %1%"
-                else if (voicePost && !noAck)  result = parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") 
-                else result = " "
-            }
-            else if (op ==~/increase|raise|up|brighten|decrease|down|lower|dim/){
-                if (parent.lightAmt){
-                    settings."groupDevice${groupType}".each{ upDownChild(it, op, num, "level") }
-                    def count = 0
-                    if (op ==~/increase|raise|up|brighten/) {
-                        result = "I have raised the brightness of the ${noun} in the group named '${app.label}'"
-                        result += num>0 ? " by ${num}%. " : ". "
-                        settings."groupDevice${groupType}".each { if (it.currentValue("level")>98) count ++ }
-                        if (count == settings."groupDevice${groupType}".size()) result = "The ${noun} in the group '${app.label}' ${verb} at maximum brightness. "
-                        if (count > 0 && count < settings."groupDevice${groupType}".size()) result += "Some of the ${noun} ${verb} at maximum brightness. "
-                    }
-                    if (op ==~/decrease|down|lower|dim/){
-                        result = "I have decreased the brightness of the ${noun} in the group named '${app.label}'"
-                        result += num>0 ? " by ${num}%. " : ". "
-                        settings."groupDevice${groupType}".each { if (it.currentValue("switch")=="off") count ++ }
-                        if (count == settings."groupDevice${groupType}".size()) result = "The ${noun} in the group '${app.label}' ${verb} off. "
-                        if (count > 0 && count < settings."groupDevice${groupType}".size()) result += "Some of the ${noun} ${verb} now off. "
-                    }
-                }
-                else result = "The default increase or decrease value is set to zero within the SmartApp. I am taking no action. %1%"
-            }
-            else if (op==~/undefined|status|null/){
-            	def grpCtl = groupType=="switchLevel" ? "dimmer" : groupType=="colorControl" ? "colored light" : "temperature control light"
-                if (!settings."groupDevice${groupType}"?.currentValue("switch").contains("off")) result = "All of the ${grpCtl}s in the device group, '${app.label}', are on. "
-                else if (!settings."groupDevice${groupType}"?.currentValue("switch").contains("on")) result = "All of the ${grpCtl}s in the device group, '${app.label}', are off. "
-                else settings."groupDevice${groupType}".each{ 
-                	result += "The ${it.label} is ${it.currentValue('switch')}"
-                    result += it.currentValue('switch')=="on" ? " and set to ${it.currentValue('level')}. " : ". "
-                }
-            }
-            else {
-                if (groupType=="switchLevel") result = "For a dimmer group, be sure to use an 'on', 'off', 'toggle', 'status' or brightness level setting. %1%" 
-                else if (groupType=="colorControl") result = "For a colored light group, be sure to give me an 'on', 'off', 'toggle', 'status', brightness level or color command. %1%"
-                else if (groupType=="colorTemperature") result = "For a temperature control light group, be sure to give me an 'on', 'off', 'toggle', 'status', brightness level or temperature command. %1%"
-        	}
-        }
-        else if (groupType=="lock"){
-            noun=settings."groupDevice${groupType}".size()==1 ? "device" : "devices"
-            if (op ==~ /lock|unlock/){         
-                settings."groupDevice${groupType}"?."$op"()
-                result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : "I am ${op}ing the ${noun} in the group named '${app.label}'. " 
-            }
-            else if (op==~/undefined|status|null/) {
-				if (!settings."groupDevice${groupType}"?.currentValue("lock").contains("locked")) result = "All of the locks in the device group, '${app.label}', are unlocked. "
-                else if (!settings."groupDevice${groupType}"?.currentValue("lock").contains("unlocked")) result = "All of the locks in the device group, '${app.label}', are locked. "
-                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue('lock')}. " }
-            }
-            else result = "For a lock device group, you must use a 'lock', 'unlock' or 'status' command. %1%" 
-        }
-        else if (groupType==~/doorControl|windowShade/){
-        	def grpCtl = groupType=="doorControl" ? "door" : "windowShade", grpName = groupType=="doorControl" ? "door" : "shade"
-            if (op ==~ /open|close/){
-                settings."groupDevice${groupType}"?."$op"()
-                def condition = op=="close" ? "closing" : "opening"
-                result = voicePost && !noAck  ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " :  "I am ${condition} the ${noun} in the group named '${app.label}'. "
-            }
-            else if (op==~/undefined|status|null/) {
-                if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("open") && !settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("Open")) result = "All of the ${grpName}s in the device group, '${app.label}', are closed. "
-                else if (!settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("closed") && !settings."groupDevice${groupType}"?.currentValue("${grpCtl}").contains("Closed")) result = "All of the ${grpName}s in the device group, '${app.label}', are open. "
-                else settings."groupDevice${groupType}".each{ result += "The ${it.label} is ${it.currentValue(grpCtl).toLowerCase()}. " }
-            }
-            else result = "For a ${grpCtl} device group, you must use an 'open', 'close' or 'status' command. %1%" 
-        }
-        else if (groupType=="thermostat"){
-            noun=settings."groupDevice${groupType}".size()==1 ? "thermostat in the group named '${app.label}'" : "thermostats in the group named '${app.label}'"
-            if (num>0) {
-                if (parent.getTstatLimits().hi) num = num <= parent.getTstatLimits().hi ? num : parent.getTstatLimits().hi
-                if (parent.getTstatLimits().lo) num = num >= parent.getTstatLimits().lo ? num : parent.getTstatLimits().lo
-            }
-            if (op =="maximum" && parent.getTstatLimits().hi) num = parent.getTstatLimits().hi
-            if (op =="minimum" && parent.getTstatLimits().lo) num = parent.getTstatLimits().lo
-            def ecobeeCustomRegEx = parent.MyEcobeeCMD && parent.ecobeeCMD ? getEcobeeCustomRegEx(settings."groupDevice${groupType}") : null
-            if ((param==~/heat|heating|cool|cooling|auto|automatic|eco|AC|comfort|home|away|sleep|resume program/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && num == 0 && op=="undefined") op="on"
-            if (op ==~/on|off/) {
-                if (param ==~/undefined|null/ && op == "on") result="You must designate 'heating mode' or 'cooling mode' when turning on a thermostat group. %1%"
-                if (param =~/heat/) {result="I am setting the ${noun} to 'heating' mode. "; settings."groupDevice${groupType}"?.heat()}
-                if (param =~/cool|AC/) {result="I am setting the ${noun} to 'cooling' mode. "; settings."groupDevice${groupType}"?.cool()}
-                if (param =~/auto/) {result="I am setting the ${noun} to 'auto' mode. Please note, to properly set the temperature in 'auto' mode, you must specify the heating or cooling setpoints separately. " ; settings."groupDevice${groupType}"?.auto()}
-                if (op == "off") { result = "I am turning off the ${noun}. "; settings."groupDevice${groupType}"?.off() }
-                if (parent.stelproCMD && (param=="eco" || param=="comfort")){ result="I am setting the ${noun} to '${param}' mode. "; settings."groupDevice${groupType}"?.setThermostatMode("${param}") }
-                if (param==~/home|present/ && parent.nestCMD) { result="I am setting the ${noun} to 'home' mode. "; settings."groupDevice${groupType}"?.present() }
-                if (param=="away" && parent.nestCMD) { 
-                    result="I am setting the ${noun} to 'away' mode. Please note that Nest thermostats will not accept temperature changes while in 'away' status. "
-                    settings."groupDevice${groupType}"?.away()
-                }
-                if ((param ==~/home|away|sleep/ || (ecobeeCustomRegEx && param =~ /${ecobeeCustomRegEx}/)) && parent.ecobeeCMD){
-                    result = "I am setting the ${noun} to '" + param + "'. "
-                    settings."groupDevice${groupType}".each {myDevice ->
-                        myDevice.supportedCommands.each {comm ->
-							if(comm.name == "setThermostatProgram") myDevice.setThermostatProgram("${param.capitalize()}")
-							else if(comm.name == "setClimate") myDevice.setThisTstatClimate("${param.capitalize()}")
-                        }  
-                        myDevice.supportedCommands.each {comm ->
-                            if(comm.name == "setThermostatProgram") myDevice.setThermostatProgram("${param.capitalize()}")
-                            else if(comm.name == "setClimate") myDevice.setClimate("","${param.capitalize()}")
-                        }
-                    }
-                }
-                if ((param=="resume program") && parent.ecobeeCMD && !parent.MyEcobeeCMD) {   
-                    result="I am resuming the climate program of the ${noun}. "
-                    parent.MyEcobeeCMD ? settings."groupDevice${groupType}"?.resumeThisTstat() : settings."groupDevice${groupType}"?.resumeProgram()
-                } 
-            }
-            else if (op ==~/increase|raise|up|decrease|down|lower/) result = "Increase and decrease commands are not yet compatible with thermostat device group macros. %1%"
-            else if (op==~/undefined|status|null/ && param ==~ /undefined|null/) settings."groupDevice${groupType}".each{ result += "The ${it.label} is reading ${it.currentValue('temperature')} degrees. " }
-            else {
-                param = tstatDefaultCool && param ==~/undefined|null/ ? "cool" : tstatDefaultHeat && param ==~ /undefined|null/ ? "heat" : param
-                if (param  ==~ /undefined|null/) result = "You must designate a 'heating' or 'cooling' parameter when setting the temperature of a thermostat device group. %1%"
-                if ((op =="maximum" && !parent.getTstatLimits().hi) || (op =="minimum" && !parent.getTstatLimits().lo)) {
-                    result = "You do not have a ${op} thermostat setpoint defined within your SmartApp. %1%"
-                    param = "undefined"
-                }
-                if (param =~/heat/ && num > 0) {
-                    result="I am setting the heating setpoint of the ${noun} to ${num} degrees. "
-                    settings."groupDevice${groupType}"?.setHeatingSetpoint(num) 
-                    if (parent.stelproCMD) settings."groupDevice${groupType}"?.applyNow()
-                }
-                if (param =~/cool|AC/ && num>0) {
-                    result="I am setting the cooling setpoint of the ${noun} to ${num} degrees. "
-                    settings."groupDevice${groupType}"?.setCoolingSetpoint(num)
-                }
-                if (param !="undefined" && param !="null" && parent.getTstatLimits().hi && num >= parent.getTstatLimits().hi) result += "This is the maximum temperature I can set for this device group. "
-                if (param !="undefined" && param !="null"  && parent.getTstatLimits().lo && num <= parent.getTstatLimits().lo) result += "This is the minimum temperature I can set for this device group. "
-            }
-        }
-        result = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","",macroType,app.label,0,"") : noAck ? " " : result
-	}
-    catch(e) { result = "There was a problem controlling the device group named '${app.label}'. Be sure it is configured correctly within the SmartApp. %1%" }
-    return result
-}
-*/
 //WebCoRE Handler-----------------------------------------------------------
 def WebCoREResults(sDelay,xParam){	
 	String result = ""
@@ -2466,6 +2274,10 @@ def tStatCTLOptions(){
 	return tstatOptions
 }
 //Common Code (Child and Parent)
+def uvIndexReading(uvValue){ 
+	def uv = uvValue as int
+    return uv<3 ? "low" : uv < 6 && uv > 2.9 ? "moderate" : uv < 8 && uv > 5.9 ? "high" : uv < 11 && uv > 7.9 ? "very high" : "extreme"
+}
 def mqRefresh(evt){ sendLocationEvent(name: "askAlexaMQ", value: "refresh", data: [queues: getMQListID(false)] , isStateChange: true, descriptionText: "Ask Alexa message queue list refresh") }
 def childQDelete(qList){
 	qList.each{qID->
@@ -2667,17 +2479,6 @@ def macroTypeDesc(){
     def customAck = !noAck && !voicePost ? "; uses standard acknowledgment message" : !noAck  && voicePost ? "; includes a custom acknowledgment message" :  "; there will be no acknowledgment messages"
     if (macroType ==~ /Control|CoRE/) customAck += cDelay>1 ? "; activates ${cDelay} minutes after triggered" : cDelay==1 ? "; activates one minute after triggered" : ""
     if (macroType == "Control" && (phrase || setMode || SHM || getDeviceDesc() != "Status: UNCONFIGURED${PIN} - Tap to configure" || getHTTPDesc() !="Status: UNCONFIGURED - Tap to configure" || ctlMsgQue)) desc= "Control Macro CONFIGURED${customAck}${PIN} - Tap to edit" 
-	//Remove in version 2.3.2
-    /*if (macroType =="Group" && groupType && settings."groupDevice${groupType}") {
-    	def groupDesc =[switch:"Switch Group",switchLevel:"Dimmer Group",colorTemperature: "Temperature (Kelvin) Light Group", thermostat:"Thermostat Group",colorControl:"Colored Light Group",lock:"Lock Group",doorControl: "Door Group",windowShade: "Window Shade Group"][groupType] ?: groupType
-        def countDesc = settings."groupDevice${groupType}".size() == 1 ? "one device" : settings."groupDevice${groupType}".size() + " devices"
-        if (parent.stelproCMD && groupType=="thermostat") customAck = "- Accepts Stelpro baseboard heater commands" + customAck
-        if (parent.nestCMD && groupType=="thermostat") customAck = "- Accepts Nest 'Home'/'Away' commands" + customAck
-        if (parent.ecobeeCMD && groupType=="thermostat") customAck = "- Accepts Ecobee 'Home'/'Away'/'Sleep'/'Resume Program' commands" + customAck
-        if (parent.ecobeeCMD && parent.MyEcobeeCMD && groupType=="thermostat") customAck = "- Accepts My Ecobee 'Get Tips/'Erase Tips' commands" + customAck
-        customAck = tstatDefaultHeat && groupType=="thermostat" ? "- Sends heating setpoint by default" + customAck : tstatDefaultCool && groupType=="thermostat" ? "- Sends cooling setpoint by default" + customAck : customAck
-        desc = "${groupDesc} CONFIGURED with ${countDesc}${customAck}${PIN} - Tap to edit" 
-    }*/
     if (macroType =="GroupM" &&  groupMacros) {
         customAck += addPost && !noAck ? " appended to the child macro messages" : noAck ? "" : " replacing the child macro messages"
         def countDesc = groupMacros.size() == 1 ? "one macro" : groupMacros.size() + " macros"
@@ -2763,8 +2564,7 @@ private replaceVoiceVar(msg, delay, filter, type, name, age, xParam) {
 	def day = df.format(new Date()), time = parseDate("","h:mm a"), month = parseDate("","MMMM"), year = parseDate("","yyyy"), dayNum = parseDate("","d")
     def varList = getVariableList(), temp = varList.temp != "undefined device" ? roundValue(varList.temp) + " degrees" : varList.temp
     def humid = varList.humid, people = varList.people
-    def fullMacroType=[GroupM: "Extension Group", Control:"Control Macro", Group:"Device Group", Voice:"Voice Report"][type] ?: type
-	def fullDeviceType=[colorControl: "Colored Light",switchLevel:"Dimmer" ,doorControl:"Door",lock:"Lock",switch:"Switch",thermostat:"Thermostat"][groupType] ?: groupType
+    def fullMacroType=[GroupM: "Extension Group", Control:"Control Macro", Voice:"Voice Report", Room: "Rooms and Groups"][type] ?: type
     def delayMin = delay ? delay + " minutes" : "No delay specified"
     msg = msg.replace('%mtype%', "${fullMacroType}")
     msg = msg.replace('%macro%', "${name}")
@@ -2883,6 +2683,7 @@ private tstatsSel() { return tstats || (deviceAlias && tstatsAlias) }
 private tempsSel() { return temps || (deviceAlias && tempsAlias) }
 private humidSel() { return humid || (deviceAlias && humidAlias) }
 private fooBotSel() { return fooBot || (deviceAlias && fooBotAlias) }
+private uvSel() { return UV || (deviceAlias && UVAlias) }
 private speakersSel() { return speakers || (deviceAlias && speakersAlias) }
 private waterSel() { return water || (deviceAlias && waterAlias) }
 private presenceSel() { return presence || (deviceAlias && presenceAlias) }
@@ -3094,6 +2895,7 @@ def getExtList(){
     getWR().each {extList +=["${it.id}":"${it.label}"]}
     getVR().each {extList +=["${it.id}":"${it.label}"]}
     getSCHD().each {extList +=["${it.id}":"${it.label}"]}
+    getRM().each {extList +=["${it.id}":"${it.label}"]}
     getAskAlexa().each {if (it.macroType !='CoRE') extList +=["${it.id}":"${it.label}"]}
     return extList
 }
@@ -3198,6 +3000,7 @@ def mapDevices(isAlias){
 	if (settings."presence${ext}") result << [devices: settings."presence${ext}", type : "presence",fullListName:"Presence Sensor", cmd: presenceVoc()]
 	if (settings."acceleration${ext}") result << [devices: settings."acceleration${ext}", type : "acceleration",fullListName:"Acceleration Sensor", cmd: accelVoc()]
     if (settings."fooBot${ext}") result << [devices: settings."fooBot${ext}", type : "pollution", fullListName:"Foobot Air Quality Monitor", cmd: fooBotVoc()]
+    if (settings."UV${ext}") result << [devices: settings."UV${ext}", type : "uvIndex", fullListName:"UV Index Device", cmd: uvVoc()]
     return result
 }
 def basicVoc(){return ["status","event","events"]}
@@ -3216,6 +3019,7 @@ def tempVoc(){return basicVoc()}
 def humidVoc(){return basicVoc()}
 def contactVoc(){return basicVoc()}
 def fooBotVoc(){return basicVoc()}
+def uvVoc(){return basicVoc()}
 def speakerVoc(){return basicVoc()+["play","pause","stop","next track","previous track","off","mute","on","unmute","status","low","medium","high","maximum","increase","raise","up","decrease","down","lower"]}
 def tstatVoc(){
 	def result =["increase","raise","up","decrease","down","lower","maximum","minimum","off"]
@@ -3413,7 +3217,7 @@ def fillTypeList(){
         "voice report","control macro", "control macros","control", "controls","extension group","extension groups","core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", 
         "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases","temperature light","temperature lights","kelvin light","kelvin lights","message queue",
         "queue","message queues","queues","weather", "weather report", "weather reports","schedule","schedules","webcore","webcore trigger", "webcore macro","webcore macros","webcore triggers","pollution","air quality",
-        "room", "rooms"] 
+        "room", "rooms","uv","uv index"] 
 }
 def getURLs(){
 	def mName = params.mName, qName = params.qName, url, result
@@ -3478,6 +3282,8 @@ private cheat(){
     if (getCheatDisplayList("humidity") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("humidity") +"<br>" }
     if (fooBotSel()) { result += "<h2><u>Foobot Air Quality Monitor (Valid Commands: <b>"+ getList(fooBotVoc()) +"</b>)</u></h2>"; fooBot.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("pollution") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("pollution") +"<br>" }
+    if (uvSel()) { result += "<h2><u>UV index devices (Valid Commands: <b>"+ getList(uvVoc()) +"</b>)</u></h2>"; UV.each{ result += it.label +"<br>" } }
+    if (getCheatDisplayList("uvIndex") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("uvIndex") +"<br>" }
     if (speakersSel()) { result += "<h2><u>Speakers (Valid Commands: <b>{volume level}, "+ getList(speakerVoc()+basicVoc()) +"</b>)</u></h2>"; speakers.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("music") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("music") +"<br>" }
     if (speakersSel() && sonosCMD && sonosMemoryCount){
@@ -3566,7 +3372,7 @@ private cheat(){
     }
     result += "<h2><u>Message Queues (Valid Commands: <b>"+getList(msgVoc())+"</b>)</u></h2>Primary Message Queue<br>"
     if (getAAMQ().size()) getAAMQ().each { result += it.label+"<br>" }       
-    result += "<br><u><b>Examples:</b><br><i>'Alexa, ask ${invocationName} to play messages {queue name}'</i><br><i>'Alexa, ask ${invocationName} to delete messages'</i><br><i>'Alexa, ask ${invocationName} to play {queue name} messages'</i><br>"
+    result += "<br><u><b>Examples:</b><br><i>'Alexa, ask ${invocationName} to play messages in the {queue name}'</i><br><i>'Alexa, ask ${invocationName} to delete messages'</i><br><i>'Alexa, ask ${invocationName} to play {queue name} messages'</i><br>"
     displayData(result)
 }
 //Version/Copyright/Information/Help-----------------------------------------------------------
@@ -3581,15 +3387,15 @@ private textVersion() {
     if (getRM().size()) aaRMVer="\n"+getRM()[0].textVersion()
     return "${version}${lambdaVersion}${aaMQVer}${aaRMVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
 }
-private versionInt(){ return 231 }
+private versionInt(){ return 232 }
 private LambdaReq() { return 129 }
 private mqReq() { return 106 }
 private wrReq()  { return 105 }
-private vrReq()  { return 105 }
+private vrReq()  { return 106 }
 private schReq()  { return 103 }
-private rmReq() { return 100 }
-private versionLong(){ return "2.3.1" }
-private versionDate(){ return "09/13/17" }
+private rmReq() { return 101 }
+private versionLong(){ return "2.3.2" }
+private versionDate(){ return "09/22/17" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+

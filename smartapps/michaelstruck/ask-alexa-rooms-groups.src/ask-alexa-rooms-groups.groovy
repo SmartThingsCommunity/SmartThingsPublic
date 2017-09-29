@@ -2,9 +2,10 @@
  *  Ask Alexa Rooms/Groups
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.0 9/13/17
+ *  Version 1.0.1 9/26/17
  * 
  *  Version 1.0.0 (9/13/17) - Initial release
+ *  Version 1.0.1 (9/26/17) - Fixed text area variable issue
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -79,11 +80,12 @@ def pageSwitchRPT() {
             	if ((!setCMD || setCMD == "dimmers")){
 					input "defaultDim", "enum", title: "Default Dimmer Level When Turned 'On'", options:
                  	[0:"Set to previous level",10:"10",20:"20",30:"30",40:"40",50:"50",60:"60",70:"70",80:"80",90:"90",100:"100"], defaultValue: 0, required: false
-            		input "defaultColor", "enum", title: "Default Color When Turned 'On'", options: parent.STColors().name, defaultValue: 0, required: false
+            		input "defaultColor", "enum", title: "Default Color When Turned 'On'", options: parent.STColors().name, required: false
                 }
+                input "on100", "bool", title: "Turn On All Switches When 100% Level Command Is Given", defaultValue: false 
                 input "kLights", "bool", title:"Utilize Kelvin Temperature Settings (For White Kelvin Bulbs)", defaultValue: false
-                input "excludeLight", "enum", title: "Exclude Lights From These Commands", options:["none":"No exclusion","on": "Exclude lights from \"ON\" command", "off":"Exclude lights from \"OFF\" command"], defaultValue: "none", required: false, submitOnChange: true
-            	if (excludeLight !="none") input "switchesExclude", "enum", title: "Lights/Switches/Dimmers To Exclude From Command", options: switchList(), multiple: true, required: false
+            	input "switchesExcludeOn", "enum", title: "Lights/Switches/Dimmers To Exclude From 'On' Command", options: switchList(), multiple: true, required: false
+                input "switchesExcludeOff", "enum", title: "Lights/Switches/Dimmers To Exclude From 'Off' Command", options: switchList(), multiple: true, required: false
             }
             section ("Status reporting"){
             	input "switchesRPT", "bool", title: "Include Switches In Status Report", defaultValue: false, submitOnChange: true
@@ -263,7 +265,7 @@ def getOutput(room, mNum, op, param, mPW, xParam){
     else if (num && param ==~/null|undefined/ && switches && tstats && setCMD=="dimmers") result = levelSet(room, num, xParam)
     else if (param !="undefined" && param != "null") result = colorSet(room, param, num)
     else result="I did not understand what you wanted to do with the room, '${room}'. %1%"
-    if (op !="status") outputTxt = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","","Room/Group", room, 0, xParam) : noAck ? " " : result 
+    if (op !="status") outputTxt = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","","Room", room, 0, xParam) : noAck ? " " : result 
     else outputTxt = result
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     if (outputTxt && !outputTxt.endsWith("%")) outputTxt += "%4%"
@@ -275,7 +277,7 @@ def onOff(room, op){
     deviceList = switches
     if (deviceList){       
         deviceList.each {
-            if (!(switchesExclude && switchesExclude.contains(it.label) && ((excludeLight =="on" && op=="on") || (excludeLight =="off" && op=="off")))){
+            if (!((switchesExcludeOn && switchesExcludeOn.contains(it.label) && op=="on") || (switchesExcludeOff && switchesExcludeOff.contains(it.label) && op=="off"))){
                 it."$op"()
         		count ++
                 if (defaultDim && defaultDim != "0" && op=="on" && it.getSupportedCommands().name.contains("setLevel")) it.setLevel(defaultDim as int)
@@ -377,11 +379,16 @@ def levelSet(room, num, xParam){
 	String result = ""
     def lvl = num as int, deviceList = switches.findAll{it.getSupportedCommands().name.contains("setLevel")}, count = deviceList.size() as int
     if (deviceList) {
-    	deviceList.each {it.setLevel(lvl) }
+    	deviceList.each { it.setLevel(lvl) }
   		def sss= count > 1 ? "s" : ""
     	result = "I am setting the dimmable device${sss} to ${lvl}% in the group named: '${room}'. "
     }
-    else result = "You don't have any dimmable devices in the group named: '${room}'. %1%"
+    if (on100 && switches && lvl==100) {
+		switches?.on()
+        count ++
+        result = "I am turning on all of the devices and setting them to ${lvl}% in the group named: '${room}'. "
+    }
+    else if (!count) result = "You don't have any dimmable devices in the group named: '${room}'. %1%"
 	return result
 }
 def increaseDecrease(room, op){
@@ -575,7 +582,7 @@ def getDesc(type){
                 countVerb = switches.size()>1 ? "are" : "is"
                 countAdj = switches.size()>1 ? "all" : "the"
                 result= "Switch${countNoun} configured"
-                if (excludeLight ==~/on|off/ && switchesExclude) result +="; Some lights excluded from \"${excludeLight. toUpperCase()}\" command"
+                if (switchesExcludeOn || switchesExcludeOff) result +="; Some lights excluded from ${switchesExcludeOn && !switchesExcludeOff ? "'On' command" : switchesExcludeOff && !switchesExcludeOn ? "'Off' command" : "'On' and 'Off' commands"}"
                 if (switchesRPT && switchesRPTOn) result += "; Include in status report only when switch${countNoun} ${countVerb} 'On'"
                 else if (switchesRPT && !switchesRPTOn) result += "; Include ${countAdj} switch${countNoun} in status report"
             }
@@ -659,6 +666,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 100 }
+private versionInt(){ return 101 }
 private def textAppName() { return "Ask Alexa Rooms/Groups" }	
-private def textVersion() { return "Rooms/Groups Version: 1.0.0 (09/13/2017)" }
+private def textVersion() { return "Rooms/Groups Version: 1.0.1 (09/26/2017)" }

@@ -2,7 +2,7 @@
  *  Ask Alexa Voice Report Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.5 8/3/17
+ *  Version 1.0.6 9/21/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restricitions 
@@ -10,6 +10,7 @@
  *  Version 1.0.3 - (6/28/17) - Added device health report, replaced notifications with Message Queue
  *  Version 1.0.4 - (7/11/17) - Added code for additional text field variables, allow suppression of continuation messages.
  *  Version 1.0.5 - (8/3/17) - Added support for Foobot Air Quality Monitor, permanently enabled voice filters
+ *  Version 1.0.6 - (9/21/17) - Added UV index reporting
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -58,7 +59,7 @@ def mainPage() {
             input "voicePre", "text", title: "Pre Message Before Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false, capitalization: "sentences"
             href "pageSwitchReport", title: "Switch/Dimmer Report", description: getDesc("switch"), state: (voiceSwitch || voiceDimmer ? "complete" : null), image: parent.imgURL() + "power.png"
             href "pageDoorReport", title: "Door/Window/Lock Report", description: getDesc("door"), state: (voiceDoorSensors || voiceDoorControls || voiceDoorLocks || voiceWindowShades ? "complete": null), image: parent.imgURL() + "lock.png"
-            href "pageTempReport", title: "Temperature/Humidity/Thermostat Report", description: getDesc("temp"), state:(voiceTemperature || voiceTempSettings || voiceHumidity? "complete" : null),image: parent.imgURL() + "temp.png"
+            href "pageTempReport", title: "Environmental Report", description: getDesc("temp"), state:(voiceTemperature || voiceTempSettings || voiceHumidity || voiceUV ? "complete" : null),image: parent.imgURL() + "temp.png"
             href "pageAirReport", title: "Foobot Air Quality Report", description: getDesc("pollution"), state:(fooBot ? "complete" : null), image: parent.imgURL() + "pollution.png"
             href "pageSpeakerReport", title: "Speaker Report", description: getDesc("speaker"), state: (voiceSpeaker ? "complete": null), image: parent.imgURL() + "speaker.png"
             href "pagePresenceReport", title: "Presence Report", description:  getDesc("presence"), state:(voicePresence ? "complete": null), image : parent.imgURL() + "people.png"    
@@ -125,6 +126,7 @@ def pageAirReport(){
         section(" ") {
             input "fooBot", "capability.carbonDioxideMeasurement", title: "Choose Foobot Air Quality Monitors", multiple: true, required: false, submitOnChange: true 
             if (fooBot){
+            	input "fooBooRptLvl", "enum", title:"GPI Reporting Level", options:["All":"Always report", "Good":"'Good' or below", "Fair": "'Fair' or 'Poor'","Poor":"'Poor' Only"], defaultValue: "All", required: false
             	input "fooBotPoll", "bool", title:"Refresh Foobot Data Before Reporting", defaultValue:false
             	input "fooBotCO2", "bool", title: "Include Carbon Dioxide", defaultValue:false
                 input "fooBotVOC", "bool", title: "Include Volatile Organic Compounds", defaultValue:false
@@ -207,7 +209,7 @@ def pageOtherReport(){
 }
 def pageTempReport(){
     dynamicPage(name: "pageTempReport", install: false, uninstall: false){
-        section { paragraph "Temperature/Humidity/Thermostat Report", image: parent.imgURL() + "temp.png" }
+        section { paragraph "Environmental Report", image: parent.imgURL() + "temp.png" }
         section ("Temperature reporting", hideWhenEmpty: true){
             input "voiceTemperature", "capability.temperatureMeasurement", title: "Devices To Report Temperatures...",multiple: true, required: false, submitOnChange: true
 			if (voiceTemperature && voiceTemperature.size() > 1) input "voiceTempAvg", "bool", title: "Report Average Of Temperature Readings", defaultValue: false	
@@ -230,6 +232,9 @@ def pageTempReport(){
                 input "voiceTempState", "bool", title: "Report Current Thermostat State", defaultValue: false
                 input "voiceTempMode", "bool", title: "Report Current Thermostat Mode", defaultValue: false
         	}    
+        }
+        section ("UV index reporting", hideWhenEmpty: true){
+        	input "voiceUV", "capability.ultravioletIndex", title: "Devices To Report UV Index", multiple: true, required: false
         }
     }
 }
@@ -317,6 +322,7 @@ def getOutput(){
         else if (voiceHumidity  && voiceHumidity.size() > 1 && voiceHumidAvg) outputTxt += "The average of the monitored humidity devices is " + parent.getAverage(voiceHumidity, "humidity") + "%. "
         if (voiceTempSettingSummary && voiceTempSettingsType && voiceTempSettingsType !="autoAll") outputTxt += voiceTempSettings ? thermostatSummary(): ""
         else outputTxt += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
+        outputTxt += UV ? uvReport() : ""
         outputTxt += fooBot ? airReport() : ""
         outputTxt += voiceSpeaker ? speakerReport() : ""
         outputTxt += voicePresence ? presenceReport() : ""
@@ -586,6 +592,14 @@ def powerReport(){
 	}
     return result 
 }
+def uvReport(){
+	String result = ""
+    UV.each{
+    	def currValue = it.currentValue("ultravioletIndex") as int
+        result += "The ${it.label} is reading '${parent.uvIndexReading(currValue)}', with a UV index of ${currValue}. " 
+    }
+    return result
+}
 def shadeReport(){
     String result = ""
     voiceWindowShades.each { deviceName->
@@ -667,19 +681,22 @@ def airReport(){
 	if (fooBotPoll) fooBot.poll()
     String result = ""
     fooBot.each{
-		result = "The Foobot air quality monitor, '${it.label}', is reading: '${it.currentValue("GPIstate")}', with a Global Pollution Index of ${it.currentValue("pollution")}"
-		if (fooBotCO2 || fooBoVOC || fooBotPart){
-			result += ". In addition, "
-            result += fooBotCO2 ? "the carbon dioxide reading is ${it.currentValue("carbonDioxide")} parts per million" : "" 
-            result += fooBoVOC && fooBotCO2 && !fooBotPart ? " and " : fooBoVOC && !fooBotCO2 && !fooBotPart ? ". " : fooBoVOC && fooBotCO2 && fooBotPart ? ", " : ""
-            result += fooBoVOC ? "the volatile organic compounds is reading ${it.currentVoc} parts per billion" : ""
-			result += (fooBoVOC || fooBotCO2) && fooBotPart ? "and the particulate matter reading is ${it.currentParticle} µg/m³" : !(fooBoVOC || fooBotCO2) && fooBotPart ? "the particulate matter reading is ${it.currentParticle} µg/m³" : ""   
-        	if ((fooBotCO2 || fooBoVOC || fooBotPart) && (fooBotTemp || fooBotHum)) result +=". Finally, "
-        	else if ((fooBotTemp || fooBotHum) && !(fooBotCO2 || fooBoVOC || fooBotPart)) result += ". In addition, "
-            result += fooBotTemp ? "the temperature reading at this device is ${it.currentValue("temperature")} degrees" : ""
-            result += fooBotTemp && fooBotHum ? " and the relative humidity is ${it.currentValue("humidity")}%" : !fooBotTemp && fooBotHum ? "the relative humidity reading at this device is ${it.currentValue("humidity")}%" : ""
-        }
+		def currGPI = it.currentValue("GPIstate")
+        if ((!fooBooRptLvl || fooBooRptLvl=="Good") || (fooBooRptLvl=="Good" && currGPI==~/Good|Fair|Poor/) || (fooBooRptLvl=="Fair" && currGPI==~/Fair|Poor/) || (fooBooRptLvl=="Poor" && currGPI=="Poor")){
+            result = "The Foobot air quality monitor, '${it.label}', is reading: '${currGPI}', with a Global Pollution Index of ${it.currentValue("pollution")}"
+            if (fooBotCO2 || fooBoVOC || fooBotPart){
+                result += ". In addition, "
+                result += fooBotCO2 ? "the carbon dioxide reading is ${it.currentValue("carbonDioxide")} parts per million" : "" 
+                result += fooBoVOC && fooBotCO2 && !fooBotPart ? " and " : fooBoVOC && !fooBotCO2 && !fooBotPart ? ". " : fooBoVOC && fooBotCO2 && fooBotPart ? ", " : ""
+                result += fooBoVOC ? "the volatile organic compounds is reading ${it.currentVoc} parts per billion" : ""
+                result += (fooBoVOC || fooBotCO2) && fooBotPart ? "and the particulate matter reading is ${it.currentParticle} µg/m³" : !(fooBoVOC || fooBotCO2) && fooBotPart ? "the particulate matter reading is ${it.currentParticle} µg/m³" : ""   
+                if ((fooBotCO2 || fooBoVOC || fooBotPart) && (fooBotTemp || fooBotHum)) result +=". Finally, "
+                else if ((fooBotTemp || fooBotHum) && !(fooBotCO2 || fooBoVOC || fooBotPart)) result += ". In addition, "
+                result += fooBotTemp ? "the temperature reading at this device is ${it.currentValue("temperature")} degrees" : ""
+                result += fooBotTemp && fooBotHum ? " and the relative humidity is ${it.currentValue("humidity")}%" : !fooBotTemp && fooBotHum ? "the relative humidity reading at this device is ${it.currentValue("humidity")}%" : ""
+        	}
         result += ". "
+        }
     }
     return result
 }
@@ -747,16 +764,19 @@ def getDesc(type){
             }
             break
 		case "temp":
-            if (voiceTemperature || voiceHumidity || voiceTempSettings ){
+            if (voiceTemperature || voiceHumidity || voiceTempSettings || voiceUV ){
                 def tempAvg = voiceTempAvg ? " (Average)" : ""
                 def humidAvg = voiceHumidAvg  ? " (Average)" : ""
-                def tstatSet = voiceTempSettingSummary && voiceTempSettings && voiceTempSettingsType !="autoAll" && voiceTempTarget ? "(Setpoint summary target: ${voiceTempTarget} degrees)":"(Setpoint)" 
+                def tstatSet = voiceTempSettingSummary && voiceTempSettings && voiceTempSettingsType !="autoAll" && voiceTempTarget ? "(setpoint summary target: ${voiceTempTarget} degrees)":"(setpoint)" 
                 result  = voiceTemperature && voiceTemperature.size()>1 ? "Temperature sensors${tempAvg}" : voiceTemperature && voiceTemperature.size()==1 ? "Temperature sensor${tempAvg}" : ""
                 if (voiceHumidity) result  += result && voiceHumidity.size()>1 && voiceTempSettings ? ", humidity sensors${humidAvg}" : result && voiceHumidity.size()==1 && voiceTempSettings ? ", humidity sensor${humidAvg}" : ""
                 if (voiceHumidity) result  += result && voiceHumidity.size()>1 && !voiceTempSettings ? " and humidity sensors${humidAvg}" : result && voiceHumidity.size()==1 && !voiceTempSettings ? " and humidity sensor${humidAvg}" : ""
                 if (voiceHumidity) result  += !result && voiceHumidity.size()>1 ? "Humidity sensors${humidAvg}" : !result && voiceHumidity.size()==1 ? "Humidity sensor${humidAvg}" : ""
-                if (voiceTempSettings) result  += result  && voiceTempSettings.size()>1 ? " and thermostats ${tstatSet}" : result && voiceTempSettings.size()==1 ? " and thermostat${tstatSet}" : ""
-                if (voiceTempSettings) result  += !result && voiceTempSettings.size()>1 ? "Thermostats ${tstatSet}" : !result && voiceTempSettings.size()==1 ? "Thermostat ${tstatSet}" : ""
+                if (voiceTempSettings) result += result && voiceTempSettings.size()>1 && !voiceUV ? " and thermostats ${tstatSet}" : result && voiceTempSettings.size()==1 && !voiceUV ? " and thermostat${tstatSet}" : ""
+                if (voiceTempSettings) result += result && voiceTempSettings.size()>1 && voiceUV? ", thermostats ${tstatSet}" : result && voiceTempSettings.size()==1 && voiceUV? ", thermostat${tstatSet}" : ""
+                if (voiceTempSettings) result += !result && voiceTempSettings.size()>1 ? "Thermostats ${tstatSet}" : !result && voiceTempSettings.size()==1 ? "Thermostat ${tstatSet}" : ""
+                if (voiceUV) result += result && voiceUV.size()>1 ? " and UV index devices" : result && voiceUV.size()==1 ? " and UV index device" : ""
+                if (voiceUV) result += !result && voiceUV.size()>1 ? "UV index devices" : !result && voiceUV.size()==1 ? "UV index device" : ""
                 count += voiceHumidity ? voiceHumidity.size() : 0
                 count += voiceTemperature ? voiceTemperature.size() : 0
                 count += voiceTempSettings ? voiceTempSettings.size() : 0
@@ -792,7 +812,9 @@ def getDesc(type){
 				result += fooBotPart && !(fooBotTemp || fooBotHum ||fooBotVOC) ? " & particulate count" : fooBotCO2 && fooBotPart && (fooBotTemp || fooBotHum ||fooBotVOC) ? ", particulate count" : ""
 				result += fooBotVOC && !(fooBotTemp || fooBotHum) ? " & volatile organic compounds" : fooBotVOC && (fooBotTemp || fooBotHum) ? ", volatile organic compounds" : ""
 				result += fooBotTemp && !fooBotHum ? " & temperature" : fooBotTemp && fooBotHum ? ", temperature" : ""
-				if (fooBotHum)  result += " &  humidity" 
+				if (fooBotHum)  result += " &  humidity"
+                result +=  fooBooRptLvl =="Good" ? ". Report only when GPI is 'Good' or below" : fooBooRptLvl =="Fair" ? ". Report only when GPI is 'Fair' or 'Poor'" : 
+                	fooBooRptLvl =="Poor" ? ". Report only when GPI is 'Poor'" : ". Reports at all GPI levels"
 				if (fooBotPoll) result += ". Data refreshed before report"
             }
             break
@@ -802,6 +824,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 105}
+private versionInt(){ return 106}
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.5 (08/03/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.6 (09/21/2017)" }
