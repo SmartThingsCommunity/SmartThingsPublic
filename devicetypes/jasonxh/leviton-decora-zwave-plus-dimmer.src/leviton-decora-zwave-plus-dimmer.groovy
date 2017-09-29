@@ -35,6 +35,8 @@ metadata {
         command "low"
         command "medium"
         command "high"
+        command "levelUp"
+        command "levelDown"
 
         fingerprint mfr:"001D", prod:"3201", model:"0001", deviceJoinName: "Leviton Decora Z-Wave Plus 600W Dimmer"
         fingerprint mfr:"001D", prod:"3301", model:"0001", deviceJoinName: "Leviton Decora Z-Wave Plus 1000W Dimmer"
@@ -65,6 +67,10 @@ metadata {
                 attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
                 attributeState "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
                 attributeState "turningOff", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
+            }
+            tileAttribute("device.level", key: "VALUE_CONTROL") {
+                attributeState "VALUE_UP", action:"levelUp"
+                attributeState "VALUE_DOWN", action:"levelDown"
             }
             tileAttribute("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", label: '${currentValue} %', action: "switch level.setLevel"
@@ -296,6 +302,14 @@ def medium() {
 
 def high() {
     setLevel(100)
+}
+
+def levelUp() {
+    setLevel(device.currentValue("level") + 10)
+}
+
+def levelDown() {
+    setLevel(device.currentValue("level") - 10)
 }
 
 
