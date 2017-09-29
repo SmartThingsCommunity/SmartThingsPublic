@@ -160,7 +160,7 @@ def Modes(){
             }
             section("Other Modes"){
                 input(name: "Night", type : "mode", title: "Select Night mode", multiple: true, required: true, submitOnChange: true)
-                input(name: "Away", type : "mode", title: "Select away mode", multiple: false, required: true, submitOnChange: true)
+                input(name: "Away", type : "mode", title: "Select away mode", multiple: true, required: true, submitOnChange: true)
             }
             section("MoreModes"){ 
                 input(name: "Moremodes", type: "bool", title: "add more modes", required: false, defaut: false, submitOnChange: true)
@@ -880,32 +880,9 @@ remove(AltSensorDevicesList[loopV])
                     def CurrTemp = ThermSet.currentValue("temperature") 
                     def ThermState = ThermSet.currentValue("thermostatMode")  
 
-                    def ModeInArray = null
-                    if(CurrMode in CustomMode1){
-                        ModeInArray = CustomMode1.find{it == "$CurrMode"}
-                        log.debug "ARRAY MODE IS: $ModeInArray"
-                    }
-                    else if(CurrMode in CustomMode2){
-                       ModeInArray = CustomMode2.find{it == "$CurrMode"}
-                        log.debug "ARRAY MODE IS: $ModeInArray"
-                    }
-                    else if(CurrMode in Home){
-                       ModeInArray = Home.find{it == "$CurrMode"}
-                        log.debug "ARRAY MODE IS: $ModeInArray"
-                    }
-                    else if(CurrMode in Night){
-                       ModeInArray = Night.find{it == "$CurrMode"}
-                        log.debug "ARRAY MODE IS: $ModeInArray"
-                    }
-                     
-
-                    def ModeList = ["$ModeInArray": "H", "$ModeInArray": "N", "$ModeInArray": "A", "$ModeInArray": "Cust1_T", "$ModeInArray": "Cust2_T" ]   
-                    def ModeValue = ModeList.find{ it.key == "$CurrMode"}
-                    ModeValue = ModeValue.value
-                    log.debug """ThermState = $ThermState || ModeValue = $ModeValue || CurrMode = $CurrMode || 
-CustomMode1 = $CustomMode1 || CustomMode2 = $CustomMode2 
-|| HSPCust1_T = HSPCust1_T${[loopValue.toString()]}"""
-
+                    def ModeValueList = IndexValueMode()
+                    def ModeValue = ModeValueList[0]
+                    log.debug "@ loop ${loopValue}, ModeValue is $ModeValue"
 
                     def HSP = "HSP${ModeValue}${loopValue.toString()}"
 
@@ -946,11 +923,11 @@ CustomMode1 = $CustomMode1 || CustomMode2 = $CustomMode2
                     //humidity = Double.parseDouble(humidity)
                     //humidity = humidity.toInteger()
 
-                    def TooHumid = humidity > HumidityTolerance && Outside > Inside + 3
+                    def TooHumid = humidity > HumidityTolerance && Outside > CSPSet 
 
                     def INSIDEhumidity = ThermSet.latestValue("humidity")   
                     //INSIDEhumidity = INSIDEhumidity?.toInteger()
-                    def TooHumidINSIDE =  INSIDEhumidity > HumidityTolerance
+                    def TooHumidINSIDE =  INSIDEhumidity > HumidityTolerance 
 
                     log.trace """        
 ThermsInvolved = ${Thermostats.size()} 
@@ -1455,6 +1432,67 @@ $ThermSet HSP should be : $HSPSet current HSP: $CurrentHeatingSetPoint
     /// disabled FOR TESTS
     EndEvalTRUE()
 }
+
+def IndexValueMode(){
+    def ModeInArray = WhichMode()
+
+    def ModeList = ["$Home", "$Night", "$Away", "$CustomMode1", "$CustomMode2"]  
+    def LetterModeList = ["H", "N", "A", "Cust1_T", "Cust2_T"]
+    def NumberModeList = ["0", "1", "2", "3", "4"]
+
+    def ModeMapList = [:]
+    def lv = 0
+    def size = LetterModeList.size()
+    def ModeValue = null
+    def ModeFound = null
+    def ModeMatches = false
+    def Intersection = null
+    def ModeIndexValue = null
+    for(size > 0; lv < size; lv++){
+        /// DO NOT DELETE THIS EXAMPLE! (ModeMapList) it will be usefull for further A.I. developments 
+        /// ModeMapList << [(ModeList[lv]) : (LetterModeList[lv])]    
+        /// build a map of all modes and set a Srting key for each mode
+        /// this allows for writing a new variable below
+        ModeFound = ModeList[lv]
+
+        ModeMatches = ModeFound.contains("$ModeInArray")
+        log.debug "ModeFound is : $ModeFound || ModeMatches = $ModeMatches || ModeInArray = $ModeInArray"
+        if(ModeMatches){
+            log.debug "MATCH!"
+            ModeValue = "${LetterModeList[lv]}" // attribute mode letter to start writing the new variable
+            ModeIndexValue = "${NumberModeList[lv]}" 
+        }
+    }
+
+   ModeIndexValue = ModeIndexValue.toInteger()
+
+    log.debug """ModeValue = $ModeValue"""
+
+    return [ModeValue, ModeIndexValue]
+}
+
+def WhichMode(){
+    def CurrMode = location.currentMode
+    def ModeInArray = null
+    if(CurrMode in CustomMode1){
+        ModeInArray = CustomMode1.find{it == "$CurrMode"}
+        log.debug "ARRAY MODE IS: $ModeInArray"
+    }
+    else if(CurrMode in CustomMode2){
+        ModeInArray = CustomMode2.find{it == "$CurrMode"}
+        log.debug "ARRAY MODE IS: $ModeInArray"
+    }
+    else if(CurrMode in Home){
+        ModeInArray = Home.find{it == "$CurrMode"}
+        log.debug "ARRAY MODE IS: $ModeInArray"
+    }
+    else if(CurrMode in Night){
+        ModeInArray = Night.find{it == "$CurrMode"}
+        log.debug "ARRAY MODE IS: $ModeInArray"
+    }
+    return ModeInArray
+}
+
 def EndEvalTRUE(){
     state.EndEval = true
     log.info "state.EndEval = $state.EndEval"
@@ -1642,12 +1680,20 @@ def BedSensorStatus(){
             ConsideredOpen = false
             log.debug "too many events in the last couple minutes"
         }
-        else if (isOpen && ContactsEventsSize == 1){  
+        else { //if (isOpen && ContactsEventsSize == 1){  
 
-            // declare an integer value for the thermostat which has had its values modified
+            // set appMgt variable to true to avoid false override
+
             def Map = [:]
-            log.debug "Map = $Map ----------------------------------------------"
-            Map = Thermostats.collectEntries{[it.name, it.val]}
+            def i = Thermostats.size()
+            def loopV = 0
+            def Therm = null
+            for(i != 0; loopV < i; loopV++){
+                Therm = Thermostats[loopV]
+                log.info "Therm is $Therm"
+                Map << ["$Therm": loopV]
+            }
+            
             log.debug "Map = $Map"
             //["${Thermostats[0]}": "0" , "${Thermostats[1]}": 1, "${Thermostats[2]}": "2", "${Thermostats[3]}": "3"]
 
@@ -1911,15 +1957,9 @@ log.debug "waiting"
         def HSPCust1 = ["0","$state.newValueT1HSP", "$state.newValueT2HSP", "$state.newValueT3HSP", "$HSPCust1_T4"]
         def HSPCust2 = ["0","$state.newValueT1HSP", "$state.newValueT2HSP", "$state.newValueT3HSP", "$HSPCust2_T4"]
 
+        def ModeIndexValueList = IndexValueMode()
+        ModeIndexValue = ModeIndexValueList[1]
 
-        // declare an integer value for current mode
-        def MapofIndexValues = [0: "0", "$Home": "1", "$Night": "2", "$Away": "3", "$CustomMode1": "4", "$CustomMode2": "5" ]   
-        def ModeIndexValue = MapofIndexValues.find{ it.key == "$CurrMode"}
-        //log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
-        ModeIndexValue = ModeIndexValue.value
-
-        ModeIndexValue = ModeIndexValue.toInteger()
-        log.info "-----------------------------------------------------------------------------------------ModeIndexValue = $ModeIndexValue"
 
         //array cool
 
@@ -2397,7 +2437,7 @@ state.messageSent($state.messageSent)
                     message = "I'm opening windows because $state.causeOpen"
                 }
                 log.info message 
-                send(message)
+                //send(message)
             }
             else { 
                 log.debug "Windows have already been opened, doing nothing" 
@@ -2411,7 +2451,7 @@ state.messageSent($state.messageSent)
         ActuatorException?.off()
 
         message = "I'm closing windows because $state.causeClose"
-        send(message)
+        //send(message)
         log.info message 
 
         state.ClosedByApp = true
@@ -2576,7 +2616,7 @@ def OkToOpen(){
         log.debug "SinceLast = $SinceLast || MessageMinutes = $MessageMinutes || LastTimeMessageSent = $LastTimeMessageSent || MessageTimeDelay = $MessageTimeDelay"
 
         if(MessageTimeDelay && ContactsClosed) {
-            send(message)
+            //send(message)
             LastTimeMessageSent = now() as Long
             state.LastTimeMessageSent = LastTimeMessageSent as Long
         }
@@ -2717,11 +2757,6 @@ def schedules() {
 }
 def polls(){
 
-    def MapofIndexValues = [0: "0", "$Home": "1", "$Night": "2", "$Away": "3", "${CustomMode1[0]}": "4", "${CustomMode2[0]}": "5" ]   
-    def ModeIndexValue = MapofIndexValues.find{ it.key == "$location.currentMode"}
-    ModeIndexValue = ModeIndexValue.value.toInteger()
-
-
     def CtrlSwtchPoll = CtrlSwt?.hasCommand("poll")
     def CtrlSwtchRefresh = CtrlSwt?.hasCommand("refresh")
 
@@ -2737,66 +2772,26 @@ def polls(){
         //log.debug "$CtrlSwt neither supports poll() nor refresh() commands"
     }
 
-    if(Thermostat_1){
-        def poll = Thermostat_1.hasCommand("poll")
-        def refresh = Thermostat_1.hasCommand("refresh")
+    def loopV = 0
+    def i = Thermostats.size()
+    def ThermSet = null
+    for(i > 0; loopV < i; loopV++){
+        ThermSet = Thermostats[loopV]
+        def poll = ThermSet.hasCommand("poll")
+        def refresh = ThermSet.hasCommand("refresh")
         if(poll){
-            Thermostat_1.poll()
+            ThermSet.poll()
             //log.debug "polling $Thermostat_1"
         }
         else if(refresh){
-            Thermostat_1.refresh()
+            ThermSet.refresh()
             //log.debug "refreshing $Thermostat_1"
         }
         else { 
             //log.debug "$Thermostat_1 does not support either poll() nor refresh() commands"
         }
     }
-    if(Thermostat_2){
-        def poll = Thermostat_2.hasCommand("poll")
-        def refresh = Thermostat_2.hasCommand("refresh")
-        if(poll){
-            Thermostat_2.poll()
-            //log.debug "polling $Thermostat_2"
-        }
-        else if(refresh){
-            Thermostat_2.refresh()
-            //log.debug "refreshing $Thermostat_2"
-        }
-        else { 
-            //log.debug "$Thermostat_2 does not support either poll() nor refresh() commands"
-        }
-    }
-    if(Thermostat_3){
-        def poll = Thermostat_3.hasCommand("poll")
-        def refresh = Thermostat_3.hasCommand("refresh")
-        if(poll){
-            Thermostat_3.poll()
-            //log.debug "polling $Thermostat_3"
-        }
-        else if(refresh){
-            Thermostat_3.refresh()
-            //log.debug "refreshing $Thermostat_3"
-        }
-        else { 
-            //log.debug "$Thermostat_3 does not support either poll() nor refresh() commands"
-        }
-    }
-    if(Thermostat_4){
-        def poll = Thermostat_4.hasCommand("poll")
-        def refresh = Thermostat_4.hasCommand("refresh")
-        if(poll){
-            Thermostat_4.poll()
-            //log.debug "polling $Thermostat_4"
-        }
-        else if(refresh){
-            Thermostat_4.refresh()
-            //log.debug "refreshing $Thermostat_4"
-        }
-        else { 
-            //log.debug "Thermostat_4 does not support either poll() nor refresh() commands"
-        }
-    }
+
     if(OutsideSensor){
         def poll = OutsideSensor.hasCommand("poll")
         def refresh = OutsideSensor.hasCommand("refresh")
