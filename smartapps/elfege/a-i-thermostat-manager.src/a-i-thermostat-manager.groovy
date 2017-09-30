@@ -565,12 +565,13 @@ def installed() {
 
     // first default values to be set to any suitable value so it doesn't crash with null value 
     // they will be updated within seconds with user's settings 
-    state.newValueT1CSP = 75
-    state.newValueT1HSP = 75
-    state.newValueT2CSP = 75
-    state.newValueT2HSP = 75
-    state.newValueT2CSP = 75
-    state.newValueT2HSP = 75
+
+    def t = Thermostats.size()
+    def loopV = 0
+    for(t != 0; loopV < t; loopV++){
+        state."{newValueT${loopV}CSP}" = 75
+        state."{newValueT${loopV}HSP}" = 75
+    }
 
 
     init()
@@ -586,7 +587,7 @@ def updated() {
     unsubscribe()
     unschedule()
     EndEvalTRUE() 
-    OverrideReset()
+
     init()
 }
 def init() {
@@ -728,13 +729,14 @@ def init() {
 
 
     schedules()
-
+    OverrideReset()
 
 }
 
 // MAIN LOOP
 
 def Evaluate(){
+
     EndEvalFALSE() ///// 
 
     def CurrMode = location.currentMode
@@ -882,7 +884,8 @@ remove(AltSensorDevicesList[loopV])
 
                     def ModeValueList = IndexValueMode()
                     def ModeValue = ModeValueList[0]
-                    log.debug "@ loop ${loopValue}, ModeValue is $ModeValue"
+                    def Test = ModeValueList[1]
+                    log.debug "@ loop ${loopValue}, ModeValue is $ModeValue &&& Test = $Test"
 
                     def HSP = "HSP${ModeValue}${loopValue.toString()}"
 
@@ -1210,28 +1213,14 @@ HSPok = $HSPok
                     // if user sets unit back to its currently calculated 
                     // value, then the app will end the override
 
-                    if(loopValue == 1){
-                        state.newValueT1CSP = CSPSet 
-                        state.newValueT1HSP = HSPSet
 
-                    }    
-                    if(loopValue == 2){
-                        state.newValueT2CSP = CSPSet 
-                        state.newValueT2HSP = HSPSet
+                    state.HSPMap << ["$ThermSet": CSPSet]
+                    state.CSPMap << ["$ThermSet": HSPSet]
 
-                    }
-                    if(loopValue == 3){
-                        state.newValueT3CSP = CSPSet 
-                        state.newValueT3HSP = HSPSet  
-
-                    }
-                    if(loopValue == 4){
-                        state.newValueT4CSP = CSPSet 
-                        state.newValueT4HSP = HSPSet  
-
-                    }
 
                     log.debug """
+HSPMap = $state.HSPMap
+CSPMap = $state.CSPMap
 InMotionModes?($InMotionModes)
 AccountForMotion?($AccountForMotion)
 Motion at $MotionSensor Active for the past $minutesMotion minutes?($Active)
@@ -1431,6 +1420,7 @@ $ThermSet HSP should be : $HSPSet current HSP: $CurrentHeatingSetPoint
 
     /// disabled FOR TESTS
     EndEvalTRUE()
+    //OverrideReset()
 }
 
 def IndexValueMode(){
@@ -1446,27 +1436,29 @@ def IndexValueMode(){
     def ModeValue = null
     def ModeFound = null
     def ModeMatches = false
-    def Intersection = null
     def ModeIndexValue = null
     for(size > 0; lv < size; lv++){
         /// DO NOT DELETE THIS EXAMPLE! (ModeMapList) it will be usefull for further A.I. developments 
         /// ModeMapList << [(ModeList[lv]) : (LetterModeList[lv])]    
         /// build a map of all modes and set a Srting key for each mode
         /// this allows for writing a new variable below
-        ModeFound = ModeList[lv]
+        ModeFound = ModeList[lv] // each mode in the array created above, is an array in itself
 
-        ModeMatches = ModeFound.contains("$ModeInArray")
+        ModeMatches = ModeFound.contains("$ModeInArray") // so find to which array mode the current mode belongs to
+
         log.debug "ModeFound is : $ModeFound || ModeMatches = $ModeMatches || ModeInArray = $ModeInArray"
         if(ModeMatches){
             log.debug "MATCH!"
             ModeValue = "${LetterModeList[lv]}" // attribute mode letter to start writing the new variable
             ModeIndexValue = "${NumberModeList[lv]}" 
+            // break this loop so it doesn't apply a match to other modes (since now ModeMatches = true)
+            break
         }
+
+        log.debug "mode found = $ModeValue && $ModeIndexValue"
     }
 
-   ModeIndexValue = ModeIndexValue.toInteger()
-
-    log.debug """ModeValue = $ModeValue"""
+    log.debug """ModeValue = $ModeValue && ModeIndexValue = $ModeIndexValue"""
 
     return [ModeValue, ModeIndexValue]
 }
@@ -1693,7 +1685,7 @@ def BedSensorStatus(){
                 log.info "Therm is $Therm"
                 Map << ["$Therm": loopV]
             }
-            
+
             log.debug "Map = $Map"
             //["${Thermostats[0]}": "0" , "${Thermostats[1]}": 1, "${Thermostats[2]}": "2", "${Thermostats[3]}": "3"]
 
@@ -1914,14 +1906,22 @@ The source of this event was: $evt.source"
 """
     handlerrunningTRUE()
     def Endeval = state.EndEval
-    /*while(Endeval != true){
-Endeval = state.EndEval
-log.debug "waiting"
-}*/
+    while(Endeval != true){
+        Endeval = state.EndEval
+        log.debug "waiting eval override"
+        // "state" is modified only as of the moment Evaluate() is done so we need to wait before last sent command has been recorded as such to avoid false overrides
+    }
 
     // declare an integer value for the thermostat which has had its values modified
-    def MapModesThermostats = ["${Thermostats[0]}": "0" , "${Thermostats[1]}": 1, "${Thermostats[2]}": "2", 
-                               "${Thermostats[3]}": "3"]
+
+    def tsize = Thermostats.size()
+    def loopV = 0
+    def MapModesThermostats = [:]
+    for(tsize != 0; loopV < tsize; loopV++){
+        MapModesThermostats << ["${Thermostats[loopV]}": "$loopV"]
+    }
+    log.debug "MapModesThermostats = $MapModesThermostats"
+
     def KeyValueForThisTherm = MapModesThermostats.find { it.key == "$evt.device"}
     log.info "device is ------------------- $KeyValueForThisTherm.key"
     def ThermNumber = KeyValueForThisTherm.value
@@ -1951,37 +1951,33 @@ log.debug "waiting"
         //log.debug "CurrMode is $CurrMode mode"
 
         //array heat
-        def HSPH = ["0","$state.newValueT1HSP", "$state.newValueT2HSP", "$state.newValueT3HSP", "$HSPH4"]
-        def HSPN = ["0","$state.newValueT1HSP", "$state.newValueT2HSP", "$state.newValueT3HSP", "$HSPN4"]
-        def HSPA = ["0","$HSPA", "$HSPA", "$HSPA", "$HSPA"]
-        def HSPCust1 = ["0","$state.newValueT1HSP", "$state.newValueT2HSP", "$state.newValueT3HSP", "$HSPCust1_T4"]
-        def HSPCust2 = ["0","$state.newValueT1HSP", "$state.newValueT2HSP", "$state.newValueT3HSP", "$HSPCust2_T4"]
 
-        def ModeIndexValueList = IndexValueMode()
-        ModeIndexValue = ModeIndexValueList[1]
 
+
+        def ModeValueList = IndexValueMode()
+        def ModeIndexValue = ModeValueList[1].toInteger()
 
         //array cool
+        // example: 
+        //HSPMap = [Temperature LIVING:72, Temperature BEDROOM:72, Temperature LIVING:72, NewHSP2:72, NewHSP1:72, Temperature OFFICE:72, Temperature OFFICE:72, Temperature BEDROOM:72, NewHSP0:72]
+        //CSPMap = [Temperature LIVING:72, NewCSP0:68, NewCSP1:72, Temperature BEDROOM:68, Temperature LIVING:72, NewCSP2:72, Temperature OFFICE:72, Temperature OFFICE:72, Temperature BEDROOM:68]
+        def HSPMap = state.HSPMap
+        def CurrentHSP = HSPMap.find{it.key == "$evt.device"}
+        CurrentHSP = CurrentHSP.value
 
-        def CSPH = ["0","$state.newValueT1CSP", "$state.newValueT2CSP", "$state.newValueT3CSP", "$CSPH4"]
-        def CSPN = ["0","$state.newValueT1CSP", "$state.newValueT2CSP", "$state.newValueT3CSP", "$CSPN4"]
-        def CSPA = ["0","$CSPA", "$CSPA", "$CSPA", "$CSPA"]
-        def CSPCust1 = ["0","$state.newValueT1CSP", "$state.newValueT2CSP", "$state.newValueT3CSP", "$CSPCust1_T4"]
-        def CSPCust2 = ["0","$state.newValueT1CSP", "$state.newValueT2CSP", "$state.newValueT3CSP", "$CSPCust2_T4"]
+        log.debug "CurrentHSP = $CurrentHSP"
+        def RefHeat = CurrentHSP.toInteger()
+        log.debug "RefHeat = $RefHeat"
 
-        // now transpose corresponding values among tables
-        // for heat values
-        def ListHSPs = ["0", HSPH, HSPN, HSPA, HSPCust1, HSPCust2]
-        def HSPModecheck = ListHSPs[ModeIndexValue]
-        //log.debug "HSPModecheck = $HSPModecheck"
-        def RefHeat = HSPModecheck[ThermNumber]
         //do the same with cooling values
-        def ListCSPs = ["0", CSPH, CSPN, CSPA, CSPCust1, CSPCust2]
-        log.trace """
-ListCSPs = $ListCSPs
-ListHSPs = $ListHSPs"""
-        def CSPModecheck = ListCSPs[ModeIndexValue]
-        def RefCool = CSPModecheck[ThermNumber]
+        def CSPMap = state.CSPMap
+        def CurrentCSP = CSPMap.find{it.key == "$evt.device"}
+        CurrentCSP = CurrentCSP.value
+
+        log.debug "CurrentCSP = $CurrentCSP"
+        def RefCool = CurrentCSP.toInteger()
+        log.debug "RefCool = $RefCool"
+
 
         // for thermostat set to work based on alternate temp sensors, the Alternativesensor() loops will 
         // simply stop running after this new setting has been compared to settings() in the arrays above
@@ -1989,16 +1985,14 @@ ListHSPs = $ListHSPs"""
 
         if(evt.name == "heatingSetpoint"){              
             reference = RefHeat
-            reference = Math.round(Double.parseDouble(RefHeat))
-            reference = reference.toInteger()
+
             log.trace """RefHeat is $RefHeat and it is now converted to a reference for comparison"""
 
         }
         else  if(evt.name == "coolingSetpoint"){ 
             reference = RefCool
-            reference = Math.round(Double.parseDouble(RefCool))
-            reference = reference.toInteger()
-            //log.debug "RefCool is $RefCool and it is now converted to a reference for comparison"
+
+            log.debug "RefCool is $RefCool and it is now converted to a reference for comparison"
         }
 
 
@@ -2011,34 +2005,37 @@ ListHSPs = $ListHSPs"""
         //def Value = Math.round(Double.parseDouble(evt.value))
         Value = Value.toInteger()
         //log.debug "Evt value to Integer is : $Value and it is to be compared to reference: $reference"
+        def ValueIsReference = Value == reference
+        def doorsOk = AllContactsAreClosed()
 
 
-        log.trace """
+        if(ValueIsReference || ThisIsModeChange ||  (!doorsOk && !thisIsExceptionTemp))
+        {  
+            log.debug "NO SETPOINT OVERRIDE for $evt.device"
+            state.AppMgtList[ThermNumber] = true // restores normal operation
+        }
+        else {
+
+            state.AppMgtList[ThermNumber] = false // As of here this value won't change until location mode changes or closing windows
+
+            log.trace """AppMgt as of now is ${state.AppMgtList[ThermNumber]}, override list: $state.AppMgtList
+
+MANUAL SETPOINT OVERRIDE for $evt.device
+state.AppMgtList = $state.AppMgtList
+3 possible causes: 
+ValueIsReference = $ValueIsReference (should be false)
+ThisIsModeChange = $ThisIsModeChange (should be false)
+doorsOk should be true: $doorsOk
+isIsExceptionTemp should be false: $thisIsExceptionTemp
 RefHeat for $evt.device is: $RefHeat 
 RefCool for $evt.device is: $RefCool 
 reference for $evt.device is: $reference
 ThisIsModeChange : $ThisIsModeChange
+ValueIsReference: $ValueIsReference
+doorsOk = $doorsOk
 OVERRIDE? if true then should have $reference != $Value 
 (unless location mode just changed or Exception Switch is on or ThisIsMotion or ThisIsLinearEq)
 """
-
-        def doorsOk = AllContactsAreClosed()
-        if(Value == reference || ThisIsModeChange ||  (!doorsOk && !thisIsExceptionTemp) && !AppMgt)
-        {  
-            log.debug "NO SETPOINT OVERRIDE for $evt.device"
-        }
-        else {
-
-            state.AppMgtList[ThermNumber] = false // As of here this value won't change until location mode change or closing windows
-
-            log.debug """AppMgt now is $AppMgt, override list: $state.AppMgtList
-
-MANUAL SETPOINT OVERRIDE for $evt.device
-state.AppMgtList = $state.AppMgtList
-"""
-
-            def message = "user set temperature manually on $evt.device"
-            log.info message
 
         }
 
@@ -2095,7 +2092,7 @@ log.debug "waiting"
         //state.thisIsWindowMgt = false
         def thisIsWindowMgt = state.thisIsWindowMgt
         def ExceptionState = state.exception
-        def thisIsExceptionTemp = evt.displayName == "$Thermostat_1" && ExceptionState
+        def thisIsExceptionTemp = evt.displayName == "${Thermostat[0]}" && ExceptionState
         //log.debug "Location Mode Changed?($LocatioModeChange)"
 
         log.trace "Latest Thermostat ModeS : $state.LatestThermostatMode_T1 | $state.LatestThermostatMode_T2 | $state.LatestThermostatMode_T3 | $state.LatestThermostatMode_T4"
@@ -2149,9 +2146,15 @@ def thisIsWindowMgtFALSE(){
     }
 }
 def OverrideReset(){
+    def t = Thermostats.size()
+    def i = 0
+    def list = []
 
-    state.AppMgtList = [true, true, true, true, true]
-    log.info "OVERRIDES RESET"
+    for(t != 0; i < t; i++){
+        list[i] = true
+    }
+    state.AppMgtList = list
+    log.info "OVERRIDES RESET: $state.AppMgtList"
 }
 
 def resetLocationChangeVariable(){
