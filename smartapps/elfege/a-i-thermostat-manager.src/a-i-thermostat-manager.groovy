@@ -725,7 +725,9 @@ def init() {
 
     runIn(10, resetLocationChangeVariable)
 
-    // false positive overrides management 
+    // reset A.I. override maps
+    state.HSPMap = [:]
+    state.CSPMap = [:]
 
 
     schedules()
@@ -897,7 +899,7 @@ remove(AltSensorDevicesList[loopV])
 
                     //log.trace"SETTINGS: $settings"
 
-                    HSPSet = settings.find{it.key == "$HSP"} // retrieve from settings
+                    HSPSet = settings.find{it.key == "$HSP"} // retrieve the String from settings
                     log.debug "HSPSet for $ThermSet is $HSPSet "
                     HSPSet = HSPSet.value
                     log.debug "HSPSet for $ThermSet is $HSPSet "
@@ -995,17 +997,24 @@ Current Temperature Inside = $Inside
 //log.debug "ShouldHeat = $ShouldHeat
 """
 
-                    //modify with presence/motion in the room
+                    /// ALGEBRA
 
+                    def xa = 0
+                    def ya = 0
+
+                    def xb = 0
+                    def yb = 0
+                    def b = 0
+                    def coef = 0
 
 
                     if(adjustments == "Yes, use a linear variation"){
-                        // linear function for Cooling
-                        def xa = 75	//outside temp a
-                        def ya = CSPSet // desired cooling temp a 
+                        /////////////////////////COOL////////////////////  linear function for Cooling
+                        xa = 75	//outside temp a
+                        ya = CSPSet // desired cooling temp a 
 
-                        def xb = 100 		//outside temp b
-                        def yb = CSPSet + 5  // desired cooling temp b  
+                        xb = 100 		//outside temp b
+                        yb = CSPSet + 5  // desired cooling temp b  
 
                         // take humidity into account
                         // if outside humidity is higher than .... 
@@ -1016,16 +1025,17 @@ Current Temperature Inside = $Inside
                             yb = CSPSet + 2 // desired cooling temp b  LESS VARIATION WHEN HUMID
                         }
 
-                        def coef = (yb-ya)/(xb-xa)
+                        coef = (yb-ya)/(xb-xa)
 
-                        def b = ya - coef * xa // solution to ya = coef*xa + b // CSPSet = coef*outsideTemp + b
+                        b = ya - coef * xa // solution to ya = coef*xa + b // CSPSet = coef*outsideTemp + b
 
-                        //CSPSet - (coef * outsideTemp) 
-                        log.info "b is: $b ---------------------------------------"
                         CSPSet = coef*outsideTemp + b as double
+                            log.info "b is: $b ---------------------------------------"
+                        //
+                        CSPSet.toInteger()
 
+                    } 
 
-                            } 
                     else if(adjustments == "Yes, but use a logarithmic variation"){
                         // logarithmic treatment 
 
@@ -1037,15 +1047,45 @@ Where log can be a logarithm function in any base, n is the number and b is the 
 Math.log(256) / Math.log(2)
 => 8.0
 */
+                        // log base is: CSPSet
+                        def Base = CSPSet
+                        /////////////////////////COOL//////////////////// 
                         //outsideTemp = 90 // for test only 
-                        CSPSet = (Math.log(outsideTemp) / Math.log(CSPSet)) * CSPSet
+                        CSPSet = (Math.log(outsideTemp) / Math.log(Base)) * CSPSet
                         log.debug "Logarithmic CSPSet = $CSPSet"
                         //CSPSet = Math.round(CSPSet)
                         CSPSet = CSPSet.toInteger()
                         log.debug "Integer CSPSet = $CSPSet"
 
+                        /////////////////////////HEAT//////////////////// 
+                        /* // log base is: HSPSet
+Base = 75
+//outsideTemp = 60 // for test only 
+HSPSet = (Math.log(outsideTemp) / Math.log(Base)) * HSPSet
+log.debug "Logarithmic HSPSet = $HSPSet"
+//CSPSet = Math.round(HSPSet)
+HSPSet = HSPSet.toInteger()
+log.debug "Integer HSPSet = $HSPSet"
+*/
 
-                        // end of algebraic adjustments        
+                        /////////////////////////HEAT//////////////////// ALWAYS linear function for heating
+
+                        xa = 65	//outside temp a
+                        ya = HSPSet // desired heating temp a 
+
+                        xb = 45 		//outside temp b
+                        yb = HSPSet + 5  // desired heating temp b  
+
+                        coef = (yb-ya)/(xb-xa)
+                        b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b
+
+                       log.info "b is: $b ---------------------------------------"
+                        HSPSet = coef*outsideTemp + b as double
+                            
+                            
+                             HSPSet = HSPSet.toInteger()
+                             log.debug "linear HSPSet = $HSPSet"
+                        // end of algebra        
 
 
                         if(AccountForMotion && InMotionModes && AppMgt){
@@ -1053,11 +1093,15 @@ Math.log(256) / Math.log(2)
                             if(!Active){
                                 // record algebraic CSPSet for debug purpose
                                 def algebraicCSPSet = CSPSet 
+                                def algebraicHSPSet = HSPSet
                                 // log.info "$ThermSet default Cool: $CSPSet and default heat: $HSPSet "
-                                CSPSet = CSPSet + HeatNoMotionVal 
-                                HSPSet = HSPSet - CoolNoMotionVal
+                                CSPSet = CSPSet + CoolNoMotionVal  
+                                HSPSet = HSPSet - HeatNoMotionVal
 
-                                log.trace "NO MOTION so $ThermSet CSP, which was $defaultCSPSet, then (if algebra) $algebraicCSPSet, is now set to $CSPSet and HSP was $defaultHSPSet and is now set to $HSPSet"
+                                log.trace """
+NO MOTION so $ThermSet CSP, which was $defaultCSPSet, then (if algebra) $algebraicCSPSet, is now set to $CSPSet
+NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebraicHSPSet, is now set to $HSPSet
+"""
 
                             }
                             else {
@@ -1084,15 +1128,25 @@ Math.log(256) / Math.log(2)
 
                         // no lower than defaultCSPSet 
                         log.debug "Calculated CSPSet = $CSPSet, defaultCSPSet = $defaultCSPSet (loop $loopValue)"
-                        if(CSPSet < defaultCSPSet){
+                        if(CSPSet <= (defaultCSPSet - 2)){
 
                             log.info """CurrTemp at ${ThermSet} is: $CurrTemp. CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp
-But, because CSPSet is lower than default value ($defaultCSPSet), default settings are maintained"""
+But, because CSPSet is too much lower than default value ($defaultCSPSet), default settings are maintained"""
                             CSPSet = defaultCSPSet
                         }
                         else {
 
                             log.info "CurrTemp at ${ThermSet} is: $CurrTemp  CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
+                        }
+                        if(HSPSet >= (defaultHSPSet + 2)){
+
+                            log.info """CurrTemp at ${ThermSet} is: $CurrTemp. HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp
+But, because HSPSet is too much lower than default value ($defaultHSPSet), default settings are maintained"""
+                            HSPSet = defaultHSPSet
+                        }
+                        else {
+
+                            log.info "CurrTemp at ${ThermSet} is: $CurrTemp  HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp"
                         }
                     }
 
@@ -1102,12 +1156,12 @@ But, because CSPSet is lower than default value ($defaultCSPSet), default settin
                     def WarmOutside = outsideTemp >= (CSPSet - 1)
                     def WarmInside = CurrTemp - 1 > CSPSet
                     log.debug "WarmOutside = $WarmOutside, WarmInside = $WarmInside"
-                    def ShouldCoolWithAC = WarmInside || WarmOutside
+                    def ShouldCoolWithAC = WarmInside && WarmOutside
                     log.debug "$ThermSet ShouldCoolWithAC = $ShouldCoolWithAC (before other criteria loop $loopValue)"
 
-                    def ShouldHeat = outsideTemp < OutsideTempLowThres && CurrTemp <= HSPSet
+                    def ShouldHeat = !WarmOutside && CurrTemp <= HSPSet 
 
-                    if((WarmInside || tooHumidINSIDE) && !ShouldHeat){
+                    if((WarmInside && tooHumidINSIDE) && !ShouldHeat){
                         ShouldCoolWithAC = true
                         log.debug "ShouldCoolWithAC set to true loop $loopValue"
                     }
@@ -1119,6 +1173,8 @@ ShouldCoolWithAC = $ShouldCoolWithAC
 ShouldHeat = $ShouldHeat 
 WarmOutside = $WarmOutside 
 WarmInside = $WarmInside
+OutsideTempLowThres = $OutsideTempLowThres
+
 """       
 
                     def ThisIsExceptionTherm =  false
@@ -1212,7 +1268,6 @@ HSPok = $HSPok
                     // and for back to normal action
                     // if user sets unit back to its currently calculated 
                     // value, then the app will end the override
-
 
                     state.HSPMap << ["$ThermSet": CSPSet]
                     state.CSPMap << ["$ThermSet": HSPSet]
@@ -1418,8 +1473,9 @@ $ThermSet HSP should be : $HSPSet current HSP: $CurrentHeatingSetPoint
         state.thisIsWindowMgt = false
     }
 
-    /// disabled FOR TESTS
+
     EndEvalTRUE()
+    /// disabled FOR TESTS
     //OverrideReset()
 }
 
@@ -2018,15 +2074,15 @@ The source of this event was: $evt.source"
 
             state.AppMgtList[ThermNumber] = false // As of here this value won't change until location mode changes or closing windows
 
-            log.trace """AppMgt as of now is ${state.AppMgtList[ThermNumber]}, override list: $state.AppMgtList
 
+            log.trace """AppMgt as of now is ${state.AppMgtList[ThermNumber]}, override list: $state.AppMgtList
 MANUAL SETPOINT OVERRIDE for $evt.device
 state.AppMgtList = $state.AppMgtList
 3 possible causes: 
-ValueIsReference = $ValueIsReference (should be false)
-ThisIsModeChange = $ThisIsModeChange (should be false)
-doorsOk should be true: $doorsOk
-isIsExceptionTemp should be false: $thisIsExceptionTemp
+ValueIsReference = $ValueIsReference (should be false if override)
+ThisIsModeChange = $ThisIsModeChange (should be false if override)
+doorsOk should be true if override: $doorsOk
+isIsExceptionTemp should be false if override: $thisIsExceptionTemp
 RefHeat for $evt.device is: $RefHeat 
 RefCool for $evt.device is: $RefCool 
 reference for $evt.device is: $reference
@@ -2036,13 +2092,15 @@ doorsOk = $doorsOk
 OVERRIDE? if true then should have $reference != $Value 
 (unless location mode just changed or Exception Switch is on or ThisIsMotion or ThisIsLinearEq)
 """
-
         }
+
 
     }
     else {
         log.debug "$evt.device already in OVERRIDE MODE, not checking SETPOINT override"
     }
+
+
 
     handlerrunningFALSE()
 
@@ -2760,54 +2818,19 @@ def schedules() {
 }
 def polls(){
 
-    def CtrlSwtchPoll = CtrlSwt?.hasCommand("poll")
-    def CtrlSwtchRefresh = CtrlSwt?.hasCommand("refresh")
-
-    if(CtrlSwtchPoll){
-        CtrlSwt?.poll()
-        //log.debug "polling $CtrlSwt"
-    }
-    else if(CtrlSwtchRefresh){
-        CtrlSwt?.refresh()
-        //log.debug "refreshing $CtrlSwt"
-    }
-    else { 
-        //log.debug "$CtrlSwt neither supports poll() nor refresh() commands"
-    }
-
-    def loopV = 0
-    def i = Thermostats.size()
-    def ThermSet = null
-    for(i > 0; loopV < i; loopV++){
-        ThermSet = Thermostats[loopV]
-        def poll = ThermSet.hasCommand("poll")
-        def refresh = ThermSet.hasCommand("refresh")
-        if(poll){
-            ThermSet.poll()
-            //log.debug "polling $Thermostat_1"
-        }
-        else if(refresh){
-            ThermSet.refresh()
-            //log.debug "refreshing $Thermostat_1"
-        }
-        else { 
-            //log.debug "$Thermostat_1 does not support either poll() nor refresh() commands"
-        }
-    }
-
     if(OutsideSensor){
         def poll = OutsideSensor.hasCommand("poll")
         def refresh = OutsideSensor.hasCommand("refresh")
         if(poll){
             OutsideSensor.poll()
-            //log.debug "polling $OutsideSensor"
+            log.debug "polling $OutsideSensor"
         }
         else if(refresh){
             OutsideSensor.refresh()
-            //log.debug "refreshing $OutsideSensor"
+            log.debug "refreshing $OutsideSensor"
         }
         else { 
-            //log.debug "$OutsideSensor does not support either poll() nor refresh() commands"
+            log.debug "$OutsideSensor does not support either poll() nor refresh() commands"
         }
     }
 
