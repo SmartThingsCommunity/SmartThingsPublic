@@ -872,6 +872,7 @@ def getACState(PodUid)
 // Send state to the Sensibo Pod
 def sendJson(String PodUid, String jsonBody)
 {
+    log.debug "Request sent to Sensibo API(acStates) for PODUid : $PodUid - $jsonBody"
 	def cmdParams = [
 		uri: "${getServerUrl()}",
 		path: "/api/v2/pods/${PodUid}/acStates",
