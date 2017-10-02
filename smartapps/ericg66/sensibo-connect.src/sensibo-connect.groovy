@@ -610,14 +610,14 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
     log.debug "Target Temperature :" + targetTemperature
     
 	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode
-    if (fanLevel != null) {
+    if (fanLevel != null && fanLevel != "null") {
        jsonRequestBody += '","fanLevel": "' + fanLevel + '"'
     }
     
     if (targetTemperature != 0) {
     	jsonRequestBody += ',"targetTemperature": '+ targetTemperature + ',"temperatureUnit": "' + sUnit + '"'       
     }
-    if (swingM != null)
+    if (swingM != null && swingM != "null")
     {
         jsonRequestBody += ',"swing": "' + swingM + '"'
     }
