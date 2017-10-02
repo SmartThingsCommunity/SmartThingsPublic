@@ -655,7 +655,9 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 	}
     else {
     	def tData = atomicState.sensibo[child.device.deviceNetworkId]
-    	tData.data.Error = "Failed"
+        if (tData == null) return false
+    	
+        tData.data.Error = "Failed"
     }
 
 	return(result)
