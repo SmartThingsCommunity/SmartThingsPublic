@@ -42,9 +42,14 @@ metadata {
                 attributeState "kwhr", label: '${currentValue} kWh'
             }
         }
+        htmlTile(name:"graph",
+             action: "generateGraph",
+             refreshInterval: 10,
+             width: 6, height: 6,
+             whitelist: ["www.gstatic.com"])
 
         main(["power"])
-        details(["power"])
+        details(["power", "graph"])
     }
 }
 
@@ -54,8 +59,26 @@ mappings {
     }
 }
 
-def handleMeasurements(values) {
-    sendEvent(name: "power", value: values)
+def handleMeasurements(values)
+{
+  if(values instanceof Collection)
+    {
+      // For some reason they show up out of order
+      values.sort{a,b -> a.t <=> b.t}
+    state.values = values;
+    }
+    else
+    {
+      sendEvent(name: "power", value: Math.round(values))
+
+        if(Math.round(values) > Math.round(state.threshold)){
+          sendEvent(name: "switch", value: "on")
+        } else {
+          sendEvent(name: "switch", value: "off")
+        }
+    }
+
+    //log.debug("State now contains ${state.toString().length()}/100000 bytes")
 }
 
 def handleKwhr(kwhr) {
@@ -63,12 +86,73 @@ def handleKwhr(kwhr) {
 }
 
 
-String getDataString() {
-    def dataString = ""
+String getDataString()
+{
+  def dataString = ""
 
-    state.values.each() {
-        def ts = (long) it.t * 1000.0
-        dataString += ["new Date(${ts})", it.w].toString() + ","
-    }
-    return dataString
+  state.values.each()
+    {
+      def ts = (long)it.t * 1000.0
+    dataString += ["new Date(${ts})", it.w].toString() + ","
+  }
+    //log.debug "dataString: ${dataString}"
+
+  return dataString
+}
+
+
+def generateGraphHTML() {
+  def html = """
+    <!DOCTYPE html>
+      <html>
+        <head>
+          <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+          <script type="text/javascript">
+            google.charts.load('current', {packages: ['corechart']});
+            google.charts.setOnLoadCallback(drawGraph);
+            function drawGraph() {
+              var data = new google.visualization.DataTable();
+              data.addColumn('datetime', 'time');
+              data.addColumn('number', 'Power');
+              data.addRows([
+                ${getDataString()}
+              ]);
+              var options = {
+                fontName: 'San Francisco, Roboto, Arial',
+                height: 240,
+                hAxis: {
+                  format: 'h:mm aa',
+                  slantedText: false
+                },
+                series: {
+                  0: {targetAxisIndex: 0, color: '#FFC2C2', lineWidth: 1}
+                },
+                vAxes: {
+                  0: {
+                    title: 'Power (W)',
+                    format: 'decimal',
+                    textStyle: {color: '#004CFF'},
+                    titleTextStyle: {color: '#004CFF'},
+                                        minValue: 0
+                  },
+                },
+                legend: {
+                  position: 'none'
+                },
+                chartArea: {
+                  width: '72%',
+                  height: '85%'
+                }
+              };
+              var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));
+              chart.draw(data, options);
+            }
+          </script>
+        </head>
+        <body>
+          <div id="chart_div"></div>
+        </body>
+      </html>
+    """
+  render contentType: "text/html", data: html, status: 200
 }

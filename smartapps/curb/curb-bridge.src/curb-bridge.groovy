@@ -257,10 +257,103 @@ def getAllData() {
 
     asynchttp_v1.get(processUsage, latestparams)
 
+    def historicalparams = [
+      uri: "https://app.energycurb.com",
+      path: "/api/historical/${atomicState.location}/24h/5m",
+        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        requestContentType: 'application/json'
+      ]
+    asynchttp_v1.get(processHistorical, historicalparams)
+
+}
+
+def processHistorical(resp, data)
+{
+    if (resp.hasError())
+    {
+        log.error "Historical Response Error: ${resp.getErrorMessage()}"
+        return
+    }
+
+  def json = resp.json
+
+    if(json)
+    {
+        //log.debug "Got Historical Data: ${json}"
+        def total = null
+        def prod = null
+
+        json.each
+        {
+            updateChildDevice("${it.id}", it.label, it.values)
+            if(it.main)
+            {
+                it.values.sort{a,b -> a.t <=> b.t}
+                if(total == null)
+                {
+                    total = it
+                }
+                else
+                {
+                    if(it.values.size() != total.values.size())
+                    {
+                        log.debug("Size mismatch")
+                    }
+                    else
+                    {
+                        for(int i = 0; i < total.values.size(); ++i)
+                        {
+                            if(total.values[i].t != it.values[i].t)
+                            {
+                                log.debug("Time mismatch")
+                            }
+                            else
+                            {
+                                total.values[i].w = (total.values[i].w) + (it.values[i].w)
+                            }
+                        }
+                    }
+                }
+            }
+            if(it.production)
+            {
+                it.values.sort{a,b -> a.t <=> b.t}
+                if(prod == null)
+                {
+                    prod = it
+                }
+                else
+                {
+                    if(it.values.size() != total.values.size())
+                    {
+                        log.debug("Size mismatch")
+                    }
+                    else
+                    {
+                        for(int i = 0; i < total.values.size(); ++i)
+                        {
+                            if(prod.values[i].t != it.values[i].t)
+                            {
+                                log.debug("Time mismatch")
+                            }
+                            else
+                            {
+                                prod.values[i].w = (prod.values[i].w) + (it.values[i].w)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        updateChildDevice("__NET__", "Main", total.values)
+        updateChildDevice("__PRODUCTION__", "Solar", prod.values)
+    }
 }
 
 def processUsage(resp, data) {
     if (resp.hasError()) {
+        refreshAuthToken()
         log.error "Usage Response Error: ${resp.getErrorMessage()}"
         return
     }
