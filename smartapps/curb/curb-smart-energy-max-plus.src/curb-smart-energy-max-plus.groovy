@@ -25,16 +25,17 @@ definition(
 
 
 preferences {
+
   section("Set your desired energy usage") {
-    input "energyMonitor", "capability.energyMeter", title: "Select your Main", multiple: false
+    input "energyMonitor", "capability.energyMeter", title: "Select your circuit to monitor (Probably the Main)", multiple: false
+    input "maximumEnergy", "float", title: "Maximum kWh over your selected energy interval"
+  }
+
+  section("Select your controls") {
     input "thermostat", "capability.thermostat", title: "Select your Thermostat", multiple: false, required: false
     input "switches", "capability.switch", title: "Select your Load Controllers", multiple: true, required: false
-  input(
-    name: "maximumEnergy",
-    type: "float",
-    title: "Maximum kWh over your selected energy interval"
-    )
   }
+
 }
 
 def installed() {
@@ -58,6 +59,10 @@ def initialize() {
   subscribe(energyMonitor, "energy", checkEventEnergyMonitor)
   if(thermostat){
     subscribe(thermostat, "themostatMode", thermostatManualOverride)
+  }
+  for (s in switches)
+  {
+    subscribe(s, "switch",switchManualOverride)
   }
 }
 
@@ -86,6 +91,21 @@ def thermostatManualOverride(event){
   if (event.value != state.thermostatReturnMode)
   {
     state.thermostatReturnMode = event.value
+  }
+}
+
+def switchManualOverride(event){
+  if (event.value == "off" && state.throttling)
+  {
+    // We've captured the throttle off message
+    return
+  }
+  if (event.isStateChange())
+  {
+    switches.eachWithIndex { index, s ->
+      if (s.getDeviceId() == event.getDeviceId()){
+        state.switchReturnModes[index] = event.value
+      }
   }
 }
 
