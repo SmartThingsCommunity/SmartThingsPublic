@@ -56,7 +56,7 @@ def updated() {
 def initialize() {
 
   captureContollerStates()
-  subscribe(energyMonitor, "energy", checkEventEnergyMonitor)
+  subscribe(energyMonitor, "energy", checkEnergyMonitor)
   if(thermostat){
     subscribe(thermostat, "themostatMode", thermostatManualOverride)
   }
