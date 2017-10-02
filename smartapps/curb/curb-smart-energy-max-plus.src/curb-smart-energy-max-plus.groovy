@@ -108,6 +108,7 @@ def switchManualOverride(event){
       }
   }
 }
+}
 
 def captureContollerStates()
 {
