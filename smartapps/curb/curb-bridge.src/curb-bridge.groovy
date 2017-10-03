@@ -420,8 +420,10 @@ def processKwhr(resp, data) {
     def solarkwh = 0.0
     def usagekwh = 0.0
     if (json) {
+    log.debug json
         json.each {
             if (it.main) {
+            	log.debug it
                 mainkwh = mainkwh + it.kwhr
             }
             try {
