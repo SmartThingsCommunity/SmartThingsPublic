@@ -23,7 +23,6 @@ definition(
     iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png")
 
-
 preferences {
 
   section("Set your desired energy usage") {
@@ -54,43 +53,38 @@ def updated() {
 }
 
 def initialize() {
-log.debug thermostat.currentState("thermostatMode").value
-	if (state.throttling == null)
-    {
-    	state.throttling = false
-    }
+
+  if (state.throttling == null)
+  {
+  	state.throttling = false
+  }
+
   captureContollerStates()
   subscribe(energyMonitor, "energy", checkEnergyMonitor)
-
-  log.debug "${thermostat}"
-  if(thermostat)
-  {
-  	log.debug "thermostat == true"
-  }
 }
 
 def checkEnergyMonitor(evt) {
-	log.debug("checking energy")
-    log.debug state
+
   def currentEnergy = energyMonitor.currentState("energy")
   def highEnergyReference = Float.parseFloat(settings.maximumEnergy) * 0.85
   def lowEnergyReference = Float.parseFloat(settings.maximumEnergy) * 0.75
-	log.debug("current: ${currentEnergy.value} high: ${highEnergyReference} low: ${lowEnergyReference}")
-    log.debug("Throttling? ${state.throttling}")
 
-    if(Float.parseFloat(currentEnergy.value) > highEnergyReference && !state.throttling) {
-      throttleUsage()
-    }
+  log.debug state
+  log.debug("current kWh: ${currentEnergy.value} high: ${highEnergyReference} low: ${lowEnergyReference}")
 
-    if(Float.parseFloat(currentEnergy.value) < lowEnergyReference && state.throttling) {
+  if(Float.parseFloat(currentEnergy.value) > highEnergyReference && !state.throttling) {
+    throttleUsage()
+  }
 
-      stopThrottlingUsage()
-    }
+  if(Float.parseFloat(currentEnergy.value) < lowEnergyReference && state.throttling) {
+    stopThrottlingUsage()
+  }
+
 }
 
 def captureContollerStates()
 {
-  if (state.throttling == false)
+  if (!state.throttling)
   {
     if (thermostat){
       state.thermostatReturnMode = thermostat.currentState("thermostatMode").value
@@ -105,19 +99,16 @@ def captureContollerStates()
 
 def restoreControllerStates()
 {
-  if (state.throttling == false)
+  if (!state.throttling)
   {
+
     if (thermostat){
       thermostat.setThermostatMode(state.thermostatReturnMode)
     }
+
     for (s in switches){
-      if (state[s.id] == "on")
-      {
-        s.on()
-      }
-      else {
-        s.off()
-      }
+      if (!state[s.id]) { continue }
+      state[s.id] == "on" ? s.on() : s.off()
     }
   }
 }
@@ -126,10 +117,12 @@ def throttleUsage()
 {
   state.throttling = true
   log.debug "throttling usage"
-  log.debug state
   captureContollerStates()
-  log.debug state
-  thermostat.off()
+
+  if (thermostat){
+    thermostat.off()
+  }
+
   for (s in switches){
     s.off()
   }
@@ -139,6 +132,5 @@ def stopThrottlingUsage()
 {
   state.throttling = false
   log.debug "resuming normal operations"
-  log.debug state
   restoreControllerStates()
 }

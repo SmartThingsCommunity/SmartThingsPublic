@@ -285,11 +285,16 @@ def processHistorical(resp, data)
 
         json.each
         {
-            updateChildDevice("${it.id}", it.label, it.values)
+        	if(!it.main && !it.production){
+
+            	updateChildDevice("${it.id}", it.label, it.values)
+
+            }
+
             if(it.main)
             {
                 it.values.sort{a,b -> a.t <=> b.t}
-                if(total == null)
+                if(!total)
                 {
                     total = it
                 }
@@ -347,7 +352,9 @@ def processHistorical(resp, data)
         }
 
         updateChildDevice("__NET__", "Main", total.values)
-        updateChildDevice("__PRODUCTION__", "Solar", prod.values)
+        if(prod){
+        	updateChildDevice("__PRODUCTION__", "Solar", prod.values)
+        }
     }
 }
 
@@ -398,7 +405,6 @@ def processDevices(resp, data) {
             createChildDevice("__CONSUMPTION__", "Usage")
         }
     }
-    getKwhr()
 }
 
 def processKwhr(resp, data) {
