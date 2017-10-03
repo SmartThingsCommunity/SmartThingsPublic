@@ -67,8 +67,10 @@ def parse(String description) {
 	return result
 }
 
-def updated() {
-	response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+def installed() {
+	if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
