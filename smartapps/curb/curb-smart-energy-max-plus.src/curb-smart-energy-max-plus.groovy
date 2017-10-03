@@ -54,60 +54,38 @@ def updated() {
 }
 
 def initialize() {
-
+log.debug thermostat.currentState("thermostatMode").value
+	if (state.throttling == null)
+    {
+    	state.throttling = false
+    }
   captureContollerStates()
   subscribe(energyMonitor, "energy", checkEnergyMonitor)
-  if(thermostat){
-    subscribe(thermostat, "themostatMode", thermostatManualOverride)
-  }
-  for (s in switches)
+
+  log.debug "${thermostat}"
+  if(thermostat)
   {
-    subscribe(s, "switch",switchManualOverride)
+  	log.debug "thermostat == true"
   }
 }
 
 def checkEnergyMonitor(evt) {
-
+	log.debug("checking energy")
+    log.debug state
   def currentEnergy = energyMonitor.currentState("energy")
   def highEnergyReference = Float.parseFloat(settings.maximumEnergy) * 0.85
   def lowEnergyReference = Float.parseFloat(settings.maximumEnergy) * 0.75
+	log.debug("current: ${currentEnergy.value} high: ${highEnergyReference} low: ${lowEnergyReference}")
+    log.debug("Throttling? ${state.throttling}")
 
     if(Float.parseFloat(currentEnergy.value) > highEnergyReference && !state.throttling) {
       throttleUsage()
     }
 
     if(Float.parseFloat(currentEnergy.value) < lowEnergyReference && state.throttling) {
+
       stopThrottlingUsage()
     }
-
-}
-
-def thermostatManualOverride(event){
-  if (event.value == "off" && state.throttling)
-  {
-    // We've captured the throttle off message
-    return
-  }
-  if (event.value != state.thermostatReturnMode)
-  {
-    state.thermostatReturnMode = event.value
-  }
-}
-
-def switchManualOverride(event){
-  if (event.value == "off" && state.throttling)
-  {
-    // We've captured the throttle off message
-    return
-  }
-  if (event.isStateChange())
-  {
-    switches.eachWithIndex { index, s ->
-      if (s.getDeviceId() == event.getDeviceId()){
-        state.switchReturnModes[index] = event.value
-      }
-  }
-}
 }
 
 def captureContollerStates()
@@ -117,9 +95,11 @@ def captureContollerStates()
     if (thermostat){
       state.thermostatReturnMode = thermostat.currentState("thermostatMode").value
     }
-    switches.eachWithIndex { index, s ->
-      state.switchReturnModes[index] = s.currentState("switch").value
+    for (s in switches)
+    {
+    	state[s.id] = s.currentState("switch").value
     }
+    log.debug "state: ${state}"
   }
 }
 
@@ -130,8 +110,8 @@ def restoreControllerStates()
     if (thermostat){
       thermostat.setThermostatMode(state.thermostatReturnMode)
     }
-    switches.eachWithIndex { index, s ->
-      if (state.switchReturnModes[index] == "on")
+    for (s in switches){
+      if (state[s.id] == "on")
       {
         s.on()
       }
@@ -146,7 +126,9 @@ def throttleUsage()
 {
   state.throttling = true
   log.debug "throttling usage"
+  log.debug state
   captureContollerStates()
+  log.debug state
   thermostat.off()
   for (s in switches){
     s.off()
@@ -155,8 +137,8 @@ def throttleUsage()
 
 def stopThrottlingUsage()
 {
-  log.debug "resuming normal operations"
-  log.debug thermostat.currentState("thermostatMode").value
-  restoreControllerStates()
   state.throttling = false
+  log.debug "resuming normal operations"
+  log.debug state
+  restoreControllerStates()
 }
