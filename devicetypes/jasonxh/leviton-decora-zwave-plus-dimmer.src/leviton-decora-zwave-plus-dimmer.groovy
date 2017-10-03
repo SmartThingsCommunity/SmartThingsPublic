@@ -140,6 +140,14 @@ metadata {
     }
 
     preferences {
+        input name: "levelIncrement", type: "number", title: "In-App Level Increment",
+                description: "1 - 100", range: "1..100", defaultValue: defaultLevelIncrement,
+                displayDuringSetup: false, required: true
+
+        input type: "paragraph", element: "paragraph", title: "Device Preferences",
+                description: "The following preferences are configuring the device behaviors. " +
+                        "All of them are optional. Leave a preference empty to skip configuring it."
+
         input name: "loadType", type: "enum", title: "Load type",
                 options: ["Incandescent (default)", "LED", "CFL"],
                 displayDuringSetup: false, required: false
@@ -170,6 +178,7 @@ metadata {
 def installed() {
     log.debug "installed..."
     initialize()
+    response(refresh())
 }
 
 def updated() {
@@ -227,6 +236,9 @@ def parse(String description) {
 }
 
 def on() {
+    def fadeOnTime = device.currentValue("fadeOnTime")
+    def presetLevel = device.currentValue("presetLevel")
+
     short duration = fadeOnTime == null ? 255 : fadeOnTime
     short level = presetLevel == null || presetLevel == 0 ? 0xFF : toZwaveLevel(presetLevel as short)
     delayBetween([
@@ -236,6 +248,8 @@ def on() {
 }
 
 def off() {
+    def fadeOffTime = device.currentValue("fadeOffTime")
+
     short duration = fadeOffTime == null ? 255 : fadeOffTime
     delayBetween([
             zwave.switchMultilevelV2.switchMultilevelSet(value: 0x00, dimmingDuration: duration).format(),
@@ -305,13 +319,15 @@ def high() {
 }
 
 def levelUp() {
-    setLevel(device.currentValue("level") + 10)
+    setLevel(device.currentValue("level") + (levelIncrement ?: defaultLevelIncrement))
 }
 
 def levelDown() {
-    setLevel(device.currentValue("level") - 10)
+    setLevel(device.currentValue("level") - (levelIncrement ?: defaultLevelIncrement))
 }
 
+
+private static int getDefaultLevelIncrement() { 10 }
 
 private initialize() {
     // Device-Watch simply pings if no device events received for 32min(checkInterval)
