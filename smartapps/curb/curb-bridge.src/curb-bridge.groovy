@@ -94,6 +94,7 @@ def authPage() {
                     type: "enum",
                     title: "Energy Interval",
                     options: [
+                    	"1m",
                         "15m",
                         "30m",
                         "1h",
@@ -232,11 +233,11 @@ def getDevices() {
 def getAllData() {
 
     def aggregateResolution = "h"
-    if (settings.energyInterval == "30m" || settings.energyInterval == "15m") {
+    if (settings.energyInterval == "30m" || settings.energyInterval == "15m" || settings.energyInterval == "1m") {
         aggregateResolution = "s"
     }
     if (settings.energyInterval == "1h") {
-        aggregateResolution == "m"
+        aggregateResolution = "m"
     }
 
     def kwhrparams = [
@@ -245,6 +246,7 @@ def getAllData() {
         headers: ["Authorization": "Bearer ${atomicState.authToken}"],
         requestContentType: 'application/json'
     ]
+    log.debug kwhrparams.path
 
     asynchttp_v1.get(processKwhr, kwhrparams)
 

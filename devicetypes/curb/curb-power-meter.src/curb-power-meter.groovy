@@ -70,15 +70,7 @@ def handleMeasurements(values)
     else
     {
       sendEvent(name: "power", value: Math.round(values))
-
-        if(Math.round(values) > Math.round(state.threshold)){
-          sendEvent(name: "switch", value: "on")
-        } else {
-          sendEvent(name: "switch", value: "off")
-        }
     }
-
-    //log.debug("State now contains ${state.toString().length()}/100000 bytes")
 }
 
 def handleKwhr(kwhr) {

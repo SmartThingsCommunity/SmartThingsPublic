@@ -102,7 +102,7 @@ def restoreControllerStates()
   if (!state.throttling)
   {
 
-    if (thermostat){
+    if (thermostat) {
       thermostat.setThermostatMode(state.thermostatReturnMode)
     }
 
