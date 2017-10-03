@@ -2,7 +2,7 @@
  *  Ask Alexa Voice Report Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.6 9/21/17
+ *  Version 1.0.6a 10/2/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restricitions 
@@ -10,7 +10,7 @@
  *  Version 1.0.3 - (6/28/17) - Added device health report, replaced notifications with Message Queue
  *  Version 1.0.4 - (7/11/17) - Added code for additional text field variables, allow suppression of continuation messages.
  *  Version 1.0.5 - (8/3/17) - Added support for Foobot Air Quality Monitor, permanently enabled voice filters
- *  Version 1.0.6 - (9/21/17) - Added UV index reporting
+ *  Version 1.0.6a - (9/21/17) - Added UV index reporting
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -322,7 +322,7 @@ def getOutput(){
         else if (voiceHumidity  && voiceHumidity.size() > 1 && voiceHumidAvg) outputTxt += "The average of the monitored humidity devices is " + parent.getAverage(voiceHumidity, "humidity") + "%. "
         if (voiceTempSettingSummary && voiceTempSettingsType && voiceTempSettingsType !="autoAll") outputTxt += voiceTempSettings ? thermostatSummary(): ""
         else outputTxt += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
-        outputTxt += UV ? uvReport() : ""
+        outputTxt += voiceUV ? uvReport() : ""
         outputTxt += fooBot ? airReport() : ""
         outputTxt += voiceSpeaker ? speakerReport() : ""
         outputTxt += voicePresence ? presenceReport() : ""
@@ -594,7 +594,7 @@ def powerReport(){
 }
 def uvReport(){
 	String result = ""
-    UV.each{
+    voiceUV.each{
     	def currValue = it.currentValue("ultravioletIndex") as int
         result += "The ${it.label} is reading '${parent.uvIndexReading(currValue)}', with a UV index of ${currValue}. " 
     }
@@ -603,7 +603,7 @@ def uvReport(){
 def shadeReport(){
     String result = ""
     voiceWindowShades.each { deviceName->
-		def currVal = deviceName.currentValue("windowShade")
+		def currVal = deviceName.currentValue("windowShade").toLowerCase()
         result += "The ${deviceName} is " + currVal  + ". "
 	}
     return result
@@ -682,7 +682,7 @@ def airReport(){
     String result = ""
     fooBot.each{
 		def currGPI = it.currentValue("GPIstate")
-        if ((!fooBooRptLvl || fooBooRptLvl=="Good") || (fooBooRptLvl=="Good" && currGPI==~/Good|Fair|Poor/) || (fooBooRptLvl=="Fair" && currGPI==~/Fair|Poor/) || (fooBooRptLvl=="Poor" && currGPI=="Poor")){
+        if ((!fooBooRptLvl || fooBooRptLvl=="All") || (fooBooRptLvl=="Good" && currGPI==~/Good|Fair|Poor/) || (fooBooRptLvl=="Fair" && currGPI==~/Fair|Poor/) || (fooBooRptLvl=="Poor" && currGPI=="Poor")){
             result = "The Foobot air quality monitor, '${it.label}', is reading: '${currGPI}', with a Global Pollution Index of ${it.currentValue("pollution")}"
             if (fooBotCO2 || fooBoVOC || fooBotPart){
                 result += ". In addition, "
@@ -826,4 +826,4 @@ def getDesc(type){
 //Version/Copyright/Information/Help
 private versionInt(){ return 106}
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.6 (09/21/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.6a (10/02/2017)" }
