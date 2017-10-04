@@ -58,33 +58,35 @@ metadata {
 	}
 
 	// tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-		}
-		valueTile("power", "device.power", decoration: "flat") {
+	tiles(scale: 2){
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState("on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc")
+				attributeState("off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff")
+			}
+ 		}
+		valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 		}
-		valueTile("energy", "device.energy", decoration: "flat") {
+		valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 		}
-		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat") {
+		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'reset kWh', action:"reset"
 		}
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
 		(1..4).each { n ->
-			standardTile("switch$n", "switch$n", canChangeIcon: true) {
-				state "on", label: '${name}', action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			standardTile("switch$n", "switch$n", canChangeIcon: true, width: 2, height: 2) {
+				state "on", label: '${name}', action: "off$n", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 				state "off", label: '${name}', action: "on$n", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
-			valueTile("power$n", "power$n", decoration: "flat") {
+			valueTile("power$n", "power$n", decoration: "flat", width: 2, height: 2) {
 				state "default", label:'${currentValue} W'
 			}
-			valueTile("energy$n", "energy$n", decoration: "flat") {
+			valueTile("energy$n", "energy$n", decoration: "flat", width: 2, height: 2) {
 				state "default", label:'${currentValue} kWh'
 			}
 		}

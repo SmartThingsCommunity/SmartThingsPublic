@@ -39,7 +39,8 @@
 		capability 	"Contact Sensor"
 		capability 	"Sensor"
 		capability 	"Battery"
-        capability 	"Configuration"
+		capability 	"Configuration"
+		capability  "Health Check"
         
         command		"resetParams2StDefaults"
         command		"listCurrentParams"
@@ -67,8 +68,8 @@
 
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ffa81e"
-			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+			state "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#e86d13"
+			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
@@ -85,7 +86,7 @@
 		}
         standardTile("tamper", "device.alarm") {
 			state("secure", label:'secure',    icon:"st.locks.lock.locked",   backgroundColor:"#ffffff")
-			state("tampered", label:'tampered', icon:"st.locks.lock.unlocked", backgroundColor:"#53a7c0")
+			state("tampered", label:'tampered', icon:"st.locks.lock.unlocked", backgroundColor:"#00a0dc")
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -266,6 +267,9 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
  */
 def configure() {
 	log.debug "Configuring Device..."
+	// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	def cmds = []
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 1, size: 2).format()
 	// send associate to group 3 to get sensor data reported only to hub

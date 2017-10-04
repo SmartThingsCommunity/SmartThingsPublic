@@ -5,7 +5,9 @@ machine:
 
 dependencies:
   override:
-    - echo "Nothing to do."
+    - ./gradlew dependencies -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD"
+  post:
+    - ./gradlew compileSmartappsGroovy compileDevicetypesGroovy -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD"
 
 test:
   override:
@@ -15,13 +17,11 @@ deployment:
   develop:
     branch: master
     commands:
-      - ./gradlew deployArchives -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD -Ps3BucketName=$S3_BUCKET_NAME_PREPROD_DEV
-      - ./gradlew hipchatSendNotification -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD -Pbranch=$CIRCLE_BRANCH
-      - ./gradlew hipchatShareFile -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD
+      - ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_DEV"
+      - ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL" --stacktrace
 
   stage:
     branch: staging
     commands:
-      - ./gradlew deployArchives -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD -Ps3BucketName=$S3_BUCKET_NAME_PREPROD_STAGING
-      - ./gradlew hipchatSendNotification -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD -Pbranch=$CIRCLE_BRANCH
-      - ./gradlew hipchatShareFile -PsmartThingsArtifactoryUserName=$ARTIFACTORY_USERNAME -PsmartThingsArtifactoryPassword=$ARTIFACTORY_PASSWORD
+      - ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_STAGE"
+      - ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL" --stacktrace

@@ -29,7 +29,7 @@
  * 2.	20150125	Todd Wackford
  *		Leaned out parse and moved most device info getting into configuration method.
  */
- 
+
  /**
  * Sets up metadata, simulator info and tile definition.
  *
@@ -38,7 +38,7 @@
  * @return none
  */
  metadata {
-	definition (name: "Fibaro Motion Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Fibaro Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability 	"Motion Sensor"
 		capability 	"Temperature Measurement"
 		capability 	"Acceleration Sensor"
@@ -46,12 +46,13 @@
 		capability 	"Illuminance Measurement"
 		capability 	"Sensor"
 		capability 	"Battery"
-        
-        command		"resetParams2StDefaults"
-        command		"listCurrentParams"
-        command		"updateZwaveParam"
-        command		"test"
-        command		"configure"
+		capability  	"Health Check"
+
+        	command		"resetParams2StDefaults"
+        	command		"listCurrentParams"
+        	command		"updateZwaveParam"
+        	command		"test"
+		command		"configure"
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x84,0x85,0x80,0x8F,0x56,0x72,0x86,0x70,0x8E,0x31,0x9C,0xEF,0x30,0x31,0x9C"
 	}
@@ -79,12 +80,14 @@
 		}
 	}
 
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
-		}
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+	 tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
+				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
+			}
+ 		}
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 			backgroundColors:[
 				[value: 31, color: "#153591"],
@@ -96,20 +99,19 @@
 				[value: 96, color: "#bc2323"]
 			]
 		}
-		valueTile("illuminance", "device.illuminance", inactiveLabel: false) {
+		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
 			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
-        standardTile("acceleration", "device.acceleration") {
-			state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'still', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+        	standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
+			state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#00a0dc")
+			state("inactive", label:'still', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc")
 		}
-        
 
 		main(["motion", "temperature", "acceleration", "illuminance"])
 		details(["motion", "temperature", "acceleration", "battery", "illuminance", "configure"])
@@ -125,23 +127,25 @@
  */
 def configure() {
 	log.debug "Configuring Device For SmartThings Use"
+	// Device-Watch simply pings if no device events received for 8 hrs & 2 minutes
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
     def cmds = []
-    
+
     // send associate to group 3 to get sensor data reported only to hub
     cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
 
 	// turn on tamper sensor with active/inactive reports (use it as an acceleration sensor) default is 0, or off
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 24).format()
-        
+
     // temperature change report threshold (0-255 = 0.1 to 25.5C) default is 1.0 Celcius, setting to .5 Celcius
     cmds << zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 60).format() 
-    
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 60).format()
+
     cmds << response(zwave.batteryV1.batteryGet())
     cmds << response(zwave.versionV1.versionGet().format())
     cmds << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-    cmds << response(zwave.firmwareUpdateMdV2.firmwareMdGet().format())
 
 	delayBetween(cmds, 500)
 }
@@ -151,20 +155,20 @@ def parse(String description)
 {
 	def result = []
 	def cmd = zwave.parse(description, [0x72: 2, 0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x86: 1, 0x7A: 1, 0x56: 1])
-    
+
     if (description == "updated") {
         result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 7200, nodeid:zwaveHubNodeId))
-		result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())            
+		result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
 	}
-    
+
 	if (cmd) {
-		if( cmd.CMD == "8407" ) { 
+		if( cmd.CMD == "8407" ) {
             result << response(zwave.batteryV1.batteryGet().format())
-        	result << new physicalgraph.device.HubAction(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) 
+        	result << new physicalgraph.device.HubAction(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
         }
 		result << createEvent(zwaveEvent(cmd))
 	}
-    
+
     if ( result[0] != null ) {
 		log.debug "Parse returned ${result}"
 		result
@@ -185,14 +189,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 	}
 }
 
-def createEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, Map item1) { 
+def createEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, Map item1) {
 	log.debug "manufacturerId:   ${cmd.manufacturerId}"
     log.debug "manufacturerName: ${cmd.manufacturerName}"
     log.debug "productId:        ${cmd.productId}"
     log.debug "productTypeId:    ${cmd.productTypeId}"
 }
 
-def createEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd, Map item1) {	
+def createEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd, Map item1) {
     updateDataValue("applicationVersion", "${cmd.applicationVersion}")
     log.debug "applicationVersion:      ${cmd.applicationVersion}"
     log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
@@ -201,7 +205,7 @@ def createEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd, Map it
     log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
 }
 
-def createEvent(physicalgraph.zwave.commands.firmwareupdatemdv1.FirmwareMdReport cmd, Map item1) { 
+def createEvent(physicalgraph.zwave.commands.firmwareupdatemdv1.FirmwareMdReport cmd, Map item1) {
     log.debug "checksum:       ${cmd.checksum}"
     log.debug "firmwareId:     ${cmd.firmwareId}"
     log.debug "manufacturerId: ${cmd.manufacturerId}"
@@ -300,7 +304,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	log.debug "msr: $msr"
     updateDataValue("MSR", msr)
-    
+
     if ( msr == "010F-0800-2001" ) { //this is the msr and device type for the fibaro motion sensor
     	configure()
     }
@@ -330,7 +334,7 @@ def test() {
  * @return none
  */
 def updateZwaveParam(params) {
-	if ( params ) {   
+	if ( params ) {
         def pNumber = params.paramNumber
         def pSize	= params.size
         def pValue	= [params.value]
@@ -340,7 +344,7 @@ def updateZwaveParam(params) {
 		def cmds = []
         cmds << zwave.configurationV1.configurationSet(configurationValue: pValue, parameterNumber: pNumber, size: pSize).format()
         cmds << zwave.configurationV1.configurationGet(parameterNumber: pNumber).format()
-        delayBetween(cmds, 1000)        
+        delayBetween(cmds, 1000)
     }
 }
 
@@ -384,13 +388,13 @@ def resetParams2StDefaults() {
     cmds << zwave.configurationV1.configurationSet(configurationValue: [18], parameterNumber: 86, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [28], parameterNumber: 87, size: 1).format()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 89, size: 1).format()
-    
+
     delayBetween(cmds, 500)
 }
 
  /**
- * Lists all of available Fibaro parameters and thier current settings out to the 
- * logging window in the IDE This will be called from the "Fibaro Tweaker" or 
+ * Lists all of available Fibaro parameters and thier current settings out to the
+ * logging window in the IDE This will be called from the "Fibaro Tweaker" or
  * user's own app.
  *
  * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
@@ -429,7 +433,6 @@ def listCurrentParams() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 86).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 87).format()
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 89).format()
-    
+
 	delayBetween(cmds, 500)
 }
-

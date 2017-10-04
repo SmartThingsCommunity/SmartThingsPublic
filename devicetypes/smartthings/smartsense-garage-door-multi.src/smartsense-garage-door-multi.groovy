@@ -50,18 +50,18 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
-				attributeState "closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821", nextState:"opening"
-				attributeState "open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e", nextState:"closing"
-				attributeState "opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffe71e"
-				attributeState "closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e"
+				attributeState "closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#00A0DC", nextState:"opening"
+				attributeState "open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing"
+				attributeState "opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#e86d13"
+				attributeState "closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#00A0DC"
 			}
 		}
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
 		}
 		standardTile("acceleration", "device.acceleration", decoration: "flat", width: 2, height: 2) {
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
+			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00A0DC")
 			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
 		}
 		valueTile("temperature", "device.temperature", decoration: "flat", width: 2, height: 2) {
@@ -86,9 +86,9 @@ metadata {
 
 def parse(String description) {
 	log.debug "parse($description)"
-	def results = null
+	def results = [:]
 
-	if (!isSupportedDescription(description) || zigbee.isZoneType19(description)) {
+	if (!isSupportedDescription(description) || description.startsWith("zone")) {
 		// Ignore this in favor of orientation-based state
 		// results = parseSingleMessage(description)
 	}

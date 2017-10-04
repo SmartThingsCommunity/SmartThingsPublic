@@ -22,6 +22,8 @@ metadata {
 		capability "Battery"
 
 		fingerprint profileId: "FC01", deviceId: "0139"
+
+		attribute "status", "string"
 	}
 
 	simulator {
@@ -50,14 +52,14 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
 			}
 		}
 
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00a0dc")
+			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc")
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state("temperature", label:'${currentValue}°',
@@ -84,7 +86,7 @@ metadata {
 def parse(String description) {
 	def results
 
-	if (!isSupportedDescription(description) || zigbee.isZoneType19(description)) {
+	if (!isSupportedDescription(description) || description.startsWith("zone")) {
 		results = parseSingleMessage(description)
 	}
 	else if (description == 'updated') {
@@ -99,7 +101,7 @@ def parse(String description) {
 
 }
 
-private Map parseSingleMessage(description) {
+private List parseSingleMessage(description) {
 
 	def name = parseName(description)
 	def value = parseValue(description)
@@ -108,8 +110,9 @@ private Map parseSingleMessage(description) {
 	def handlerName = value == 'open' ? 'opened' : value
 	def isStateChange = isStateChange(device, name, value)
 
-	def results = [
-		name: name,
+	def results = []
+	results << createEvent(
+		name: "contact",
 		value: value,
 		unit: null,
 		linkText: linkText,
@@ -117,8 +120,18 @@ private Map parseSingleMessage(description) {
 		handlerName: handlerName,
 		isStateChange: isStateChange,
 		displayed: displayed(description, isStateChange)
-	]
-	log.debug "Parse results for $device: $results"
+	)
+
+	results << createEvent(
+		name: "status",
+		value: value,
+		unit: null,
+		linkText: linkText,
+		descriptionText: descriptionText,
+		handlerName: handlerName,
+		isStateChange: isStateChange,
+		displayed: displayed(description, isStateChange)
+	)
 
 	results
 }
@@ -190,7 +203,7 @@ private List parseContactMessage(String description) {
 	parts.each { part ->
 		part = part.trim()
 		if (part.startsWith('contactState:')) {
-			results << getContactResult(part, description)
+			results.addAll(getContactResult(part, description))
 		}
 		else if (part.startsWith('accelerationState:')) {
 			results << getAccelerationResult(part, description)
@@ -269,7 +282,7 @@ private List parseRssiLqiMessage(String description) {
 	results
 }
 
-private getContactResult(part, description) {
+private List getContactResult(part, description) {
 	def name = "contact"
 	def value = part.endsWith("1") ? "open" : "closed"
 	def handlerName = value == 'open' ? 'opened' : value
@@ -277,19 +290,33 @@ private getContactResult(part, description) {
 	def descriptionText = "$linkText was $handlerName"
 	def isStateChange = isStateChange(device, name, value)
 
-	[
-		name: name,
-		value: value,
-		unit: null,
-		linkText: linkText,
-		descriptionText: descriptionText,
-		handlerName: handlerName,
-		isStateChange: isStateChange,
-		displayed: displayed(description, isStateChange)
-	]
+	def results = []
+	results << createEvent(
+			name: "contact",
+			value: value,
+			unit: null,
+			linkText: linkText,
+			descriptionText: descriptionText,
+			handlerName: handlerName,
+			isStateChange: isStateChange,
+			displayed:false
+	)
+
+	results << createEvent(
+			name: "status",
+			value: value,
+			unit: null,
+			linkText: linkText,
+			descriptionText: descriptionText,
+			handlerName: handlerName,
+			isStateChange: isStateChange,
+			displayed: displayed(description, isStateChange)
+	)
+
+	results
 }
 
-private getAccelerationResult(part, description) {
+private Map getAccelerationResult(part, description) {
 	def name = "acceleration"
 	def value = part.endsWith("1") ? "active" : "inactive"
 	def linkText = getLinkText(device)
@@ -308,7 +335,7 @@ private getAccelerationResult(part, description) {
 	]
 }
 
-private getTempResult(part, description) {
+private Map getTempResult(part, description) {
 	def name = "temperature"
 	def temperatureScale = getTemperatureScale()
 	def value = zigbee.parseSmartThingsTemperatureValue(part, "temp: ", temperatureScale)
@@ -333,7 +360,7 @@ private getTempResult(part, description) {
 	]
 }
 
-private getXyzResult(results, description) {
+private Map getXyzResult(results, description) {
 	def name = "threeAxis"
 	def value = "${results.x},${results.y},${results.z}"
 	def linkText = getLinkText(device)
@@ -352,7 +379,7 @@ private getXyzResult(results, description) {
 	]
 }
 
-private getBatteryResult(part, description) {
+private Map getBatteryResult(part, description) {
 	def batteryDivisor = description.split(",").find {it.split(":")[0].trim() == "batteryDivisor"} ? description.split(",").find {it.split(":")[0].trim() == "batteryDivisor"}.split(":")[1].trim() : null
 	def name = "battery"
 	def value = zigbee.parseSmartThingsBatteryValue(part, batteryDivisor)
@@ -373,7 +400,7 @@ private getBatteryResult(part, description) {
 	]
 }
 
-private getRssiResult(part, description, lastHop=false) {
+private Map getRssiResult(part, description, lastHop=false) {
 	def name = lastHop ? "lastHopRssi" : "rssi"
 	def valueString = part.split(":")[1].trim()
 	def value = (Integer.parseInt(valueString) - 128).toString()
@@ -404,7 +431,7 @@ private getRssiResult(part, description, lastHop=false) {
  * Note: To make the signal strength indicator more accurate, we could combine
  * LQI with RSSI.
  */
-private getLqiResult(part, description, lastHop=false) {
+private Map getLqiResult(part, description, lastHop=false) {
 	def name = lastHop ? "lastHopLqi" : "lqi"
 	def valueString = part.split(":")[1].trim()
 	def percentageOf = 255
@@ -449,6 +476,7 @@ private Boolean isOrientationMessage(String description) {
 	description ==~ /x:.*y:.*z:.*rssi:.*lqi:.*/
 }
 
+//Note: Not using this method anymore
 private String parseName(String description) {
 	if (isSupportedDescription(description)) {
 		return "contact"
@@ -460,12 +488,7 @@ private String parseValue(String description) {
 	if (!isSupportedDescription(description)) {
 		return description
 	}
-	else if (zigbee.translateStatusZoneType19(description)) {
-		return "open"
-	}
-	else {
-		return "closed"
-	}
+	return zigbee.parseZoneStatus(description)?.isAlarm1Set() ? "open" : "closed"
 }
 
 private parseDescriptionText(String linkText, String value, String description) {

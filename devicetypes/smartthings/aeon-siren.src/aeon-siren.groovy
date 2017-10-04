@@ -16,14 +16,15 @@
  *	Date: 2014-07-15
  */
 metadata {
- definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings") {
+ definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 	capability "Actuator"
 	capability "Alarm"
 	capability "Switch"
+	capability "Health Check"
 
 	command "test"
 
-	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98"
+	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98", deviceJoinName: "Aeon Labs Siren (Gen 5)"
  }
 
  simulator {
@@ -48,8 +49,8 @@ metadata {
 	}
 
 	preferences {
-		input "sound", "number", title: "Siren sound (1-5)", defaultValue: 1, required: true//, displayDuringSetup: true  // don't display during setup until defaultValue is shown
-		input "volume", "number", title: "Volume (1-3)", defaultValue: 3, required: true//, displayDuringSetup: true
+		input "sound", "number", title: "Siren sound (1-5)", range: "1..5", defaultValue: 1, required: true//, displayDuringSetup: true  // don't display during setup until defaultValue is shown
+		input "volume", "number", title: "Volume (1-3)", range: "1..3", defaultValue: 3, required: true//, displayDuringSetup: true
 	}
 
 	main "alarm"
@@ -57,7 +58,19 @@ metadata {
  }
 }
 
+def installed() {
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	// Get default values and set device to send us an update when alarm state changes from device
+	response([secure(zwave.basicV1.basicGet()), secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [2]))])
+}
+
 def updated() {
+	def commands = []
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
 	if(!state.sound) state.sound = 1
 	if(!state.volume) state.volume = 3
 
@@ -69,12 +82,15 @@ def updated() {
 	if (sound != state.sound || volume != state.volume) {
 		state.sound = sound
 		state.volume = volume
-		return response([
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 37, size: 2, configurationValue: [sound, volume])),
-			"delay 1000",
-			secure(zwave.basicV1.basicSet(value: 0x00)),
-		])
+		commands << secure(zwave.configurationV1.configurationSet(parameterNumber: 37, size: 2, configurationValue: [sound, volume]))
+		commands << "delay 1000"
+		commands << secure(zwave.basicV1.basicSet(value: 0x00))
 	}
+
+	// Set device to send us an update when alarm state changes from device
+	commands << secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [2]))
+
+	response(commands)
 }
 
 def parse(String description) {
@@ -147,4 +163,11 @@ def test() {
 
 private secure(physicalgraph.zwave.Command cmd) {
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	secure(zwave.basicV1.basicGet())
 }
