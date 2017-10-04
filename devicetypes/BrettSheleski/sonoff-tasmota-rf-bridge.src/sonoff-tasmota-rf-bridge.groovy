@@ -70,17 +70,16 @@ metadata {
 		}
 
 		standardTile("button1", "device.switch", width: 2, height: 2) {
-			state "off", label: '', action: "key1", backgroundColor: "#ffffff"
+			state "off", label: '', action: "key1", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
 		}
 
-		standardTile("learnButton1", "device.switch", width: 2, height: 1) {
+		valueTile("learnButton1", "device.switch", width: 2, height: 1) {
 			state "off", label: 'Learn', action: "learn1", backgroundColor: "#ffffff"
 		}
 
-		standardTile("clearButton1", "device.switch", width: 2, height: 1) {
+		valueTile("clearButton1", "device.switch", width: 2, height: 1) {
 			state "off", label: 'Clear', action: "clear1", backgroundColor: "#ffffff"
 		}
-
 
 
 		valueTile("label2", "device.integerFloat", width: 2, height: 2) {
@@ -88,77 +87,241 @@ metadata {
 		}
 
 		standardTile("button2", "device.switch", width: 2, height: 2) {
-			state "off", label: '', action: "key2", backgroundColor: "#ffffff"
+			state "off", label: '', action: "key2", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
 		}
 
-		standardTile("learnButton2", "device.switch", width: 2, height: 1) {
+		valueTile("learnButton2", "device.switch", width: 2, height: 1) {
 			state "off", label: 'Learn', action: "learn2", backgroundColor: "#ffffff"
 		}
 
-		standardTile("clearButton2", "device.switch", width: 2, height: 1) {
+		valueTile("clearButton2", "device.switch", width: 2, height: 1) {
 			state "off", label: 'Clear', action: "clear2", backgroundColor: "#ffffff"
 		}
 
 
 
-		standardTile("button3", "device.switch", width: 3, height: 3) {
-			state "off", label: '3', action: "key3", backgroundColor: "#ffffff"
+		valueTile("label3", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 3', defaultState: true
 		}
 
-		standardTile("button4", "device.switch", width: 3, height: 3) {
-			state "off", label: '4', action: "key4", backgroundColor: "#ffffff"
+		standardTile("button3", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key3", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
 		}
 
-
-		standardTile("button5", "device.switch", width: 3, height: 3) {
-			state "off", label: '5', action: "key5", backgroundColor: "#ffffff"
+		valueTile("learnButton3", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn3", backgroundColor: "#ffffff"
 		}
 
-		standardTile("button6", "device.switch", width: 3, height: 3) {
-			state "off", label: '6', action: "key6", backgroundColor: "#ffffff"
+		valueTile("clearButton3", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear3", backgroundColor: "#ffffff"
 		}
 
-		standardTile("button7", "device.switch", width: 3, height: 3) {
-			state "off", label: '7', action: "key7", backgroundColor: "#ffffff"
+		valueTile("label4", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 4', defaultState: true
 		}
 
-		standardTile("button8", "device.switch", width: 3, height: 3) {
-			state "off", label: '8', action: "key8", backgroundColor: "#ffffff"
+		standardTile("button4", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key4", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
 		}
 
-
-
-		standardTile("button9", "device.switch", width: 3, height: 3) {
-			state "off", label: '9', action: "key9", backgroundColor: "#ffffff"
+		valueTile("learnButton4", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn4", backgroundColor: "#ffffff"
 		}
 
-		standardTile("button10", "device.switch", width: 3, height: 3) {
-			state "off", label: '10', action: "key10", backgroundColor: "#ffffff"
+		valueTile("clearButton4", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear4", backgroundColor: "#ffffff"
 		}
 
-		standardTile("button11", "device.switch", width: 3, height: 3) {
-			state "off", label: '11', action: "key11", backgroundColor: "#ffffff"
+		valueTile("label5", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 5', defaultState: true
 		}
 
-		standardTile("button12", "device.switch", width: 3, height: 3) {
-			state "off", label: '12', action: "key12", backgroundColor: "#ffffff"
+		standardTile("button5", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key5", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
 		}
 
-
-		standardTile("button13", "device.switch", width: 3, height: 3) {
-			state "off", label: '13', action: "key13", backgroundColor: "#ffffff"
+		valueTile("learnButton5", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn5", backgroundColor: "#ffffff"
 		}
 
-		standardTile("button14", "device.switch", width: 3, height: 3) {
-			state "off", label: '14', action: "key14", backgroundColor: "#ffffff"
+		valueTile("clearButton5", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear5", backgroundColor: "#ffffff"
 		}
 
-		standardTile("button15", "device.switch", width: 3, height: 3) {
-			state "off", label: '15', action: "key15", backgroundColor: "#ffffff"
+		valueTile("label6", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 6', defaultState: true
 		}
 
-		standardTile("button16", "device.switch", width: 3, height: 3) {
-			state "off", label: '16', action: "key16", backgroundColor: "#ffffff"
+		standardTile("button6", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key6", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton6", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn6", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton6", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear6", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label7", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 7', defaultState: true
+		}
+
+		standardTile("button7", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key7", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton7", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn7", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton7", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear7", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label8", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 8', defaultState: true
+		}
+
+		standardTile("button8", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key8", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton8", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn8", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton8", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear8", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label9", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 9', defaultState: true
+		}
+
+		standardTile("button9", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key9", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton9", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn9", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton9", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear9", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label10", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 10', defaultState: true
+		}
+
+		standardTile("button10", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key10", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton10", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn10", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton10", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear10", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label11", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 11', defaultState: true
+		}
+
+		standardTile("button11", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key11", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton11", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton11", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label12", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 12', defaultState: true
+		}
+
+		standardTile("button12", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key12", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton12", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn12", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton12", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear12", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label13", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 13', defaultState: true
+		}
+
+		standardTile("button13", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key13", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton13", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn13", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton13", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear13", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label14", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 14', defaultState: true
+		}
+
+		standardTile("button14", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key14", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton14", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn14", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton14", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear14", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label15", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 15', defaultState: true
+		}
+
+		standardTile("button15", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key15", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton15", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn15", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton15", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear15", backgroundColor: "#ffffff"
+		}
+
+		valueTile("label16", "device.integerFloat", width: 2, height: 2) {
+			state "val", label:'Key 16', defaultState: true
+		}
+
+		standardTile("button16", "device.switch", width: 2, height: 2) {
+			state "off", label: '', action: "key16", icon: "st.Lighting.light11", backgroundColor: "#ffffff"
+		}
+
+		valueTile("learnButton16", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Learn', action: "learn16", backgroundColor: "#ffffff"
+		}
+
+		valueTile("clearButton16", "device.switch", width: 2, height: 1) {
+			state "off", label: 'Clear', action: "clear16", backgroundColor: "#ffffff"
 		}
 
 		//main "switch"
