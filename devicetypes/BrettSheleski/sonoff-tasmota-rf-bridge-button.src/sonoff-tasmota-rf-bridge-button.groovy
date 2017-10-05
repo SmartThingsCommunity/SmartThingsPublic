@@ -1,6 +1,8 @@
 metadata {
     definition(name: "Sonoff-Tasmota RF Bridge Button", namespace: "BrettSheleski", author: "Brett Sheleski") {
-		capability "Switch"
+		capability "momentary"
+
+		attribute "keyNumber", "number"
     }
 
 	// UI tile definitions
@@ -15,47 +17,29 @@ metadata {
 		main "switch"
 	}
 
-    preferences {
-		input(name: "ipAddress", type: "string", title: "IP Address", description: "IP Address of Sonoff", displayDuringSetup: true, required: true)
-		input(name: "port", type: "number", title: "Port", description: "Port", displayDuringSetup: true, required: true, defaultValue: 80)
-
-		input(name: "onKey", type: "number", title: "On Key", description: "On Key", displayDuringSetup: true, required: true, defaultValue: 1)
-		input(name: "offKey", type: "number", title: "Off Key", description: "Off Key", displayDuringSetup: true, required: true, defaultValue: 2)
-		
-		section("Authentication") {
-			input(name: "username", type: "string", title: "Username", description: "Username", displayDuringSetup: false, required: false)
-			input(name: "password", type: "password", title: "Password", description: "Password", displayDuringSetup: false, required: false)
-		}
+	preferences {
+		input(name: "keyNumber", type: "number", title: "Key Number", description: "Key Number", displayDuringSetup: true, required: true)
     }
+
 }
 
-
-def setSwitchState(Boolean on){
-	log.debug "The switch is " + (on ? "ON" : "OFF")
-
-	sendEvent(name: "switch", value: on ? "on" : "off");
-}
-
-def on(){
-	log.debug "ON"
-	setSwitchState(true);
-	return sendCommand("RfKey$onKey", null);
-}
-
-def off(){
+def push(){
 	log.debug "OFF"
-	setSwitchState(false);
-	return sendCommand("RfKey$offKey", null);
+
+	def keyNumberString = device.latestValue("keyNumber").ToString();
+
+	return sendCommand("RfKey", keyNumberString);
 }
 
 private def sendCommand(String command, String payload){
 
     log.debug "sendCommand(${command}:${payload})"
 
+	def ipAddress = parent.ipAddress;
     def hosthex = convertIPtoHex(ipAddress);
     def porthex = convertPortToHex(port);
 
-    device.deviceNetworkId = "$hosthex:$porthex";
+    //device.deviceNetworkId = "$hosthex:$porthex";
 
 	def path = "/cm"
 
@@ -73,8 +57,6 @@ private def sendCommand(String command, String payload){
 			path += "&password=${password}"
 		}
 	}
-
-
 
     def result = new physicalgraph.device.HubAction(
         method: "GET",

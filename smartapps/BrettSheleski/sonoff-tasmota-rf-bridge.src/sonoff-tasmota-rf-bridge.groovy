@@ -27,25 +27,28 @@ def updated() {
 	initialize()
 }
 
-def scheduledTimeHandler() {
-    
-}
-
 def initialize(){
 
 	def children = getChildDevices()
+	def namespace = "BrettSheleski"
+	def deviceName = "Sonoff-Tasmota RF Bridge Button"
+	def theHub = null;
 
-	for ( i in 0..15 )
+
+	for ( i in 1..16 )
 	{
+		def deviceId = "${app.id}-key${i}"
 		def childDevice = children.find {
-				it.deviceNetworkId == "$device.deviceNetworkId-key$i"
+				it.deviceNetworkId == deviceId
 			}
+		def deviceMap = [keyNumber : i]
 		
 		if (childDevice){
-			log.debug "FOUND child device found for ${it.deviceNetworkId}"
+			log.debug "FOUND child device found for ${childDevice.deviceNetworkId}"
+
 		}
 		else{
-			log.debug "no child device found for $i"
+			childDevice = addChildDevice(namespace, deviceName, deviceId, theHub, deviceMap)
 		}
 	}
 }
