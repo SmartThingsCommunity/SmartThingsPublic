@@ -487,6 +487,8 @@ MacroOperation {MCmd} to {Macro} password {MPW}
 MacroOperation to {MCmd} the {Macro}
 MacroOperation {MCmd} {Macro} devices
 MacroOperation {MCmd} {Macro}
+MacroOperation {MCmd} the {Macro}
+MacroOperation to {MCmd} the {Macro}
 MacroOperation to {MCmd} the {Macro} password {MPW}
 MacroOperation to turn {MCmd} the {Macro} and {MNum}
 MacroOperation to turn {Macro} {MCmd} {MNum}
