@@ -93,9 +93,7 @@ preferences {
    input("device5", "string", title: "Device Network ID 5", description: "The Device Network Id", defaultValue: "03", type: "capability.switch", required: false, displayDuringSetup: false)
    input("end5", "string", title: "Device Endpoint ID 5", description: "endpointId from Data Section of device", defaultValue: "", required: false, displayDuringSetup: false)
   }
-    section("Turn on this light") {
-        input "theswitch", "capability.switch", required: true
-    }
+    
  }
 
 
