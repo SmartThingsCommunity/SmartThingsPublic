@@ -115,10 +115,10 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
               buttonEvent(cmd.sceneNumber, "pushed")
            break
            case 1: // released
-              //buttonEvent(cmd.sceneNumber, "held")
+              if (!settings.holdMode || settings.holdMode == "2") buttonEvent(cmd.sceneNumber, "held")
            break
            case 2: // held
-              buttonEvent(cmd.sceneNumber, "held")
+              if (settings.holdMode == "1") buttonEvent(cmd.sceneNumber, "held")
            break
            default:
               logging("Unhandled CentralSceneNotification: ${cmd}")
@@ -552,6 +552,14 @@ Default: Blue
         <Item label="Red" value="1" />
         <Item label="Green" value="2" />
         <Item label="Blue" value="3" />
+  </Value>
+  <Value type="list" byteSize="4" index="holdMode" label="Hold Mode" min="1" max="2" value="2" setting_type="preference" fw=""> 
+    <Help>
+Multiple "held" events on botton hold? With this option, the controller will send a "held" event about every second while holding down a button. If set to No it will send a "held" event a single time when the button is released.
+Default: No
+   </Help>
+        <Item label="No" value="2" />
+        <Item label="Yes" value="1" />
   </Value>
   <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="">
     <Help>
