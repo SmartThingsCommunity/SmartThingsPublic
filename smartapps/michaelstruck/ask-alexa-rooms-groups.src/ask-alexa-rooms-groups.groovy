@@ -2,10 +2,10 @@
  *  Ask Alexa Rooms/Groups
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1 9/26/17
+ *  Version 1.0.1a 9/26/17
  * 
  *  Version 1.0.0 (9/13/17) - Initial release
- *  Version 1.0.1 (9/26/17) - Fixed text area variable issue
+ *  Version 1.0.1a (9/26/17) - Fixed text area variable issue
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -457,11 +457,10 @@ def colorSet(room, param, num){
 }
 def roomStatus(room){
 	String result = ""
-    if ((switches && switchesRPT)  || (doors && doorsRPT ) || (locks && locksRPT) || (shades && shadesRPT) || (tstats && tstatsRPT) || 
-    	temp || humid || water || contact || motion) {
+    if ((switches && switchesRPT)  || (doors && doorsRPT ) || (locks && locksRPT) || (shades && shadesRPT) || (tstats && tstatsRPT) || temp || humid || water || contact || motion) {
         result = "The group named, '${room}', is reporting the following: "
         if (switches && switchesRPT){
-        	if (switchesRPTOn) switches.each { if (it.currentValue("switch")=="on") result += "The ${it.label} is on. " }	
+            if (switchesRPTOn) switches.each { if (it.currentValue("switch")=="on") result += "The ${it.label} is on. " }	
             else {
             	if (!switches?.currentValue("switch").contains("off")) result += "All of the switches are on. "
                 else if (!switches?.currentValue("switch").contains("on")) result += "All of the switches are off. "
@@ -484,12 +483,20 @@ def roomStatus(room){
                 else locks.each{ result += "The ${it.label} is ${it.currentValue("locks")}. " }
             }
         }
-		if (shades && shadesRPTOn){
-        	if (shadesRPTOn) shades.each { if (it.currentValue("windowShade")=="open") result += "The '${it.label}' is open. " }	
+		if (shades && shadesRPT){
+            if (shadesRPTOn) shades.each { if (it.currentValue("windowShade").toLowerCase()=="open") result += "The '${it.label}' is open. " }	
             else {
-            	if (!shades?.currentValue("windowShade").contains("closed")) result = "All of the window shades are open. "
-                else if (!shades?.currentValue("windowShade").contains("open")) result = "All of the window shades are closed. "
-                else shades.each{ result += "The ${it.label} is ${it.currentValue("windowShade")}. " }
+            	if (shades?.currentValue("windowShade").contains("Closed") || shades?.currentValue("windowShade").contains("Open") || shades?.currentValue("windowShade").contains("Partially open")){
+                	if (!shades?.currentValue("windowShade").contains("Closed") && !shades?.currentValue("windowShade").contains("Partially open")) result += "All of the window shades are open. "
+                	else if (!shades?.currentValue("windowShade").contains("Open") && !shades?.currentValue("windowShade").contains("Partially open")) result += "All of the window shades are closed. "
+                    else if (shades?.currentValue("windowShade").contains("Partially open") && !shades?.currentValue("windowShade").contains("Closed") && !shades?.currentValue("windowShade").contains("Open") ) result += "All of the window shades are partially open. "
+                	else shades.each{ result += "The ${it.label} is ${it.currentValue("windowShade").toLowerCase()}. " }
+                }
+                else {
+            		if (!shades?.currentValue("windowShade").contains("closed")) result += "All of the window shades are open. "
+                	else if (!shades?.currentValue("windowShade").contains("open")) result += "All of the window shades are closed. "
+                	else shades.each{ result += "The ${it.label} is ${it.currentValue("windowShade").toLowerCase()}. " }
+            	}
             }
         }
 		if (tstats && tstatsRPT) {
@@ -668,4 +675,4 @@ def getDesc(type){
 //Version/Copyright/Information/Help
 private versionInt(){ return 101 }
 private def textAppName() { return "Ask Alexa Rooms/Groups" }	
-private def textVersion() { return "Rooms/Groups Version: 1.0.1 (09/26/2017)" }
+private def textVersion() { return "Rooms/Groups Version: 1.0.1a (09/26/2017)" }
