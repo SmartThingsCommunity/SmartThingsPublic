@@ -141,8 +141,8 @@ metadata {
 
     preferences {
         input name: "levelIncrement", type: "number", title: "In-App Level Increment",
-                description: "1 - 100", range: "1..100", defaultValue: defaultLevelIncrement,
-                displayDuringSetup: false, required: true
+                description: "1 - 100 (default $defaultLevelIncrement)", range: "1..100", defaultValue: defaultLevelIncrement,
+                displayDuringSetup: false, required: false
 
         input type: "paragraph", element: "paragraph", title: "Device Preferences",
                 description: "The following preferences are configuring the device behaviors. " +
