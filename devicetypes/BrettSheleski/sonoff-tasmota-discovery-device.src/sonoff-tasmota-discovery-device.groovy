@@ -4,6 +4,17 @@ metadata {
 
 		command "discover"
     }
+
+	 tiles(scale: 2) {
+		
+
+		standardTile("discover", "discover", width: 2, height: 2) {
+			state "discover", label: 'Discover', action: "discover", icon: "st.secondary.refresh", backgroundColor: "#ffffff"
+		}
+
+
+		main "discover"
+	}
 }
 
 def parse(String description) {
@@ -31,7 +42,7 @@ def parse(String description) {
 
 def discover(){
     log.debug "DISCOVER"
-    return sendCommand("Status" , "0")
+    sendCommand("Status" , "0")
 }
 
 
@@ -43,6 +54,8 @@ private def sendCommand(String command, String payload){
 	def port = 80;
     def hosthex = convertIPtoHex(ipAddress);
     def porthex = convertPortToHex(port);
+
+	def deviceNetworkId = "$hosthex:$porthex"
 
 	def path = "/cm"
 
@@ -61,15 +74,10 @@ private def sendCommand(String command, String payload){
 		}
 	}
 
-    def result = new physicalgraph.device.HubAction(
-        method: "GET",
-        path: path,
-        headers: [
-            HOST: "${ipAddress}:${port}"
-        ]
-    )
+	sendHubCommand(new physicalgraph.device.HubAction("""GET $path HTTP/1.1
+HOST: ${ipAddress}:${port}
 
-    return result
+""", physicalgraph.device.Protocol.LAN, "${deviceNetworkId}"))
 }
 
 private String convertIPtoHex(ipAddress) { 
