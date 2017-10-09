@@ -39,7 +39,7 @@ def mainPage() {
 			}
 			if (sensor) {
 				section("Select the ${(thermostatMode == "heat") ? "heater" : "air conditioner"} outlet(s)... "){
-					input "outlets", "capability.switch", title: "Outlets", multiple: true, submitOnChange: true
+					input "outlets", "capability.outlet", title: "Outlets", multiple: true, submitOnChange: true
 				}
 			}
 			if (thermostatMode && outlets) {
