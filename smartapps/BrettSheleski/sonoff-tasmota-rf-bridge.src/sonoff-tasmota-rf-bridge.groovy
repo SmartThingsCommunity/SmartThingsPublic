@@ -38,7 +38,7 @@ private removeChildDevices(delete) {
 def initialize(){
 
 	def children = getChildDevices()
-	def namespace = "BrettSheleski"
+	def namespace = app.namespace
 	def deviceName = "Sonoff-Tasmota RF Bridge Button"
 	def theHubId = location.hubs[0].id
 
