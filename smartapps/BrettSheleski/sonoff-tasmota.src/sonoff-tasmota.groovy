@@ -53,6 +53,8 @@ def initialize(){
 }
 
 def discoverCompleted(Map deviceSettings){
+	log.debug "$deviceSettings";
+	deleteDiscoveryDevice();
 
 }
 
@@ -60,7 +62,7 @@ def discoverCompleted(Map deviceSettings){
 
 def getDiscoveryDevice(){
 	def namespace = app.namespace
-	def deviceName = "Sonoff-Tasmota RF Bridge Button"
+	def deviceName = "Sonoff-Tasmota Discovery Device"
 	def theHubId = location.hubs[0].id
 	def deviceId = "${app.id}-discoveryDevice"
 
