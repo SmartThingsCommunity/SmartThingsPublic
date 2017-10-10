@@ -3,7 +3,7 @@
  
   */
  metadata {
- 	definition (name: "Orvibo Relay controller", namespace: "ericyew", author: "Eric Yew") {
+ 	definition (name: "Orvibo Relay controller", namespace: "ericyew", author: "ericyew") {
          capability "Refresh"
          capability "Polling"
          capability "Configuration"
