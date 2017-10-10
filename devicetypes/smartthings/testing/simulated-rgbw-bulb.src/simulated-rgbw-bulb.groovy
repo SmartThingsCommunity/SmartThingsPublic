@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  Author: SmartThings
- *  Date: 2017-08-07
+ *  Date: 2017-10-09
  *
  */
 import groovy.transform.Field
@@ -61,7 +61,6 @@ metadata {
         attribute  "bulbMode", "ENUM", ["Color", "White", "Off"]
         attribute  "bulbValue", "STRING"
         attribute  "colorIndicator", "NUMBER"
-        
         command    "simulateBulbState"
     }
 
@@ -71,8 +70,8 @@ metadata {
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#FFFFFF", nextState:"turningOn"
-                attributeState "turningOn", label:'Turning On', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"on"
-                attributeState "turningOff", label:'Turning Off', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#FFFFFF", nextState:"off"
+                attributeState "turningOn", label:'Turning On', icon:"st.switches.light.off", backgroundColor:"#FFFFFF", nextState:"on"
+                attributeState "turningOff", label:'Turning Off', icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"off"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", action: "setLevel"
@@ -259,7 +258,7 @@ metadata {
             state "bulbValue", label: '${currentValue}'
         }
 
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label: "", action: "refresh", icon: "st.secondary.refresh"
         }
 
@@ -268,7 +267,7 @@ metadata {
         }
 
         main(["switch"])
-        details(["switch", "colorTempControlLabel", "colorTempSliderControl", "bulbValue", "colorIndicator", "refresh", "reset"])
+        details(["switch", "colorTempControlLabel", "colorTempSliderControl", "bulbValue", "colorIndicator", "refresh"])
     }
 }
 
@@ -278,7 +277,7 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-    log.trace "parse $description"
+    log.trace "Executing 'parse' $description"
     def parsedEvents
     def pair = description?.split(":")
     if (!pair || pair.length < 2) {
@@ -290,6 +289,7 @@ def parse(String description) {
         }
         parsedEvents = createEvent(name: name, value: pair[1]?.trim())
     }
+    done()
     return parsedEvents
 }
 
@@ -308,6 +308,7 @@ def updated() {
 //
 
 def ping() {
+    log.trace "Executing 'ping'"
     refresh()
 }
 
@@ -323,7 +324,7 @@ def refresh() {
 
 def configure() {
     log.trace "Executing 'configure'"
-    // this would be for a physical decive being assigned a handler
+    // this would be for a physical device when it gets a handler assigned to it
     initialize()
 }
 
@@ -331,12 +332,14 @@ def on() {
     log.trace "Executing 'on'"
     turnOn()
     simulateBulbState(state.lastMode)
+    done()
 }
 
 def off() {
     log.trace "Executing 'off'"
     turnOff()
     simulateBulbState(MODE.OFF)
+    done()
 }
 
 def setLevel(levelPercent) {
@@ -368,12 +371,14 @@ def setSaturation(saturationPercent) {
     log.trace "Executing 'setSaturation' ${saturationPercent}/100"
     Integer currentHue = device.currentValue("hue")
     setColor(currentHue, saturationPercent)
+    // setColor will call done() for us
 }
 
 def setHue(huePercent) {
     log.trace "Executing 'setHue' ${huePercent}/100"
     Integer currentSaturation = device.currentValue("saturation")
     setColor(huePercent, currentSaturation)
+    // setColor will call done() for us
 }
 
 /**
@@ -384,13 +389,13 @@ def setHue(huePercent) {
 def setColor(Integer huePercent, Integer saturationPercent) {
     Integer boundedHue = boundInt(huePercent, PERCENT_RANGE)
     Integer boundedSaturation = boundInt(saturationPercent, PERCENT_RANGE)
-    String logMsg ="executing 'setColor' from separate values hue: $boundedHue, saturation: $boundedSaturation"
+    String logMsg ="Executing 'setColor' from separate values hue: $boundedHue, saturation: $boundedSaturation"
     if (huePercent != boundedHue || saturationPercent != boundedSaturation) {
         logMsg += " (pre-bounded values hue: $huePercent, saturation: $saturationPercent)"
     }
     log.trace logMsg
     Map colorHSMap = buildColorHSMap(hue, saturation)
-    setColor(colorHSMap)
+    setColor(colorHSMap) // call the capability version method overload
 }
 
 /**
@@ -398,14 +403,14 @@ def setColor(Integer huePercent, Integer saturationPercent) {
  * @param String hex    RGB color donoted as a hex string in format #1F1F1F
  */
 def setColor(String hex) {
-    log.trace "executing 'setColor' from hex $hex"
+    log.trace "Executing 'setColor' from hex $hex"
     if (hex == "#000000") {
         // setting to black? turn it off.
         off()
     } else {
         List hsvList = colorUtil.hexToHsv(hex)
         Map colorHSMap = buildColorHSMap(hsvList[0], hsvList[1])
-        setColor(colorHSMap)
+        setColor(colorHSMap) // call the capability version method overload
     }
 }
 
@@ -414,12 +419,13 @@ def setColor(String hex) {
  * @param colorHSMap
  */
 def setColor(Map colorHSMap) {
-    log.trace "executing 'setColor' $colorHSMap"
+    log.trace "Executing 'setColor' $colorHSMap"
     implicitOn()
     sendEvent(name: "hue", value: colorHSMap?.hue?:0)
     sendEvent(name: "saturation", value: colorHSMap?.saturation?:0)
     sendEvent(name: "color", value: colorHSMap)
     simulateBulbState(MODE.COLOR)
+    done()
 }
 
 private initialize() {

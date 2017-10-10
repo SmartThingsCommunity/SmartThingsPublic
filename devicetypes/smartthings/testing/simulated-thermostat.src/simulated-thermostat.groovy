@@ -1,5 +1,5 @@
 /**
- *  Copyright 2015 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -148,7 +148,7 @@ metadata {
             state "cool",           action: "cycleMode", nextState: "updating", icon: "st.thermostat.cool"
             state "auto",           action: "cycleMode", nextState: "updating", icon: "st.thermostat.auto"
             state "emergency heat", action: "cycleMode", nextState: "updating", icon: "st.thermostat.emergency-heat"
-            state "updating", label: "Working", icon: "st.secondary.secondary"
+            state "updating", label: "Working"
         }
 
         standardTile("fanMode", "device.thermostatFanMode", width: 2, height: 2, decoration: "flat") {
@@ -156,7 +156,7 @@ metadata {
             state "auto",      action: "cycleFanMode", nextState: "updating", icon: "st.thermostat.fan-auto"
             state "on",        action: "cycleFanMode", nextState: "updating", icon: "st.thermostat.fan-on"
             state "circulate", action: "cycleFanMode", nextState: "updating", icon: "st.thermostat.fan-circulate" 
-            state "updating", label: "Working", icon: "st.secondary.secondary"
+            state "updating", label: "Working"
         }
 
         valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2, decoration: "flat") {
@@ -230,7 +230,7 @@ metadata {
             state "humidity", action: "setHumidityPercent"
         }
 
-        main("thermostatMulti")
+        main("roomTemp")
         details(["thermostatMulti",
             "heatDown", "heatUp",
             "mode", 
@@ -250,11 +250,13 @@ metadata {
 def installed() {
     log.trace "Executing 'installed'"
     initialize()
+    done()
 }
 
 def configure() {
     log.trace "Executing 'configure'"
     initialize()
+    done()
 }
 
 private initialize() {
@@ -285,7 +287,7 @@ private initialize() {
 
 // parse events into attributes
 def parse(String description) {
-    log.trace "parse $description"
+    log.trace "Executing parse $description"
     def parsedEvents
     def pair = description?.split(":")
     if (!pair || pair.length < 2) {
@@ -297,15 +299,19 @@ def parse(String description) {
         }
         parsedEvents = createEvent(name: name, value: pair[1]?.trim())
     }
+    done()
     return parsedEvents
 }
 
 
 def ping() {
+    log.trace "Executing ping"
     refresh()
+    // done() called by refresh()
 }
 
 def refresh() {
+    log.trace "Executing refresh"
     sendEvent(name: "thermostatMode", value: getThermostatMode())
     sendEvent(name: "thermostatFanMode", value: getFanMode())
     sendEvent(name: "thermostatOperatingState", value: getOperatingState())
@@ -314,6 +320,7 @@ def refresh() {
     sendEvent(name: "heatingSetpoint", value: getHeatingSetpoint(), unit: "°F")
     sendEvent(name: "temperature", value: getTemperature(), unit: "°F")
     sendEvent(name: "humidity", value: getHumidityPercent(), unit: "%")
+    done()
 }
 
 // Thermostat mode
@@ -322,6 +329,7 @@ private String getThermostatMode() {
 }
 
 def setThermostatMode(String value) {
+    log.trace "Executing 'setThermostatMode' $value"
     if (value in SUPPORTED_MODES) {
         proposeSetpoints(getHeatingSetpoint(), getCoolingSetpoint(), state.lastUserSetpointMode)
         sendEvent(name: "thermostatMode", value: value)
@@ -329,11 +337,14 @@ def setThermostatMode(String value) {
     } else {
         log.warn "'$value' is not a supported mode. Please set one of ${SUPPORTED_MODES.join(', ')}"
     }
+    done()
 }
 
 private String cycleMode() {
+    log.trace "Executing 'cycleMode'"
     String nextMode = nextListElement(SUPPORTED_MODES, getThermostatMode())
     setThermostatMode(nextMode)
+    done()
     return nextMode
 }
 
@@ -355,8 +366,10 @@ def setThermostatFanMode(String value) {
 }
 
 private String cycleFanMode() {
+    log.trace "Executing 'cycleFanMode'"
     String nextMode = nextListElement(SUPPORTED_FAN_MODES, getFanMode())
     setThermostatFanMode(nextMode)
+    done()
     return nextMode
 }
 
@@ -402,9 +415,10 @@ private Integer getHeatingSetpoint() {
 }
 
 def setHeatingSetpoint(Double degreesF) {
-    log.debug "setHeatingSetpoint($degreesF)"
+    log.trace "Executing 'setHeatingSetpoint' $degreesF"
     state.lastUserSetpointMode = SETPOINT_TYPE.HEATING
     setHeatingSetpointInternal(degreesF)
+    done()
 }
 
 private setHeatingSetpointInternal(Double degreesF) {
@@ -414,17 +428,21 @@ private setHeatingSetpointInternal(Double degreesF) {
 }
 
 private heatUp() {
+    log.trace "Executing 'heatUp'"
     def newHsp = getHeatingSetpoint() + 1
     if (getThermostatMode() in HEAT_ONLY_MODES + DUAL_SETPOINT_MODES) {
         setHeatingSetpoint(newHsp)
     }
+    done()
 }
 
 private heatDown() {
+    log.trace "Executing 'heatDown'"
     def newHsp = getHeatingSetpoint() - 1
     if (getThermostatMode() in HEAT_ONLY_MODES + DUAL_SETPOINT_MODES) {
         setHeatingSetpoint(newHsp)
     }
+    done()
 }
 
 private Integer getCoolingSetpoint() {
@@ -433,9 +451,10 @@ private Integer getCoolingSetpoint() {
 }
 
 def setCoolingSetpoint(Double degreesF) {
-    log.debug "setCoolingSetpoint($degreesF)"
+    log.trace "Executing 'setCoolingSetpoint' $degreesF"
     state.lastUserSetpointMode = SETPOINT_TYPE.COOLING
     setCoolingSetpointInternal(degreesF)
+    done()
 }
 
 private setCoolingSetpointInternal(Double degreesF) {
@@ -445,36 +464,44 @@ private setCoolingSetpointInternal(Double degreesF) {
 }
 
 private coolUp() {
+    log.trace "Executing 'coolUp'"
     def newCsp = getCoolingSetpoint() + 1
     if (getThermostatMode() in COOL_ONLY_MODES + DUAL_SETPOINT_MODES) {
         setCoolingSetpoint(newCsp)
     }
+    done()
 }
 
 private coolDown() {
+    log.trace "Executing 'coolDown'"
     def newCsp = getCoolingSetpoint() - 1
     if (getThermostatMode() in COOL_ONLY_MODES + DUAL_SETPOINT_MODES) {
         setCoolingSetpoint(newCsp)
     }
+    done()
 }
 
 // for the setpoint up/down buttons on the multi-attribute thermostat tile.
 private setpointUp() {
+    log.trace "Executing 'setpointUp'"
     String mode = getThermostatMode()
     if (mode in COOL_ONLY_MODES) {
         coolUp()
     } else if (mode in HEAT_ONLY_MODES + DUAL_SETPOINT_MODES) {
         heatUp()
     }
+    done()
 }
 
 private setpointDown() {
+    log.trace "Executing 'setpointDown'"
     String mode = getThermostatMode()
     if (mode in COOL_ONLY_MODES + DUAL_SETPOINT_MODES) {
         coolDown()
     } else if (mode in HEAT_ONLY_MODES) {
         heatDown()
     }
+    done()
 }
 
 // simulated temperature
@@ -643,14 +670,14 @@ private evaluateOperatingState(Map overrides) {
 //
 // Methods to "run" the heating/air conditioning. This baby heats or  cools at about a degree every 15 seconds.
 //
-
 private startSimHvac() {
     String operatingState = getOperatingState()
     Boolean isRunning = state?.isHvacRunning?:false
     Boolean shouldBeRunning = (operatingState in RUNNING_OP_STATES)
-    log.trace "Executing 'startSimHvac' isRunning: $isRunning, shouldBeRunning: $shouldBeRunning, op: $operatingState"
+    log.trace "Executing 'startSimHvac' - isRunning: $isRunning, shouldBeRunning: $shouldBeRunning, op: $operatingState"
+
     if (!isRunning && shouldBeRunning) {
-        log.info "starting simulated hvac"
+        log.info "START HVAC / starting simulated hvac run"
         state.isHvacRunning = true
         runIn(SIM_HVAC_CYCLE_SECONDS, "runSimHvacCycle")
     } else if (isRunning) {
@@ -668,16 +695,24 @@ private runSimHvacCycle() {
     log.trace "Executing 'runSimHvacCycle' - op: $operatingState, current: $currentTemp, heat set: $heatSet, cool set: $coolSet"
 
     if (operatingState == OP_STATE.HEATING && heatSet - currentTemp >= THRESHOLD_DEGREES) {
+        log.info "RUN HVAC / room temp +1 degree"
         tempUp()
         runIn(SIM_HVAC_CYCLE_SECONDS, "runSimHvacCycle")
     } else if (operatingState == OP_STATE.COOLING && currentTemp - coolSet >= THRESHOLD_DEGREES) {
+        log.info "RUN HVAC / room temp -1 degree"
         tempDown()
         runIn(SIM_HVAC_CYCLE_SECONDS, "runSimHvacCycle")
     } else {
         // end the job
         evaluateOperatingState()
         state.isHvacRunning = false
-        log.info "simulated hvac cycle has concluded"
+        log.info "END HVAC / simulated hvac run has concluded"
     }
 }
 
+/**
+ * Just mark the end of the execution in the log
+ */
+private void done() {
+    log.trace "---- DONE ----"
+}
