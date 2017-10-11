@@ -91,7 +91,7 @@ import physicalgraph.zwave.commands.usercodev1.*
  */
 def installed() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
-	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 /**
@@ -110,7 +110,7 @@ def uninstalled() {
  */
 def updated() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
-	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	def hubAction = null
 	try {
 		def cmds = []
