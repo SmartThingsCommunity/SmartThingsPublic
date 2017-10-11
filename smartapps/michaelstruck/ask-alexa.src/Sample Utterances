@@ -104,8 +104,12 @@ DeviceOperation to set the {Device} to {Operator}
 DeviceOperation set {Device} {Param} to {Operator}
 DeviceOperation set the {Device} {Param} to {Operator}
 DeviceOperation to set the {Device} {Param} to {Operator}
+DeviceOperation turn {Operator} the {Device}
+DeviceOperation to turn {Operator} the {Device}
 DeviceOperation turn {Device} {Operator}
 DeviceOperation turn {Device} to {Operator}
+DeviceOperation turn the {Device} {Operator}
+DeviceOperation turn the {Device} to {Operator}
 DeviceOperation turn {Device} {Operator} by {Num}
 DeviceOperation turn {Device} {Param} mode to {Operator}
 DeviceOperation turn the {Device} {Operator} by {Num} percent
@@ -791,6 +795,7 @@ MacroOperation turn {Macro} {MParam} mode to {MCmd}
 MacroOperation set {Macro} {MParam} to {MCmd}
 MacroOperation turn {MCmd} {Macro} {MParam} mode
 MacroOperation turn {MCmd} {Macro} to {MParam}
+MacroOperation turn {MCmd} the {Macro}
 ListOperation list {Type}
 ListOperation {Type}
 ListOperation about {Type}
