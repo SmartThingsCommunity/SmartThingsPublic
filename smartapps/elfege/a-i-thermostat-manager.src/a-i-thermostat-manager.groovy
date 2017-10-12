@@ -723,7 +723,7 @@ def init() {
 
     //log.debug "Number of Thermostats Selected by User : ${Thermostats.size()} [init]"
 
-    runIn(10, resetLocationChangeVariable)
+    runIn(30, resetLocationChangeVariable)
 
     // reset A.I. override maps
     state.HSPMap = [:]
@@ -771,11 +771,15 @@ def init() {
 def SetListsAndMaps(){
 
     // reset lists and maps
-    state.thermMotion = []              
-    state.MotionModes = []
-    state.MotionSensor = []
-    state.MotionModesAndItsThermMap = [:]
-    state.SensorThermMap = [:]
+    // these lists will allow to have sets of thermostats working with sets of motion sensors
+    def thermMotionList = []              
+    def MotionModesList = []
+    def MotionSensorList = []
+    
+    // these maps' purpose is only to verify that all settings were properly arranged together 
+    // and may be used as a debug ressource
+    def MotionModesAndItsThermMap = [:]
+    def SensorThermMap = [:]
 
     // recollect lists for motion sensors and associated thermostats
     def loopV = 0
@@ -798,31 +802,24 @@ def SetListsAndMaps(){
         refmmodes = refmmodes?.value
         refms = refms?.value
 
-        state.thermMotion << ["$reftm"]
-        state.MotionModes << ["$refmmodes"]
-        state.MotionSensor << [refms] // we need a list of devices, not just names... 
+        thermMotionList << ["$reftm"]
+        MotionModesList << ["$refmmodes"]
+        MotionSensorList << [refms] // we need a list of devices, not just names... 
 
-        state.MotionModesAndItsThermMap << ["$reftm" : refmmodes]
-        state.SensorThermMap << ["$reftm" : refms]
+        MotionModesAndItsThermMap << ["$reftm" : refmmodes]
+        SensorThermMap << ["$reftm" : refms]
 
-        //def thermMotion = state.thermMotion
-        //   
+        // keep those in db fo when needed without having to call this function
+        state.thermMotionList = thermMotionList
+        state.MotionModesList = MotionModesList
+        state.MotionSensorList = MotionSensorList
+        state.MotionModesAndItsThermMap = MotionModesAndItsThermMap
+        state.SensorThermMap = SensorThermMap
 
-        log.debug """ loop[${i}]
-reftm is $reftm
-refmmodes is $refmmodes
-
-"""     
     }
 
-    log.debug """
-state.thermMotion = $state.thermMotion
-state.MotionModes = $state.MotionModes
-state.MotionSensor = $state.MotionSensor
-state.SensorThermMap = $state.SensorThermMap
-state.MotionModesAndItsThermMap = $state.MotionModesAndItsThermMap
-
-"""  
+    def totalList = [thermMotionList, MotionModesList, MotionSensorList, MotionModesAndItsThermMap, SensorThermMap]
+    return totalList
 }
 
 // MAIN LOOP
@@ -1069,13 +1066,13 @@ All MotionSensors are $state.MotionSensor
                     def MotionSensorList = MotionSensor.findAll{it.device != null}.sort() 
                     def MotionSensor = MotionSensorList[loopValue] 
 
-                    //def MotionModesList = state.MotionModes.findAll{it.device != null}.sort() 
-                    def MotionModes = state.MotionModes
-                    MotionModes = MotionModes[loopValue]
+
+                    def MotionModes = state.MotionModesAndItsThermMap.find{it.key == "$ThermSet"}
+                    MotionModes = MotionModes?.value
+                    log.debug "MotionModes?.value for $ThermSet = $MotionModes"
 
                     /// TO FIX : MotionModes = MotionModes[loopValue]
                     def InMotionModes = CurrMode in MotionModes
-                    state.InMotionModes = InMotionModes
 
                     def HeatNoMotionVal = HeatNoMotion
                     def CoolNoMotionVal = CoolNoMotion
@@ -1325,7 +1322,7 @@ OutsideTempLowThres = $OutsideTempLowThres
 NowBedisClosed = $NowBedisClosed, 
 NowBedisOpen = $NowBedisOpen, """
 
-                        //log.debug "$BedSensor closed, applying settings accordingly"  
+                        log.debug "$BedSensor closed, applying settings accordingly"  
                         CSPSet = CSPSetBedSensor.toInteger()
                         HSPSet = HSPSetBedSensor.toInteger()
                         CSPok = CurrentCoolingSetPoint == CSPSet
@@ -2173,21 +2170,19 @@ def setpointHandler(evt){
         else  if(evt.name == "coolingSetpoint"){ 
             reference = RefCool
 
-            //log.debug "RefCool is $RefCool and it is now converted to a reference for comparison"
+            log.trace "RefCool is $RefCool and it is now converted to a reference for comparison"
         }
 
 
         def ThisIsModeChange = state.locationModeChange
         def ExceptionState = state.exception
-        def thisIsExceptionTemp = evt.displayName == "$NoTurnOffOnContact" && ExceptionState
-
-
+        def thisIsExceptionTemp = evt.displayName in NoTurnOffOnContact && ExceptionState
 
         def Value = evt.value
         //def Value = Math.round(Double.parseDouble(evt.value))
         Value = Value.toInteger()
         reference = reference.toInteger()
-        ////log.debug "Evt value to Integer is : $Value and it is to be compared to reference: $reference"
+        log.info "Evt value to Integer is : $Value and it is to be compared to reference: $reference"
         def ValueIsReference = true
         if (Value != reference){
             ValueIsReference = false
@@ -2196,8 +2191,7 @@ def setpointHandler(evt){
 
         if(ValueIsReference || ThisIsModeChange ||  (!doorsOk && !thisIsExceptionTemp))
         {  
-            //log.debug "NO SETPOINT OVERRIDE for $evt.device"
-
+            log.debug "NO SETPOINT OVERRIDE for $evt.device"
 
             state.AppMgtMap.remove("$evt.device")
             state.AppMgtMap["$evt.device"] = true // restore normal operation 
@@ -2207,8 +2201,8 @@ def setpointHandler(evt){
             //log.info "MANUAL SETPOINT OVERRIDE for $evt.device"
             /// NOT UNTIL IT WORKS... 
 
-            state.AppMgtMap.remove("$evt.device")
-            state.AppMgtMap["$evt.device"] = false 
+            /*state.AppMgtMap.remove("$evt.device")
+state.AppMgtMap["$evt.device"] = false  commented out until it works */
 
         }
 
@@ -2306,10 +2300,7 @@ def resetLocationChangeVariable(){
 
 // contacts and windows management and motion bool tests
 def MainContactsClosed(){
-
     def MainContactsAreClosed = true // has to be true by default in case no contacts selected
-
-
     def CurrentContacts = Maincontacts.currentValue("contact")
 
     log.debug """Maincontacts are $Maincontacts
@@ -2489,17 +2480,36 @@ def TurnOffThermostats(){
 }
 def MotionTest(){
 
-    SetListsAndMaps()
+    //SetListsAndMaps() // for tests only. This loop is called by updated() and as a function
+
+
+    //  returned totalList of lists in SetListsAndMaps(): [thermMotionList, MotionModesList, MotionSensorList, MotionModesAndItsThermMap, SensorThermMap]
+    def thermMotionList = SetListsAndMaps()
+    thermMotionList = thermMotionList[0]
+
+    def MotionModesList = SetListsAndMaps()
+    MotionModesList = MotionModesList[1]
+
+    def MotionSensorList = SetListsAndMaps()
+    MotionSensorList = MotionSensorList[2]
+
+    def MotionModesAndItsThermMap = SetListsAndMaps()
+    MotionModesAndItsThermMap = MotionModesAndItsThermMap[3]
+
+    def SensorThermMap = SetListsAndMaps()
+    SensorThermMap = SensorThermMap[4]
 
     log.info """
 
 All MotionSensor are: $MotionSensor
+MotionSensorList = $MotionSensorList
 """  
     def loopV = 0
     def s = MotionSensor.size()
+    def t = state.thermMotion.size()
     //def s = MotionSensor.findAll{it.device != null}.sort()
 
-    //def MotionSensor = state.MotionSensor.findAll{it.device != null}.sort()
+    def MotionSensor = state.MotionSensor // .findAll{it.device != null}.sort()
 
     loopV = 0
     def o = null
@@ -2513,26 +2523,21 @@ All MotionSensor are: $MotionSensor
     def motionEvents = []
     def Active = []
 
-/* TO DO:
-state.SensorThermMap find key so motionsensor 2 is decomposed in its 2 devices
+    /* TO DO:
 
-also need to fix the inMotionModes 
+but need to fix the inMotionMode
 
 ... and AppMgt still not working values turned to false from I don't know where
 
 */
 
-
-    for(s > 0; i < s; i++){
-        motionEvents[i] = state.MotionSensor[i].collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
+    for(t > 0; i < t; i++){
+        motionEvents[i] = MotionSensorList[i].collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
         Active[i] = motionEvents[i].size() != 0
         log.debug """
-Found ${motionEvents[i].size() ?: 0} events in the last $minutesMotion minutes at ${MotionSensor[i]}
+Found ${motionEvents[i].size() ?: 0} events in the last $minutesMotion minutes at ${state.MotionSensor[i]}
 deltaMinutes = $deltaMinutes"""
     }
-
-
-
     state.Motionhandlerrunning = false
     //log.debug "Active = $Active"
     return Active
