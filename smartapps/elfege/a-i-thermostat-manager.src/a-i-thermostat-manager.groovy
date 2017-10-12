@@ -775,7 +775,7 @@ def SetListsAndMaps(){
     def thermMotionList = []              
     def MotionModesList = []
     def MotionSensorList = []
-    
+
     // these maps' purpose is only to verify that all settings were properly arranged together 
     // and may be used as a debug ressource
     def MotionModesAndItsThermMap = [:]
@@ -1055,38 +1055,7 @@ AppMgt = $AppMgt
                 //log.debug "CurrTemp = $CurrTemp ($ThermSet)"
                 state.CurrTemp = CurrTemp
 
-                // motion management
-                //log.debug "-------------------------------------------------------------------------------------------------------------------------------------"
-                if(useMotion){
-                    log.debug """
-All MotionModes are : $state.MotionModes
-All MotionSensors are $state.MotionSensor
-"""
 
-                    def MotionSensorList = MotionSensor.findAll{it.device != null}.sort() 
-                    def MotionSensor = MotionSensorList[loopValue] 
-
-
-                    def MotionModes = state.MotionModesAndItsThermMap.find{it.key == "$ThermSet"}
-                    MotionModes = MotionModes?.value
-                    log.debug "MotionModes?.value for $ThermSet = $MotionModes"
-
-                    /// TO FIX : MotionModes = MotionModes[loopValue]
-                    def InMotionModes = CurrMode in MotionModes
-
-                    def HeatNoMotionVal = HeatNoMotion
-                    def CoolNoMotionVal = CoolNoMotion
-                    def ActiveList = MotionTest() 
-                    def Active = ActiveList[loopValue]
-                    log.debug """
-Current MotionModes = $state.MotionModes, 
-InMotionModes?($InMotionModes),
-useMotion?($useMotion)
-ActiveList = $ActiveList
-MotionSensorList = $MotionSensorList
-Active?(from List) for $ThermSet && $MotionSensor = $Active
-"""
-                }
 
 
                 def defaultCSPSet = CSPSet // recording this default value so if A.I. brings setpoint too low, it'll be recovered
@@ -1160,16 +1129,6 @@ Math.log(256) / Math.log(2)
                     CSPSet = CSPSet.toInteger()
                     //log.debug "Integer CSPSet = $CSPSet"
 
-                    /////////////////////////HEAT//////////////////// 
-                    /* // log base is: HSPSet
-Base = 75
-//outsideTemp = 60 // for test only 
-HSPSet = (Math.log(outsideTemp) / Math.log(Base)) * HSPSet
-//log.debug "Logarithmic HSPSet = $HSPSet"
-//CSPSet = Math.round(HSPSet)
-HSPSet = HSPSet.toInteger()
-//log.debug "Integer HSPSet = $HSPSet"
-*/
 
                     /////////////////////////HEAT//////////////////// ALWAYS linear function for heating
 
@@ -1188,30 +1147,7 @@ HSPSet = HSPSet.toInteger()
 
                         HSPSet = HSPSet.toInteger()
                     //log.debug "linear HSPSet = $HSPSet"
-                    // end of algebra        
 
-
-                    if(useMotion && InMotionModes && AppMgt){
-
-                        if(!Active){
-                            // record algebraic CSPSet for debug purpose
-                            def algebraicCSPSet = CSPSet 
-                            def algebraicHSPSet = HSPSet
-                            // log.info "$ThermSet default Cool: $CSPSet and default heat: $HSPSet "
-                            CSPSet = CSPSet + CoolNoMotionVal  
-                            HSPSet = HSPSet - HeatNoMotionVal
-
-                            log.trace """
-NO MOTION so $ThermSet CSP, which was $defaultCSPSet, then (if algebra) $algebraicCSPSet, is now set to $CSPSet
-NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebraicHSPSet, is now set to $HSPSet
-"""
-
-                        }
-                        else {
-
-                            //log.debug "There's motion in ${ThermSet}'s room (main loop)"
-                        }
-                    }
 
                     if(TooHumid && Inside - 2 >= outsideTemp && Active){
                         CSPSet = CSPSet - 1 
@@ -1252,9 +1188,74 @@ But, because HSPSet is too much higher than default value ($defaultHSPSet), defa
                         log.info "CurrTemp at ${ThermSet} is: $CurrTemp  HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp"
                     }
                 }
+
+                log.debug "end of algebra" 
+
+                // motion management
+                //log.debug "-------------------------------------------------------------------------------------------------------------------------------------"
+                if(useMotion){
+                    log.debug """
+All MotionModes are : $state.MotionModes
+All MotionSensors are $state.MotionSensor
+"""
+                    def MotionSensorList = MotionSensor.findAll{it.device != null}.sort() 
+                    def MotionSensor = MotionSensorList[loopValue] 
+
+
+                    def MotionModesList = SetListsAndMaps()
+                    MotionModesList = MotionModesList[1]
+
+                    def MotionModesAndItsThermMap = SetListsAndMaps()
+                    MotionModesAndItsThermMap = MotionModesAndItsThermMap[3]
+
+                    def MotionModes = MotionModesAndItsThermMap.find{it.key == "$ThermSet"}
+                    MotionModes = MotionModes?.value
+                    log.debug "MotionModes?.value = $MotionModes"
+
+                    /// TO FIX : MotionModes = MotionModes[loopValue]
+                    def InMotionModes = CurrMode in MotionModes
+
+                    def HeatNoMotionVal = HeatNoMotion
+                    def CoolNoMotionVal = CoolNoMotion
+                    def ActiveList = MotionTest() 
+                    def Active = ActiveList[loopValue]
+
+                    log.debug """
+Current MotionModes = $state.MotionModes, 
+InMotionModes?($InMotionModes),
+useMotion?($useMotion)
+ActiveList = $ActiveList
+MotionSensorList = $MotionSensorList
+Active?(from List) for $ThermSet && $MotionSensor = $Active
+"""
+
+                    if(InMotionModes && AppMgt){
+
+                        if(!Active){
+                            // record algebraic CSPSet for debug purpose
+                            def algebraicCSPSet = CSPSet 
+                            def algebraicHSPSet = HSPSet
+                            // log.info "$ThermSet default Cool: $CSPSet and default heat: $HSPSet "
+                            CSPSet = CSPSet + CoolNoMotionVal  
+                            HSPSet = HSPSet - HeatNoMotionVal
+
+                            log.trace """
+NO MOTION so $ThermSet CSP, which was $defaultCSPSet, then (if algebra) $algebraicCSPSet, is now set to $CSPSet
+NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebraicHSPSet, is now set to $HSPSet
+"""
+
+                        }
+                        else {
+
+                            //log.debug "There's motion in ${ThermSet}'s room (main loop)"
+                        }
+                    }
+                }
                 /// END OF HSPSet and CSPSet eval
                 state.CSPSet = CSPSet
-                state.HSPSet = HSPSet
+                state.HSPSet = HSPSet  // record those values for further references like in windowscheck or overrides management
+
+
                 // evaluate needs
 
                 def WarmOutside = outsideTemp >= (CSPSet - 1)
@@ -2480,9 +2481,6 @@ def TurnOffThermostats(){
 }
 def MotionTest(){
 
-    //SetListsAndMaps() // for tests only. This loop is called by updated() and as a function
-
-
     //  returned totalList of lists in SetListsAndMaps(): [thermMotionList, MotionModesList, MotionSensorList, MotionModesAndItsThermMap, SensorThermMap]
     def thermMotionList = SetListsAndMaps()
     thermMotionList = thermMotionList[0]
@@ -2537,9 +2535,11 @@ but need to fix the inMotionMode
         log.debug """
 Found ${motionEvents[i].size() ?: 0} events in the last $minutesMotion minutes at ${state.MotionSensor[i]}
 deltaMinutes = $deltaMinutes"""
+
     }
+
     state.Motionhandlerrunning = false
-    //log.debug "Active = $Active"
+    log.debug "Active = $Active"
     return Active
 }
 
