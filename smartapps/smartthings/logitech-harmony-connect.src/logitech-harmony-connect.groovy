@@ -890,7 +890,7 @@ def sendToHarmony(evt, String callbackUrl) {
             log.debug "Harmony - Cloud Response: ${resp.status}"
         }
     } catch (e) {
-        log.error "Harmony - Cloud Something went wrong: ${resp.status} - $e"
+        log.error "Harmony - Cloud Something went wrong: $e"
     }
   }
 }
