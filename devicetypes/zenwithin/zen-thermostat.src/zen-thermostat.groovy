@@ -250,8 +250,11 @@ def parse(String description) {
             case "001c": // ATTRIBUTE_SYSTEM_MODE
                 // Make sure operating state is in sync
                 map.name = "thermostatMode"
-                map.isStateChange = state.switchMode ?: false  // set to true to force update if switchMode failed and old mode is returned
-                state.switchMode = false
+                if (state.switchMode) {
+                    // set isStateChange to true to force update if switchMode failed and old mode is returned
+                    map.isStateChange = true
+                    state.switchMode = false
+                }
                 map.data = [supportedThermostatModes: supportedModes]
                 map.value = systemModeMap[descMap.value]
                 // in case of refresh, allow heat/cool setpoints to be reported before updating setpoint
@@ -275,8 +278,11 @@ def parse(String description) {
                 // Make sure operating state is in sync
                 ping()
                 map.name = "thermostatFanMode"
-                map.isStateChange = state.switchFanMode ?: false  // set to true to force update if switchMode failed and old mode is returned
-                state.switchFanMode = false
+                if (state.switchFanMode) {
+                    // set isStateChange to true to force update if switchMode failed and old mode is returned
+                    map.isStateChange = true
+                    state.switchFanMode = false
+                }
                 map.data = [supportedThermostatFanModes: state.supportedFanModes]
                 map.value = fanModeMap[descMap.value]
                 break
