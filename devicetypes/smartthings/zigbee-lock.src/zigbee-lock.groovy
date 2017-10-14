@@ -310,9 +310,8 @@ def validateAttributes() {
 		cmds += zigbee.configureReporting(CLUSTER_ALARM, ALARM_ATTR_ALARM_COUNT,
 				DataType.UINT16, 0, 21600, null)
 	}
-	if (state.attrSendPinOta == null || state.attrSendPinOta == 0) {
-		cmds += zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
-	}
+	// DOORLOCK_ATTR_SEND_PIN_OTA is sometimes getting reset to 0. Hence, writing it explicitly to 1.
+	cmds += zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
 	if(!device.currentValue("maxCodes")) {
 		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_NUM_PIN_USERS)
 	}
@@ -321,9 +320,6 @@ def validateAttributes() {
 	}
 	if(!device.currentValue("maxCodeLength")) {
 		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_MAX_PIN_LENGTH)
-	}
-	if (state.attrSendPinOta == null || state.attrSendPinOta == 0) {
-		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA)
 	}
 	cmds = cmds.flatten()
 	log.trace "validateAttributes returning commands list: " + cmds
@@ -345,7 +341,8 @@ def deleteCode(codeID) {
 		// Calling user code get when deleting a code because some Kwikset locks do not generate
 		// programming event when a code is deleted manually on the lock.
 		// This will also help in resolving the failure cases during deletion of a lock code.
-		cmds = zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_CLEAR_USER_CODE, getLittleEndianHexString(codeID))
+		cmds = zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
+		cmds += zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_CLEAR_USER_CODE, getLittleEndianHexString(codeID))
 		cmds += requestCode(codeID)
 	} else {
 		log.warn "Zigbee DTH - Invalid input: Unable to delete slot number $codeID"
@@ -496,9 +493,6 @@ private def parseAttributeResponse(String description) {
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_NUM_PIN_USERS && descMap.value) {
 		def maxCodes = Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodes", value: maxCodes, descriptionText: "Maximum Number of user codes supported is ${maxCodes}", displayed: false]
-	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_SEND_PIN_OTA && descMap.value) {
-		state.attrSendPinOta = Integer.parseInt(descMap.value, 16)
-		return null
 	} else {
 		log.trace "ZigBee DTH - parseAttributeResponse() - ignoring attribute response"
 		return null
@@ -548,7 +542,7 @@ private def parseCommandResponse(String description) {
 		
 		if (eventSource == 0) {
 			def codeID = Integer.parseInt(data[3] + data[2], 16)
-			if (!isValidCodeID(codeID)) {
+			if (!isValidCodeID(codeID, true)) {
 				// invalid code slot number reported by lock
 				log.debug "Invalid slot number := $codeID"
 				return null
@@ -946,12 +940,17 @@ private def getCodeFromOctet(data) {
  * Checks if the slot number is within the allowed limits
  *
  * @param codeID The code slot number
+ * 
+ * @param allowMasterCode Flag to indicate if master code slot should be allowed as a valid slot
  *
  * @return true if valid, false if not
  */
-private boolean isValidCodeID(codeID) {
+private boolean isValidCodeID(codeID, allowMasterCode = false) {
 	def defaultMaxCodes = isYaleLock() ? 250 : 30
 	def minCodeId = isYaleLock() ? 1 : 0
+	if (allowMasterCode) {
+		minCodeId = 0
+	}
 	def maxCodes = device.currentValue("maxCodes") ?: defaultMaxCodes
 	if (codeID.toInteger() >= minCodeId && codeID.toInteger() <= maxCodes) {
 		return true
