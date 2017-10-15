@@ -2,12 +2,12 @@
  *  Ask Alexa Schedules Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.3 7/6/17
+ *  Version 1.0.3a 7/6/17
  * 
  *  Version 1.0.0 (6/1/17) - Initial release
  *  Version 1.0.1 (6/8/17) - Fixed custom schedule issue. Added %age% variable for birthdays/anniversaries
  *  Version 1.0.2 (6/15/17) - Added %age% variable for any text field
- *  Version 1.0.3 (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
+ *  Version 1.0.3a (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -836,7 +836,7 @@ def remindDesc(){
                 result += schMsgQueRemind && schMsgQueRemind.size()==1 ? "message queue: " : "message queues: "
                 result += schMsgQueRemind ? translateMQid(schMsgQueRemind) : "Same as action message queue(s)"
                 result += schMQNotifyRemind ? "\nNotification Mode Only" : ""
-                result += schMQExpireRemind ? "\nExpires in ${schMQExpireRemind} seconds" : ""
+                result += schMQExpireRemind ? "\nExpires in ${schMQExpireRemind} minutes" : ""
                 result += schMQOverwriteRemind ? "\nOverwrite all previous reminder messages" : ""
                 result += schSuppressTDRemind ? "\nSuppress time and date from Alexa playback" : ""
             	result += schRemindFollow ? "\nReminders utlize action's on/off status & restrictions" : ""
@@ -850,7 +850,7 @@ def remindDesc(){
                 result += schMsgQueRemind && schMsgQueRemind.size()==1 ? "message queue: " : "message queues: "
                 result += schMsgQueRemind ? translateMQid(schMsgQueRemind) : "Same as action message queue(s)"
                 result += schMQNotifyRemind ? "\nNotification Mode Only" : ""
-                result += schMQExpireRemind ? "\nExpires in ${schMQExpireRemind} seconds" : ""
+                result += schMQExpireRemind ? "\nExpires in ${schMQExpireRemind} minutes" : ""
                 result += schMQOverwriteRemind ? "\nOverwrite all previous reminder messages" : ""
                 result += schSuppressTDRemind ? "\nSuppress Time and Date from Alexa Playback" : ""
         	}
@@ -863,7 +863,7 @@ def mqDesc(){
     if (schMsgQue){
     	result = "Send to: ${translateMQid(schMsgQue)}"
         result += schMQNotify ? "\nNotification Mode Only" : ""
-        result += schMQExpire ? "\nExpires in ${schMQExpire} seconds" : ""
+        result += schMQExpire ? "\nExpires in ${schMQExpire} minutes" : ""
         result += schMQOverwrite ? "\nOverwrite all previous schedule messages" : ""
         result += schSuppressTDRemind ? "\nSuppress Time and Date from Alexa Playback" : ""
 	}
@@ -900,4 +900,4 @@ def translateMQid(mqIDList){
 //Versions
 private versionInt(){ return 103 }
 private def textAppName() { return "Ask Alexa Schedules" }	
-private def textVersion() { return "Schedules Version: 1.0.3 (07/06/2017)" }
+private def textVersion() { return "Schedules Version: 1.0.3a (07/06/2017)" }

@@ -2,7 +2,7 @@
  *  Ask Alexa Message Queue Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.6 8/22/17
+ *  Version 1.0.6a 8/22/17
  * 
  *  Version 1.0.0 (3/31/17) - Initial release
  *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
@@ -11,7 +11,7 @@
  *  Version 1.0.3 (6/12/17) - Added logging feature for added partner usage
  *  Version 1.0.4 (7/8/17) - Added REST URL access to Message Queue
  *  Version 1.0.5 (7/21/17) - Changed REST URL icon and display for consistency
- *  Version 1.0.6 (8/22/17) - Added voice options to Message Queue
+ *  Version 1.0.6a (8/22/17) - Added voice options to Message Queue
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -124,7 +124,7 @@ def msgHandler(date, descriptionText, unit, value, overwrite, expires, notifyOnl
     if (mqSpeaker && mqVolume && ((restrictAudio && getOkToRun())||!restrictAudio)) {
 		def msgVoice, msgSFX
 		if (mqAlertType ==~/0|1|2/) {
-			def msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in primary message queue from : " + value : ""
+			def msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in ${app.label} message queue from : " + value : ""
 			if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
 			def outputVoice = mqVoice ?: "Salli"
             msgVoice = textToSpeech (msgTxt, outputVoice)
@@ -238,4 +238,4 @@ def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && 
 //Version/Copyright/Information/Help
 private versionInt(){ return 106 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.6 (08/22/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.6a (08/22/2017)" }
