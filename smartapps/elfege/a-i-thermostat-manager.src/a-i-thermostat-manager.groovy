@@ -1239,7 +1239,7 @@ NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebra
 
                 def WarmOutside = outsideTemp >= (CSPSet - 1)
                 def WarmInside = CurrTemp - 1 > CSPSet
-                // // log.debug "WarmOutside = $WarmOutside, WarmInside = $WarmInside"
+                log.debug "CurrTemp = $CurrTemp, outsideTemp = $outsideTemp, CSPSet = $CSPSet, WarmOutside = $WarmOutside, WarmInside = $WarmInside"
                 def ShouldCoolWithAC = WarmInside && WarmOutside
 
                 // // log.debug "$ThermSet ShouldCoolWithAC = $ShouldCoolWithAC (before other criteria loop $loopValue)"
