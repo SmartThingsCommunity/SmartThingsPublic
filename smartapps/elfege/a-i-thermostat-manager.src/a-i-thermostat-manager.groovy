@@ -605,7 +605,7 @@ def updated() {
     init()
 }
 def init() {
-
+    OverrideReset()
     state.CSPSet = [CSP:"72"]
     state.HSPSet = [HSP:"72"]// temporary values to prevent null error
     log.debug """
@@ -937,14 +937,14 @@ Override (AppMgt) modes map: $state.AppMgtMap"""
                     TheSensorOBJECT = settings.find{it.key == CurrentSensor}
                     TheSensorOBJECT = TheSensor?.value
                     def ok = "$TheSensorOJECT" == "$TheSensorSTRING"
-                    
+
                     if(ok){
 
                         CurrTemp = CurrentSensor.currentValue("temperature")
                         log.debug "$CurrentSensor selected as CurrTemp source for $ThermSet and it returns ${CurrTemp}F "
                     }
                     else {
-                    log.debug "$TheSensorOJECT == $TheSensorSTRING"
+                        log.debug "$TheSensorOJECT == $TheSensorSTRING"
                     }
                 }
                 else {
@@ -1176,34 +1176,62 @@ All MotionSensors are $state.MotionSensor
                     //def MotionSensor = MotionSensorList[loopValue] 
                     //  FOR REFERENCE : def results = [thermMotionList, MotionModesList, MotionSensorList, MotionModesAndItsThermMap, SensorThermMap]
 
+
                     def refm = SetListsAndMaps()
                     def thermMotionList = refm[0]
                     def MotionModesList = refm[1]
                     def MotionSensorList = refm[2]
                     def MotionModesAndItsThermMap = refm[3]
+                    def SensorThermMap = refm[4]
 
-                    def MotionModes = MotionModesAndItsThermMap."${ThermSet}"    
+                    //def TheSensor = "MotionSensor${loopValue}"
+                    //TheSensor = settings.find{it.key == TheSensor}
+                    //TheSensor = TheSensor?.value
+
+
                     // log.debug "MotionModes = $MotionModes"
+                    def TheSensor = SensorThermMap.find{it.key == "${ThermSet}"}
+                    TheSensor = TheSensor?.value
 
-                    def InMotionModes = CurrMode in MotionModes
+                    def MotionModes = MotionModesAndItsThermMap.find{it.key == "${ThermSet}"}
+                     log.debug "MotionModes before value called: $MotionModes"
+                   MotionModes = MotionModes?.value
+                    //log.debug "MotionModes after value called: $MotionModes"
+                    //def InMotionModesFind = MotionModes.findAll{it == "$CurrMode"}  
+                    //log.debug "InMotionModesFind : $InMotionModesFind"
+                    def inMotionModes = MotionModes.find("$CurrMode") == "$CurrMode"
+                    log.debug "inMotionModes after value called: $inMotionModes"
+                   	
+                    def ActiveMap = MotionTest() 
+                    def ActiveFind = ActiveMap.find{it.key == "${TheSensor}"}
+                    log.debug "ActiveFind = $ActiveFind before value call"
+                    //ActiveFind = ActiveFind?.value
+                    def Active = ActiveFind?.value
+                    Active = "$Active" == "true"
+
+                    log.debug """
+CurrMode is $CurrMode
+Current Motion Sensor = $TheSensor
+Current MotionModes = $MotionModes, 
+$ThermSet is inMotionModes?($inMotionModes),
+MotionModesAndItsThermMap = $MotionModesAndItsThermMap
+useMotion?($useMotion)
+ActiveMap = $ActiveMap
+SensorThermMap = $SensorThermMap
+MotionSensorList = $MotionSensorList
+Active?(from List) for $ThermSet && $TheSensor = $Active
+AppMgt = $AppMgt
+"""
 
                     def HeatNoMotionVal = HeatNoMotion
                     def CoolNoMotionVal = CoolNoMotion
-                    def ActiveMap = MotionTest() 
-                    def Active = ActiveMap."${MotionSensorList[loopValue]}" == "true"
-
-                    log.debug """
-Current MotionModes = $MotionModes, 
-InMotionModes?($InMotionModes),
-useMotion?($useMotion)
-ActiveList = $ActiveList
-MotionSensorList = $MotionSensorList
-Active?(from List) for $ThermSet && $MotionSensor = $Active
-"""
-
-                    if(InMotionModes && AppMgt){
+                    
+  log.debug "HeatNoMotionVal = $HeatNoMotionVal CoolNoMotionVal= $CoolNoMotionVal"
+  
+                    if(inMotionModes && AppMgt){
 
                         if(!Active){
+                      log.debug "TEST3"
                             // record algebraic CSPSet for debug purpose
                             def algebraicCSPSet = CSPSet 
                             def algebraicHSPSet = HSPSet
@@ -1219,7 +1247,7 @@ NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebra
                         }
                         else {
 
-                            // // log.debug "There's motion in ${ThermSet}'s room (main loop)"
+                            log.debug "There's motion in ${ThermSet}'s room (main loop)"
                         }
                     }
                 } 
@@ -1240,7 +1268,8 @@ NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebra
                 def WarmOutside = outsideTemp >= (CSPSet - 1)
                 def WarmInside = CurrTemp - 1 > CSPSet
                 log.debug "CurrTemp = $CurrTemp, outsideTemp = $outsideTemp, CSPSet = $CSPSet, WarmOutside = $WarmOutside, WarmInside = $WarmInside"
-                def ShouldCoolWithAC = WarmInside && WarmOutside
+                def ShouldCoolWithAC = WarmInside && WarmOutside || (CurrTemp + 3 > CSPSet)
+                state.ShouldCoolWithAC = ShouldCoolWithAC // will be used by venting option
 
                 // // log.debug "$ThermSet ShouldCoolWithAC = $ShouldCoolWithAC (before other criteria loop $loopValue)"
 
@@ -1253,7 +1282,6 @@ NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebra
                 state.ShouldCoolWithAC = ShouldCoolWithAC
 
                 state.ShouldHeat = ShouldHeat
-
 
                 log.debug """
 ShouldCoolWithAC = $ShouldCoolWithAC 
@@ -1599,16 +1627,73 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
         state.thisIsWindowMgt = false
     }
 
-
     state.Endeval = true
 
-    OkToOpen() // for test only comment out after
-
-
-
+    //OkToOpen() // for test only comment out after
 }
 
 
+def MotionTest(){
+
+    //  returned totalList of lists in SetListsAndMaps(): [thermMotionList, MotionModesList, MotionSensorList, MotionModesAndItsThermMap, SensorThermMap]
+    def thermMotionList = SetListsAndMaps()
+    thermMotionList = thermMotionList[0]
+
+    def MotionModesList = SetListsAndMaps()
+    MotionModesList = MotionModesList[1]
+
+    def MotionSensorList = SetListsAndMaps()
+    MotionSensorList = MotionSensorList[2]
+
+    def MotionModesAndItsThermMap = SetListsAndMaps()
+    MotionModesAndItsThermMap = MotionModesAndItsThermMap[3]
+
+    def SensorThermMap = SetListsAndMaps()
+    SensorThermMap = SensorThermMap[4]
+
+    /*  log.info """
+thermMotionList = $thermMotionList
+MotionModesList = $MotionModesList
+MotionSensorList = $MotionSensorList
+
+MotionModesAndItsThermMap = $MotionModesAndItsThermMap
+SensorThermMap = $SensorThermMap
+"""  
+*/
+    def loopV = 0
+    def s = MotionSensorList.size()
+    def t = thermMotionList.size()
+    //def s = MotionSensor.findAll{it.device != null}.sort()
+
+    loopV = 0
+    def o = null
+    def i = 0
+    def x = []
+    def ThisSensorList = []
+
+    i = 0
+    def deltaMinutes = minutesMotion * 60000 as Long
+
+    def motionEvents = []
+    def result = [:]
+    def Active = false
+    for(t > 0; i < t; i++){
+
+        def TheSensor = "MotionSensor${i}"
+        TheSensor = settings.find{it.key == TheSensor}
+        TheSensor = TheSensor?.value
+
+        motionEvents = TheSensor.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
+        // log.debug "motionEvents = $motionEvents"
+        Active = motionEvents.size() != 0
+        result << ["${TheSensor}": "$Active"]
+        log.debug """
+Found ${motionEvents.size() ?: 0} events in the last $minutesMotion minutes at ${MotionSensorList[i]}
+deltaMinutes = $deltaMinutes"""
+    }
+    log.debug "result = $result"
+    return result
+}
 def IndexValueMode(){
     def ModeInArray = WhichMode()
 
@@ -1804,7 +1889,6 @@ def contactHandlerClosed(evt) {
         updated()
     }
 
-
 } 
 def contactHandlerOpen(evt) {
     // // log.debug "$evt.device is now $evt.value, Turning off all thermostats in $TimeBeforeClosing seconds"
@@ -1812,7 +1896,8 @@ def contactHandlerOpen(evt) {
     state.attempts = 0 // reset of thisiswindowsmgt()
     state.thisIsWindowMgt = true // prevent false ON/OFF override
 
-    runIn(TimeBeforeClosing, TurnOffThermostats)   
+
+    runIn(TimeBeforeClosing, TurnOffThermostats)  
     def message = ""
 
     // // log.debug "state.OpenByApp = $state.OpenByApp"
@@ -1833,12 +1918,7 @@ def contactExceptionHandlerOpen(evt) {
     state.ThermOff = false
     // // log.debug "$evt.device is now $evt.value (Contact Exception), Turning off all thermostats in $TimeBeforeClosing seconds"
 
-    if(OperatingTime){
-        runIn(TimeBeforeClosing, TurnOffThermostats)  
-    }
-    else{
-        TurnOffThermostats()
-    }
+    runIn(TimeBeforeClosing, TurnOffThermostats)  
 
     runIn(5, thisIsWindowMgtFALSE)
     //  Evaluate()
@@ -1847,7 +1927,7 @@ def contactExceptionHandlerClosed(evt) {
     state.ThermOff = false
     // // log.debug "$evt.device is now $evt.value (Contact Exception), Resuming Evaluation for $NoTurnOffOnContact"
 
-    //   Evaluate()
+    Evaluate()
 }
 def ChangedModeHandler(evt) {
 
@@ -1870,7 +1950,7 @@ def ChangedModeHandler(evt) {
     state.recentModeChange = true
     state.ventingrun = 0
     runIn(60, recentModeChangeFALSE)
-    OverrideReset()
+
     updated()
 
 }
@@ -2400,67 +2480,6 @@ def TurnOffThermostats(){
 
 }
 
-def MotionTest(){
-
-    //  returned totalList of lists in SetListsAndMaps(): [thermMotionList, MotionModesList, MotionSensorList, MotionModesAndItsThermMap, SensorThermMap]
-    def thermMotionList = SetListsAndMaps()
-    thermMotionList = thermMotionList[0]
-
-    def MotionModesList = SetListsAndMaps()
-    MotionModesList = MotionModesList[1]
-
-    def MotionSensorList = SetListsAndMaps()
-    MotionSensorList = MotionSensorList[2]
-
-    def MotionModesAndItsThermMap = SetListsAndMaps()
-    MotionModesAndItsThermMap = MotionModesAndItsThermMap[3]
-
-    def SensorThermMap = SetListsAndMaps()
-    SensorThermMap = SensorThermMap[4]
-
-    /*  log.info """
-thermMotionList = $thermMotionList
-MotionModesList = $MotionModesList
-MotionSensorList = $MotionSensorList
-
-MotionModesAndItsThermMap = $MotionModesAndItsThermMap
-SensorThermMap = $SensorThermMap
-"""  
-*/
-    def loopV = 0
-    def s = MotionSensorList.size()
-    def t = thermMotionList.size()
-    //def s = MotionSensor.findAll{it.device != null}.sort()
-
-    loopV = 0
-    def o = null
-    def i = 0
-    def x = []
-    def ThisSensorList = []
-
-    i = 0
-    def deltaMinutes = minutesMotion * 60000 as Long
-
-    def motionEvents = []
-    def result = [:]
-    def Active = false
-    for(t > 0; i < t; i++){
-
-        def TheSensor = "MotionSensor${i}"
-        TheSensor = settings.find{it.key == TheSensor}
-        TheSensor = TheSensor?.value
-
-        motionEvents = TheSensor.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
-        // log.debug "motionEvents = $motionEvents"
-        Active = motionEvents.size() != 0
-        result << ["${MotionSensorList[i]}": "$Active"]
-        log.debug """
-Found ${motionEvents.size() ?: 0} events in the last $minutesMotion minutes at ${MotionSensorList[i]}
-deltaMinutes = $deltaMinutes"""
-    }
-    // log.debug "result = $result"
-    return result
-}
 
 def CheckWindows(){
 
@@ -2653,12 +2672,18 @@ def OkToOpen(){
     def inHomeMode = CurrMode in Home
 
     def result = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool && !TooHumid && !OutsideFeelsHotter
+    def ShouldCoolWithAC = AverageCurrTemp - 3 > AverageCSPSet
 
-
-    def NeedVenting = Outside < OutsideTempLowThres && !ShouldHeat && AverageCurrTemp >= AverageCSPSet + 1
+    def NeedVenting = Outside < OutsideTempLowThres && !ShouldHeat && AverageCurrTemp >= AverageCSPSet + 1 && state.more == 0
     log.debug "NeedVenting = $NeedVenting state.coldbutneedcool = $state.coldbutneedcool && state.ventingrun = $state.ventingrun"
 
-    if(NeedVenting)
+    // TO IMPLEMENT IN USER SETTINGS NOT DONE YET!!! 
+    def UndesiredMode = CustomMode2
+
+    if(CurrMode in Away || CurrMode in UndesiredMode){
+        log.debug "in $CurrMode mode, not venting"
+    }
+    else if(NeedVenting)
     {
         state.coldbutneedcool = state.coldbutneedcool + 1 
         log.info"state.coldbutneedcool set to $state.coldbutneedcool"
@@ -2676,12 +2701,45 @@ def OkToOpen(){
 
         }
         else {
-
             log.debug "not opening because state.ventingrun is $state.ventingrun"
+
+
+            if(!ContactsClosed && AverageCurrTemp - 2 > AverageCSPSet && AverageCurrTemp < AverageCSPSet + 4){
+                // if CSP is 72, Average 75 then Average is still lower than 76
+                // it got hotter inside despite opening windows
+                // open them more 
+                log.debug """
+opening a bit more
+AverageCurrTemp - 2 = ${AverageCurrTemp - 2}
+AverageCSPSet = $AverageCSPSet
+AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
+state.more = $state.more
+"""
+                Actuators?.on()
+                ActuatorException?.on()
+                runIn(10, StopActuators)
+                state.more = state.more + 1
+            }
+            // still getting too hot
+            // if CSP is 72, Average 76 then Average -3 = 73 is still higher than 72
+            // and we already tried to open fully
+            if(!ContactsClosed && AverageCurrTemp - 3 > AverageCSPSet && state.more > 4){
+                // trigger full closing so AC can run instead 
+                log.debug """still too hot, closing entirely
+
+AverageCurrTemp - 2 = ${AverageCurrTemp - 2}
+AverageCSPSet = $AverageCSPSet
+AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
+state.more = $state.more
+"""
+                state.coldbutneedcool = 0 
+
+            }
         }
     }
     else {
-        state.coldbutneedcool = 0 
+        state.coldbutneedcool = 0
+        state.more = 0
 
         log.debug """state.coldbutneedcool set to $state.coldbutneedcool
 no venting needed, making sure windows are closed"""
@@ -2694,14 +2752,14 @@ CLOSING WINDOWS"""
         }
 
     }
-  
 
-    state.OpenInFull = []
+
+    state.OpenInFull = false
     if(OpenWhenEverPermitted && outsideTemp >= HSPSet) { 
-        state.OpenInFull = [true]
+        state.OpenInFull = true
     }
     else {
-        state.OpenInFull = [false]
+        state.OpenInFull = false
     }
 
     // open all the way when gone?
@@ -2877,7 +2935,7 @@ def StopActuators(){
             ActuatorException?.stop()        
         }
     }
-    else if(state.coldbutneedcool >= 1){
+    else if(state.coldbutneedcool >= 1 || state.more >= 1){
         // log.debug "SENDING STOP COMMAND"
         if (ActuatorException?.hasCommand("stop") /* && !OpenInFull*/){
             ActuatorException?.stop()        
