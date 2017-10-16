@@ -3,14 +3,14 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.5 8/03/17
+ *  Version 1.0.5a 8/03/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
  *  Version 1.0.2a (6/17/17) - Deprecated send to notification feed. Will add message queue functionality if feedback is given
  *  Version 1.0.3 - (6/28/17) Replaced notifications with Message Queue
  *  Version 1.0.4 - (7/11/17) Allow suppression of continuation messages.
- *  Version 1.0.5 - (8/3/17) Fixed issue due to changes in Weather Undergroud API
+ *  Version 1.0.5a - (8/3/17) Fixed issue due to changes in Weather Undergroud API
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -215,7 +215,7 @@ def mqDesc(){
     if (wrMsgQue){
     	result = "Send to: ${translateMQid(wrMsgQue)}"
         result += wrMQNotify ? "\nNotification Mode Only" : ""
-        result += wrMQExpire ? "\nExpires in ${wrMQExpire} seconds" : ""
+        result += wrMQExpire ? "\nExpires in ${wrMQExpire} minutes" : ""
         result += wrMQOverwrite ? "\nOverwrite all previous voice report messages" : ""
         result += wrSuppressTDRemind ? "\nSuppress Time and Date from Alexa Playback" : ""
 	}
@@ -602,4 +602,4 @@ private tideInfo() {
 //Version/Copyright/Information/Help
 private versionInt(){ return 105 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.5 (08/03/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.5a (08/03/2017)" }
