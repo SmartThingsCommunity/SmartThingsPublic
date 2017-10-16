@@ -89,21 +89,21 @@ def authPage() {
                     title: "Curb Location",
                     options: atomicState.locationNames
                 )
-                input(
-                    name: "energyInterval",
-                    type: "enum",
-                    title: "Energy Interval",
-                    options: [
-                    	"1m",
-                        "15m",
-                        "30m",
-                        "1h",
-                        "1d",
-                        "1mo",
-                        "billing"
-                    ],
-                    default: "30m"
-                )
+                // input(
+                //     name: "energyInterval",
+                //     type: "enum",
+                //     title: "Energy Interval",
+                //     options: [
+                //     	"1m",
+                //         "15m",
+                //         "30m",
+                //         "1h",
+                //         "1d",
+                //         "1mo",
+                //         "billing"
+                //     ],
+                //     default: "30m"
+                // )
             }
         }
     } else {
@@ -232,23 +232,41 @@ def getDevices() {
 
 def getAllData() {
 
-    def aggregateResolution = "h"
-    if (settings.energyInterval == "30m" || settings.energyInterval == "15m" || settings.energyInterval == "1m") {
-        aggregateResolution = "s"
-    }
-    if (settings.energyInterval == "1h") {
-        aggregateResolution = "m"
-    }
+    // def aggregateResolution = "h"
+    // if (settings.energyInterval == "30m" || settings.energyInterval == "15m" || settings.energyInterval == "1m") {
+    //     aggregateResolution = "s"
+    // }
+    // if (settings.energyInterval == "1h") {
+    //     aggregateResolution = "m"
+    // }
 
-    def kwhrparams = [
+    def onehparams = [
         uri: "https://app.energycurb.com",
-        path: "/api/aggregate/${atomicState.location}/${settings.energyInterval}/${aggregateResolution}",
+        path: "/api/aggregate/${atomicState.location}/1h/m",
         headers: ["Authorization": "Bearer ${atomicState.authToken}"],
         requestContentType: 'application/json'
     ]
-    log.debug kwhrparams.path
+    log.debug onehparams
+    asynchttp_v1.get(processKwh1h, onehparams)
 
-    asynchttp_v1.get(processKwhr, kwhrparams)
+    def thirtymparams = [
+        uri: "https://app.energycurb.com",
+        path: "/api/aggregate/${atomicState.location}/30m/m",
+        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        requestContentType: 'application/json'
+    ]
+    log.debug thirtymparams
+
+    asynchttp_v1.get(processKwh30m, thirtymparams)
+
+    def onemparams = [
+        uri: "https://app.energycurb.com",
+        path: "/api/aggregate/${atomicState.location}/1m/s",
+        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        requestContentType: 'application/json'
+    ]
+
+    asynchttp_v1.get(processKwh1m, onemparams)
 
     def latestparams = [
         uri: "https://app.energycurb.com",
@@ -409,7 +427,7 @@ def processDevices(resp, data) {
     }
 }
 
-def processKwhr(resp, data) {
+def processKwhr(resp, data, res) {
     if (resp.hasError()) {
         log.error "Kwhr Response Error: ${resp.getErrorMessage()}"
         return
@@ -420,17 +438,16 @@ def processKwhr(resp, data) {
     def solarkwh = 0.0
     def usagekwh = 0.0
     if (json) {
-    log.debug json
         json.each {
             if (it.main) {
-            	log.debug it
                 mainkwh = mainkwh + it.kwhr
             }
             try {
                 def existingDevice = getChildDevice(it.id)
                 if (existingDevice) {
-                    existingDevice.handleKwhr(it.kwhr)
-                    //existingDevice.setAggregate(it)
+                  if(res == "1h")  { existingDevice.handleKwh1h(it.kwhr)  }
+                  if(res == "30m") { existingDevice.handleKwh30m(it.kwhr) }
+                  if(res == "1m")  { existingDevice.handleKwh1m(it.kwhr)  }
                 }
             } catch (e) {
                 log.error "Error creating or updating device: ${e}"
@@ -438,9 +455,23 @@ def processKwhr(resp, data) {
         }
         def existingDevice = getChildDevice("__NET__")
         if (existingDevice) {
-            existingDevice.handleKwhr(mainkwh)
+          if(res == "1h")  { existingDevice.handleKwh1h(mainkwh)  }
+          if(res == "30m") { existingDevice.handleKwh30m(mainkwh) }
+          if(res == "1m")  { existingDevice.handleKwh1m(mainkwh)  }
         }
     }
+}
+
+def processKwh1h(resp, data) {
+  processKwhr(resp, data, "1h")
+}
+
+def processKwh30m(resp, data) {
+  processKwhr(resp, data, "30m")
+}
+
+def processKwh1m(resp, data) {
+  processKwhr(resp, data, "1m")
 }
 
 def toQueryString(Map m) {

@@ -39,8 +39,14 @@ metadata {
                     ]
             }
             tileAttribute("device.energy", key: "SECONDARY_CONTROL") {
-                attributeState "kwhr", label: '${currentValue} kWh'
+                attributeState "kwh1h", label: '${currentValue} kWh used in the past hour'
             }
+        }
+        valueTile("kwh30m", "device.energy", decoration: "flat", width: 1, height: 1) {
+            state "kwh30m", label:'${currentValue} used in the past 30 mins'
+        }
+        valueTile("kwh1m", "device.energy", decoration: "flat", width: 1, height: 1) {
+            state "kwh1m", label:'${currentValue} used in the past minute'
         }
         htmlTile(name:"graph",
              action: "generateGraph",
@@ -73,8 +79,21 @@ def handleMeasurements(values)
     }
 }
 
-def handleKwhr(kwhr) {
-    sendEvent(name: "energy", value: kwhr.round(3))
+def handleKwhr(kwh) {
+    sendEvent(name: "energy", value: kwh.round(3))
+}
+
+def handleKwh1h(kwh) {
+    sendEvent(name: "kwh1h", value: kwh.round(3))
+}
+
+def handleKwh30m(kwh) {
+  log.debug "30m"
+    sendEvent(name: "kwh30m", value: kwh.round(3))
+}
+
+def handleKwh1m(kwh) {
+    sendEvent(name: "kwh1m", value: kwh.round(3))
 }
 
 
