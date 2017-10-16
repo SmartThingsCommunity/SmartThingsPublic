@@ -88,7 +88,6 @@ def handleKwh1h(kwh) {
 }
 
 def handleKwh30m(kwh) {
-  log.debug "30m"
     sendEvent(name: "kwh30m", value: kwh.round(3))
 }
 
