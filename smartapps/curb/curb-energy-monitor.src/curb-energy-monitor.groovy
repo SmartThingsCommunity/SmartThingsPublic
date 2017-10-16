@@ -17,10 +17,10 @@
 include 'asynchttp_v1'
 
 definition(
-    name: "Curb Bridge",
+    name: "CURB Energy Monitor",
     namespace: "curb",
     author: "Curb",
-    description: "App to get usage data from a Curb home energy monitor",
+    description: "Gain insight into energy usage throughout your home.",
     category: "",
     iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
@@ -80,13 +80,13 @@ def authPage() {
     }
 
     if (atomicState.authToken) {
-        return dynamicPage(name: "auth", title: "SuccessfullyConnected", nextPage: "", install: true, uninstall: true) {
+        return dynamicPage(name: "auth", title: "Login Successful", nextPage: "", install: true, uninstall: true) {
             section() {
-                paragraph("Select your Curb Location")
+                paragraph("Select your CURB Location")
                 input(
                     name: "curbLocation",
                     type: "enum",
-                    title: "Curb Location",
+                    title: "CURB Location",
                     options: atomicState.locationNames
                 )
                 // input(
@@ -109,8 +109,8 @@ def authPage() {
     } else {
         return dynamicPage(name: "auth", title: "Login", nextPage: "", uninstall: false) {
             section() {
-                paragraph("Tap below to log in to the Curb service and authorize SmartThings access")
-                href url: buildRedirectUrl, style: "embedded", required: true, title: "Curb", description: "Click to enter Curb Credentials"
+                paragraph("Tap below to log in to the CURB service and authorize SmartThings access")
+                href url: buildRedirectUrl, style: "embedded", required: true, title: "CURB", description: "Click to enter CURB Credentials"
             }
         }
     }

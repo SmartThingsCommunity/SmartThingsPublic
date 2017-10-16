@@ -38,15 +38,15 @@ metadata {
                         [value: 2000, color: "#db5e1f"]
                     ]
             }
-            tileAttribute("device.energy", key: "SECONDARY_CONTROL") {
-                attributeState "kwh1h", label: '${currentValue} kWh used in the past hour'
-            }
         }
         valueTile("kwh30m", "device.energy", decoration: "flat", width: 1, height: 1) {
             state "kwh30m", label:'${currentValue} used in the past 30 mins'
         }
         valueTile("kwh1m", "device.energy", decoration: "flat", width: 1, height: 1) {
             state "kwh1m", label:'${currentValue} used in the past minute'
+        }
+        valueTile("kwh1h", "device.energy", decoration: "flat", width: 1, height: 1) {
+            state "kwh1h", label:'${currentValue} used in the past hour'
         }
         htmlTile(name:"graph",
              action: "generateGraph",
