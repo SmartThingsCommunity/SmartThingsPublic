@@ -1,12 +1,9 @@
-/**
- *
+ /**
  *  Inovelli 2-Channel Smart Plug w/Scene
- *
- *  github: Eric Maycock (erocm123)
+ *  Author: Eric Maycock (erocm123)
  *  Date: 2017-10-17
- *  Copyright Eric Maycock
  *
- *  Includes all configuration parameters and ease of advanced configuration.
+ *  Copyright 2017 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -18,6 +15,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+ 
 metadata {
 	definition(name: "Inovelli 2-Channel Smart Plug w/Scene", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Actuator"
@@ -88,7 +86,7 @@ def parse(String description) {
 	return result
 }
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
-	logging("BasicReport ${cmd} - ep ${ep}", 2)
+	log.debug "BasicReport ${cmd} - ep ${ep}"
 	if (ep) {
 		def event
 		childDevices.each {
