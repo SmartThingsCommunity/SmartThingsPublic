@@ -31,6 +31,7 @@ ALARMSTATE={'version' : 0.1}
 MAXPARTITIONS=16
 MAXZONES=64
 MAXALARMUSERS=95
+EVENTCODES=[510,511,601,602,603,604,605,606,609,610,616,620,621,622,623,624,625,626,650,651,652,653,654,655,656,657,663,664,840,841]
 CONNECTEDCLIENTS={}
 
 def dict_merge(a, b):
@@ -78,7 +79,7 @@ class AlarmServerConfig():
         self._config.read(configfile)
 
         self.LOGURLREQUESTS = self.read_config_var('alarmserver', 'logurlrequests', True, 'bool')
-        self.HTTPSPORT = self.read_config_var('alarmserver', 'httpsport', 8111, 'int')
+        self.HTTPPORT = self.read_config_var('alarmserver', 'httpport', 8111, 'int')
         self.CERTFILE = self.read_config_var('alarmserver', 'certfile', 'server.crt', 'str')
         self.KEYFILE = self.read_config_var('alarmserver', 'keyfile', 'server.key', 'str')
         self.MAXEVENTS = self.read_config_var('alarmserver', 'maxevents', 10, 'int')
@@ -97,7 +98,6 @@ class AlarmServerConfig():
         self.CALLBACKURL_BASE = self.read_config_var('alarmserver', 'callbackurl_base', '', 'str')
         self.CALLBACKURL_APP_ID = self.read_config_var('alarmserver', 'callbackurl_app_id', '', 'str')
         self.CALLBACKURL_ACCESS_TOKEN = self.read_config_var('alarmserver', 'callbackurl_access_token', '', 'str')
-        self.CALLBACKURL_EVENT_CODES = self.read_config_var('alarmserver', 'callbackurl_event_codes', '', 'str')
         global LOGTOFILE
         if self.LOGFILE == '':
             LOGTOFILE = False
@@ -431,17 +431,16 @@ class EnvisalinkClient(asynchat.async_chat):
         self.handle_event(code, parameters[0], event, message)
 
     def callbackurl_event(self, code, parameters, event, message):
-        myEvents = self._config.CALLBACKURL_EVENT_CODES.split(',')
         # Determine what events we are sending to smartthings then send if we match
-        if str(code) in myEvents:
+        if code in EVENTCODES:
            # Check for events with no type by code instead
-           if str(code) == '620':
+           if code == 620:
              update = {
                'type': 'partition',
                'value': '1',
                'status': 'duress'
              }
-           elif str(code) == '616':
+           elif code == 616:
              update = {
                'type': 'bypass',
                'status': 'bypass',
@@ -464,27 +463,27 @@ class EnvisalinkClient(asynchat.async_chat):
                if zone in self._config.ZONENAMES and self._config.ZONENAMES[zone]!=False:
                  value = 'on' if (binary[count] == '1') else 'off'
                  update['parameters'][str(zone)]=value
-           elif str(code) in ['510','511']:
+           elif code in [510,511]:
              codeMap = {
-               '510':'led',
-               '511':'ledflash',
+               510:'led',
+               511:'ledflash',
              }
 
              ledMap = {
-               '0':'backlight',
-               '1':'fire',
-               '2':'program',
-               '3':'trouble',
-               '4':'bypass',
-               '5':'memory',
-               '6':'armed',
-               '7':'ready'
+               0:'backlight',
+               1:'fire',
+               2:'program',
+               3:'trouble',
+               4:'bypass',
+               5:'memory',
+               6:'armed',
+               7:'ready'
              }
 
              update = {
                'type': 'partition',
                'value': '1',
-               'status': codeMap[str(code)],
+               'status': codeMap[code],
                'parameters': {}
              }
 
@@ -492,42 +491,42 @@ class EnvisalinkClient(asynchat.async_chat):
 
              for i in range(0, 8):
                value = 'on' if (binary[i] == '1') else 'off'
-               update['parameters'][ledMap[str(i)]]=value
+               update['parameters'][ledMap[i]]=value
            elif event['type'] == 'system':
              codeMap = {
-               '621':'keyfirealarm',
-               '622':'keyfirerestore',
-               '623':'keyauxalarm',
-               '624':'keyauxrestore',
-               '625':'keypanicalarm',
-               '626':'keypanicrestore',
+               621:'keyfirealarm',
+               622:'keyfirerestore',
+               623:'keyauxalarm',
+               624:'keyauxrestore',
+               625:'keypanicalarm',
+               626:'keypanicrestore',
              }
 
              update = {
                'type': 'partition',
                'value': '1',
-               'status': codeMap[str(code)],
+               'status': codeMap[code],
              }
            elif event['type'] == 'partition':
              # Is our partition setup with a custom name?
              if int(parameters[0]) in self._config.PARTITIONNAMES and self._config.PARTITIONNAMES[int(parameters[0])]!=False:
-               if str(code) == '655':
+               if code == 655:
                  self.send_command('071', '1*1#')
 
                codeMap = {
-                 '650':'ready',
-                 '651':'notready',
-                 '653':'forceready',
-                 '654':'alarm',
-                 '655':'disarm',
-                 '656':'exitdelay',
-                 '657':'entrydelay',
-                 '663':'chime',
-                 '664':'nochime',
-                 '701':'armed',
-                 '702':'armed',
-                 '840':'trouble',
-                 '841':'restore',
+                 650:'ready',
+                 651:'notready',
+                 653:'forceready',
+                 654:'alarm',
+                 655:'disarm',
+                 656:'exitdelay',
+                 657:'entrydelay',
+                 663:'chime',
+                 664:'nochime',
+                 701:'armed',
+                 702:'armed',
+                 840:'trouble',
+                 841:'restore',
                }
 
                update = {
@@ -536,7 +535,7 @@ class EnvisalinkClient(asynchat.async_chat):
                  'value': str(int(parameters[0]))
                }
 
-               if str(code) == '652':
+               if code == 652:
                  if message.endswith('Zero Entry Away'):
                    update['status']='instantaway'
                  elif message.endswith('Zero Entry Stay'):
@@ -548,7 +547,7 @@ class EnvisalinkClient(asynchat.async_chat):
                  else:
                    update['status']='armed'
                else:
-                   update['status']=codeMap[str(code)]
+                   update['status']=codeMap[code]
              else:
                # We don't care about this partition
                return
@@ -556,23 +555,23 @@ class EnvisalinkClient(asynchat.async_chat):
              # Is our zone setup with a custom name, if so we care about it
              if int(parameters) in self._config.ZONENAMES and self._config.ZONENAMES[int(parameters)]!=False:
                codeMap = {
-                 '601':'alarm',
-                 '602':'closed',
-                 '603':'tamper',
-                 '604':'restore',
-                 '605':'fault',
-                 '606':'restore',
-                 '609':'open',
-                 '610':'closed',
-                 '631':'smoke',
-                 '632':'clear',
+                 601:'alarm',
+                 602:'closed',
+                 603:'tamper',
+                 604:'restore',
+                 605:'fault',
+                 606:'restore',
+                 609:'open',
+                 610:'closed',
+                 631:'smoke',
+                 632:'clear',
                }
 
                update = {
                  'type': 'zone',
                  'name': self._config.ZONENAMES[int(parameters)],
                  'value': str(int(parameters)),
-                 'status': codeMap[str(code)]
+                 'status': codeMap[code]
                }
              else:
                # We don't care about this zone
@@ -627,7 +626,7 @@ class AlarmServer(asyncore.dispatcher):
         # Create socket and listen on it
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.bind(("", config.HTTPSPORT))
+        self.bind(("", config.HTTPPORT))
         self.listen(5)
 
     def handle_accept(self):
