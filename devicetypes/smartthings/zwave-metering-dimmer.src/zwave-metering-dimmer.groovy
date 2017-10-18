@@ -27,11 +27,13 @@ metadata {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Light"
+        capability "Configuration"
 
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x32"
 		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeon Labs Micro Smart Dimmer 2E"
+        fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeon Labs Nano Dimmer"
 	}
 
 	simulator {
@@ -44,11 +46,11 @@ metadata {
 		status "99%": "command: 2603, payload: 63"
 
 		for (int i = 0; i <= 10000; i += 1000) {
-			status "power  ${i} W": new physicalgraph.zwave.Zwave().meterV1.meterReport(
+			status "power  ${i} W": new physicalgraph.zwave.Zwave().meterV3.meterReport(
 				scaledMeterValue: i, precision: 3, meterType: 4, scale: 2, size: 4).incomingMessage()
 		}
 		for (int i = 0; i <= 100; i += 10) {
-			status "energy  ${i} kWh": new physicalgraph.zwave.Zwave().meterV1.meterReport(
+			status "energy  ${i} kWh": new physicalgraph.zwave.Zwave().meterV3.meterReport(
 				scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
 		}
 
@@ -84,7 +86,7 @@ metadata {
 	}
 
 	main(["switch","power","energy"])
-	details(["switch", "power", "energy", "refresh", "reset"])
+	details(["switch", "power", "energy", "refresh", "configure", "reset"])
 }
 
 def getCommandClassVersions() {
@@ -95,6 +97,18 @@ def getCommandClassVersions() {
 		0x70: 1,  // Configuration
 		0x32: 3,  // Meter
 	]
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	response(refresh())
 }
 
 // parse events into attributes
@@ -109,19 +123,8 @@ def parse(String description) {
 			log.debug("Couldn't zwave.parse '$description'")
 		}
 	}
+
     result
-}
-
-def installed() {
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-}
-
-def updated() {
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
-	response(refresh())
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -160,23 +163,30 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 		result << createEvent(name: "level", value: cmd.value, unit: "%")
 	}
 	if (switchEvent.isStateChange) {
-		result << response(["delay 3000", zwave.meterV2.meterGet(scale: 2).format()])
+		result << response(["delay 3000", meterGet(scale: 2).format()])
 	}
 	return result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
-	if (cmd.meterType == 1) {
-		if (cmd.scale == 0) {
-			return createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
-		} else if (cmd.scale == 1) {
-			return createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
-		} else if (cmd.scale == 2) {
-			return createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
-		} else {
-			return createEvent(name: "electric", value: cmd.scaledMeterValue, unit: ["pulses", "V", "A", "R/Z", ""][cmd.scale - 3])
-		}
+def handleMeterReport(cmd)
+{
+    if (cmd.scale == 0) {
+		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
+	} else if (cmd.scale == 1) {
+		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
+	} else if (cmd.scale == 2) {
+		createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
+    log.debug "v3 Meter report: "+cmd
+    handleMeterReport(cmd)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
+    log.debug "v1 Meter report: "+cmd
+	handleMeterReport(cmd)
 }
 
 def on() {
@@ -195,8 +205,8 @@ def off() {
 
 def poll() {
 	delayBetween([
-		zwave.meterV2.meterGet(scale: 0).format(),
-		zwave.meterV2.meterGet(scale: 2).format(),
+		meterGet(scale: 0).format(),
+		meterGet(scale: 2).format(),
 	], 1000)
 }
 
@@ -209,11 +219,15 @@ def ping() {
 }
 
 def refresh() {
-	delayBetween([
-		zwave.switchMultilevelV1.switchMultilevelGet().format(),
-		zwave.meterV2.meterGet(scale: 0).format(),
-		zwave.meterV2.meterGet(scale: 2).format(),
-	], 1000)
+    log.debug "Refresh..."
+
+    def result = delayBetween([
+        zwave.switchMultilevelV1.switchMultilevelGet().format(),
+        meterGet(scale: 0).format(),
+        meterGet(scale: 2).format(),
+    ], 1000)
+    log.debug "Refresh result: "+result
+    result
 }
 
 def setLevel(level) {
@@ -222,4 +236,55 @@ def setLevel(level) {
 		zwave.basicV1.basicSet(value: level).format(),
 		zwave.switchMultilevelV1.switchMultilevelGet().format()
 	], 5000)
+}
+
+def configure() {
+	log.debug "Configure..."
+    def result = []
+
+    zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
+
+    log.debug "Configure zwaveInfo: "+zwaveInfo
+
+    if (zwaveInfo.mfr == "0086") {  // Aeon Labs meter
+		result << response(delayBetween([
+            zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2).format(),    // basic report cc
+			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4).format(),   // report power in watts
+			zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
+            zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8).format(),   // report energy in kWh
+			zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
+            //zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0).format(),    // no third report
+			//zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
+			meterGet(scale: 0).format(),
+			meterGet(scale: 2).format(),
+		]))
+	} else {
+		result << response(delayBetween([
+			meterGet(scale: 0).format(),
+			meterGet(scale: 2).format(),
+		]))
+	}
+    result
+}
+
+def reset() {
+	return [
+		meterReset().format(),
+		meterGet(scale: 0).format()
+	]
+}
+
+def meterGet(scale)
+{
+    return (isNano() ? zwave.meterV3.meterGet(scale) : zwave.meterV2.meterGet(scale))
+}
+
+def meterReset()
+{
+    return (isNano() ? zwave.meterV3.meterReset() : zwave.meterV2.meterReset())
+}
+
+def isNano()
+{
+    return (zwaveInfo.mfr == "0086" && zwaveInfo.prod == "0103")
 }
