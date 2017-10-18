@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition (name: "NodOn Octan Remote", namespace: "NodOn", author: "Alexis Lutun") {
+	definition (name: "NodOn Soft Remote", namespace: "NodOn", author: "Alexis Lutun") {
     	capability "Actuator"
 		capability "Button"
 		capability "Configuration"
@@ -29,7 +29,9 @@ metadata {
 		command	"buttonPushed", [int]
 		command	"refresh"
 
-    fingerprint mfr: "0165", prod: "0002", model: "0001", cc: "5E,85,59,80,5B,70,5A,72,73,86,84", ccOut: "5E,5B,2B,27,22,20,26,84"// Octan
+	//fingerprint mfr: "0165", prod: "0002", model: "0003", cc: "5E,85,59,80,5B,70,5A,72,73,86,84", ccOut: "5E,5B,2B,27,22,20,26,84" // Wall Switch
+    fingerprint mfr: "0165", prod: "0002", model: "0002", cc: "5E,85,59,80,5B,70,5A,72,73,86,84", ccOut: "5E,5B,2B,27,22,20,26,84" // Soft Remote
+    //fingerprint mfr: "0165", prod: "0002", model: "0001", cc: "5E,85,59,80,5B,70,5A,72,73,86,84", ccOut: "5E,5B,2B,27,22,20,26,84"// Octan
     //LEGACY FINGERPRINT GENERIC FOR THREE : fingerprint deviceId: "0x0101", inClusters: "0x5E,0x85,0x59,0x80,0x5B,0x70,0x5A,0x72,0x73,0x86,0x84,0xEF,0x5E,0x5B,0x2B,0x27,0x22,0x20,0x26,0x84"
 
     }
@@ -37,13 +39,13 @@ metadata {
 	tiles(scale: 2) {
     	standardTile("My Octan", "device.button", width: 1, height: 1)
         {
-			state "default", label: "", icon:"http://nodon.fr/smarthings/octan-remote/octanfullicon.png", backgroundColor: "#ffffff"
+			state "default", label: "", icon:"http://nodon.fr/smarthings/soft-remote/softremotefullicon.png", backgroundColor: "#ffffff"
     	}
         multiAttributeTile(name:"BatteryTile", type: "generic", width: 6, height: 4)
         {
        		tileAttribute ("device.battery", key: "PRIMARY_CONTROL")
             {
-        		attributeState "default", backgroundColor: "#f58220", decoration: "flat", icon:"http://nodon.fr/smarthings/octan-remote/octanfullicon.png"
+        		attributeState "default", backgroundColor: "#f58220", decoration: "flat", icon:"http://nodon.fr/smarthings/soft-remote/softremotefullicon.png"
            	}
         	tileAttribute ("device.battery", key: "SECONDARY_CONTROL")
         	{
@@ -52,29 +54,28 @@ metadata {
 		}
         standardTile("button One", "device.button", width: 2, height: 2, decoration: "flat")
         {
-        	state "default", label: "", action: "pushButtonOne", icon:"http://nodon.fr/smarthings/octan-remote/1line.png",defaultState: true, backgroundColor: "#ffffff"
-            state "pushed", label: "", action: "pushButtonOne", icon:"http://nodon.fr/smarthings/octan-remote/1fill.png", backgroundColor: "#ffffff"
+        	state "default", label: "", action: "pushButtonOne", icon:"http://nodon.fr/smarthings/soft-remote/softremotedisk.png",defaultState: true, backgroundColor: "#ffffff"
+            state "pushed", label: "", action: "pushButtonOne", icon:"http://nodon.fr/smarthings/soft-remote/softremotediskfill.png", backgroundColor: "#ffffff"
         }
         standardTile("button Two", "device.button", width: 2, height: 2, decoration: "flat")
         {
-            state "default", label: "",action: "pushButtonTwo", icon:"http://nodon.fr/smarthings/octan-remote/2line.png", defaultState: true, backgroundColor: "#ffffff"
-            state "pushed", label: "",action: "pushButtonTwo", icon:"http://nodon.fr/smarthings/octan-remote/2fill.png", backgroundColor: "#ffffff"
+            state "default", label: "",action: "pushButtonTwo", icon:"http://nodon.fr/smarthings/soft-remote/softremoteplus.png", defaultState: true, backgroundColor: "#ffffff"
+            state "pushed", label: "",action: "pushButtonTwo", icon:"http://nodon.fr/smarthings/soft-remote/softremoteplusfill.png", backgroundColor: "#ffffff"
         }
         standardTile("button Three", "device.button", width: 2, height: 2, decoration: "flat")
         {
-            state "default", label: "", action: "pushButtonThree", icon: "http://nodon.fr/smarthings/octan-remote/3line.png", defaultState: true, backgroundColor: "#ffffff"
-            state "pushed", label: "", action: "pushButtonThree", icon: "http://nodon.fr/smarthings/octan-remote/3fill.png", backgroundColor: "#ffffff"
+            state "default", label: "", action: "pushButtonThree", icon: "http://nodon.fr/smarthings/soft-remote/softremotering.png", defaultState: true, backgroundColor: "#ffffff"
+            state "pushed", label: "", action: "pushButtonThree", icon: "http://nodon.fr/smarthings/soft-remote/softremoteringfill.png", backgroundColor: "#ffffff"
         }
         standardTile("button Four", "device.button", width: 2, height: 2,decoration: "flat")
         {
-            state "default", label: "",action: "pushButtonFour", icon:"http://nodon.fr/smarthings/octan-remote/4line.png", defaultState: true, backgroundColor: "#ffffff"
-            state "pushed", label: "",action: "pushButtonFour", icon:"http://nodon.fr/smarthings/octan-remote/4fill.png", backgroundColor: "#ffffff"
+            state "default", label: "",action: "pushButtonFour", icon:"http://nodon.fr/smarthings/soft-remote/softremoteminus.png", defaultState: true, backgroundColor: "#ffffff"
+            state "pushed", label: "",action: "pushButtonFour", icon:"http://nodon.fr/smarthings/soft-remote/softremoteringminusfill.png", backgroundColor: "#ffffff"
         }
         standardTile("refresh", "generic", inactiveLabel: false, decoration: "flat", width: 2, height: 2)
         {
 			state "default", label:'', action: "refresh", icon:"st.secondary.refresh"
 		}
-
         standardTile("configure", "device.Configuration", decoration: "flat", width: 2, height: 2)
         {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
