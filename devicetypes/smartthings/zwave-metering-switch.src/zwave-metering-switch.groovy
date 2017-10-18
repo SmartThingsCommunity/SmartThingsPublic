@@ -28,7 +28,6 @@ metadata {
 
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeon Labs Micro Smart Switch"
-        fingerprint mfr:"0086", prod:"0103", model:"0074", deviceJoinName: "Aeon Labs Nano Switch"
 	}
 
 	// simulator metadata
@@ -48,6 +47,7 @@ metadata {
 		// reply messages
 		reply "2001FF,delay 100,2502": "command: 2503, payload: FF"
 		reply "200100,delay 100,2502": "command: 2503, payload: 00"
+
 	}
 
 	// tile definitions
@@ -72,14 +72,13 @@ metadata {
 		}
 
 		main(["switch","power","energy"])
-		details(["switch","power","energy","refresh","configure","reset"])
+		details(["switch","power","energy","refresh","reset"])
 	}
 }
 
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
 }
 
 def updated() {
@@ -95,32 +94,24 @@ def updated() {
 def getCommandClassVersions() {
 	[
 		0x20: 1,  // Basic
-		0x32: 3,  // Meter
+		0x32: 1,  // SwitchMultilevel
 		0x56: 1,  // Crc16Encap
-        0x70: 1,  // Configuration
 		0x72: 2,  // ManufacturerSpecific
 	]
 }
 
-// parse events into attributes
 def parse(String description) {
 	def result = null
-	if (description != "updated") {
-		def cmd = zwave.parse(description, commandClassVersions)
-		if (cmd) {
-			result = zwaveEvent(cmd)
-	        log.debug("'$description' parsed to $result")
-		} else {
-			log.debug("Couldn't zwave.parse '$description'")
-		}
+	if(description == "updated") return
+	def cmd = zwave.parse(description, commandClassVersions)
+	if (cmd) {
+		result = zwaveEvent(cmd)
 	}
-
-    result
+	return result
 }
 
-def handleMeterReport(cmd)
-{
-    if (cmd.scale == 0) {
+def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
+	if (cmd.scale == 0) {
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 	} else if (cmd.scale == 1) {
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
@@ -129,23 +120,11 @@ def handleMeterReport(cmd)
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
-    log.debug "v3 Meter report: "+cmd
-    handleMeterReport(cmd)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
-    log.debug "v1 Meter report: "+cmd
-	handleMeterReport(cmd)
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 {
-    log.debug "Basic report: "+cmd
-    def value = (cmd.value ? "on" : "off")
-	def evt = createEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
+	def evt = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
 	if (evt.isStateChange) {
-		[evt, response(["delay 3000", meterGet(scale: 2).format()])]
+		[evt, response(["delay 3000", zwave.meterV2.meterGet(scale: 2).format()])]
 	} else {
 		evt
 	}
@@ -153,9 +132,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
 {
-    log.debug "Switch binary report: "+cmd
-    def value = (cmd.value ? "on" : "off")
-	createEvent(name: "switch", value: value, type: "digital", descriptionText: "$device.displayName was turned $value")
+	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -165,7 +142,30 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	log.debug "msr: $msr"
 	updateDataValue("MSR", msr)
 
+	// retypeBasedOnMSR()
+
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
+
+	if (msr.startsWith("0086") && !state.aeonconfig) {  // Aeon Labs meter
+		state.aeonconfig = 1
+		result << response(delayBetween([
+			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4).format(),   // report power in watts
+			zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
+			zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8).format(),   // report energy in kWh
+			zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
+			zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0).format(),    // no third report
+			//zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
+			zwave.meterV2.meterGet(scale: 0).format(),
+			zwave.meterV2.meterGet(scale: 2).format(),
+		]))
+	} else {
+		result << response(delayBetween([
+			zwave.meterV2.meterGet(scale: 0).format(),
+			zwave.meterV2.meterGet(scale: 2).format(),
+		]))
+	}
+
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
@@ -188,7 +188,7 @@ def on() {
 		zwave.basicV1.basicSet(value: 0xFF).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		"delay 3000",
-		meterGet(scale: 2).format()
+		zwave.meterV2.meterGet(scale: 2).format()
 	]
 }
 
@@ -197,16 +197,15 @@ def off() {
 		zwave.basicV1.basicSet(value: 0x00).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		"delay 3000",
-		meterGet(scale: 2).format()
+		zwave.meterV2.meterGet(scale: 2).format()
 	]
 }
 
 def poll() {
-    log.debug "Poll..."
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
-		meterGet(scale: 0).format(),
-		meterGet(scale: 2).format()
+		zwave.meterV2.meterGet(scale: 0).format(),
+		zwave.meterV2.meterGet(scale: 2).format()
 	])
 }
 
@@ -219,62 +218,20 @@ def ping() {
 }
 
 def refresh() {
-    log.debug "Refresh..."
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
-		meterGet(scale: 0).format(),
-		meterGet(scale: 2).format()
+		zwave.meterV2.meterGet(scale: 0).format(),
+		zwave.meterV2.meterGet(scale: 2).format()
 	])
 }
 
 def configure() {
-    log.debug "Configure..."
-    def result = []
-
-    zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
-
-    log.debug "Configure zwaveInfo: "+zwaveInfo
-
-    if (zwaveInfo.mfr == "0086") {  // Aeon Labs meter
-		result << response(delayBetween([
-            zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2).format(),    // basic report cc
-			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4).format(),   // report power in watts
-			zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-            zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8).format(),   // report energy in kWh
-			zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-            //zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 2).format(),  // no third report
-			//zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-			meterGet(scale: 0).format(),
-			meterGet(scale: 2).format(),
-		]))
-	} else {
-		result << response(delayBetween([
-			meterGet(scale: 0).format(),
-			meterGet(scale: 2).format(),
-		]))
-	}
-
-    result
+	zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
 }
 
 def reset() {
 	return [
-		meterReset().format(),
-		meterGet(scale: 0).format()
+		zwave.meterV2.meterReset().format(),
+		zwave.meterV2.meterGet(scale: 0).format()
 	]
-}
-
-def meterGet(scale)
-{
-    return (isNano() ? zwave.meterV3.meterGet(scale) : zwave.meterV2.meterGet(scale))
-}
-
-def meterReset()
-{
-    return (isNano() ? zwave.meterV3.meterReset() : zwave.meterV2.meterReset())
-}
-
-def isNano()
-{
-    return (zwaveInfo.mfr == "0086" && zwaveInfo.prod == "0103")
 }
