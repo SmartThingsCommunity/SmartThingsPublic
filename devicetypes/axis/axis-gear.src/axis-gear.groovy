@@ -107,9 +107,11 @@ def off() {
 def setLevel(value) {
 	//sendEvent(name: "integerFloat", value: 47.0)
 	sendEvent(name:"level", value: value, displayed:true)
-    setWindowShade(value)
-	zigbee.setLevel(value)
-    //refresh()
+    def L = Math.round(value);
+    def i = Integer.valueOf(L.intValue());
+    setWindowShade(i)
+	zigbee.setLevel(i)
+
 }
 
 def open() {
@@ -121,8 +123,8 @@ def close() {
 }
 
 def ping(){
-	refresh
-    log.debug "Ping() "
+ log.debug "Ping() "
+
     
 }
 
@@ -190,3 +192,4 @@ private Map parseReportAttributeMessage(String description) {
     }
     return resultMap
 }
+
