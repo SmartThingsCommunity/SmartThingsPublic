@@ -111,7 +111,7 @@ def setLevel(value) {
     def i = Integer.valueOf(L.intValue());
     setWindowShade(i)
 	zigbee.setLevel(i)
-    //refresh()
+
 }
 
 def open() {
@@ -123,7 +123,8 @@ def close() {
 }
 
 def ping(){
-	log.debug "Ping() "
+ log.debug "Ping() "
+
     
 }
 
@@ -191,3 +192,4 @@ private Map parseReportAttributeMessage(String description) {
     }
     return resultMap
 }
+
