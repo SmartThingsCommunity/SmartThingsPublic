@@ -415,16 +415,17 @@ def getWhite(value) {
 	return hex(level)
 }
 def setColor(value) {
+    log.debug value
     log.debug "setColor being called with ${value}"
     def uri
     def validValue = true
     
-    if ((value.saturation != null) && (value.hue != null)) {
+    /*if ((value.saturation != null) && (value.hue != null)) {
         def hue = (value.hue != null) ? value.hue : 13
 		def saturation = (value.saturation != null) ? value.saturation : 13
 		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
         value.hex = rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]])
-    } 
+    } */
     
     if (value.hue == 5 && value.saturation == 4) {
        log.debug "setting color Soft White - Default"
@@ -456,6 +457,14 @@ def setColor(value) {
        def whiteLevel = getWhite(value.level)
        uri = "/w1?value=${whiteLevel}"
        state.previousColor = "${whiteLevel}"
+    }
+    else if (((value.saturation != null) || (value.hue != null)) && !value.hex) {
+        def hue = (value.hue != null) ? value.hue : device.currentValue("hue")
+		def saturation = (value.saturation != null) ? value.saturation : device.currentValue("saturation")
+        log.debug "hue: $hue, saturation: $saturation"
+		def rgb = huesatToRGB(hue as Integer, saturation as Integer)
+        def dimmedColor = getDimmedColor(rgbToHex([r:rgb[0], g:rgb[1], b:rgb[2]]), value.level)
+        uri = "/rgb?value=${dimmedColor}"
     }
 	else if (value.hex) {
        log.debug "setting color with hex"
@@ -510,7 +519,7 @@ def setColor(value) {
        // A valid color was not chosen. Setting to white
        uri = "/w1?value=ff"
     }
-
+    
     if (uri != null && validValue != false) getAction("$uri&channels=$channels&transition=$transition")
 
 }
