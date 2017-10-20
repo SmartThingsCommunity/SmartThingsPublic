@@ -14,6 +14,9 @@
  *
  *  Author: Eric Maycock (erocm123)
  *  Date: 2016-11-12
+ *
+ *  2017-10-20: Removed parameter 26 "Power Source" as this seems to be read only. 
+ *
  */
  
 metadata {
@@ -1130,7 +1133,7 @@ Default: 0 (Disabled)
     <Item label="H" value="2" />
     <Item label="DH" value="3" />
 </Value>
-<Value type="list" byteSize="1" index="26" label="Power Source" min="0" max="1" value="0" setting_type="zwave" fw="">
+<Value type="list" byteSize="1" index="26" label="Power Source" min="0" max="1" value="0" setting_type="zwave" fw="" disabled="true">
  <Help>
 Range: 0 to 1
 Default: 0 (Battery)
