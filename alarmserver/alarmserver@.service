@@ -1,0 +1,53 @@
+; Before you start
+; ----------------
+;   Replace "{user}" with a real user name when you follow this instruction.
+;   For example, replace it with "pi" without quotes for Raspberry Pi users.
+;
+; Pre-requisites
+; --------------
+;  - "screen" package is needed for this systemd unit
+;
+;      sudo apt-get install screen
+;
+;  - Python "requests" module is needed for Alarmserver python script.
+;  
+;      sudo apt-get install python-pip
+;      pip install requests
+;
+; Service Installation
+; --------------------
+; 1. Save your alarmserver scripts at /home/{user}/alarmserver
+; 2. Save this file at /usr/lib/systemd/system/alarmserver@.service
+;  
+;   NOTE: It is not a typo that this file name ends with @ (at) symbol.
+;         This file is systemd unit configuration file template.
+;
+; 3. Run the following commands
+;      sudo systemctl enable alarmserver@{user}.service
+;      sudo systemctl start alarmserver@{user}.service
+;
+; Monitoring
+; ----------
+; To see status of alarmserver service, run the following command:
+;     systemctl status alarmserver@{user}.service
+;
+; To see alarmserver console (re-attach to screen):
+;     screen -r alarmserver 
+;
+; To exit from alarmserver console (detach from screen):
+;     Press Ctrl-a d
+;
+[Unit]
+Description=alarmserver
+After=network-online.target
+
+[Service]
+Type=simple
+User=%i
+ExecStart=/usr/bin/screen -DmS alarmserver /home/%i/alarmserver/alarmserver.py -c /home/%i/alarmserver/alarmserver.cfg
+ExecStop=/usr/bin/screen -S alarmserver -X quit
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
