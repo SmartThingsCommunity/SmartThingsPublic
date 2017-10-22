@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 ## Alarm Server
-## Supporting Envisalink 2DS/3
+## Supporting Envisalink 2DS/3/4
 ## Written by donnyk+envisalink@gmail.com
 ## Lightly improved by leaberry@gmail.com
 ## Smartthings away/stay mode by jordan@xeron.cc
@@ -859,10 +859,11 @@ if __name__=="__main__":
         print ('Writing logfile to %s' % config.LOGFILE)
 
     alarmserver_logger('Alarm Server Starting')
-    alarmserver_logger('Currently Supporting Envisalink 2DS/3 only')
-    alarmserver_logger('Tested on a DSC-1616 + EVL-3')
-    alarmserver_logger('and on a DSC-1832 + EVL-2DS')
-    alarmserver_logger('and on a DSC-1864 v4.6 + EVL-3')
+    alarmserver_logger('Currently Supporting Envisalink 2DS/3/4 only')
+    alarmserver_logger('Tested on a DSC PC1616 + EVL-3')
+    alarmserver_logger('and on a DSC PC1832 + EVL-2DS')
+    alarmserver_logger('and on a DSC PC1832 v4.6 + EVL-4')
+    alarmserver_logger('and on a DSC PC1864 v4.6 + EVL-3')
 
     DeviceSetup(config)
     server = AlarmServer(config)
