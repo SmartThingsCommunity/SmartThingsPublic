@@ -18,7 +18,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZigBee RGBW Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee RGBW Bulb", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
 
         capability "Actuator"
         capability "Color Control"
