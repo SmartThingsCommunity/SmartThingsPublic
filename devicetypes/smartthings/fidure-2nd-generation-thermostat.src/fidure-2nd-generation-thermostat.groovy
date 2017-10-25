@@ -696,7 +696,7 @@ private adjustSetpoint(Number value, String mode) {
 		return;
 	
 	device.updateDataValue(attrName, "$currentSetPoint")
-	sendEvent(name: attrName, value: currentSetPoint, eventType: "ENTITY_UPDATE")
+	sendEvent(name: attrName, value: currentSetPoint, unit: getTemperatureScale(), eventType: "ENTITY_UPDATE")
 	updateThermostatSetpoint(currentSetPoint, mode)
 	
 	def cmds = setSetpoint(attrId, currentSetPoint)
@@ -790,7 +790,7 @@ private Integer getCelsiusValueX100(Number value) {
 	return degreesC	
 }
 def getModeMap() { ["00":"off","01":"auto","03":"cool","04":"heat"]}
-def getSupportedModes() { ["off", "heat", "cool", "auto"])}
+def getSupportedModes() { ["off", "heat", "cool", "auto"]}
 def getFanModeMap() { ["00":"fanAuto", "01":"fanOn", "02":"fanCirculate75", "03":"fanCirculate50", "04":"fanCirculate", "05":"fanCirculate20"] }
 def getOnOffMap() {[	"00":"Off","01":"On"]}
 def getLockMap(){[0:"unlocked",1:"modeonly",2:"setpoint",3:"level3",4:"level4",5:"full"]}
