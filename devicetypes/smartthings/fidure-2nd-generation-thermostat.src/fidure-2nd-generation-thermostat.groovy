@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 SmartThings, Inc.
+ *  Copyright 2017 Fidure Corp..
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,8 +13,7 @@
  *  Fidure Thermostat, Based on ZigBee thermostat (SmartThings)
  *
  *	Author: Fidure
- *	Date: 2014-12-13
- *  Updated: 2017-7-19
+ *	Date: 2017-10-15
  */
 
 import physicalgraph.zigbee.zcl.DataType
@@ -29,10 +28,9 @@ metadata {
 		capability "Relative Humidity Measurement"
 		
 		capability "Temperature Measurement"
-		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
-		capability "lock" // for locking the keypad on the device.  
+		capability "Lock" // for locking the keypad on the device.  
 		
 		command "tempUp"
 		command "tempDown"
@@ -40,7 +38,6 @@ metadata {
 		command "heatDown"
 		command "coolUp"
 		command "coolDown"
-		command "setTemperature", ["number"]
 		command "poll"
 
 		command "setThermostatTime"
@@ -67,15 +64,34 @@ metadata {
 	}
 
 	preferences {
-		input ("lock_level", "enum", title: "Thermostat Keypad Lock Level", description: "Setting the Lock Level allows you to restric the on-device access.", options: ["Mode Only", "Setpoint","Full"], defaultValue: "Full")
- 	}
+		input ("lock_level", "enum", title: "Thermostat Keypad Lock Level", description: "Setting the Lock Level allows you to restrict the on-device access.", options: ["Mode Only", "Setpoint","Full"], defaultValue: "Full")
+	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"thermostatFull", type:"thermostat", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("temp", label:'${currentValue}', unit:"dF", defaultState: true)
+				attributeState("temp", label:'${currentValue}°', icon: "st.alarm.temperature.normal",
+					backgroundColors:[
+							// Celsius
+							[value: 0, color: "#153591"],
+							[value: 7, color: "#1e9cbb"],
+							[value: 15, color: "#90d2a7"],
+							[value: 23, color: "#44b621"],
+							[value: 28, color: "#f1d801"],
+							[value: 35, color: "#d04e00"],
+							[value: 37, color: "#bc2323"],
+							// Fahrenheit
+							[value: 40, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+					]
+				)
 			}
-			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
+			tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", action: "tempUp")
 				attributeState("VALUE_DOWN", action: "tempDown")
 			}
@@ -129,7 +145,6 @@ metadata {
 		standardTile("tempUp", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "tempUp", label:'up', action:"tempUp", defaultState: true , icon:"st.thermostat.thermostat-up"
 		}
-
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "heat", label:'${currentValue} heat', unit: "F", backgroundColor:"#ffffff"
 		}
@@ -139,7 +154,6 @@ metadata {
 		standardTile("heatUp", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "heatUp", label:'up', action:"heatUp", defaultState: true , icon:"st.thermostat.thermostat-up"
 		}
-
 		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "cool", label:'${currentValue} cool', unit:"F", backgroundColor:"#ffffff"
 		}
@@ -149,21 +163,18 @@ metadata {
 		standardTile("coolUp", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "coolUp", label:'up', action:"coolUp", defaultState: true , icon:"st.thermostat.thermostat-up"
 		}
-
 		standardTile("mode", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "updating", label:'wait', action:"", backgroundColor:"#880000", nextState:"off" //, icon: "st.secondary.secondary"
+			state "updating", label:'Updating...', action:"", backgroundColor:"#880000", nextState:"off" 
 			state "off", action:"thermostat.auto", backgroundColor:"#ffffff", nextState:"updating" , icon: "st.thermostat.heating-cooling-off"
 			state "auto",action:"thermostat.cool", backgroundColor:"#00A0DC", nextState:"updating", icon: "st.thermostat.auto"
 			state "cool", action:"thermostat.heat", backgroundColor:"#00A0DC", nextState:"updating", icon: "st.thermostat.cool"
 			state "heat", action:"thermostat.off", backgroundColor:"#e86d13", nextState:"updating" , icon: "st.thermostat.heat"
-			
-			
 		}
 		standardTile("fanMode", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "updating", label:'wait', action:"", backgroundColor:"#ffffff", nextState:"fanAuto" // , icon: "st.secondary.secondary"
-			state "fanAuto",        action:"thermostat.fanOn", backgroundColor:"#ffffff" , nextState:"updating" , icon: "st.thermostat.fan-auto"
-			state "fanOn"		,   action:"thermostat.fanCirculate", backgroundColor:"#ffffff" ,  nextState:"updating" , icon: "st.thermostat.fan-on"
-			state "fanCirculate",   action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
+			state "updating", label:'Updating...', action:"", backgroundColor:"#ffffff", nextState:"fanAuto" 
+			state "fanAuto", action:"thermostat.fanOn", backgroundColor:"#ffffff" , nextState:"updating" , icon: "st.thermostat.fan-auto"
+			state "fanOn", action:"thermostat.fanCirculate", backgroundColor:"#ffffff" ,  nextState:"updating" , icon: "st.thermostat.fan-on"
+			state "fanCirculate", action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
 			state "fanCirculate50", action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
 			state "fanCirculate75", action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
 			state "fanCirculate20", action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
@@ -173,7 +184,6 @@ metadata {
 			state "heating", backgroundColor:"#e86d13", icon:"st.thermostat.heating"
 			state "cooling", backgroundColor:"#00A0DC", icon:"st.thermostat.cooling"
 		}
-
 		standardTile("toggle", "device.lock", width: 2, height: 2) {
 			state "unknown", label:"Unknown", action:"lock", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff", nextState:"locking"
 			state "full", label:'Locked', action:"unlock", icon:"st.locks.lock.locked", backgroundColor:"#79b821", nextState:"unlocking"
@@ -186,31 +196,26 @@ metadata {
 			state "unlocking", label:'Unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
 			
 		}
-		
 		standardTile("refresh", "device.temperature", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-
 		standardTile("hold", "setpointHold", width: 2, height: 2, decoration: "flat") {
-			state "changing", label:'Updating'
+			state "changing", label:'Updating...'
 			state "On", label:'Hold ${currentValue}', action:"turnHoldOff", nextState:"changing"
 			state "Off", label:'Hold ${currentValue}', action:"turnHoldOn", nextState:"changing"
 		}
-
 		standardTile("program", "prorgammingOperation", width: 2, height: 2, decoration: "flat") {
-			state "changing", label:'Updating'
+			state "changing", label:'Updating...'
 			state "On", label:'Sched ${currentValue}', action:"turnProgOff", nextState:"changing"
 			state "Off", label:'Sched ${currentValue}', action:"turnProgOn", nextState:"changing"
 		}
-
 		valueTile("humidity", "device.humidity", width: 2, height: 2, decoration: "flat") {
 			state "humidity", label:'${currentValue}%'
 		}
 		valueTile("seen", "lastSeen", width: 2, height: 2, decoration: "flat") {
 			state "seen", label:'last seen ${currentValue}'
 		}
-
-		main("thermostatFull")
+		main("temperature")
 		details([
 			"thermostatFull", 
 			"temperature","tempDown","tempUp",
@@ -219,38 +224,27 @@ metadata {
 			"coolingSetpoint", "coolDown", "coolUp",
 			"toggle","program", "hold",
 			"humidity","refresh", "seen"
-
 		])
 	}
-	
 }
 
 def installed() {
 	log.debug "installed"
 	// checkInterval of 12 minutes.
-    sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-
-	sendEvent(name: "temperature", value: 72, unit: "F")
-	sendEvent(name: "heatingSetpoint", value: 70, unit: "F")
-	sendEvent(name: "thermostatSetpoint", value: 70, unit: "F")
-	sendEvent(name: "coolingSetpoint", value: 76, unit: "F")
-	sendEvent(name: "thermostatMode", value: "off")
-	sendEvent(name: "thermostatFanMode", value: "fanAuto")
-	sendEvent(name: "thermostatOperatingState", value: "idle")
-	sendEvent(name: "humidity", value: 53, unit: "%")
-
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID],eventType: "ENTITY_UPDATE")
 	state.refreshExtraAttributes = (state.refreshExtraAttributes?:0) - (25 * 60 * 60 * 1000)
-
+	sendEvent(name: "supportedThermostatModes", value: getSupportedModes(), eventType: "ENTITY_UPDATE", displayed: false)
+	sendEvent(name: "supportedThermostatFanModes", value: ["fanAuto", "fanOn", "fanCirculate"], eventType: "ENTITY_UPDATE", displayed: false)
 	runIn(2, "configure", [overwrite: true])  // Allow configure command to be sent and acknowledged before proceeding
 }
 
 def updated() {
 	log.debug "updated"
-    
-    // Make sure we poll all attributes from the device
-    state.refreshExtraAttributes = (state.refreshExtraAttributes?:0) - (25 * 60 * 60 * 1000)
+	
+	// Make sure we poll all attributes from the device
+	state.refreshExtraAttributes = (state.refreshExtraAttributes?:0) - (25 * 60 * 60 * 1000)
 	// this may be the second call to configure, the overwrite should catch extra calls
-    runIn(2, "configure", [overwrite: true])
+	runIn(2, "configure", [overwrite: true])
 }
 
 def refresh(){
@@ -272,16 +266,16 @@ def refresh(){
 		   cmds += zigbee.readAttribute(0x0201, 0x0010, ["mfgCode": 0x1121]) 
 		   cmds += setThermostatTime()
 
-    def timeNow = new Date().time
-    if (!state.refreshExtraAttributes || (24 * 60 * 60 * 1000 < (timeNow - state.refreshExtraAttributes))) {
-        state.refreshExtraAttributes = timeNow
+	def timeNow = new Date().time
+	if (!state.refreshExtraAttributes || (24 * 60 * 60 * 1000 < (timeNow - state.refreshExtraAttributes))) {
+		state.refreshExtraAttributes = timeNow
 
 		// also pull down the setpoint limits.
-        cmds += zigbee.readAttribute(0x0201, 0x0015)
+		cmds += zigbee.readAttribute(0x0201, 0x0015)
 		cmds += zigbee.readAttribute(0x0201, 0x0016)
 		cmds += zigbee.readAttribute(0x0201, 0x0017)
 		cmds += zigbee.readAttribute(0x0201, 0x0018)
-    }
+	}
 	 
 	 sendZigbeeCmds(cmds, 100)
 }
@@ -327,6 +321,7 @@ def configure() {
 
 	runIn(5, "refresh", [overwrite: true]) 
 }
+
 def setDefaultMinMax(){
 	device.updateDataValue("minheatSetpoint", "830") 
 	device.updateDataValue("maxheatSetpoint", "3000") 
@@ -337,7 +332,7 @@ def setDefaultMinMax(){
 def	turnProgOff() {	zigbee.writeAttribute(0x0201,0x0025, 0x18, 0) }
 def	turnProgOn() { zigbee.writeAttribute(0x0201, 0x0025, 0x18, 1)}
 def	turnHoldOn() { zigbee.writeAttribute(0x0201, 0x0023 , 0x30 , 1)}
-def turnHoldOff() {zigbee.writeAttribute(0x0201, 0x0023 , 0x30 , 0)}
+def	turnHoldOff() {zigbee.writeAttribute(0x0201, 0x0023 , 0x30 , 0)}
 
 
 def parse(String description) {
@@ -367,12 +362,12 @@ def parse(String description) {
 	log.debug "Parse returned $maps"
 	maps.each { parsedMap ->
 		evts += parsedMap ? createEvent(parsedMap) : [:]
-    }
+	}
 
 	// check clock sync
 	getTimeAndDay()
 
-	return evts
+	return evts.size()? evts : null
 }
 
 private getTimeAndDay() {
@@ -421,9 +416,10 @@ private Map processSingleAttributeMessge(Map descMap){
 	} else if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		resultMap.name = "temperature"
 		resultMap.value = getTemperature(descMap.value)
+		resultMap.unit = getTemperatureScale()
 	} else if (descMap.cluster == "0204" && descMap.attrId == "0001") {
-	  	resultMap.name = "lock"
-        resultMap.value =  Integer.parseInt("${descMap.value}", 16)
+		resultMap.name = "lock"
+		resultMap.value =  Integer.parseInt("${descMap.value}", 16)
 		sendEvent("name":"lockLevel", "value": resultMap.value)
 		resultMap.value = getLockMap()[resultMap.value ?: 0]
 	} else if (descMap.cluster == "0202" && descMap.attrId == "0000") {
@@ -461,7 +457,7 @@ private Map[] parseReportAttributeMessage(String description) {
 		def nameAndValue = param.split(":")
 		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
 	}
-    Integer type = Integer.parseInt("${descMap.encoding}", 16)
+	Integer type = Integer.parseInt("${descMap.encoding}", 16)
 	Integer length = DataType.getLength(type)
 
 	// POSSIBLE ST BUG: sometimes a Char String attribute like model identifier is read through the ST platform but ST does not (according to docs) process Char Strings
@@ -473,7 +469,7 @@ private Map[] parseReportAttributeMessage(String description) {
 	
 	Map[] descMaps = []
 
-    if (descMap.value.length() > (length * 2)){
+	if (descMap.value.length() > (length * 2)){
 		descMaps += parseMultipleAttributes(descMap.cluster, descMap.raw.substring(12))
 	}else {
 		descMaps += descMap
@@ -482,100 +478,102 @@ private Map[] parseReportAttributeMessage(String description) {
 	Map[] resultMaps = []
 	descMaps.each { map ->
 		resultMaps += processSingleAttributeMessge(map)
-    }
+	}
 	return resultMaps
 }
 
 private Map parseThermostatClusterAttr(Map descMap){
-
-		Map map = [:]
-
-		switch(descMap.attrId.toLowerCase())
-				{
-	            case "0000":
-	  						map.name = "temperature"
-	  						map.value = getTemperature(descMap.value)
-	  					break
-	            case "0005":
-	            if (descMap.encoding ==  "23")
-	            {
-	        	    map.name = "holdExpiary"
-	              	map.value = "${convertToTime(descMap.value).getTime()}"
-	  			}
-	            break
-				case "0007":
-				map.name = "coolingDemand"
-				map.value = Integer.parseInt("${descMap.value}", 16)
-				break
-				case "0008":
-				map.name = "heatingDemand"
-				map.value = Integer.parseInt("${descMap.value}", 16)
-				break
-				case "0010":
-				Integer encoding = Integer.parseInt("${descMap.encoding}",16)
-					if (encoding == 0x30) {
-					map.name ="fanMode"
-					map.value = getFanModeMap()[descMap.value]
-					}
-				break
-	  			case "0011":
-				 if (descMap.encoding ==  "29") {
-					map.name = "coolingSetpoint"
-	  				map.value = getTemperature(descMap.value)
-				} // as opposed to private attr 0x11 (descMap.encoding ==  "23") 
-	  			break
-	  			case "0012":
-	  				map.name = "heatingSetpoint"
-	  				map.value = getTemperature(descMap.value)
-	  			break
-				case "0015": 
-					device.updateDataValue("minheatSetpoint",  "${Integer.parseInt(descMap.value, 16)}")
-                break
-	            case "0016": 
-					device.updateDataValue("maxheatSetpoint",  "${Integer.parseInt(descMap.value, 16)}")
-                break
-		        case "0017": 
-					device.updateDataValue("mincoolSetpoint",  "${Integer.parseInt(descMap.value, 16)}")	
-                break
-			    case "0018": 
-					device.updateDataValue("maxcoolSetpoint",  "${Integer.parseInt(descMap.value, 16)}")	
-                break
-	  			case "001c":
-                    map.name = "thermostatMode"
-	  				map.value = getModeMap()[descMap.value]
-	  			break
-				case "001e":   
-			      	map.name = "runningMode"
-					map.value = getModeMap()[descMap.value]
-				break
-	            case "0023":   
-	            map.name = "setpointHold"
-	            map.value = getOnOffMap()[descMap.value]
-				sendEvent("name":"setpointHold", "value":getOnOffMap()[descMap.value])
-	            break
-	            case "0024":   
-	            map.name = "setpointHoldDuration"
-	            map.value = Integer.parseInt("${descMap.value}", 16)
-	            break
-	            case "0025":   
-				map.name = "prorgammingOperation"
-	            map.value = getOnOffMap()[descMap.value]
-				sendEvent("name":"prorgammingOperation", "value":getOnOffMap()[descMap.value])
-	  			break
-	            case "0029":
-	            map.name = "thermostatOperatingState"
-	            map.value = getThermostatOperatingState(descMap.value)
-	            break
-	      }
-
-		  return map
+	Map map = [:]
+	switch(descMap.attrId.toLowerCase())
+		{
+		case "0000":
+			map.name = "temperature"
+			map.value = getTemperature(descMap.value)
+			map.unit = getTemperatureScale()
+		break
+		case "0005":
+		if (descMap.encoding ==  "23"){
+			map.name = "holdExpiary"
+			map.value = "${convertToTime(descMap.value).getTime()}"
+		}
+		break
+		case "0007":
+		map.name = "coolingDemand"
+		map.value = Integer.parseInt("${descMap.value}", 16)
+		break
+		case "0008":
+		map.name = "heatingDemand"
+		map.value = Integer.parseInt("${descMap.value}", 16)
+		break
+		case "0010":
+		Integer encoding = Integer.parseInt("${descMap.encoding}",16)
+			if (encoding == 0x30) {
+			map.name ="fanMode"
+			map.value = getFanModeMap()[descMap.value]
+			}
+		break
+		case "0011":
+			if (descMap.encoding ==  "29") {
+			map.name = "coolingSetpoint"
+			map.value = getTemperature(descMap.value)
+			map.unit = getTemperatureScale()
+			updateThermostatSetpoint(map.value, "cool")
+		} // as opposed to private attr 0x11 (descMap.encoding ==  "23") 
+		break
+		case "0012":
+			map.name = "heatingSetpoint"
+			map.value = getTemperature(descMap.value)
+			map.unit = getTemperatureScale()
+			updateThermostatSetpoint(map.value, "heat")
+		break
+		case "0015": 
+			device.updateDataValue("minheatSetpoint",  "${Integer.parseInt(descMap.value, 16)}")
+		break
+		case "0016": 
+			device.updateDataValue("maxheatSetpoint",  "${Integer.parseInt(descMap.value, 16)}")
+		break
+		case "0017": 
+			device.updateDataValue("mincoolSetpoint",  "${Integer.parseInt(descMap.value, 16)}")	
+		break
+		case "0018": 
+			device.updateDataValue("maxcoolSetpoint",  "${Integer.parseInt(descMap.value, 16)}")	
+		break
+		case "001c":
+			map.name = "thermostatMode"
+			map.value = getModeMap()[descMap.value]
+			map.isStateChange = true  // set to true to force update if switchMode failed and old mode is returned
+			map.data = [supportedThermostatModes: getSupportedModes()]
+		break
+		case "001e":   
+			map.name = "runningMode"
+			map.value = getModeMap()[descMap.value]
+		break
+		case "0023":   
+			map.name = "setpointHold"
+			map.value = getOnOffMap()[descMap.value]
+			sendEvent("name":"setpointHold", "value":getOnOffMap()[descMap.value])
+		break
+		case "0024":   
+			map.name = "setpointHoldDuration"
+			map.value = Integer.parseInt("${descMap.value}", 16)
+		break
+		case "0025":   
+			map.name = "prorgammingOperation"
+			map.value = getOnOffMap()[descMap.value]
+			sendEvent("name":"prorgammingOperation", "value":getOnOffMap()[descMap.value])
+		break
+		case "0029":
+			map.name = "thermostatOperatingState"
+			map.value = getThermostatOperatingState(descMap.value)
+		break
+	}
+	return map
 }
-
 
 private Map parseCatchAllMessage(String description) {
 	Map resultMap = [:]
-    def cluster = zigbee.parse(description)
-    return resultMap
+	def cluster = zigbee.parse(description)
+	return resultMap
 }
 
 def setheatingSetpointAfterDelay(data){
@@ -588,39 +586,34 @@ def setcoolingSetpointAfterDelay(data){
 
 def setSetpoint(Integer attrId, Double value){
 	Integer zigBeeTemp = getCelsiusValueX100(value)
-    
 	def cmds = zigbee.writeAttribute(0x0201, attrId , 0x29 , zigBeeTemp) 
 }
 
 def setHeatingSetpoint(Double degrees) {
-	
-	sendEvent(name: "heatingSetpoint", value: degrees)
+	sendEvent(name: "heatingSetpoint", value: degrees, eventType: "ENTITY_UPDATE")
 	setSetpoint(0x12, degrees)
 }
 
-def setCoolingSetpoint(Double degreesF) {
-
-	sendEvent(name: "coolingSetpoint", value: degreesF)
-	setSetpoint(0x11, degreesF)
+def setCoolingSetpoint(Double degrees) {
+	sendEvent(name: "coolingSetpoint", value: degrees, eventType: "ENTITY_UPDATE")
+	setSetpoint(0x11, degrees)
 }
 
 def setCoolLimit(Double value){
 	Integer zigBeeTemp = getCelsiusValueX100(value)
-    // minmum cool limit
+	// minmum cool limit
 	[ zigbee.writeAttribute(0x0201, 0x0017 , 0x29 , zigBeeTemp) ]
 }
 
 def setHeatLimit(Double value){
 	Integer zigBeeTemp = getCelsiusValueX100(value)
-    // maximum heat limit
+	// maximum heat limit
 	[ zigbee.writeAttribute(0x0201, 0x0016 , 0x29 , zigBeeTemp) ]
 }
 
 def setThermostatMode(String next) {
 	def val = (getModeMap().find { it.value == next }?.key)?: "00"
 	def mode = device.currentState("thermostatMode")?.value
-	
-	sendEvent("name":"thermostatMode", "value":"$next")
 	
 	[ zigbee.writeAttribute(0x0201, 0x1C , 0x30 , val) + 
 		"delay 300" +
@@ -629,8 +622,6 @@ def setThermostatMode(String next) {
 }
 
 def setThermostatFanMode(String value) {
-
-	sendEvent(name: "thermostatFanMode", value: value)
 	def val = (getFanModeMap().find { it.value == value }?.key)?: "00"
 	[ zigbee.writeAttribute(0x0201, 0x10 , 0x30 , val, ["mfgCode": 0x1121]) + 
 	  "delay 300" +
@@ -653,6 +644,15 @@ def heatDown() { adjustSetpoint(-5, "heat") }
 def coolUp()   { adjustSetpoint(5, "cool")  }
 def coolDown() { adjustSetpoint(-5, "cool") }
 
+private updateThermostatSetpoint(Number data, String forMode){
+	String mode = device.currentState("thermostatMode")?.value
+	if (mode == "auto")
+		mode = device.currentState("runningMode")?.value
+	
+	if (mode == forMode)
+		sendEvent(name: "thermostatSetpoint", value: data, eventType: "ENTITY_UPDATE")
+}
+
 private adjustSetpoint(Number value, String mode) {
 		
 	if ("cool" != mode && "heat" != mode){
@@ -665,16 +665,16 @@ private adjustSetpoint(Number value, String mode) {
 	//  Instead of using the zigbee command for raising or lower setpoint, we'll fiddle with the setpoint and manually adjust
 
 	//default to both heat and cool
-    Integer attrId
+	Integer attrId
 	Number currentSetPoint
-    Integer zigBeeTemp
+	Integer zigBeeTemp
 	String attrName 
 	if ("heat" == mode ){
-    	attrId = 0x12
+		attrId = 0x12
 		currentSetPoint = device.currentValue("heatingSetpoint")
 		attrName = "heatingSetpoint"
 	}
-    else if ("cool" == mode){
+	else if ("cool" == mode){
 		attrId = 0x11
 		currentSetPoint = device.currentValue("coolingSetpoint")
 		attrName = "coolingSetpoint"
@@ -695,13 +695,14 @@ private adjustSetpoint(Number value, String mode) {
 	if (!checkBoundary(mode, currentSetPoint))
 		return;
 	
-    device.updateDataValue(attrName, "$currentSetPoint")
-	sendEvent(name: attrName, value: currentSetPoint)
-    
+	device.updateDataValue(attrName, "$currentSetPoint")
+	sendEvent(name: attrName, value: currentSetPoint, eventType: "ENTITY_UPDATE")
+	updateThermostatSetpoint(currentSetPoint, mode)
+	
 	def cmds = setSetpoint(attrId, currentSetPoint)
 
-    runIn(3, "set"+ attrName + "AfterDelay" , [overwrite: true, data: [c: cmds]])
-    return null
+	runIn(3, "set"+ attrName + "AfterDelay" , [overwrite: true, data: [c: cmds]])
+	return null
 }
 
 def checkBoundary(mode, newValue){
@@ -720,21 +721,21 @@ def sendZigBeCommands(data) {
 }
 
 def sendZigbeeCmds(cmds, delay = 2000) {
-    // remove zigbee library added "delay 2000" after each command
-    // the new sendHubCommand won't honor these, instead it'll take the delay as argument
+	// remove zigbee library added "delay 2000" after each command
+	// the new sendHubCommand won't honor these, instead it'll take the delay as argument
 
-    cmds?.removeAll { it.startsWith("delay") }
-    // convert each command into a HubAction
-    cmds = cmds.collect { new physicalgraph.device.HubAction(it) }
-    //log.trace "hub command: $cmds delay $delay"
-    sendHubCommand(cmds, delay)
+	cmds?.removeAll { it.startsWith("delay") }
+	// convert each command into a HubAction
+	cmds = cmds.collect { new physicalgraph.device.HubAction(it) }
+	//log.trace "hub command: $cmds delay $delay"
+	sendHubCommand(cmds, delay)
 }
 // ST platform currently does not have a time service.  This command allows for a smartApp to Manually update the time.
 def setThermostatTime() {
-  	Date date = new Date()
+	Date date = new Date()
 
 	long millis = date.getTime() // Millis since Unix epoch
-  	millis -= 946684800000  // adjust for ZigBee EPOCH
+	millis -= 946684800000  // adjust for ZigBee EPOCH
 	// adjust for time zone and DST offset
 	millis += location.timeZone.getOffset(date.getTime())
 	//convert to seconds
@@ -748,12 +749,12 @@ def setThermostatTime() {
 }
 
 def updateTime() {
-    sendZigbeeCmds(setThermostatTime(), 100)
+	sendZigbeeCmds(setThermostatTime(), 100)
 }
 
 def poll() {
 	log.trace "Poll..."
-    refresh()
+	refresh()
 }
 
 def lock(){	setLockLevel(getLockLevelMap()[settings.lock_level] ?: 5) }
@@ -762,7 +763,7 @@ def unlock() { setLockLevel(0) }
 def setLockLevel(Integer level) {
 	if (level < 0 || level > 5 )
 		return
-   
+
 	[ 
 	zigbee.writeAttribute(0x0204, 0x0001 , 0x30 , level) ,
 	"delay 300",
@@ -789,6 +790,7 @@ private Integer getCelsiusValueX100(Number value) {
 	return degreesC	
 }
 def getModeMap() { ["00":"off","01":"auto","03":"cool","04":"heat"]}
+def getSupportedModes() { ["off", "heat", "cool", "auto"])}
 def getFanModeMap() { ["00":"fanAuto", "01":"fanOn", "02":"fanCirculate75", "03":"fanCirculate50", "04":"fanCirculate", "05":"fanCirculate20"] }
 def getOnOffMap() {[	"00":"Off","01":"On"]}
 def getLockMap(){[0:"unlocked",1:"modeonly",2:"setpoint",3:"level3",4:"level4",5:"full"]}
