@@ -7,6 +7,14 @@ apply plugin: 'groovy'
 apply plugin: 'smartthings-executable-deployment'
 apply plugin: 'smartthings-slack'
 
+// Define the Artifactory Username and Password as property that try to pull from ENVIRONMENT variables
+ext.smartThingsArtifactoryUserName = project.hasProperty('smartThingsArtifactoryUserName') ?
+        project.getProperty('smartThingsArtifactoryUserName') :
+        System.getenv('ARTIFACTORY_USERNAME') ?: ''
+ext.smartThingsArtifactoryPassword = project.hasProperty('smartThingsArtifactoryPassword') ?
+        project.getProperty('smartThingsArtifactoryPassword') :
+        System.getenv('ARTIFACTORY_PASSWORD') ?: ''
+
 buildscript {
     dependencies {
         classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.12"
@@ -16,8 +24,8 @@ buildscript {
         jcenter()
         maven {
             credentials {
-                username smartThingsArtifactoryUserName
-                password smartThingsArtifactoryPassword
+                username "${project.smartThingsArtifactoryUserName}"
+                password "${project.smartThingsArtifactoryPassword}"
             }
             url "https://smartthings.jfrog.io/smartthings/libs-release-local"
         }
@@ -29,8 +37,8 @@ repositories {
     jcenter()
     maven {
         credentials {
-            username smartThingsArtifactoryUserName
-            password smartThingsArtifactoryPassword
+            username "${project.smartThingsArtifactoryUserName}"
+            password "${project.smartThingsArtifactoryPassword}"
         }
         url "https://smartthings.jfrog.io/smartthings/libs-release-local"
     }
