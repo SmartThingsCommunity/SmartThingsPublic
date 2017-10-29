@@ -666,6 +666,21 @@ def updated() {
     unschedule()
 
     //state.MotionSensor = []
+    subscribe(Maincontacts, "contact.open", contactHandlerOpen)
+    subscribe(Maincontacts, "contact.closed", contactHandlerClosed)
+
+    if(ContactException){
+        subscribe(ContactException, "contact.open", contactExceptionHandlerOpen)
+        subscribe(ContactException, "contact.closed", contactExceptionHandlerClosed)
+        //  subscribe(ContactException, "contact.open", contactHandlerOpen)
+        // subscribe(ContactException, "contact.closed", contactHandlerClosed)
+        //log.debug "subscribed ContactException to ContactException Handler"     
+    }
+
+    subscribe(XtraTempSensor, "temperature", temperatureHandler)
+    subscribe(location, "mode", ChangedModeHandler)	
+
+
 
 
     init()
@@ -713,6 +728,40 @@ state.CSPSet = $state.CSPSet"""
 
 }
 /// subscriptions
+def mischsubscriptions() {
+
+    subscribe(Maincontacts, "contact.open", contactHandlerOpen)
+    subscribe(Maincontacts, "contact.closed", contactHandlerClosed)
+
+    if(ContactException){
+        subscribe(ContactException, "contact.open", contactExceptionHandlerOpen)
+        subscribe(ContactException, "contact.closed", contactExceptionHandlerClosed)
+    }
+
+    if(BedSensor){
+        subscribe(BedSensor, "contact.open", BedSensorHandler)
+        subscribe(BedSensor, "contact.closed", BedSensorHandler)
+
+    }
+
+    subscribe(OutsideSensor, "temperature", temperatureHandler)
+    def hasHumidity = OutsideSensor.hasAttribute("humidity")
+    //log.debug "hasHumidity is $hasHumidity"
+    if(hasHumidity){
+        subscribe(OutsideSensor, "humidity", HumidityHandler)
+
+    }
+    def hasFeelsLike = OutsideSensor.hasAttribute("feelsLike")
+    if(hasFeelsLike){
+        subscribe(OutsideSensor, "feelsLike", FeelsLikeHandler)
+
+    }
+    def hasWind = OutsideSensor.hasAttribute("wind")
+    if(hasWind){
+        subscribe(OutsideSensor, "wind", WindHandler)
+
+    }
+}
 def ThermSubscriptions(){
 
     def loopV = 0
@@ -1097,22 +1146,23 @@ CSPSet for $ThermSet is $CSPSet
                 //Inside = Inside.toInteger()
 
                 state.Inside = Inside
-                //def humidity = OutsideSensor?.latestValue("humidity")
                 def humidity = OutsideSensor.currentValue("temperature")
-                //humidity = Double.parseDouble(humidity)
-                //humidity = humidity.toInteger()
-
                 def TooHumid = humidity > HumidityTolerance && Outside > CSPSet 
 
                 def INSIDEhumidity = ThermSet.latestValue("humidity")   
-                //INSIDEhumidity = INSIDEhumidity?.toInteger()
-                def TooHumidINSIDE =  INSIDEhumidity > HumidityTolerance 
+                def TooHumidINSIDE =  INSIDEhumidity > 60 // 60% is the known healthy limit for a house
 
                 log.trace """        
 ThermsInvolved = ${Thermostats.size()} 
 loop($loopValue) 
 AppMgtList = $state.AppMgtMap
 AppMgt = $AppMgt
+INSIDEhumidity = $INSIDEhumidity
+TooHumidINSIDE = $TooHumidINSIDE
+outside humidity = $humidity
+outside too humid: $TooHumid
+inside humidity tolerance is 60 (built-in value, not modifiable by user)
+
 """        
                 state.ThermSet = []
                 state.ThermSet << "$ThermSet"
@@ -1357,18 +1407,19 @@ NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebra
                 // evaluate needs
 
                 def WarmOutside = outsideTemp >= (CSPSet - 1)
-                def WarmInside = CurrTemp >= CSPSet + 1 && WarmOutside
+                def WarmInside = (CurrTemp >= CSPSet + 1 && WarmOutside) || (CurrTemp >= CSPSet + 1 && TooHumidINSIDE && Active)
                 log.debug "CurrTemp = $CurrTemp, outsideTemp = $outsideTemp, CSPSet = $CSPSet, WarmOutside = $WarmOutside, WarmInside = $WarmInside"
-                def ShouldCoolWithAC = WarmInside && WarmOutside
+
+                def ShouldCoolWithAC = WarmInside && WarmOutside 
                 state.ShouldCoolWithAC = ShouldCoolWithAC // will be used by venting option
 
                 // // log.debug "$ThermSet ShouldCoolWithAC = $ShouldCoolWithAC (before other criteria loop $loopValue)"
 
                 def ShouldHeat = !WarmOutside && CurrTemp <= HSPSet
 
-                if((WarmInside && tooHumidINSIDE) && !ShouldHeat){
+                if((WarmInside && TooHumidINSIDE) && !ShouldHeat && Active){
                     ShouldCoolWithAC = true
-                    // // log.debug "ShouldCoolWithAC set to true loop $loopValue"
+                    log.debug "ShouldCoolWithAC set to true loop $loopValue due to humidity levels inside the place"
                 }
                 state.ShouldCoolWithAC = ShouldCoolWithAC
 
@@ -1381,6 +1432,7 @@ state.ShouldHeat = $state.ShouldHeat
 WarmOutside = $WarmOutside 
 WarmInside = $WarmInside
 OutsideTempLowThres = $OutsideTempLowThres
+TooHumidINSIDE = $TooHumidINSIDE
 
 """       
 
@@ -1934,7 +1986,8 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
                     if(state.coldbutneedcool == 0){
                         Actuators?.off()
                         ActuatorException?.off()
-                        state.ventingrun == 0 // allows future venting
+                        state.ventingrun = 0 // allows future venting
+                        state.more = 0 
                         // allow for user to reopen them if they want to. 
                         state.windowswereopenandclosedalready = true // windows won't close again as Long as temperature is still critical to allow for user's override 
                         // this value must not be reset by updated() because updated() is run by contacthandler it is only reset here or after new installation of the app
@@ -1946,7 +1999,8 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
                 else { // no intersection between those devices so these windows / fans will now stop/close
                     Actuators?.off()
                     ActuatorException?.off()
-                    state.ventingrun == 0 // allows future venting
+                    state.ventingrun = 0 // allows future venting
+                    state.more = 0 
                     // allow for user to reopen them if they want to. 
                     state.windowswereopenandclosedalready = true // windows won't close again as Long as temperature is still critical to allow for user's override 
                     // this value must not be reset by updated() because updated() is run by contacthandler it is only reset here or after new installation of the app
@@ -2464,6 +2518,8 @@ def ExcepContactsClosed(){
     def ContactsExepClosed = true
     if(ContactException){
         def CurrentContactsExept = ContactException.currentValue("contact")    
+        log.debug "CurrentContactsExept = $CurrentContactsExept && ContactException are $ContactException"
+
         def ClosedContactsExpt = CurrentContactsExept.findAll { AllcontactsExeptAreClosed ->
             AllcontactsExeptAreClosed == "closed" ? true : false
         }
@@ -2515,7 +2571,7 @@ def AllContactsAreOpen() {
         def OpenContactsExpt = CurrentContactsExept.findAll { AllcontactsExeptAreOpen ->
             AllcontactsExeptAreOpen == "open" ? true : false
         }
-        //  // // log.debug "${OpenContactsExpt.size()} windows/doors out of ${ContactException.size()} are open SO ContactsExepOpen = $ContactsExepOpen"
+        log.debug "${OpenContactsExpt.size()} windows/doors out of ${ContactException.size()} are open SO ContactsExepOpen = $ContactsExepOpen"
 
         def OpenExptSize = OpenContactsExpt.size()
         def ExceptionSize = ContactException.size() 
@@ -2714,7 +2770,8 @@ state.messageSent($state.messageSent)
                 message = "I'm closing windows because $state.causeClose"
                 //send(message)
                 log.info message 
-
+state.ventingrun = 0 // allows future venting
+                        state.more = 0 
                 state.ClosedByApp = true
                 state.OpenByApp = false // so it doesn't close again if user opens it manually
 
@@ -2726,7 +2783,8 @@ state.messageSent($state.messageSent)
         else { // no intersection between those devices so these windows / fans will now stop/close
             Actuators?.off()
             ActuatorException?.off()
-
+state.ventingrun = 0 // allows future venting
+                        state.more = 0 
             message = "I'm closing windows because $state.causeClose"
             //send(message)
             log.info message 
@@ -2740,10 +2798,13 @@ def CloseWindows(){
     if(state.coldbutneedcool == 0){
         Actuators?.off()
         ActuatorException?.off()
+        state.ventingrun = 0 // allows future venting
+                        state.more = 0 
         // log.debug "state.coldbutneedcool = $state.coldbutneedcool"
     }
 }
 def OkToOpen(){
+
     polls()
     def message = ""
     log.debug "OkToOpen()"
@@ -2876,120 +2937,120 @@ state.ventingrun = $state.ventingrun
 itscooling = $itscooling"""
 
 
-if(CurrMode in Away){
-log.debug "in $CurrMode mode, not venting"
-}
-else if (inVentingModes){
-if(NeedVenting)
-{
+    if(CurrMode in Away){
+        log.debug "in $CurrMode mode, not venting"
+    }
+    else if (inVentingModes){
+        if(NeedVenting)
+        {
 
-state.coldbutneedcool = state.coldbutneedcool + 1 
-log.info"state.coldbutneedcool set to $state.coldbutneedcool"
+            state.coldbutneedcool = state.coldbutneedcool + 1 
+            log.info"state.coldbutneedcool set to $state.coldbutneedcool"
 
-// open windows just to cool down a little while it's cold outside but too hot inside instead of using AC 
-if(state.ventingrun == 0){
-log.debug "VENTING THE HOUSE because NeedVenting = $NeedVenting"
-TurnOffThermostats()
-ActuatorsVenting?.on()
+            // open windows just to cool down a little while it's cold outside but too hot inside instead of using AC 
+            if(state.ventingrun == 0){
+                log.debug "VENTING THE HOUSE because NeedVenting = $NeedVenting"
+                TurnOffThermostats()
+                ActuatorsVenting?.on()
 
-if(!inVentingModesException){
-ActuatorsVentingException?.on()
-}
+                if(!inVentingModesException){
+                    ActuatorsVentingException?.on()
+                }
 
-runIn(10, StopActuators)
-message = "Venting the place to cool it down a little"
-log.info message
-send(message)
+                runIn(10, StopActuators)
+                message = "Venting the place to cool it down a little"
+                log.info message
+                send(message)
 
-state.ventingrun = state.ventingrun + 1 
+                state.ventingrun = state.ventingrun + 1 
 
-}
-else {
-log.debug "not opening because state.ventingrun is $state.ventingrun"
-
-
-if(!ContactsClosed && AverageCurrTemp - 2 > AverageCSPSet && AverageCurrTemp < AverageCSPSet + 4){
-// if CSP is 72, Average 75 then Average is still lower than 76
-// it got hotter inside despite opening windows
-// open them more 
-log.debug """
-    opening a bit more
-    AverageCurrTemp - 2 = ${AverageCurrTemp - 2}
-    AverageCSPSet = $AverageCSPSet
-    AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
-    state.more = $state.more
-    """
-ActuatorsVenting?.on()
-if(!inVentingModesException){
-ActuatorsVentingException?.on()
-}
-
-runIn(10, StopActuators)
+            }
+            else {
+                log.debug "not opening because state.ventingrun is $state.ventingrun"
 
 
-state.more = state.more + 1
-}
-// still getting too hot
-// if CSP is 72, Average 76 then Average -3 = 73 is still higher than 72
-// and we already tried to open fully
-if(!ContactsClosed && AverageCurrTemp - 3 > AverageCSPSet && state.more > 4){
-// trigger full closing so AC can run instead 
-log.debug """still too hot, closing entirely
+                if(!ContactsClosed && AverageCurrTemp - 2 > AverageCSPSet && AverageCurrTemp < AverageCSPSet + 4){
+                    // if CSP is 72, Average 75 then Average is still lower than 76
+                    // it got hotter inside despite opening windows
+                    // open them more 
+                    log.debug """
+opening a bit more
+AverageCurrTemp - 2 = ${AverageCurrTemp - 2}
+AverageCSPSet = $AverageCSPSet
+AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
+state.more = $state.more
+"""
+                    ActuatorsVenting?.on()
+                    if(!inVentingModesException){
+                        ActuatorsVentingException?.on()
+                    }
 
-    AverageCurrTemp - 2 = ${AverageCurrTemp - 2}
-    AverageCSPSet = $AverageCSPSet
-    AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
-    state.more = $state.more
-    """
-state.coldbutneedcool = 0 
-
-}
-}
-}
-else if(NeedToCloseAfterVenting) {
-state.coldbutneedcool = 0
-state.more = 0
-
-log.debug """state.coldbutneedcool set to $state.coldbutneedcool
-    no venting needed, making sure windows are closed"""
-if(state.ventingrun >= 1){
-ActuatorsVenting?.off()
-ActuatorsVentingException?.off()
-
-state.ventingrun = 0
-log.debug """state.ventingrun set to $state.ventingrun
-    CLOSING WINDOWS"""
-}
-}
-}
-else 
-{
-log.debug "Location is not in venting Modes"
-}
-
-state.OpenInFull = false
-def ItIsNiceOutThere = Outside > HSPSet - 3 && Outside < HSPSet
-
-if( OpenWhenEverPermitted && ItIsNiceOutThere) { 
-state.OpenInFull = true
-}
-else {
-state.OpenInFull = false
-}
+                    runIn(10, StopActuators)
 
 
-// open all the way when gone?
-if(CurrMode in Away && WithinCriticalOffSet && OpenInfullWhenAway ){
-result = true
-state.OpenInFull = true
-} 
-def CRITICAL = false
-if(state.CRITICAL == true){
-result = false
-CRITICAL = true
-state.OpenByApp = true // so windows will close even if manually opened
-}
-/*
+                    state.more = state.more + 1
+                }
+                // still getting too hot
+                // if CSP is 72, Average 76 then Average -3 = 73 is still higher than 72
+                // and we already tried to open fully
+                if(!ContactsClosed && AverageCurrTemp - 3 > AverageCSPSet && state.more > 4){
+                    // trigger full closing so AC can run instead 
+                    log.debug """still too hot, closing entirely
+
+AverageCurrTemp - 2 = ${AverageCurrTemp - 2}
+AverageCSPSet = $AverageCSPSet
+AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
+state.more = $state.more
+"""
+                    state.coldbutneedcool = 0 
+
+                }
+            }
+        }
+        else if(NeedToCloseAfterVenting) {
+            state.coldbutneedcool = 0
+            state.more = 0
+
+            log.debug """state.coldbutneedcool set to $state.coldbutneedcool
+no venting needed, making sure windows are closed"""
+            if(state.ventingrun >= 1){
+                ActuatorsVenting?.off()
+                ActuatorsVentingException?.off()
+
+                state.ventingrun = 0
+                log.debug """state.ventingrun set to $state.ventingrun
+CLOSING WINDOWS"""
+            }
+        }
+    }
+    else 
+    {
+        log.debug "Location is not in venting Modes"
+    }
+
+    state.OpenInFull = false
+    def ItIsNiceOutThere = Outside > HSPSet - 3 && Outside < HSPSet
+
+    if( OpenWhenEverPermitted && ItIsNiceOutThere) { 
+        state.OpenInFull = true
+    }
+    else {
+        state.OpenInFull = false
+    }
+
+
+    // open all the way when gone?
+    if(CurrMode in Away && WithinCriticalOffSet && OpenInfullWhenAway ){
+        result = true
+        state.OpenInFull = true
+    } 
+    def CRITICAL = false
+    if(state.CRITICAL == true){
+        result = false
+        CRITICAL = true
+        state.OpenByApp = true // so windows will close even if manually opened
+    }
+    /*
 if(!result){
 // preparing a dynamic message which will tell why windows won't open (or fans won't turn on)
 def cause1 = !OutSideWithinMargin
@@ -3110,142 +3171,142 @@ state.messageopened = message // sent once as push message by checkwindows()
 
 }
 */
-log.info """
-    Inside?($Inside), Outside?($Outside), 
-        Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) 
-    closed?($ContactsClosed)
-    OutSideWithinMargin?($OutSideWithinMargin)
-    Inside is WithinCriticalOffSet?($WithinCriticalOffSet) 
-    Should Cool (no AC)?($ShouldCool)
-    Should Heat?($ShouldHeat)
-    ItfeelsLike ${ItfeelsLike}F
-    Wind = ${WindValue}mph
-    HumidityTolerance($HumidityTolerance)
-    Too Humid?($TooHumid)
-    Outside Humidity is: $humidity
-    OutsideFeelsHotter?($OutsideFeelsHotter)
-    OkToOpen?($result)
-    """
+    log.info """
+Inside?($Inside), Outside?($Outside), 
+Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) 
+closed?($ContactsClosed)
+OutSideWithinMargin?($OutSideWithinMargin)
+Inside is WithinCriticalOffSet?($WithinCriticalOffSet) 
+Should Cool (no AC)?($ShouldCool)
+Should Heat?($ShouldHeat)
+ItfeelsLike ${ItfeelsLike}F
+Wind = ${WindValue}mph
+HumidityTolerance($HumidityTolerance)
+Too Humid?($TooHumid)
+Outside Humidity is: $humidity
+OutsideFeelsHotter?($OutsideFeelsHotter)
+OkToOpen?($result)
+"""
 
-/// FOR TESTS 
-// result = false
+    /// FOR TESTS 
+    // result = false
 
-return result
+    return result
 }
 
 def StopActuators(){
-def CurrMode = location.currentMode
-def inAway = CurrMode in Away
+    def CurrMode = location.currentMode
+    def inAway = CurrMode in Away
 
-def SlightOpen = state.SlightOpen
+    def SlightOpen = state.SlightOpen
 
-def OpenInFull = state.OpenInFull
-// log.debug "CHECKING FOR STOP COMMAND"
+    def OpenInFull = state.OpenInFull
+    // log.debug "CHECKING FOR STOP COMMAND"
 
-if(!inAway && !OpenInfullWhenAway){
-// log.debug "SENDING STOP COMMAND"
-if (Actuators?.hasCommand("stop")/* && !OpenInFull*/){
-Actuators?.stop()
-}
-if (ActuatorException?.hasCommand("stop") /* && !OpenInFull*/){
-ActuatorException?.stop()        
-}
-}
-else if(state.coldbutneedcool >= 1 || state.more >= 1){
-// log.debug "SENDING STOP COMMAND"
-if (ActuatorException?.hasCommand("stop") /* && !OpenInFull*/){
-ActuatorException?.stop()        
-}
-if (Actuators?.hasCommand("stop")/* && !OpenInFull*/){
-Actuators?.stop()
-}
-}
+    if(!inAway && !OpenInfullWhenAway){
+        // log.debug "SENDING STOP COMMAND"
+        if (Actuators?.hasCommand("stop")/* && !OpenInFull*/){
+            Actuators?.stop()
+        }
+        if (ActuatorException?.hasCommand("stop") /* && !OpenInFull*/){
+            ActuatorException?.stop()        
+        }
+    }
+    else if(state.coldbutneedcool >= 1 || state.more >= 1){
+        // log.debug "SENDING STOP COMMAND"
+        if (ActuatorException?.hasCommand("stop") /* && !OpenInFull*/){
+            ActuatorException?.stop()        
+        }
+        if (Actuators?.hasCommand("stop")/* && !OpenInFull*/){
+            Actuators?.stop()
+        }
+    }
 }
 def ActuatorsDelay() {
 
-def seconds = 5000 as Long
-def secondsLog = seconds / 1000
-def since = now() as Long
-def Delay = since + seconds as Long
-log.trace "seconds($secondsLog), since($since), Delay($Delay)"
-/* while(now() < Delay){
+    def seconds = 5000 as Long
+    def secondsLog = seconds / 1000
+    def since = now() as Long
+    def Delay = since + seconds as Long
+    log.trace "seconds($secondsLog), since($since), Delay($Delay)"
+    /* while(now() < Delay){
 // // log.debug "wait $secondsLog seconds"
 }
 
 StopActuators()
 */
-runIn(OperatingTime, StopActuators)
+    runIn(OperatingTime, StopActuators)
 
 }
 
 //miscellaneous 
 def ExceptACModes(){
-def OutsideTempHighThres = OutsideTempHighThres
-if(ExceptACMode1 && CurrMode in ExceptACMode1){
-def ToMinus = OutsideTempHighThres
-//log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
-def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold1
-// // log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold1" 
-OutsideTempHighThres = NewOutsideTempHighThres
-}
-else if(ExceptACMode2 && CurrMode in ExceptACMode2){
-def ToMinus = OutsideTempHighThres
-//log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
-def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold2
-// // log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold2" 
-OutsideTempHighThres = NewOutsideTempHighThres
-}
-return OutsideTempHighThres
+    def OutsideTempHighThres = OutsideTempHighThres
+    if(ExceptACMode1 && CurrMode in ExceptACMode1){
+        def ToMinus = OutsideTempHighThres
+        //log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
+        def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold1
+        // // log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold1" 
+        OutsideTempHighThres = NewOutsideTempHighThres
+    }
+    else if(ExceptACMode2 && CurrMode in ExceptACMode2){
+        def ToMinus = OutsideTempHighThres
+        //log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
+        def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold2
+        // // log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold2" 
+        OutsideTempHighThres = NewOutsideTempHighThres
+    }
+    return OutsideTempHighThres
 }
 def schedules() { 
-OverrideReset()
-def scheduledTimeA = 2 // less makes this app exceeds executions limits
-def scheduledTimeB = 5
+    OverrideReset()
+    def scheduledTimeA = 2 // less makes this app exceeds executions limits
+    def scheduledTimeB = 5
 
-//schedule("0 0/$scheduledTimeA * * * ?", Evaluate)
-// // log.debug "Evaluate scheduled to run every $scheduledTimeA minutes"
+    //schedule("0 0/$scheduledTimeA * * * ?", Evaluate)
+    // // log.debug "Evaluate scheduled to run every $scheduledTimeA minutes"
 
-schedule("0 0/$scheduledTimeB * * * ?", polls)
-// log.debug "polls scheduled to run every $scheduledTimeB minutes"
+    schedule("0 0/$scheduledTimeB * * * ?", polls)
+    // log.debug "polls scheduled to run every $scheduledTimeB minutes"
 
 
 }
 def polls(){
 
-if(OutsideSensor){
-def poll = OutsideSensor.hasCommand("poll")
-def refresh = OutsideSensor.hasCommand("refresh")
-if(poll){
-OutsideSensor.poll()
-// // log.debug "polling $OutsideSensor"
-}
-else if(refresh){
-OutsideSensor.refresh()
-// // log.debug "refreshing $OutsideSensor"
-}
-else { 
-// // log.debug "$OutsideSensor does not support either poll() nor refresh() commands"
-}
-}
+    if(OutsideSensor){
+        def poll = OutsideSensor.hasCommand("poll")
+        def refresh = OutsideSensor.hasCommand("refresh")
+        if(poll){
+            OutsideSensor.poll()
+            // // log.debug "polling $OutsideSensor"
+        }
+        else if(refresh){
+            OutsideSensor.refresh()
+            // // log.debug "refreshing $OutsideSensor"
+        }
+        else { 
+            // // log.debug "$OutsideSensor does not support either poll() nor refresh() commands"
+        }
+    }
 
 }
 def send(msg){
-if (location.contactBookEnabled) {
-sendNotificationToContacts(msg, recipients)
-}
-else {
-if (sendPushMessage) {
-// // log.debug("sending push message")
-sendPush(msg)
-}
+    if (location.contactBookEnabled) {
+        sendNotificationToContacts(msg, recipients)
+    }
+    else {
+        if (sendPushMessage) {
+            // // log.debug("sending push message")
+            sendPush(msg)
+        }
 
-if (phone) {
-// // log.debug("sending text message")
-sendSms(phone, msg)
-}
-}
+        if (phone) {
+            // // log.debug("sending text message")
+            sendSms(phone, msg)
+        }
+    }
 
-// // log.debug msg
+    // // log.debug msg
 }
 
 
