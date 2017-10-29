@@ -150,6 +150,6 @@ private def textLicense() {
 }
 private def textHelp() {
 	def text =
-		"Allows the creation of Virtual Momentary Button Tiles, or Alexa Switches (special virtual dimmers that allow for non-state updates)."+
+		"Allows the creation of Virtual Momentary Button Tiles or Alexa Switches (special virtual dimmers that allow for non-state updates)."+
         "You can then attach these switches to various SmartThings automations (WebCoRE, Amazon Alexa, etc)."
 }
