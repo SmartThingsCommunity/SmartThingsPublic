@@ -17,8 +17,9 @@
  *
  *	Changelog:
  *
+ *	0.05 (10/29/2017) -	Corrected sendEvent typo
  *	0.04 (10/29/2017) -	Add Z-Wave dimmer capability
-  *	0.03 (12/23/2016) -	Added test/workaround preference option to cancel single press after double press. Added
+ *	0.03 (12/23/2016) -	Added test/workaround preference option to cancel single press after double press. Added
  *                      preference option to disable switch relay
  *	0.02 (08/04/2016) -	Added double and triple tap (increments button by +4, and +8 respectively)
  *	0.01 (06/08/2016) -	Initial 0.01 Test Code/Beta
@@ -410,7 +411,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
            else
            {
              sendEvent(name: "buttonNum" , value: "Btn: $buttonResult pushed")
-             sendvent(name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
+             sendEvent(name: "button", value: "pushed", data: [buttonNumber: "$buttonResult"], 
                 descriptionText: "$device.displayName $buttonResult pressed", isStateChange: true, type: "physical")
            }
            
