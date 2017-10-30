@@ -15,12 +15,10 @@
  */
 
 metadata {
-    definition(name: "Curb Power Meter", namespace: "curb", author: "Curb") {
+    definition(name: "CURB Power Meter", namespace: "curb", author: "Curb") {
         capability "Power Meter"
         capability "Energy Meter"
     }
-
-    simulator {}
 
     tiles {
         multiAttributeTile(name: "power", type: "lighting", width: 2, height: 2, canChangeIcon: false) {
@@ -38,132 +36,23 @@ metadata {
                         [value: 2000, color: "#db5e1f"]
                     ]
             }
+            tileAttribute ("device.energy", key: "SECONDARY_CONTROL") {
+                attributeState "energy", label:'${currentValue} kWh this billing period'
+            }
         }
-        valueTile("kwh30m", "device.energy", decoration: "flat", width: 1, height: 1) {
-            state "kwh30m", label:'${currentValue} used in the past 30 mins'
-        }
-        valueTile("kwh1m", "device.energy", decoration: "flat", width: 1, height: 1) {
-            state "kwh1m", label:'${currentValue} used in the past minute'
-        }
-        valueTile("kwh1h", "device.energy", decoration: "flat", width: 1, height: 1) {
-            state "kwh1h", label:'${currentValue} used in the past hour'
-        }
-        htmlTile(name:"graph",
-             action: "generateGraph",
-             refreshInterval: 10,
-             width: 6, height: 6,
-             whitelist: ["www.gstatic.com"])
-
         main(["power"])
-        details(["power", "graph"])
+        details(["power", "energy"])
     }
 }
 
 mappings {
-    path("/generateGraph") {
-        action: [GET: "generateGraphHTML"]
-    }
+
 }
 
-def handleMeasurements(values)
-{
-  if(values instanceof Collection)
-    {
-      // For some reason they show up out of order
-      values.sort{a,b -> a.t <=> b.t}
-    state.values = values;
-    }
-    else
-    {
-      sendEvent(name: "power", value: Math.round(values))
-    }
+def handlePower(value) {
+    sendEvent(name: "power", value: value)
 }
 
-def handleKwhr(kwh) {
+def handleKwhBilling(kwh) {
     sendEvent(name: "energy", value: kwh.round(3))
-}
-
-def handleKwh1h(kwh) {
-    sendEvent(name: "kwh1h", value: kwh.round(3))
-}
-
-def handleKwh30m(kwh) {
-  log.debug "30m"
-    sendEvent(name: "kwh30m", value: kwh.round(3))
-}
-
-def handleKwh1m(kwh) {
-    sendEvent(name: "kwh1m", value: kwh.round(3))
-}
-
-
-String getDataString()
-{
-  def dataString = ""
-
-  state.values.each()
-    {
-      def ts = (long)it.t * 1000.0
-    dataString += ["new Date(${ts})", it.w].toString() + ","
-  }
-    //log.debug "dataString: ${dataString}"
-
-  return dataString
-}
-
-
-def generateGraphHTML() {
-  def html = """
-    <!DOCTYPE html>
-      <html>
-        <head>
-          <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-          <script type="text/javascript">
-            google.charts.load('current', {packages: ['corechart']});
-            google.charts.setOnLoadCallback(drawGraph);
-            function drawGraph() {
-              var data = new google.visualization.DataTable();
-              data.addColumn('datetime', 'time');
-              data.addColumn('number', 'Power');
-              data.addRows([
-                ${getDataString()}
-              ]);
-              var options = {
-                fontName: 'San Francisco, Roboto, Arial',
-                height: 240,
-                hAxis: {
-                  format: 'h:mm aa',
-                  slantedText: false
-                },
-                series: {
-                  0: {targetAxisIndex: 0, color: '#FFC2C2', lineWidth: 1}
-                },
-                vAxes: {
-                  0: {
-                    title: 'Power (W)',
-                    format: 'decimal',
-                    textStyle: {color: '#004CFF'},
-                    titleTextStyle: {color: '#004CFF'},
-                                        minValue: 0
-                  },
-                },
-                legend: {
-                  position: 'none'
-                },
-                chartArea: {
-                  width: '72%',
-                  height: '85%'
-                }
-              };
-              var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));
-              chart.draw(data, options);
-            }
-          </script>
-        </head>
-        <body>
-          <div id="chart_div"></div>
-        </body>
-      </html>
-    """
-  render contentType: "text/html", data: html, status: 200
 }
