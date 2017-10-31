@@ -2,12 +2,12 @@
  *  Ask Alexa Schedules Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.3a 7/6/17
+ *  Version 1.0.3b 7/6/17
  * 
  *  Version 1.0.0 (6/1/17) - Initial release
  *  Version 1.0.1 (6/8/17) - Fixed custom schedule issue. Added %age% variable for birthdays/anniversaries
  *  Version 1.0.2 (6/15/17) - Added %age% variable for any text field
- *  Version 1.0.3a (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
+ *  Version 1.0.3b (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -765,7 +765,7 @@ def checkDate(type){
     return ["result":result, "warning":warning, "expired":expired]
 }
 def monthList(){ return ["1": "January", "2":"February", "3":"March", "4":"April", "5":"May", "6":"June", "7":"July", "8":"August", "9":"September", "10":"October", "11":"November", "12":"December"] }	
-def actionList(){ return ["msg":"Send Free-Text To Message Queue(s)", "macro":"Run Macro (Control, CoRE or Extension Group)","VR":"Send/Play Voice Report", "WR":"Send/Play Weather Report/Advisories","purge":"Purge Message Queue(s)"] }
+def actionList(){ return ["msg":"Send Free-Text To Message Queue(s)", "macro":"Run Macro (Control, WebCoRE or Extension Group)","VR":"Send/Play Voice Report", "WR":"Send/Play Weather Report/Advisories","purge":"Purge Message Queue(s)"] }
 def reType(){
 	return ["1":"Every minute", "5":"Every 5 minutes", "10":"Every 10 minutes", "15": "Every 15 minutes", "30": "Every 1/2 hour", "60": "Every hour", "180": "Every 3 hours", "360": "Every 6 hours",
     	"720": "Every 12 hours", "day": "Daily", "week":"Weekly", "month": "Monthly", "year": "Annually"]   	
@@ -900,4 +900,4 @@ def translateMQid(mqIDList){
 //Versions
 private versionInt(){ return 103 }
 private def textAppName() { return "Ask Alexa Schedules" }	
-private def textVersion() { return "Schedules Version: 1.0.3a (07/06/2017)" }
+private def textVersion() { return "Schedules Version: 1.0.3b (07/06/2017)" }
