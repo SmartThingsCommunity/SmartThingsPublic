@@ -528,7 +528,14 @@ private def parseCommandResponse(String description) {
 	def cmd = descMap.commandInt
 	def clusterInt = descMap.clusterInt
 	
-	if (clusterInt == CLUSTER_DOORLOCK && cmd == DOORLOCK_RESPONSE_OPERATION_EVENT) {
+	if (clusterInt == CLUSTER_DOORLOCK && (cmd == DOORLOCK_CMD_LOCK_DOOR || cmd == DOORLOCK_CMD_UNLOCK_DOOR)) {
+		log.trace "ZigBee DTH - Executing DOOR LOCK/UNLOCK SUCCESS for device ${deviceName} with description map:- $descMap"
+		// Reading lock state with a delay of 4200 as some locks do not report their state change
+		def cmdList = []
+		cmdList << "delay 4200"
+		cmdList << zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE).first()
+		result << response(cmdList)
+	} else if (clusterInt == CLUSTER_DOORLOCK && cmd == DOORLOCK_RESPONSE_OPERATION_EVENT) {
 		log.trace "ZigBee DTH - Executing DOORLOCK_RESPONSE_OPERATION_EVENT for device ${deviceName} with description map:- $descMap"
 		def eventSource = Integer.parseInt(data[0], 16)
 		def eventCode = Integer.parseInt(data[1], 16)
@@ -550,7 +557,6 @@ private def parseCommandResponse(String description) {
 			codeName = getCodeName(lockCodes, codeID)
 			responseMap.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 		} else if (eventSource == 1) {
-			desc = "via app"
 			responseMap.data = [ method: "command" ]
 		} else if (eventSource == 2) {
 			desc = "manually"
