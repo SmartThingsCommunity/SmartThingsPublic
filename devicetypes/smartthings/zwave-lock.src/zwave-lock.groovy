@@ -60,6 +60,7 @@ metadata {
 			tileAttribute ("device.lock", key: "PRIMARY_CONTROL") {
 				attributeState "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00A0DC", nextState:"unlocking"
 				attributeState "unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking"
+				attributeState "unlocked with timeout", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking"
 				attributeState "unknown", label:"unknown", action:"lock.lock", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff", nextState:"locking"
 				attributeState "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#00A0DC"
 				attributeState "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
@@ -291,21 +292,20 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	unschedule("stateCheck")
 	
 	// DoorLockOperationReport is called when trying to read the lock state or when the lock is locked/unlocked from the DTH or the smart app
-	def desc = ""
-	if (device.currentValue("lock")) {
-		desc = "via app"
-	}
 	def map = [ name: "lock" ]
 	map.data = [ lockName: device.displayName ]
 	if (cmd.doorLockMode == 0xFF) {
 		map.value = "locked"
-		map.descriptionText = "Locked $desc"
+		map.descriptionText = "Locked"
 	} else if (cmd.doorLockMode >= 0x40) {
 		map.value = "unknown"
 		map.descriptionText = "Unknown state"
-	} else {
+	} else if (cmd.doorLockMode == 0x01) {
+		map.value = "unlocked with timeout"
+		map.descriptionText = "Unlocked with timeout"
+	}  else {
 		map.value = "unlocked"
-		map.descriptionText = "Unlocked $desc"
+		map.descriptionText = "Unlocked"
 		if (state.assoc != zwaveHubNodeId) {
 			result << response(secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)))
 			result << response(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId))
@@ -370,11 +370,11 @@ private def handleAccessAlarmReport(cmd) {
 			map.data = [ method: "manual" ]
 			break
 		case 3: // Locked by command
-			map.descriptionText = "Locked via app"
+			map.descriptionText = "Locked"
 			map.data = [ method: "command" ]
 			break
 		case 4: // Unlocked by command
-			map.descriptionText = "Unlocked via app"
+			map.descriptionText = "Unlocked"
 			map.data = [ method: "command" ]
 			break
 		case 5: // Locked with keypad
@@ -592,10 +592,16 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 18: // Locked with keypad
 			codeID = cmd.alarmLevel
-			codeName = getCodeName(lockCodes, codeID)
 			map = [ name: "lock", value: "locked" ]
-			map.descriptionText = "Locked by \"$codeName\""
-			map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+			// Kwikset lock reporting code id as 0 when locked using the lock keypad button
+			if (isKwiksetLock() && codeID == 0) {
+				map.descriptionText = "Locked manually"
+				map.data = [ method: "manual" ]
+			} else {
+				codeName = getCodeName(lockCodes, codeID)
+				map.descriptionText = "Locked by \"$codeName\""
+				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+			}
 			break
 		case 21: // Manually locked
 			map = [ name: "lock", value: "locked", data: [ method: (cmd.alarmLevel == 2) ? "keypad" : "manual" ] ]
@@ -611,11 +617,11 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 24: // Locked by command
 			map = [ name: "lock", value: "locked", data: [ method: "command" ] ]
-			map.descriptionText = "Locked via app"
+			map.descriptionText = "Locked"
 			break
 		case 25: // Unlocked by command
 			map = [ name: "lock", value: "unlocked", data: [ method: "command" ] ]
-			map.descriptionText = "Unlocked via app"
+			map.descriptionText = "Unlocked"
 			break
 		case 26:
 			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
