@@ -10,18 +10,7 @@
  *  Version: 1.00
  *
  *  Description:
- *   - This device handler is written specifically for the Aeon Home Energy Meter Gen2 UK version, with a single clamp.
- *   - Supports live reporting of energy, power, current, and voltage. Press the 'Now' tile to refresh.
- *      (voltage tile is not shown by default, but you can enable it below).
- *   - Supports reporting of energy usage and cost over an ad hoc period, based on the 'energy' figure reported by 
- *     the device. Press the 'Since...' tile to reset.
- *   - Supports additional reporting of energy usage and cost over multiple pre-defined periods:
- *       'Today', 'Last 24 Hours', 'Last 7 Days', 'This Month', 'This Year', and 'Lifetime'
- *     These can be cycled through by pressing the 'statsMode' tile. 
- *   - There's a tile that will reset all Energy Stats periods, but it's hidden by default.
- *   - Key device parameters can be set from the device settings. Refer to the Aeon HEMv2 instruction 
- *     manual for full details.
- *   - If you are re-using this device, please use your own hosting for the icons.
+ *   - Support for the SwannOne Motion Sensor
  *
  *  Version History:
  *
