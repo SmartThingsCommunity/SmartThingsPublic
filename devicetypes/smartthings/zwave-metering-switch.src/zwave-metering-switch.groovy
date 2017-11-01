@@ -238,9 +238,9 @@ def configure() {
     if (zwaveInfo.mfr == "0086") {  // Aeon Labs meter
 		result << response(delayBetween([
             zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2).format(),    // basic report cc
-			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4).format(),   // report power in watts
+			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 1).format(),   // report power in watts
 			zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-            zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8).format(),   // report energy in kWh
+            zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 2).format(),   // report energy in kWh
 			zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
             //zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 2).format(),  // no third report
 			//zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
