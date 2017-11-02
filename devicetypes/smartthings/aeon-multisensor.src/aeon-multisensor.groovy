@@ -31,29 +31,30 @@ metadata {
 		status "no motion (basic)"  : "command: 2001, payload: 00"
 		status "motion (binary)"    : "command: 3003, payload: FF"
 		status "no motion (binary)" : "command: 3003, payload: 00"
+		status "wakeup" 			: "command: 8407, payload: 00"
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "temperature ${i}F": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-				scaledSensorValue: i, precision: 1, sensorType: 1, scale: 1).incomingMessage()
+					scaledSensorValue: i, precision: 1, sensorType: 1, scale: 1).incomingMessage()
 		}
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "humidity ${i}%": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-				scaledSensorValue: i, precision: 0, sensorType: 5).incomingMessage()
+					scaledSensorValue: i, precision: 0, sensorType: 5).incomingMessage()
 		}
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "luminance ${i} lux": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-				scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
+					scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
 		}
 		for (int i = 200; i <= 1000; i += 200) {
 			status "luminance ${i} lux": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-				scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
+					scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
 		}
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(
-				batteryLevel: i).incomingMessage()
+					batteryLevel: i).incomingMessage()
 		}
 	}
 
@@ -66,15 +67,15 @@ metadata {
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
-			backgroundColors:[
-				[value: 31, color: "#153591"],
-				[value: 44, color: "#1e9cbb"],
-				[value: 59, color: "#90d2a7"],
-				[value: 74, color: "#44b621"],
-				[value: 84, color: "#f1d801"],
-				[value: 95, color: "#d04e00"],
-				[value: 96, color: "#bc2323"]
-			]
+					backgroundColors:[
+							[value: 31, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+					]
 		}
 		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
 			state "humidity", label:'${currentValue}% humidity', unit:""
@@ -85,12 +86,14 @@ metadata {
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
-		}
 
 		main(["motion", "temperature", "humidity", "illuminance"])
-		details(["motion", "temperature", "humidity", "illuminance", "battery", "configure"])
+		details(["motion", "temperature", "humidity", "illuminance", "battery"])
+	}
+
+	preferences {
+		input name: "timeout", type: "number", title: "Motion timeout", description: "Enter guard interval before receiving another motion event, in seconds", range: "20..60", defaultValue: 20
+		input name: "period", type: "number", title: "Reporting period", description: "Enter reporting period, in minutes", range: "4..15", defaultValue: 5
 	}
 }
 
@@ -107,20 +110,30 @@ def updated(){
 // Parse incoming device messages to generate events
 def parse(String description)
 {
-	def result = []
-	def cmd = zwave.parse(description, [0x31: 2, 0x30: 1, 0x84: 1])
-	if (cmd) {
-		if( cmd.CMD == "8407" ) { result << new physicalgraph.device.HubAction(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) }
-		result << createEvent(zwaveEvent(cmd))
+	def results = []
+	log.debug("parsing")
+	if (description.startsWith("Err")) {
+		results = createEvent(descriptionText:description, displayed:true)
+	} else {
+		def cmd = zwave.parse(description, [0x31: 2, 0x30: 1, 0x84: 1])
+		if(cmd) results += zwaveEvent(cmd)
+		if(!results) results = [ descriptionText: cmd, displayed: false ]
 	}
-	log.debug "Parse returned ${result}"
-	return result
+	log.debug("Parsed '$description' to $results")
+	return results
 }
 
 // Event Generation
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
-	[descriptionText: "${device.displayName} woke up", isStateChange: false]
+	def results = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
+	// try to configure until we've received a temperature update
+	if (!device.currentValue("temperature")) {
+		log.debug "temp is null, configuring"
+		results += configure()
+	}
+	results << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
+	return results
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelReport cmd)
@@ -198,17 +211,22 @@ def ping() {
 }
 
 def configure() {
+	def defaultTimeout = timeout ?: 20
+	def defaultPeriod = period ?: 5
 	delayBetween([
-		// send binary sensor report instead of basic set for motion
-		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2).format(),
+			// send remove association to avoid double reports
+			zwave.associationV1.associationRemove(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format(),
 
-		// send no-motion report 15 seconds after motion stops
-		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 15).format(),
+			// send binary sensor report instead of basic set for motion
+			zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2).format(),
 
-		// send all data (temperature, humidity, illuminance & battery) periodically
-		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 225).format(),
+			// send no-motion report 15 seconds after motion stops
+			zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: defaultTimeout).format(),
 
-		// set data reporting period to 5 minutes
-		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format()
+			// send all data (temperature, humidity, illuminance & battery) periodically
+			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 225).format(),
+
+			// set data reporting period to 5 minutes
+			zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: defaultPeriod*60).format()
 	])
 }
