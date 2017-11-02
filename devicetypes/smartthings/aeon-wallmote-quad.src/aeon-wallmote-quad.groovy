@@ -20,19 +20,19 @@ metadata {
 	definition (name: "Aeon WallMote", namespace: "smartthings", author: "Eric Maycock") {
 		capability "Actuator"
 		capability "Button"
-        capability "Holdable Button"
+    capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
-        capability "Battery"
-        capability "Health Check"
-        capability "Switch Level"
+    capability "Battery"
+    capability "Health Check"
+    capability "Switch Level"
 
-        attribute "sequenceNumber", "number"
-        attribute "numberOfButtons", "number"
-        attribute "needUpdate", "string"
+    attribute "sequenceNumber", "number"
+    attribute "numberOfButtons", "number"
+    attribute "needUpdate", "string"
 
 		fingerprint deviceId: "0x1801", inClusters: "0x5E,0x73,0x98,0x86,0x85,0x59,0x8E,0x60,0x72,0x5A,0x84,0x5B,0x71,0x70,0x80,0x7A", outClusters: "0x25,0x26" // secure inclusion
-        fingerprint deviceId: "0x1801", inClusters: "0x5E,0x85,0x59,0x8E,0x60,0x86,0x70,0x72,0x5A,0x73,0x84,0x80,0x5B,0x71,0x7A", outClusters: "0x25,0x26"
+    fingerprint deviceId: "0x1801", inClusters: "0x5E,0x85,0x59,0x8E,0x60,0x86,0x70,0x72,0x5A,0x73,0x84,0x80,0x5B,0x71,0x7A", outClusters: "0x25,0x26"
 
 	}
     preferences {
