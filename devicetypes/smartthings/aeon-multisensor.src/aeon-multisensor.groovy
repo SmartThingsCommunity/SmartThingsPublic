@@ -35,26 +35,26 @@ metadata {
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "temperature ${i}F": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-					scaledSensorValue: i, precision: 1, sensorType: 1, scale: 1).incomingMessage()
+				scaledSensorValue: i, precision: 1, sensorType: 1, scale: 1).incomingMessage()
 		}
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "humidity ${i}%": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-					scaledSensorValue: i, precision: 0, sensorType: 5).incomingMessage()
+				scaledSensorValue: i, precision: 0, sensorType: 5).incomingMessage()
 		}
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "luminance ${i} lux": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-					scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
+				scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
 		}
 		for (int i = 200; i <= 1000; i += 200) {
 			status "luminance ${i} lux": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-					scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
+				scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
 		}
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(
-					batteryLevel: i).incomingMessage()
+				batteryLevel: i).incomingMessage()
 		}
 	}
 
@@ -67,15 +67,15 @@ metadata {
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
-					backgroundColors:[
-							[value: 31, color: "#153591"],
-							[value: 44, color: "#1e9cbb"],
-							[value: 59, color: "#90d2a7"],
-							[value: 74, color: "#44b621"],
-							[value: 84, color: "#f1d801"],
-							[value: 95, color: "#d04e00"],
-							[value: 96, color: "#bc2323"]
-					]
+			backgroundColors:[
+				[value: 31, color: "#153591"],
+				[value: 44, color: "#1e9cbb"],
+				[value: 59, color: "#90d2a7"],
+				[value: 74, color: "#44b621"],
+				[value: 84, color: "#f1d801"],
+				[value: 95, color: "#d04e00"],
+				[value: 96, color: "#bc2323"]
+			]
 		}
 		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
 			state "humidity", label:'${currentValue}% humidity', unit:""
@@ -214,19 +214,19 @@ def configure() {
 	def defaultTimeout = timeout ?: 20
 	def defaultPeriod = period ?: 5
 	delayBetween([
-			// send remove association to avoid double reports
-			zwave.associationV1.associationRemove(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format(),
+		// send remove association to avoid double reports
+		zwave.associationV1.associationRemove(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format(),
 
-			// send binary sensor report instead of basic set for motion
-			zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2).format(),
+		// send binary sensor report instead of basic set for motion
+		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2).format(),
 
-			// send no-motion report 15 seconds after motion stops
-			zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: defaultTimeout).format(),
+		// send no-motion report 15 seconds after motion stops
+		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: defaultTimeout).format(),
 
-			// send all data (temperature, humidity, illuminance & battery) periodically
-			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 225).format(),
+		// send all data (temperature, humidity, illuminance & battery) periodically
+		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 225).format(),
 
-			// set data reporting period to 5 minutes
-			zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: defaultPeriod*60).format()
+		// set data reporting period to 5 minutes
+		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: defaultPeriod*60).format()
 	])
 }
