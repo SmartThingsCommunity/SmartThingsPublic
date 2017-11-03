@@ -2,7 +2,7 @@
  *  Ask Alexa Voice Report Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.6a 10/2/17
+ *  Version 1.0.7 11/2/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restricitions 
@@ -11,6 +11,7 @@
  *  Version 1.0.4 - (7/11/17) - Added code for additional text field variables, allow suppression of continuation messages.
  *  Version 1.0.5 - (8/3/17) - Added support for Foobot Air Quality Monitor, permanently enabled voice filters
  *  Version 1.0.6a - (9/21/17) - Added UV index reporting
+ *  Version 1.0.7 - (11/2/17) - Added LUX and window shade reporting along with support for custom Aeon power meter DTH
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -35,10 +36,10 @@ definition(
     )
 preferences {
     page name:"mainPage"
-    	page name:"pageTempReport"
+    	page name:"pageEnviroReport"
         page name:"pageAirReport"
 		page name:"pageHomeReport"
-		page name:"pageOtherReport"
+		page name:"pageOtherSensors"
     	page name:"pageBatteryReport"
     	page name:"pageDoorReport"
     	page name:"pageSwitchReport"
@@ -58,12 +59,12 @@ def mainPage() {
         section ("Voice report items") {
             input "voicePre", "text", title: "Pre Message Before Device Report", description: "Use variables like %time%, %day%, %date% here.", required: false, capitalization: "sentences"
             href "pageSwitchReport", title: "Switch/Dimmer Report", description: getDesc("switch"), state: (voiceSwitch || voiceDimmer ? "complete" : null), image: parent.imgURL() + "power.png"
-            href "pageDoorReport", title: "Door/Window/Lock Report", description: getDesc("door"), state: (voiceDoorSensors || voiceDoorControls || voiceDoorLocks || voiceWindowShades ? "complete": null), image: parent.imgURL() + "lock.png"
-            href "pageTempReport", title: "Environmental Report", description: getDesc("temp"), state:(voiceTemperature || voiceTempSettings || voiceHumidity || voiceUV ? "complete" : null),image: parent.imgURL() + "temp.png"
+            href "pageDoorReport", title: "Door/Window/Shade/Lock Report", description: getDesc("door"), state: (voiceDoorSensors || voiceDoorControls || voiceDoorLocks || voiceWindowShades ? "complete": null), image: parent.imgURL() + "lock.png"
+            href "pageEnviroReport", title: "Environmental Report", description: getDesc("temp"), state:(voiceTemperature || voiceTempSettings || voiceHumidity || voiceUV || voiceLux? "complete" : null),image: parent.imgURL() + "temp.png"
             href "pageAirReport", title: "Foobot Air Quality Report", description: getDesc("pollution"), state:(fooBot ? "complete" : null), image: parent.imgURL() + "pollution.png"
             href "pageSpeakerReport", title: "Speaker Report", description: getDesc("speaker"), state: (voiceSpeaker ? "complete": null), image: parent.imgURL() + "speaker.png"
             href "pagePresenceReport", title: "Presence Report", description:  getDesc("presence"), state:(voicePresence ? "complete": null), image : parent.imgURL() + "people.png"    
-            href "pageOtherReport", title: "Other Sensors Report", description: getDesc("sensor"), state: (voiceWater|| voiceMotion|| voicePower || voiceAccel  ? "complete" :null), image: parent.imgURL() + "sensor.png"
+            href "pageOtherSensors", title: "Other Sensors Report", description: getDesc("sensor"), state: (voiceWater|| voiceMotion|| voicePower || voiceAccel  ? "complete" :null), image: parent.imgURL() + "sensor.png"
             href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: getDesc("MSHM"), state: (voiceMode|| voiceSHM? "complete": null), image: parent.imgURL() + "modes.png"
             href "pageDeviceHealth", title: "Device Health Report", description:getDesc("health"), state: (voiceHealth ? "complete" : null), image: parent.imgURL() + "health.png"
             href "pageBatteryReport",title: "Battery Report", description: getDesc("battery"), state: (voiceBattery ? "complete" : null), image: parent.imgURL() + "battery.png"
@@ -181,11 +182,14 @@ def pageDoorReport(){
             if (voiceDoorSensors || voiceDoorControls)input "voiceDoorEvt", "bool",title: "Report Time Of Last Door/Window Opening", defaultValue: false
             if (voiceDoorLocks)input "voiceLockEvt", "bool",title: "Report Time Of Last Lock Unlocking", defaultValue: false
         }
-        section("Window shades reporting", hideWhenEmpty: true){ input "voiceWindowShades", "capability.windowShade", title: "Window Shades To Report Their Status...", multiple: true, required: false } 
+        section("Window shades reporting", hideWhenEmpty: true){ 
+        	input "voiceWindowShades", "capability.windowShade", title: "Window Shades To Report Their Status...", multiple: true, required: false, submitOnChange: true
+            if (voiceWindowShades)input "voiceShadeAll", "bool", title: "Report Window Shade Summary Instead Of Individual Device Report", defaultValue: false     
+        } 
     }
 }
-def pageOtherReport(){
-    dynamicPage(name: "pageOtherReport", install: false, uninstall: false){
+def pageOtherSensors(){
+    dynamicPage(name: "pageOtherSensors", install: false, uninstall: false){
         section { paragraph "Other Sensors Report", image: parent.imgURL() + "sensor.png" }
         section ("Acceleration sensors", hideWhenEmpty: true){
             input "voiceAccel", "capability.accelerationSensor", title: "Acceleration Sensors To Report Their Status...", multiple: true, required: false, submitOnChange: true
@@ -198,8 +202,11 @@ def pageOtherReport(){
             if (voiceMotion) input "voiceMotionEvt", "bool",title: "Report Time Of The Last Movement", defaultValue: false 
         }
         section("Power meters", hideWhenEmpty: true){
-       		input "voicePower", "capability.powerMeter", title: "Power Meters To Report Energy Use...", multiple: true, required: false
-            if (voicePower) input "voicePowerOn", "bool", title: "Report Only Meters Drawing Power", defaultValue: false
+       		input "voicePower", "capability.powerMeter", title: "Power Meters To Report Energy Use...", multiple: true, required: false, submitOnChange: true
+            if (voicePower) {
+            	input "voicePowerOn", "bool", title: "Report Only Meters Drawing Power", defaultValue: false
+             	input "voiceAeon", "bool", title: "Speak kWh Usage And Cost (Custom Aeon DTH)", defaultValue: false
+            }
         }
         section ("Water report", hideWhenEmpty: true) {
             input "voiceWater", "capability.waterSensor", title: "Water Sensors To Report Their Status...", multiple: true, required: false, submitOnChange: true
@@ -207,8 +214,8 @@ def pageOtherReport(){
         }
     }
 }
-def pageTempReport(){
-    dynamicPage(name: "pageTempReport", install: false, uninstall: false){
+def pageEnviroReport(){
+    dynamicPage(name: "pageEnviroReport", install: false, uninstall: false){
         section { paragraph "Environmental Report", image: parent.imgURL() + "temp.png" }
         section ("Temperature reporting", hideWhenEmpty: true){
             input "voiceTemperature", "capability.temperatureMeasurement", title: "Devices To Report Temperatures...",multiple: true, required: false, submitOnChange: true
@@ -232,6 +239,9 @@ def pageTempReport(){
                 input "voiceTempState", "bool", title: "Report Current Thermostat State", defaultValue: false
                 input "voiceTempMode", "bool", title: "Report Current Thermostat Mode", defaultValue: false
         	}    
+        }
+        section ("Luminosity (Lux) reporting", hideWhenEmpty: true){
+        	input "voiceLux", "capability.illuminanceMeasurement", title: "Devices To Report Luminosity (Lux)", multiple: true, required: false
         }
         section ("UV index reporting", hideWhenEmpty: true){
         	input "voiceUV", "capability.ultravioletIndex", title: "Devices To Report UV Index", multiple: true, required: false
@@ -322,6 +332,7 @@ def getOutput(){
         else if (voiceHumidity  && voiceHumidity.size() > 1 && voiceHumidAvg) outputTxt += "The average of the monitored humidity devices is " + parent.getAverage(voiceHumidity, "humidity") + "%. "
         if (voiceTempSettingSummary && voiceTempSettingsType && voiceTempSettingsType !="autoAll") outputTxt += voiceTempSettings ? thermostatSummary(): ""
         else outputTxt += (voiceTempSettings && voiceTempSettingsType) ? reportStatus(voiceTempSettings, voiceTempSettingsType) : ""
+        outputTxt += voiceLux ? luxReport() : ""
         outputTxt += voiceUV ? uvReport() : ""
         outputTxt += fooBot ? airReport() : ""
         outputTxt += voiceSpeaker ? speakerReport() : ""
@@ -375,7 +386,7 @@ def mqDesc(){
     if (vrMsgQue){
     	result = "Send to: ${translateMQid(vrMsgQue)}"
         result += vrMQNotify ? "\nNotification Mode Only" : ""
-        result += vrMQExpire ? "\nExpires in ${vrMQExpire} seconds" : ""
+        result += vrMQExpire ? "\nExpires in ${vrMQExpire} minutes" : ""
         result += vrMQOverwrite ? "\nOverwrite all previous voice report messages" : ""
         result += vrSuppressTDRemind ? "\nSuppress Time and Date from Alexa Playback" : ""
 	}
@@ -589,8 +600,20 @@ def powerReport(){
         if (currVal == null) currVal=0
         if (voicePowerOn)  result += currVal>0 ? "The ${deviceName} is reading " + currVal  + " watts. " : ""
         else result += "The ${deviceName} is reading " + currVal  + " watts. "
-	}
+		if (voiceAeon){
+        	def currKWH = deviceName.currentValue("currentKWH"), currPCost=deviceName.currentValue("kwhCosts")
+            if (currKWH && currPCost) result += "In addition, this device is reading the current power usage is ${currKWH} at a cost of " + currPCost +". "
+    	}
+    }
     return result 
+}
+def luxReport(){
+	String result = ""
+    voiceLux.each{
+    	def currValue = it.currentValue("illuminance") as int
+        result += "The ${it.label} is reading ${currValue} lux. " 
+    }
+    return result
 }
 def uvReport(){
 	String result = ""
@@ -602,14 +625,29 @@ def uvReport(){
 }
 def shadeReport(){
     String result = ""
-    voiceWindowShades.each { deviceName->
-		def currVal = deviceName.currentValue("windowShade").toLowerCase()
-        result += "The ${deviceName} is " + currVal  + ". "
+    if (voiceShadeAll){	
+        if (voiceWindowShades?.currentValue("windowShade").contains("Closed") || voiceWindowShades?.currentValue("windowShade").contains("Open") || voiceWindowShades?.currentValue("windowShade").contains("Partially open")){
+            if (!voiceWindowShades?.currentValue("windowShade").contains("Closed") && !voiceWindowShades?.currentValue("windowShade").contains("Partially open")) result += "All of the window shades are open. "
+            else if (!voiceWindowShades?.currentValue("windowShade").contains("Open") && !voiceWindowShades?.currentValue("windowShade").contains("Partially open")) result += "All of the window shades are closed. "
+            else if (voiceWindowShades?.currentValue("windowShade").contains("Partially open") && !voiceWindowShades?.currentValue("windowShade").contains("Closed") && !voiceWindowShades?.currentValue("windowShade").contains("Open") ) result += "All of the window shades are partially open. "
+			else voiceWindowShades.each{ result += "The ${it.label} is ${it.currentValue("windowShade").toLowerCase()}. " }
+        }
+        else {
+        	if (!voiceWindowShades?.currentValue("windowShade").contains("closed")) result += "All of the window shades are open. "
+			else if (!voiceWindowShades?.currentValue("windowShade").contains("open")) result += "All of the window shades are closed. "
+            else voiceWindowShades.each{ result += "The ${it.label} is ${it.currentValue("windowShade").toLowerCase()}. " }
+		}
 	}
+	else {    
+    	voiceWindowShades.each { deviceName->
+			def currVal = deviceName.currentValue("windowShade").toLowerCase()
+        	result += "The ${deviceName} is " + currVal  + ". "
+		}
+    }
     return result
 }
 def doorWindowReport(){
-	def countOpened = 0, countOpenedDoor = 0, countUnlocked = 0, listOpened = "", listUnlocked = ""
+	def countOpened = 0, countOpenedDoor = 0, countUnlocked = 0, listOpened=[], listUnlocked=[]
     String result = ""   
     if (voiceDoorSensors && voiceDoorSensors.latestValue("contact").contains("open")){  
         listOpened = voiceDoorSensors.findAll{it.latestValue("contact")=="open"}
@@ -764,22 +802,32 @@ def getDesc(type){
             }
             break
 		case "temp":
-            if (voiceTemperature || voiceHumidity || voiceTempSettings || voiceUV ){
+            if (voiceTemperature || voiceHumidity || voiceTempSettings || voiceUV || voiceLux ){
                 def tempAvg = voiceTempAvg ? " (Average)" : ""
                 def humidAvg = voiceHumidAvg  ? " (Average)" : ""
                 def tstatSet = voiceTempSettingSummary && voiceTempSettings && voiceTempSettingsType !="autoAll" && voiceTempTarget ? "(setpoint summary target: ${voiceTempTarget} degrees)":"(setpoint)" 
                 result  = voiceTemperature && voiceTemperature.size()>1 ? "Temperature sensors${tempAvg}" : voiceTemperature && voiceTemperature.size()==1 ? "Temperature sensor${tempAvg}" : ""
-                if (voiceHumidity) result  += result && voiceHumidity.size()>1 && voiceTempSettings ? ", humidity sensors${humidAvg}" : result && voiceHumidity.size()==1 && voiceTempSettings ? ", humidity sensor${humidAvg}" : ""
-                if (voiceHumidity) result  += result && voiceHumidity.size()>1 && !voiceTempSettings ? " and humidity sensors${humidAvg}" : result && voiceHumidity.size()==1 && !voiceTempSettings ? " and humidity sensor${humidAvg}" : ""
+                
+                if (voiceHumidity) result  += result && voiceHumidity.size()>1 && (voiceTempSettings || voiceLux || voiceUV) ? ", humidity sensors${humidAvg}" : result && voiceHumidity.size()==1 && (voiceTempSettings || voiceLux || voiceUV) ? ", humidity sensor${humidAvg}" : ""
+                if (voiceHumidity) result  += result && voiceHumidity.size()>1 && !(voiceTempSettings || voiceLux || voiceUV)  ? " and humidity sensors${humidAvg}" : result && voiceHumidity.size()==1 && !(voiceTempSettings || voiceLux || voiceUV) ? " and humidity sensor${humidAvg}" : ""
                 if (voiceHumidity) result  += !result && voiceHumidity.size()>1 ? "Humidity sensors${humidAvg}" : !result && voiceHumidity.size()==1 ? "Humidity sensor${humidAvg}" : ""
-                if (voiceTempSettings) result += result && voiceTempSettings.size()>1 && !voiceUV ? " and thermostats ${tstatSet}" : result && voiceTempSettings.size()==1 && !voiceUV ? " and thermostat${tstatSet}" : ""
-                if (voiceTempSettings) result += result && voiceTempSettings.size()>1 && voiceUV? ", thermostats ${tstatSet}" : result && voiceTempSettings.size()==1 && voiceUV? ", thermostat${tstatSet}" : ""
+                
+                if (voiceTempSettings) result += result && voiceTempSettings.size()>1 && !(voiceLux || voiceUV) ? " and thermostats ${tstatSet}" : result && voiceTempSettings.size()==1 && !(voiceLux || voiceUV)? " and thermostat${tstatSet}" : ""
+                if (voiceTempSettings) result += result && voiceTempSettings.size()>1 && (voiceLux || voiceUV)? ", thermostats ${tstatSet}" : result && voiceTempSettings.size()==1 && (voiceLux || voiceUV) ? ", thermostat${tstatSet}" : ""
                 if (voiceTempSettings) result += !result && voiceTempSettings.size()>1 ? "Thermostats ${tstatSet}" : !result && voiceTempSettings.size()==1 ? "Thermostat ${tstatSet}" : ""
+               
+                if (voiceLux) result += result && voiceLux.size()>1 && !voiceUV ? " and luminosity devices" : result && voiceLux.size()==1 && !voiceUV ? " and luminosity device" : ""
+                if (voiceLux) result += result && voiceLux.size()>1 && voiceUV ? ", luminosity devices" : !result && voiceLux.size()==1 && voiceUV ? ", luminosity device" : ""
+                if (voiceLux) result += !result && voiceLux.size()>1  ? "Luminosity devices" : !result && voiceLux.size()==1 ? "Luminosity device" : ""
+                
                 if (voiceUV) result += result && voiceUV.size()>1 ? " and UV index devices" : result && voiceUV.size()==1 ? " and UV index device" : ""
                 if (voiceUV) result += !result && voiceUV.size()>1 ? "UV index devices" : !result && voiceUV.size()==1 ? "UV index device" : ""
+                
                 count += voiceHumidity ? voiceHumidity.size() : 0
                 count += voiceTemperature ? voiceTemperature.size() : 0
                 count += voiceTempSettings ? voiceTempSettings.size() : 0
+                count += voiceLux ? voiceLux.size() : 0
+                count += voiceUV ? voiceUV.size() : 0
                 result += count>1 ? " report status" : " reports status"
                 result += voiceTempValue || voiceTempHumid || voiceTempState || voiceTempMode ? " along with additional attributes" : ""
             }
@@ -824,6 +872,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 106}
+private versionInt(){ return 107}
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.6a (10/02/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.7 (11/2/2017)" }

@@ -2,7 +2,7 @@
  *  Alexa Virtual Switch Creator
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.0 10/29/17
+ *  Version 1.0.0 11/1/17
  * 
  *  Version 1.0.0 - Initial release
  *
@@ -35,7 +35,7 @@ def mainPage() {
         section("New switch information"){
             input "addSwitchName", "text", title: "Switch Label", description: "Enter a unique label name for the virtual switch", required: false, submitOnChange:true
             input "addSwitchType", "enum", title: "Switch Type...", description: "Choose a switch type", options:["Alexa Switch","Momentary Button Tile"], required: false, submitOnChange:true	
-            if (addSwitchType && addSwitchName) href "pageAddSwitch",title: "Add Switch", description: none, image: imgURL()+"add.png"
+            if (addSwitchType && addSwitchName) href "pageAddSwitch",title: "Tap To Add Switch", description: "Switch will be created based on the parameters above", image: imgURL()+"add.png"
         }        
         def switchList = ""
         state.sw1Ver = ""
@@ -61,6 +61,7 @@ def mainPage() {
 		}
 	}
 }
+// Show "pageAbout" page
 def pageAbout(){
 	dynamicPage(name: "pageAbout", uninstall: true) {
 		section {
@@ -107,7 +108,7 @@ def addChildSwitches(){
         result ="The ${addSwitchType} named '${addSwitchName}' has been created.\n\nIf you are using this with Alexa,\nbe sure to 'discover' the switch in your Alexa app."
     } catch (e) {
 		log.debug "Error creating switch: ${e}"
-        result ="The ${addSwitchType} named '${addSwitchName}' could NOT be created.\n\nEnsure you have the correct device code installed and published within the IDE."
+        result ="The ${addSwitchType} named '${addSwitchName}' could NOT be created.\n\nEnsure you have the correct device code installed and published within the SmartThings IDE."
 	}
 	result + "\n\nTap < to return to the switches page."   
 }
@@ -127,7 +128,7 @@ def imgURL() { return "https://raw.githubusercontent.com/MichaelStruck/SmartThin
 //Version/Copyright/Information/Help
 private def textAppName() { return "Alexa Virtual Switch Creator" }	
 private def textVersion() {
-    def version = "Version: 1.0.0 (10/29/2017)", childVersion, deviceCount= getChildDevices().size()
+    def version = "Version: 1.0.0 (11/01/2017)", childVersion, deviceCount= getChildDevices().size()
     childVersion = state.sw1Ver && deviceCount ? "\n${state.sw1Ver}": ""
     childVersion += state.sw2Ver && deviceCount ? "\n${state.sw2Ver}": ""
     return "${version}${childVersion}"

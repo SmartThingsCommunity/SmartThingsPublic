@@ -2,10 +2,11 @@
  *  Ask Alexa Rooms/Groups
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.1a 9/26/17
+ *  Version 1.0.2 10/31/17
  * 
  *  Version 1.0.0 (9/13/17) - Initial release
  *  Version 1.0.1a (9/26/17) - Fixed text area variable issue
+ *  Version 1.0.2 (10/31/17) - Added a summary option for switch status outputs
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -66,6 +67,10 @@ def mainPage() {
         	if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after action runs", required: false, capitalization: "sentences"
         	input "noAck", "bool", title: "No Acknowledgment Message", defaultValue: false, submitOnChange: true
 		}
+        //section ("Switch trigger for this macro", hideable: true, hidden: !(rmTriggerSwitch)){
+		//	input "rmTriggerSwitch", "capability.switch", title: "Trigger Switch", multiple: false, required: false, submitOnChange:true
+		//	paragraph "A virtual dimmer switch is recommended (but not required) to trigger a room/group. You may associate the switch with other automations (including native Alexa Routines) to turn on/off this room/group when the switch state change. ", image: imgURL()+"info.png"
+		//}
         section("Tap below to remove this room/group"){ }
 	}
 }
@@ -89,7 +94,10 @@ def pageSwitchRPT() {
             }
             section ("Status reporting"){
             	input "switchesRPT", "bool", title: "Include Switches In Status Report", defaultValue: false, submitOnChange: true
-        		if (switchesRPT) input "switchesRPTOn", "bool", title: "Report Only Switches That Are On", defaultValue: false
+        		if (switchesRPT) {
+                	if (!switchesRPTSummary) input "switchesRPTOn", "bool", title: "Report Only Switches That Are On", defaultValue: false, submitOnChange: true
+                 	if (!switchesRPTOn && switches.size()>1 ) input "switchesRPTSummary", "bool", title: "Summarize When All Devices Are Not In Same State", defaultValue: false , submitOnChange: true
+                }
             }
             if (setCMD == "tstats" && tstats && switches){
             	section ("Please note"){
@@ -458,9 +466,12 @@ def colorSet(room, param, num){
 def roomStatus(room){
 	String result = ""
     if ((switches && switchesRPT)  || (doors && doorsRPT ) || (locks && locksRPT) || (shades && shadesRPT) || (tstats && tstatsRPT) || temp || humid || water || contact || motion) {
-        result = "The group named, '${room}', is reporting the following: "
         if (switches && switchesRPT){
+            def countOn = switches?.findAll{it.currentValue("switch")=="on"}.size() as int, countOff=switches?.findAll{it.currentValue("switch")=="off"}.size() as int, onVerb=countOn==1 ? "is" : "are", offVerb = countOff==1 ? "is" : "are"
             if (switchesRPTOn) switches.each { if (it.currentValue("switch")=="on") result += "The ${it.label} is on. " }	
+            else if (switches?.size()>1 && switchesRPTSummary && countOn && countOff) {
+            	result += "Of the ${countOn+countOff} switches, ${countOn} ${onVerb} on, ${countOff} ${offVerb} off. "
+            }
             else {
             	if (!switches?.currentValue("switch").contains("off")) result += "All of the switches are on. "
                 else if (!switches?.currentValue("switch").contains("on")) result += "All of the switches are off. "
@@ -521,6 +532,8 @@ def roomStatus(room){
 		if (motion) result += motionReport()
         if (contact) result +=contactReport()
         if (water) result +=waterReport()
+        if (result) result = "The group named, '${room}', is reporting the following: " + result
+        else result = "None of the devices in the group named, '${room}' are reporting information. This may be normal based on your set up. %1%"
     }
     else result = "There are no devices set up to report status in the '${room}' group. %1%"
     return result 
@@ -591,7 +604,8 @@ def getDesc(type){
                 result= "Switch${countNoun} configured"
                 if (switchesExcludeOn || switchesExcludeOff) result +="; Some lights excluded from ${switchesExcludeOn && !switchesExcludeOff ? "'On' command" : switchesExcludeOff && !switchesExcludeOn ? "'Off' command" : "'On' and 'Off' commands"}"
                 if (switchesRPT && switchesRPTOn) result += "; Include in status report only when switch${countNoun} ${countVerb} 'On'"
-                else if (switchesRPT && !switchesRPTOn) result += "; Include ${countAdj} switch${countNoun} in status report"
+                else if (switchesRPT && switchesRPTSummary) result += "; Summarize status of switch${countNoun}"
+                else if (switchesRPT && !switchesRPTOn && !switchesRPTSummary) result += "; Include ${countAdj} switch${countNoun} in status report"
             }
     	break
 		case "door" :
@@ -673,6 +687,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 101 }
+private versionInt(){ return 102 }
 private def textAppName() { return "Ask Alexa Rooms/Groups" }	
-private def textVersion() { return "Rooms/Groups Version: 1.0.1a (09/26/2017)" }
+private def textVersion() { return "Rooms/Groups Version: 1.0.2 (10/31/2017)" }

@@ -2,7 +2,7 @@
  *  Ask Alexa Message Queue Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.6a 8/22/17
+ *  Version 1.0.7 10/17/17
  * 
  *  Version 1.0.0 (3/31/17) - Initial release
  *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
@@ -12,6 +12,7 @@
  *  Version 1.0.4 (7/8/17) - Added REST URL access to Message Queue
  *  Version 1.0.5 (7/21/17) - Changed REST URL icon and display for consistency
  *  Version 1.0.6a (8/22/17) - Added voice options to Message Queue
+ *  Version 1.0.7 (10/17/17) - Put 'purge' logging message into proper location to reduce Live Logging clutter
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -220,13 +221,13 @@ def qDelete() {
 }
 def purgeMQ(){
 	if (!state.msgQueue) state.msgQueue=[]
-    log.debug "Ask Alexa is purging expired messages from the '${app.label}' Message Queue."
     def deleteList = state.msgQueue.findAll{it.expires !=0 && now() > it.expires && it.trackDelete}
 	state.msgQueue.removeAll{it.expires !=0 && now() > it.expires}
     if (deleteList){
     	deleteList.each{
 			sendLocationEvent(name:"askAlexaMQ", value: "${it.appName}.${it.id}",isStateChange: true, data:[[deleteType: "expire"],[queue:app.label]], descriptionText:"Ask Alexa expired messages from the '${app.label}' message queue")
         }
+        log.debug "Ask Alexa is purging expired messages from the '${app.label}' Message Queue."
 	}
     if (!state.msgQueue.size()){
     	if (msgQueueNotifyLightsOn && msgQueueNotifyLightsOff) msgQueueNotifyLightsOn?.off()
@@ -238,4 +239,4 @@ def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && 
 //Version/Copyright/Information/Help
 private versionInt(){ return 106 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.6a (08/22/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.7 (10/17/2017)" }
