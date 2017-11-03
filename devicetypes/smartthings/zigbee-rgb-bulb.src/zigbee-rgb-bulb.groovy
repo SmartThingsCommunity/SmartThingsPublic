@@ -23,7 +23,6 @@ metadata {
 		capability "Actuator"
 		capability "Color Control"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
