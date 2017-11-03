@@ -237,6 +237,6 @@ def purgeMQ(){
 //Common Code
 def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
 //Version/Copyright/Information/Help
-private versionInt(){ return 106 }
+private versionInt(){ return 107 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
 private def textVersion() { return "Message Queue Version: 1.0.7 (10/17/2017)" }
