@@ -17,6 +17,7 @@ metadata {
 		capability "Actuator"
 		capability "Switch"
 		capability "Power Meter"
+		capability "Polling"
 		capability "Refresh"
 		capability "Configuration"
 		capability "Sensor"
@@ -198,6 +199,14 @@ def off() {
 		"delay 3000",
 		zwave.meterV2.meterGet(scale: 2).format()
 	]
+}
+
+def poll() {
+	delayBetween([
+		zwave.switchBinaryV1.switchBinaryGet().format(),
+		zwave.meterV2.meterGet(scale: 0).format(),
+		zwave.meterV2.meterGet(scale: 2).format()
+	])
 }
 
 /**

@@ -18,6 +18,7 @@ metadata {
 		capability "Actuator"
 		capability "Switch"
 		capability "Configuration"
+		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 
@@ -164,6 +165,10 @@ def setLevel(value) {
 def setLevel(value, duration) {
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
 	zwave.switchMultilevelV2.switchMultilevelSet(value: value, dimmingDuration: dimmingDuration).format()
+}
+
+def poll() {
+	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
 def refresh() {
