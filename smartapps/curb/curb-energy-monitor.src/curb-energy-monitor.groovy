@@ -129,7 +129,7 @@ def callback() {
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
             resp ->
                 atomicState.refreshToken = resp.data.refresh_token
-            	atomicState.authToken = resp.data.access_token
+              atomicState.authToken = resp.data.access_token
 
             getCurbLocations()
         }
@@ -246,10 +246,10 @@ def processUsage(resp, data) {
                 hasProduction = true
             }
             if (it.main) {
-            	main += it.avg
+              main += it.avg
             }
             if (it.production) {
-            	production += it.avg
+              production += it.avg
             }
         }
         updateChildDevice("__NET__", "Main", main)
@@ -304,10 +304,10 @@ def processKwh(resp, data) {
                 hasProduction = true
             }
             if (it.main) {
-            	main += it.kwhr
+              main += it.kwhr
             }
             if (it.production) {
-            	production += it.kwhr
+              production += it.kwhr
             }
         }
         getChildDevice("__NET__").handleKwhBilling(main)
