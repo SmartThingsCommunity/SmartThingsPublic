@@ -746,7 +746,8 @@ def zwaveEvent(UserCodeReport cmd) {
 		def codeName
 		
 		// Schlage locks sends a blank/empty code during code creation/updation where as it sends "**********" during scanning
-		if (!cmd.code && isSchlageLock()) {
+		// Some Schlage locks send "**********" during code creation also. The state check will work for them
+		if ((!cmd.code || state["setname$codeID"]) && isSchlageLock()) {
 			// this will be executed when the user tries to create/update a user code through the
 			// smart app or manually on the lock. This is specific to Schlage locks.
 			log.trace "[DTH] User code creation successful for Schlage lock"
