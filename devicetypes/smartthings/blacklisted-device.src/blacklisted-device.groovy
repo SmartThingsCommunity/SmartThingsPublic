@@ -28,7 +28,7 @@ metadata {
             }
         }
         valueTile("info", "device.info", decoration: "flat", height: 3, width: 6, inactiveLabel: false) {
-            state "default", label: 'This device is known to be incompatible with SmartThings and may not function as expected or cause other devices to malfunction. For more information go to https://support.smartthings.com'
+            state "default", label: 'This device is known to be incompatible with SmartThings and may not function as expected or cause other devices to malfunction. For more information go to https://support.smartthings.com/hc/en-us/articles/115005123183'
         }
 
         main "alarm"
