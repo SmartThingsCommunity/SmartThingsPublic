@@ -174,12 +174,13 @@ def getCurbLocations() {
 }
 
 def updateSelectedLocationId() {
+  def location = ""
     atomicState.locationLookup.each {
         if (it.name == settings.curbLocation) {
-            atomicState.location = it.id
-            return it.id
+            location = it.id
         }
     }
+    atomicState.location = location
 }
 
 def updateChildDevice(dni, label, value) {
