@@ -20,19 +20,18 @@ metadata {
 	definition (name: "Aeon WallMote", namespace: "smartthings", author: "Eric Maycock") {
 		capability "Actuator"
 		capability "Button"
-    capability "Holdable Button"
+        capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
-    capability "Battery"
-    capability "Health Check"
-    capability "Switch Level"
+        capability "Battery"
+        capability "Health Check"
 
-    attribute "sequenceNumber", "number"
-    attribute "numberOfButtons", "number"
-    attribute "needUpdate", "string"
+        attribute "sequenceNumber", "number"
+        attribute "numberOfButtons", "number"
+        attribute "needUpdate", "string"
 
 		fingerprint deviceId: "0x1801", inClusters: "0x5E,0x73,0x98,0x86,0x85,0x59,0x8E,0x60,0x72,0x5A,0x84,0x5B,0x71,0x70,0x80,0x7A", outClusters: "0x25,0x26" // secure inclusion
-    fingerprint deviceId: "0x1801", inClusters: "0x5E,0x85,0x59,0x8E,0x60,0x86,0x70,0x72,0x5A,0x73,0x84,0x80,0x5B,0x71,0x7A", outClusters: "0x25,0x26"
+        fingerprint deviceId: "0x1801", inClusters: "0x5E,0x85,0x59,0x8E,0x60,0x86,0x70,0x72,0x5A,0x73,0x84,0x80,0x5B,0x71,0x7A", outClusters: "0x25,0x26"
 
 	}
     preferences {
@@ -66,14 +65,12 @@ metadata {
             state "NO" , label:'', action:"configuration.configure", icon:"st.secondary.configure"
             state "YES", label:'', action:"configuration.configure", icon:"https://github.com/erocm123/SmartThingsPublic/raw/master/devicetypes/erocm123/qubino-flush-1d-relay.src/configure@2x.png"
         }
-
 		main "button"
 		details(["button", "battery", "sequenceNumber", "configure"])
 	}
 }
 
 def parse(String description) {
-    logging("Parse: "+description)
 	def results = []
 	if (description.startsWith("Err")) {
 	    results = createEvent(descriptionText:description, displayed:true)
@@ -88,7 +85,6 @@ def parse(String description) {
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStartLevelChange cmd) {
         logging("upDown: $cmd.upDown")
-        logging("CMD: ${cmd}")
 
         switch (cmd.upDown) {
            case 0: // Up
@@ -107,7 +103,6 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
         logging("keyAttributes: $cmd.keyAttributes")
         logging("sceneNumber: $cmd.sceneNumber")
         logging("sequenceNumber: $cmd.sequenceNumber")
-        logging("CentralSceneNotification: "+cmd)
 
         sendEvent(name: "sequenceNumber", value: cmd.sequenceNumber, displayed:false)
         switch (cmd.keyAttributes) {
@@ -170,6 +165,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 def buttonEvent(button, value) {
     String childDni = "${device.deviceNetworkId}/${button}"
 	def child = childDevices.find{it.deviceNetworkId == childDni}
+    if (child != null)
+        log.debug "Sending button event on child device: "+childDni
     child?.sendEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$child.displayName was $value", isStateChange: true)
     def event = createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true)
     log.debug "Generated button event: "+event
