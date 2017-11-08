@@ -115,6 +115,8 @@ DeviceOperation turn {Device} {Param} mode to {Operator}
 DeviceOperation turn the {Device} {Operator} by {Num} percent
 DeviceOperation turn {Operator} {Device} to {Param}
 DeviceOperation turn {Operator} {Device} {Param} mode
+DeviceOperation turn {Operator} {Device}
+DeviceOperation turn {Operator} the {Device}
 DeviceOperation to turn {Device} {Operator}
 DeviceOperation to turn {Operator} {Device}
 DeviceOperation to turn {Operator} the {Device}
