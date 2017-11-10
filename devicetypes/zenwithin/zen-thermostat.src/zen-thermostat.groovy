@@ -4,7 +4,7 @@
  *  Author: Zen Within
  *  Date: 2015-02-21
  *  Updated by SmartThings
- *  Date: 2017-10-12
+ *  Date: 2017-11-12
  */
 metadata {
     definition (name: "Zen Thermostat", namespace: "zenwithin", author: "ZenWithin") {
@@ -23,7 +23,7 @@ metadata {
         // To please some of the thermostat SmartApps
         command "poll"
 
-		fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat"
+        fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat"
     }
 
     tiles {
@@ -89,8 +89,12 @@ metadata {
         section {
             input("systemModes", "enum",
                 title: "Thermostat configured modes\nSelect the modes the thermostat has been configured for, as displayed on the thermostat",
-                description: "off, heat, cool", defaultValue: "1", required: true, multiple: false,
-                options:["1":"off, heat, cool", "2":"off, auto, heat, cool", "3":"off, emergency heat, heat, cool"]
+                description: "off, heat, cool", defaultValue: "3", required: true, multiple: false,
+                options:["1":"off, heat",
+                        "2":"off, cool",
+                        "3":"off, heat, cool",
+                        "4":"off, auto, heat, cool",
+                        "5":"off, emergency heat, heat, cool"]
             )
         }
     }
@@ -126,9 +130,11 @@ def getSupportedModes() {
 
 def getSupportedModesMap() {
     [
-        "1":["off", "heat", "cool"],
-        "2":["off", "auto", "heat", "cool"],
-        "3":["off", "emergency heat", "heat", "cool"]
+        "1":["off", "heat"],
+        "2":["off", "cool"],
+        "3":["off", "heat", "cool"],
+        "4":["off", "auto", "heat", "cool"],
+        "5":["off", "emergency heat", "heat", "cool"]
     ]
 }
 
