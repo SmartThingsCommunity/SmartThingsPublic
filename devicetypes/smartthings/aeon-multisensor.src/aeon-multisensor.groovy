@@ -92,6 +92,8 @@ metadata {
 	}
 
 	preferences {
+		input description: "Please consult the operating manual for advanced setting options. You can skip this configuration to use default settings",
+				title: "Advanced Configuration", displayDuringSetup: true, type: "paragraph", element: "paragraph"
 		// these are cribbed from the newer aeon-multisensor-6
 		input "motionDelayTime", "enum", title: "Motion Sensor Delay Time",
 				options: ["20 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"], defaultValue: "${motionDelayTime}", displayDuringSetup: true
