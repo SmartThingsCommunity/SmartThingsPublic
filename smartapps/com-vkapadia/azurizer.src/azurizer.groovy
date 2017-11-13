@@ -76,13 +76,10 @@ def processResponse(response, data) {
     
     switch (status) {
         case 200:
-            log.debug "200 returned"
-            break
-        case 304:
-            log.debug "304 returned"
+            log.debug "200 returned."
             break
         default:
-            log.warn "no handling for response with status $status"
+            log.warn "Error contacting remote service."
             break
     }
 }
