@@ -12,6 +12,11 @@ Works with:
 * Schlage Camelot Touchscreen Deadbolt Door Lock
 * Schlage Century Touchscreen Deadbolt Door Lock
 * Schlage Connected Keypad Lever Door Lock
+* Yale Touchscreen Deadbolt Door Lock
+* Yale Touchscreen Lever Door Lock
+* Yale Push Button Deadbolt Door Lock
+* Yale Push Button Lever Door Lock
+* Yale Assure Lock with Bluetooth
 
 ## Table of contents
 

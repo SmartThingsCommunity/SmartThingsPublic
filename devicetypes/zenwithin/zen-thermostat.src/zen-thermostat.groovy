@@ -4,7 +4,7 @@
  *  Author: Zen Within
  *  Date: 2015-02-21
  *  Updated by SmartThings
- *  Date: 2017-09-07
+ *  Date: 2017-11-12
  */
 metadata {
     definition (name: "Zen Thermostat", namespace: "zenwithin", author: "ZenWithin") {
@@ -23,7 +23,7 @@ metadata {
         // To please some of the thermostat SmartApps
         command "poll"
 
-		fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat"
+        fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019", manufacturer: "Zen Within", model: "Zen-01", deviceJoinName: "Zen Thermostat"
     }
 
     tiles {
@@ -89,8 +89,12 @@ metadata {
         section {
             input("systemModes", "enum",
                 title: "Thermostat configured modes\nSelect the modes the thermostat has been configured for, as displayed on the thermostat",
-                description: "off, heat, cool", defaultValue: "1", required: true, multiple: false,
-                options:["1":"off, heat, cool", "2":"off, auto, heat, cool", "3":"off, emergency heat, heat, cool"]
+                description: "off, heat, cool", defaultValue: "3", required: true, multiple: false,
+                options:["1":"off, heat",
+                        "2":"off, cool",
+                        "3":"off, heat, cool",
+                        "4":"off, auto, heat, cool",
+                        "5":"off, emergency heat, heat, cool"]
             )
         }
     }
@@ -126,9 +130,11 @@ def getSupportedModes() {
 
 def getSupportedModesMap() {
     [
-        "1":["off", "heat", "cool"],
-        "2":["off", "auto", "heat", "cool"],
-        "3":["off", "emergency heat", "heat", "cool"]
+        "1":["off", "heat"],
+        "2":["off", "cool"],
+        "3":["off", "heat", "cool"],
+        "4":["off", "auto", "heat", "cool"],
+        "5":["off", "emergency heat", "heat", "cool"]
     ]
 }
 
@@ -196,7 +202,6 @@ def parse(String description) {
         def mode = device.currentValue("thermostatMode")
         switch (descMap.attrId) {
             case "0000": // ATTRIBUTE_LOCAL_TEMPERATURE
-                log.debug "LOCAL TEMPERATURE"
                 map.name = "temperature"
                 map.unit = locationScale
                 map.value = getTempInLocalScale(parseTemperature(descMap.value), "C") // Zibee always reports in °C
@@ -251,7 +256,11 @@ def parse(String description) {
             case "001c": // ATTRIBUTE_SYSTEM_MODE
                 // Make sure operating state is in sync
                 map.name = "thermostatMode"
-                map.isStateChange = true  // set to true to force update if switchMode failed and old mode is returned
+                if (state.switchMode) {
+                    // set isStateChange to true to force update if switchMode failed and old mode is returned
+                    map.isStateChange = true
+                    state.switchMode = false
+                }
                 map.data = [supportedThermostatModes: supportedModes]
                 map.value = systemModeMap[descMap.value]
                 // in case of refresh, allow heat/cool setpoints to be reported before updating setpoint
@@ -275,7 +284,11 @@ def parse(String description) {
                 // Make sure operating state is in sync
                 ping()
                 map.name = "thermostatFanMode"
-                map.isStateChange = true  // set to true to force update if switchMode failed and old mode is returned
+                if (state.switchFanMode) {
+                    // set isStateChange to true to force update if switchMode failed and old mode is returned
+                    map.isStateChange = true
+                    state.switchFanMode = false
+                }
                 map.data = [supportedThermostatFanModes: state.supportedFanModes]
                 map.value = fanModeMap[descMap.value]
                 break
@@ -296,7 +309,6 @@ def parse(String description) {
     if (map) {
       result = createEvent(map)
     }
-    log.debug "Parse returned $map, result:$result"
     return result
 }
 
@@ -407,9 +419,9 @@ def updateBatteryStatus(rawValue) {
         // customAttribute in order to change UI icon/label
         def eventMap = [name: "batteryIcon", value: "err_battery", displayed: false]
         def linkText = getLinkText(device)
-        if (volts < 61 && volts != 0 && volts != 255) {
+        if (volts < 62 && volts != 0 && volts != 255) {
             def minVolts = 34  // voltage when device UI starts to die
-            def maxVolts = 60  // 4 batteries at 1.5V
+            def maxVolts = 61  // 4 batteries at 1.5V should be 6.0V, however logs from users show 6,1 as well
             def pct = (volts - minVolts) / (maxVolts - minVolts)
             eventMap.value = Math.min(100, (int) pct * 100)
             // Update capability "Battery"
@@ -664,6 +676,7 @@ def switchToMode(nextMode) {
             def mode = Integer.parseInt(systemModeMap.find { it.value == nextMode }?.key, 16)
             cmds += zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_SYSTEM_MODE, typeENUM8, mode)
             sendZigbeeCmds(cmds)
+            state.switchMode = true
         } else {
             log.debug("ThermostatMode $nextMode is not supported by ${device.displayName}")
         }
@@ -712,6 +725,7 @@ def switchToFanMode(nextMode) {
             def mode = fanModeMap.find { it.value == nextMode }?.key
             def cmds = zigbee.writeAttribute(FAN_CONTROL_CLUSTER, ATTRIBUTE_FAN_MODE, typeENUM8, mode)
             sendZigbeeCmds(cmds)
+            state.switchFanMode = true
         } else {
             log.debug("FanMode $nextMode is not supported by ${device.displayName}")
         }

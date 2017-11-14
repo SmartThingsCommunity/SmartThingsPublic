@@ -38,6 +38,13 @@ metadata {
 		fingerprint mfr:"003B", prod:"6341", model:"0544", deviceJoinName: "Schlage Camelot Touchscreen Deadbolt Door Lock"
 		fingerprint mfr:"003B", prod:"6341", model:"5044", deviceJoinName: "Schlage Century Touchscreen Deadbolt Door Lock"
 		fingerprint mfr:"003B", prod:"634B", model:"504C", deviceJoinName: "Schlage Connected Keypad Lever Door Lock"
+		fingerprint mfr:"0129", prod:"0002", model:"0800", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD120
+		fingerprint mfr:"0129", prod:"0002", model:"0000", deviceJoinName: "Yale Touchscreen Deadbolt Door Lock" // YRD220, YRD240
+		fingerprint mfr:"0129", prod:"0002", model:"FFFF", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRD220
+		fingerprint mfr:"0129", prod:"0004", model:"0800", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD110
+		fingerprint mfr:"0129", prod:"0004", model:"0000", deviceJoinName: "Yale Push Button Deadbolt Door Lock" // YRD210
+		fingerprint mfr:"0129", prod:"0001", model:"0000", deviceJoinName: "Yale Push Button Lever Door Lock" // YRD210
+		fingerprint mfr:"0129", prod:"8002", model:"0600", deviceJoinName: "Yale Assure Lock with Bluetooth"
 	}
 
 	simulator {
@@ -53,6 +60,7 @@ metadata {
 			tileAttribute ("device.lock", key: "PRIMARY_CONTROL") {
 				attributeState "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00A0DC", nextState:"unlocking"
 				attributeState "unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking"
+				attributeState "unlocked with timeout", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff", nextState:"locking"
 				attributeState "unknown", label:"unknown", action:"lock.lock", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff", nextState:"locking"
 				attributeState "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#00A0DC"
 				attributeState "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
@@ -84,7 +92,16 @@ import physicalgraph.zwave.commands.usercodev1.*
  */
 def installed() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
-	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+/**
+ * Called on app uninstalled
+ */
+def uninstalled() {
+	def deviceName = device.displayName
+	log.trace "[DTH] Executing 'uninstalled()' for device $deviceName"
+	sendEvent(name: "lockRemoved", value: device.id, isStateChange: true, displayed: false)
 }
 
 /**
@@ -93,14 +110,8 @@ def installed() {
  * @return hubAction: The commands to be executed
  */
 def updated() {
-	if (device.rawDescription.contains("mfr:0129") && device.getType() != "Yale Z-Wave Lock") {
-		log.trace "[DTH] Setting device type to 'Yale Z-Wave Lock' for device ${device.displayName}"
-		setDeviceType("Yale Z-Wave Lock")
-		return null
-	}
-	
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
-	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	def hubAction = null
 	try {
 		def cmds = []
@@ -144,9 +155,6 @@ def configure() {
 def doConfigure() {
 	log.trace "[DTH] Executing 'doConfigure()' for device ${device.displayName}"
 	state.configured = true
-	if (device.rawDescription.contains("mfr:003B")) {
-		updateDataValue("manufacturer", "Schlage")
-	}
 	def cmds = []
 	cmds << secure(zwave.doorLockV1.doorLockOperationGet())
 	cmds << secure(zwave.batteryV1.batteryGet())
@@ -283,6 +291,7 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	unschedule("followupStateCheck")
 	unschedule("stateCheck")
 	
+	// DoorLockOperationReport is called when trying to read the lock state or when the lock is locked/unlocked from the DTH or the smart app
 	def map = [ name: "lock" ]
 	map.data = [ lockName: device.displayName ]
 	if (cmd.doorLockMode == 0xFF) {
@@ -291,7 +300,10 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	} else if (cmd.doorLockMode >= 0x40) {
 		map.value = "unknown"
 		map.descriptionText = "Unknown state"
-	} else {
+	} else if (cmd.doorLockMode == 0x01) {
+		map.value = "unlocked with timeout"
+		map.descriptionText = "Unlocked with timeout"
+	}  else {
 		map.value = "unlocked"
 		map.descriptionText = "Unlocked"
 		if (state.assoc != zwaveHubNodeId) {
@@ -369,7 +381,7 @@ private def handleAccessAlarmReport(cmd) {
 			if (cmd.eventParameter || cmd.alarmLevel) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
-				map.descriptionText = "\"$codeName\" locked the lock"
+				map.descriptionText = "Locked by \"$codeName\""
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			} else {
 				// locked by pressing the Schlage button
@@ -380,7 +392,7 @@ private def handleAccessAlarmReport(cmd) {
 			if (cmd.eventParameter || cmd.alarmLevel) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
-				map.descriptionText = "\"$codeName\" unlocked the lock"
+				map.descriptionText = "Unlocked by \"$codeName\""
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
@@ -412,16 +424,24 @@ private def handleAccessAlarmReport(cmd) {
 		case 0xD: // User code deleted
 			if (cmd.eventParameter || cmd.alarmLevel) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
-				codeName = getCodeName(lockCodes, codeID)
-				map = [ name: "codeChanged", value: "$codeID deleted", isStateChange: true ]
-				map.descriptionText = "Deleted \"$codeName\""
-				map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
-				result << codeDeletedEvent(lockCodes, codeID)
+				if (lockCodes[codeID.toString()]) {
+					codeName = getCodeName(lockCodes, codeID)
+					map = [ name: "codeChanged", value: "$codeID deleted", isStateChange: true ]
+					map.descriptionText = "Deleted \"$codeName\""
+					map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
+					result << codeDeletedEvent(lockCodes, codeID)
+				}
 			}
 			break
 		case 0xE: // Master or user code changed/set
 			if (cmd.eventParameter || cmd.alarmLevel) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
+				if(codeID == 0 && isKwiksetLock()) {
+					//Ignoring this AlarmReport as Kwikset reports codeID 0 when all slots are full and user tries to set another lock code manually
+					//Kwikset locks don't send AlarmReport when Master code is set
+					log.trace "Ignoring this alarm report in case of Kwikset locks"
+					break
+				}
 				codeName = getCodeNameFromState(lockCodes, codeID)
 				changeType = getChangeType(lockCodes, codeID)
 				map = [ name: "codeChanged", value: "$codeID $changeType",  descriptionText: "${getStatusForDescription(changeType)} \"$codeName\"", isStateChange: true ]
@@ -566,16 +586,22 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			if (cmd.alarmLevel != null) {
 				codeID = cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
-				map.descriptionText = "\"$codeName\" unlocked the lock"
+				map.descriptionText = "Unlocked by \"$codeName\""
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 18: // Locked with keypad
 			codeID = cmd.alarmLevel
-			codeName = getCodeName(lockCodes, codeID)
 			map = [ name: "lock", value: "locked" ]
-			map.descriptionText = "\"$codeName\" locked the lock"
-			map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+			// Kwikset lock reporting code id as 0 when locked using the lock keypad button
+			if (isKwiksetLock() && codeID == 0) {
+				map.descriptionText = "Locked manually"
+				map.data = [ method: "manual" ]
+			} else {
+				codeName = getCodeName(lockCodes, codeID)
+				map.descriptionText = "Locked by \"$codeName\""
+				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+			}
 			break
 		case 21: // Manually locked
 			map = [ name: "lock", value: "locked", data: [ method: (cmd.alarmLevel == 2) ? "keypad" : "manual" ] ]
@@ -613,11 +639,13 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 33: // User code deleted
 			codeID = cmd.alarmLevel
-			codeName = getCodeName(lockCodes, codeID)
-			map = [ name: "codeChanged", value: "$codeID deleted", isStateChange: true ]
-			map.descriptionText = "Deleted \"$codeName\""
-			map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
-			result << codeDeletedEvent(lockCodes, codeID)
+			if (lockCodes[codeID.toString()]) {
+				codeName = getCodeName(lockCodes, codeID)
+				map = [ name: "codeChanged", value: "$codeID deleted", isStateChange: true ]
+				map.descriptionText = "Deleted \"$codeName\""
+				map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
+				result << codeDeletedEvent(lockCodes, codeID)
+			}
 			break
 		case 38: // Non Access
 			map = [ descriptionText: "A Non Access Code was entered at the lock", isStateChange: true ]
@@ -625,6 +653,12 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 		case 13:
 		case 112: // Master or user code changed/set
 			codeID = cmd.alarmLevel
+			if(codeID == 0 && isKwiksetLock()) {
+				//Ignoring this AlarmReport as Kwikset reports codeID 0 when all slots are full and user tries to set another lock code manually
+				//Kwikset locks don't send AlarmReport when Master code is set
+				log.trace "Ignoring this alarm report in case of Kwikset locks"
+				break
+			}
 			codeName = getCodeNameFromState(lockCodes, codeID)
 			def changeType = getChangeType(lockCodes, codeID)
 			map = [ name: "codeChanged", value: "$codeID $changeType", descriptionText:
@@ -712,7 +746,8 @@ def zwaveEvent(UserCodeReport cmd) {
 		def codeName
 		
 		// Schlage locks sends a blank/empty code during code creation/updation where as it sends "**********" during scanning
-		if (!cmd.code && isSchlageLock()) {
+		// Some Schlage locks send "**********" during code creation also. The state check will work for them
+		if ((!cmd.code || state["setname$codeID"]) && isSchlageLock()) {
 			// this will be executed when the user tries to create/update a user code through the
 			// smart app or manually on the lock. This is specific to Schlage locks.
 			log.trace "[DTH] User code creation successful for Schlage lock"
@@ -750,7 +785,8 @@ def zwaveEvent(UserCodeReport cmd) {
 		map = [ name: "codeChanged", value: "$codeID failed", descriptionText: "User code is not added", isStateChange: true,
 			data: [ lockName: deviceName, isCodeDuplicate: true] ]
 	} else {
-		if (codeID == "0" && isSchlageLock()) {
+		// We are using userIdStatus here because codeID = 0 is reported when user tries to set programming code as the user code
+		if (codeID == "0" && userIdStatus == UserCodeReport.USER_ID_STATUS_AVAILABLE_NOT_SET && isSchlageLock()) {
 			// all codes deleted for Schlage locks
 			log.trace "[DTH] All user codes deleted for Schlage lock"
 			result << allCodesDeletedEvent()
@@ -1149,13 +1185,22 @@ def reloadAllCodes() {
 	sendEvent(lockCodesEvent(lockCodes))
 	state.checkCode = 1
 
+	def cmds = []
+	// Not calling validateAttributes() here because userNumberGet command will be added twice
+	if(!device.currentValue("codeLength") && isSchlageLock()) {
+		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: getSchlageLockParam().codeLength.number))
+	}
 	if (!state.codes) {
 		// BUG: There might be a bug where Schlage does not return the below number of codes
-		return secure(zwave.userCodeV1.usersNumberGet())
+		cmds << secure(zwave.userCodeV1.usersNumberGet())
 	} else {
 		sendEvent(name: "maxCodes", value: state.codes, displayed: false)
-		return requestCode(1)
+		cmds << requestCode(1)
 	}
+	if(cmds.size() > 1) {
+		cmds = delayBetween(cmds, 4200)
+	}
+	cmds
 }
 
 /**
@@ -1248,8 +1293,7 @@ def updateCodes(codeSettings) {
 			def n = name[4..-1].toInteger()
 			if (updated && updated.size() >= 4 && updated.size() <= 8) {
 				log.debug "Setting code number $n"
-				def cmds = setCode(n, updated)
-				set_cmds << cmds.first()
+				set_cmds << secure(zwave.userCodeV1.userCodeSet(userIdentifier:n, userIdStatus:1, user:updated))
 			} else if (updated == null || updated == "" || updated == "0") {
 				log.debug "Deleting code number $n"
 				set_cmds << deleteCode(n)
@@ -1274,9 +1318,15 @@ void nameSlot(codeSlot, codeName) {
 	if (!isCodeSet(codeSlot)) {
 		return
 	}
+	def deviceName = device.displayName
+	log.trace "[DTH] - Executing nameSlot() for device $deviceName"
 	def lockCodes = loadLockCodes()
-	lockCodes[codeSlot] = (codeName ?: "Code $codeSlot")
+	def oldCodeName = getCodeName(lockCodes, codeSlot)
+	def newCodeName = codeName ?: "Code $codeSlot"
+	lockCodes[codeSlot] = newCodeName
 	sendEvent(lockCodesEvent(lockCodes))
+	sendEvent(name: "codeChanged", value: "$codeSlot renamed", data: [ lockName: deviceName, notify: false, notificationText: "Renamed \"$oldCodeName\" to \"$newCodeName\" in $deviceName at ${location.name}" ],
+		descriptionText: "Renamed \"$oldCodeName\" to \"$newCodeName\"", displayed: true, isStateChange: true)
 }
 
 /**
@@ -1288,11 +1338,12 @@ void nameSlot(codeSlot, codeName) {
  */
 def deleteCode(codeID) {
 	log.trace "[DTH] Executing 'deleteCode()' by ${this.device.displayName}"
-	secure(zwave.userCodeV1.userCodeSet(userIdentifier:codeID, userIdStatus:0))
-	/*secureSequence([
+	// Calling user code get when deleting a code because some Kwikset locks do not generate
+	// AlarmReport when a code is deleted manually on the lock
+	secureSequence([
 		zwave.userCodeV1.userCodeSet(userIdentifier:codeID, userIdStatus:0),
 		zwave.userCodeV1.userCodeGet(userIdentifier:codeID)
-	], 7000)*/
+	], 4200)
 }
 
 /**
@@ -1560,7 +1611,40 @@ def getSchlageLockParam() {
  * @return true if the lock manufacturer is Schlage, else false
  */
 def isSchlageLock() {
-	if (device.getDataValue("manufacturer") == "Schlage") {
+	if ("003B" == zwaveInfo.mfr) {
+		if("Schlage" != getDataValue("manufacturer")) {
+			updateDataValue("manufacturer", "Schlage")
+		}
+		return true
+	}
+	return false
+}
+
+/**
+ * Utility function to check if the lock manufacturer is Kwikset
+ *
+ * @return true if the lock manufacturer is Kwikset, else false
+ */
+def isKwiksetLock() {
+	if ("0090" == zwaveInfo.mfr) {
+		if("Kwikset" != getDataValue("manufacturer")) {
+			updateDataValue("manufacturer", "Kwikset")
+		}
+		return true
+	}
+	return false
+}
+
+/**
+ * Utility function to check if the lock manufacturer is Yale
+ *
+ * @return true if the lock manufacturer is Yale, else false
+ */
+def isYaleLock() {
+	if ("0129" == zwaveInfo.mfr) {
+		if("Yale" != getDataValue("manufacturer")) {
+			updateDataValue("manufacturer", "Yale")
+		}
 		return true
 	}
 	return false

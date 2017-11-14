@@ -9,6 +9,10 @@ Works with:
 * KwikSet SmartCode 912 Lever Door Lock
 * KwikSet SmartCode 914 Deadbolt Door Lock
 * KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock
+* Yale Touch Screen Lever Lock
+* Yale Push Button Deadbolt Lock
+* Yale Touch Screen Deadbolt Lock
+* Yale Push Button Lever Lock
 
 ## Table of contents
 
