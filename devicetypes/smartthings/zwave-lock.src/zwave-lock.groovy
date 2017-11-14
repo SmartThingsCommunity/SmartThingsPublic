@@ -773,7 +773,7 @@ def zwaveEvent(UserCodeReport cmd) {
 				result << codeSetEvent(lockCodes, codeID, codeName)
 			} else {
 				map.value = "$codeID changed"
-				map.isStateChange = false
+				map.isStateChange = true
 			}
 			map.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
 			map.data = [ codeName: codeName, lockName: deviceName ]
@@ -805,7 +805,7 @@ def zwaveEvent(UserCodeReport cmd) {
 				result << codeDeletedEvent(lockCodes, codeID)
 			} else {
 				map.value = "$codeID unset"
-				map.isStateChange = false
+				map.isStateChange = true
 				map.data = [ lockName: deviceName ]
 			}
 		}
