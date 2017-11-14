@@ -24,7 +24,6 @@ metadata {
         capability "Color Control"
         capability "Color Temperature"
         capability "Configuration"
-        capability "Polling"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"

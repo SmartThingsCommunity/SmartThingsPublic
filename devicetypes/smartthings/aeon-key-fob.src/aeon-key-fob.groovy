@@ -40,7 +40,7 @@ metadata {
 	}
 	tiles {
 
-		multiAttributeTile(name: "rich-control") {
+		multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.button", key: "PRIMARY_CONTROL") {
 				attributeState "default", label: ' ', action: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
 			}
