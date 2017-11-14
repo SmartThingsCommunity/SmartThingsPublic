@@ -759,7 +759,7 @@ private def parseCommandResponse(String description) {
 				// Code slot is empty - can happen when a slot is found empty while scanning the lock
 				responseMap.value = "$codeID unset"
 				responseMap.descriptionText = "Code slot $codeID found empty during scanning"
-				responseMap.isStateChange = false
+				responseMap.isStateChange = true
 				responseMap.displayed = false
 			}
 		}
