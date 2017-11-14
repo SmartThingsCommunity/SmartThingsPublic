@@ -53,10 +53,11 @@ def updated() {
 }
 
 def initialize() {
-	subscribe(switches, "switch", switchesHandler)
+	subscribe(switches, "switch", deviceHandler)
+    subscribe(sensors, "sensor", deviceHandler)
 }
 
-def switchesHandler(evt) {
+def deviceHandler(evt) {
     log.debug "${evt.device.label} set to ${evt.value}"
 
     def params = [
