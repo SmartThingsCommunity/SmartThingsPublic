@@ -16,7 +16,6 @@
 
 include 'asynchttp_v1'
 
-
 definition(
     name: "Azurizer",
     namespace: "com.vkapadia",
@@ -26,7 +25,6 @@ definition(
     iconUrl: "https://kapadiahome.blob.core.windows.net/files/azurizer.png",
     iconX2Url: "https://kapadiahome.blob.core.windows.net/files/azurizer.png",
     iconX3Url: "https://kapadiahome.blob.core.windows.net/files/azurizer.png")
-
 
 preferences {
 	section("Function") {
@@ -41,13 +39,11 @@ preferences {
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-
 	initialize()
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-
 	unsubscribe()
 	initialize()
 }
@@ -57,7 +53,9 @@ def initialize() {
     
     sensors.each { sen ->
         sen.capabilities.each { cap ->
-            subscribe(sen, cap.name, deviceHandler)
+            cap.attributes.each { attr ->
+                subscribe(sen, attr.name, deviceHandler)
+            }
         }
     }
 }
@@ -82,7 +80,7 @@ def processResponse(response, data) {
     
     switch (status) {
         case 200:
-            log.debug "200 returned."
+            log.debug "Success."
             break
         default:
             log.warn "Error contacting remote service."
