@@ -54,7 +54,12 @@ def updated() {
 
 def initialize() {
 	subscribe(switches, "switch", deviceHandler)
-    subscribe(sensors, "sensor", deviceHandler)
+    
+    sensors.each { sen ->
+        sen.capabilities.each { cap ->
+            subscribe(sen, cap.name, deviceHandler)
+        }
+    }
 }
 
 def deviceHandler(evt) {
