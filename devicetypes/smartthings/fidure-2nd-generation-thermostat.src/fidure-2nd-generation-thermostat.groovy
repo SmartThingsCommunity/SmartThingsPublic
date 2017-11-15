@@ -96,7 +96,7 @@ metadata {
 				attributeState("VALUE_DOWN", action: "tempDown")
 			}
 			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
-				attributeState("humidity", label:'${currentValue}%', unit:"%", defaultState: true)
+				attributeState("humidity", label:'${currentValue}%', defaultState: true)
 			}
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
 				attributeState("idle", backgroundColor:"#00A0DC")
@@ -116,6 +116,28 @@ metadata {
 				attributeState("coolingSetpoint", label:'${currentValue}', unit:"dF", defaultState: true)
 			}
 		}
+        valueTile("temperature", "device.temperature", width: 2, height: 2) {
+			state("temperature", label:'${currentValue}', unit:"dF",
+				backgroundColors:[
+							// Celsius
+							[value: 0, color: "#153591"],
+							[value: 7, color: "#1e9cbb"],
+							[value: 15, color: "#90d2a7"],
+							[value: 23, color: "#44b621"],
+							[value: 28, color: "#f1d801"],
+							[value: 35, color: "#d04e00"],
+							[value: 37, color: "#bc2323"],
+							// Fahrenheit
+							[value: 40, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+				]
+			)
+		}
 		standardTile("mode", "device.thermostatMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "updating", label:'Updating...', action:"", backgroundColor:"#880000", nextState:"off" 
 			state "off", action:"thermostat.auto", backgroundColor:"#ffffff", nextState:"updating" , icon: "st.thermostat.heating-cooling-off"
@@ -123,7 +145,7 @@ metadata {
 			state "cool", action:"thermostat.heat", backgroundColor:"#00A0DC", nextState:"updating", icon: "st.thermostat.cool"
 			state "heat", action:"thermostat.off", backgroundColor:"#e86d13", nextState:"updating" , icon: "st.thermostat.heat"
 		}
-		standardTile("fanMode", "device.thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+		standardTile("fanMode", "thermostatFanMode", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "updating", label:'Updating...', action:"", backgroundColor:"#ffffff", nextState:"fanAuto" 
 			state "fanAuto", action:"thermostat.fanOn", backgroundColor:"#ffffff" , nextState:"updating" , icon: "st.thermostat.fan-auto"
 			state "fanOn", action:"thermostat.fanCirculate", backgroundColor:"#ffffff" ,  nextState:"updating" , icon: "st.thermostat.fan-on"
@@ -163,7 +185,7 @@ metadata {
 			state "Off", label:'Sched ${currentValue}', action:"turnProgOn", nextState:"changing"
 		}
 		valueTile("humidity", "device.humidity", width: 2, height: 2, decoration: "flat") {
-			state "humidity", label:'${currentValue}%'
+			state "humidity", label:'${currentValue}%', icon:"st.Weather.weather12"
 		}
 		valueTile("seen", "lastSeen", width: 2, height: 2, decoration: "flat") {
 			state "seen", label:'last seen ${currentValue}'
@@ -171,10 +193,7 @@ metadata {
 		main("temperature")
 		details([
 			"thermostatFull", 
-			"temperature","tempDown","tempUp",
 			"mode", "fanMode", "operatingState",
-			"heatingSetpoint", "heatDown", "heatUp",
-			"coolingSetpoint", "coolDown", "coolUp",
 			"toggle","program", "hold",
 			"humidity","refresh", "seen"
 		])
@@ -204,6 +223,7 @@ def refresh(){
 	log.trace "refreshing..."
 
 	def cmds = []
+           cmds += zigbee.readAttribute(0x0201, 0x0010, ["mfgCode": 0x1121]) 
 		   cmds += zigbee.readAttribute(0x0405, 0x0000)
 		   cmds += zigbee.readAttribute(0x0000, 0x0005) 
 		   cmds += zigbee.readAttribute(0x0201, 0x0000) 
@@ -216,7 +236,6 @@ def refresh(){
 		   cmds += zigbee.readAttribute(0x0201, 0x0024) 
 		   cmds += zigbee.readAttribute(0x0201, 0x0025) 
 		   cmds += zigbee.readAttribute(0x0201, 0x0029) 
-		   cmds += zigbee.readAttribute(0x0201, 0x0010, ["mfgCode": 0x1121]) 
 		   cmds += setThermostatTime()
 
 	def timeNow = new Date().time
@@ -365,6 +384,7 @@ private Map processSingleAttributeMessge(Map descMap){
 	}
 	else if (descMap.cluster == "0405" && descMap.attrId == "0000") {
 		resultMap.name = "humidity"
+        resultMap.unit = "%"
 		resultMap.value = Integer.parseInt("${descMap.encoding}", 16) / 100
 	} else if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		resultMap.name = "temperature"
@@ -461,7 +481,7 @@ private Map parseThermostatClusterAttr(Map descMap){
 		case "0010":
 		Integer encoding = Integer.parseInt("${descMap.encoding}",16)
 			if (encoding == 0x30) {
-			map.name ="fanMode"
+			map.name ="thermostatFanMode"
 			map.value = getFanModeMap()[descMap.value]
 			}
 		break
@@ -670,7 +690,7 @@ def checkBoundary(mode, newValue){
 
 def sendZigBeCommands(data) {
 	//log.trace "Sending ZigBee Commands: $data?.c[0]"
-	sendZigbeeCmds(data.c[0], 100)
+	sendZigbeeCmds(data.c[0], 400)
 }
 
 def sendZigbeeCmds(cmds, delay = 2000) {
@@ -763,3 +783,4 @@ def getThermostatOperatingState(value){
 	return desc
 }
 def reverseHex(String hex){ return (hex.length() > 2)? (reverseHex(hex.substring(2)) + hex.substring(0,2)) : hex }
+// End of DTH
