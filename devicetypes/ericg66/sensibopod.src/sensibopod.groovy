@@ -970,6 +970,7 @@ def generateModeEvent(mode) {
 
 def GetNextFanLevel(fanLevel, fanLevels)
 {
+	if (fanLevels == null) return "null"
 	if (!fanLevels.contains(fanLevel)){
     	switch (fanLevel) {
         	case "high":
@@ -991,6 +992,12 @@ def GetNextFanLevel(fanLevel, fanLevels)
             	if (fanLevels.contains("low")) return "low"
                 if (fanLevels.contains("medium")) return "medium"
             	if (fanLevels.contains("high")) return "high"                
+                break
+            default:
+                if (fanLevels.contains("auto")) return "auto"            	
+                if (fanLevels.contains("low")) return "low"
+                if (fanLevels.contains("medium")) return "medium"
+                if (fanLevels.contains("high")) return "high"
                 break
         }
     }    
