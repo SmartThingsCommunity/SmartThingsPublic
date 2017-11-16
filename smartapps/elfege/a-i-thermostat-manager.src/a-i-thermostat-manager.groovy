@@ -147,12 +147,13 @@ log.debug """ intersectMap = $intersectMap"""
             def MyThermostats = []
             Thermostats.each {MyThermostats << "$it"}
             if(VirThermSwitch){
-                input(name: "coolOrHeat", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heatint"], default: "heating")
+                input(name: "coolOrHeat", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], default: "heating")
                 input(name: "VirThermTherm", type: "capability.thermostat", title: "Select the thermostat used for set point reference", multiple: false, required: true)
                 input(name: "AltSensorVirTherm", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
                 if(AltSensorVirTherm){
                     input(name: "VirThermSensor", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
                 }
+                input(name: "VirThermModes", type: "mode", title: "Run only in these modes", multiple: true, required: false)
             }
         }
     }
@@ -976,6 +977,14 @@ def VirtualThermostat(){
                 }
     def SwitchState = VirThermSwitch?.currentSwitch
 
+    def inVirThermModes = false 
+    if(VirThermModes){
+        inVirThermModes = location.currentMode in VirThermModes
+        log.debug " inVirThermModes set to $inVirThermModes"
+    }
+    
+
+
     log.debug """Values @ virtual thermostat are: 
 ---------------------------- 
 CurrTemp = $CurrTemp
@@ -983,13 +992,14 @@ CurrCSP = $CurrCSP
 CurrHSP = $CurrHSP
 Mode coolOrHeat = $coolOrHeat
 Switch State = $SwitchState
+inVirThermModes = $inVirThermModes
 ----------------------------    
 """
 
 
     if(coolOrHeat == "cooling"){
         if(CurrTemp > CurrCSP){
-            if(SwitchState != "on"){
+            if(SwitchState != "on" && inVirThermModes){
                 VirThermSwitch?.on()
                 log.debug "$VirThermSwitch [cool] turned on"
             }
@@ -1004,7 +1014,7 @@ Switch State = $SwitchState
     }
     else {
         if(CurrTemp < CurrHSP){
-            if(SwitchState != "on"){
+            if(SwitchState != "on" && inVirThermModes){
                 VirThermSwitch?.on()
                 log.debug "$VirThermSwitch [heat] turned on"
             }
