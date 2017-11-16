@@ -1183,7 +1183,7 @@ def reloadAllCodes() {
 	sendEvent(name: "scanCodes", value: "Scanning", descriptionText: "Code scan in progress", displayed: false)
 	def lockCodes = loadLockCodes()
 	sendEvent(lockCodesEvent(lockCodes))
-	state.checkCode = 1
+	state.checkCode = state.checkCode ?: 1
 
 	def cmds = []
 	// Not calling validateAttributes() here because userNumberGet command will be added twice
@@ -1195,7 +1195,7 @@ def reloadAllCodes() {
 		cmds << secure(zwave.userCodeV1.usersNumberGet())
 	} else {
 		sendEvent(name: "maxCodes", value: state.codes, displayed: false)
-		cmds << requestCode(1)
+		cmds << requestCode(state.checkCode)
 	}
 	if(cmds.size() > 1) {
 		cmds = delayBetween(cmds, 4200)
