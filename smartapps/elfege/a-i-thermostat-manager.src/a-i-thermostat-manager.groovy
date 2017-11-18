@@ -3,17 +3,9 @@ definition(
     namespace: "ELFEGE",
     author: "ELFEGE",
 
-    description: """Manage one or more thermostats in parallel with several other features such as: 
-- Unlimited number of thermostats, sensors, etc. 
-- Home location mode (up to 5 unlimited sets)
-- open/close windows and/or turn on/off fans instead of AC
-- contact sensors 
-- humidity measurment
-- outside / inside temperatures amplitude
-- wind speed 
-- subjective ("feels like") outside's temperature
-- adjust temperature with presence using motion sensors
-- switch on/off state
+    description: """
+Control an unlimited number of devices, sensors and many other features. This manager is probably the most complete and smartest solution you'll find out there. It'll make your 
+home more comfortable than you ever thought possible. You might however get surprised by outside's weather so much this app will make you forget it even changes... 
 """ ,
     category: "Green Living",
     iconUrl: "http://elfege.com/penrose.jpg",
@@ -982,7 +974,7 @@ def VirtualThermostat(){
         inVirThermModes = location.currentMode in VirThermModes
         log.debug " inVirThermModes set to $inVirThermModes"
     }
-    
+
 
 
     log.debug """Values @ virtual thermostat are: 
@@ -2338,15 +2330,13 @@ BedSensor is $BedSensor---------------------------------------------------------
 }
 def Timer() {
     def minutes = findFalseAlarmThreshold() 
-    def deltaMinutes = minutes * 60000 as Long
+    def deltaMinutes = minutes as Long
 
-    def start = new Date(now() - deltaMinutes)
-    def end = new Date(now())
-    def ContactsEvents = BedSensor?.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
+    def ContactsEvents = BedSensor?.collect{ it.eventsSince(new Date(now() - (60000 * deltaMinutes))) }.flatten()
     //BedSensor[0].statesBetween("contact", start, end, [max: 200]))
 
     log.debug """
-Found ${ContactsEvents.size()} events in the last $minutes minutes"
+Timer Found ${ContactsEvents.size()} events in the last $minutes minutes"
 """
     def size = ContactsEvents.size()
     return size
@@ -2362,6 +2352,7 @@ private findFalseAlarmThreshold() {
 def BedSensorStatus(){
     def ConsideredOpen = true // has to be true by default in case no contacts selected
     def BedSensorAreClosed = false // has to be false by default in case no contacts selected
+
     if(BedSensor){
 
         def CurrentContacts = BedSensor.currentValue("contact")    
@@ -2372,17 +2363,17 @@ def BedSensorStatus(){
             BedSensorAreClosed = true
         }
 
-        // // log.debug "${ClosedContacts.size()} sensors out of ${BedSensor.size()} are closed SO BedSensorAreClosed = $BedSensorAreClosed"
+        log.debug "${ClosedContacts.size()} sensors out of ${BedSensor.size()} are closed SO BedSensorAreClosed = $BedSensorAreClosed"
         def ContactsEventsSize = Timer()
 
         def Open = BedSensor.findAll{it.currentValue("contact") == "open"}
 
         boolean isOpen = Open.size() != 0 && !BedSensorAreClosed
-        // // log.debug "Open = ${Open}, isOpen = $isOpen"
+        log.debug "Open = ${Open}, isOpen = $isOpen"
 
         if(isOpen && ContactsEventsSize > 1){
             ConsideredOpen = false
-            // // log.debug "too many events in the last couple minutes"
+            log.debug "too many events in the last couple minutes"
         }
         else if (isOpen && ContactsEventsSize == 1){  
 
@@ -2396,11 +2387,9 @@ def BedSensorStatus(){
                 Map << ["$Therm": loopV]
             }
 
-            // // log.debug "Map = $Map"
-            //["${Thermostats[0]}": "0" , "${Thermostats[1]}": 1, "${Thermostats[2]}": "2", "${Thermostats[3]}": "3"]
 
             def KeyValueForThisTherm = Map.find { it.key == "$ThermContact"}
-            log.info "device is ------------------- $KeyValueForThisTherm.value"
+            log.info "devices is/are ------------------- $KeyValueForThisTherm.value"
             def ThermNumber = KeyValueForThisTherm.value
             ThermNumber = KeyValueForThisTherm.value.toInteger()
 
@@ -2409,11 +2398,11 @@ def BedSensorStatus(){
             // state.AppMgtMap["$ThermContact"] = false 
 
             ConsideredOpen = true
-            // log.debug "Only one event within the last couple minutes"
+            log.debug "Only one event within the last couple minutes"
 
         }
     }
-    // // log.debug "BedSensorAreClosed = $BedSensorAreClosed, ConsideredOpen = $ConsideredOpen"
+    log.debug "BedSensorAreClosed = $BedSensorAreClosed, ConsideredOpen = $ConsideredOpen"
     return [BedSensorAreClosed, ConsideredOpen]
 }
 
