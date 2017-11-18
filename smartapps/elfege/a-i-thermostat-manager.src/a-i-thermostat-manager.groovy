@@ -2346,7 +2346,7 @@ private findFalseAlarmThreshold() {
     // In Groovy, the return statement is implied, and not required.
     // We check to see if the variable we set in the preferences
     // is defined and non-empty, and if it is, return it.  Otherwise,
-    // return our default value of 10
+    // return our default value of 2
     (falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold : 2
 }
 def BedSensorStatus(){
