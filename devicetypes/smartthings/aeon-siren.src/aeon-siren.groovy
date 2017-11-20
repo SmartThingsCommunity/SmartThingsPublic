@@ -97,9 +97,23 @@ def updated() {
 def parse(String description) {
 	log.debug "parse($description)"
 	def result = null
-	def cmd = zwave.parse(description, [0x98: 1, 0x20: 1, 0x70: 1])
-	if (cmd) {
-		result = zwaveEvent(cmd)
+	if (description.startsWith("Err")) {
+		if (state.sec) {
+			result = createEvent(descriptionText:description, displayed:false)
+		} else {
+			result = createEvent(
+					descriptionText: "This device failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
+					eventType: "ALERT",
+					name: "secureInclusion",
+					value: "failed",
+					displayed: true,
+			)
+		}
+	} else {
+		def cmd = zwave.parse(description, [0x98: 1, 0x20: 1, 0x70: 1])
+		if (cmd) {
+			result = zwaveEvent(cmd)
+		}
 	}
 	log.debug "Parse returned ${result?.inspect()}"
 	return result
