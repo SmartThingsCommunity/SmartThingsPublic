@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Open/Closed Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Open/Closed Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Contact Sensor"
 		capability "Sensor"
 
@@ -29,8 +29,8 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#ffa81e"
-			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+			state "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
+			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
 		}
 
 		main "contact"
@@ -40,14 +40,11 @@ metadata {
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-	def name = null
-	def value = description
-	if (zigbee.isZoneType19(description)) {
-		name = "contact"
-		value = zigbee.translateStatusZoneType19(description) ? "open" : "closed"
+	def resMap
+	if (description.startsWith("zone")) {
+		resMap = createEvent(name: "contact", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "open" : "closed")
 	}
-	
-	def result = createEvent(name: name, value: value)
-	log.debug "Parse returned ${result?.descriptionText}"
-	return result
+
+	log.debug "Parse returned $resMap"
+	return resMap
 }

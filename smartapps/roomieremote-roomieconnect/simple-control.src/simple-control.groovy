@@ -21,6 +21,12 @@ preferences()
 	section("Allow Simple Control to Monitor and Control These Things...")
     {
     	input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
+    	input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false
+        input "thermostats", "capability.thermostat", title: "Which Thermostats?", multiple: true, required: false
+        input "doorControls", "capability.doorControl", title: "Which Door Controls?", multiple: true, required: false
+        input "colorControls", "capability.colorControl", title: "Which Color Controllers?", multiple: true, required: false
+        input "musicPlayers", "capability.musicPlayer", title: "Which Music Players?", multiple: true, required: false
+        input "switchLevels", "capability.switchLevel", title: "Which Adjustable Switches?", multiple: true, required: false
   	}
 	
 	page(name: "mainPage", title: "Simple Control Setup", content: "mainPage", refreshTimeout: 5)
@@ -32,11 +38,16 @@ preferences()
 mappings {
 	path("/devices") {
     	action: [
+        	GET: "getDevices"
+        ]
+	}
+    path("/:deviceType/devices") {
+    	action: [
         	GET: "getDevices",
             POST: "handleDevicesWithIDs"
         ]
-	}
-    path("/device/:id") {
+    }
+    path("/device/:deviceType/:id") {
     	action: [
         	GET: "getDevice",
             POST: "updateDevice"
@@ -93,33 +104,40 @@ def handleDevicesWithIDs()
     //log.debug("ids: ${ids}")
     def command = data?.command
 	def arguments = data?.arguments
+	def type = params?.deviceType
+    //log.debug("device type: ${type}")
     if (command)
     {
-    	def success = false
+    	def statusCode = 404
 	    //log.debug("command ${command}, arguments ${arguments}")
     	for (devId in ids)
         {
 			def device = allDevices.find { it.id == devId }
-			if (device) {
-				if (arguments) {
+            //log.debug("device: ${device}")
+			// Check if we have a device that responds to the specified command
+			if (validateCommand(device, type, command)) {
+            	if (arguments) {
 					device."$command"(*arguments)
-				} else {
-					device."$command"()
-				}
-				success = true
+                }
+                else {
+                	device."$command"()
+                }
+				statusCode = 200
 			} else {
-            	//log.debug("device not found ${devId}")
+            	statusCode = 403
 			}
 		}
-        
-        if (success)
+        def responseData = "{}"
+        switch (statusCode)
         {
-        	render status: 200, data: "{}"
+        	case 403:
+            	responseData = '{"msg": "Access denied. This command is not supported by current capability."}'
+                break
+			case 404:
+            	responseData = '{"msg": "Device not found"}'
+                break
         }
-        else
-        {
-        	render status: 404, data: '{"msg": "Device not found"}'
-        }
+        render status: statusCode, data: responseData
     }
     else
     {
@@ -164,23 +182,99 @@ def updateDevice()
 	def data = request.JSON
 	def command = data?.command
 	def arguments = data?.arguments
+	def type = params?.deviceType
+    //log.debug("device type: ${type}")
 
 	//log.debug("updateDevice, params: ${params}, request: ${data}")
 	if (!command) {
 		render status: 400, data: '{"msg": "command is required"}'
 	} else {
+		def statusCode = 404
 		def device = allDevices.find { it.id == params.id }
 		if (device) {
-			if (arguments) {
-				device."$command"(*arguments)
+			// Check if we have a device that responds to the specified command
+			if (validateCommand(device, type, command)) {
+	        	if (arguments) {
+					device."$command"(*arguments)
+	            }
+	            else {
+	            	device."$command"()
+	            }
+				statusCode = 200
 			} else {
-				device."$command"()
+	        	statusCode = 403
 			}
-			render status: 204, data: "{}"
-		} else {
-			render status: 404, data: '{"msg": "Device not found"}'
 		}
+		
+	    def responseData = "{}"
+	    switch (statusCode)
+	    {
+	    	case 403:
+	        	responseData = '{"msg": "Access denied. This command is not supported by current capability."}'
+	            break
+			case 404:
+	        	responseData = '{"msg": "Device not found"}'
+	            break
+	    }
+	    render status: statusCode, data: responseData
 	}
+}
+
+/**
+ * Validating the command passed by the user based on capability.
+ * @return boolean
+ */
+def validateCommand(device, deviceType, command) {
+	//log.debug("validateCommand ${command}")
+    def capabilityCommands = getDeviceCapabilityCommands(device.capabilities)
+    //log.debug("capabilityCommands: ${capabilityCommands}")
+	def currentDeviceCapability = getCapabilityName(deviceType)
+    //log.debug("currentDeviceCapability: ${currentDeviceCapability}")
+	if (capabilityCommands[currentDeviceCapability]) {
+		return command in capabilityCommands[currentDeviceCapability] ? true : false
+	} else {
+		// Handling other device types here, which don't accept commands
+		httpError(400, "Bad request.")
+	}
+}
+
+/**
+ * Need to get the attribute name to do the lookup. Only
+ * doing it for the device types which accept commands
+ * @return attribute name of the device type
+ */
+def getCapabilityName(type) {
+    switch(type) {
+		case "switches":
+			return "Switch"
+		case "locks":
+			return "Lock"
+        case "thermostats":
+        	return "Thermostat"
+        case "doorControls":
+        	return "Door Control"
+        case "colorControls":
+        	return "Color Control"
+        case "musicPlayers":
+        	return "Music Player"
+        case "switchLevels":
+        	return "Switch Level"
+		default:
+			return type
+	}
+}
+
+/**
+ * Constructing the map over here of
+ * supported commands by device capability
+ * @return a map of device capability -> supported commands
+ */
+def getDeviceCapabilityCommands(deviceCapabilities) {
+	def map = [:]
+	deviceCapabilities.collect {
+		map[it.name] = it.commands.collect{ it.name.toString() }
+	}
+	return map
 }
 
 def listSubscriptions()
@@ -361,7 +455,13 @@ def agentDiscovery(params=[:])
         }
         section("Allow Simple Control to Monitor and Control These Things...")
         {
-	    	input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
+			input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
+			input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false
+			input "thermostats", "capability.thermostat", title: "Which Thermostats?", multiple: true, required: false
+			input "doorControls", "capability.doorControl", title: "Which Door Controls?", multiple: true, required: false
+			input "colorControls", "capability.colorControl", title: "Which Color Controllers?", multiple: true, required: false
+			input "musicPlayers", "capability.musicPlayer", title: "Which Music Players?", multiple: true, required: false
+			input "switchLevels", "capability.switchLevel", title: "Which Adjustable Switches?", multiple: true, required: false
 	  	}
     }
 }
@@ -670,7 +770,5 @@ def List getRealHubFirmwareVersions()
 {
     return location.hubs*.firmwareVersionString.findAll { it }
 }
-
-
 
 

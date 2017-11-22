@@ -1,8 +1,7 @@
 /**
- *  Iris Smart Fob
+ *  ZigBee Button
  *
  *  Copyright 2015 Mitch Pond
- *	Presence code adapted from SmartThings Arrival Sensor HA device type
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,181 +13,267 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
+import physicalgraph.zigbee.zcl.DataType
+
 metadata {
-	definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond") {
-		capability "Battery"
-		capability "Button"
+    definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond") {
+        capability "Actuator"
+        capability "Battery"
+        capability "Button"
+        capability "Holdable Button"        
         capability "Configuration"
-		capability "Presence Sensor"
-		capability "Sensor"
-        
-		//fingerprint endpointId: "01", profileId: "0104", inClusters: "0000,0001,0003,0007,0020,0B05", outClusters: "0003,0006,0019", model:"3450-L", manufacturer: "CentraLite"
-	}
-    
-    preferences{
-	    input ("holdTime", "number", title: "Minimum time in seconds for a press to count as \"held\"",
-    		defaultValue: 3, displayDuringSetup: false)
-        input "checkInterval", "enum", title: "Presence timeout (minutes)",
-            defaultValue:"2", options: ["2", "3", "5"], displayDuringSetup: false
-        input "logging", "bool", title: "Enable debug logging",
-            defaultValue: false, displayDuringSetup: false
+        capability "Refresh"
+        capability "Sensor"
+        capability "Health Check"
+
+        command "enrollResponse"
+
+        fingerprint inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "OSRAM", model: "LIGHTIFY Dimming Switch", deviceJoinName: "OSRAM LIGHTIFY Dimming Switch"
+        fingerprint inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "CentraLite", model: "3130", deviceJoinName: "Centralite Zigbee Smart Switch"
+        //fingerprint inClusters: "0000, 0001, 0003, 0020, 0500", outClusters: "0003,0019", manufacturer: "CentraLite", model: "3455-L", deviceJoinName: "Iris Care Pendant"
+        fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0402, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model: "3460-L", deviceJoinName: "Iris Smart Button"
+        fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob"
     }
 
-	tiles(scale: 2) {
-    	standardTile("presence", "device.presence", width: 4, height: 4, canChangeBackground: true) {
-            state "present", label: "Present", labelIcon:"st.presence.tile.present", backgroundColor:"#53a7c0"
-            state "not present", labelIcon:"st.presence.tile.not-present", backgroundColor:"#ffffff"
-        }
-    	standardTile("button", "device.button", decoration: "flat", width: 2, height: 2) {
-        	state "default", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-        }
-		valueTile("battery", "device.battery", decoration: "flat", width: 2, height: 2) {
-			state "battery", label:'${currentValue}% battery', unit:""
-		}
+    simulator {}
 
-		main (["presence"])
-		details(["presence","button","battery"])
-	}
+    preferences {
+        section {
+            input ("holdTime", "number", title: "Minimum time in seconds for a press to count as \"held\"", defaultValue: 1, displayDuringSetup: false)
+        }
+    }
+
+    tiles {
+        standardTile("button", "device.button", width: 2, height: 2) {
+            state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
+            state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
+        }
+
+        valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+            state "battery", label:'${currentValue}% battery', unit:""
+        }
+
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+            state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+        }
+        main (["button"])
+        details(["button", "battery", "refresh"])
+    }
 }
 
 def parse(String description) {
-    def descMap = zigbee.parseDescriptionAsMap(description)
-    logIt descMap
-    state.lastCheckin = now()
-    logIt "lastCheckin = ${state.lastCheckin}"
-    handlePresenceEvent(true)
-    
-	def results = []
-    if (description?.startsWith('catchall:'))
-		results = parseCatchAllMessage(descMap)
-	else if (description?.startsWith('read attr -'))
-		results = parseReportAttributeMessage(descMap)
-    else logIt(descMap, "trace")
+    log.debug "description is $description"
+    def event = zigbee.getEvent(description)
+    if (event) {
+        sendEvent(event)
+    }
+    else {
+        if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
+            def descMap = zigbee.parseDescriptionAsMap(description)
+            if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) {
+                event = getBatteryResult(zigbee.convertHexToInt(descMap.value))
+            }
+            else if (descMap.clusterInt == 0x0006 || descMap.clusterInt == 0x0008) {
+                event = parseNonIasButtonMessage(descMap)
+            }
+        }
+        else if (description?.startsWith('zone status')) {
+            event = parseIasButtonMessage(description)
+        }
+
+        log.debug "Parse returned $event"
+        def result = event ? createEvent(event) : []
+
+        if (description?.startsWith('enroll request')) {
+            List cmds = zigbee.enrollResponse()
+            result = cmds?.collect { new physicalgraph.device.HubAction(it) }
+        }
+        return result
+    }
+}
+
+private Map parseIasButtonMessage(String description) {
+    def zs = zigbee.parseZoneStatus(description)
+    return zs.isAlarm2Set() ? getButtonResult("press") : getButtonResult("release")
+}
+
+private Map getBatteryResult(rawValue) {
+    log.debug 'Battery'
+    def volts = rawValue / 10
+    if (volts > 3.0 || volts == 0 || rawValue == 0xFF) {
+        return [:]
+    }
+    else {
+        def result = [
+                name: 'battery'
+        ]
+        def minVolts = 2.1
+        def maxVolts = 3.0
+        def pct = (volts - minVolts) / (maxVolts - minVolts)
+        result.value = Math.min(100, (int) pct * 100)
+        def linkText = getLinkText(device)
+        result.descriptionText = "${linkText} battery was ${result.value}%"
+        return result
+    }
+}
+
+private Map parseNonIasButtonMessage(Map descMap){
+    def buttonState = ""
+    def buttonNumber = 0
+    if ((device.getDataValue("model") == "3460-L") &&(descMap.clusterInt == 0x0006)) {
+        if (descMap.commandInt == 1) {
+            getButtonResult("press")
+        }
+        else if (descMap.commandInt == 0) {
+            getButtonResult("release")
+        }
+    }
+    else if ((device.getDataValue("model") == "3450-L") && (descMap.clusterInt == 0x0006)) {
+        if (descMap.commandInt == 1) {
+            getButtonResult("press")
+        }
+        else if (descMap.commandInt == 0) {
+            def button = 1
+            switch(descMap.sourceEndpoint) {
+                case "01":
+                    button = 4
+                    break
+                case "02":
+                    button = 3
+                    break
+                case "03":
+                    button = 1
+                    break
+                case "04":
+                    button = 2
+                    break
+            }
         
-	return results;
+            getButtonResult("release", button)
+        }
+    }
+    else if (descMap.clusterInt == 0x0006) {
+        buttonState = "pushed"
+        if (descMap.command == "01") {
+            buttonNumber = 1
+        }
+        else if (descMap.command == "00") {
+            buttonNumber = 2
+        }
+        if (buttonNumber !=0) {
+            def descriptionText = "$device.displayName button $buttonNumber was $buttonState"
+            return createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
+        }
+        else {
+            return [:]
+        }
+    }
+    else if (descMap.clusterInt == 0x0008) {
+        if (descMap.command == "05") {
+            state.buttonNumber = 1
+            getButtonResult("press", 1)
+        }
+        else if (descMap.command == "01") {
+            state.buttonNumber = 2
+            getButtonResult("press", 2)
+        }
+        else if (descMap.command == "03") {
+            getButtonResult("release", state.buttonNumber)
+        }
+    }
+}
+
+def refresh() {
+    log.debug "Refreshing Battery"
+
+    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x20) +
+            zigbee.enrollResponse()
+}
+
+def configure() {
+    log.debug "Configuring Reporting, IAS CIE, and Bindings."
+    def cmds = []
+    if (device.getDataValue("model") == "3450-L") {
+        cmds << [
+                "zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 300",
+                "zdo bind 0x${device.deviceNetworkId} 2 1 6 {${device.zigbeeId}} {}", "delay 300",
+                "zdo bind 0x${device.deviceNetworkId} 3 1 6 {${device.zigbeeId}} {}", "delay 300",
+                "zdo bind 0x${device.deviceNetworkId} 4 1 6 {${device.zigbeeId}} {}", "delay 300"
+        ]
+    }
+    return zigbee.onOffConfig() +
+            zigbee.levelConfig() +
+            zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x20, DataType.UINT8, 30, 21600, 0x01) +
+            zigbee.enrollResponse() +
+            zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x20) +
+            cmds
+
+}
+
+private Map getButtonResult(buttonState, buttonNumber = 1) {
+    if (buttonState == 'release') {
+        log.debug "Button was value : $buttonState"
+        def timeDiff = now() - state.pressTime
+        log.info "timeDiff: $timeDiff"
+        def holdPreference = holdTime ?: 1
+        log.info "holdp1 : $holdPreference"
+        holdPreference = (holdPreference as int) * 1000
+        log.info "holdp2 : $holdPreference"
+        if (timeDiff > 10000) {         //timeDiff>10sec check for refresh sending release value causing actions to be executed
+            return [:]
+        }
+        else {
+            if (timeDiff < holdPreference) {
+                buttonState = "pushed"
+            }
+            else {
+                buttonState = "held"
+            }
+            def descriptionText = "$device.displayName button $buttonNumber was $buttonState"
+            return createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
+        }
+    }
+    else if (buttonState == 'press') {
+        log.debug "Button was value : $buttonState"
+        state.pressTime = now()
+        log.info "presstime: ${state.pressTime}"
+        return [:]
+    }
+}
+
+def installed() {
+    initialize()
 }
 
 def updated() {
-	startTimer()
-    configure()
+    initialize()
 }
 
-def configure(){
-	logIt "Configuring Smart Fob..."
-	[
-	"zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 2 1 6 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 3 1 6 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 4 1 6 {${device.zigbeeId}} {}", "delay 200",
-    "zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}", "delay 200"
-    ] +
-    zigbee.configureReporting(0x0001,0x0020,0x20,20,20,0x01)
-}
-
-def parseCatchAllMessage(descMap) {
-    if (descMap?.clusterId == "0006" && descMap?.command == "01") 		//button pressed
-    	handleButtonPress(descMap.sourceEndpoint as int)
-    else if (descMap?.clusterId == "0006" && descMap?.command == "00") 	//button released
-    	handleButtonRelease(descMap.sourceEndpoint as int)
-    else logIt("Parse: Unhandled message: ${descMap}","trace")
-}
-
-def parseReportAttributeMessage(descMap) {
-	if (descMap?.cluster == "0001" && descMap?.attrId == "0020") createBatteryEvent(getBatteryLevel(descMap.value))
-    else logIt descMap
-}
-
-private createBatteryEvent(percent) {
-	logIt "Battery level at " + percent
-	return createEvent([name: "battery", value: percent])
-}
-
-//this method determines if a press should count as a push or a hold and returns the relevant event type
-private handleButtonRelease(button) {
-	logIt "lastPress state variable: ${state.lastPress}"
-    def sequenceError = {logIt("Uh oh...missed a message? Dropping this event.", "error"); state.lastPress = null; return []}	
-    
-    if (!state.lastPress) return sequenceError()
-	else if (state.lastPress.button != button) return sequenceError()
-    
-    def currentTime = now()
-    def startOfPress = state.lastPress?.time
-    def timeDif = currentTime - startOfPress
-    def holdTimeMillisec = (settings.holdTime?:3).toInteger() * 1000
-    
-    state.lastPress = null	//we're done with this. clear it to make error conditions easier to catch
-    
-    if (timeDif < 0) 
-    //likely a message sequence issue or dropped packet. Drop this press and wait for another.
-    	return sequenceError()
-    else if (timeDif < holdTimeMillisec)
-    	return createButtonEvent(button,"pushed")
-    else 
-    	return createButtonEvent(button,"held")
-}
-
-private handleButtonPress(button) {
-	state.lastPress = [button: button, time: now()]
-}
-
-private createButtonEvent(button,action) {
-	logIt "Button ${button} ${action}"
-	return createEvent([
-    	name: "button",
-        value: action, 
-        data:[buttonNumber: button], 
-        descriptionText: "${device.displayName} button ${button} was ${action}",
-        isStateChange: true, 
-        displayed: true])
-}
-
-private getBatteryLevel(rawValue) {
-	def intValue = Integer.parseInt(rawValue,16)
-	def min = 2.1
-    def max = 3.0
-    def vBatt = intValue / 10
-    return ((vBatt - min) / (max - min) * 100) as int
-}
-
-private handlePresenceEvent(present) {
-    def wasPresent = device.currentState("presence")?.value == "present"
-    if (!wasPresent && present) {
-        logIt "Sensor is present"
-        startTimer()
-    } else if (!present) {
-        logIt "Sensor is not present"
-        stopTimer()
+def initialize() {
+    // Arrival sensors only goes OFFLINE when Hub is off
+    sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+    if ((device.getDataValue("manufacturer") == "OSRAM") && (device.getDataValue("model") == "LIGHTIFY Dimming Switch")) {
+        sendEvent(name: "numberOfButtons", value: 2)
     }
-    def linkText = getLinkText(device)
-    def eventMap = [
-        name: "presence",
-        value: present ? "present" : "not present",
-        linkText: linkText,
-        descriptionText: "${linkText} has ${present ? 'arrived' : 'left'}",
-    ]
-    logIt "Creating presence event: ${eventMap}"
-    sendEvent(eventMap)
-}
-
-private startTimer() {
-    logIt "Scheduling periodic timer"
-    schedule("0 * * * * ?", checkPresenceCallback)
-}
-
-private stopTimer() {
-    logIt "Stopping periodic timer"
-    unschedule()
-}
-
-def checkPresenceCallback() {
-    def timeSinceLastCheckin = (now() - state.lastCheckin) / 1000
-    def theCheckInterval = (checkInterval ? checkInterval as int : 2) * 60
-    logIt "Sensor checked in ${timeSinceLastCheckin} seconds ago"
-    if (timeSinceLastCheckin >= theCheckInterval) {
-        handlePresenceEvent(false)
+    else if (device.getDataValue("manufacturer") == "CentraLite") {
+        if (device.getDataValue("model") == "3130") {
+            sendEvent(name: "numberOfButtons", value: 2)
+        }
+        else if ((device.getDataValue("model") == "3455-L") || (device.getDataValue("model") == "3460-L")) {
+            sendEvent(name: "numberOfButtons", value: 1)
+        }
+        else if (device.getDataValue("model") == "3450-L") {
+            sendEvent(name: "numberOfButtons", value: 4)
+        }
+        else {
+            sendEvent(name: "numberOfButtons", value: 4)    //default case. can be changed later.
+        }
     }
+    else {
+        //default. can be changed
+        sendEvent(name: "numberOfButtons", value: 4)
+    }
+
 }
-
-// ****** Utility functions ******
-
-private logIt(str, logLevel = 'debug') {if (settings.logging) log."$logLevel"(str) }

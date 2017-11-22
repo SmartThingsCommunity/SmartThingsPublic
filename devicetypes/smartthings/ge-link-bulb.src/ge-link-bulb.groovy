@@ -1,7 +1,7 @@
 /**
  *  GE Link Bulb
  *
- *  Copyright 2014 SmartThings
+ *  Copyright 2016 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -42,7 +42,7 @@
  */
 
 metadata {
-    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 
         capability "Actuator"
         capability "Configuration"
@@ -53,15 +53,17 @@ metadata {
         capability "Polling"
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE_Appliances", model: "ZLL Light", deviceJoinName: "GE Link Bulb"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE", model: "SoftWhite", deviceJoinName: "GE Link Soft White Bulb"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE", model: "Daylight", deviceJoinName: "GE Link Daylight Bulb"
     }
 
 	// UI tile definitions
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00a0dc", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00a0dc", nextState:"turningOff"
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -85,7 +87,7 @@ metadata {
 def parse(String description) {
     def resultMap = zigbee.getEvent(description)
     if (resultMap) {
-        if ((resultMap.name == "level" && state.trigger == "setLevel") || resultMap.name != "level") {  //doing this to account for weird level reporting bug with GE Link Bulbs
+        if (resultMap.name != "level" || resultMap.value != 0) {  // Ignore level reports of 0 sent when bulb turns off
             sendEvent(resultMap)
         }
     }
@@ -96,11 +98,7 @@ def parse(String description) {
 }
 
 def poll() {
-    def refreshCmds = [
-        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 500"
-    ]
-
-    return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh()
+	return zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def updated() {
@@ -180,31 +178,26 @@ def updated() {
     	state.dOnOff = "0000"
     }
 
-    "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state.dOnOff}}"
-
-
+	sendHubCommand(new physicalgraph.device.HubAction("st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state.dOnOff}}"))
 }
 
 def on() {
-    state.trigger = "on/off"
     zigbee.on()
 }
 
 def off() {
-    state.trigger = "on/off"
     zigbee.off()
 }
 
 def refresh() {
     def refreshCmds = [
-        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 500"
+        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 2000"
     ]
 
     return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig()
 }
 
 def setLevel(value) {
-    state.trigger = "setLevel"
     def cmd
     def delayForRefresh = 500
     if (dimRate && (state?.rate != null)) {

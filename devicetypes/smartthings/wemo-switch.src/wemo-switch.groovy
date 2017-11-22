@@ -1,3 +1,5 @@
+//DEPRECATED. INTEGRATION MOVED TO SUPER LAN CONNECT
+
 /**
  *  Copyright 2015 SmartThings
  *
@@ -16,7 +18,7 @@
  * Date: 2015-10-11
  */
  metadata {
- 	definition (name: "Wemo Switch", namespace: "smartthings", author: "SmartThings") {
+ 	definition (name: "Wemo Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug") {
         capability "Actuator"
         capability "Switch"
         capability "Polling"
@@ -38,11 +40,11 @@
     tiles(scale: 2) {
         multiAttributeTile(name:"rich-control", type: "switch", canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#00A0DC", nextState:"turningOff"
                  attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#00A0DC", nextState:"turningOff"
                  attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-                 attributeState "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
+                 attributeState "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#cccccc"
  			}
             tileAttribute ("currentIP", key: "SECONDARY_CONTROL") {
              	 attributeState "currentIP", label: ''
@@ -50,11 +52,11 @@
         }
 
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-            state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+            state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#00A0DC", nextState:"turningOff"
             state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+            state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.off", backgroundColor:"#00A0DC", nextState:"turningOff"
             state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
+            state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#cccccc"
         }
 
         standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
@@ -84,7 +86,7 @@ def parse(String description) {
     def bodyString = msg.body
     if (bodyString) {
     	unschedule("setOffline")
-        def body = new XmlSlurper().parseText(bodyString)
+        def body = new XmlSlurper().parseText(bodyString.replaceAll("[^\\x20-\\x7e]", ""))
  		if (body?.property?.TimeSyncRequest?.text()) {
         	log.trace "Got TimeSyncRequest"
         	result << timeSyncResponse()
@@ -208,7 +210,7 @@ def subscribe(ip, port) {
     def existingIp = getDataValue("ip")
     def existingPort = getDataValue("port")
     if (ip && ip != existingIp) {
-         log.debug "Updating ip from $existingIp to $ip"    
+         log.debug "Updating ip from $existingIp to $ip"
     	 updateDataValue("ip", ip)
     	 def ipvalue = convertHexToIP(getDataValue("ip"))
          sendEvent(name: "currentIP", value: ipvalue, descriptionText: "IP changed to ${ipvalue}")

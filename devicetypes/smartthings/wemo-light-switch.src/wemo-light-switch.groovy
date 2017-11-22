@@ -1,3 +1,5 @@
+//DEPRECATED. INTEGRATION MOVED TO SUPER LAN CONNECT
+
 /**
  *  Copyright 2015 SmartThings
  *
@@ -18,7 +20,7 @@
 
 
 metadata {
-	definition (name: "Wemo Light Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Wemo Light Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Polling"
@@ -40,11 +42,11 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"rich-control", type: "switch", canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#00A0DC", nextState:"turningOff"
                  attributeState "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
-                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#00A0DC", nextState:"turningOff"
                  attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
-                 attributeState "offline", label:'${name}', icon:"st.Home.home30", backgroundColor:"#ff0000"
+                 attributeState "offline", label:'${name}', icon:"st.Home.home30", backgroundColor:"#cccccc"
  			}
             tileAttribute ("currentIP", key: "SECONDARY_CONTROL") {
              	 attributeState "currentIP", label: ''
@@ -52,11 +54,11 @@ metadata {
         }
 
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-            state "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+            state "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#00A0DC", nextState:"turningOff"
             state "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+            state "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#00A0DC", nextState:"turningOff"
             state "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "offline", label:'${name}', icon:"st.Home.home30", backgroundColor:"#ff0000"
+            state "offline", label:'${name}', icon:"st.Home.home30", backgroundColor:"#cccccc"
         }
 
         standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
@@ -86,7 +88,7 @@ def parse(String description) {
 	def bodyString = msg.body
 	if (bodyString) {
 		unschedule("setOffline")
-		def body = new XmlSlurper().parseText(bodyString)
+        def body = new XmlSlurper().parseText(bodyString.replaceAll("[^\\x20-\\x7e]", ""))
 
 		if (body?.property?.TimeSyncRequest?.text()) {
 			log.trace "Got TimeSyncRequest"

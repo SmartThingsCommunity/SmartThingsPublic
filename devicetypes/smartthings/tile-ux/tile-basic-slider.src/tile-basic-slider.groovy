@@ -39,7 +39,7 @@ metadata {
 		}
 
 		valueTile("rangeValue", "device.rangedLevel", height: 2, width: 2) {
-			state "default", label:'${currentValue}'
+			state "range", label:'${currentValue}', defaultState: true
 		}
 
 		controlTile("rangeSliderConstrained", "device.rangedLevel", "slider", height: 2, width: 4, range: "(40..60)") {

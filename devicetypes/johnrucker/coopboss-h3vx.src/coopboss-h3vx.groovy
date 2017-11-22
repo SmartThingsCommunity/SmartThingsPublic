@@ -95,12 +95,12 @@ metadata {
 		multiAttributeTile(name:"doorCtrl", type:"generic", width:6, height:4) {tileAttribute("device.doorState", key: "PRIMARY_CONTROL") 
         	{  
 			attributeState "unknown", label: '${name}', action:"openDoor", icon: "st.Outdoor.outdoor20", nextState:"Sent"          
-			attributeState "open", label: '${name}', action:"closeDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#0000ff" , nextState:"Sent" 
-			attributeState "opening", label: '${name}', action:"closeDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#ffa81e"            
-			attributeState "closed", label: '${name}', action:"openDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#79b821", nextState:"Sent" 
-			attributeState "closing", label: '${name}', action:"openDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#ffa81e" 
-			attributeState "jammed", label: '${name}', action:"closeDoorHiI", icon: "st.Outdoor.outdoor20", backgroundColor: "#ff0000", nextState:"Sent" 
-			attributeState "forced close", label: 'forced\rclose', action:"openDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#ff8000", nextState:"Sent"   
+			attributeState "open", label: '${name}', action:"closeDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#00A0DC" , nextState:"Sent"
+			attributeState "opening", label: '${name}', action:"closeDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#00A0DC"
+			attributeState "closed", label: '${name}', action:"openDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#ffffff", nextState:"Sent"
+			attributeState "closing", label: '${name}', action:"openDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#ffffff"
+			attributeState "jammed", label: '${name}', action:"closeDoorHiI", icon: "st.Outdoor.outdoor20", backgroundColor: "#ff0000", nextState:"Sent"
+			attributeState "forced close", label: 'forced\rclose', action:"openDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#ff8000", nextState:"Sent"
 			attributeState "fault", label: 'FAULT', action:"openDoor", icon: "st.Outdoor.outdoor20", backgroundColor: "#ff0000", nextState:"Sent"              
 			attributeState "Sent", label: 'wait', icon: "st.motion.motion.active", backgroundColor: "#ffa81e"              
 			} 
@@ -112,10 +112,10 @@ metadata {
 		multiAttributeTile(name:"dtlsDoorCtrl", type:"generic", width:6, height:4) {tileAttribute("device.doorState", key: "PRIMARY_CONTROL") 
         	{
       		attributeState "unknown", label: '${name}', action:"openDoor", icon: "st.secondary.tools", nextState:"Sent"
-      		attributeState "open", label: '${name}', action:"closeDoor", icon: "st.doors.garage.garage-open", backgroundColor: "#0000ff", nextState:"Sent"
-            attributeState "opening", label: '${name}', action:"closeDoor", icon: "st.doors.garage.garage-opening", backgroundColor: "#ffa81e" 
-            attributeState "closed", label: '${name}', action:"openDoor", icon: "st.doors.garage.garage-closed", backgroundColor: "#79b821", nextState:"Sent"
-            attributeState "closing", label: '${name}', action:"openDoor", icon: "st.doors.garage.garage-closing", backgroundColor: "#ffa81e" 
+      		attributeState "open", label: '${name}', action:"closeDoor", icon: "st.doors.garage.garage-open", backgroundColor: "#00A0DC", nextState:"Sent"
+            attributeState "opening", label: '${name}', action:"closeDoor", icon: "st.doors.garage.garage-opening", backgroundColor: "#00A0DC"
+            attributeState "closed", label: '${name}', action:"openDoor", icon: "st.doors.garage.garage-closed", backgroundColor: "#ffffff", nextState:"Sent"
+            attributeState "closing", label: '${name}', action:"openDoor", icon: "st.doors.garage.garage-closing", backgroundColor: "#ffffff"
             attributeState "jammed", label: '${name}', action:"closeDoorHiI", icon: "st.doors.garage.garage-open", backgroundColor: "#ff0000", nextState:"Sent"
             attributeState "forced close", label: "forced", action:"openDoor", icon: "st.doors.garage.garage-closed", backgroundColor: "#ff8000", nextState:"Sent"
             attributeState "fault", label: 'FAULT', action:"openDoor", icon: "st.secondary.tools", backgroundColor: "#ff0000", nextState:"Sent"  
@@ -135,13 +135,13 @@ metadata {
     	}        
         
 		standardTile("autoClose", "device.autoCloseEnable", width: 2, height: 2){
-			state "on", label: 'Auto', action:"autoCloseOff", icon: "st.doors.garage.garage-closing", backgroundColor: "#79b821", nextState:"Sent"
+			state "on", label: 'Auto', action:"autoCloseOff", icon: "st.doors.garage.garage-closing", backgroundColor: "#00A0DC", nextState:"Sent"
 			state "off", label: 'Auto', action:"autoCloseOn", icon: "st.doors.garage.garage-closing", nextState:"Sent"
 			state "Sent", label: 'wait', icon: "st.motion.motion.active", backgroundColor: "#ffa81e"              
 		}    
         
 		standardTile("autoOpen", "device.autoOpenEnable", width: 2, height: 2){
-			state "on", label: 'Auto', action:"autoOpenOff", icon: "st.doors.garage.garage-opening", backgroundColor: "#79b821", nextState:"Sent"
+			state "on", label: 'Auto', action:"autoOpenOff", icon: "st.doors.garage.garage-opening", backgroundColor: "#00A0DC", nextState:"Sent"
 			state "off", label: 'Auto', action:"autoOpenOn", icon: "st.doors.garage.garage-opening", nextState:"Sent"
 			state "Sent", label: 'wait', icon: "st.motion.motion.active", backgroundColor: "#ffa81e"              
 		}            
@@ -189,13 +189,13 @@ metadata {
         
 		standardTile("aux1", "device.Aux1", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label:'Aux 1', action:"Aux1On", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"Sent"        
-			state "on", label:'Aux 1', action:"Aux1Off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"Sent"
+			state "on", label:'Aux 1', action:"Aux1Off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"Sent"
 			state "Sent", label: 'wait', icon: "st.motion.motion.active", backgroundColor: "#ffa81e"            
 		}        
         
 		standardTile("aux2", "device.Aux2", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label:'Aux 2', action:"Aux2On", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"Sent"        
-			state "on", label:'Aux 2', action:"Aux2Off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"Sent"
+			state "on", label:'Aux 2', action:"Aux2Off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"Sent"
 			state "Sent", label: 'wait', icon: "st.motion.motion.active", backgroundColor: "#ffa81e"   
 		}            
         

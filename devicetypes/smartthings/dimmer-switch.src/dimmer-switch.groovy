@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Dimmer Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Dimmer Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Indicator"
@@ -20,8 +20,13 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
+		capability "Light"
 
-		fingerprint inClusters: "0x26"
+		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "GE In-Wall Smart Dimmer"
+		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "GE In-Wall Smart Dimmer"
+		fingerprint mfr:"0063", prod:"5044", deviceJoinName: "GE Plug-In Smart Dimmer"
+		fingerprint mfr:"0063", prod:"4944", model:"3034", deviceJoinName: "GE In-Wall Smart Fan Control"
 	}
 
 	simulator {
@@ -42,12 +47,16 @@ metadata {
 		reply "200163,delay 5000,2602": "command: 2603, payload: 63"
 	}
 
+	preferences {
+		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator... ", required: false, options:["on": "When On", "off": "When Off", "never": "Never"], defaultValue: "off"
+	}
+
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -70,16 +79,51 @@ metadata {
 		}
 
 		main(["switch"])
-		details(["switch", "level", "indicator", "refresh"])
+		details(["switch", "level", "refresh"])
 
 	}
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	response(refresh())
+}
+
+def updated(){
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+  switch (ledIndicator) {
+        case "on":
+            indicatorWhenOn()
+            break
+        case "off":
+            indicatorWhenOff()
+            break
+        case "never":
+            indicatorNever()
+            break
+        default:
+            indicatorWhenOn()
+            break
+    }
+}
+
+def getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x26: 1,  // SwitchMultilevel
+		0x56: 1,  // Crc16Encap
+		0x70: 1,  // Configuration
+	]
 }
 
 def parse(String description) {
 	def result = null
 	if (description != "updated") {
 		log.debug "parse() >> zwave.parse($description)"
-		def cmd = zwave.parse(description, [0x20: 1, 0x26: 1, 0x70: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -138,11 +182,22 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	log.debug "productTypeId:    ${cmd.productTypeId}"
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	updateDataValue("MSR", msr)
+	updateDataValue("manufacturer", cmd.manufacturerName)
 	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelStopLevelChange cmd) {
 	[createEvent(name:"switch", value:"on"), response(zwave.switchMultilevelV1.switchMultilevelGet().format())]
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = commandClassVersions
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -191,6 +246,13 @@ def poll() {
 	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
+}
+
 def refresh() {
 	log.debug "refresh() is called"
 	def commands = []
@@ -201,19 +263,19 @@ def refresh() {
 	delayBetween(commands,100)
 }
 
-def indicatorWhenOn() {
-	sendEvent(name: "indicatorStatus", value: "when on")
-	zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()
+void indicatorWhenOn() {
+	sendEvent(name: "indicatorStatus", value: "when on", displayed: false)
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()))
 }
 
-def indicatorWhenOff() {
-	sendEvent(name: "indicatorStatus", value: "when off")
-	zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()
+void indicatorWhenOff() {
+	sendEvent(name: "indicatorStatus", value: "when off", displayed: false)
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 3, size: 1).format()))
 }
 
-def indicatorNever() {
-	sendEvent(name: "indicatorStatus", value: "never")
-	zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()
+void indicatorNever() {
+	sendEvent(name: "indicatorStatus", value: "never", displayed: false)
+	sendHubCommand(new physicalgraph.device.HubAction(zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 3, size: 1).format()))
 }
 
 def invertSwitch(invert=true) {

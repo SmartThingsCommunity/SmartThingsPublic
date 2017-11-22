@@ -33,7 +33,7 @@ metadata {
 
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.unknown.zwave.device", backgroundColor: "#79b821"
+			state "on", label: '${name}', action: "switch.off", icon: "st.unknown.zwave.device", backgroundColor: "#00A0DC"
 			state "off", label: '${name}', action: "switch.on", icon: "st.unknown.zwave.device", backgroundColor: "#ffffff"
 		}
 		standardTile("switchOn", "device.switch", inactiveLabel: false, decoration: "flat") {
@@ -67,8 +67,10 @@ def parse(String description) {
 	return result
 }
 
-def updated() {
-	response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+def installed() {
+	if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
