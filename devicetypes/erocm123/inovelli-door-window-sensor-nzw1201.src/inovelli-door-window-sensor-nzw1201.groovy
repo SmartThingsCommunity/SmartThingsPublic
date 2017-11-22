@@ -28,9 +28,9 @@ metadata {
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
 
-        fingerprint mfr:"015D", prod:"2003", model:"B41C"
-        fingerprint mfr:"0312", prod:"2003", model:"C11C"
-        fingerprint mfr:"015D", prod:"2003", model:"C11C"
+        fingerprint mfr:"015D", prod:"2003", model:"B41C", deviceJoinName: "Inovelli Door/Window Sensor"
+        fingerprint mfr:"0312", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Door/Window Sensor"
+        fingerprint mfr:"015D", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Door/Window Sensor"
     }
 
     simulator {
