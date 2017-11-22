@@ -138,12 +138,14 @@ def parse(String description)
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def results = []
+	def cmds = []
 	results << createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
 	// If we haven't configured yet, then do so now
 	if (!isConfigured()) {
-		results << configure()
+		cmds = configure()
 	}
-	results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	cmds += zwave.wakeUpV1.wakeUpNoMoreInformation()
+	results << response(cmds)
 	return results
 }
 
@@ -247,7 +249,7 @@ def configure() {
 
 		// like once every 12 hours
 		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 12*60*60).format()
-	])
+	]) + ["delay 5000"]
 }
 
 private def getTimeOptionValueMap() { [
