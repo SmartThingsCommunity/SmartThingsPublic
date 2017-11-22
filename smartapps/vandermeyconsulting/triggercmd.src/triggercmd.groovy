@@ -53,11 +53,7 @@ def installed() {
 	unschedule()
 	unsubscribe()
 
-	setupBulbs()
-
-	def cron = "0 11 23 * * ?"
-	// log.debug "schedule('$cron', syncronizeDevices)"
-	// schedule(cron, syncronizeDevices)
+	setupBulbs()       
 }
 
 def updated() {
@@ -149,6 +145,9 @@ def setupBulbs() {
 	def delete = getChildDevices().findAll { !selectedBulbs?.contains(it.deviceNetworkId) }
 	removeChildDevices(delete)
 
+    unschedule()
+    def exp = "* 0 * * * ?"    
+	schedule(exp, cleanupTriggers)    
 }
 
 def initialize() {
@@ -180,7 +179,41 @@ def initialize() {
 			paragraph msg
 		}
 	}
+
 }
+
+def cleanupTriggers() {
+	debugOut "Running cleanupTriggers."
+    deviceDiscovery()    
+    
+    def devices =  state.devices
+   
+    // debugOut "devices: ${devices}"
+    // debugOut "selectedBulbs: ${selectedBulbs}"
+    
+    def founddevice = ""
+    def founddevicename = ""
+    def selecteddevice = ""    
+    def selectedwasfound = ""
+    
+    selectedBulbs.each { did ->
+      selectedwasfound = "false"
+      selecteddevice = did     
+      // debugOut "Selecteddevice: ${selecteddevice}"
+      devices.each({
+        founddevice = it?.did        
+        if ( founddevice == selecteddevice ) {
+        	// debugOut "selecteddevice: ${selecteddevice} founddevice: ${founddevice}"
+      		selectedwasfound = "true"
+        }        
+      })
+      if ( selectedwasfound == "false" ) {
+         debugOut "Deleting: ${selecteddevice}"
+         deleteChildDevice(selecteddevice)
+      }
+	}    
+}
+
 
 def deviceDiscovery() {
 	def Params = [
@@ -208,7 +241,7 @@ def deviceDiscovery() {
 	if ( devices[1] != null ) {		
 		debugOut "Room Device Data: did:${roomId} roomName:${roomName}"		
 		devices.each({
-			debugOut "Bulb Device Data: did:${it?.did} room:${roomName} BulbName:${it?.name}"
+			// debugOut "Bulb Device Data: did:${it?.did} room:${roomName} BulbName:${it?.name}"
 			deviceList += ["name" : "${roomName} ${it?.name}", "did" : "${it?.did}", "type" : "bulb"]
 		})
 	} else {
@@ -391,7 +424,7 @@ def debugEvent(message, displayEvent) {
 
 def debugOut(msg) {
 	// log.debug msg
-	//sendNotificationEvent(msg) //Uncomment this for troubleshooting only
+	// sendNotificationEvent(msg) //Uncomment this for troubleshooting only
 }
 
 
@@ -407,7 +440,7 @@ def on(childDevice) {
 	def Params = [
 		token: "${atomicState.token}",
         uri: "/api/run/triggerByID",
-        body: "trigger=${dni}"
+        body: "trigger=${dni}&params=on"
 	]
 
 	apiPost(Params) { response ->
@@ -418,5 +451,18 @@ def on(childDevice) {
 
 def off(childDevice) {
 	debugOut "Off request from child device"
+
+    def dni = childDevice.device.deviceNetworkId
+
+	//Russ
+	def Params = [
+		token: "${atomicState.token}",
+        uri: "/api/run/triggerByID",
+        body: "trigger=${dni}&params=off"
+	]
+
+	apiPost(Params) { response ->
+		debugOut "OFF result: ${response.data}"
+	}
 }
 

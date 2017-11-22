@@ -60,14 +60,14 @@ def on() {
 	sendEvent(name:"switch",value:on)
 	parent.on(this)
 
-    off()
+    // off()
 }
 
 def off() {
 	log.debug "Executing 'off'"
 	sendEvent(name:"switch",value:off)
 	parent.off(this)
-	sendEvent(name: "power", value: 0.0)
+	// sendEvent(name: "power", value: 0.0)
 }
 
 def poll() {
@@ -82,7 +82,7 @@ def refresh() {
 
 def installed() {
 	initialize()
-    off()
+    // off()
 }
 
 def updated() {
