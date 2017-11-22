@@ -22,6 +22,8 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 		capability "Light"
+		
+		fingerprint mfr: "0312", prod: "B212", model: "271C", deviceJoinName: "Inovelli Dimmer Smart Plug"
 	}
 
 	simulator {
