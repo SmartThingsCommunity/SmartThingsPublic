@@ -244,7 +244,7 @@ def on() {
     delayBetween([
             zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: duration).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
-    ], (durationToSeconds(duration) + 1) * 1000)
+    ], durationToSeconds(duration) * 1000 + commandDelayMs)
 }
 
 def off() {
@@ -254,25 +254,24 @@ def off() {
     delayBetween([
             zwave.switchMultilevelV2.switchMultilevelSet(value: 0x00, dimmingDuration: duration).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
-    ], (durationToSeconds(duration) + 1) * 1000)
+    ], durationToSeconds(duration) * 1000 + commandDelayMs)
 }
 
 def setLevel(value, durationSeconds = null) {
     log.debug "setLevel >> value: $value, durationSeconds: $durationSeconds"
     short level = toDisplayLevel(value as short)
     short dimmingDuration = durationSeconds == null ? 255 : secondsToDuration(durationSeconds as int)
-    int getStatusDelay = (durationToSeconds(dimmingDuration) + 1) * 1000
 
     sendEvent(name: "level", value: level, unit: "%")
     sendEvent(name: "switch", value: level > 0 ? "on" : "off")
     delayBetween([
             zwave.switchMultilevelV2.switchMultilevelSet(value: toZwaveLevel(level), dimmingDuration: dimmingDuration).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
-    ], getStatusDelay)
+    ], durationToSeconds(dimmingDuration) * 1000 + commandDelayMs)
 }
 
 def poll() {
-    delayBetween(statusCommands, 100)
+    delayBetween(statusCommands, commandDelayMs)
 }
 
 def ping() {
@@ -288,7 +287,7 @@ def refresh() {
         commands << zwave.configurationV1.configurationGet(parameterNumber: i).format()
     }
     log.debug "Refreshing with commands $commands"
-    delayBetween(commands, 1000)
+    delayBetween(commands, commandDelayMs)
 }
 
 def indicatorNever() {
@@ -327,6 +326,7 @@ def levelDown() {
 }
 
 
+private static int getCommandDelayMs() { 1000 }
 private static int getDefaultLevelIncrement() { 10 }
 
 private initialize() {
@@ -411,8 +411,7 @@ private zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.Manufactu
 }
 
 private zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
-    [createEvent(name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false),
-     response(poll())]
+    createEvent(name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false)
 }
 
 private zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -487,7 +486,7 @@ private configurationCommand(param, value) {
     delayBetween([
             zwave.configurationV1.configurationSet(parameterNumber: param, configurationValue: [value]).format(),
             zwave.configurationV1.configurationGet(parameterNumber: param).format()
-    ], 1000)
+    ], commandDelayMs)
 }
 
 private setFadeOnTime(short time) {
