@@ -423,8 +423,8 @@ def debugEvent(message, displayEvent) {
 }
 
 def debugOut(msg) {
-	log.debug msg
-	sendNotificationEvent(msg) //Uncomment this for troubleshooting only
+	// log.debug msg
+	// sendNotificationEvent(msg) //Uncomment this for troubleshooting only
 }
 
 
