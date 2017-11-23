@@ -69,10 +69,10 @@ def updated() {
 	if (!getDataValue("manufacturer")) {
 		runIn(48, "initialize", [overwrite: true])  // installation may still be running
 	} else {
-        //If controller ignored some of associationSet and sceneControllerConfSet commands
-        //and failsafe integrated into initialize() did not manage to fix it,
-        //user can enter device settings and press save until controller starts to respond
-        //correctly
+	//If controller ignored some of associationSet and sceneControllerConfSet commands
+	//and failsafe integrated into initialize() did not manage to fix it,
+	//user can enter device settings and press save until controller starts to respond
+	//correctly
 		initialize()
 	}
 }
@@ -122,15 +122,9 @@ def refresh() {
 }
 
 def parse(String description) {
-	if (description.startsWith("Err")) {
-		if (description.startsWith("Err 106") && !state.sec) {
-			state.sec = 0
-		}
-	} else {
-		def cmd = zwave.parse(description)
-		if (cmd) {
-			zwaveEvent(cmd)
-		}
+	def cmd = zwave.parse(description)
+	if (cmd) {
+		zwaveEvent(cmd)
 	}
 	return []
 }
@@ -232,7 +226,7 @@ void childOff(deviceNetworkId) {
 }
 
 private setSwitchState(switchId, state) {
-	String childDni = "${device.deviceNetworkId}/${switchId}"
+	String childDni = "${device.deviceNetworkId}/$switchId"
 	def child = childDevices.find{it.deviceNetworkId == childDni}
 	if (!child) {
 		log.error "Child device $childDni not found"
@@ -247,7 +241,7 @@ private updateLocalSwitchState() {
 	def binarySwitchState = 0;
 	def multiplier = 1;
 	for (int i = 1; i <= 5; ++i) {
-		String childDni = "${device.deviceNetworkId}/${i}"
+		String childDni = "${device.deviceNetworkId}/$i"
 		def child = childDevices.find{it.deviceNetworkId == childDni}
 		if (child?.device.currentState("switch")?.value == "on") {
 			binarySwitchState += multiplier
@@ -259,10 +253,10 @@ private updateLocalSwitchState() {
 
 private addChildSwitches() {
 	for (i in 1..5) {
-		String childDni = "${device.deviceNetworkId}/${i}"
+		String childDni = "${device.deviceNetworkId}/$i"
 		def child = childDevices.find{it.deviceNetworkId == childDni}
-		addChildDevice("Child Switch", "${childDni}", null,
-				[completedSetup: true, label: "${device.displayName} switch ${i}",
+		addChildDevice("Child Switch", childDni, null,
+				[completedSetup: true, label: "$device.displayName switch $i",
 				 isComponent: true, componentName: "switch$i", componentLabel: "Switch $i"])
 	}
 }
