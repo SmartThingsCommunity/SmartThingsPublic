@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa - Lambda Code
  *
- *  Version 1.2.9 - 7/12/17 Copyright © 2017 Michael Struck
+ *  Version 1.3.0 - 10/11/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for code and assistance 
  *  
  *  Version 1.0.0 - Initial release
@@ -24,6 +24,7 @@
  *  Version 1.2.7 - Added in option for 'whisper' mode, changed structure to SSML output. Allow for speed/pitch adjustments
  *  Version 1.2.8 - Added dynamic icons for skill's card. Ready for the Amazon Show!
  *  Version 1.2.9 - Added advanced featured to WebCoRE macros, added varibles for whipser and emphasis, updated brief replies
+ *  Version 1.3.0 - Added compound commands 
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -37,9 +38,9 @@
  */
 'use strict';
 exports.handler = function( event, context ) {
-    var versionTxt = '1.2.9';
-    var versionDate= '07/12/2017';
-    var versionNum = '129';
+    var versionTxt = '1.3.0';
+    var versionDate= '10/11/2017';
+    var versionNum = '130';
     var https = require( 'https' );
     // Paste app code here between the breaks------------------------------------------------
     var STappID = '';
@@ -87,6 +88,23 @@ exports.handler = function( event, context ) {
                     url += 'd?Device=' + Device + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param; 
                     process = true;
                     cardName = "SmartThings Devices";
+                }
+                else if (intentName == "ObjectOperation") {
+                    var Operator1 = event.request.intent.slots.OperatorA.value;
+                    var Object1 = event.request.intent.slots.DeviceA.value;
+                    var Ext1 = event.request.intent.slots.ExtA.value;
+                    var Num1 = event.request.intent.slots.NumA.value;
+                    var Param1 = event.request.intent.slots.ParamA.value;
+                    var Operator2 = event.request.intent.slots.OperatorB.value;
+                    var Object2 = event.request.intent.slots.DeviceB.value;
+                    var Ext2 = event.request.intent.slots.ExtB.value;
+                    var Num2 = event.request.intent.slots.NumB.value;
+                    var Param2 = event.request.intent.slots.ParamB.value;
+                    if (!Object1) Object1=Ext1;
+                    if (!Object2) Object2=Ext2;
+                    url += 'o?Object1=' + Object1 + '&Operator1=' + Operator1 + '&Num1=' + Num1 + '&Param1=' + Param1 + '&Object2=' + Object2 + '&Operator2=' + Operator2 + '&Num2=' + Num2 + '&Param2=' + Param2; 
+                    process = true;
+                    cardName = "SmartThings Compound Command";
                 }
                 else if (intentName == "FollowUpOperation") {
                     var FType = event.request.intent.slots.FType.value;
