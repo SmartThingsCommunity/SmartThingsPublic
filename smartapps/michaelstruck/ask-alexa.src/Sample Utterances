@@ -1,3 +1,7 @@
+ObjectOperation what is {OperatorA} of the {DeviceA} and {OperatorB} of the {DeviceB}
+ObjectOperation what is the {OperatorA} of the {DeviceA} and the {OperatorB} of the {DeviceB}
+ObjectOperation {OperatorA} of the {DeviceA} and {OperatorB} of the {DeviceB}
+ObjectOperation {OperatorA} of {DeviceA} and {OperatorB} of {DeviceB}
 ObjectOperation {OperatorA} the {DeviceA} and {OperatorB} the {DeviceB}
 ObjectOperation {OperatorA} {DeviceA} and {OperatorB} {DeviceB}
 ObjectOperation {DeviceA} {OperatorA} and {DeviceB} {OperatorB}
