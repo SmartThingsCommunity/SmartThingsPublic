@@ -51,7 +51,7 @@ ObjectOperation {DeviceA} {OperatorA} and set {DeviceB} to {NumB} percent
 ObjectOperation {DeviceA} {OperatorA} and set {DeviceB} to {NumB}
 ObjectOperation turn {DeviceA} {OperatorA} and set {DeviceB} to {NumB} percent
 ObjectOperation turn {DeviceA} {OperatorA} and set the {DeviceB} to {NumB}
-ObjectOperation turn {DeviceA} {OperatorA} and set the {DeviceB} to {NumB}  percent
+ObjectOperation turn {DeviceA} {OperatorA} and set the {DeviceB} to {NumB} percent
 
 ObjectOperation set {DeviceA} and {DeviceB} to {NumA}
 ObjectOperation set {DeviceA} and {DeviceB} to {NumA} percent
