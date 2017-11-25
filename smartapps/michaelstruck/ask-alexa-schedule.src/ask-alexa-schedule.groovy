@@ -2,12 +2,12 @@
  *  Ask Alexa Schedules Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.3b 7/6/17
+ *  Version 1.0.3c 7/6/17
  * 
  *  Version 1.0.0 (6/1/17) - Initial release
  *  Version 1.0.1 (6/8/17) - Fixed custom schedule issue. Added %age% variable for birthdays/anniversaries
  *  Version 1.0.2 (6/15/17) - Added %age% variable for any text field
- *  Version 1.0.3b (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
+ *  Version 1.0.3c (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -361,7 +361,9 @@ def doAction(){
             outputTxt += schAppendPost ? schMsgTxt + schAppendPost: schMsgTxt
             sendMsg(outputTxt)
         }
-        if (schAction=="macro") parent.processMacroAction(schMacro.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""), 0, "undefined", "undefined", "undefined", false,"")
+         if (schAction=="macro") {
+			parent.processMacroAction(schMacro.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""), "undefined", "undefined", false,"undefined")
+        }
         if (schAction=="VR") {
         	outputTxt = schAppendPre ? schAppendPre + " " : ""
             outputTxt += parent.processOtherRpt(schVR)
@@ -900,4 +902,4 @@ def translateMQid(mqIDList){
 //Versions
 private versionInt(){ return 103 }
 private def textAppName() { return "Ask Alexa Schedules" }	
-private def textVersion() { return "Schedules Version: 1.0.3b (07/06/2017)" }
+private def textVersion() { return "Schedules Version: 1.0.3c (07/06/2017)" }
