@@ -289,6 +289,7 @@ DeviceOperation to turn the {Device} to {Num}
 DeviceOperation to turn the {Device} to {Num} percent
 DeviceOperation {Device} {Operator}
 DeviceOperation {Device} to {Operator}
+DeviceOperation the {Operator} of the {Device}
 DeviceOperation {Device} {Operator} {Param}
 DeviceOperation {Device} {Operator} {Param} level {Num}
 DeviceOperation {Device} {Operator} level {Num} {Param}
