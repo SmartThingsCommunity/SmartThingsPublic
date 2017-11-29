@@ -23,17 +23,25 @@ preferences {
 			input("enabled", "bool", title: "Active", defaultValue: true)
 		}
 		section("When to run") {
-			input("weekdays", "enum", title: "Set Days of Week", multiple: true, required: true, options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], defaultValue: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-			input("hours", "enum", title: "Select Times of Day", multiple: true, required: true, options: [[0 : "12am"], [1 : "1am"], [2 : "2am"], [3 : "3am"], [4 : "4am"], [5 : "5am"], [6 : "6am"], [7 : "7am"], [8 : "8am"], [9 : "9am"], [10 : "10am"], [11 : "11am"], [12 : "12pm"], [13 : "1pm"], [14 : "2pm"], [15 : "3pm"], [16 : "4pm"], [17 : "5pm"], [18 : "6pm"], [19 : "7pm"], [20 : "8pm"], [21 : "9pm"], [22 : "10pm"], [23 : "11pm"]], defaultValue: [15, 16, 17, 18, 19])
+			input("weekdays", "enum", title: "Set Days of Week", multiple: true, required: true,
+            	options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                defaultValue: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+			input("hours", "enum", title: "Select Times of Day", multiple: true, required: true,
+            	options: [[0 : "12am"], [1 : "1am"], [2 : "2am"], [3 : "3am"], [4 : "4am"], [5 : "5am"], [6 : "6am"], [7 : "7am"], [8 : "8am"], [9 : "9am"],
+                [10 : "10am"], [11 : "11am"], [12 : "12pm"], [13 : "1pm"], [14 : "2pm"], [15 : "3pm"], [16 : "4pm"], [17 : "5pm"], [18 : "6pm"], [19 : "7pm"],
+                [20 : "8pm"], [21 : "9pm"], [22 : "10pm"], [23 : "11pm"]],
+                defaultValue: [15, 16, 17, 18, 19])
 		}
 	}
 	page(name: "pageTwo", nextPage: "pageThree" ) {
 		section("Threshold Settings") {
-			input("timeInterval", "enum", title: "Select Measurement Interval", multiple: false, options: [[15 : "15 minutes"], [30 : "30 minutes"], [60 : "60 minutes"]], defaultValue: 30)
+			input("timeInterval", "enum", title: "Select Measurement Interval", multiple: false,
+            	options: [[15 : "15 minutes"], [30 : "30 minutes"], [60 : "60 minutes"]], defaultValue: 30)
 			input("kwhThreshold", "float", title: "Set Threshold Usage (kWh)")
             input("safetyMargin", "float", title: "Set Safety Margin (%)", defaultValue: 25)
 			input("projectionPeriod", "float", title: "Set Projection Period (%)", defaultValue: 50)
 			input("meter", "capability.energyMeter", title: "Select Monitored Circuit", multiple: false)
+            input("circuits", "capability.energyMeter", title: "Circuits to send alerts on", multiple:true, defaultValue: ALL)
 		}
 	}
     page(name: "pageThree", install: true, uninstall:true) {
@@ -43,12 +51,9 @@ preferences {
             input("cycleTimeLatency", "float", title: "Set Cycle Time Latency (minutes)", defaultValue: 5)
 		}
 
-		section("Notifications") {
-			input("recipients", "contact", multiple: true) {
-				input("phone", "phone", description: "Phone Number", required: false)
-				input("email", "email", description: "Email Address", required: false)
-			}
-		}
+        section("Notifications") {
+            input("recipients", "contact", title: "Send notifications to", multiple:true)
+        }
 	}
 }
 
@@ -60,6 +65,7 @@ def installed() {
 }
 
 def updated() {
+	sendNotifications()
 	log.debug "Updated with settings: ${settings}"
 	runAutomation()
 	unsubscribe()
@@ -67,7 +73,7 @@ def updated() {
 }
 
 def initialize() {
-	state.scalingFactor = 0.5
+    state.notificationSent = false
 	subscribe(meter, "power", checkEnergyMonitor)
 	runEvery1Minute(runAutomation)
 
@@ -86,9 +92,36 @@ def checkRunning() {
 	return false
 }
 
+def sendNotifications() {
+	//log.debug("notifying")
+    //log.debug(recipients)
+    def devlist = []
+    //log.debug(circuits)
+    def count = 0
+    def currentTotal = Float.parseFloat(meter.currentState("power").value)
+    for(c in circuits){
+        //log.debug(c)
+        //log.debug(currentTotal)
+        devlist.add([pct: ((Float.parseFloat(c.currentState("power").value) / currentTotal) * 100).round(), name: c.toString()])
+         count += count
+    }
+
+    log.debug(devlist)
+
+    def sorted = devlist.sort { a, b -> b.pct <=> a.pct }
+    def message = "Curb Alert: Energy usage is project to go over selected threshold."
+    //log.debug(devlist.size())
+    if (devlist.size() > 3)
+    {
+    	message = "Curb Alert: Energy usage is project to go over selected threshold. Your biggest consumers currently are: ${sorted[0].name} ${sorted[0].pct}%, ${sorted[1].name} ${sorted[1].pct}%, and ${sorted[2].name} ${sorted[2].pct}%"
+    }
+	sendNotificationToContacts(message, recipients)
+}
+
 def resetClocking() {
 	log.debug("resetting the clock")
 	state.readings = []
+    state.notificationSent = false
 	for (int i = 0; i < Integer.parseInt(timeInterval); i++) {
 		state.readings[i] = null
 	}
@@ -100,10 +133,20 @@ def resetClocking() {
 def runAutomation() {
 	def mf = new java.text.SimpleDateFormat("m")
 	def minute = Integer.parseInt(mf.format(new Date())) % Integer.parseInt(timeInterval)
+
+    log.debug("in automation / minute: " + minute.toString())
+
+    // First Minute, reset the whole process
 	if (minute == 0) {
 		resetClocking()
 	}
-	log.debug("automation/minute: " + minute.toString())
+
+    //we're still in the projection period. don't do anything
+    if (minute < Float.parseFloat(timeInterval) * (1 - (Float.parseFloat(projectionPeriod) / 100) ) )
+    {
+    	return
+    }
+
 	state.usage = 0.0
 	def samples = 0.0
 	for (int i = 0; i < Integer.parseInt(timeInterval); i++) {
@@ -114,18 +157,13 @@ def runAutomation() {
 	}
 	log.debug("samples:" + samples.toString())
 	log.debug("usage:" + state.usage.toString())
-	if (samples != 0.0) {
-    	def wt = Float.parseFloat(kwhThreshold) * (1 - ( Float.parseFloat(safetyMargin) / 100))
-        def m = state.usage / samples
-        def TH = Float.parseFloat(projectionPeriod) / 100
-        def te = Float.parseFloat(timeInterval)
-        def tCross = ( wt - (TH * m * te ) ) / ( m - (TH * m) )
-        log.debug("wt: "+wt.toString()+" TH: "+TH.toString()+" m: "+m.toString()+" te: "+te.toString()+" usage: "+state.usage.toString()+" samples: "+samples.toString() + " tCross: " + tCross.toString() )
 
-        if ( tCross < te && tCross > (te - Float.parseFloat(cycleTimeLatency) ) ) {
-        	tCross = te - cycleTimeLatency
-        }
-		if ( tCross - 1 < minute ) {
+	if (samples != 0.0) {
+    	def avgedUsage = minute * ( state.usage / samples )
+        log.debug(avgedUsage)
+        def safetyThreshold = ( Float.parseFloat(kwhThreshold) * ( 1 - (Float.parseFloat(safetyMargin) / 100)))
+        log.debug(safetyThreshold)
+    	if (avgedUsage > safetyThreshold) {
 			throttleUsage()
 		}
 	}
@@ -141,7 +179,7 @@ def checkEnergyMonitor(evt) {
 
 	def power = meter.currentState("power").value
 	state.readings[minute] = Float.parseFloat(power)
-	log.debug(state)
+	//log.debug(state)
 }
 
 def captureContollerStates() {
@@ -175,12 +213,15 @@ def restoreControllerStates() {
 }
 
 def throttleUsage() {
+
 	if (state.throttling) {
 		return
 	}
+    captureContollerStates()
+    sendNotifications()
 	state.throttling = true
 	log.debug "throttling usage"
-	captureContollerStates()
+
 
 	for (t in thermostats) {
 		t.off()
