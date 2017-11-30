@@ -124,7 +124,9 @@ def resetClocking() {
 	}
 	state.usage = 0
 	log.debug(state)
-	stopThrottlingUsage()
+	if (state.throttling == true){
+		stopThrottlingUsage()
+	}
 }
 
 def runAutomation() {
@@ -230,7 +232,7 @@ def throttleUsage() {
 }
 
 def stopThrottlingUsage() {
-	state.throttling = false
-	log.debug "resuming normal operations"
-	restoreControllerStates()
+		state.throttling = false
+		log.debug "resuming normal operations"
+		restoreControllerStates()
 }
