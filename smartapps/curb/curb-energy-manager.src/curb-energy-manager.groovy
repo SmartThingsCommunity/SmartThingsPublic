@@ -48,7 +48,7 @@ preferences {
 		section("Controlled Appliances") {
 			input("thermostats", "capability.thermostat", title: "Select your Thermostat", multiple: true, required: false)
 			input("switches", "capability.switch", title: "Select your Load Controllers", multiple: true, required: false)
-            input("cycleTimeLatency", "float", title: "Set Cycle Time Latency (minutes)", defaultValue: 5)
+            //input("cycleTimeLatency", "float", title: "Set Cycle Time Latency (minutes)", defaultValue: 5)
 		}
 
         section("Notifications") {
@@ -121,7 +121,6 @@ def sendNotifications() {
 def resetClocking() {
 	log.debug("resetting the clock")
 	state.readings = []
-    state.notificationSent = false
 	for (int i = 0; i < Integer.parseInt(timeInterval); i++) {
 		state.readings[i] = null
 	}
