@@ -14,7 +14,7 @@
  *
  */
 
-definition(name: "CURB Energy Manager", namespace: "curb", author: "Neil Zumwalde", description: "Maximize your energy savings with the Curbs!", category: "", iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png", iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png", iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png")
+definition(name: "CURB Energy Manager", namespace: "curb", author: "Neil Zumwalde", description: "Maximize your energy savings with CURB!", category: "", iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png", iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png", iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png")
 
 preferences {
 	page(name: "pageOne", nextPage: "pageTwo") {
@@ -65,7 +65,6 @@ def installed() {
 }
 
 def updated() {
-	sendNotifications()
 	log.debug "Updated with settings: ${settings}"
 	runAutomation()
 	unsubscribe()
@@ -73,7 +72,6 @@ def updated() {
 }
 
 def initialize() {
-    state.notificationSent = false
 	subscribe(meter, "power", checkEnergyMonitor)
 	runEvery1Minute(runAutomation)
 
@@ -109,11 +107,11 @@ def sendNotifications() {
     log.debug(devlist)
 
     def sorted = devlist.sort { a, b -> b.pct <=> a.pct }
-    def message = "Curb Alert: Energy usage is project to go over selected threshold."
+    def message = "Curb Alert: Energy usage is projected to go over selected threshold."
     //log.debug(devlist.size())
     if (devlist.size() > 3)
     {
-    	message = "Curb Alert: Energy usage is project to go over selected threshold. Your biggest consumers currently are: ${sorted[0].name} ${sorted[0].pct}%, ${sorted[1].name} ${sorted[1].pct}%, and ${sorted[2].name} ${sorted[2].pct}%"
+    	message = "Curb Alert: Energy usage is projected to go over selected threshold. Your biggest consumers currently are: ${sorted[0].name} ${sorted[0].pct}%, ${sorted[1].name} ${sorted[1].pct}%, and ${sorted[2].name} ${sorted[2].pct}%"
     }
 	sendNotificationToContacts(message, recipients)
 }
@@ -154,8 +152,8 @@ def runAutomation() {
 			state.usage = state.usage + (state.readings[i] / 60 / 1000)
 		}
 	}
-	log.debug("samples:" + samples.toString())
-	log.debug("usage:" + state.usage.toString())
+	//log.debug("samples:" + samples.toString())
+	//log.debug("usage:" + state.usage.toString())
 
 	if (samples != 0.0) {
     	def avgedUsage = minute * ( state.usage / samples )
