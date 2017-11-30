@@ -17,7 +17,7 @@ definition(
 preferences {
 	page(name: "page1", title: "Welcome", uninstall: true, install: true) {
 		section() {
-            input(name: "selectedSwitch", type: "capability.switch", title: "The switch which is the paired Intermatic CA-3750", multiple: false, required: true)
+            input(name: "selectedSwitch", type: "capability.switch", title: "The switch which is the paired Intermatic CA-3750", multiple: false, required: false)
 		}
 	}
 }
