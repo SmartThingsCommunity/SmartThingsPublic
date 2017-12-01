@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.4 - 11/20/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.4a - 11/20/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.1 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
@@ -9,7 +9,7 @@
  *  Version 2.3.1 (9/13/17) Added new extention: Rooms/Groups, disabling of Device Groups, add voice to message queue
  *  Version 2.3.2 (9/22/17) Removed device group macro code, added UV index to Environmentals
  *  Version 2.3.3 (11/2/17) Extension version update; begin adding code for compound commands, removed Sonos specific memory slots (now redundent with Sonos Skill), added switch trigger for macros
- *  Version 2.3.4 (11/20/17) Continued to add compound commands; removed old speaker code.
+ *  Version 2.3.4a (11/20/17) Continued to add compound commands; removed old speaker code.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -692,7 +692,7 @@ def pageContCommands(){
             input "speakPitch", "enum", title: "Alexa Speaking Pitch", options: ["x-low":"Extra Low", "low":"Low", "medium":"Default", "high":"High", "x-high":"Extra High"], defaultValue: "medium", submitOnChange: true, required: false
             if (speakPitch=="medium" || !speakPitch) input "whisperMode", "bool", title: "Enable Whisper Mode", defaultValue: false, submitOnChange: true
             if ((speakPitch=="medium" || !speakPitch)  && whisperMode) {
-            	href "timeIntervalInputWhisper",  title: "Whisper Only During These Times...", description: getTimeLabel(timeStartWhisper, timeEndWhisper), state: (timeStartWhisper || timeEndWhisper? "complete":null), image: imgURL() + "clock.png"
+                href "timeIntervalInputWhisper",  title: "Whisper Only During These Times...", description: getTimeLabel(timeStartWhisper, timeEndWhisper), state: (timeStartWhisper || timeEndWhisper? "complete":null), image: imgURL() + "clock.png"
             	input "runModeWhisper", "mode", title: "Whisper Only In The Following Modes...", multiple: true, required: false, image: imgURL() + "modes.png"
             }
             input "invocationName", title: "Invocation Name (Only Used For Examples)", defaultValue: "SmartThings", required: false 
@@ -2190,14 +2190,15 @@ def getReply(devices, type, STdeviceName, op, num, param){
         }
         if (otherStatus && op=="status"){
             def temp = STdevice.currentValue("temperature"), accel=STdevice.currentValue("acceleration"), motion=STdevice.currentValue("motion"), lux =STdevice.currentValue("illuminance"), 
-            	uv=STdevice.currentValue("ultravioletIndex"), pressure=STdevice.currentPressure, humidity=STdevice.currentValue("humidity")
-            result += lux ? "The illuminance at this device's location is ${lux} lux. " : ""
-            if (uv && type !="uvIndex") result += "The UV Index at this device's location is '${uvIndexReading(uv)}' with a reading of ${uv}. "
+            	uv=STdevice.currentValue("ultravioletIndex"), pressure=STdevice.currentPressure, humidity=STdevice.currentValue("humidity"), tamper=STdevice.currentValue("tamper")
+            result += lux != null ? "The illuminance at this device's location is ${lux} lux. " : ""
+            if (uv !=null && type !="uvIndex") result += "The UV Index at this device's location is '${uvIndexReading(uv)}' with a reading of ${uv}. "
             if (pressure) result += "This device is also reading a barometric pressure of ${pressure}. "
-            if (humidity && !(type ==~/humidity|temperature|thermostat|pollution/)) result +="And the relative humidity at this location is ${humidity}%. "
+            if (humidity != null && !(type ==~/humidity|temperature|thermostat|pollution/)) result +="And the relative humidity at this location is ${humidity}%. "
             result += temp && type != "thermostat" && type != "humidity" && type != "temperature" ? "In addition, the temperature reading from this device is ${roundValue(temp)} degrees. " : ""
 			result += motion == "active" && type != "motion" ? "This device is also a motion sensor, and it is currently reading movement. " : ""
  			result += accel == "active" ? "This device has a vibration sensor, and it is currently reading movement. " : ""
+            result += tamper == "detected" ? "This device is also a tamper detector and it is reading active. " : ""
         }
         if (healthWarn && STdevice.status=="OFFLINE") result +="This device's status is reporting offline. "
         if (supportedCaps.name.contains("Battery") && batteryWarn){
@@ -3453,7 +3454,7 @@ private wrReq()  { return 105 }
 private vrReq()  { return 107 }
 private schReq()  { return 103 }
 private rmReq() { return 102 }
-private versionLong(){ return "2.3.4" }
+private versionLong(){ return "2.3.4a" }
 private versionDate(){ return "11/20/2017" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
