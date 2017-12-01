@@ -22,7 +22,6 @@ metadata {
 		capability "Battery"
         capability "Temperature Measurement"
         capability "Tamper Alert"
-        capability "Refresh"
 
 		fingerprint mfr: "014A", prod: "0005", model: "0010"
 }
@@ -65,13 +64,9 @@ metadata {
             state "battery", label:'${currentValue}% battery', unit:""
         }
 
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
-
 
 		main (["water", "temperature", "tamper"])
-		details(["water", "temperature", "tamper", "battery", "refresh"])
+		details(["water", "temperature", "tamper", "battery"])
 	}
 }
 
@@ -211,11 +206,3 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     return null
 }
 
-def refresh() {
-		log.debug "refreshing"
-        // Some examples of Get commands
-        delayBetween([
-                zwave.switchNotificationV3.notificationGet().format(),
-                zwave.batteryV1.batteryGet().format(),
-        ], 1200)
-}
