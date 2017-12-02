@@ -75,7 +75,7 @@ metadata {
 
 
 		main (["water", "temperature", "tamper"])
-		details(["water", "temperature", "tamper", "battery"])
+		details(["water", "temperature", "temperatureState", "tamper", "battery", "poll"])
 	}
 }
 
