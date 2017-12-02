@@ -49,10 +49,12 @@ metadata {
 				attributeState "default", label:'Last activity: ${currentValue}', action: "refresh.refresh"
 			}
         }
-
-		standardTile("temperature", "device.temperature", width: 2, height: 2) {
-			state "normal", icon:"st.alarm.temperature.normal", backgroundColor:"#ffffff"
-			state "freezing", icon:"st.alarm.temperature.freeze", backgroundColor:"#53a7c0"
+valueTile("power", "device.power") {
+    // label will be the current value of the power attribute
+    state "power", label: '${currentValue} W'
+}
+		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+			state "temperature", label: '${currentValue}'
 		}
         
 		standardTile("tamper", "device.tamper", width: 2, height: 2) {
@@ -108,7 +110,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
                         break
                 case 7:
                         result = createEvent(name:"temperature",
-                                value: cmd.sensorValue ? "freezing" : "normal")
+                                value: cmd.sensorValue ? "30" : "50")
                         break
         }
         result
