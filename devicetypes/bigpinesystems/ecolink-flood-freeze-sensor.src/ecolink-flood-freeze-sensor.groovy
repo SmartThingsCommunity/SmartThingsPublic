@@ -22,6 +22,7 @@ metadata {
 		capability "Battery"
         capability "Temperature Measurement"
         capability "Tamper Alert"
+        capability "Polling"
 
 		fingerprint mfr: "014A", prod: "0005", model: "0010"
 }
@@ -49,12 +50,18 @@ metadata {
 				attributeState "default", label:'Last activity: ${currentValue}', action: "refresh.refresh"
 			}
         }
-valueTile("power", "device.power") {
-    // label will be the current value of the power attribute
-    state "power", label: '${currentValue} W'
-}
+
+		standardTile("temperatureState", "device.temperature", width: 2, height: 2) {
+			state "normal", icon:"st.alarm.temperature.normal", backgroundColor:"#ffffff"
+			state "freezing", icon:"st.alarm.temperature.freeze", backgroundColor:"#53a7c0"
+		}
+
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state "temperature", label: '${currentValue}'
+			state "temperature", label: '${currentValue}°',
+					backgroundColors: [
+							[value: 30, color: "#153591"],
+							[value: 50, color: "#44b621"]
+					]
 		}
         
 		standardTile("tamper", "device.tamper", width: 2, height: 2) {
@@ -71,6 +78,40 @@ valueTile("power", "device.power") {
 		details(["water", "temperature", "tamper", "battery"])
 	}
 }
+
+
+def poll() {
+	// Get Temperature
+    // Get Wet Status
+    return delayBetween([
+        zwave.sensorBinaryV2.sensorBinaryGet().format(),
+        zwave.notificationV3.notificationGet().format(),
+        zwave.batteryV1.batteryGet().format()
+    ], 200)
+}
+
+def installed() {
+    log.debug "Device Installed..."
+    return response(configure())
+}
+
+def updated() { // neat built-in smartThings function which automatically runs whenever any setting inputs are changed in the preferences menu of the device handler
+    
+    log.debug "Settings Updated..."
+    return response(delayBetween([
+        configure(), // the response() function is used for sending commands in reponse to an event, without it, no zWave commands will work for contained function
+    	zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId),
+    	zwave.associationV2.associationGet(groupingIdentifier:1),
+		zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId)
+    ], 200))
+
+}
+
+def configure() {
+	log.debug "Configuring...." 
+    return zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+}
+
 
 def parse(String description) {
 	def result = []
@@ -95,6 +136,7 @@ def parse(String description) {
 	log.debug "Parse returned ${result}"
 	result
 }
+
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd)
 {
@@ -195,9 +237,6 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	log.debug "msr: $msr"
 	updateDataValue("MSR", msr)
 
-	if (msr == "0086-0002-002D") {  // Aeon Water Sensor needs to have wakeup interval set
-		result << response(zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId))
-	}
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 	result
 }
