@@ -22,7 +22,6 @@ metadata {
 		capability "Battery"
         capability "Temperature Measurement"
         capability "Tamper Alert"
-        capability "Polling"
 
 		fingerprint mfr: "014A", prod: "0005", model: "0010"
 }
@@ -75,20 +74,11 @@ metadata {
 
 
 		main (["water", "temperature", "tamper"])
-		details(["water", "temperature", "temperatureState", "tamper", "battery", "poll"])
+		details(["water", "temperature", "temperatureState", "tamper", "battery"])
 	}
 }
 
 
-def poll() {
-	// Get Temperature
-    // Get Wet Status
-    return delayBetween([
-        zwave.sensorBinaryV2.sensorBinaryGet().format(),
-        zwave.notificationV3.notificationGet().format(),
-        zwave.batteryV1.batteryGet().format()
-    ], 200)
-}
 
 def installed() {
     log.debug "Device Installed..."
