@@ -1,12 +1,11 @@
 /**
  *  Device Type Definition File
  *
- *  Device Type:		Fibaro Roller Shutter
- *  File Name:			fibaro-roller-shutter.groovy
- *	Initial Release:	2015-06-00
- *	Author:				SmartThings
+ *  Device Type:		Fibaro Roller Shutter 2
+ *  File Name:			fibaro-Roller-shutter.groovy
+ *	Initial Release:	2016-02-12
+ *	Author:				ADF
  *
- *  Copyright 2015 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -55,32 +54,22 @@ metadata {
 	}
 
 	tiles {
-            multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
-            tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState("on", label:"open", action:"switch.off", icon:"st.doors.garage.garage-open", backgroundColor:"#79b821", nextState: "turningOff")
-				attributeState("off", label:"close", action:"switch.on", icon:"st.doors.garage.garage-closed", backgroundColor:"#ffffff", nextState: "turningOn")
-                attributeState("turningOn", label:"opening", action:"switch.off", icon:"st.doors.garage.garage-opening", backgroundColor:"#79b821", nextState: "turningOff")
-                attributeState("turningOff", label:"closing", action:"switch.on", icon:"st.doors.garage.garage-closing", backgroundColor:"#ffffff", nextState:"turningOn")
-            }
-            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState("level", action:"switch level.setLevel")
-            }
-        }
-		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+		standardTile("switch", "device.switch", width: 2, height: 2) {
+			state "on", label:'open', action:"switch.off", icon:"st.doors.garage.garage-open", backgroundColor:"#79b821", nextState:"turningOff"
+			state "off", label:'closed', action:"switch.on", icon:"st.doors.garage.garage-closed", backgroundColor:"#ffffff", nextState:"turningOn"
+			state "turningOn", label:'opening...', action:"switch.off", icon:"st.doors.garage.garage-opening", backgroundColor:"#79b821", nextState:"turningOff"
+			state "turningOff", label:'closing...', action:"switch.on", icon:"st.doors.garage.garage-closing", backgroundColor:"#ffffff", nextState:"turningOn"
 		}
-        standardTile("on", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state("on", label:'open', action:"switch.on", icon:"st.doors.garage.garage-opening")
-        	}
-        standardTile("off", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state("off", label:'close', action:"switch.off", icon:"st.doors.garage.garage-closing")
-        	}
-        standardTile("stop", "device.level", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state("default", label:'stop/my', action:"switch level.setLevel", icon:"st.Transportation.transportation13")
-        	}
-            
+		controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 1, inactiveLabel: false) {
+			state "level", action:"switch level.setLevel"
+        }
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+
+		}
+
 		main(["switch"])
-		details(["switch", "refresh", "on", "off", "stop"])
+		details(["switch", "levelSliderControl", "refresh"])
 	}
 }
 
