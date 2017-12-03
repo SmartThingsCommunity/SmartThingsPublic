@@ -2192,7 +2192,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
             def temp = STdevice.currentValue("temperature"), accel=STdevice.currentValue("acceleration"), motion=STdevice.currentValue("motion"), lux =STdevice.currentValue("illuminance"), 
             	uv=STdevice.currentValue("ultravioletIndex"), pressure=STdevice.currentPressure, humidity=STdevice.currentValue("humidity"), tamper=STdevice.currentValue("tamper")
             result += lux != null ? "The illuminance at this device's location is ${lux} lux. " : ""
-            if (uv !=null && type !="uvIndex") result += "The UV Index at this device's location is '${uvIndexReading(uv)}' with a reading of ${uv}. "
+            if (uv !=null && type !="uvIndex") result += "The UV Index at this device's location is '${uvIndexReading(uv)}', with a reading of ${uv}. "
             if (pressure) result += "This device is also reading a barometric pressure of ${pressure}. "
             if (humidity != null && !(type ==~/humidity|temperature|thermostat|pollution/)) result +="And the relative humidity at this location is ${humidity}%. "
             result += temp && type != "thermostat" && type != "humidity" && type != "temperature" ? "In addition, the temperature reading from this device is ${roundValue(temp)} degrees. " : ""
