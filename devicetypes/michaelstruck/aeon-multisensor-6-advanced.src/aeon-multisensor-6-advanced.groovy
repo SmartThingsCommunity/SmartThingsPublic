@@ -185,7 +185,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
         }
     }*/
     events << createEvent(map)
-    
+    updateStatus()
     //state.lastBatteryReport = now()
     return events
 }
