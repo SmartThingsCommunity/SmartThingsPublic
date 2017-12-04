@@ -31,7 +31,6 @@ metadata {
 		status "no motion (basic)"  : "command: 2001, payload: 00"
 		status "motion (binary)"    : "command: 3003, payload: FF"
 		status "no motion (binary)" : "command: 3003, payload: 00"
-		status "wakeup" 			: "command: 8407, payload: "
 
 		for (int i = 0; i <= 100; i += 20) {
 			status "temperature ${i}F": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
@@ -86,20 +85,12 @@ metadata {
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
+		}
 
 		main(["motion", "temperature", "humidity", "illuminance"])
-		details(["motion", "temperature", "humidity", "illuminance", "battery"])
-	}
-
-	preferences {
-		input description: "Please consult the operating manual for advanced setting options. You can skip this configuration to use default settings",
-				title: "Advanced Configuration", displayDuringSetup: true, type: "paragraph", element: "paragraph"
-		// these are cribbed from the newer aeon-multisensor-6
-		input "motionDelayTime", "enum", title: "Motion Sensor Delay Time",
-				options: ["20 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"], defaultValue: "${motionDelayTime}", displayDuringSetup: true
-
-		input "reportInterval", "enum", title: "Sensors Report Interval",
-				options: ["5 minutes", "8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${reportInterval}", displayDuringSetup: true
+		details(["motion", "temperature", "humidity", "illuminance", "battery", "configure"])
 	}
 }
 
@@ -111,39 +102,25 @@ def installed(){
 def updated(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
-	log.debug "Updated with settings: ${settings}"
-
-	//preferences changed, so we should reconfigure on next wakeup
-	setConfigured("false")
 }
 
 // Parse incoming device messages to generate events
 def parse(String description)
 {
-	def results = []
-	log.debug("parsing")
-	if (description.startsWith("Err")) {
-		results = createEvent(descriptionText:description, displayed:true)
-	} else {
-		def cmd = zwave.parse(description, [0x31: 2, 0x30: 1, 0x84: 1])
-		if(cmd) results += zwaveEvent(cmd)
-		if(!results) results = [ descriptionText: cmd, displayed: false ]
+	def result = []
+	def cmd = zwave.parse(description, [0x31: 2, 0x30: 1, 0x84: 1])
+	if (cmd) {
+		if( cmd.CMD == "8407" ) { result << new physicalgraph.device.HubAction(zwave.wakeUpV1.wakeUpNoMoreInformation().format()) }
+		result << createEvent(zwaveEvent(cmd))
 	}
-	log.debug("Parsed '$description' to $results")
-	return results
+	log.debug "Parse returned ${result}"
+	return result
 }
 
 // Event Generation
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
-	def results = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
-	// If we haven't configured yet, then do so now
-	if (!isConfigured()) {
-		results += configure()
-	}
-	results << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
-	return results
+	[descriptionText: "${device.displayName} woke up", isStateChange: false]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelReport cmd)
@@ -221,57 +198,17 @@ def ping() {
 }
 
 def configure() {
-	def defaultTimeout = motionDelayTime ? timeOptionValueMap[motionDelayTime] : 20
-	def defaultPeriod = reportInterval ? timeOptionValueMap[reportInterval]: 5*60
-
-	setConfigured("true")
-
 	delayBetween([
-		// send remove association to avoid double reports
-		zwave.associationV1.associationRemove(groupingIdentifier: 1, nodeId: zwaveHubNodeId).format(),
-
 		// send binary sensor report instead of basic set for motion
 		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2).format(),
 
-		// send no-motion report after a user-specified period (default 20 seconds) after motion stops
-		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: defaultTimeout).format(),
+		// send no-motion report 15 seconds after motion stops
+		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 15).format(),
 
-		// send all data (temperature, humidity, & illuminance) periodically
-		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 224).format(),
+		// send all data (temperature, humidity, illuminance & battery) periodically
+		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 225).format(),
 
-		// set data reporting period for above to a user-specified period (default 5 minutes)
-		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: defaultPeriod).format(),
-
-		// send a battery report less frequently
-		zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1).format(),
-
-		// like once every 12 hours
-		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 12*60*60).format()
+		// set data reporting period to 5 minutes
+		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format()
 	])
-}
-
-private def getTimeOptionValueMap() { [
-		"20 seconds" : 20,
-		"40 seconds" : 40,
-		"1 minute"   : 60,
-		"2 minutes"  : 2*60,
-		"3 minutes"  : 3*60,
-		"4 minutes"  : 4*60,
-		"5 minutes"  : 5*60,
-		"8 minutes"  : 8*60,
-		"15 minutes" : 15*60,
-		"30 minutes" : 30*60,
-		"1 hours"    : 1*60*60,
-		"6 hours"    : 6*60*60,
-		"12 hours"   : 12*60*60,
-		"18 hours"   : 6*60*60,
-		"24 hours"   : 24*60*60,
-]}
-
-private setConfigured(configure) {
-	updateDataValue("configured", configure)
-}
-
-private isConfigured() {
-	getDataValue("configured") == "true"
 }
