@@ -76,15 +76,13 @@
                 state "inactive",label:'no motion',icon:"st.motion.motion.inactive",backgroundColor:"#ffffff"
                 state "active",label:'motion',icon:"st.motion.motion.active",backgroundColor:"#00a0dc"
 		}
-
 		valueTile("humidity","device.humidity", inactiveLabel: false, width: 2, height: 2) {
            	state "humidity",label:'${currentValue} % humidity'
 		}
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
            state "luminosity", label:'${currentValue} lux', unit:"lux"
 		}
-		valueTile(
-        	"ultravioletIndex","device.ultravioletIndex", inactiveLabel: false, width: 2, height: 2) {
+		valueTile("ultravioletIndex","device.ultravioletIndex", inactiveLabel: false, width: 2, height: 2) {
 				state "ultravioletIndex",label:'${currentValue} UV Index',unit:""
 		}
         standardTile("tamper", "device.tamper", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -109,7 +107,6 @@
             ])
 	}
 }
-
 def parse(String description)
 {
 	def result = []
@@ -353,7 +350,7 @@ def updated(){
     state.enableDebugging = settings.enableDebugging
     sendEvent(name: "checkInterval", value: 6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     logging("updated() is being called")
-    if(settings."101" != null && settings."101" == "240") { 
+    /*if(settings."101" != null && settings."101" == "240") { 
         sendEvent(name:"batteryTile", value: "USB Powered", displayed:false)
     } else {
         try {
@@ -363,7 +360,7 @@ def updated(){
             sendEvent(name:"battery", value: "100", displayed:false)
             sendEvent(name:"batteryTile", value: "${(device.currentValue("battery") == null ? '?' : device.currentValue("battery"))}% battery", displayed:false)
         }
-    }
+    }*/
 
     state.needfwUpdate = ""
     
