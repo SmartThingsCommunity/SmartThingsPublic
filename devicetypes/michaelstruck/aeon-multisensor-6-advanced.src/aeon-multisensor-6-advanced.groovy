@@ -1,6 +1,6 @@
 /**
  *  Aeon Multisensor 6 (Advanced)
- *  Version 1.0.1 (12/3/17)
+ *  Version 1.0.1 (12/4/17)
  *
  *	Version 1.0.0 @erocm123 Initial release
  *	Version 1.0.1 Michael Struck update. Fixed refresh issues, reformatted interface
@@ -180,16 +180,16 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	} else {
 		map.value = cmd.batteryLevel
 	}
-    if(settings."101" == null || settings."101" == "241") {
+    /*if(settings."101" == null || settings."101" == "241") {
         try {
             events << createEvent([name: "batteryTile", value: "${map.value}% battery", displayed:false])
         } catch (e) {
             logging("$e")
         }
-    }
+    }*/
     events << createEvent(map)
     
-    state.lastBatteryReport = now()
+    //state.lastBatteryReport = now()
     return events
 }
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd){
