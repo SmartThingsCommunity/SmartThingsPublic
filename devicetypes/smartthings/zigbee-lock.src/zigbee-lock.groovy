@@ -243,9 +243,9 @@ def reloadAllCodes() {
 	sendEvent(lockCodesEvent(lockCodes))
 	def cmds = validateAttributes()
 	if (isYaleLock()) {
-		state.checkCode = 1
+		state.checkCode = state.checkCode ?: 1
 	} else {
-		state.checkCode = 0
+		state.checkCode = state.checkCode ?: 0
 	}
 	cmds += requestCode(state.checkCode)
 	
@@ -729,10 +729,15 @@ private def parseCommandResponse(String description) {
 				// This will be applicable when a slot is found occupied during scanning of lock
 				// Populating the 'lockCodes' attribute after scanning a code slot
 				log.debug "Scanning lock - code $codeID is occupied"
-				responseMap.value = "$codeID set"
-				responseMap.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
+				def changeType = getChangeType(lockCodes, codeID)
+				responseMap.value = "$codeID $changeType"
+				responseMap.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
 				responseMap.data = [ codeName: codeName ]
-				result << codeSetEvent(lockCodes, codeID, codeName)
+				if ("set" == changeType) {
+					result << codeSetEvent(lockCodes, codeID, codeName)
+				} else {
+					responseMap.displayed = false
+				}
 			}
 		} else {
 			// Code slot is empty - can happen when code creation fails or a slot is empty while scanning the lock
@@ -759,7 +764,6 @@ private def parseCommandResponse(String description) {
 				// Code slot is empty - can happen when a slot is found empty while scanning the lock
 				responseMap.value = "$codeID unset"
 				responseMap.descriptionText = "Code slot $codeID found empty during scanning"
-				responseMap.isStateChange = false
 				responseMap.displayed = false
 			}
 		}
