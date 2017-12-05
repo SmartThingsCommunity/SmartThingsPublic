@@ -150,9 +150,6 @@ metadata {
 			state "fanAuto", action:"thermostat.fanOn", backgroundColor:"#ffffff" , nextState:"updating" , icon: "st.thermostat.fan-auto"
 			state "fanOn", action:"thermostat.fanCirculate", backgroundColor:"#ffffff" ,  nextState:"updating" , icon: "st.thermostat.fan-on"
 			state "fanCirculate", action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
-			state "fanCirculate50", action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
-			state "fanCirculate75", action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
-			state "fanCirculate20", action:"thermostat.fanAuto", backgroundColor:"#ffffff" , nextState:"updating", icon: "st.thermostat.fan-circulate"
 		}
 		standardTile("operatingState", "device.thermostatOperatingState", width: 2, height: 2) {
 			state "idle", label:'${name}', backgroundColor:"#ffffff"
@@ -262,6 +259,8 @@ def configure() {
 	def cmds = []
 	cmds += // Bind the device so reporting can take place
 	"zdo bind 0x${device.deviceNetworkId} 1 1 0x201 {${device.zigbeeId}} {}" 
+	cmds += // Bind the device so humidity reporting can take place
+	"zdo bind 0x${device.deviceNetworkId} 1 1 0x405 {${device.zigbeeId}} {}" 
 	 // THERMOSTAT_PROGRAMMING_OPERATION_MODE
 	cmds +=  zigbee.configureReporting(0x0201, 0x0025, 0x18, 2, 3600, null) 
 	 // THERMOSTAT_RUNNING_MODE
@@ -281,7 +280,7 @@ def configure() {
 	// THERMOSTAT_RUNNING_STATE
 	cmds += zigbee.configureReporting(0x0201, 0x0029, 0x19, 2, 300, 0x01) 
 	// FAN_MODE_ATTRIBUTE
-	cmds += zigbee.configureReporting(0x0201, 0x0010, 0x19, 2, 300, null, [mfgCode: 0x1121]) 
+	cmds += zigbee.configureReporting(0x0201, 0x0010, 0x30, 2, 300, null, [mfgCode: 0x1121]) 
 	// KEYPAD_LOCKOUT
 	cmds += zigbee.configureReporting(0x0204, 0x0001, 0x30, 2, 3600, 0x01) 
 	// HUMIDITY
@@ -398,6 +397,7 @@ private Map processSingleAttributeMessge(Map descMap){
 	} else if (descMap.cluster == "0202" && descMap.attrId == "0000") {
 		resultMap.name = "thermostatFanMode"
 		resultMap.value = getFanModeMap()[descMap.value]
+		resultMap.data = [supportedThermostatFanModes: ["fanAuto","fanOn","fanCirculate"]]
 	} else if (descMap.cluster == "0000" && descMap.attrId == "0500") {
 		resultMap.name = "modelIdentifier"
 		resultMap.value = descMap.value
@@ -483,6 +483,7 @@ private Map parseThermostatClusterAttr(Map descMap){
 			if (encoding == 0x30) {
 			map.name ="thermostatFanMode"
 			map.value = getFanModeMap()[descMap.value]
+			map.data = [supportedThermostatFanModes: ["fanAuto","fanOn","fanCirculate"]]
 			}
 		break
 		case "0011":
@@ -764,7 +765,7 @@ private Integer getCelsiusValueX100(Number value) {
 }
 def getModeMap() { ["00":"off","01":"auto","03":"cool","04":"heat"]}
 def getSupportedModes() { ["off", "heat", "cool", "auto"]}
-def getFanModeMap() { ["00":"fanAuto", "01":"fanOn", "02":"fanCirculate75", "03":"fanCirculate50", "04":"fanCirculate", "05":"fanCirculate20"] }
+def getFanModeMap() { ["00":"fanAuto", "01":"fanOn", "04":"fanCirculate", "02":"fanCirculate", "03":"fanCirculate", "05":"fanCirculate"] }
 def getOnOffMap() {[	"00":"Off","01":"On"]}
 def getLockMap(){[0:"unlocked",1:"modeonly",2:"setpoint",3:"level3",4:"level4",5:"full"]}
 def getLockLevelMap(){["Unlocked":0,"Mode Only":1,"Setpoint":2,"Level3":3,"Level4":4,"Full":5]}
