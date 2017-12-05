@@ -1,10 +1,10 @@
-# Cooper 5-scene keypad
+# Eaton 5-scene keypad
 
 Cloud Execution
 
 Works with: 
 
-* [Cooper 5-scene keypad](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/aspire_rf_5_button_scene_control_keypad_rfwdc_rfwc5.html)
+* [Eaton 5-scene keypad](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/aspire_rf_5_button_scene_control_keypad_rfwdc_rfwc5.html)
 
 ## Table of contents
 
@@ -30,7 +30,7 @@ Child devices support:
 
 ## Installation
 
-The Cooper 5-scene keypad has blue LEDs which will all blink when the device is not included in a Z-Wave network.
+The Eaton 5-scene keypad has blue LEDs which will all blink when the device is not included in a Z-Wave network.
 
 * To include this device in SmartThings Hub network, start device discovery from SmartThings app, then press the device's All Off button one time.
 * DO NOT press any buttons while the device LEDs are blinking sequentially. After pairing is complete the LEDs will stop blinking.
@@ -47,11 +47,11 @@ Repeat last step until all switches start working correctly.
 
 ## Supported Functionality
 
-SmartThings will treat Cooper 5-scene keypad as 5-switch remote and will support All Off button functionality.
+SmartThings will treat Eaton 5-scene keypad as 5-switch remote and will support All Off button functionality.
 
 ## Unsupported Functionality
 
-SmartThings does not support Dimmer functionality of Cooper 5-scene keypad.
+SmartThings does not support Dimmer functionality of Eaton 5-scene keypad.
 
 ## Deinstallation
 * Start device exlusion using SmartThings app.

@@ -12,12 +12,12 @@
  *
  */
 metadata {
-	definition (name: "Cooper 5-Scene Keypad", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Eaton 5-Scene Keypad", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Refresh"
 		capability "Sensor"
 		//zw:L type:0202 mfr:001A prod:574D model:0000 ver:2.05 zwv:2.78 lib:01 cc:87,77,86,22,2D,85,72,21,70
-		fingerprint mfr: "001A", prod:"574D", model:"0000", deviceJoinName: "Cooper 5-Scene Keypad"
+		fingerprint mfr: "001A", prod:"574D", model:"0000", deviceJoinName: "Eaton 5-Scene Keypad"
 	}
 
 	tiles(scale: 2) {
@@ -42,25 +42,25 @@ def installed() {
 	//Device will sometimes respond with ApplicationBusy with STATUS_TRY_AGAIN_IN_WAIT_TIME_SECONDS
 	//this can happen for any of associationSet and sceneControllerConfSet commands even with intervals over 6000ms
 	//As this process will take a while, we use controller's LED indicators to display progress.
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 0).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:1, sceneId: 1).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 1).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:2, sceneId: 2).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 3).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:3, sceneId: 3).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 7).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:4, sceneId: 4).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 15).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:5, sceneId: 5).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 31).format())
-	cmds << new physicalgraph.device.HubAction(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+	cmds << zwave.indicatorV1.indicatorSet(value: 0)
+	cmds << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:1, sceneId: 1)
+	cmds << zwave.indicatorV1.indicatorSet(value: 1)
+	cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId])
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:2, sceneId: 2)
+	cmds << zwave.indicatorV1.indicatorSet(value: 3)
+	cmds << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId])
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:3, sceneId: 3)
+	cmds << zwave.indicatorV1.indicatorSet(value: 7)
+	cmds << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId])
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:4, sceneId: 4)
+	cmds << zwave.indicatorV1.indicatorSet(value: 15)
+	cmds << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId])
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:5, sceneId: 5)
+	cmds << zwave.indicatorV1.indicatorSet(value: 31)
+	cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	//use runIn to schedule the initialize method in case updated method below is also sending commands to the device
-	sendHubCommand(cmds, 3100)
+	sendHubCommand cmds*.format(), 3100
 	runIn(50, "initialize", [overwrite: true])  // Allow set up to finish and acknowledged before proceeding
 }
 
@@ -85,48 +85,44 @@ def initialize() {
 	//Check if Hub is associated to groups responsible for all five switches
 	//We do this, because most likely some of associationSet and sceneControllerConfSet commands were ignored
 	//As this process will take a while, we use controller's LED indicators to display progress.
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 0).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationGet(groupingIdentifier:1).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:1).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 1).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationGet(groupingIdentifier:2).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:2).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 3).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationGet(groupingIdentifier:3).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:3).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 7).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationGet(groupingIdentifier:4).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:4).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 15).format())
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationGet(groupingIdentifier:5).format())
-	cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:5).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 31).format())
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: 0).format())
+	cmds << zwave.indicatorV1.indicatorSet(value: 0)
+	cmds << zwave.associationV1.associationGet(groupingIdentifier:1)
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:1)
+	cmds << zwave.indicatorV1.indicatorSet(value: 1)
+	cmds << zwave.associationV1.associationGet(groupingIdentifier:2)
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:2)
+	cmds << zwave.indicatorV1.indicatorSet(value: 3)
+	cmds << zwave.associationV1.associationGet(groupingIdentifier:3)
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:3)
+	cmds << zwave.indicatorV1.indicatorSet(value: 7)
+	cmds << zwave.associationV1.associationGet(groupingIdentifier:4)
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:4)
+	cmds << zwave.indicatorV1.indicatorSet(value: 15)
+	cmds << zwave.associationV1.associationGet(groupingIdentifier:5)
+	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:5)
+	cmds << zwave.indicatorV1.indicatorSet(value: 31)
+	cmds << zwave.indicatorV1.indicatorSet(value: 0)
 	//Make sure cloud is in sync with device
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorGet().format())
+	cmds << zwave.indicatorV1.indicatorGet()
 	if (!getDataValue("manufacturer")) {
-		cmds << new physicalgraph.device.HubAction(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	}
 	//Long interval to make it possible to process association set commands if necessary
-	sendHubCommand(cmds, 3000)
+	sendHubCommand cmds*.format(), 3000
 }
 
 def refresh() {
-	def cmds = []
-	// when using All Off feature, controller will often not respond to Indicator Get command
-	// using delayed refresh proves more reliable in this case
-	cmds << new physicalgraph.device.HubAction("delay 500")
-	cmds << new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorGet().format())
+	response zwave.indicatorV1.indicatorGet().format()
 	//Indicator returns number which is a bit representation of current state of switches
-	sendHubCommand(cmds, 500)
 }
 
 def parse(String description) {
+	def result = []
 	def cmd = zwave.parse(description)
 	if (cmd) {
-		zwaveEvent(cmd)
+		result += zwaveEvent(cmd)
 	}
-	return []
+	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -140,18 +136,20 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	if (cmd.productId != null) {
 		updateDataValue("productId", cmd.productId.toString())
 	}
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
 	if (cmd.nodeId.any { it == zwaveHubNodeId }) {
-		sendEvent(descriptionText: "$device.displayName is associated in group ${cmd.groupingIdentifier}")
+		createEvent(descriptionText: "$device.displayName is associated in group ${cmd.groupingIdentifier}")
 	} else {
 		// We're not associated properly to this group, try setting association two times
 		def cmds = []
 		//Set Association for this group
-		cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:[zwaveHubNodeId]).format())
-		cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:[zwaveHubNodeId]).format())
-		sendHubCommand(cmds, 1500)
+		cmds << zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:[zwaveHubNodeId])
+		cmds << zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:[zwaveHubNodeId])
+		sendHubCommand cmds*.format(), 1500
+		return null
 	}
 }
 
@@ -160,13 +158,22 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	if (cmd.value == 0) {
 		//Device sends this event when any switch is turned off
 		//Most reliable way to know which switches are still "on" is to check their status
-		refresh()
+		def cmds = []
+		// when using All Off feature, controller will often not respond to Indicator Get command
+		// using delayed refresh proves more reliable in this case
+		cmds << new physicalgraph.device.HubAction("delay 500")
+		cmds << zwave.indicatorV1.indicatorGet().format()
+		//Indicator returns number which is a bit representation of current state of switches
+		sendHubCommand cmds, 500
+	} else {
+		return null
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
 	//we do not support dimming duration
 	setSwitchState(cmd.sceneId, "on")
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
@@ -181,34 +188,40 @@ def zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
 	setSwitchState(4, (cmd.value & 8)? "on" : "off")
 	//switch 5 - fifth bit
 	setSwitchState(5, (cmd.value & 16)? "on" : "off")
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStartLevelChange cmd) {
 	//Not supported
 	//We have no way to set and/or retrieve multilevel state of each button
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStopLevelChange cmd) {
 	//Not supported
 	//We have no way to set and/or retrieve multilevel state of each switch
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy cmd) {
 	//we have no way of knowing which command was ignored
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.scenecontrollerconfv1.SceneControllerConfReport cmd) {
 	if (cmd.groupId != cmd.sceneId) {
 		//Scene not set up properly for this association group. Try setting it two more times.
 		def cmds = []
-		cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration: 0, groupId: cmd.groupId, sceneId: cmd.groupId).format())
-		cmds << new physicalgraph.device.HubAction(zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration: 0, groupId: cmd.groupId, sceneId: cmd.groupId).format())
-		sendHubCommand(cmds, 1500)
+		cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration: 0, groupId: cmd.groupId, sceneId: cmd.groupId)
+		cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration: 0, groupId: cmd.groupId, sceneId: cmd.groupId)
+		sendHubCommand cmds*.format(), 1500
 	}
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "Unexpected zwave command $cmd"
+	return null
 }
 
 //method created to make child class reusable
@@ -248,7 +261,7 @@ private updateLocalSwitchState() {
 		}
 		multiplier *= 2
 	}
-	sendHubCommand new physicalgraph.device.HubAction(zwave.indicatorV1.indicatorSet(value: binarySwitchState).format())
+	sendHubCommand zwave.indicatorV1.indicatorSet(value: binarySwitchState).format()
 }
 
 private addChildSwitches() {
