@@ -12,14 +12,17 @@
  *
  */
 metadata {
-	definition (name: "Cooper Receptacle", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Eaton Receptacle", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
 
+		attribute "powerUpStateValue", "enum", ["On", "Off", "Last State"]
+		attribute "protectionValue", "enum", ["Disabled", "By sequence", "No local operation"]
+
 		//zw:L type:1003 mfr:001A prod:5244 model:0000 ver:3.05 zwv:3.67 lib:03 cc:25,27,75,86,70,71,85,77,2B,2C,72,73,82,87
-		fingerprint mfr:"001A", prod:"5244", deviceJoinName: "Cooper Receptacle"
+		fingerprint mfr:"001A", prod:"5244", deviceJoinName: "Eaton Receptacle"
 	}
 
 	preferences {
@@ -43,56 +46,72 @@ metadata {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
+		standardTile("powerUp", "device.powerUpStateValue", inactiveLabel: false, decoration: "flat",
+				width: 2, height: 2, backgroundColor: "#00a0dc") {
+			state "default", label: 'Power up state:\n${currentValue}'
+		}
+
+		standardTile("protection", "device.protectionValue", inactiveLabel: false, decoration: "flat",
+				width: 2, height: 2, backgroundColor: "#00a0dc") {
+			state "default", label: 'Protection:\n${currentValue}'
+		}
+
 		main "switch"
-		details(["switch","refresh"])
+		details(["switch", "refresh", "powerUp", "protection"])
 	}
 }
 
 def updated(){
+	def powerUpValue = getPowerUpStateValue()
+	def protectionValue = getProtectionValue()
+	// Update or initialize displayed attributes
+	sendEvent(name: "protectionValue", value: getProtectionName(protectionValue))
+	sendEvent(name: "powerUpStateValue", value: getPowerUpStateName(powerUpValue))
 	def cmds = []
-	cmds << hubAction(zwave.configurationV1.configurationSet(configurationValue: [getPowerUpStateValue()],
-			parameterNumber: 5, size :1).format())
-	cmds << hubAction(zwave.protectionV1.protectionSet(protectionState: getProtection()).format())
-	cmds << hubAction(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-	sendHubCommand(cmds, 300)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [getPowerUpStateValue()],
+			parameterNumber: 5, size :1)
+	cmds << zwave.protectionV1.protectionSet(protectionState: protectionValue)
+	cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+	sendHubCommand cmds*.format(), 300
 }
 
 def on() {
-	def cmd = []
-	cmd << hubAction(zwave.basicV1.basicSet(value: 0xFF).format())
-	cmd << hubAction(zwave.basicV1.basicGet().format())
-	sendHubCommand(cmd, 300)
+	def cmds = []
+	cmds << zwave.basicV1.basicSet(value: 0xFF)
+	cmds << zwave.basicV1.basicGet()
+	delayBetween cmds*.format(), 300
 }
 
 def off() {
-	def cmd = []
-	cmd << hubAction(zwave.basicV1.basicSet(value: 0x00).format())
-	cmd << hubAction(zwave.basicV1.basicGet().format())
-	sendHubCommand(cmd, 300)
+	def cmds = []
+	cmds << zwave.basicV1.basicSet(value: 0x00)
+	cmds << zwave.basicV1.basicGet()
+	delayBetween cmds*.format(), 300
 }
 
 def refresh() {
-	def cmd = []
-	cmd << hubAction(zwave.basicV1.basicGet().format())
-	cmd << hubAction(zwave.configurationV1.configurationGet(parameterNumber: 5).format())
-	cmd << hubAction(zwave.protectionV1.protectionGet().format())
-	sendHubCommand(cmd, 300)
+	def cmds = []
+	cmds << zwave.basicV1.basicGet()
+	cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
+	cmds << zwave.protectionV1.protectionGet()
+	delayBetween cmds*.format(), 300
 }
 
 def parse(String description) {
+	def result = []
 	def cmd = zwave.parse(description, [0x75:1])
 	if (cmd) {
-		zwaveEvent(cmd)
+		result += zwaveEvent(cmd)
 	}
-	return []
+	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+	createEvent(name: "switch", value: cmd.value ? "on" : "off")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+	createEvent(name: "switch", value: cmd.value ? "on" : "off")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -106,35 +125,27 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	if (cmd.productId != null) {
 		updateDataValue("productId", cmd.productId.toString())
 	}
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	//settings are read-only, so send event if settings are out of sync
-	if(cmd.parameterNumber == 5 && cmd.configurationValue[0] != getPowerUpStateValue()) {
-		sendEvent([descriptionText: "$device.displayName power up state settings are out of sync. Please save device preferences.",
-				   isStateChange: true])
+	//settings are read-only
+	if(cmd.parameterNumber == 5) {
+		createEvent(name: "powerUpStateValue", value: getPowerUpStateName(cmd.configurationValue[0]))
+	} else {
+		return null
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.protectionv1.ProtectionReport cmd) {
-	//settings are read-only, so send event if settings are out of sync
-	if(cmd.protectionState == getProtection()) {
-		sendEvent([descriptionText: "$device.displayName protection settings are out of sync. Please save device preferences.",
-				   isStateChange: true])
-	}
+	//settings are read-only
+	createEvent(name: "protectionValue", value: getProtectionName(cmd.protectionState))
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	log.debug "Unexpected zwave command $cmd"
-}
-
-private hubAction(formattedCommand) {
-	new physicalgraph.device.HubAction(formattedCommand)
-}
-
-private sendCommand(formattedCommand) {
-	sendHubCommand(new physicalgraph.device.HubAction(formattedCommand))
+	return null
 }
 
 private getPowerUpStateValue() {
@@ -154,7 +165,24 @@ private getPowerUpStateValue() {
 	value
 }
 
-private getProtection() {
+private getPowerUpStateName(arg) {
+	def value
+	switch (arg) {
+		case 1:
+			value = "Off"
+			break
+		case 2:
+			value = "On"
+			break
+		case 3:
+		default:
+			value = "Last State"
+			break
+	}
+	value
+}
+
+private getProtectionValue() {
 	def value
 	switch (settings.protection) {
 		case "sequence":
@@ -166,6 +194,23 @@ private getProtection() {
 		case "disabled":
 		default:
 			value = 0
+			break
+	}
+	value
+}
+
+private getProtectionName(arg) {
+	def value
+	switch (arg) {
+		case 1:
+			value = "By sequence"
+			break
+		case 2:
+			value = "No local operation"
+			break
+		case 0:
+		default:
+			value = "Disabled"
 			break
 	}
 	value

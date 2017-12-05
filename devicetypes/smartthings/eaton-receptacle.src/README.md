@@ -1,10 +1,10 @@
-# Cooper Wireless Receptacle
+# Eaton Wireless Receptacle
 
 Cloud Execution
 
 Works with:
 
-* [Cooper Wireless Receptacle](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/aspire_rf_15a_tamper_resistant_split_control_duplex_receptacle_rftr9505_t.html)
+* [Eaton Wireless Receptacle](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/aspire_rf_15a_tamper_resistant_split_control_duplex_receptacle_rftr9505_t.html)
 
 ## Table of contents
 
@@ -32,11 +32,11 @@ Repeat last step until device successfuly connects to SmartThing network.
 
 ## Supported Functionality
 
-Please note Cooper Wireless Receptacle offers **wireless control for ONE outlet**.
+Please note Eaton Wireless Receptacle offers **wireless control for ONE outlet**.
 
-* SmartThings support Cooper Wireless Receptacle's switch on/off feature.
-* SmartThings support settings for power up state feature of Cooper Wireless Receptacle.
-* SmartThings support settings for Child Lockout feature of Cooper Wireless Receptacle.
+* SmartThings support Eaton Wireless Receptacle's switch on/off feature.
+* SmartThings support settings for power up state feature of Eaton Wireless Receptacle.
+* SmartThings support settings for Child Lockout feature of Eaton Wireless Receptacle.
 
 ## Deinstallation
 * Start device exlusion using SmartThings app.
