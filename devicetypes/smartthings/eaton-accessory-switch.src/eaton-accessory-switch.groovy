@@ -13,14 +13,16 @@
  */
 
 metadata {
-	definition(name: "Cooper Accessory Switch", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Eaton Accessory Switch", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
 
+		attribute "delayedOffValue", "number"
+
 		//zw:L type:1201 mfr:001A prod:5352 model:0000 ver:3.13 zwv:3.52 lib:03 cc:27,75,86,70,85,77,2B,2C,72,73,87
-		fingerprint mfr: "001A ", prod: "5352", model: "0000", deviceJoinName: "Cooper Accessory Switch"
+		fingerprint mfr: "001A ", prod: "5352", model: "0000", deviceJoinName: "Eaton Accessory Switch"
 	}
 
 	tiles(scale: 2) {
@@ -31,21 +33,23 @@ metadata {
 			}
 		}
 
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 6, height: 2, backgroundColor: "#00a0dc") {
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 4, height: 2, backgroundColor: "#00a0dc") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
+		standardTile("delayedOff", "device.delayedOffValue", inactiveLabel: false, decoration: "flat",
+				width: 2, height: 2, backgroundColor: "#00a0dc") {
+			state "default", label: 'Delayed off time:\n${currentValue}s'
+		}
+
 		main "switch"
-		details(["switch", "refresh"])
+		details(["switch", "refresh", "delayedOff"])
 	}
 
 	preferences {
-		section {
-			input( "delayedOffTime", "number",
-					title: "Time after which switch will turn off when using delayed off feature",
-					description: "[1..255]", defaultValue: 10, range: "1..255", required: false, displayDuringSetup: true
-			)
-		}
+		input "delayedOffTime", "number",
+				title: "Time after which switch will turn off when using delayed off feature (1 - 255 [s])",
+				description: "10", range: "1..255"
 	}
 }
 
@@ -65,66 +69,64 @@ def updated() {
 }
 
 def initialize() {
+	def delayedOff = settings.delayedOffTime ? settings.delayedOffTime : 10
+	sendEvent(name: "delayedOffValue", value: delayedOff)
+
 	def cmds = []
 	//manufacturer information needs to be checked only once
 	if (!getDataValue("manufacturer")) {
-		cmds << new physicalgraph.device.HubAction(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	}
 	//Check initial switch state
-	cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicGet().format())
+	cmds << zwave.basicV1.basicGet()
 	//set dalayed off parameter to value set in preferences (default value is 10s)
-	cmds << new physicalgraph.device.HubAction(zwave.configurationV1
-			.configurationSet(configurationValue: [settings.delayedOffTime ? settings.delayedOffTime : 10], parameterNumber: 1, size: 1).format())
-	sendHubCommand(cmds)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [delayedOff], parameterNumber: 1, size: 1)
+	sendHubCommand cmds*.format()
 }
 
 def on() {
 	//Earlier versions of device will not allow setting basic set value for "on" (configuration parameter 4)
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicSet(value: 0xFF).format())
+	cmds << zwave.basicV1.basicSet(value: 0xFF)
 	//Get current switch value to confirm change
-	cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicGet().format())
-	sendHubCommand(cmds, 200)
+	cmds << zwave.basicV1.basicGet()
+	delayBetween cmds*.format(), 200
 }
 
 def off() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicSet(value: 0x00).format())
+	cmds << zwave.basicV1.basicSet(value: 0x00)
 	//Get current switch value to confirm change
-	cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicGet().format())
-	sendHubCommand(cmds, 200)
+	cmds << zwave.basicV1.basicGet()
+	delayBetween cmds*.format(), 200
 }
 
 def refresh() {
 	def cmds = []
 	//Get current switch value
-	cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicGet().format())
+	cmds << zwave.basicV1.basicGet()
 	//Get current off delay setting
-	cmds << new physicalgraph.device.HubAction(zwave.configurationV1.configurationGet(parameterNumber: 1).format())
-	sendHubCommand(cmds, 200)
+	cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
+	delayBetween cmds*.format(), 200
 }
 
 def parse(String description) {
-	//error handling
-	if (description.startsWith("Err")) {
-		sendEvent(descriptionText: description, isStateChange: true)
-	} else {
-		//parse z-wave command
-		def cmd = zwave.parse(description)
-		if (cmd) {
-			//handle z-wave commands
-			zwaveEvent(cmd)
-		}
+	def result = []
+	//parse z-wave command
+	def cmd = zwave.parse(description)
+	if (cmd) {
+		//handle z-wave commands
+		result += zwaveEvent(cmd)
 	}
-	return []
+	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	sendEvent(name: "switch", value: cmd.value == 0 ? "off" : "on")
+	createEvent(name: "switch", value: cmd.value == 0 ? "off" : "on")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	sendEvent(name: "switch", value: cmd.value == 0 ? "off" : "on")
+	createEvent(name: "switch", value: cmd.value == 0 ? "off" : "on")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -138,16 +140,21 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	if (cmd.productId != null) {
 		updateDataValue("productId", cmd.productId.toString())
 	}
+	return null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	//Update dalayedOffTime preference value
 	if (cmd.parameterNumber == 1) {
-		settings.delayedOffTime = cmd.configurationValue
+		// Settings are read-only
+		// We use custom attribute do display current "Delayed Off" time set on the device.
+		createEvent(name: "delayedOffValue", value: cmd.configurationValue[0])
+	} else {
+		return null
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	//received unhandled command
-	sendEvent(descriptionText: "$device.displayName: $cmd")
+	createEvent(descriptionText: "$device.displayName: $cmd")
 }

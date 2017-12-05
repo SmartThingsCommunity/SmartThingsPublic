@@ -1,10 +1,10 @@
-# Cooper Accessory Switch
+# Eaton Accessory Switch
 
 Cloud Execution
 
 Works with: 
 
-* [Cooper Accessory Switch](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/switches/aspire_rf_accessory_switch_rf9517.html)
+* [Eaton Accessory Switch](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/switches/aspire_rf_accessory_switch_rf9517.html)
 
 ## Table of contents
 
@@ -32,8 +32,8 @@ Repeat last step until device successfuly connects to SmartThing network.
 
 ## Supported Functionality
 
-* SmartThings support Cooper Accessory Switch switch functionality.
-* SmartThings support setting Cooper Accessory Switch delayed off delay. To trigger delayed off feature, user needs to hold device's button while device is turned on.
+* SmartThings support Eaton Accessory Switch switch functionality.
+* SmartThings support setting Eaton Accessory Switch delayed off delay. To trigger delayed off feature, user needs to hold device's button while device is turned on.
 
 ## Deinstallation
 * Start device exlusion using SmartThings app.
