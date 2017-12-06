@@ -1,4 +1,4 @@
-# Cooper Dimmer
+# Eaton Dimmer
 
 Cloud Execution
 
@@ -34,10 +34,10 @@ Repeat last step until device successfuly connects to SmartThing network.
 
 ## Supported Features
 
-* SmartThings support Cooper Dimmer's switch functionality.
+* SmartThings support Eaton Dimmer's switch functionality.
 * SmartThings support setting device's dimmer level.
-* SmartThings support setting Cooper Dimmer's "delayed off" delay. To trigger delayed off feature, user needs to hold device's button while device is turned on.
-* SmartThings support configuration of Cooper Dimmer's "power up state".
+* SmartThings support setting Eaton Dimmer's "delayed off" delay. To trigger delayed off feature, user needs to hold device's button while device is turned on.
+* SmartThings support configuration of Eaton Dimmer's "power up state".
 
 ## Denstallation
 
