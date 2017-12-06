@@ -1,10 +1,10 @@
-# Cooper Anyplace Switch
+# Eaton Anyplace Switch
 
 Cloud Execution
 
-Works with: 
+Works with:
 
-* [Cooper Anyplace Switch](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/anyplace.html)
+* [Eaton Anyplace Switch](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/anyplace.html)
 
 ## Table of contents
 
@@ -26,12 +26,12 @@ Works with:
 * Device LED will start blinking
 * When device LED stops blinking, device is already added to the network and goes to sleep.
 * User is required to push dimmer buttons a few times, to wake device up long enough for hub to properly retrieve device information.
-* If new "Cooper Anyplace Switch" device appears in SmartThings app, confirm addition of new device.
+* If new "Eaton Anyplace Switch" device appears in SmartThings app, confirm addition of new device.
 
 ## Supported Functionality
 
-* SmartThings support Cooper Anyplace Switch switch functionality.
-* SmartThings support Cooper Anyplace Switch dimmer buttons (each press changes dimmer level by set amount).
+* SmartThings support Eaton Anyplace Switch switch functionality.
+* SmartThings support Eaton Anyplace Switch dimmer buttons (each press changes dimmer level by set amount).
 
 ## Deinstallation
 * Start device exlusion using SmartThings app.
