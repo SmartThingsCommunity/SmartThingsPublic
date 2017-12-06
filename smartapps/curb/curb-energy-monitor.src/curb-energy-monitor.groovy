@@ -252,6 +252,9 @@ def processUsage(resp, data) {
             if (it.production) {
               production += it.avg
             }
+            if (!atomicState.hasMains && !it.production) {
+            	main += it.avg
+            }
         }
         updateChildDevice("__NET__", "Main", main)
         if (hasProduction) {
@@ -267,6 +270,7 @@ def processDevices(resp, data) {
         return
     }
     def json = resp.json
+    atomicState.hasMains = False
     if (json) {
         def hasProduction = false
         json.circuits.each {
@@ -276,6 +280,10 @@ def processDevices(resp, data) {
             if (it.production) {
                 hasProduction = true
             }
+            if (it.main) {
+            	atomicState.hasMains=True
+            }
+
         }
         createChildDevice("__NET__", "Main")
         if (hasProduction) {
@@ -309,6 +317,9 @@ def processKwh(resp, data) {
             }
             if (it.production) {
               production += it.kwhr
+            }
+            if (!atomicState.hasMains && !it.production) {
+            	main += it.kwhr
             }
         }
         getChildDevice("__NET__").handleKwhBilling(main)
