@@ -269,9 +269,31 @@ def uninstalled() {
 	cirrus.unregisterServiceManager()
 }
 
+def countChildren() {
+	log.debug "Counting child devices"
+	state.attemptUninstall = true
+	runIn(11, attemptUninstall)
+}
+
+def attemptUninstall() {
+	log.debug "Will uninstall if no child devices"
+	if (!getChildDevices()) {
+		try {
+            log.debug "No children, performing uninstall"
+			app.delete()
+		} catch (e) {
+			unschedule()
+			unsubscribe()
+			log.error "No child devices, but failed to uninstall"
+		}
+	} else {
+		state.attemptUninstall = false
+	}
+}
 // called after Done is hit after selecting a Location
 def initialize() {
 	log.debug "initialize"
+	state.attemptUninstall = false
 
 	if (cirrusEnabled) {
 		// Create the devices
@@ -437,62 +459,65 @@ void updateDevices() {
 	if (!state.devices) {
 		state.devices = [:]
 	}
-	def devices = devicesInLocation()
-	def selectors = []
 
-	log.debug("All selectors: ${selectors}")
+	if (!state.attemptUninstall) {
+		def devices = devicesInLocation()
+		def selectors = []
 
-	devices.each { device ->
-		def childDevice = getChildDevice(device.id)
-		selectors.add("${device.id}")
-		if (!childDevice) {
-			// log.info("Adding device ${device.id}: ${device.product}")
-			if (device.product.capabilities.has_color) {
-				childDevice = addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, ["label": device.label, "completedSetup": true])
-			} else {
-				childDevice = addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+		log.debug("All selectors: ${selectors}")
+
+		devices.each { device ->
+			def childDevice = getChildDevice(device.id)
+			selectors.add("${device.id}")
+			if (!childDevice) {
+				// log.info("Adding device ${device.id}: ${device.product}")
+				if (device.product.capabilities.has_color) {
+					childDevice = addChildDevice(app.namespace, "LIFX Color Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+				} else {
+					childDevice = addChildDevice(app.namespace, "LIFX White Bulb", device.id, null, ["label": device.label, "completedSetup": true])
+				}
 			}
-		}
 
-		if (device.product.capabilities.has_color) {
-			childDevice.sendEvent(name: "color", value: colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int))
-			childDevice.sendEvent(name: "hue", value: device.color.hue / 3.6)
-			childDevice.sendEvent(name: "saturation", value: device.color.saturation * 100)
-		}
-		childDevice.sendEvent(name: "label", value: device.label)
-		childDevice.sendEvent(name: "level", value: Math.round((device.brightness ?: 1) * 100))
-		childDevice.sendEvent(name: "switch.setLevel", value: Math.round((device.brightness ?: 1) * 100))
-		childDevice.sendEvent(name: "switch", value: device.power)
-		childDevice.sendEvent(name: "colorTemperature", value: device.color.kelvin)
-		childDevice.sendEvent(name: "model", value: device.product.name)
+			if (device.product.capabilities.has_color) {
+				childDevice.sendEvent(name: "color", value: colorUtil.hslToHex((device.color.hue / 3.6) as int, (device.color.saturation * 100) as int))
+				childDevice.sendEvent(name: "hue", value: device.color.hue / 3.6)
+				childDevice.sendEvent(name: "saturation", value: device.color.saturation * 100)
+			}
+			childDevice.sendEvent(name: "label", value: device.label)
+			childDevice.sendEvent(name: "level", value: Math.round((device.brightness ?: 1) * 100))
+			childDevice.sendEvent(name: "switch.setLevel", value: Math.round((device.brightness ?: 1) * 100))
+			childDevice.sendEvent(name: "switch", value: device.power)
+			childDevice.sendEvent(name: "colorTemperature", value: device.color.kelvin)
+			childDevice.sendEvent(name: "model", value: device.product.name)
 
-		if (state.devices[device.id] == null) {
-			// State missing, add it and set it to opposite status as current status to provoke event below
-			state.devices[device.id] = [online: !device.connected]
-		}
+			if (state.devices[device.id] == null) {
+				// State missing, add it and set it to opposite status as current status to provoke event below
+				state.devices[device.id] = [online: !device.connected]
+			}
 
-		if (!state.devices[device.id]?.online && device.connected) {
-			// Device came online after being offline
-			childDevice?.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
-			log.debug "$device is back Online"
-		} else if (state.devices[device.id]?.online && !device.connected) {
-			// Device went offline after being online
-			childDevice?.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
-			log.debug "$device went Offline"
+			if (!state.devices[device.id]?.online && device.connected) {
+				// Device came online after being offline
+				childDevice?.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
+				log.debug "$device is back Online"
+			} else if (state.devices[device.id]?.online && !device.connected) {
+				// Device went offline after being online
+				childDevice?.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
+				log.debug "$device went Offline"
+			}
+			state.devices[device.id] = [online: device.connected]
 		}
-		state.devices[device.id] = [online: device.connected]
-	}
-	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
-		log.debug("Deleting ${it.deviceNetworkId}")
-		if (state.devices[it.deviceNetworkId])
-			state.devices[it.deviceNetworkId] = null
-		// The reason the implementation is trying to delete this bulb is because it is not longer connected to the LIFX location.
-		// Adding "try" will prevent this exception from happening.
-		// Ideally device health would show to the user that the device is not longer accessible so that the user can either force delete it or remove it from the SmartApp.
-		try {
-			deleteChildDevice(it.deviceNetworkId)
-		} catch (Exception e) {
-			log.debug("Can't remove this device because it's being used by an SmartApp")
+		getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
+			log.debug("Deleting ${it.deviceNetworkId}")
+			if (state.devices[it.deviceNetworkId])
+				state.devices[it.deviceNetworkId] = null
+			// The reason the implementation is trying to delete this bulb is because it is not longer connected to the LIFX location.
+			// Adding "try" will prevent this exception from happening.
+			// Ideally device health would show to the user that the device is not longer accessible so that the user can either force delete it or remove it from the SmartApp.
+			try {
+				deleteChildDevice(it.deviceNetworkId)
+			} catch (Exception e) {
+				log.debug("Can't remove this device because it's being used by an SmartApp")
+			}
 		}
 	}
 }
