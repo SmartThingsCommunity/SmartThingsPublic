@@ -18,9 +18,6 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		attribute "powerUpStateValue", "enum", ["On", "Off", "Last State"]
-		attribute "protectionValue", "enum", ["Disabled", "By sequence", "No local operation"]
-
 		//zw:L type:1003 mfr:001A prod:5244 model:0000 ver:3.05 zwv:3.67 lib:03 cc:25,27,75,86,70,71,85,77,2B,2C,72,73,82,87
 		fingerprint mfr:"001A", prod:"5244", deviceJoinName: "Eaton Receptacle"
 	}
@@ -42,35 +39,21 @@ metadata {
 						icon: "st.switches.switch.off", backgroundColor: "#ffffff")
 			}
 		}
-		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.switch", width: 6, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		standardTile("powerUp", "device.powerUpStateValue", inactiveLabel: false, decoration: "flat",
-				width: 2, height: 2, backgroundColor: "#00a0dc") {
-			state "default", label: 'Power up state:\n${currentValue}'
-		}
-
-		standardTile("protection", "device.protectionValue", inactiveLabel: false, decoration: "flat",
-				width: 2, height: 2, backgroundColor: "#00a0dc") {
-			state "default", label: 'Protection:\n${currentValue}'
-		}
-
 		main "switch"
-		details(["switch", "refresh", "powerUp", "protection"])
+		details(["switch", "refresh"])
 	}
 }
 
-def updated(){
-	def powerUpValue = getPowerUpStateValue()
-	def protectionValue = getProtectionValue()
+def updated() {
 	// Update or initialize displayed attributes
-	sendEvent(name: "protectionValue", value: getProtectionName(protectionValue))
-	sendEvent(name: "powerUpStateValue", value: getPowerUpStateName(powerUpValue))
 	def cmds = []
 	cmds << zwave.configurationV1.configurationSet(configurationValue: [getPowerUpStateValue()],
-			parameterNumber: 5, size :1)
-	cmds << zwave.protectionV1.protectionSet(protectionState: protectionValue)
+			parameterNumber: 5, size: 1)
+	cmds << zwave.protectionV1.protectionSet(protectionState: getProtectionValue())
 	cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	sendHubCommand cmds*.format(), 300
 }
@@ -99,7 +82,7 @@ def refresh() {
 
 def parse(String description) {
 	def result = []
-	def cmd = zwave.parse(description, [0x75:1])
+	def cmd = zwave.parse(description, [0x75: 1])
 	if (cmd) {
 		result += zwaveEvent(cmd)
 	}
@@ -129,17 +112,23 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	//settings are read-only
-	if(cmd.parameterNumber == 5) {
-		createEvent(name: "powerUpStateValue", value: getPowerUpStateName(cmd.configurationValue[0]))
+	//settings are read-only, so send event if settings are out of sync
+	if (cmd.parameterNumber == 5 && cmd.configurationValue[0] != getPowerUpStateValue()) {
+		createEvent([descriptionText: "$device.displayName power up state settings are out of sync. Please save device preferences.",
+				isStateChange: true])
 	} else {
 		return null
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.protectionv1.ProtectionReport cmd) {
-	//settings are read-only
-	createEvent(name: "protectionValue", value: getProtectionName(cmd.protectionState))
+	//settings are read-only, so send event if settings are out of sync
+	if(cmd.protectionState != getProtectionValue()) {
+		createEvent([descriptionText: "$device.displayName protection settings are out of sync. Please save device preferences.",
+				isStateChange: true])
+	} else {
+		return null
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -165,23 +154,6 @@ private getPowerUpStateValue() {
 	value
 }
 
-private getPowerUpStateName(arg) {
-	def value
-	switch (arg) {
-		case 1:
-			value = "Off"
-			break
-		case 2:
-			value = "On"
-			break
-		case 3:
-		default:
-			value = "Last State"
-			break
-	}
-	value
-}
-
 private getProtectionValue() {
 	def value
 	switch (settings.protection) {
@@ -194,23 +166,6 @@ private getProtectionValue() {
 		case "disabled":
 		default:
 			value = 0
-			break
-	}
-	value
-}
-
-private getProtectionName(arg) {
-	def value
-	switch (arg) {
-		case 1:
-			value = "By sequence"
-			break
-		case 2:
-			value = "No local operation"
-			break
-		case 0:
-		default:
-			value = "Disabled"
 			break
 	}
 	value
