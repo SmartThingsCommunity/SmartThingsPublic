@@ -351,7 +351,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	secure(zwave.batteryV1.batteryGet())
+	if (device.latestValue("powerSource") == "dc") {
+		command(zwave.batteryV1.batteryGet())
+	} else {
+		log.debug "Can't ping a wakeup device on battery"
+	}
 }
 
 def configure() {
