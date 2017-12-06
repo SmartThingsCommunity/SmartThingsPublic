@@ -19,31 +19,24 @@ metadata {
 		capability "Sensor"
 		capability "Switch"
 
-		attribute "delayedOffValue", "number"
-
 		//zw:L type:1201 mfr:001A prod:5352 model:0000 ver:3.13 zwv:3.52 lib:03 cc:27,75,86,70,85,77,2B,2C,72,73,87
 		fingerprint mfr: "001A ", prod: "5352", model: "0000", deviceJoinName: "Eaton Accessory Switch"
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name: "switch", width: 6, height: 4, canChangeIcon: true) {
+		multiAttributeTile(name: "switch", type:"generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label: '${name}', action: "switch.off", icon: "st.unknown.zwave.device", backgroundColor: "#00a0dc", nextState: "off"
 				attributeState "off", label: '${name}', action: "switch.on", icon: "st.unknown.zwave.device", backgroundColor: "#ffffff", nextState: "on"
 			}
 		}
 
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 4, height: 2, backgroundColor: "#00a0dc") {
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 6, height: 2, backgroundColor: "#00a0dc") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-		standardTile("delayedOff", "device.delayedOffValue", inactiveLabel: false, decoration: "flat",
-				width: 2, height: 2, backgroundColor: "#00a0dc") {
-			state "default", label: 'Delayed off time:\n${currentValue}s'
-		}
-
 		main "switch"
-		details(["switch", "refresh", "delayedOff"])
+		details(["switch", "refresh"])
 	}
 
 	preferences {
@@ -70,7 +63,6 @@ def updated() {
 
 def initialize() {
 	def delayedOff = settings.delayedOffTime ? settings.delayedOffTime : 10
-	sendEvent(name: "delayedOffValue", value: delayedOff)
 
 	def cmds = []
 	//manufacturer information needs to be checked only once
@@ -144,11 +136,11 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	//Update dalayedOffTime preference value
-	if (cmd.parameterNumber == 1) {
-		// Settings are read-only
-		// We use custom attribute do display current "Delayed Off" time set on the device.
-		createEvent(name: "delayedOffValue", value: cmd.configurationValue[0])
+	def delayedOff = settings.delayedOffTime ? settings.delayedOffTime : 10
+	//settings are read-only, so send event if settings are out of sync
+	if(cmd.parameterNumber == 1 && cmd.configurationValue[0] != delayedOff) {
+		createEvent([descriptionText: "$device.displayName delayed off time settings are out of sync. Please save device preferences.",
+				isStateChange: true])
 	} else {
 		return null
 	}

@@ -2,7 +2,7 @@
 
 Cloud Execution
 
-Works with: 
+Works with:
 
 * [Eaton Accessory Switch](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/switches/aspire_rf_accessory_switch_rf9517.html)
 
