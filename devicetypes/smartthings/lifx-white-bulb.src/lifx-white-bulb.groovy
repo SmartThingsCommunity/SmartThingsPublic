@@ -69,6 +69,11 @@ def updated() {
 	initialize()
 }
 
+def uninstalled() {
+	log.debug "uninstalled()"
+	parent.countChildren()
+}
+
 // handle commands
 def setLevel(percentage) {
 	log.debug "setLevel ${percentage}"

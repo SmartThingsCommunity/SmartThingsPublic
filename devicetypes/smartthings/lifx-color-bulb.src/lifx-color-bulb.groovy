@@ -78,6 +78,11 @@ def updated() {
 	initialize()
 }
 
+def uninstalled() {
+	log.debug "uninstalled()"
+	parent.countChildren()
+}
+
 // handle commands
 def setHue(percentage) {
 	log.debug "setHue ${percentage}"
