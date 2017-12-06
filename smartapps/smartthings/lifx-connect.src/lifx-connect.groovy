@@ -276,7 +276,7 @@ def countChildren() {
 }
 
 def attemptUninstall() {
-    log.debug "Will uninstall if no child devices"
+	log.debug "Will uninstall if no child devices"
 	if (!getChildDevices()) {
 		try {
             log.debug "No children, performing uninstall"
