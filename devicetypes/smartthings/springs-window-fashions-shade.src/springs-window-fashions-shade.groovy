@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -52,11 +52,11 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"windowShade", type: "generic", width: 6, height: 4){
             tileAttribute ("device.windowShade", key: "PRIMARY_CONTROL") {
-                attributeState "open", label:'${name}', action:"close", icon:"st.doors.garage.garage-open", backgroundColor:"#79b821", nextState:"closing"
-                attributeState "closed", label:'${name}', action:"open", icon:"st.doors.garage.garage-closed", backgroundColor:"#ffffff", nextState:"opening"
-                attributeState "partiallyOpen", label:'Open', action:"close", icon:"st.doors.garage.garage-open", backgroundColor:"#79b821", nextState:"closing"
-                attributeState "opening", label:'${name}', action:"stop", icon:"st.doors.garage.garage-opening", backgroundColor:"#79b821", nextState:"partiallyOpen"
-                attributeState "closing", label:'${name}', action:"stop", icon:"st.doors.garage.garage-closing", backgroundColor:"#ffffff", nextState:"partiallyOpen"
+                attributeState "open", label:'${name}', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
+                attributeState "closed", label:'${name}', action:"open", icon:"st.shades.shade-closed", backgroundColor:"#ffffff", nextState:"opening"
+                attributeState "partiallyOpen", label:'Open', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
+                attributeState "opening", label:'${name}', action:"stop", icon:"st.shades.shade-opening", backgroundColor:"#79b821", nextState:"partiallyOpen"
+                attributeState "closing", label:'${name}', action:"stop", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partiallyOpen"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", action:"setLevel"
