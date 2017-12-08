@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.4a - 11/20/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.4b - 11/20/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.1 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
@@ -9,7 +9,7 @@
  *  Version 2.3.1 (9/13/17) Added new extention: Rooms/Groups, disabling of Device Groups, add voice to message queue
  *  Version 2.3.2 (9/22/17) Removed device group macro code, added UV index to Environmentals
  *  Version 2.3.3 (11/2/17) Extension version update; begin adding code for compound commands, removed Sonos specific memory slots (now redundent with Sonos Skill), added switch trigger for macros
- *  Version 2.3.4a (11/20/17) Continued to add compound commands; removed old speaker code.
+ *  Version 2.3.4b (11/20/17) Continued to add compound commands; removed old speaker code.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -610,12 +610,14 @@ def pagePriQueue(){
             if (mqFeed || mqSMS || mqPush || mqContacts) input "restrictMobile", "bool", title: "Apply Restrictions To Mobile Notification", defaultValue: false, submitOnChange: true
         }
         if (restrictMobile || restrictVisual || restrictAudio){
-            section("Message Queue Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
+            section("Message queue Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive )) {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: imgURL() + "calendar.png"
 				href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: imgURL() + "clock.png"
 				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: imgURL() + "modes.png"
                 input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: imgURL() + "people.png"
 				if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+                input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: imgURL() + "on.png"
+				input "runSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false, image: imgURL() + "off.png"
             }
         }
         section ("REST URL for this message queue", hideable: true, hidden:true){
@@ -651,7 +653,7 @@ def pageDefaultValue(){
 		section("Increase / Brighten / Decrease / Dim values\n(When no values are requested)"){
 			input "lightAmt", "number", title: "Dimmer/Colored Lights", range:"1..100", defaultValue: 20, required: false
 			input "tstatAmt", "number", title: "Thermostat Temperature", range:"1..100",defaultValue: 5, required: false
-			//input "speakerAmt", "number", title: "Speaker Volume", range:"1..100",defaultValue: 5, required: false
+			input "speakerAmt", "number", title: "Speaker Volume", range:"1..100",defaultValue: 5, required: false
 		}
        	section("Low / Medium / High values (For dimmers or colored lights)") {
 			input "dimmerLow", "number", title: "\"Low\" Value",range:"1..100", defaultValue: 10, required: false
@@ -833,12 +835,14 @@ def mainPageChild(){
             }
         }
         if (macroType && macroType ==~/Control|CoRE/){
-            section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
+            section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive)) {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: imgURL() + "calendar.png"
 				href "timeIntervalInput", title: "Only During Certain Times...", description: getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: imgURL() + "clock.png"
 				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: imgURL() + "modes.png"
                 input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: imgURL() + "people.png"
 					if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+                input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: imgURL() + "on.png"
+				input "runSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false, image: imgURL() + "off.png"
                 input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
             }
         }
@@ -2422,7 +2426,15 @@ def qDelete(){
 	if (msgQueueNotifyLightsOn && msgQueueNotifyLightsOff) msgQueueNotifyLightsOn?.off()
     if (msgQueueNotifycLightsOn && msgQueueNotifyLightsOff) msgQueueNotifycLightsOn?.off()
 }
-def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd) && getPeopleOk(runPeople,runPresAll) }
+def getOkToRun(){ 
+	def result = (!runMode || runMode.contains(location.mode)) && getDayOk(runDay) && getTimeOk(timeStart,timeEnd) && getPeopleOk(runPeople,runPresAll) && switchesOnStatus() && switchesOffStatus()
+}
+private switchesOnStatus(){
+	return runSwitchActive && runSwitchActive.find{it.currentValue("switch") == "off"} ? false : true	
+}
+private switchesOffStatus(){
+	return runSwitchNotActive && runSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true	
+}
 def battOptions() { return  [5:"<5%",10:"<10%",20:"<20%",30:"<30%",40:"<40%",50:"<50%",60:"<60%",70:"<70%",80:"<80%",90:"<90%",101:"Always play battery level"] }
 def kelvinOptions(){ return ["${parent.kSoftWhite}" : "Soft White (${parent.kSoftWhite}K)", "${parent.kWarmWhite}" : "Warm White (${parent.kWarmWhite}K)", 
     "${parent.kCoolWhite}": "Cool White (${parent.kCoolWhite}K)", "${parent.kDayWhite}" : "Daylight White (${parent.kDayWhite}K)"] 
@@ -2876,18 +2888,17 @@ def msgPMQ(date,descriptionText,unit,value,overwrite, expires, notifyOnly, suppr
         }
     }
     else {
+        def msgTxt
         if (overwrite && msgQueueDelete && msgQueueDelete.contains("Primary Message Queue")) msgDeletePMQ(unit, value)
         else if (overwrite && (!msgQueueDelete || !msgQueueDelete.contains("Primary Message Queue"))) log.debug "An overwrite command was issued from '${value}', however, the option to allow deletions was not enabled for the Primary Message Queue."
         if (!notifyOnly) log.debug "New message added to primary message queue from: " + value
         if (!notifyOnly) state.msgQueue<<["date":date.getTime(),"appName":value,"msg":descriptionText,"id":unit, "expires": expires, "suppressTimeDate": suppressTimeDate,"trackDelete":trackDelete] 
+        if (mqAlertType ==~/0|1|2/) {
+			msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in ${app.label} message queue from : " + value : ""
+			if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
+    	}
         if (mqSpeaker && mqVolume && ((restrictAudio && getOkToRun())||!restrictAudio)) {
-        	def msgVoice, msgSFX
-            if (mqAlertType ==~/0|1|2/) {
-            	def msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in primary message queue from : " + value : ""
-            	if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
-            	def outputVoice = mqVoice ?: "Salli"
-                msgVoice = textToSpeech (msgTxt, outputVoice)
-            }
+        	def msgSFX, outputVoice = mqVoice ?: "Salli", msgVoice = textToSpeech (msgTxt, outputVoice)
             if (mqAlertType == "3" || mqAppendSound) msgSFX = sfxLookup(mqAlertSound)
 			mqSpeaker?.setLevel(mqVolume as int)            
             if (mqAlertType != "3" && !mqAppendSound) mqSpeaker?.playTrack (msgVoice.uri)
@@ -3454,7 +3465,7 @@ private wrReq()  { return 105 }
 private vrReq()  { return 107 }
 private schReq()  { return 103 }
 private rmReq() { return 102 }
-private versionLong(){ return "2.3.4a" }
+private versionLong(){ return "2.3.4b" }
 private versionDate(){ return "11/20/2017" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {

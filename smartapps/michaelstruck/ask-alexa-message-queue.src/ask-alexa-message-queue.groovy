@@ -2,7 +2,7 @@
  *  Ask Alexa Message Queue Extension
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.7 10/17/17
+ *  Version 1.0.7a 10/17/17
  * 
  *  Version 1.0.0 (3/31/17) - Initial release
  *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
@@ -12,7 +12,7 @@
  *  Version 1.0.4 (7/8/17) - Added REST URL access to Message Queue
  *  Version 1.0.5 (7/21/17) - Changed REST URL icon and display for consistency
  *  Version 1.0.6a (8/22/17) - Added voice options to Message Queue
- *  Version 1.0.7 (10/17/17) - Put 'purge' logging message into proper location to reduce Live Logging clutter
+ *  Version 1.0.7a (10/17/17) - Put 'purge' logging message into proper location to reduce Live Logging clutter
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -84,12 +84,14 @@ def mainPage() {
         	if (mqFeed || mqSMS || mqPush || mqContacts) input "restrictMobile", "bool", title: "Apply Restrictions To Mobile Notification", defaultValue: false, submitOnChange: true
         }
         if (restrictMobile || restrictVisual || restrictAudio){
-            section("Message queue restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
+            section("Message queue restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive)) {            
 				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png"
 				href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png"
 				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png"
                 input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
 				if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+            	input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: parent.imgURL() + "on.png"
+				input "runSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false, image: parent.imgURL() + "off.png"
             }
         }
         section ("REST URL for this message queue", hideable: true, hidden:true){
@@ -117,19 +119,18 @@ def initialize() {
 }
 //Main Handlers
 def msgHandler(date, descriptionText, unit, value, overwrite, expires, notifyOnly, suppressTimeDate, trackDelete) {
+    def msgTxt
     if (!state.msgQueue) state.msgQueue=[]
     if (overwrite && parent.msgQueueDelete && parent.msgQueueDelete.contains(app.id)) msgDeleteHandler(unit, value)
     else if (overwrite) log.debug "An overwrite command was issued from '${value}', however, the option to allow deletions was not enabled for the '${app.label}' queue."
     if (!notifyOnly) log.debug "New message added to the '${app.label}' message queue from: " + value
 	if (!notifyOnly) state.msgQueue<<["date":date.getTime(),"appName":value,"msg":descriptionText,"id":unit,"expires":expires,"suppressTimeDate": suppressTimeDate, "trackDelete":trackDelete] 
+    if (mqAlertType ==~/0|1|2/) {
+		msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in ${app.label} message queue from : " + value : ""
+		if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
+    }
     if (mqSpeaker && mqVolume && ((restrictAudio && getOkToRun())||!restrictAudio)) {
-		def msgVoice, msgSFX
-		if (mqAlertType ==~/0|1|2/) {
-			def msgTxt= !mqAlertType ||mqAlertType as int ==0 || mqAlertType as int ==1 ? "New message received in ${app.label} message queue from : " + value : ""
-			if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
-			def outputVoice = mqVoice ?: "Salli"
-            msgVoice = textToSpeech (msgTxt, outputVoice)
-		}
+		def msgSFX, outputVoice = mqVoice ?: "Salli", msgVoice = textToSpeech (msgTxt, outputVoice)
 		if (mqAlertType == "3" || mqAppendSound) msgSFX = parent.sfxLookup(mqAlertSound)
 		mqSpeaker?.setLevel(mqVolume as int)            
 		if (mqAlertType != "3" && !mqAppendSound) mqSpeaker?.playTrack (msgVoice.uri)
@@ -235,8 +236,14 @@ def purgeMQ(){
 	}
 }
 //Common Code
-def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
+def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) && switchesOnStatus() && switchesOffStatus() }
+private switchesOnStatus(){
+	return runSwitchActive && runSwitchActive.find{it.currentValue("switch") == "off"} ? false : true	
+}
+private switchesOffStatus(){
+	return runSwitchNotActive && runSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true	
+}
 //Version/Copyright/Information/Help
 private versionInt(){ return 107 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.7 (10/17/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.7a (10/17/2017)" }
