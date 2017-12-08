@@ -31,6 +31,10 @@ metadata {
 		fingerprint mfr:"001D", prod:"0401", model:"0334", deviceJoinName: "Leviton 600W Incandescent Dimmer"
 		fingerprint mfr:"0111", prod:"8200", model:"0200", deviceJoinName: "Remotec Technology Plug-In Dimmer"
 		fingerprint mfr:"1104", prod:"001D", model:"0501", deviceJoinName: "Leviton 1000W Incandescant Dimmer"
+		fingerprint mfr:"0039", prod:"5044", model:"3033", deviceJoinName: "Honeywell Z-Wave Plug-in Dimmer (Dual Outlet)"
+		fingerprint mfr:"0039", prod:"5044", model:"3038", deviceJoinName: "Honeywell Z-Wave Plug-in Dimmer"
+		fingerprint mfr:"0039", prod:"4944", model:"3038", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Dimmer"
+		fingerprint mfr:"0039", prod:"4944", model:"3130", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Dimmer"
 	}
 
 	simulator {
