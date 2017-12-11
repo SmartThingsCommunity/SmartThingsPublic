@@ -238,13 +238,9 @@ def processUsage(resp, data) {
     def main = 0.0
     def production = 0.0
     if (json) {
-        def hasProduction = false
         json.each {
             if (!it.main && !it.production) {
                 updateChildDevice("${it.id}", it.label, it.avg)
-            }
-            if (it.production) {
-                hasProduction = true
             }
             if (it.main) {
               main += it.avg
@@ -257,7 +253,7 @@ def processUsage(resp, data) {
             }
         }
         updateChildDevice("__NET__", "Main", main)
-        if (hasProduction) {
+        if (atomicState.hasProduction) {
             updateChildDevice("__PRODUCTION__", "Solar", production)
             updateChildDevice("__CONSUMPTION__", "Usage", main-production)
         }
@@ -270,23 +266,22 @@ def processDevices(resp, data) {
         return
     }
     def json = resp.json
-    atomicState.hasMains = False
+    atomicState.hasMains = false
+    atomicState.hasProduction = false
     if (json) {
-        def hasProduction = false
         json.circuits.each {
             if (!it.main && !it.production) {
                 device = createChildDevice("${it.id}", "${it.label}")
             }
             if (it.production) {
-                hasProduction = true
+                atomicState.hasProduction = true
             }
             if (it.main) {
-            	atomicState.hasMains=True
+            	atomicState.hasMains = true
             }
-
         }
         createChildDevice("__NET__", "Main")
-        if (hasProduction) {
+        if (atomicState.hasProduction) {
             createChildDevice("__PRODUCTION__", "Solar")
             createChildDevice("__CONSUMPTION__", "Usage")
         }
@@ -304,13 +299,9 @@ def processKwh(resp, data) {
     def production = 0.0
     def existingDevice = null
     if (json) {
-        def hasProduction = false
         json.each {
             if (!it.main && !it.production) {
                 getChildDevice("${it.id}").handleKwhBilling(it.kwhr)
-            }
-            if (it.production) {
-                hasProduction = true
             }
             if (it.main) {
               main += it.kwhr
@@ -323,7 +314,7 @@ def processKwh(resp, data) {
             }
         }
         getChildDevice("__NET__").handleKwhBilling(main)
-        if (hasProduction) {
+        if (atomicState.hasProduction) {
             getChildDevice("__SOLAR__").handleKwhBilling(production)
             getChildDevice("__USAGE__").handleKwhBilling(main-production)
         }
