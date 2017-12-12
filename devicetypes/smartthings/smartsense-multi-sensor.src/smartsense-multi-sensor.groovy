@@ -273,10 +273,10 @@ private Map getBatteryResult(rawValue) {
 			def pct = batteryMap[volts]
 			result.value = pct
 		} else {
-			def minVolts = 2.1
-			def maxVolts = 2.7
+			def minVolts = 2.5
+			def maxVolts = 3.0
 			// Get the current battery percentage as a multiplier 0 - 1
-			def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
+			def curValVolts = Integer.parseInt(device.currentState("battery")?.value, 10) / 100.0
 			// Find the corresponding voltage from our range
 			curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
 			// Round to the nearest 10th of a volt
