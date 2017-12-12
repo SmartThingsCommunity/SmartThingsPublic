@@ -35,6 +35,7 @@ metadata {
 		fingerprint mfr:"0039", prod:"5044", model:"3038", deviceJoinName: "Honeywell Z-Wave Plug-in Dimmer"
 		fingerprint mfr:"0039", prod:"4944", model:"3038", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Dimmer"
 		fingerprint mfr:"0039", prod:"4944", model:"3130", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Dimmer"
+		fingerprint mfr:"0039", prod:"4944", model:"3131", deviceJoinName: "Honeywell Z-Wave Plus In-Wall Fan Speed Control"
 	}
 
 	simulator {
