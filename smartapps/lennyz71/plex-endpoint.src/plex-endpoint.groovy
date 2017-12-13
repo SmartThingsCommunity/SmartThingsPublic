@@ -58,7 +58,7 @@ void updateSwitches() {
     // use the built-in request object to get the command parameter
     def command = params.command
 
-    // all switches have the comand
+    // all switches have the command
     // execute the command on all switches
     // (note we can do this on the array - the command will be invoked on every element
     switch(command) {
