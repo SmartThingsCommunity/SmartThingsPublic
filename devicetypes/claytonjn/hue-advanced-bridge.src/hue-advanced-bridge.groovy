@@ -7,6 +7,7 @@
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Hue Advanced Bridge", namespace: "claytonjn", author: "claytonjn") {
+		capability "Bridge"
 		capability "Refresh"
 		capability "Health Check"
 
@@ -27,10 +28,10 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-     	multiAttributeTile(name:"rich-control"){
+     	multiAttributeTile(name:"rich-control", type:"lighting"){
 			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
 				attributeState "Offline", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#ffffff"
-	            attributeState "Online", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#79b821"
+	            attributeState "Online", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#00A0DC"
 			}
 		}
 		valueTile("doNotRemove", "v", decoration: "flat", height: 1, width: 4, inactiveLabel: false) {
@@ -56,7 +57,7 @@ metadata {
 }
 
 void installed() {
-	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
 }
 
 // parse events into attributes
