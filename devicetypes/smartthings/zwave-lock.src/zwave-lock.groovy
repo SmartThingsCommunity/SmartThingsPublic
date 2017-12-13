@@ -313,6 +313,17 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 		}
 	}
 	result ? [createEvent(map), *result] : createEvent(map)
+	if (generatesDoorLockOperationReportBeforeAlarmReport()) {
+		// we're expecting lock events to come after notification events, but for specific yale locks they come out of order
+		runIn(3, "delayLockEvent", [data: [event: result]])
+        return [:]
+	} else {
+		return result
+	}
+}
+
+def delayLockEvent(data) {
+	sendEvent(data.event)
 }
 
 /**
@@ -1645,6 +1656,19 @@ def isYaleLock() {
 		if("Yale" != getDataValue("manufacturer")) {
 			updateDataValue("manufacturer", "Yale")
 		}
+		return true
+	}
+	return false
+}
+
+/**
+ * Returns true if this lock generates door lock operation report before alarm report, false otherwise
+ * @return true if this lock generates door lock operation report before alarm report, false otherwise
+ */
+def generatesDoorLockOperationReportBeforeAlarmReport() {
+	//Fix for ICP-2367, ICP-2366
+	if(isYaleLock() && "0007" == zwaveInfo.prod && "0001" == zwaveInfo.model) {
+		//Yale Keyless Connected Smart Door Lock
 		return true
 	}
 	return false
