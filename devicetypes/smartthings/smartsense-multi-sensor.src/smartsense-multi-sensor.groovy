@@ -273,8 +273,10 @@ private Map getBatteryResult(rawValue) {
 			def pct = batteryMap[volts]
 			result.value = pct
 		} else {
+			def useOldBatt = shouldUseOldBatteryReporting()
 			def minVolts = 2.1
-			def maxVolts = 2.7
+			def maxVolts = useOldBatt ? 3.0 : 2.7
+
 			// Get the current battery percentage as a multiplier 0 - 1
 			def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
 			// Find the corresponding voltage from our range
@@ -285,15 +287,16 @@ private Map getBatteryResult(rawValue) {
 			// OR we have received the same reading twice in a row
 			// OR we don't currently have a battery reading
 			// OR the value we just received is at least 2 steps off from the last reported value
-			if(state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+			// OR the device's firmware is older than 1.15.7
+			if(useOldBatt || state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				def roundedPct = Math.round(pct * 100)
 				if (roundedPct <= 0)
 					roundedPct = 1
 				result.value = Math.min(100, roundedPct)
 			} else {
-				// Don't update as we want to smooth the battery values
-				result = null
+				// Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
+				result.value = device.currentState("battery").value
 			}
 			state.lastVolts = volts
 		}
@@ -411,6 +414,25 @@ private getManufacturerCode() {
 	} else {
 		return "0x104E"
 	}
+}
+
+private shouldUseOldBatteryReporting() {
+	def isFwVersionLess = true // By default use the old battery reporting
+	def deviceFwVer = "${device.getFirmwareVersion()}"
+	def deviceVersion = deviceFwVer.tokenize('.')  // We expect the format ###.###.### where ### is some integer
+
+	if (deviceVersion.size() == 3) {
+		def targetVersion = [1, 15, 7] // Centralite Firmware 1.15.7 contains battery smoothing fixes, so versions before that should NOT be smoothed
+		def devMajor = deviceVersion[0] as int
+		def devMinor = deviceVersion[1] as int
+		def devBuild = deviceVersion[2] as int
+
+		isFwVersionLess = ((devMajor < targetVersion[0]) ||
+			(devMajor == targetVersion[0] && devMinor < targetVersion[1]) ||
+			(devMajor == targetVersion[0] && devMinor == targetVersion[1] && devBuild < targetVersion[2]))
+	}
+
+	return isFwVersionLess // If f/w version is less than 1.15.7 then do NOT smooth battery reports and use the old reporting
 }
 
 private hexToInt(value) {
