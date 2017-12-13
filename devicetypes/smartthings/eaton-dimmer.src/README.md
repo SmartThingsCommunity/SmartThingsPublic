@@ -4,6 +4,8 @@ Cloud Execution
 
 Works with:
 
+
+* [RF All Load Smart Dimmer - RF9540-N](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/dimmers/ASPIRE-RF-All-Load-Smart-Dimmer-RF9540-N.html)
 * [RF Accessory Dimmer - RF9542-Z](http://www.cooperindustries.com/content/public/en/wiring_devices/products/lighting_controls/aspire_rf_wireless/dimmers/aspire_rf_accessory_w_leds_rf9542_z_.html)
 
 ## Table of contents
