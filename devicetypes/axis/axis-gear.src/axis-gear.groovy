@@ -21,7 +21,7 @@ metadata {
     }
    
 	tiles(scale: 2) {
-        multiAttributeTile(name:"shade", type: "lighting", width: 6, height: 6) {
+        multiAttributeTile(name:"shade", type: "lighting", width: 3, height: 3) {
             tileAttribute("device.windowShade", key: "PRIMARY_CONTROL") {
                 attributeState("open",  icon:"http://i.imgur.com/4TbsR54.png", backgroundColor:"#ffcc33", nextState: "closed")
                 attributeState("partial",  icon:"http://i.imgur.com/vBA17WL.png", backgroundColor:"#ffcc33", nextState: "closed")
@@ -40,32 +40,32 @@ metadata {
             state("closed", label:'Closed', icon:"http://i.imgur.com/SAiEADI.png", backgroundColor:"#bbbbdd", nextState: "open")
             //action:"close",action:"open"
         }
-	 	controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 6, inactiveLabel: true) {
+	 	controlTile("mediumSlider", "device.level", "slider",decoration:"flat",height: 1, width: 3, inactiveLabel: true) {
             state("level", action:"setLevel")
         }
         
-        valueTile("battery", "device.battery", inactiveLabel:false, decoration:"flat", width:4, height:2) {
+        valueTile("battery", "device.battery", inactiveLabel:false, decoration:"flat", width:2, height:1) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
         
-		standardTile("refresh", "device.refresh", inactiveLabel:false, decoration:"flat", width:2, height:2) {
+		standardTile("refresh", "device.refresh", inactiveLabel:false, decoration:"flat", width:1, height:1) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
         main(["main"])
-        details(["shade", "levelSliderControl","battery", "refresh"])
+        details(["shade", "mediumSlider","battery", "refresh"])
         //details('shade', 'levelSliderControl')
         //details('levelSliderControl', 'otherTile', 'anotherTile') //adjustment and order of tiles
 	}
 
 }
-
+//Declare Clusters
 private getCLUSTER_POWER() {0x0001}
 private getCLUSTER_LEVEL() {0x0008}
 private getLEVEL_ATTR_LEVEL() {0x0000}
 private getPOWER_ATTR_BATTERY() {0x0021}
 
-
+//Custom command to increment blind position by 25 %
 def ShadesUp(){
 	def shadeValue = device.latestValue("level") as Integer ?: 0 
     
@@ -78,7 +78,7 @@ def ShadesUp(){
     setLevel(shadeValue)
     
 }
-
+//Custom command to decrement blind position by 25 %
 def ShadesDown(){
 	def shadeValue = device.latestValue("level") as Integer ?: 0 
     
@@ -92,65 +92,69 @@ def ShadesDown(){
     
 }
 
+//Send Command through setLevel()
 def on() {
 	//sendEvent(name:"level", value:0, displayed:true)
-    setLevel(0)
-    
-    //zigbee.on()
+    setLevel(0)  
 }
 
+//Send Command through setLevel()
 def off() {
 	setLevel(100)
     //zigbee.off()
 }
-
+//Command to set the blinf position (%) and log the event
 def setLevel(value) {
-	//sendEvent(name: "integerFloat", value: 47.0)
 	sendEvent(name:"level", value: value, displayed:true)
     def L = Math.round(value);
     def i = Integer.valueOf(L.intValue());
     setWindowShade(i)
 	zigbee.setLevel(i)
-
+    //refresh()
 }
-
+//Send Command through setLevel()
 def open() {
-    on()  
+    setLevel(0)   
 }
-
+//Send Command through setLevel()
 def close() {
-	off()
+	setLevel(100)
 }
 
+//Reporting of Battery & position levels
 def ping(){
- log.debug "Ping() "
-
+	log.debug "Ping() "
+    return zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
+    	   zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL)
     
 }
 
+//Set blind State based on position (which shows appropriate image) 
 def setWindowShade(value){
- if ((value>0)&&(value<100)){
+ if ((value>0)&&(value<99)){
     	sendEvent(name:"windowShade", value: "partial", displayed:true)
-    } else if (value == 100){
+    } else if (value > 99){
     	sendEvent(name:"windowShade", value: "closed", displayed:true)
     }else{
     	sendEvent(name:"windowShade", value: "open", displayed:true)
     }
 }
 
+//Refresh command
 def refresh() {
-    def cmds = 
-    	zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
-    	zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL) 	
-    return cmds 
+    return zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
+    	   zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL) +
+    	   zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 250, 300, 0x01) +
+           zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 250, 300, 0x01)
+    
 }
-
+//configure reporting
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    sendEvent(name: "checkInterval", value: 30, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 300, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     def cmds = 
-    	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 0, 60, 0x01) +
-        zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 0, 60, 0x01)
+    	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 250, 300, 0x01) +
+        zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 250, 300, 0x01)
         log.info "configure() --- cmds: $cmds"
     return refresh + cmds
 }
@@ -192,4 +196,3 @@ private Map parseReportAttributeMessage(String description) {
     }
     return resultMap
 }
-
