@@ -105,8 +105,8 @@ def setLevel(value) {
 	def cmds = []
 	//apply manufacturer's default limits
 	def newLevel = Math.min(99, Math.max(4, value))
-	cmds << new physicalgraph.device.HubAction(zwave.switchMultilevelV1.switchMultilevelSet(value: newLevel).format())
-	sendDelayedCommandsAccordingToDimmerRampTime(cmds)
+    cmds << zwave.switchMultilevelV1.switchMultilevelSet(value: newLevel)
+	addDelayedCommandsAccordingToDimmerRampTime(cmds)
 }
 
 def setLevel(value, duration) {
@@ -143,7 +143,7 @@ def refresh() {
 		state.refreshTriggeredAt = timeNow
 		def cmds = []
 		cmds << zwave.basicV1.basicGet()
-		cmds << zwave.switchMultilevelV1.switchMultilevelGet()
+		//cmds << zwave.switchMultilevelV1.switchMultilevelGet()
 		cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
 		cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
 		cmds << zwave.configurationV1.configurationGet(parameterNumber: 7)
@@ -167,8 +167,7 @@ def parse(String description) {
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	// creating on/off event is omitted, that state will be updated later (when level drops down to 0)
 	def cmds = []
-	getDelayedGetCommandsDimmerRampTime(cmds)
-	return response(cmds)
+    return response(addDelayedCommandsAccordingToDimmerRampTime(cmds))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd) {
@@ -232,40 +231,26 @@ private handleDimmerValue(newValue){
 }
 
 private handleOnOff(newValue){
-	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicSet(value: newValue).format())
-	cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicGet().format())
-	sendDelayedCommandsAccordingToDimmerRampTime(cmds)
+	def cmds = []	
+    cmds << zwave.basicV1.basicSet(value: newValue)
+	cmds << zwave.basicV1.basicGet()   
+	addDelayedCommandsAccordingToDimmerRampTime(cmds)
 }
 
-private sendDelayedCommandsAccordingToDimmerRampTime(cmds){
+private addDelayedCommandsAccordingToDimmerRampTime(cmds){
 	def rampTime = settings.dimmerRampTime ? settings.dimmerRampTime : 5
 	// calculate delay between basicGet commands
 	def totalDelay = (rampTime + 2)  * 1000
-	def delay =  (totalDelay <= 10000) ? 1000 : totalDelay.intdiv(10)
+	
+    def delay =  (totalDelay <= 10000) ? 1000 : totalDelay.intdiv(10)
 	// add basicGet commands in order to refresh actual state in smart application
 	// if dimmerRampTime is shorter than 10 second, basicGet commands will be called with 1 seconds delay
 	// if dimmerRampTime is longer than 10 second, basicGet commands will be called with totalDelay/10 seconds delay
 	while (totalDelay > 0){
-		cmds << new physicalgraph.device.HubAction(zwave.basicV1.basicGet().format())
+        cmds << zwave.basicV1.basicGet()
 		totalDelay -= delay
 	}
-	delayBetween(cmds,delay)
-}
-
-def getDelayedGetCommandsDimmerRampTime(cmds){
-	def rampTime = settings.dimmerRampTime ? settings.dimmerRampTime : 5
-	// calculate delay between basicGet commands
-	def totalDelay = (rampTime + 2)  * 1000
-	def delay =  (totalDelay <= 10000) ? 1000 : totalDelay.intdiv(10)
-	// add basicGet commands in order to refresh actual state in smart application
-	// if dimmerRampTime is shrter than 10 second, basicGet commands will be called with 1 seconds delay
-	// if dimmerRampTime is longer than 10 second, basicGet commands will be called with totalDelay/10 seconds delay
-	while (totalDelay > 0){
-		cmds << "delay $delay"
-		cmds << zwave.basicV1.basicGet().format()
-		totalDelay -= delay
-	}
+	delayBetween(cmds*.format(),delay)
 }
 
 private getPowerUpStateValue() {
