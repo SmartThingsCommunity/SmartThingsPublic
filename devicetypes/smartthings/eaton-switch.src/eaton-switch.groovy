@@ -17,7 +17,6 @@ metadata {
 		capability "Actuator"
 		capability "Refresh"
 		capability "Sensor"
-		capability "Relay Switch"
 		capability "Switch"
 
 		attribute "protectionMode", "enum", ["unprotected", "sequence", "noControl"]
@@ -39,6 +38,9 @@ metadata {
 		//87 - Indicator
 
 		fingerprint mfr: "001A ", prod: "534C ", model: "0000", deviceJoinName: "Eaton RF9501 Switch "
+
+		//zw:L type:1201 mfr:001A prod:5352 model:0000 ver:3.13 zwv:3.52 lib:03 cc:27,75,86,70,85,77,2B,2C,72,73,87
+		fingerprint mfr: "001A ", prod: "5352", model: "0000", deviceJoinName: "Eaton Accessory Switch"
 	}
 
 	tiles(scale: 2) {
