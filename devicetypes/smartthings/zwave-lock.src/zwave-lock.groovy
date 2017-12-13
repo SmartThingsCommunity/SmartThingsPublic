@@ -371,10 +371,16 @@ private def handleAccessAlarmReport(cmd) {
 	switch(cmd.zwaveAlarmEvent) {
 		case 1: // Manually locked
 			map.descriptionText = "Locked manually"
+			if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+				map.isStateChange = true
+			}
 			map.data = [ method: (cmd.alarmLevel == 2) ? "keypad" : "manual" ]
 			break
 		case 2: // Manually unlocked
 			map.descriptionText = "Unlocked manually"
+			if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+				map.isStateChange = true
+			}
 			map.data = [ method: "manual" ]
 			break
 		case 3: // Locked by command
@@ -390,10 +396,16 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
+				if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+					map.isStateChange = true
+				}
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			} else {
 				// locked by pressing the Schlage button
 				map.descriptionText = "Locked manually"
+				if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+					map.isStateChange = true
+				}
 			}
 			break
 		case 6: // Unlocked with keypad
@@ -401,6 +413,9 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
+				if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+					map.isStateChange = true
+				}
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
@@ -415,6 +430,9 @@ private def handleAccessAlarmReport(cmd) {
 		case 9: // Auto locked
 			map = [ name: "lock", value: "locked", data: [ method: "auto" ] ]
 			map.descriptionText = "Auto locked"
+			if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+				map.isStateChange = true
+			}
 			break
 		case 0xA:
 			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
@@ -595,6 +613,9 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 				codeID = cmd.alarmLevel
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
+				if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+					map.isStateChange = true
+				}
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
@@ -604,20 +625,32 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			// Kwikset lock reporting code id as 0 when locked using the lock keypad button
 			if (isKwiksetLock() && codeID == 0) {
 				map.descriptionText = "Locked manually"
+				if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+					map.isStateChange = true
+				}
 				map.data = [ method: "manual" ]
 			} else {
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
+				if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+					map.isStateChange = true
+				}
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 21: // Manually locked
 			map = [ name: "lock", value: "locked", data: [ method: (cmd.alarmLevel == 2) ? "keypad" : "manual" ] ]
 			map.descriptionText = "Locked manually"
+			if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+				map.isStateChange = true
+			}
 			break
 		case 22: // Manually unlocked
 			map = [ name: "lock", value: "unlocked", data: [ method: "manual" ] ]
 			map.descriptionText = "Unlocked manually"
+			if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+				map.isStateChange = true
+			}
 			break
 		case 23:
 			map = [ name: "lock", value: "unknown", descriptionText: "Unknown state" ]
@@ -638,6 +671,9 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 		case 27: // Auto locked
 			map = [ name: "lock", value: "locked", data: [ method: "auto" ] ]
 			map.descriptionText = "Auto locked"
+			if(generatesDoorLockOperationReportBeforeAlarmReport()) {
+				map.isStateChange = true
+			}
 			break
 		case 32: // All user codes deleted
 			result = allCodesDeletedEvent()
@@ -1653,6 +1689,19 @@ def isYaleLock() {
 		if("Yale" != getDataValue("manufacturer")) {
 			updateDataValue("manufacturer", "Yale")
 		}
+		return true
+	}
+	return false
+}
+
+/**
+ * Returns true if this lock generates door lock operation report before alarm report, false otherwise
+ * @return true if this lock generates door lock operation report before alarm report, false otherwise
+ */
+def generatesDoorLockOperationReportBeforeAlarmReport() {
+	//Fix for ICP-2367, ICP-2366
+	if(isYaleLock() && "0007" == zwaveInfo.prod && "0001" == zwaveInfo.model) {
+		//Yale Keyless Connected Smart Door Lock 
 		return true
 	}
 	return false
