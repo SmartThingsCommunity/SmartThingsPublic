@@ -312,18 +312,17 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 			result << response(secure(zwave.associationV1.associationGet(groupingIdentifier:1)))
 		}
 	}
-	result = result ? [createEvent(map), *result] : createEvent(map)
 	if (generatesDoorLockOperationReportBeforeAlarmReport()) {
 		// we're expecting lock events to come after notification events, but for specific yale locks they come out of order
-		runIn(3, "delayLockEvent", [data: [event: result]])
+		runIn(3, "delayLockEvent", [data: [map: map, result: result]])
         return [:]
 	} else {
-		return result
+		return result ? [createEvent(map), *result] : createEvent(map)
 	}
 }
 
 def delayLockEvent(data) {
-	sendEvent(data.event)
+	sendEvent(data.result ? [createEvent(data.map), *data.result] : createEvent(data.map))
 }
 
 /**
