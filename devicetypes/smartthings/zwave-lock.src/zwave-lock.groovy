@@ -387,7 +387,7 @@ private def handleAccessAlarmReport(cmd) {
 			break
 		case 5: // Locked with keypad
 			if (cmd.eventParameter || cmd.alarmLevel) {
-				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
+				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
@@ -398,7 +398,7 @@ private def handleAccessAlarmReport(cmd) {
 			break
 		case 6: // Unlocked with keypad
 			if (cmd.eventParameter || cmd.alarmLevel) {
-				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
+				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
@@ -431,7 +431,7 @@ private def handleAccessAlarmReport(cmd) {
 			break
 		case 0xD: // User code deleted
 			if (cmd.eventParameter || cmd.alarmLevel) {
-				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
+				codeID = readCodeSlotId(cmd)
 				if (lockCodes[codeID.toString()]) {
 					codeName = getCodeName(lockCodes, codeID)
 					map = [ name: "codeChanged", value: "$codeID deleted", isStateChange: true ]
@@ -443,7 +443,7 @@ private def handleAccessAlarmReport(cmd) {
 			break
 		case 0xE: // Master or user code changed/set
 			if (cmd.eventParameter || cmd.alarmLevel) {
-				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
+				codeID = readCodeSlotId(cmd)
 				if(codeID == 0 && isKwiksetLock()) {
 					//Ignoring this AlarmReport as Kwikset reports codeID 0 when all slots are full and user tries to set another lock code manually
 					//Kwikset locks don't send AlarmReport when Master code is set
@@ -464,7 +464,7 @@ private def handleAccessAlarmReport(cmd) {
 			break
 		case 0xF: // Duplicate Pin-code error
 			if (cmd.eventParameter || cmd.alarmLevel) {
-				codeID = cmd.eventParameter[2] ?: cmd.alarmLevel
+				codeID = readCodeSlotId(cmd)
 				clearStateForSlot(codeID)
 				map = [ name: "codeChanged", value: "$codeID failed", descriptionText: "User code is duplicate and not added",
 					isStateChange: true, data: [isCodeDuplicate: true] ]
@@ -592,14 +592,14 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 		case 19: // Unlocked with keypad
 			map = [ name: "lock", value: "unlocked" ]
 			if (cmd.alarmLevel != null) {
-				codeID = cmd.alarmLevel
+				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
 				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 18: // Locked with keypad
-			codeID = cmd.alarmLevel
+			codeID = readCodeSlotId(cmd)
 			map = [ name: "lock", value: "locked" ]
 			// Kwikset lock reporting code id as 0 when locked using the lock keypad button
 			if (isKwiksetLock() && codeID == 0) {
@@ -646,7 +646,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
 			break
 		case 33: // User code deleted
-			codeID = cmd.alarmLevel
+			codeID = readCodeSlotId(cmd)
 			if (lockCodes[codeID.toString()]) {
 				codeName = getCodeName(lockCodes, codeID)
 				map = [ name: "codeChanged", value: "$codeID deleted", isStateChange: true ]
@@ -660,7 +660,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 13:
 		case 112: // Master or user code changed/set
-			codeID = cmd.alarmLevel
+			codeID = readCodeSlotId(cmd)
 			if(codeID == 0 && isKwiksetLock()) {
 				//Ignoring this AlarmReport as Kwikset reports codeID 0 when all slots are full and user tries to set another lock code manually
 				//Kwikset locks don't send AlarmReport when Master code is set
@@ -681,7 +681,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 34:
 		case 113: // Duplicate Pin-code error
-			codeID = cmd.alarmLevel
+			codeID = readCodeSlotId(cmd)
 			clearStateForSlot(codeID)
 			map = [ name: "codeChanged", value: "$codeID failed", descriptionText: "User code is duplicate and not added",
 				isStateChange: true, data: [isCodeDuplicate: true] ]
@@ -1656,4 +1656,18 @@ def isYaleLock() {
 		return true
 	}
 	return false
+}
+
+/**
+ * Generic function for reading code Slot ID from AlarmReport command
+ * @param cmd: The AlarmReport command
+ * @return user code slot id
+ */
+def readCodeSlotId(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
+	if(cmd.numberOfEventParameters == 1) {
+		return cmd.eventParameter[0]
+	} else if(cmd.numberOfEventParameters >= 3) {
+		return cmd.eventParameter[2]
+	}
+	return cmd.alarmLevel
 }
