@@ -141,15 +141,9 @@ def installed(){
 }
 
 def updated() {
-// Device-Watch simply pings if no device events received for 122min(checkInterval)
 	log.debug "Updated with settings: ${settings}"
 	log.debug "${device.displayName} is now ${device.latestValue("powerSource")}"
 
-	checkInterval = 2 * 60 * 60 + 2 * 60
-	if (reportInterval) {
-		checkInterval = 2*(timeOptionValueMap[reportInterval]/60) + (2 * 60)
-	}
-	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 	def powerSource = device.latestValue("powerSource")
 
@@ -407,6 +401,14 @@ def configure() {
 	request << zwave.configurationV1.configurationGet(parameterNumber: 9)
 
 	setConfigured("true")
+
+	// set the check interval based on the report interval preference. (default 122 minutes)
+	// we do this here in case the device is in wakeup mode
+	def checkInterval = 2 * 60 * 60 + 2 * 60
+	if (reportInterval) {
+		checkInterval = 2*(timeOptionValueMap[reportInterval]/60) + (2 * 60)
+	}
+	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
