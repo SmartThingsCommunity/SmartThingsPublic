@@ -106,6 +106,7 @@ def getCheckInterval() {
 
 def installed() {
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+    response(refresh())
 }
 
 def updated() {
@@ -194,7 +195,7 @@ def open() {
             zwave.basicV1.basicSet(value: 0xFF).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()
     ], 1000)*/
-    zwave.basicV1.basicSet(value: 0xFF).format()
+    zwave.basicV1.basicSet(value: 99).format()
 }
 
 def close() {
@@ -219,7 +220,6 @@ def setLevel(value, duration = null) {
     Integer level = value as Integer
     if (level < 0) level = 0
     if (level > 99) level = 99
-    if (!preset && level > 0 && level < 95) state.preset = level
     delayBetween([
             zwave.basicV1.basicSet(value: level).format(),
             zwave.switchMultilevelV1.switchMultilevelGet().format()

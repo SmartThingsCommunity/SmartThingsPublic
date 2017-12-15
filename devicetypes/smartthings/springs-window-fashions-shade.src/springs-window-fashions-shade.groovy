@@ -111,6 +111,7 @@ def getCheckInterval() {
 
 def installed() {
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+    response(refresh())
 }
 
 def updated() {
@@ -148,7 +149,7 @@ private handleLevelReport(physicalgraph.zwave.Command cmd) {
     def shadeValue = null
 
     def level = cmd.value as Integer
-    level = switchDirection ? level : 99-level
+    level = switchDirection ? 99-level : level
     if (level >= 99) {
         level = 99
         shadeValue = "open"
@@ -210,14 +211,14 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def open() {
     log.debug "open()"
-    def level = switchDirection ? 0 : 0xFF
+    def level = switchDirection ? 0 : 99
     zwave.basicV1.basicSet(value: level).format()
     // zwave.basicV1.basicSet(value: 0xFF).format()
 }
 
 def close() {
     log.debug "close()"
-    def level = switchDirection ? 0xFF : 0
+    def level = switchDirection ? 99 : 0
     zwave.basicV1.basicSet(value: level).format()
     //zwave.basicV1.basicSet(value: 0).format()
 }
@@ -233,10 +234,9 @@ def off() {
 def setLevel(value, duration = null) {
     log.debug "setLevel(${value.inspect()})"
     Integer level = value as Integer
-    level = switchDirection ? level : 99-level
+    level = switchDirection ? 99-level : level
     if (level < 0) level = 0
     if (level > 99) level = 99
-    if (!preset && level > 0 && level < 95) state.preset = level
     zwave.basicV1.basicSet(value: level).format()
 }
 
