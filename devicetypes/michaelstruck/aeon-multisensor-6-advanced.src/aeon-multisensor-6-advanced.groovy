@@ -1,9 +1,10 @@
 /**
  *  Aeon Multisensor 6 (Advanced)
- *  Version 1.0.1 (12/4/17)
+ *  Version 1.0.2 (12/15/17)
  *
- *	Version 1.0.0 @erocm123 Initial release
- *	Version 1.0.1 Michael Struck update. Fixed refresh issues, reformatted interface
+ *	Version 1.0.0 (7/7/16) @erocm123 Initial release
+ *	Version 1.0.1 (12/3/17) - Michael Struck update. Fixed refresh issues, reformatted interface
+ *  Version 1.0.2 (12/15/17) - Added color coding to UV index based on data here: https://en.wikipedia.org/wiki/Ultraviolet_index
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort and @erocm123
  *
@@ -83,7 +84,13 @@
            state "luminosity", label:'${currentValue} lux', unit:"lux"
 		}
 		valueTile("ultravioletIndex","device.ultravioletIndex", inactiveLabel: false, width: 2, height: 2) {
-				state "ultravioletIndex",label:'${currentValue} UV Index',unit:""
+				state "ultravioletIndex",label:'${currentValue} UV Index',unit:"", backgroundColors:[
+                	[value: 0, color: "#00ff00"],
+                    [value: 3, color: "#ffff00"],
+                    [value: 6, color: "#ffa500"],
+					[value: 8, color: "#ff0000"],
+					[value: 11, color: "#8a2be2 "]
+				]
 		}
         standardTile("tamper", "device.tamper", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("clear", label:'clear', icon:"st.contact.contact.closed", backgroundColor:"#cccccc", action: "resetTamperAlert")
@@ -177,16 +184,8 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	} else {
 		map.value = cmd.batteryLevel
 	}
-    /*if(settings."101" == null || settings."101" == "241") {
-        try {
-            events << createEvent([name: "batteryTile", value: "${map.value}% battery", displayed:false])
-        } catch (e) {
-            logging("$e")
-        }
-    }*/
     events << createEvent(map)
     updateStatus()
-    //state.lastBatteryReport = now()
     return events
 }
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd){
@@ -350,19 +349,8 @@ def updated(){
     state.enableDebugging = settings.enableDebugging
     sendEvent(name: "checkInterval", value: 6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     logging("updated() is being called")
-    /*if(settings."101" != null && settings."101" == "240") { 
-        sendEvent(name:"batteryTile", value: "USB Powered", displayed:false)
-    } else {
-        try {
-            sendEvent(name:"batteryTile", value: "${(device.currentValue("battery") == null ? '?' : device.currentValue("battery"))}% battery", displayed:false)
-        } catch (e) {
-            logging("$e")
-            sendEvent(name:"battery", value: "100", displayed:false)
-            sendEvent(name:"batteryTile", value: "${(device.currentValue("battery") == null ? '?' : device.currentValue("battery"))}% battery", displayed:false)
-        }
-    }*/
 
-    state.needfwUpdate = ""
+	state.needfwUpdate = ""
     
     if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
     if (state.realHumidity != null) sendEvent(name:"humidity", value: getAdjustedHumidity(state.realHumidity))
@@ -891,7 +879,7 @@ E.g. If measure value = 9 and the standard value = 8, so the calibration value =
 If the measure value = 7 and the standard value = 9, so the calibration value = 9 – 7 = 2. 
     </Help>
   </Value>
-  <Value type="list" index="5" label="Command Option" min="1" max="2" value="1" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="list" index="5" label="Command option" min="1" max="2" value="1" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
 Which command should be sent when the motion sensor is triggered
 Default: Basic Set
@@ -901,13 +889,13 @@ Default: Basic Set
   </Value>
   <Value type="list" index="81" label="Disable LED?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.08,1.08EU">
     <Help>
-Disable/Enable LED function. (Works on Firmware v1.08 only)
+Disable/Enable LED function. (Works on firmware v1.08 only)
 Default: Enabled
     </Help>
         <Item label="No" value="0" />
         <Item label="Yes" value="1" />
   </Value>
-  <Value type="byte" index="8" label="Stay Awake Time?" min="8" max="255" value="30" byteSize="1" setting_type="zwave" fw="1.08,1.08EU">
+  <Value type="byte" index="8" label="Stay awake time?" min="8" max="255" value="30" byteSize="1" setting_type="zwave" fw="1.08,1.08EU">
     <Help>
 Set the timeout of awake after the Wake Up CC is sent out. (Works on Firmware v1.08 only)
 Range: 8~255
@@ -915,7 +903,7 @@ Default: 30
 Note: May help if config parameters aren't making it before device goes back to sleep.
     </Help>
   </Value>
-  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08,1.06EU,1.07EU">
+  <Value type="boolean" index="enableDebugging" label="Enable debug logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08,1.06EU,1.07EU">
     <Help>
     </Help>
   </Value>
