@@ -3,14 +3,15 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2017 Michael Struck
- *  Version 1.0.5a 8/03/17
+ *  Version 1.0.6 8/03/17
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
  *  Version 1.0.2a (6/17/17) - Deprecated send to notification feed. Will add message queue functionality if feedback is given
  *  Version 1.0.3 - (6/28/17) Replaced notifications with Message Queue
  *  Version 1.0.4 - (7/11/17) Allow suppression of continuation messages.
- *  Version 1.0.5a - (8/3/17) Fixed issue due to changes in Weather Undergroud API
+ *  Version 1.0.5 - (8/3/17) Fixed issue due to changes in Weather Undergroud API
+ *  Version 1.0.6 - (12/14/17) Added additional restrictions to playback for more in-app automation opportunities.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -72,12 +73,14 @@ def mainPage() {
 				if (!overRideMsg) input "suppressCont", "bool", title:"Suppress Continuation Messages (But Still Allow Continuation Commands)", defaultValue: false 
             }
         }
-        section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
+        section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive)) {            
 			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
 			href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png", submitOnChange: true
 			input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png", submitOnChange: true
             input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
 			if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+            input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: parent.imgURL() + "on.png"
+			input "runSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false, image: parent.imgURL() + "off.png"
             input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
         }
         section("Tap below to remove this message queue"){ }
@@ -229,7 +232,9 @@ def translateMQid(mqIDList){
     }
     return parent.getList(result)
 }
-def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
+def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll && switchesOnStatus() && switchesOffStatus()) }
+private switchesOnStatus(){ return runSwitchActive && runSwitchActive.find{it.currentValue("switch") == "off"} ? false : true }
+private switchesOffStatus(){ return runSwitchNotActive && runSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true }
 private currWeatherSel() { return voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip }
 private foreWeatherSel() { return voiceWeatherToday || voiceWeatherTonight || voiceWeatherTomorrow}
 def extAliasCount() { return 3 }
@@ -600,6 +605,6 @@ private tideInfo() {
     return msg		
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 105 }
+private versionInt(){ return 106 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.5a (08/03/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.6 (12/14/2017)" }

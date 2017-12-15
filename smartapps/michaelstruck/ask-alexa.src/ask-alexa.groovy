@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.4b - 11/20/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.5 - 12/14/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.1 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
@@ -9,7 +9,8 @@
  *  Version 2.3.1 (9/13/17) Added new extention: Rooms/Groups, disabling of Device Groups, add voice to message queue
  *  Version 2.3.2 (9/22/17) Removed device group macro code, added UV index to Environmentals
  *  Version 2.3.3 (11/2/17) Extension version update; begin adding code for compound commands, removed Sonos specific memory slots (now redundent with Sonos Skill), added switch trigger for macros
- *  Version 2.3.4b (11/20/17) Continued to add compound commands; removed old speaker code.
+ *  Version 2.3.4c (11/20/17) Continued to add compound commands; removed old speaker code.
+ *  Version 2.3.5 (12/14/17) Added output of extension groups to message queue, optimized code
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -75,6 +76,7 @@ preferences {
     page name:"mainPageChild"
     	page name:"pageCoRE"
         page name:"pageGroupM"
+        	page name:"pageMQExt"
     	page name:"pageControl"
     		page name:"pageSTDevices"
             page name:"pageMQ"
@@ -392,7 +394,7 @@ def pageAliasAdd(){
 		}
         if (aliasDevice && aliasName && aliasType && getDeviceAliasList(aliasType)) {
         	section(" "){ href "pageAliasAddFinal", title: "Add Device Alias", description: "Tap to create the device alias", image: imgURL() + "add.png" }
-            section("Please note") { paragraph "Do not use the \"<\" or the \"Done\" buttons on this page except to go back without adding the alias.", image: imgURL() + "caution.png" }
+            section("Please note") { paragraph "Do not use the \"<\", \"Done\" or \"Save\" buttons on this page except to go back without adding the alias.", image: imgURL() + "caution.png" }
 		}
 	}
 }
@@ -415,7 +417,7 @@ def pageAliasAddFinal(){
         	href "pageAliasMain", title: "Tap Here To Add/Delete Another Alias", description:none 
 			href "mainPageParent", title: "Tap Here To Return To The Main Menu", description:none 
 		}
-        section("Please note") { paragraph "Do not use the \"<\" or the \"Done\" buttons on this page to go back in the interface. You may encounter undesired results. Please use the two buttons above to return to the alias area or main menu.", image: imgURL() + "caution.png" }
+        section("Please note") { paragraph "Do not use the \"<\", \"Done\" or \"Save\" buttons buttons on this page to go back in the interface. You may encounter undesired results. Please use the two buttons above to return to the alias area or main menu.", image: imgURL() + "caution.png" }
 	}    
 }
 def pageAliasDel(){
@@ -423,7 +425,7 @@ def pageAliasDel(){
 		section { input "aliasDelete", "enum", title:"Choose An Alias To Delete...", options: getAliasList(), required: false, submitOnChange: true }
         if (aliasDelete){
         	section(" "){ href "pageAliasDelFinal", title: "Delete Device Alias", description: "Tap to delete the device alias", image: imgURL() + "delete.png" }
-            section("Please note") { paragraph "Do not use the \"<\" or the \"Done\" buttons on this page except to go back without deleting the alias.", image: imgURL() + "caution.png" }
+            section("Please note") { paragraph "Do not use the \"<\", \"Done\" or \"Save\" buttons on this page except to go back without deleting the alias.", image: imgURL() + "caution.png" }
 		}
     }
 }
@@ -435,7 +437,7 @@ def pageAliasDelFinal(){
             href "pageAliasMain", title: "Tap Here To Add/Delete Another Alias", description:none 
             href "mainPageParent", title: "Tap Here To Return To The Main Menu", description:none
         }
-        section("Please note") { paragraph "Do not use the \"<\" or the \"Done\" buttons on this page to go back in the interface. You may encounter undesired results. Please use the two buttons above to return to the alias area or main menu.", image: imgURL() + "caution.png" }
+        section("Please note") { paragraph "Do not use the \"<\", \"Done\" or \"Save\" buttons on this page to go back in the interface. You may encounter undesired results. Please use the two buttons above to return to the alias area or main menu.", image: imgURL() + "caution.png" }
 	}    
 }
 def pageVoiceRPT() {
@@ -786,7 +788,7 @@ def pageConfirmation(){
         section {
 			href "pageReset", title: "Revoke / Reset Access Token", description: "Tap to take action - READ WARNING BELOW", image: imgURL() + "warning.png"
 			paragraph "PLEASE CONFIRM! By resetting the access token you will disable the ability to interface this SmartApp with your Amazon Echo. You will need to copy the new access token to your Amazon Lambda code to re-enable access." +
-                "Tap below to go back to the main menu with out resetting the token. You may also tap Done in the upper left corner."
+                "Tap below to go back to the main menu with out resetting the token. You may also tap \"Done\" or \"Save\" in the upper left corner."
         }
         section(" "){ href "mainPageParent", title: "Cancel And Go Back To Main Menu", description: none }
 	}
@@ -797,7 +799,7 @@ def pageReset(){
 			revokeAccessToken()
             state.accessToken = null
             OAuthToken()
-            def msg = state.accessToken != null ? "New access token:\n${state.accessToken}\n\nClick 'Done' above to return to the previous menu." : "Could not reset Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
+            def msg = state.accessToken != null ? "New access token:\n${state.accessToken}\n\nClick , \"Done\" or \"Save\" above to return to the previous menu." : "Could not reset Access Token. OAuth may not be enabled. Go to the SmartApp IDE settings to enable OAuth."
 	    	paragraph "${msg}"
             href "mainPageParent", title: "Tap Here To Return To The Main Menu", description: " "
 		}
@@ -892,14 +894,34 @@ def pageGroupM() {
 		section { paragraph "Extension Group Settings", image: imgURL() + "macrofolder.png" }
         section (" ") { 
         	input "groupMacros", "enum", title: "Macros/Extensions To Run (Control/WebCoRE/Voice/Weather Reports)...", options: parent.getMacroList("all", ""), required: false, multiple: true
-        	if (parent.pwNeeded){ input "usePW", "bool", title: "Require PIN To Run This Macro", defaultValue: false }
+        	if (parent.pwNeeded){ input "usePW", "bool", title: "Require PIN To Run This Macro", defaultValue: false }            
         }
-        section("Acknowledgment options"){ 
+        section("Output options"){ 
+        	if (!noAck) href "pageMQExt", title: "Send Output To Message Queue(s)", description: ctlMQDesc(), state: ctlMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
             if (!noAck) input "voicePost", "text", title: "Custom Acknowledgment Message", description: "Enter a short statement to play after group macro runs", required: false, capitalization: "sentences"
-            if (!noAck) input  "addPost", "bool", title: "Append Default/Custom Acknowledgment Message To Any Output Of Child Messages, Otherwise Replace Child Messages", defaultValue: false
+            if (!noAck) input "addPost", "bool", title: "Append Default/Custom Acknowledgment Message To Any Output Of Child Messages, Otherwise Replace Child Messages", defaultValue: false
             input "noAck", "bool", title: "No Acknowledgment Messages", defaultValue: false, submitOnChange: true
 		}
 	}
+}
+def pageMQExt(){
+    dynamicPage(name:"pageMQExt"){
+        section {
+        	paragraph "Message Queue Configuration", image:parent.imgURL()+"mailbox.png"
+        }
+        section (" "){
+            input "ctlMsgQue", "enum", title: "Message Queue Recipient(s)...", options: parent.getMQListID(true), multiple:true, required: false, submitOnChange: true
+            input "ctlMQNotify", "bool", title: "Notify Only Mode (Not Stored In Queue)", defaultValue: false, submitOnChange: true
+            if (!ctlMQNotify) input "ctlMQExpire", "number", title: "Message Expires (Minutes)", range: "1..*", required: false, submitOnChange: true
+            if (!ctlMQNotify && !ctlMQExpire) input "ctlMQOverwrite", "bool", title: "Overwrite Other Voice Report Messages", defaultValue: false
+            if (!ctlMQNotify) input "ctlSuppressTD", "bool", title: "Suppress Time/Date From Alexa Playback", defaultValue: false
+        }
+        if (ctlMsgQue){
+            section ("Please Note"){
+                paragraph "The output will not go into the message queue if called via a flash briefing", image: parent.imgURL() + "info.png"
+            }
+		}
+    }
 }
 //Control Macro----------------------------------------------------
 def pageControl() {
@@ -918,7 +940,7 @@ def pageControl() {
             input "phrase", "enum", title: "Perform This Routine...", options: phrasesList, required: false, image: imgURL() + "routine.png" 
             input "setMode", "mode", title: "Set Mode To...", required: false, image: imgURL() + "modes.png"  
             input "SHM", "enum",title: "Set Smart Home Monitor To...", options: ["away":"Armed (Away)", "stay":"Armed (Home)", "off":"Disarmed"], required: false, image: imgURL() + "SHM.png"
-            href "pageMQ", title: "Send Output To Message Queue(s)", description: ctlMQDesc(), state: ctlMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
+            href "pageMQ", title: "Send Message To Message Queue(s)", description: ctlMQDesc(), state: ctlMsgQue ? "complete" : null, image: parent.imgURL()+"mailbox.png"
             href "pageSTDevices", title: "Control These SmartThings Devices...", description: getDeviceDesc(), state: deviceGreyOut(), image: imgURL() + "smartthings.png"
             href "pageHTTP", title: "Run This HTTP Request...", description: getHTTPDesc(), state: greyOutStateHTTP(), image: imgURL() + "network.png"
             input "cDelay", "number", title: "Default Delay (Minutes) To Activate",range:"0..*", defaultValue: 0, required: false, image: imgURL() + "stopwatch.png"
@@ -983,7 +1005,7 @@ def pageSTDevices(){
         section ("Thermostats", hideWhenEmpty: true){
             input "tstats", "capability.thermostat", title: "Control These Thermostats...", multiple: true, required: false, submitOnChange:true
             if (tstats) input "tstatsCMD", "enum", title: "Command To Send To Thermostats", options: parent.tStatCTLOptions() , multiple: false, required: false, submitOnChange:true
-            if (tstatsCMD ==~/heat|cool/) input "tstatLVL", "number", title: "Temperature Level", description: "Set temperature level", required: false,range:"1..100"
+            if (tstatsCMD ==~/heat|cool/) input "tstatLVL", "number", title: "Temperature Level", description: "Set temperature level", required: false, range:"1..100"
             if (tstatsCMD =~/increase|decrease/) input "tstatUpDown", "number", title: "Amount of change", description: "Set the amount of change in the setpoint (positive numbers only)", required: false, defaultValue: 5,range:"1..100"
         	
         }
@@ -1161,7 +1183,6 @@ def processObjects(){
     if (op2==~/status|undefined|null/ && op1=="play" && param2==~/undefined|null/ && numVal2==~/undefined|null/) op2="status"
     if (op2==~/undefined|null/ && param2==~/undefined|null/ && numVal2==~/undefined|null/) op2=op1
 	if ((obj2==~/undefined|null/ && !(obj1==~/undefined|null/) || (obj1==obj2 || !compoundCmd))) processDeviceAction(obj1, op1, numVal1, param1, false)
-    //if (obj1==obj2 || !compoundCmd) processDeviceAction(obj1, op1, numVal1, param1, false) 
     else processObjectsAction(obj1, obj2, op1, op2, numVal1, numVal2, param1, param2)
 }
 def processDeviceAction(dev, op, numVal, param, followup){        
@@ -1326,7 +1347,6 @@ def processObjectsAction(obj1, obj2, op1, op2, numVal1, numVal2, param1, param2)
             else if (intOutput1.endsWith("%2%") || intOutput2.endsWith("%2%")) outputTxt = intOutput1[0..-4] + intOutput2[0..-4] + "%3%"
             else if (intOutput1.endsWith("%3%") && intOutput2.endsWith("%3%") && op1==op2 && !(op1 ==~/undefined|null|\?/)) {
                 if (op1==~/on|off/) outputTxt ="I am turning ${op1} the ${obj1} and the ${obj2}. %3%"
-                //if (op1==~/lock|unlock/) outputTxt ="I am ${op1}ing both the ${obj1} and the ${obj2}. %3%"
                 if (op1==~/close|open|toggle|lock|unlock/){
                 	def verb = op1=="close"  ? "clos" : op1=="toggle" ? "toggl" : op1
                     outputTxt ="I am ${verb}ing both the ${obj1} and the ${obj2}. %3%"	
@@ -1753,7 +1773,28 @@ def processMacroAction(mac, mNum, mPW, followup, xParam){
         suppressContMsg = child.suppressCont && !child.overRideMsg && contMacro
 		def fullMacroName = [GroupM: "Extension Group",CoRE: "WebCoRE Trigger", Control:"Control Macro"][child.macroType] ?: child.macroType
 		if (child.macroType != "GroupM") outputTxt = child.getOkToRun() ? child.macroResults(num, cmd, colorData, param, mNum,xParam) : "You have restrictions within the ${fullMacroName} named, '${child.label}', that prevent it from running. Check your settings and try again. %1%"
-		else outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label)   
+		else {
+        	outputTxt = processMacroGroup(child.groupMacros, child.voicePost, child.addPost, child.noAck, child.label)
+        	if (child.ctlMsgQue && !child.noAck){    
+                def expireMin=child.ctlMQExpire ? child.ctlMQExpire as int : 0, expireSec=expireMin*60
+                def overWrite =!child.ctlMQNotify && !child.ctlMQExpire && child.ctlMQOverwrite
+                def msgTxt = outputTxt ? outputTxt.endsWith("%") ? outputTxt[0..-4] : outputTxt :  "No Output"
+                sendLocationEvent(
+                    name: "AskAlexaMsgQueue", 
+                    value: "Ask Alexa Extension Group, '${child.label}'",
+                    unit: "${app.id}",
+                    isStateChange: true, 
+                    descriptionText: msgTxt, 
+                    data:[
+                        queues:child.ctlMsgQue,
+                        overwrite: overWrite,
+                        notifyOnly: child.ctlMQNotify,
+                        expires: expireSec,
+                        suppressTimeDate:child.ctlSuppressTD   
+                    ]
+                )
+            }
+        }
 	}
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     if (outputTxt && !outputTxt.endsWith("%") && playContMsg && !suppressContMsg ) outputTxt += "%4%"
@@ -3201,14 +3242,6 @@ def setupData(){
 	if (tstats && MyEcobeeCMD){  getEcobeeCustomList(tstats).each { PARAMS<<"${it}" } }     
     if (tstatsSel() && ecobeeCMD && MyEcobeeCMD) PARAMS<<"tips"<<"tip"
     if (presenceSel() && vPresenceCMD) PARAMS<<"check in"<<"check out"<<"arrive"<<"depart"<<"not present"<<"gone"
-    /*
-    if (sonosCMD && speakersSel() && sonosMemoryCount){
-    	def memCount = sonosMemoryCount as int
-    	for (int i=1; i<memCount+1; i++){
-    		if (settings."sonosSlot${i}Name" && settings."sonosSlot${i}Music") PARAMS<<settings."sonosSlot${i}Name".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()
-    	}
-    }
-    */
     if (cLightsSel() || cLightsKSel() || macChildren.size()) { STColors().each {PARAMS<<it.name.toLowerCase()}}
     duplicates = PARAMS.findAll{PARAMS.count(it)>1}.unique()
     if (duplicates.size()){ 
@@ -3458,15 +3491,15 @@ private textVersion() {
     if (getRM().size()) aaRMVer="\n"+getRM()[0].textVersion()
     return "${version}${lambdaVersion}${aaMQVer}${aaRMVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
 }
-private versionInt(){ return 234 }
+private versionInt(){ return 235 }
 private LambdaReq() { return 130 }
 private mqReq() { return 107 }
-private wrReq()  { return 105 }
+private wrReq()  { return 106 }
 private vrReq()  { return 107 }
 private schReq()  { return 103 }
 private rmReq() { return 102 }
-private versionLong(){ return "2.3.4b" }
-private versionDate(){ return "11/20/2017" }
+private versionLong(){ return "2.3.5" }
+private versionDate(){ return "12/14/2017" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
