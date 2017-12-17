@@ -109,7 +109,7 @@ exports.handler = function( event, context ) {
                 else if (intentName == "FollowUpOperation") {
                     var FType = event.request.intent.slots.FType.value;
                     var Data = event.request.intent.slots.Data.value;
-                    url += 'f?Type=' + FType + '&Data=' + Data ;
+                    url += 'f?Type=' + FType + '&Data=' + Data;
                     process = true;
                     cardName = "SmartThings Follow up";
                 }
