@@ -729,7 +729,7 @@ state."{newValueT${loopV}HSP}" = 72
 }
 def updated() {
     state.modeStartTime = now() 
-
+	state.sendalert = 0
     state.LastTimeMessageSent = now() as Long // for causes of !OkToOpen message
 
     log.info "updated with settings = $settings"
@@ -1617,11 +1617,11 @@ Math.log(256) / Math.log(2)
 
                         /////////////////////////HEAT//////////////////// ALWAYS linear function for heating... for now... 
 
-                        xa = 65	//outside temp a
-                        ya = HSPSet.toInteger() // desired heating temp a 
+                        xa = 50	//outside temp a
+                        ya = 70 // desired heating temp a 
 
-                        xb = 64 		//outside temp b
-                        yb = HSPSet.toInteger() + 1  // desired heating temp b  
+                        xb = 40 		//outside temp b
+                        yb = 80  // desired heating temp b  
 
                         coef = (yb-ya)/(xb-xa)
                         b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b
@@ -1630,9 +1630,16 @@ Math.log(256) / Math.log(2)
                         HSPSet = coef*outsideTemp + b 
                         HSPSet = HSPSet.toInteger()
 
-                        if(HSPSet > defaultHSPSet + 4){
-                            HSPSet = defaultHSPSet + 3
+                        if(HSPSet >= yb){
+                            HSPSet = 76
+                            def message = "$ThermSet heating set point is too high, brought back to: ${HSPSet}F"
+                            log.info message
+                            if(state.sendalert != 1){
+                            send(message)
+                            state.sendalert = 1
+                            }
                         }
+                       
 
 
                         log.debug "linear HSPSet for $ThermSet = $HSPSet"
@@ -3386,17 +3393,17 @@ def polls(){
     def s = Thermostats.size()
     def i = 0
     for(s != 0; i < s; i++){
-
-        def poll = Thermostats[i].hasCommand("poll")
-        def refresh = Thermostats[i].hasCommand("refresh")
+        def therm = Thermostats[i]
+        def poll = therm.hasCommand("poll")
+        def refresh = therm.hasCommand("refresh") 
 
         if(poll){
-            Thermostats[i].poll()
-            log.debug "polling $Thermostat_1"
+            therm.poll()
+            log.debug "polling $therm"
         }
         else if(refresh){
-            Thermostats[i].refresh()
-            log.debug "refreshing $Thermostat_1"
+            therm.refresh()
+            log.debug "refreshing $therm"
         }
 
 
@@ -3408,11 +3415,11 @@ def polls(){
         def refresh = OutsideSensor.hasCommand("refresh")
         if(poll){
             OutsideSensor.poll()
-            log.debug "polling $OutsideSensor"
+            log.debug "polling $OutsideSensor -"
         }
         else if(refresh){
             OutsideSensor.refresh()
-            log.debug "refreshing $OutsideSensor"
+            log.debug "refreshing $OutsideSensor -"
         }
         else { 
             log.debug "$OutsideSensor does not support either poll() nor refresh() commands"
