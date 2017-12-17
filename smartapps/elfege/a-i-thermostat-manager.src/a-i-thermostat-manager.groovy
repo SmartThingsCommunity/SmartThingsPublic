@@ -62,11 +62,15 @@ def pageSetup() {
         section(){
             input(name:"adjustments", type: "enum", title: "Do you want to use dynamic temperatures adjustments?", 
                   options: ["no, just go with my default settings", 
-                            "Yes, use a linear variation", "Yes, but use a logarithmic variation"], required: true)
-
+                            "Yes, use a linear variation", "Yes, but use a logarithmic variation"], required: true, submitOnChange: true)
             paragraph """
 linear: save power and money and remain comfortable. 
 Algorithmic: save less money but be even more comfortable"""
+
+            if(adjustments != "no, just go with my default settings"){
+                input(name:"MaxLinearHeat", type:"number", title:"Set a maximum Heating temperature", defaultValue: 78)
+                input(name:"MinLinearCool", type:"number", title:"Set a minimum cooling temperature", defaultValue: 65)
+            }
 
         }
 
@@ -729,7 +733,7 @@ state."{newValueT${loopV}HSP}" = 72
 }
 def updated() {
     state.modeStartTime = now() 
-	state.sendalert = 0
+    state.sendalert = 0
     state.LastTimeMessageSent = now() as Long // for causes of !OkToOpen message
 
     log.info "updated with settings = $settings"
@@ -998,14 +1002,19 @@ refms = $refms
     //state.MotionModesAndItsThermMap = MotionModesAndItsThermMap
 
     def results = [thermMotionList, MotionModesList, MotionSensorList, MotionModesAndItsThermMap, SensorThermMap]
-    log.debug """SetListsAndMaps returns: $results"""
+    //log.debug """SetListsAndMaps returns: $results"""
     return results
 }
 
 ////////////////////////////////////// VIRTUAL THERMOSTAT ///////////////////////////////
 def ActiveTest(ThermSet) {
     def Active = true 
-    if(usemotion){
+    def inMotionModes = false
+    def TheSensor = null
+    
+    log.debug "useMotion: $useMotion"
+
+    if(useMotion){
         def refm = SetListsAndMaps()
         def thermMotionList = refm[0]
         def MotionModesList = refm[1]
@@ -1013,14 +1022,16 @@ def ActiveTest(ThermSet) {
         def MotionModesAndItsThermMap = refm[3]
         def SensorThermMap = refm[4]
 
-        def TheSensor = SensorThermMap.find{it.key == "${ThermSet}"}
+        def CurrMode = location.currentMode
+
+        TheSensor = SensorThermMap.find{it.key == "${ThermSet}"}
         TheSensor = TheSensor?.value
 
         def MotionModes = MotionModesAndItsThermMap.find{it.key == "${ThermSet}"}
         //log.debug "MotionModes before value called: $MotionModes"
         MotionModes = MotionModes?.value
 
-        def inMotionModes = MotionModes.find("$CurrMode") == "$CurrMode"
+        inMotionModes = MotionModes.find("$CurrMode") == "$CurrMode"
         //log.debug "inMotionModes after value called: $inMotionModes"
 
         def ActiveMap = MotionTest() 
@@ -1029,7 +1040,7 @@ def ActiveTest(ThermSet) {
         Active = ActiveFind?.value
         Active = "$Active" == "true"
 
-        log.debug """
+        log.trace """
 CurrMode is $CurrMode
 Current Motion Sensor = $TheSensor
 Current MotionModes = $MotionModes, 
@@ -1043,18 +1054,18 @@ Active?(from List) for $ThermSet && $TheSensor = $Active
 """
     }
 
-    //log.debug "boolean motion test for $ThermSet returns $Active"
+    log.debug "boolean motion test for $ThermSet returns $Active || inMotionModes = $inMotionModes"
 
-    return Active
+    return [Active, inMotionModes, TheSensor]
 }
+
 def VirtualThermostat(){
     log.info "virtual thermostat"
     def Active = null
 
     if(AllContactsAreClosed()){
-
         Active = ActiveTest(VirThermTherm)
-
+        Active = Active[0] = "true"
 
         def CurrCSP = VirThermTherm.currentValue("coolingSetpoint")
         def CurrHSP = VirThermTherm.currentValue("heatingSetpoint")
@@ -1131,6 +1142,7 @@ inVirThermModes = $inVirThermModes
         if(AddMoreVirT_B){
 
             Active = ActiveTest(VirThermTherm_2)
+            Active = Active[0] = "true"
 
             def CurrCSP_2 = VirThermTherm_2.currentValue("coolingSetpoint")
             def CurrHSP_2 = VirThermTherm_2.currentValue("heatingSetpoint")
@@ -1205,6 +1217,7 @@ inVirThermModes_2 = $inVirThermModes_2
         if(AddMoreVirT_C){
 
             Active = ActiveTest(VirThermTherm_3) 
+            Active = Active[0] = "true"
 
             def CurrCSP_3 = VirThermTherm_3.currentValue("coolingSetpoint")
             def CurrHSP_3 = VirThermTherm_3.currentValue("heatingSetpoint")
@@ -1420,8 +1433,11 @@ NowBedisClosed = $NowBedisClosed"""
                 log.debug "FOR LOOP $loopValue"
 
                 def ThermSet = Thermostats[loopValue]
-                def Active = ActiveTest(ThermSet)
-
+                def ActiveT = ActiveTest(ThermSet)
+                def Active = ActiveT[0] 
+                def inMotionModes = ActiveT[1]
+                log.trace "inMotionModes = $inMotionModes ---------Active = $Active--------------"
+                def MotionSensor = ActiveT[2]
                 def ref = AltSensorsMaps()
                 def AltSensorList = ref[0]
                 def AltSensorMap = ref[1]
@@ -1617,11 +1633,11 @@ Math.log(256) / Math.log(2)
 
                         /////////////////////////HEAT//////////////////// ALWAYS linear function for heating... for now... 
 
-                        xa = 50	//outside temp a
-                        ya = 70 // desired heating temp a 
+                        xa = 60	//outside temp a
+                        ya = HSPSet.toInteger() // desired heating temp a 
 
-                        xb = 40 		//outside temp b
-                        yb = 80  // desired heating temp b  
+                        xb = outsideTemp 	//outside temp b
+                        yb = HSPSet.toInteger() + 10  // desired heating temp b  
 
                         coef = (yb-ya)/(xb-xa)
                         b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b
@@ -1630,19 +1646,18 @@ Math.log(256) / Math.log(2)
                         HSPSet = coef*outsideTemp + b 
                         HSPSet = HSPSet.toInteger()
 
+                        log.debug "linear HSPSet for $ThermSet = $HSPSet"
+
                         if(HSPSet >= yb){
-                            HSPSet = 76
+                            HSPSet = MaxLinearHeat
                             def message = "$ThermSet heating set point is too high, brought back to: ${HSPSet}F"
                             log.info message
                             if(state.sendalert != 1){
-                            send(message)
-                            state.sendalert = 1
+                                send(message)
+                                state.sendalert = 1
                             }
                         }
-                       
 
-
-                        log.debug "linear HSPSet for $ThermSet = $HSPSet"
 
                         //log.debug "end of algebra" 
 
@@ -1668,13 +1683,13 @@ Math.log(256) / Math.log(2)
                     }
 
                     ///////////////////////////////////////////////////////// motion management/////////////////////////////////////////////////////////
-                    //log.debug "-------------------------------------------------------------------------------------------------------------------------------------"
+                    log.debug "----------------------------------------------------------motion management---------------------------------------------------"
                     if(useMotion){
 
                         def HeatNoMotionVal = HeatNoMotion
                         def CoolNoMotionVal = CoolNoMotion
 
-                        //log.debug "HeatNoMotionVal = $HeatNoMotionVal CoolNoMotionVal= $CoolNoMotionVal"
+                        log.debug "inMotionModes= $inMotionModes AppMgt = $AppMgt"
 
                         if(inMotionModes && AppMgt){
 
@@ -1699,7 +1714,7 @@ NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebra
                             }
                             else {
 
-                                //log.debug "There's motion in ${ThermSet}'s room (main loop)"          
+                                log.debug "There's motion in ${ThermSet}'s room (main loop)"          
                             }
                         }
                     }
@@ -1878,7 +1893,7 @@ CSPok?($CSPok)
 HSPok?($HSPok)
 HSPMap = $state.HSPMap
 CSPMap = $state.CSPMap
-InMotionModes?($InMotionModes)
+inMotionModes?($inMotionModes)
 useMotion?($useMotion)
 Motion at $MotionSensor Active for the past $minutesMotion minutes?($Active)
 FINAL CSPSet for $ThermSet = $CSPSet
