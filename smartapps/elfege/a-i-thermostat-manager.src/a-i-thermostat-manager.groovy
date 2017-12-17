@@ -927,7 +927,7 @@ def AltSensorsMaps(){
     for(s != 0; loopV < s; loopV++){
 
         refSensor = "Sensor${loopV.toString()}"
-       log.debug "refSensor String = $refSensor -- AltSensorsMaps"
+        log.debug "refSensor String = $refSensor -- AltSensorsMaps"
         refSensor = settings.find{it.key == "$refSensor"}
         log.debug "refSensor Settings Map = $refSensor -- AltSensorsMaps"
         refSensor = refSensor?.value
@@ -1448,10 +1448,10 @@ AltSensorMap = $AltSensorMap"""
 
                         def TheSensor = AltSensorMap.find{it.key == "$ThermSet"}
                         TheSensor = TheSensor?.value
- 						log.info "TheSensor String = $TheSensor"	
+                        log.info "TheSensor String = $TheSensor"	
                         def refSensor = null
-                       /// retrieve corresponding device object
-                       def c = 0
+                        /// retrieve corresponding device object
+                        def c = 0
                         while("$refSensor" != "$TheSensor" /*&& c < 10*/){
                             refSensor = "Sensor${c.toString()}"
                             log.debug "refSensor String = $refSensor"
@@ -1459,7 +1459,7 @@ AltSensorMap = $AltSensorMap"""
                             refSensor = refSensor?.value
                             log.debug "refSensor Value = $refSensor"
                             c++
-                        }
+                                }
 
                         TheSensor = refSensor
 
@@ -1615,12 +1615,12 @@ Math.log(256) / Math.log(2)
                         //log.debug "Integer CSPSet = $CSPSet"
 
 
-                        /////////////////////////HEAT//////////////////// ALWAYS linear function for heating
+                        /////////////////////////HEAT//////////////////// ALWAYS linear function for heating... for now... 
 
                         xa = 65	//outside temp a
                         ya = HSPSet.toInteger() // desired heating temp a 
 
-                        xb = 60 		//outside temp b
+                        xb = 64 		//outside temp b
                         yb = HSPSet.toInteger() + 1  // desired heating temp b  
 
                         coef = (yb-ya)/(xb-xa)
@@ -1631,11 +1631,11 @@ Math.log(256) / Math.log(2)
                         HSPSet = HSPSet.toInteger()
 
                         if(HSPSet > defaultHSPSet + 4){
-                            HSPSet = defaultHSPSet + 4
+                            HSPSet = defaultHSPSet + 3
                         }
 
 
-                        //log.debug "linear HSPSet for $ThermSet = $HSPSet"
+                        log.debug "linear HSPSet for $ThermSet = $HSPSet"
 
                         //log.debug "end of algebra" 
 
@@ -1928,6 +1928,7 @@ $ThermSet is inAutoOrOff = $inAutoOrOff,
 BedSensorManagement= $BedSensorManagement
 CurrTemp >= HSPSet = ${CurrTemp >= HSPSet} CurrTemp = $CurrTemp && HSPSet = $HSPSet
 CurrTemp <= CSPSet = ${CurrTemp <= CSPSet} CurrTemp = $CurrTemp && CSPSet = $CSPSet 
+CurrTemp measurment Device is: 
 AppMgt = $AppMgt
 """
 
@@ -1973,7 +1974,7 @@ AppMgt = $AppMgt
                                 if(turnOffWhenReached &&  (CurrTemp >= HSPSet || (ShouldCoolWithAC && CurrTemp <= CSPSet))){
                                     //if user selected this option then cannot eval based on warinside/wamoutside otherwise would
                                     // never turn off units when temp is reached
-                                    //log.debug "$ThermSet Off at user's request, not evaluating other criteria"
+                                    log.debug "$ThermSet Off at user's request, not evaluating other criteria"
                                 }
                                 // if turnOffWhenReached as soon as temp is below setpoint normal eval will resume
 
@@ -3376,28 +3377,45 @@ def schedules() {
     //schedule("0 0/$scheduledTimeA * * * ?", Evaluate)
     //log.debug "Evaluate scheduled to run every $scheduledTimeA minutes"
 
-    schedule("0 0/$scheduledTimeB * * * ?", polls)
+    schedule("0 0/$scheduledTimeA * * * ?", polls)
     // //log.debug "polls scheduled to run every $scheduledTimeB minutes"
-
-
-
 
 }
 def polls(){
+
+    def s = Thermostats.size()
+    def i = 0
+    for(s != 0; i < s; i++){
+
+        def poll = Thermostats[i].hasCommand("poll")
+        def refresh = Thermostats[i].hasCommand("refresh")
+
+        if(poll){
+            Thermostats[i].poll()
+            log.debug "polling $Thermostat_1"
+        }
+        else if(refresh){
+            Thermostats[i].refresh()
+            log.debug "refreshing $Thermostat_1"
+        }
+
+
+    }
+
 
     if(OutsideSensor){
         def poll = OutsideSensor.hasCommand("poll")
         def refresh = OutsideSensor.hasCommand("refresh")
         if(poll){
             OutsideSensor.poll()
-            //log.debug "polling $OutsideSensor"
+            log.debug "polling $OutsideSensor"
         }
         else if(refresh){
             OutsideSensor.refresh()
-            //log.debug "refreshing $OutsideSensor"
+            log.debug "refreshing $OutsideSensor"
         }
         else { 
-            //log.debug "$OutsideSensor does not support either poll() nor refresh() commands"
+            log.debug "$OutsideSensor does not support either poll() nor refresh() commands"
         }
     }
 
