@@ -1011,7 +1011,7 @@ def ActiveTest(ThermSet) {
     def Active = true 
     def inMotionModes = false
     def TheSensor = null
-    
+
     log.debug "useMotion: $useMotion"
 
     if(useMotion){
@@ -1732,17 +1732,12 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                         else {
 
                             log.info "CurrTemp at ${ThermSet} is: $CurrTemp  CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
+                            // hspset threshold managed by linears
                         }
-                        if(HSPSet > (defaultHSPSet + 2)){
 
-                            log.info """CurrTemp at ${ThermSet} is: $CurrTemp. HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp
-But, because HSPSet is too much higher than default value ($defaultHSPSet), default settings are maintained"""
-                            HSPSet = defaultHSPSet
-                        }
-                        else {
 
-                            log.info "CurrTemp at ${ThermSet} is: $CurrTemp  HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp"
-                        }
+                        log.info "CurrTemp at ${ThermSet} is: $CurrTemp  HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp"
+
                     }
 
                     /////////////////////////////////////////////////////////END OF SETPOINTS EVALS/////////////////////////////////////////////////////////
