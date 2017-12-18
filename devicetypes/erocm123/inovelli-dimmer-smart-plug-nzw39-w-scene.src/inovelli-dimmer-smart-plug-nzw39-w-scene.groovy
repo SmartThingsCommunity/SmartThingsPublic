@@ -34,6 +34,7 @@ metadata {
         command "pressUpX2"
 
         fingerprint mfr: "015D", prod: "2700", model: "2700", deviceJoinName: "Inovelli Dimmer Smart Plug"
+        fingerprint mfr: "0312", prod: "2700", model: "2700", deviceJoinName: "Inovelli Dimmer Smart Plug"
     }
 
     simulator {
@@ -177,26 +178,29 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def on() {
     commands([
         zwave.basicV1.basicSet(value: 0xFF),
-        zwave.switchBinaryV1.switchBinaryGet()
+        zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 
 def off() {
     commands([
         zwave.basicV1.basicSet(value: 0x00),
-        zwave.switchBinaryV1.switchBinaryGet()
+        zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 
 def setLevel(value) {
     commands([
         zwave.basicV1.basicSet(value: value < 100 ? value : 99),
+        zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 
 def setLevel(value, duration) {
     def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
-        commands([zwave.switchMultilevelV2.switchMultilevelSet(value: value < 100 ? value : 99, dimmingDuration: dimmingDuration),
+        commands([
+            zwave.switchMultilevelV2.switchMultilevelSet(value: value < 100 ? value : 99, dimmingDuration: dimmingDuration),
+            zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 

@@ -32,6 +32,7 @@ metadata {
         command "pressUpX2"
 
         fingerprint manufacturer: "015D", prod: "2500", model: "2500", deviceJoinName: "Inovelli 2-Channel Smart Plug"
+        fingerprint manufacturer: "0312", prod: "2500", model: "2500", deviceJoinName: "Inovelli 2-Channel Smart Plug"
     }
     
     simulator {}
