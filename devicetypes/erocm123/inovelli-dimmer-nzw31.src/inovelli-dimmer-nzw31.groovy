@@ -33,6 +33,7 @@ metadata {
         fingerprint mfr: "0312", prod: "0118", model: "1E1C", deviceJoinName: "Inovelli Dimmer"
         fingerprint mfr: "015D", prod: "0118", model: "1E1C", deviceJoinName: "Inovelli Dimmer"
         fingerprint mfr: "015D", prod: "1F01", model: "1F01", deviceJoinName: "Inovelli Dimmer"
+        fingerprint mfr: "0312", prod: "1F01", model: "1F01", deviceJoinName: "Inovelli Dimmer"
     }
 
     simulator {
