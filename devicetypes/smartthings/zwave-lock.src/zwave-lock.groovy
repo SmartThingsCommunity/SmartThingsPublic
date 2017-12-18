@@ -314,7 +314,7 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	}
 	if (generatesDoorLockOperationReportBeforeAlarmReport()) {
 		// we're expecting lock events to come after notification events, but for specific yale locks they come out of order
-		runIn(3, "delayLockEvent", [data: [map: map, result: result]])
+		runIn(3, "delayLockEvent", [data: [map: map]])
         return [:]
 	} else {
 		return result ? [createEvent(map), *result] : createEvent(map)
@@ -322,7 +322,8 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 }
 
 def delayLockEvent(data) {
-	sendEvent(data.result ? [createEvent(data.map), *data.result] : createEvent(data.map))
+	log.debug "Sending cached lock operation: $data.map"
+	sendEvent(data.map)
 }
 
 /**
