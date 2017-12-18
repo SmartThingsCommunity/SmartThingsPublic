@@ -45,7 +45,7 @@ exports.handler = function( event, context ) {
     // Paste app code here between the breaks------------------------------------------------
     var STappID = '';
     var STtoken = '';
-    var url='https://graph.api.smartthings.com:443/api/smartapps/installations/' + STappID + '/' ;
+    var url='';
     //---------------------------------------------------------------------------------------
     var cardName ="";
     var endSession = true;
