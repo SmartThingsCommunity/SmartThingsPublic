@@ -33,6 +33,7 @@ metadata {
         fingerprint manufacturer: "0312", prod: "0221", model: "611C", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
         fingerprint manufacturer: "015D", prod: "0221", model: "611C", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
         fingerprint manufacturer: "015D", prod: "2500", model: "2500", deviceJoinName: "Inovelli 2-Channel Smart Plug w/Scene"
+        fingerprint manufacturer: "0312", prod: "2500", model: "2500", deviceJoinName: "Inovelli 2-Channel Smart Plug w/Scene"
         
 	}
 	simulator {}

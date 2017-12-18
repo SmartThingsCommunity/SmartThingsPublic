@@ -34,6 +34,7 @@ metadata {
 
         fingerprint mfr: "015D", prod: "0221", model: "241C", deviceJoinName: "Inovelli Smart Plug"
         fingerprint mfr: "015D", prod: "2400", model: "2400", deviceJoinName: "Inovelli Smart Plug"
+        fingerprint mfr: "0312", prod: "2400", model: "2400", deviceJoinName: "Inovelli Smart Plug"
         
     }
 

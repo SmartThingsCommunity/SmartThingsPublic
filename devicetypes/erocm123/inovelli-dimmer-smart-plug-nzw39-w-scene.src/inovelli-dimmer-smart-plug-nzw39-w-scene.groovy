@@ -34,6 +34,7 @@ metadata {
         command "pressUpX2"
 
         fingerprint mfr: "015D", prod: "2700", model: "2700", deviceJoinName: "Inovelli Dimmer Smart Plug"
+        fingerprint mfr: "0312", prod: "2700", model: "2700", deviceJoinName: "Inovelli Dimmer Smart Plug"
     }
 
     simulator {
