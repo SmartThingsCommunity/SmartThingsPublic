@@ -17,7 +17,6 @@ metadata {
 		capability "Actuator"
 		capability "Switch"
 		capability "Power Meter"
-		capability "Polling"
 		capability "Refresh"
 		capability "Configuration"
 		capability "Sensor"
@@ -27,7 +26,7 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x25,0x32"
-		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeon Labs Micro Smart Switch"
+		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeotec Micro Smart Switch"
 	}
 
 	// simulator metadata
@@ -199,14 +198,6 @@ def off() {
 		"delay 3000",
 		zwave.meterV2.meterGet(scale: 2).format()
 	]
-}
-
-def poll() {
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.meterV2.meterGet(scale: 0).format(),
-		zwave.meterV2.meterGet(scale: 2).format()
-	])
 }
 
 /**

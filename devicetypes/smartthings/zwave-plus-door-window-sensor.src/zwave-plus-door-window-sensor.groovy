@@ -16,7 +16,7 @@
 */
 
 metadata {
-	definition (name: "Z-Wave Plus Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact") {
+	definition (name: "Z-Wave Plus Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact", runLocally: true, minHubCoreVersion: '000.020.00008', executeCommandsLocally: true) {
 		capability "Contact Sensor"
 		capability "Configuration"
 		capability "Battery"
