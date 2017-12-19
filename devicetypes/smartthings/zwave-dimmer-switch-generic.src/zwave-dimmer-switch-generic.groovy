@@ -36,7 +36,7 @@ metadata {
 		fingerprint mfr:"0039", prod:"4944", model:"3038", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Dimmer"
 		fingerprint mfr:"0039", prod:"4944", model:"3130", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Dimmer"
 		fingerprint mfr:"0063", prod:"4944", model:"3034", deviceJoinName: "GE In-Wall Smart Fan Control"
-		fingerprint mfr:"0063", prod:"4944", model:"3031", deviceJoinName: "GE In-Wall Smart Fan Control"
+		fingerprint mfr:"0063", prod:"4944", model:"3131", deviceJoinName: "GE In-Wall Smart Fan Control"
 		fingerprint mfr:"0039", prod:"4944", model:"3131", deviceJoinName: "Honeywell Z-Wave Plus In-Wall Fan Speed Control"
 	}
 
