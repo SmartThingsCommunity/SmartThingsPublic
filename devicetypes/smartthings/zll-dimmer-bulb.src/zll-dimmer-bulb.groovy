@@ -33,6 +33,7 @@ metadata {
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic A60 W clear - LIGHTIFY", deviceJoinName: "OSRAM LIGHTIFY LED Smart Connected Light"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "CLA60 OFD OSRAM", deviceJoinName: "OSRAM LIGHTIFY LED Classic A60 Dimming"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "Philips", model: "LWB006", deviceJoinName: "Philips Hue White"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "Philips", model: "LWB014", deviceJoinName: "Philips Hue White"
     }
 
     // simulator metadata
