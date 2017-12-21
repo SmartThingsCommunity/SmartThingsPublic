@@ -31,7 +31,7 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x32"
-		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeon Labs Micro Smart Dimmer 2E"
+		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Micro Smart Dimmer 2E"
 	}
 
 	simulator {

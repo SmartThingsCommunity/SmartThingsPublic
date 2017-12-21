@@ -13,7 +13,7 @@
  */
 metadata {
 
-    definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob") {
+    definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob", runLocally: true, minHubCoreVersion: '000.020.00008', executeCommandsLocally: true) {
         capability "Switch"
         capability "Relay Switch"
         capability "Sensor"
