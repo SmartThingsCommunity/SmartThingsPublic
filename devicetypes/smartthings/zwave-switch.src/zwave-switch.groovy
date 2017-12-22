@@ -25,12 +25,6 @@ metadata {
 		fingerprint mfr:"0063", prod:"5257", deviceJoinName: "GE Wall Switch"
 		fingerprint mfr:"0063", prod:"5052", deviceJoinName: "GE Plug-In Switch"
 		fingerprint mfr:"0113", prod:"5257", deviceJoinName: "Z-Wave Wall Switch"
-		fingerprint mfr:"0039", prod:"5052", model:"3038", deviceJoinName: "Honeywell Z-Wave Plug-in Switch"
-		fingerprint mfr:"0039", prod:"5052", model:"3033", deviceJoinName: "Honeywell Z-Wave Plug-in Switch (Dual Outlet)"
-		fingerprint mfr:"0039", prod:"4F50", model:"3032", deviceJoinName: "Honeywell Z-Wave Plug-in Outdoor Smart Switch"
-		fingerprint mfr:"0039", prod:"4952", model:"3036", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Switch"
-		fingerprint mfr:"0039", prod:"4952", model:"3037", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Switch"
-		fingerprint mfr:"0039", prod:"4952", model:"3133", deviceJoinName: "Honeywell Z-Wave In-Wall Tamper Resistant Duplex Receptacle"
 	}
 
 	// simulator metadata
