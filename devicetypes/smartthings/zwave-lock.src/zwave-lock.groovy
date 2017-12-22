@@ -1682,6 +1682,7 @@ def generatesDoorLockOperationReportBeforeAlarmReport() {
 	return false
 }
 
+ /** 
  * Generic function for reading code Slot ID from AlarmReport command
  * @param cmd: The AlarmReport command
  * @return user code slot id
