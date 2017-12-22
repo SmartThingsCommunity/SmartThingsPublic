@@ -1,7 +1,7 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.5 - 12/14/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.5a - 12/14/17 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.1 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
@@ -10,7 +10,7 @@
  *  Version 2.3.2 (9/22/17) Removed device group macro code, added UV index to Environmentals
  *  Version 2.3.3 (11/2/17) Extension version update; begin adding code for compound commands, removed Sonos specific memory slots (now redundent with Sonos Skill), added switch trigger for macros
  *  Version 2.3.4c (11/20/17) Continued to add compound commands; removed old speaker code.
- *  Version 2.3.5 (12/14/17) Added output of extension groups to message queue, optimized code
+ *  Version 2.3.5a (12/14/17) Added output of extension groups to message queue, optimized code, added optimized setup features.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -3209,7 +3209,9 @@ def setupData(){
 	def macChildren = getAskAlexa()
 	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
     def result ="<div style='padding:10px'><i><b><a href='http://aws.amazon.com' target='_blank'>Lambda</a> code variables:</b></i><br><br>var STappID = '${app.id}';<br>var STtoken = '${state.accessToken}';<br>"
-    result += "var url='${getApiServerUrl()}/api/smartapps/installations/' + STappID + '/' ;<br><br><hr>"
+    result += "var url='${getApiServerUrl()}/api/smartapps/installations/' + STappID + '/' ;<br><br>"
+    result += "Click <a href='http://ask-alexa.com/cgi-bin/lambda.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}' target='_blank'>here</a> to get the full code needed for Lambda (AWS) with the above variables already in place.<br><br>"
+    result += "Click <a href='http://ask-alexa.com/privacy.html' target='_blank'>here</a> to view the privacy policy regarding obtaining your personalized Lambda code.<br><br><hr>"
     result += flash ? "<i><b><a href='http://developer.amazon.com' target='_blank'>Amazon ASK</a> Flash Briefing Skill URL:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/flash?access_token=${state.accessToken}<br><br><hr>":""
 	result += "<i><b><a href='http://developer.amazon.com' target='_blank'>Amazon ASK</a> Custom Slot Information:</b></i><br><br><b>CANCEL_CMDS</b><br><br>cancel<br>stop<br>unschedule<br><br><b>DEVICE_TYPE_LIST</b><br><br>"
     fillTypeList().each{result += it + "<br>"}
@@ -3498,7 +3500,7 @@ private wrReq()  { return 106 }
 private vrReq()  { return 107 }
 private schReq()  { return 103 }
 private rmReq() { return 102 }
-private versionLong(){ return "2.3.5" }
+private versionLong(){ return "2.3.5a" }
 private versionDate(){ return "12/14/2017" }
 private textCopyright() {return "Copyright © 2017 Michael Struck" }
 private textLicense() {
@@ -3507,5 +3509,5 @@ private textLicense() {
 		"WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License."
 }
 private textHelp() { 
-	return "This SmartApp provides an interface to control, query and report on your SmartThings environment via the Amazon Echo ('Alexa'). For more information, go to http://thingsthataresmart.wiki/index.php?title=Ask_Alexa."
+	return "This SmartApp provides an interface to control, query and report on your SmartThings environment via the Amazon Echo ('Alexa'). For more information, go to http://Ask-Alexa.com."
 }
