@@ -157,7 +157,7 @@ def updated() {
 			sendEvent(name: "powerSource", value: powerSource, displayed: false)
 		}
 	}
-	
+
 	if (powerSource == "battery") {
 		setConfigured("false") //wait until the next time device wakeup to send configure command after user change preference
 	} else { // We haven't identified the power supply, or the power supply is USB, so configure
@@ -299,6 +299,10 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	motionEvent(cmd.value)
 }
 
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def result = []
 	if (cmd.notificationType == 7) {
@@ -309,6 +313,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 			case 3:
 				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
+				// Clear the tamper alert after 10s. This is a temporary fix for the tamper attribute until local execution handles it
+				unschedule(clearTamper)
+				runIn(10, clearTamper)
 				break
 			case 7:
 				result << motionEvent(1)
