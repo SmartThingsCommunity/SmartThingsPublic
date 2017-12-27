@@ -38,7 +38,9 @@
   *  Version 2.2.7a (6/15/17) Fixed issue with Ecobee custom DTH and brief replies, added whisper mode to personalities, added logging feature for added partner usage, added %age% text field variable, 
  *  WebCoRE connectivity, deprecated most messaging options within macros/extensions...will use Message Queue if demand is present
  *  Version 2.2.8 (6/26/17) Added dynamic icons to skill's card. Preparing for the Amazon Show. Added health status to additional attributes for devices.
-  *  Version 2.3.1 (9/13/17) Added new extention: Rooms/Groups, disabling of Device Groups, add voice to message queue
+ *  Version 2.2.9e (7/13/17) Added additional advanced features to the WebCoRE macro, begin adding code to allow external items to send to the message queue, updated the brief reply option.
+ *  Version 2.3.0 (8/3/17) GUI optimizations-Removed device specific commands (under Settings) and move them to the device areas and grouped any device voice settings, added Foobot Air Quality Monitor options
+ *  Version 2.3.1 (9/13/17) Added new extention: Rooms/Groups, disabling of Device Groups, add voice to message queue
  *  Version 2.3.2 (9/22/17) Removed device group macro code, added UV index to Environmentals
  *  Version 2.3.3 (11/2/17) Extension version update; begin adding code for compound commands, removed Sonos specific memory slots (now redundent with Sonos Skill), added switch trigger for macros
  *  Version 2.3.4c (11/20/17) Continued to add compound commands; removed old speaker code.
