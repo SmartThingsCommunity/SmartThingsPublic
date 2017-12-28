@@ -47,7 +47,6 @@ metadata {
 		fingerprint mfr: "015D", prod: "B111", model: "1E1C", deviceJoinName: "Inovelli Switch"
         fingerprint mfr: "015D", prod: "1E00", model: "1E00", deviceJoinName: "Inovelli Switch"
         fingerprint mfr: "0312", prod: "1E00", model: "1E00", deviceJoinName: "Inovelli Switch"
-        fingerprint mfr: "0312", prod: "1E02", model: "1E02", deviceJoinName: "Inovelli Switch"
 	}
 
 	simulator {
