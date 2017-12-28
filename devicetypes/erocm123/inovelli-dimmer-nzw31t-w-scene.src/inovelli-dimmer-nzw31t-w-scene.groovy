@@ -1,7 +1,7 @@
- /**
- *  Inovelli Dimmer NZW31 w/Scene
+/**
+ *  Inovelli Dimmer NZW31T w/Scene
  *  Author: Eric Maycock (erocm123)
- *  Date: 2017-07-15
+ *  Date: 2017-12-28
  *
  *  Copyright 2017 Eric Maycock
  *
@@ -17,7 +17,7 @@
  */
  
 metadata {
-    definition (name: "Inovelli Dimmer NZW31 w/Scene", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Inovelli Dimmer NZW31T w/Scene", namespace: "erocm123", author: "Eric Maycock") {
         capability "Switch"
         capability "Refresh"
         capability "Polling"
@@ -45,10 +45,7 @@ metadata {
         command "holdUp"
         command "holdDown"
 
-        fingerprint mfr: "015D", prod: "B111", model: "251C", deviceJoinName: "Inovelli Dimmer"
-        fingerprint mfr: "051D", prod: "B111", model: "251C", deviceJoinName: "Inovelli Dimmer"
-        fingerprint mfr: "015D", prod: "1F00", model: "1F00", deviceJoinName: "Inovelli Dimmer"
-        fingerprint mfr: "0312", prod: "1F00", model: "1F00", deviceJoinName: "Inovelli Dimmer"
+        fingerprint mfr: "0312", prod: "1F02", model: "1F02", deviceJoinName: "Inovelli Dimmer"
     }
 
     simulator {
@@ -58,7 +55,6 @@ metadata {
         input "minimumLevel", "number", title: "Minimum Level\n\nMinimum dimming level for attached light\nRange: 1 to 99", description: "", required: false, range: "1..99"
         input "dimmingStep", "number", title: "Dimming Step Size\n\nPercentage of step when switch is dimming up or down\nRange: 1 to 99", description: "", required: false, range: "1..99"
         input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:\n", description: "Tap to select", required: false, options:[1: "On", 0: "Off", 2: "Disable"], defaultValue: 1
         input "invert", "enum", title: "Invert Switch", description: "Tap to select", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
         input description: "1 pushed - Up 1x click\n2 pushed - Up 2x click\n3 pushed - Up 3x click\n4 pushed - Up 4x click\n5 pushed - Up 5x click\n6 pushed - Up held\n\n1 held - Down 1x click\n2 held - Down 2x click\n3 held - Down 3x click\n4 held - Down 4x click\n5 held - Down 5x click\n6 held - Down held", title: "Button Mappings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
     }
@@ -151,8 +147,6 @@ def updated() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: [minimumLevel? minimumLevel.toInteger() : 1], parameterNumber: 2, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 2)
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [ledIndicator? ledIndicator.toInteger() : 1], parameterNumber: 3, size: 1)
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
     cmds << zwave.configurationV1.configurationSet(configurationValue: [invert? invert.toInteger() : 0], parameterNumber: 4, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff? autoOff.toInteger() : 0, parameterNumber: 5, size: 2)
