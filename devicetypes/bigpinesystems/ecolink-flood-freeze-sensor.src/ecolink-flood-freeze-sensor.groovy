@@ -1,4 +1,4 @@
-/**
+ /**
  *  Copyright 2017 Big Pine Systems
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -64,8 +64,8 @@ metadata {
 		}
         
 		standardTile("tamper", "device.tamper", width: 2, height: 2) {
-			state "secured", icon:"st.locks.lock.locked", backgroundColor:"#ffffff"
-			state "tampered", icon:"st.alarm.alarm.alarm", backgroundColor:"#53a7c0"
+			state "clear", icon:"st.locks.lock.locked", backgroundColor:"#ffffff"
+			state "detected", icon:"st.alarm.alarm.alarm", backgroundColor:"#ff2730"
 		}
         
         valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
@@ -134,62 +134,56 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
-        def result
+		def event
+        def cmds = []
         switch (cmd.sensorType) {
                 case 6:
-                        result = createEvent(name:"water",
-                                value: cmd.sensorValue ? "wet" : "dry")
+                        event = createEvent(name:"water", value: cmd.sensorValue ? "wet" : "dry")
+                        cmds << zwave.batteryV1.batteryGet().format()
+                        cmds << "delay 1200"
+                        cmds << zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId).format()
                         break
                 case 7:
-                        result = createEvent(name:"temperature",
-                                value: cmd.sensorValue ? "30" : "50")
+                        event = createEvent(name:"temperature", value: cmd.sensorValue ? "30" : "50")
+                        cmds << zwave.batteryV1.batteryGet().format()
+                        cmds << "delay 1200"
+                        cmds << zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId).format()
                         break
         }
-        result
+    [event]
 }
 
 
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd)
 {
-	def result = []
+    def event
+    def cmds = []
 	if (cmd.notificationType == 0x05) {
 		switch (cmd.event) {
-		case 0x04:
-			result << createEvent(name: "water", value: "dry", descriptionText: "Water alarm cleared", isStateChange: true)
-			break
-		case 0x02:
-			result << createEvent(name: "water", value: "wet", descriptionText: "Water alarm ACTIVE", isStateChange: true)
-			break
+            case 0x04:
+                event = createEvent(name: "water", value: "dry", descriptionText: "Water alarm cleared", isStateChange: true)
+                break
+            case 0x02:
+                event = createEvent(name: "water", value: "wet", descriptionText: "Water alarm ACTIVE", isStateChange: true)
+                break
 		}
 	} else if (cmd.notificationType == 0x07) {
 		switch(cmd.event) {
         	case 0x03: 
-				result << createEvent(name:"tamper", value: "detected", descriptionText: "$device.displayName covering was removed", isStateChange: true)
-				result << response([
-					zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId).format(),
-					zwave.batteryV1.batteryGet().format()])
+				event = createEvent(name:"tamper", value: "detected", descriptionText: "$device.displayName covering was removed", isStateChange: true)
                 break;
             case 0x00:
-				result << createEvent(name:"tamper", value: "clear", descriptionText: "$device.displayName covering was replaced", isStateChange: true)
-				result << response([
-					zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId).format(),
-					zwave.batteryV1.batteryGet().format()])
+				event = createEvent(name:"tamper", value: "clear", descriptionText: "$device.displayName covering was replaced", isStateChange: true)
                 break;
         }
 	} else if (cmd.notificationType == 0x08) {
 		switch (cmd.event) {
         	case 0x0A:
-				result << createEvent(name:"battery replacement", value: "soon", descriptionText: "$device.displayName replace battery soon", isStateChange: true)
-				result << response([
-					zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId).format(),
-					zwave.batteryV1.batteryGet().format()])
+				event = createEvent(name:"battery replacement", value: "soon", descriptionText: "$device.displayName replace battery soon", isStateChange: true)
                 break;
             case 0x0B:
-				result << createEvent(name:"battery replacement", value: "now", descriptionText: "$device.displayName replace battery NOW", isStateChange: true)
-				result << response([
-					zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId).format(),
-					zwave.batteryV1.batteryGet().format()])
+				event = createEvent(name:"battery replacement", value: "now", descriptionText: "$device.displayName replace battery NOW", isStateChange: true)
                 break;
 		}
 	} else if (cmd.notificationType) {
@@ -199,7 +193,10 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		def value = cmd.v1AlarmLevel == 255 ? "active" : cmd.v1AlarmLevel ?: "inactive"
 		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, displayed: false)
 	}
-	result
+    cmds << zwave.batteryV1.batteryGet().format()
+    cmds << "delay 1200"
+    cmds << zwave.wakeUpV2.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId).format()
+    [event] //, response(cmds)]
 }
 
 
