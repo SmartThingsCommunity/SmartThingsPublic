@@ -8,9 +8,10 @@ Control an unlimited number of devices, sensors and many other features. This ma
 home more comfortable than you ever thought possible. You might however get surprised by outside's weather so much this app will make you forget it even changes... 
 """ ,
     category: "Green Living",
-    iconUrl: "http://elfege.com/penrose.jpg",
-    iconX2Url: "http://elfege.com/penrose.jpg",
-    image: "http://elfege.com/penrose.jpg"
+    
+    iconUrl: "https://static1.squarespace.com/static/5751f711d51cd45f35ec6b77/t/59c561f5a803bb6e85354945/1506107894030/penrose.jpg",
+    iconX2Url: "https://static1.squarespace.com/static/5751f711d51cd45f35ec6b77/t/59c561f5a803bb6e85354945/1506107894030/penrose.jpg",
+    image: "https://static1.squarespace.com/static/5751f711d51cd45f35ec6b77/t/59c561f5a803bb6e85354945/1506107894030/penrose.jpg"
 )
 
 preferences {
