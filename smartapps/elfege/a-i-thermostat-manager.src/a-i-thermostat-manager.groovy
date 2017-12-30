@@ -1371,20 +1371,20 @@ NowBedisClosed = $NowBedisClosed"""
     if(!KeepOffAtAllTimesWhenMode() && contactClosed && ToggleBack || (ControlWithBedSensor && NowBedisClosed && ContactExceptionIsClosed)){  //  && state.turnedOffByApp == true){  
         if(SwState.size() != 0){
             ContactAndSwitch?.on()
-            //log.debug "$ContactAndSwitch TURNED ON"
+            log.debug "$ContactAndSwitch TURNED ON"
             state.turnedOffByApp == false
         }else {
-            //log.debug "$ContactAndSwitch already on"
+            log.debug "$ContactAndSwitch already on"
         }
     }
     else if(KeepOffAtAllTimesWhenMode() && CurrMode in SwitchMode){
         if(SwState.size() == 0){
             ContactAndSwitch?.off()
-            //log.debug "$ContactAndSwitch TURNED OFF"
+            log.debug "$ContactAndSwitch TURNED OFF"
             state.turnedOffByApp == true
         }
         else {
-            //log.debug "$ContactAndSwitch already off"
+            log.debug "$ContactAndSwitch already off"
         }        
     }
     else if(!contactClosed || inAwayMode){
@@ -1648,7 +1648,7 @@ Math.log(256) / Math.log(2)
 
                         log.debug "linear HSPSet for $ThermSet = $HSPSet"
 
-                        if(HSPSet >= yb){
+                        if(HSPSet > MaxLinearHeat){
                             HSPSet = MaxLinearHeat
                             def message = "$ThermSet heating set point is too high, brought back to: ${HSPSet}F"
                             log.info message
@@ -1731,12 +1731,10 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                         }
                         else {
 
-                            log.info "CurrTemp at ${ThermSet} is: $CurrTemp  CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
+                            log.info "CurrTemp at ${ThermSet} is: $CurrTemp CSPSet was $defaultCSPSet. It is NOW $CSPSet due to outside's temperature being $outsideTemp"
                             // hspset threshold managed by linears
                         }
-
-
-                        log.info "CurrTemp at ${ThermSet} is: $CurrTemp  HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp"
+                        log.info "CurrTemp at ${ThermSet} is: $CurrTemp HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp"
 
                     }
 
@@ -1952,7 +1950,7 @@ AppMgt = $AppMgt
                             if(!BedSensorManagement){ // avoid redundancies if BedSensor's already managing unit. 
                                 if(CurrTemp >= HSPSet || (ShouldCoolWithAC && CurrTemp <= CSPSet)){
                                     if(useAltSensor){ 
-                                        /// this allows for tunr off request whenever a unit is linked to an alternate sensor
+                                        /// this allows for turn off request whenever a unit is linked to an alternate sensor
                                         log.debug "$ThermSet uses Alternative Sensor so it will be turned off once temperature is reached"
                                         if(!inAutoOrOff){
 
@@ -1961,7 +1959,7 @@ AppMgt = $AppMgt
                                             // that's why it must be recoreded even during override mode
                                             //state.AppMgtMap[loopValue] = true //override test value
                                             if(AppMgt){
-                                                //log.debug "$ThermSet TURNED OFF"  
+                                                log.debug "$ThermSet TURNED OFF"  
                                                 ThermSet.setThermostatMode("off") 
                                             }
                                         }
@@ -1975,15 +1973,15 @@ AppMgt = $AppMgt
                                         if(!inAutoOrOff){
                                             state.LatestThermostatMode = "off"                
                                             if(AppMgt){
-                                                //log.debug "$ThermSet TURNED OFF" 
+                                                log.debug "$ThermSet TURNED OFF" 
                                                 ThermSet.setThermostatMode("off")   
                                             }
                                             else {
-                                                //log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
+                                                log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
                                             }
                                         }
                                         else {
-                                            //log.debug "$ThermSet already set to off"
+                                            log.debug "$ThermSet already set to off"
                                         }
                                     }
                                 }
@@ -2008,27 +2006,27 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
                                         //log.debug " $CurrentCoolingSetPoint == $CSPSet {CurrentCoolingSetPoint == CSPSet}?"
                                         if(!CSPok){
                                             ThermSet.setCoolingSetpoint(CSPSet)
-                                            //log.debug "$ThermSet CSP set to $CSPSet" 
+                                            log.debug "$ThermSet CSP set to $CSPSet" 
                                         }
                                         else{
-                                            //log.debug "Cooling SetPoint already set to $CSPSet for $ThermSet ($CSPSet == $CurrentCoolingSetPoint)"
+                                            log.debug "Cooling SetPoint already set to $CSPSet for $ThermSet ($CSPSet == $CurrentCoolingSetPoint)"
                                         }                   
                                         if(ShouldCoolWithAC && ThermState != "cool"){  
                                             // ShouldCoolWithAC has to be rechecked here otherwise !CSPok might trigger heat while no need
-                                            //log.debug "$ThermSet set to cool"
+                                            log.debug "$ThermSet set to cool"
                                             ThermSet.setThermostatMode("cool") 
                                         }
                                         else {
                                             if(!ShouldCoolWithAC){
-                                                //log.debug "no need to cool at $ThermSet"
+                                                log.debug "no need to cool at $ThermSet"
                                             }
                                             else{
-                                                //log.debug "$ThermSet already set to cool"
+                                                log.debug "$ThermSet already set to cool"
                                             }
                                         }
                                     }
                                     else {
-                                        //log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
+                                        log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
                                     }
                                 }
                                 else if(ShouldHeat && !HSPok){
@@ -2038,16 +2036,16 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
                                         if(CurrentHeatingSetPoint != HSPSet){
 
                                             ThermSet.setHeatingSetpoint(HSPSet)
-                                            //log.debug "$ThermSet HSP set to $HSPSet" 
+                                            log.debug "$ThermSet HSP set to $HSPSet" 
                                         }
                                         else { 
-                                            //log.debug "Heating SetPoint already set to $HSPSet for $ThermSet"
+                                            log.debug "Heating SetPoint already set to $HSPSet for $ThermSet"
                                         }
 
                                         if(ShouldHeat && ThermState != "heat"){
                                             // ShouldHeat has to be rechecked here otherwise !HSPok might trigger heat while there's no need 
 
-                                            //log.debug "$ThermSet set to Heat"
+                                            log.debug "$ThermSet set to Heat"
                                             ThermSet.setThermostatMode("heat")  
                                         }
                                         else {
@@ -2065,7 +2063,7 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
                                 } 
                             }
                             else {
-                                //log.debug "$ThermSet mangaged by $BedSensor status, skipping"
+                                log.debug "$ThermSet mangaged by $BedSensor status, skipping"
                             }
                         }
                         else {
@@ -2083,7 +2081,7 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
                                 if(ThermState != "off"){
                                     if(device != null && !ThisIsExceptionTherm){
                                         device.setThermostatMode("off") 
-                                        //log.debug "$device TURNED OFF BECAUSE SOME CONTACTS ARE OPEN"
+                                        log.debug "$device TURNED OFF BECAUSE SOME CONTACTS ARE OPEN"
                                     }
                                     if(ThisIsExceptionTherm && !ContactExceptionIsClosed){
                                         device.setThermostatMode("off") 
@@ -2247,9 +2245,14 @@ def WhichMode(){
 def KeepOffAtAllTimesWhenMode(){
     def result = false
     def inMode = location.currentMode in SwitchMode
+    log.debug """
+    ToggleBack = $ToggleBack
+    SwitchIfMode = $SwitchIfMode
+    inMode = $inMode
+    """
 
-    if(ToggleBack || SwitchifMode){
-        if(SwitchifMode){
+    if(ToggleBack || SwitchIfMode){
+        if(SwitchIfMode){
             if(inMode){
                 result = true
             }
@@ -2264,7 +2267,7 @@ def KeepOffAtAllTimesWhenMode(){
     else {
         result = false 
     }
-    //log.debug "KeepOffAtAllTimesWhenMode = $result"
+    log.debug "KeepOffAtAllTimesWhenMode = $result"
     return result 
 }
 
@@ -2604,21 +2607,18 @@ def BedSensorStatus(){
     return [BedSensorAreClosed, ConsideredOpen]
 }
 
-//override management
+//override management // deprecated
 def setpointHandler(evt){
 
     log.trace "${evt.device}'s $evt.name set to $evt.value (setpointHandler)"
 
 
 }
-
 def thisIsWindowMgtFALSE(){
 
     state.thisIsWindowMgt = false
 
 }
-
-
 def resetLocationChangeVariable(){
     state.locationModeChange = false
     //log.debug "state.locationModeChange reset to FALSE"
@@ -3388,13 +3388,13 @@ def ExceptACModes(){
 }
 def schedules() { 
 
-    def scheduledTimeA = 1 // less makes this app exceeds executions limits
-    def scheduledTimeB = 5
+    def scheduledTimeA = 3 // less messes up devices' health
+    def scheduledTimeB = 15
 
     //schedule("0 0/$scheduledTimeA * * * ?", Evaluate)
     //log.debug "Evaluate scheduled to run every $scheduledTimeA minutes"
 
-    schedule("0 0/$scheduledTimeA * * * ?", polls)
+    schedule("0 0/$scheduledTimeB * * * ?", polls)
     // //log.debug "polls scheduled to run every $scheduledTimeB minutes"
 
 }
