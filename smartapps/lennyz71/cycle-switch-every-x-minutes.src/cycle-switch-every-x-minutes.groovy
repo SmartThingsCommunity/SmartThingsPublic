@@ -17,7 +17,7 @@
  */
 definition(
     name: "Cycle Switch every 'x' minutes.",
-    namespace: "LennyZ71",
+    namespace: "lennyz71",
     author: "Lenny Cunningham",
     description: "Cycle a switch on and off every 'x' minutes. Choose how long the switch stays on for and how long it stays off for.",
     category: "Convenience",
