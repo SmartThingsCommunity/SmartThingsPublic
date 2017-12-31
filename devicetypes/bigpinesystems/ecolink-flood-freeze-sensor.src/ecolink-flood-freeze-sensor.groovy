@@ -1,4 +1,4 @@
- /**
+/**
  *  Copyright 2017 Big Pine Systems
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -49,7 +49,6 @@ metadata {
 				attributeState "default", label:'Last activity: ${currentValue}', action: "refresh.refresh"
 			}
         }
-
 		standardTile("temperatureState", "device.temperature", width: 2, height: 2) {
 			state "normal", icon:"st.alarm.temperature.normal", backgroundColor:"#ffffff"
 			state "freezing", icon:"st.alarm.temperature.freeze", backgroundColor:"#53a7c0"
@@ -126,7 +125,6 @@ def parse(String description) {
 	log.debug "Parse returned ${result}"
 	result
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd)
 {
