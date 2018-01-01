@@ -285,9 +285,9 @@ def sync_properties()
 
     def cmds = []
     
-    if(state.wakeInterval == null || state.wakeInterval != 43200){
-        logging("Setting Wake Interval to 43200")
-        cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 43200, nodeid:zwaveHubNodeId)
+    if(state.wakeInterval == null || state.wakeInterval != getRoundedInterval(settings.wake)){
+        logging("Setting Wake Interval to ${getRoundedInterval(settings.wake)}")
+        cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: getRoundedInterval(settings.wake), nodeid:zwaveHubNodeId)
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
     }
     
@@ -318,7 +318,6 @@ def convertParam(number, value) {
 
 def update_current_properties(cmd)
 {
-
     def currentProperties = state.currentProperties ?: [:]
     def convertedConfigurationValue = convertParam("${cmd.parameterNumber}".toInteger(), cmd2Integer(cmd.configurationValue))
     currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
@@ -336,6 +335,8 @@ def update_current_properties(cmd)
     }
     state.currentProperties = currentProperties
 }
+
+
 
 def update_needed_settings()
 {
@@ -612,6 +613,13 @@ Note:
 The calibration value = standard value - measure value.
 E.g. If measure value = 80% Lux and the standard value = 75% Lux, so the calibration value = 75 – 80 = -5.
 If the measure value = 85% Lux and the standard value = 90% Lux, so the calibration value = 90 – 85 = 5.
+    </Help>
+  </Value>
+      <Value type="byte" byteSize="2" index="wake" label="Wake Interval" min="240" max="65536" value="43200" setting_type="wake">
+    <Help>
+Set the wake interval for the device in seconds. Decreasing this value will reduce battery life. 
+Range: 240~65536
+Default: 43200 (12 Hours)
     </Help>
   </Value>
   <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="">
