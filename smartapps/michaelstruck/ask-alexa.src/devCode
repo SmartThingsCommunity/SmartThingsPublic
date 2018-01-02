@@ -535,6 +535,8 @@
           "to set the {Macro} to {MNum} percent",
           "to set the {Macro} {MParam}",
           "{Macro} {xParam}",
+          "{Macro} {xParam} {MNum}",
+          "{Macro} {MNum} {xParam}",
           "to set the {Macro} {xParam}",
           "change {Macro} {xParam}",
           "to change the {Macro} to {xParam}",
@@ -1247,6 +1249,6 @@
         "slots": []
       }
     ],
-    "invocationName": "*/*Invocation*/*"
+    "invocationName": "*/*invocation name*/*"
   }
 }
