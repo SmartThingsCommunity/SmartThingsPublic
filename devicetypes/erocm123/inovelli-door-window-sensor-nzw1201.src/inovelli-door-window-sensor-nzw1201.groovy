@@ -39,8 +39,8 @@ metadata {
     }
     
     preferences {
-        input "tempReportInterval", "enum", title: "Temperature Report Interval\n\nHow often you would like temperature reports to be sent from the sensor. More frequent reports will have a negative impact on battery life.\nRange: 1 to 3600", description: "", required: false, options:[10: "10 Minutes", 30: "30 Minutes", 60: "1 Hour", 120: "2 Hours", 180: "3 Hours", 240: "4 Hours", 300: "5 Hours", 360: "6 Hours", 720: "12 Hours", 1440: "24 Hours"], defaultValue: 180
-        input "tempOffset", "number", title: "Temperature Offset\n\nCalibrate reported temperature by applying a negative or positive offset\nRange: -10 to 10", description: "", required: false, range: "-10..10"
+        input "tempReportInterval", "enum", title: "Temperature Report Interval\n\nHow often you would like temperature reports to be sent from the sensor. More frequent reports will have a negative impact on battery life.\nRange: 1 to 3600", description: "Tap to set", required: false, options:[10: "10 Minutes", 30: "30 Minutes", 60: "1 Hour", 120: "2 Hours", 180: "3 Hours", 240: "4 Hours", 300: "5 Hours", 360: "6 Hours", 720: "12 Hours", 1440: "24 Hours"], defaultValue: 180
+        input "tempOffset", "number", title: "Temperature Offset\n\nCalibrate reported temperature by applying a negative or positive offset\nRange: -10 to 10", description: "Tap to set", required: false, range: "-10..10"
     }
 
     tiles(scale: 2) {
