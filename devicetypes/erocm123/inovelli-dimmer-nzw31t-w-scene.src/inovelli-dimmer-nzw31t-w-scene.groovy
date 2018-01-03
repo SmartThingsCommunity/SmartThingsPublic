@@ -52,10 +52,10 @@ metadata {
     }
     
     preferences {
-        input "minimumLevel", "number", title: "Minimum Level\n\nMinimum dimming level for attached light\nRange: 1 to 99", description: "", required: false, range: "1..99"
-        input "dimmingStep", "number", title: "Dimming Step Size\n\nPercentage of step when switch is dimming up or down\nRange: 1 to 99", description: "", required: false, range: "1..99"
-        input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "", required: false, range: "0..32767"
-        input "invert", "enum", title: "Invert Switch", description: "Tap to select", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
+        input "minimumLevel", "number", title: "Minimum Level\n\nMinimum dimming level for attached light\nRange: 1 to 99", description: "Tap to set", required: false, range: "1..99"
+        input "dimmingStep", "number", title: "Dimming Step Size\n\nPercentage of step when switch is dimming up or down\nRange: 1 to 99", description: "Tap to set", required: false, range: "1..99"
+        input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
+        input "invert", "enum", title: "Invert Switch", description: "Tap to set", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
         input description: "1 pushed - Up 1x click\n2 pushed - Up 2x click\n3 pushed - Up 3x click\n4 pushed - Up 4x click\n5 pushed - Up 5x click\n6 pushed - Up held\n\n1 held - Down 1x click\n2 held - Down 2x click\n3 held - Down 3x click\n4 held - Down 4x click\n5 held - Down 5x click\n6 held - Down held", title: "Button Mappings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
     }
     

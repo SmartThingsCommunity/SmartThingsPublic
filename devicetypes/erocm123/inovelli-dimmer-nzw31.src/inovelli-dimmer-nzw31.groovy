@@ -40,11 +40,11 @@ metadata {
     }
     
     preferences {
-        input "minimumLevel", "number", title: "Minimum Level\n\nMinimum dimming level for attached light\nRange: 1 to 99", description: "", required: false, range: "1..99"
-        input "dimmingStep", "number", title: "Dimming Step Size\n\nPercentage of step when switch is dimming up or down\nRange: 1 to 99", description: "", required: false, range: "1..99"
-        input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:\n", description: "Tap to select", required: false, options:[1: "On", 0: "Off", 2: "Disable"], defaultValue: 1
-        input "invert", "enum", title: "Invert Switch", description: "Tap to select", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
+        input "minimumLevel", "number", title: "Minimum Level\n\nMinimum dimming level for attached light\nRange: 1 to 99", description: "Tap to set", required: false, range: "1..99"
+        input "dimmingStep", "number", title: "Dimming Step Size\n\nPercentage of step when switch is dimming up or down\nRange: 1 to 99", description: "Tap to set", required: false, range: "1..99"
+        input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
+        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:\n", description: "Tap to set", required: false, options:[1: "On", 0: "Off", 2: "Disable"], defaultValue: 1
+        input "invert", "enum", title: "Invert Switch", description: "Tap to set", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
     }
     
     tiles {
