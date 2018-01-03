@@ -22,6 +22,10 @@ metadata {
 		attribute "alarmState", "string"
 
 		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)"
+    fingerprint mfr:"026F", prod:"0001", model:"0001", deviceJoinName: "Sprue FireAngel Smoke Detector"
+    fingerprint mfr:"026F", prod:"0001", model:"0002", deviceJoinName: "Sprue FireAngel Heat Alarm"
+
+
 	}
 
 	simulator {
@@ -53,6 +57,7 @@ metadata {
 }
 
 def installed() {
+	log.debug "zwaveInfo: "+zwaveInfo
 // Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
@@ -71,8 +76,15 @@ def parse(String description) {
 	if (description.startsWith("Err")) {
 	    results << createEvent(descriptionText:description, displayed:true)
 	} else {
-		def cmd = zwave.parse(description, [ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
+    	def cmd
+    	if (zwaveInfo.mfr == "026F") {
+            cmd = zwave.parse(description)
+        }
+        else {
+			cmd = zwave.parse(description, [ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
+        }
 		if (cmd) {
+            log.debug "Parse generated event: "+cmd
 			zwaveEvent(cmd, results)
 		}
 	}
@@ -124,7 +136,27 @@ def createSmokeOrCOEvents(name, results) {
 	results << createEvent(name: "alarmState", value: name, descriptionText: text)
 }
 
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd, results) {
+    log.debug "v3 notification report: "+cmd
+    if (cmd.notificationType == physicalgraph.zwave.commands.notificationv3.EventSupportedGet.NOTIFICATION_TYPE_SMOKE) {
+        if (cmd.event == 3) {
+			createSmokeOrCOEvents("tested", results)
+		} else {
+			createSmokeOrCOEvents((cmd.event == 1 || cmd.event == 2) ? "smoke" : "smokeClear", results)
+		}
+    } else if (cmd.notificationType == physicalgraph.zwave.commands.notificationv3.EventSupportedGet.NOTIFICATION_TYPE_CO) {
+        if (cmd.event == 3) {
+			createSmokeOrCOEvents("tested", results)
+		} else {
+            createSmokeOrCOEvents((cmd.event == 1 || cmd.event == 2) ? "carbonMonoxide" : "carbonMonoxideClear", results)
+        }
+    }
+}
+
+
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
+    log.debug "v2 alarm report: "+cmd
 	if (cmd.zwaveAlarmType == physicalgraph.zwave.commands.alarmv2.AlarmReport.ZWAVE_ALARM_TYPE_SMOKE) {
 		if (cmd.zwaveAlarmEvent == 3) {
 			createSmokeOrCOEvents("tested", results)
@@ -149,12 +181,12 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
 			} else {
 				results << createEvent(descriptionText: "$device.displayName code 13 is $cmd.alarmLevel", isStateChange:true, displayed:false)
 			}
-			
+
 			// Clear smoke in case they pulled batteries and we missed the clear msg
 			if(device.currentValue("smoke") != "clear") {
 				createSmokeOrCOEvents("smokeClear", results)
 			}
-			
+
 			// Check battery if we don't have a recent battery event
 			if (!state.lastbatt || (now() - state.lastbatt) >= 48*60*60*1000) {
 				results << response(zwave.batteryV1.batteryGet())
@@ -182,7 +214,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 	} else if (cmd.sensorType == 2) {
 		createSmokeOrCOEvents(cmd.sensorState ? "carbonMonoxide" : "carbonMonoxideClear", results)
 	}
-	
+
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
