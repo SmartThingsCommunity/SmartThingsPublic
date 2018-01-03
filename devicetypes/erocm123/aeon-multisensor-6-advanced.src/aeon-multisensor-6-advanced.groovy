@@ -556,17 +556,23 @@ def update_needed_settings()
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
     
-    if(!state.needfwUpdate || state.needfwUpdate == ""){
+    if(!state.needfwUpdate || state.needfwUpdate == "") {
        logging("Requesting device firmware version")
        cmds << zwave.versionV1.versionGet()
-    }    
+    }
+
+    if (state.currentProperties."252" != [0]) {
+        logging("Unlocking configuration.")
+        cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(0, 1), parameterNumber: 252, size: 1)
+        cmds << zwave.configurationV1.configurationGet(parameterNumber: 252)
+    }
 
     if(state.wakeInterval == null || state.wakeInterval != getAdjustedWake()){
         logging("Setting Wake Interval to ${getAdjustedWake()}")
         cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: getAdjustedWake(), nodeid:zwaveHubNodeId)
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
     }
-   
+
     configuration.Value.each
     {     
         if ("${it.@setting_type}" == "zwave"){
