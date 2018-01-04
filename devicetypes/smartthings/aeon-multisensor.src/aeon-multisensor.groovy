@@ -264,7 +264,7 @@ private def getTimeOptionValueMap() { [
 		"1 hours"    : 1*60*60,
 		"6 hours"    : 6*60*60,
 		"12 hours"   : 12*60*60,
-		"18 hours"   : 6*60*60,
+		"18 hours"   : 18*60*60,
 		"24 hours"   : 24*60*60,
 ]}
 
