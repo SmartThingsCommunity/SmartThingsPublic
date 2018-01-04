@@ -17,16 +17,17 @@ metadata {
         fingerprint profileId: "0200", inClusters: "0000, 0001, 0004, 0005, 0006, 0008, 0100, 0102", manufacturer: "AXIS", model: "GR-ZB01-W", deviceJoinName: "AXIS Gear"
         //ClusterIDs: 0000 - Basic; 0004 - Groups; 0005 - Scenes; 0006 - On/Off; 0008 - Level Control; 0100 - Shade Configuration; 0102 - Window Covering;
         //Updated 2017-06-21
-        //Updated 2017-08-24 - added power cluster 0001 - added battery, level, reporting, & health check 
+        //Updated 2017-08-24 - added power cluster 0001 - added battery, level, reporting, & health check
+        //Updated 2018-01-04 - Axis Inversion & Increased Battery Reporting interval to 1 hour (previously 5 mins)
     }
    
 	tiles(scale: 2) {
         multiAttributeTile(name:"shade", type: "lighting", width: 3, height: 3) {
             tileAttribute("device.windowShade", key: "PRIMARY_CONTROL") {
-                attributeState("open",  action:"open", icon:"http://i.imgur.com/4TbsR54.png", backgroundColor:"#ffcc33", nextState: "closed")
-                attributeState("partial",  icon:"http://i.imgur.com/vBA17WL.png", backgroundColor:"#ffcc33", nextState: "closed")
+                attributeState("open",  action:"close", icon:"http://i.imgur.com/4TbsR54.png", backgroundColor:"#ffcc33", nextState: "closed")
+                attributeState("partial",  icon:"http://i.imgur.com/vBA17WL.png", backgroundColor:"#ffcc33")
                 attributeState("closed", action:"open",  icon:"http://i.imgur.com/mtHdMse.png", backgroundColor:"#bbbbdd", nextState: "open")
-             //label:'Open', label: 'Partial', label:'Closed'
+             
              }
                 tileAttribute ("device.level", key: "VALUE_CONTROL") {
               		attributeState("VALUE_UP", action: "ShadesUp")
@@ -36,11 +37,10 @@ metadata {
         //Added a "doubled" state to toggle states between positions
         standardTile("main", "device.windowShade"){
         	state("open", label:'Open', action:"close", icon:"http://i.imgur.com/St7oRQl.png", backgroundColor:"#ffcc33", nextState: "closed")
-            state("partial", label:'Partial',  icon:"http://i.imgur.com/y0ZpmZp.png", backgroundColor:"#ffcc33", nextState: "closed")
+            state("partial", label:'Partial',  icon:"http://i.imgur.com/y0ZpmZp.png", backgroundColor:"#ffcc33")
             state("closed", label:'Closed',action:"open", icon:"http://i.imgur.com/SAiEADI.png", backgroundColor:"#bbbbdd", nextState: "open")
-            //,
         }
-	 	controlTile("mediumSlider", "device.level", "slider",decoration:"flat",height: 1, width: 3, inactiveLabel: true) {
+	 	controlTile("mediumSlider", "device.level", "slider",decoration:"flat",height:1, width: 2, inactiveLabel: true) {
             state("level", action:"setLevel")
         }
         
@@ -48,7 +48,7 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
         
-		standardTile("refresh", "device.refresh", inactiveLabel:false, decoration:"flat", width:1, height:1) {
+		standardTile("refresh", "device.refresh", inactiveLabel:false, decoration:"flat", width:2, height:1) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
@@ -77,6 +77,7 @@ def ShadesUp(){
     //sendEvent(name:"level", value:shadeValue, displayed:true)
     setLevel(shadeValue)
 }
+
 //Custom command to decrement blind position by 25 %
 def ShadesDown(){
 	def shadeValue = device.latestValue("level") as Integer ?: 0 
@@ -151,8 +152,8 @@ def configure() {
     log.debug "Configuring Reporting and Bindings."
     sendEvent(name: "checkInterval", value: 300, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     def cmds = 
-    	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 250, 300, 0x01) +
-        zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 250, 300, 0x01)
+    	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 3000, 3600, 0x01) +
+        zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 3000, 3600, 0x01)
         log.info "configure() --- cmds: $cmds"
     return refresh + cmds
 }
