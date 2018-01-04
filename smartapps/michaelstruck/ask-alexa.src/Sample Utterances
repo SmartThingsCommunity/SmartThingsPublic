@@ -1,222 +1,3 @@
-ObjectOperation what is {OperatorA} of the {DeviceA} and {OperatorB} of the {DeviceB}
-ObjectOperation what is the {OperatorA} of the {DeviceA} and the {OperatorB} of the {DeviceB}
-ObjectOperation {OperatorA} of the {DeviceA} and {OperatorB} of the {DeviceB}
-ObjectOperation {OperatorA} of {DeviceA} and {OperatorB} of {DeviceB}
-ObjectOperation {OperatorA} the {DeviceA} and {OperatorB} the {DeviceB}
-ObjectOperation {OperatorA} {DeviceA} and {OperatorB} {DeviceB}
-ObjectOperation {DeviceA} {OperatorA} and {DeviceB} {OperatorB}
-ObjectOperation {DeviceA} and {DeviceB} {OperatorA}
-ObjectOperation {OperatorA} {DeviceA} and {DeviceB}
-ObjectOperation {OperatorA} the {DeviceA} and {DeviceB}
-ObjectOperation {OperatorA} {DeviceA} and {OperatorB} the {DeviceB}
-ObjectOperation {DeviceA} {OperatorA} and the {DeviceB} {OperatorB}
-ObjectOperation {DeviceA} {OperatorA} and {OperatorB} {DeviceB} 
-ObjectOperation turn {DeviceA} {OperatorA} and {OperatorB} {DeviceB} 
-ObjectOperation turn the {DeviceA} {OperatorA} and {OperatorB} {DeviceB} 
-ObjectOperation turn {DeviceA} {OperatorA} and {OperatorB} the {DeviceB} 
-ObjectOperation turn the {DeviceA} {OperatorA} and {OperatorB} the {DeviceB} 
-ObjectOperation turn {OperatorA} {DeviceA} and turn {DeviceB} {OperatorB}
-ObjectOperation turn {OperatorA} {DeviceA} and set {DeviceB} {OperatorB}
-ObjectOperation turn {OperatorA} {DeviceA} and set {DeviceB} to {OperatorB}
-ObjectOperation set {DeviceA} to {OperatorA} and turn {OperatorB} {DeviceB}
-ObjectOperation set the {DeviceA} to {OperatorA} and turn {OperatorB} {DeviceB}
-ObjectOperation set the {DeviceA} to {OperatorA} and turn {OperatorB} the  {DeviceB}
-
-ObjectOperation turn {OperatorA} {DeviceA} and {DeviceB}
-ObjectOperation turn {OperatorA} the {DeviceA} and the {DeviceB}
-ObjectOperation turn {OperatorA} the {DeviceA} and {DeviceB}
-ObjectOperation turn {DeviceA} and {DeviceB} {OperatorA}
-ObjectOperation turn the {DeviceA} and {DeviceB} {OperatorA}
-ObjectOperation turn the {DeviceA} and the {DeviceB} {OperatorA}
-ObjectOperation turn {DeviceA} and the {DeviceB} {OperatorA}
-ObjectOperation turn {DeviceA} and the {DeviceB} to {OperatorA}
-
-ObjectOperation turn the {DeviceA} {OperatorA} and set {DeviceB} to {NumB} percent
-ObjectOperation turn {OperatorA} {DeviceA} and set {DeviceB} to {NumB}
-ObjectOperation turn {OperatorA} {DeviceA} and set {DeviceB} to {NumB} percent
-ObjectOperation turn {OperatorA} {DeviceA} and set the {DeviceB} to {NumB}
-ObjectOperation turn {OperatorA} {DeviceA} and set the {DeviceB} to {NumB} percent
-ObjectOperation turn {OperatorA} the {DeviceA} and set {DeviceB} to {NumB}
-ObjectOperation turn {OperatorA} the {DeviceA} and set {DeviceB} to {NumB} percent
-ObjectOperation turn {OperatorA} the {DeviceA} and set the {DeviceB} to {NumB}
-ObjectOperation turn {OperatorA} the {DeviceA} and set the {DeviceB} to {NumB} percent
-ObjectOperation {OperatorA} the {DeviceA} and {DeviceB} {NumB}
-ObjectOperation {OperatorA} the {DeviceA} and {DeviceB} to {NumB} percent
-ObjectOperation {OperatorA} the {DeviceA} and {DeviceB} to {NumB}
-ObjectOperation {OperatorA} {DeviceA} and {DeviceB} to {NumB}
-ObjectOperation {OperatorA} {DeviceA} and {DeviceB} to {NumB} percent
-ObjectOperation {OperatorA} the {DeviceA} and set {DeviceB} to {NumB} percent
-ObjectOperation {OperatorA} the {DeviceA} and set {DeviceB} to {NumB}
-ObjectOperation {OperatorA} {DeviceA} and set {DeviceB} to {NumB}
-ObjectOperation {OperatorA} {DeviceA} and set {DeviceB} to {NumB} percent
-ObjectOperation {DeviceA} {OperatorA} and {DeviceB} to {NumB} percent
-ObjectOperation {DeviceA} {OperatorA} and {DeviceB} to {NumB}
-ObjectOperation {DeviceA} {OperatorA} and set {DeviceB} to {NumB} percent
-ObjectOperation {DeviceA} {OperatorA} and set {DeviceB} to {NumB}
-ObjectOperation turn {DeviceA} {OperatorA} and set {DeviceB} to {NumB} percent
-ObjectOperation turn {DeviceA} {OperatorA} and set the {DeviceB} to {NumB}
-ObjectOperation turn {DeviceA} {OperatorA} and set the {DeviceB} to {NumB} percent
-
-ObjectOperation set {DeviceA} and {DeviceB} to {NumA}
-ObjectOperation set {DeviceA} and {DeviceB} to {NumA} percent
-ObjectOperation set the {DeviceA} and the {DeviceB} to {NumA}
-ObjectOperation set the {DeviceA} and the {DeviceB} to {NumA} percent
-ObjectOperation set the {DeviceA} and {DeviceB} to {NumA} percent
-ObjectOperation set {DeviceA} and the {DeviceB} to {NumA} 
-ObjectOperation set {DeviceA} and the {DeviceB} to {NumA} percent
-ObjectOperation set {DeviceA} and {DeviceB} to a level of {NumA}
-
-ObjectOperation set {DeviceA} and {DeviceB} to a level of {NumA} percent
-
-ObjectOperation {DeviceA} {NumA} and {DeviceB} {NumB} 
-ObjectOperation set {DeviceA} {NumA} and {DeviceB} {NumB} 
-ObjectOperation {DeviceA} {NumA} and set {DeviceB} {NumB} 
-ObjectOperation set {DeviceA} {NumA} and set {DeviceB} {NumB} 
-ObjectOperation {DeviceA} to {NumA} and {DeviceB} to {NumB} 
-ObjectOperation set {DeviceA} to {NumA} and {DeviceB} to {NumB} 
-ObjectOperation {DeviceA} to {NumA} and set {DeviceB} to {NumB} 
-ObjectOperation set {DeviceA} to {NumA} and set {DeviceB} to {NumB} 
-ObjectOperation {DeviceA} {NumA} percent and {DeviceB} {NumB} percent
-ObjectOperation set {DeviceA} {NumA} percent and {DeviceB} {NumB} percent
-ObjectOperation {DeviceA} {NumA} percent and set {DeviceB} {NumB} percent
-ObjectOperation set {DeviceA} {NumA} percent and set {DeviceB} {NumB} percent
-ObjectOperation {DeviceA} to {NumA} percent and {DeviceB} to {NumB} percent
-ObjectOperation set {DeviceA} to {NumA} percent and {DeviceB} to {NumB} percent 
-ObjectOperation {DeviceA} to {NumA} percent and set {DeviceB} to {NumB} percent
-ObjectOperation set {DeviceA} to {NumA} percent and set {DeviceB} to {NumB} percent
-ObjectOperation {DeviceA} {NumA} percent and {DeviceB} {NumB}
-ObjectOperation set {DeviceA} {NumA} percent and {DeviceB} {NumB} 
-ObjectOperation {DeviceA} {NumA} percent and set {DeviceB} {NumB} 
-ObjectOperation set {DeviceA} {NumA} percent and set {DeviceB} {NumB} 
-ObjectOperation {DeviceA} to {NumA} percent and {DeviceB} to {NumB} 
-ObjectOperation set {DeviceA} to {NumA} percent and {DeviceB} to {NumB}
-ObjectOperation {DeviceA} to {NumA} percent and set {DeviceB} to {NumB} 
-ObjectOperation set {DeviceA} to {NumA} percent and set {DeviceB} to {NumB} 
-ObjectOperation {DeviceA} {NumA} and {DeviceB} {NumB} percent
-ObjectOperation set {DeviceA} {NumA}  and {DeviceB} {NumB} percent
-ObjectOperation {DeviceA} {NumA}  and set {DeviceB} {NumB} percent
-ObjectOperation set {DeviceA} {NumA} and set {DeviceB} {NumB} percent
-ObjectOperation {DeviceA} to {NumA}  and {DeviceB} to {NumB} percent
-ObjectOperation set {DeviceA} to {NumA} and {DeviceB} to {NumB} percent 
-ObjectOperation {DeviceA} to {NumA}  and set {DeviceB} to {NumB} percent
-ObjectOperation set {DeviceA} to {NumA}  and set {DeviceB} to {NumB} percent
-
-ObjectOperation set {DeviceA} to {ParamA} and turn {OperatorB} the {DeviceB}
-ObjectOperation set the {DeviceA} to {ParamA} and turn {OperatorB} the {DeviceB}
-ObjectOperation set the {DeviceA} to {ParamA} and turn {OperatorB} {DeviceB}
-
-ObjectOperation {DeviceA} {OperatorA} and set {DeviceB} to {ParamB}
-ObjectOperation {DeviceA} {OperatorA} and set the {DeviceB} to {ParamB}
-
-ObjectOperation set {DeviceA} to {ParamA} and set {DeviceB} to {ParamB}
-ObjectOperation {DeviceA} to {ParamA} and {DeviceB} to {ParamB}
-ObjectOperation set {DeviceA} to {ParamA} and {DeviceB} to {ParamB}
-ObjectOperation set the {DeviceA} to {ParamA} and set the {DeviceB} to {ParamB}
-ObjectOperation {DeviceA} to {ParamA} and the {DeviceB} to {ParamB}
-ObjectOperation set the {DeviceA} to {ParamA} and the {DeviceB} to {ParamB}
-ObjectOperation set {DeviceA} to {ParamA} and set the {DeviceB} to {ParamB}
-ObjectOperation set {DeviceA} to {ParamA} and the {DeviceB} to {ParamB}
-ObjectOperation set the {DeviceA} to {NumA}  and the {DeviceB} to {NumB} percent
-ObjectOperation set the {DeviceA} to {NumA} percent  and the {DeviceB} to {NumB} percent
-
-ObjectOperation {DeviceA} and {DeviceB} {ParamA}
-ObjectOperation set {DeviceA} and {DeviceB} to {ParamA}
-ObjectOperation turn {DeviceA} and {DeviceB} to {ParamA}
-ObjectOperation set {DeviceA} and {DeviceB} {ParamA}
-ObjectOperation set the {DeviceA} and {DeviceB} to {ParamA}
-ObjectOperation turn the {DeviceA} and {DeviceB} to {ParamA}
-ObjectOperation set the {DeviceA} and {DeviceB} {ParamA}
-ObjectOperation set the {DeviceA} and the {DeviceB} to {ParamA}
-ObjectOperation turn the {DeviceA} and the {DeviceB} to {ParamA}
-ObjectOperation set the {DeviceA} and the {DeviceB} {ParamA}
-ObjectOperation set {DeviceA} and the {DeviceB} to {ParamA}
-ObjectOperation turn {DeviceA} and the {DeviceB} to {ParamA}
-ObjectOperation set {DeviceA} and the {DeviceB} {ParamA}
-
-ObjectOperation turn {OperatorA} {ExtA} and {DeviceB}
-ObjectOperation turn {OperatorA} the {ExtA} and the {DeviceB}
-ObjectOperation turn {OperatorA} {DeviceA} and {ExtB}
-ObjectOperation turn {OperatorA} the {DeviceA} and the {ExtA}
-ObjectOperation {OperatorA} the {ExtA} and {OperatorB} the {ExtB}
-ObjectOperation {OperatorA} of {DeviceA} and {DeviceB}
-ObjectOperation {OperatorA} of {DeviceA} and {OperatorB} of {DeviceB}
-ObjectOperation {OperatorA} of {ExtA} and {ExtB}
-ObjectOperation {OperatorA} of {DeviceA} and {ExtB}
-ObjectOperation {OperatorA} of {ExtA} and {DeviceB}
-
-ObjectOperation {ExtA} {OperatorA} and {ExtB} {OperatorB}
-ObjectOperation {DeviceA} {OperatorA} and {ExtB} {OperatorB}
-ObjectOperation {ExtA} {OperatorA} and {DeviceB} {OperatorB}
-ObjectOperation run {ExtA} and {DeviceB} {OperatorB}
-ObjectOperation turn {DeviceA} {OperatorA} and run {ExtB}
-ObjectOperation turn {OperatorA} {DeviceA} and run {ExtB}
-ObjectOperation turn {DeviceA} {OperatorA} and play {ExtB}
-ObjectOperation turn {OperatorA} {DeviceA} and play {ExtB}
-ObjectOperation {ExtA} {OperatorA} and the {DeviceB} {OperatorB}
-ObjectOperation run {ExtA} and the {DeviceB} {OperatorB}
-ObjectOperation turn the {DeviceA} {OperatorA} and run {ExtB}
-ObjectOperation turn {OperatorA} the {DeviceA} and run {ExtB}
-ObjectOperation turn the {DeviceA} {OperatorA} and play {ExtB}
-ObjectOperation turn {OperatorA} the {DeviceA} and play {ExtB}
-ObjectOperation {ExtA} {OperatorA} and the {ExtB} {OperatorB}
-ObjectOperation {DeviceA} {OperatorA} and the {ExtB} {OperatorB}
-
-ObjectOperation {OperatorA} {ExtA} and {DeviceB} {OperatorB}
-ObjectOperation {OperatorA} {ExtA} and {OperatorB} {DeviceB}
-ObjectOperation {OperatorA} {ExtA} and turn {OperatorB} {DeviceB}
-ObjectOperation {OperatorA} {ExtA} and turn {OperatorB} the {DeviceB}
-ObjectOperation {OperatorA} {ExtA} and set {DeviceB} {OperatorB} 
-ObjectOperation {OperatorA} {ExtA} and set {DeviceB} to {OperatorB} 
-ObjectOperation {OperatorA} {ExtA} and the {DeviceB} {OperatorB}
-ObjectOperation {OperatorA} {ExtA} and {OperatorB} the {DeviceB}
-ObjectOperation {OperatorA} {ExtA} and set the {DeviceB} {OperatorB} 
-ObjectOperation {OperatorA} {ExtA} and set the {DeviceB} to {OperatorB} 
-
-ObjectOperation turn {OperatorA} {ExtA} and turn {OperatorB} {DeviceB}
-ObjectOperation turn {OperatorA} the {ExtA} and turn {OperatorB} the {DeviceB}
-ObjectOperation set {OperatorA} {ExtA} and set {DeviceB} {OperatorB} 
-ObjectOperation set {OperatorA} to {ExtA} and set {DeviceB} to {OperatorB} 
-
-ObjectOperation {ExtA} and {DeviceB} {OperatorA}
-ObjectOperation {ExtA} and the {DeviceB} {OperatorA}
-ObjectOperation {DeviceA} and {ExtB} {OperatorA}
-ObjectOperation {ExtA} and {ExtB} {OperatorA}
-ObjectOperation set {ExtA} and {ExtB} {OperatorA}
-ObjectOperation set {ExtA} and the {DeviceB} {OperatorA}
-ObjectOperation set the {ExtA} and the {ExtB} {OperatorA}
-ObjectOperation set {ExtA} and the {ExtB} {OperatorA}
-ObjectOperation set the {ExtA} and the {DeviceB} {OperatorA}
-
-ObjectOperation set {DeviceA} to {NumA} and turn {OperatorB} {DeviceB} 
-ObjectOperation set {DeviceA} to {NumA} percent and turn {OperatorB} {DeviceB} 
-ObjectOperation set the {DeviceA} to {NumA} and turn {OperatorB} {DeviceB} 
-ObjectOperation set the {DeviceA} to {NumA} percent and turn {OperatorB} {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} and turn {OperatorB} the {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} percent and turn {OperatorB} the {DeviceB} 
-ObjectOperation set the {DeviceA} to {NumA} and turn {OperatorB} the {DeviceB}
-ObjectOperation turn {OperatorB} the {DeviceB} and set the {DeviceA} to {NumA} percent
-ObjectOperation {DeviceA} {NumA} and {OperatorB} the {DeviceB}
-ObjectOperation {DeviceA} to {NumA} percent and {OperatorB} the {DeviceB}
-ObjectOperation  {DeviceA} to {NumA} and {OperatorB} the {DeviceB}
-ObjectOperation {DeviceA} to {NumA} and {OperatorB} {DeviceB}
-ObjectOperation {DeviceA} to {NumA} percent and {OperatorB} {DeviceB} 
-ObjectOperation set {DeviceA} to {NumA} percent and  {OperatorB} the {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} and {OperatorB} the {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} and {OperatorB} {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} percent and {OperatorB} {DeviceB}
-ObjectOperation {DeviceA} to {NumA} percent and {DeviceB} {OperatorB}
-ObjectOperation {DeviceA} to {NumA} and {DeviceB} {OperatorB} and
-ObjectOperation set {DeviceA} to {NumA} percent and {DeviceB} {OperatorB}
-ObjectOperation set {DeviceA} to {NumA} and {DeviceB} {OperatorB}  
-ObjectOperation set {DeviceA} {NumA} and turn {OperatorB} {DeviceB}
-ObjectOperation set {DeviceA} {NumA} percent and turn {OperatorB} {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} and turn {OperatorB} {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} percent and turn {OperatorB} {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} percent and turn {OperatorB} the {DeviceB}
-ObjectOperation set {DeviceA} to {NumA} percent and turn the {DeviceB} {OperatorB}
-ObjectOperation set {DeviceA} to {NumA} percent and turn {DeviceB} {OperatorB}
-ObjectOperation set the {DeviceA} to {NumA} percent and turn {OperatorB} the {DeviceB}
-
 DeviceOperation turn {Operator} {Device}
 DeviceOperation turn {Operator} the {Device}
 DeviceOperation {Device} {Num}
@@ -289,10 +70,10 @@ DeviceOperation to turn the {Device} to {Num}
 DeviceOperation to turn the {Device} to {Num} percent
 DeviceOperation {Device} {Operator}
 DeviceOperation {Device} to {Operator}
-DeviceOperation the {Operator} of the {Device}
 DeviceOperation {Device} {Operator} {Param}
 DeviceOperation {Device} {Operator} {Param} level {Num}
 DeviceOperation {Device} {Operator} level {Num} {Param}
+DeviceOperation the {Operator} of the {Device}
 DeviceOperation {Operator} {Device}
 DeviceOperation {Operator} {Device} by {Num}
 DeviceOperation {Operator} {Device} password {Num}
@@ -676,6 +457,8 @@ MacroOperation to set the {Macro} to {MNum} degrees
 MacroOperation to set the {Macro} to {MNum} percent
 MacroOperation to set the {Macro} {MParam}
 MacroOperation {Macro} {xParam}
+MacroOperation {Macro} {xParam} {MNum}
+MacroOperation {Macro} {MNum} {xParam}
 MacroOperation to set the {Macro} {xParam}
 MacroOperation change {Macro} {xParam}
 MacroOperation to change the {Macro} to {xParam}
@@ -1037,7 +820,208 @@ MQOperation {MQCmd} {Queue} message
 MQOperation {MQCmd} {Queue} queue
 MQOperation {MQCmd} messages in {Queue}
 MQOperation {MQCmd} messages in {Queue} queue
-
+ObjectOperation the {OperatorA} of the {DeviceA} and the {DeviceB}
+ObjectOperation the {OperatorA} of the {DeviceA} and {DeviceB}
+ObjectOperation the {OperatorA} of {DeviceA} and {DeviceB}
+ObjectOperation what is {OperatorA} of the {DeviceA} and {OperatorB} of the {DeviceB}
+ObjectOperation what is the {OperatorA} of the {DeviceA} and the {OperatorB} of the {DeviceB}
+ObjectOperation {OperatorA} of the {DeviceA} and {OperatorB} of the {DeviceB}
+ObjectOperation {OperatorA} of {DeviceA} and {OperatorB} of {DeviceB}
+ObjectOperation {OperatorA} the {DeviceA} and {OperatorB} the {DeviceB}
+ObjectOperation {OperatorA} {DeviceA} and {OperatorB} {DeviceB}
+ObjectOperation {DeviceA} {OperatorA} and {DeviceB} {OperatorB}
+ObjectOperation {DeviceA} and {DeviceB} {OperatorA}
+ObjectOperation {OperatorA} {DeviceA} and {DeviceB}
+ObjectOperation {OperatorA} the {DeviceA} and {DeviceB}
+ObjectOperation {OperatorA} {DeviceA} and {OperatorB} the {DeviceB}
+ObjectOperation {DeviceA} {OperatorA} and the {DeviceB} {OperatorB}
+ObjectOperation {DeviceA} {OperatorA} and {OperatorB} {DeviceB}
+ObjectOperation turn {DeviceA} {OperatorA} and {OperatorB} {DeviceB}
+ObjectOperation turn the {DeviceA} {OperatorA} and {OperatorB} {DeviceB}
+ObjectOperation turn {DeviceA} {OperatorA} and {OperatorB} the {DeviceB}
+ObjectOperation turn the {DeviceA} {OperatorA} and {OperatorB} the {DeviceB}
+ObjectOperation turn {OperatorA} {DeviceA} and turn {DeviceB} {OperatorB}
+ObjectOperation turn {OperatorA} {DeviceA} and set {DeviceB} {OperatorB}
+ObjectOperation turn {OperatorA} {DeviceA} and set {DeviceB} to {OperatorB}
+ObjectOperation set {DeviceA} to {OperatorA} and turn {OperatorB} {DeviceB}
+ObjectOperation set the {DeviceA} to {OperatorA} and turn {OperatorB} {DeviceB}
+ObjectOperation set the {DeviceA} to {OperatorA} and turn {OperatorB} the  {DeviceB}
+ObjectOperation turn {OperatorA} {DeviceA} and {DeviceB}
+ObjectOperation turn {OperatorA} the {DeviceA} and the {DeviceB}
+ObjectOperation turn {OperatorA} the {DeviceA} and {DeviceB}
+ObjectOperation turn {DeviceA} and {DeviceB} {OperatorA}
+ObjectOperation turn the {DeviceA} and {DeviceB} {OperatorA}
+ObjectOperation turn the {DeviceA} and the {DeviceB} {OperatorA}
+ObjectOperation turn {DeviceA} and the {DeviceB} {OperatorA}
+ObjectOperation turn {DeviceA} and the {DeviceB} to {OperatorA}
+ObjectOperation turn the {DeviceA} {OperatorA} and set {DeviceB} to {NumB} percent
+ObjectOperation turn {OperatorA} {DeviceA} and set {DeviceB} to {NumB}
+ObjectOperation turn {OperatorA} {DeviceA} and set {DeviceB} to {NumB} percent
+ObjectOperation turn {OperatorA} {DeviceA} and set the {DeviceB} to {NumB}
+ObjectOperation turn {OperatorA} {DeviceA} and set the {DeviceB} to {NumB} percent
+ObjectOperation turn {OperatorA} the {DeviceA} and set {DeviceB} to {NumB}
+ObjectOperation turn {OperatorA} the {DeviceA} and set {DeviceB} to {NumB} percent
+ObjectOperation turn {OperatorA} the {DeviceA} and set the {DeviceB} to {NumB}
+ObjectOperation turn {OperatorA} the {DeviceA} and set the {DeviceB} to {NumB} percent
+ObjectOperation {OperatorA} the {DeviceA} and {DeviceB} {NumB}
+ObjectOperation {OperatorA} the {DeviceA} and {DeviceB} to {NumB} percent
+ObjectOperation {OperatorA} the {DeviceA} and {DeviceB} to {NumB}
+ObjectOperation {OperatorA} {DeviceA} and {DeviceB} to {NumB}
+ObjectOperation {OperatorA} {DeviceA} and {DeviceB} to {NumB} percent
+ObjectOperation {OperatorA} the {DeviceA} and set {DeviceB} to {NumB} percent
+ObjectOperation {OperatorA} the {DeviceA} and set {DeviceB} to {NumB}
+ObjectOperation {OperatorA} {DeviceA} and set {DeviceB} to {NumB}
+ObjectOperation {OperatorA} {DeviceA} and set {DeviceB} to {NumB} percent
+ObjectOperation {DeviceA} {OperatorA} and {DeviceB} to {NumB} percent
+ObjectOperation {DeviceA} {OperatorA} and {DeviceB} to {NumB}
+ObjectOperation {DeviceA} {OperatorA} and set {DeviceB} to {NumB} percent
+ObjectOperation {DeviceA} {OperatorA} and set {DeviceB} to {NumB}
+ObjectOperation turn {DeviceA} {OperatorA} and set {DeviceB} to {NumB} percent
+ObjectOperation turn {DeviceA} {OperatorA} and set the {DeviceB} to {NumB}
+ObjectOperation turn {DeviceA} {OperatorA} and set the {DeviceB} to {NumB} percent
+ObjectOperation set {DeviceA} and {DeviceB} to {NumA}
+ObjectOperation set {DeviceA} and {DeviceB} to {NumA} percent
+ObjectOperation set the {DeviceA} and the {DeviceB} to {NumA}
+ObjectOperation set the {DeviceA} and the {DeviceB} to {NumA} percent
+ObjectOperation set the {DeviceA} and {DeviceB} to {NumA} percent
+ObjectOperation set {DeviceA} and the {DeviceB} to {NumA}
+ObjectOperation set {DeviceA} and the {DeviceB} to {NumA} percent
+ObjectOperation set {DeviceA} and {DeviceB} to a level of {NumA}
+ObjectOperation set {DeviceA} and {DeviceB} to a level of {NumA} percent
+ObjectOperation {DeviceA} {NumA} and {DeviceB} {NumB}
+ObjectOperation set {DeviceA} {NumA} and {DeviceB} {NumB}
+ObjectOperation {DeviceA} {NumA} and set {DeviceB} {NumB}
+ObjectOperation set {DeviceA} {NumA} and set {DeviceB} {NumB}
+ObjectOperation {DeviceA} to {NumA} and {DeviceB} to {NumB}
+ObjectOperation set {DeviceA} to {NumA} and {DeviceB} to {NumB}
+ObjectOperation {DeviceA} to {NumA} and set {DeviceB} to {NumB}
+ObjectOperation set {DeviceA} to {NumA} and set {DeviceB} to {NumB}
+ObjectOperation {DeviceA} {NumA} percent and {DeviceB} {NumB} percent
+ObjectOperation set {DeviceA} {NumA} percent and {DeviceB} {NumB} percent
+ObjectOperation {DeviceA} {NumA} percent and set {DeviceB} {NumB} percent
+ObjectOperation set {DeviceA} {NumA} percent and set {DeviceB} {NumB} percent
+ObjectOperation {DeviceA} to {NumA} percent and {DeviceB} to {NumB} percent
+ObjectOperation set {DeviceA} to {NumA} percent and {DeviceB} to {NumB} percent
+ObjectOperation {DeviceA} to {NumA} percent and set {DeviceB} to {NumB} percent
+ObjectOperation set {DeviceA} to {NumA} percent and set {DeviceB} to {NumB} percent
+ObjectOperation {DeviceA} {NumA} percent and {DeviceB} {NumB}
+ObjectOperation set {DeviceA} {NumA} percent and {DeviceB} {NumB}
+ObjectOperation {DeviceA} {NumA} percent and set {DeviceB} {NumB}
+ObjectOperation set {DeviceA} {NumA} percent and set {DeviceB} {NumB}
+ObjectOperation {DeviceA} to {NumA} percent and {DeviceB} to {NumB}
+ObjectOperation set {DeviceA} to {NumA} percent and {DeviceB} to {NumB}
+ObjectOperation {DeviceA} to {NumA} percent and set {DeviceB} to {NumB}
+ObjectOperation set {DeviceA} to {NumA} percent and set {DeviceB} to {NumB}
+ObjectOperation {DeviceA} {NumA} and {DeviceB} {NumB} percent
+ObjectOperation set {DeviceA} {NumA}  and {DeviceB} {NumB} percent
+ObjectOperation {DeviceA} {NumA}  and set {DeviceB} {NumB} percent
+ObjectOperation set {DeviceA} {NumA} and set {DeviceB} {NumB} percent
+ObjectOperation {DeviceA} to {NumA}  and {DeviceB} to {NumB} percent
+ObjectOperation set {DeviceA} to {NumA} and {DeviceB} to {NumB} percent
+ObjectOperation {DeviceA} to {NumA}  and set {DeviceB} to {NumB} percent
+ObjectOperation set {DeviceA} to {NumA}  and set {DeviceB} to {NumB} percent
+ObjectOperation set {DeviceA} to {ParamA} and turn {OperatorB} the {DeviceB}
+ObjectOperation set the {DeviceA} to {ParamA} and turn {OperatorB} the {DeviceB}
+ObjectOperation set the {DeviceA} to {ParamA} and turn {OperatorB} {DeviceB}
+ObjectOperation {DeviceA} {OperatorA} and set {DeviceB} to {ParamB}
+ObjectOperation {DeviceA} {OperatorA} and set the {DeviceB} to {ParamB}
+ObjectOperation set {DeviceA} to {ParamA} and set {DeviceB} to {ParamB}
+ObjectOperation {DeviceA} to {ParamA} and {DeviceB} to {ParamB}
+ObjectOperation set {DeviceA} to {ParamA} and {DeviceB} to {ParamB}
+ObjectOperation set the {DeviceA} to {ParamA} and set the {DeviceB} to {ParamB}
+ObjectOperation {DeviceA} to {ParamA} and the {DeviceB} to {ParamB}
+ObjectOperation set the {DeviceA} to {ParamA} and the {DeviceB} to {ParamB}
+ObjectOperation set {DeviceA} to {ParamA} and set the {DeviceB} to {ParamB}
+ObjectOperation set {DeviceA} to {ParamA} and the {DeviceB} to {ParamB}
+ObjectOperation set the {DeviceA} to {NumA}  and the {DeviceB} to {NumB} percent
+ObjectOperation set the {DeviceA} to {NumA} percent  and the {DeviceB} to {NumB} percent
+ObjectOperation {DeviceA} and {DeviceB} {ParamA}
+ObjectOperation set {DeviceA} and {DeviceB} to {ParamA}
+ObjectOperation turn {DeviceA} and {DeviceB} to {ParamA}
+ObjectOperation set {DeviceA} and {DeviceB} {ParamA}
+ObjectOperation set the {DeviceA} and {DeviceB} to {ParamA}
+ObjectOperation turn the {DeviceA} and {DeviceB} to {ParamA}
+ObjectOperation set the {DeviceA} and {DeviceB} {ParamA}
+ObjectOperation set the {DeviceA} and the {DeviceB} to {ParamA}
+ObjectOperation turn the {DeviceA} and the {DeviceB} to {ParamA}
+ObjectOperation set the {DeviceA} and the {DeviceB} {ParamA}
+ObjectOperation set {DeviceA} and the {DeviceB} to {ParamA}
+ObjectOperation turn {DeviceA} and the {DeviceB} to {ParamA}
+ObjectOperation set {DeviceA} and the {DeviceB} {ParamA}
+ObjectOperation turn {OperatorA} {ExtA} and {DeviceB}
+ObjectOperation turn {OperatorA} the {ExtA} and the {DeviceB}
+ObjectOperation turn {OperatorA} {DeviceA} and {ExtB}
+ObjectOperation turn {OperatorA} the {DeviceA} and the {ExtA}
+ObjectOperation {OperatorA} the {ExtA} and {OperatorB} the {ExtB}
+ObjectOperation {OperatorA} of {DeviceA} and {DeviceB}
+ObjectOperation {OperatorA} of {ExtA} and {ExtB}
+ObjectOperation {OperatorA} of {DeviceA} and {ExtB}
+ObjectOperation {OperatorA} of {ExtA} and {DeviceB}
+ObjectOperation {ExtA} {OperatorA} and {ExtB} {OperatorB}
+ObjectOperation {DeviceA} {OperatorA} and {ExtB} {OperatorB}
+ObjectOperation {ExtA} {OperatorA} and {DeviceB} {OperatorB}
+ObjectOperation run {ExtA} and {DeviceB} {OperatorB}
+ObjectOperation turn {DeviceA} {OperatorA} and run {ExtB}
+ObjectOperation turn {OperatorA} {DeviceA} and run {ExtB}
+ObjectOperation turn {DeviceA} {OperatorA} and play {ExtB}
+ObjectOperation turn {OperatorA} {DeviceA} and play {ExtB}
+ObjectOperation {ExtA} {OperatorA} and the {DeviceB} {OperatorB}
+ObjectOperation run {ExtA} and the {DeviceB} {OperatorB}
+ObjectOperation turn the {DeviceA} {OperatorA} and run {ExtB}
+ObjectOperation turn {OperatorA} the {DeviceA} and run {ExtB}
+ObjectOperation turn the {DeviceA} {OperatorA} and play {ExtB}
+ObjectOperation turn {OperatorA} the {DeviceA} and play {ExtB}
+ObjectOperation {ExtA} {OperatorA} and the {ExtB} {OperatorB}
+ObjectOperation {DeviceA} {OperatorA} and the {ExtB} {OperatorB}
+ObjectOperation {OperatorA} {ExtA} and {DeviceB} {OperatorB}
+ObjectOperation {OperatorA} {ExtA} and {OperatorB} {DeviceB}
+ObjectOperation {OperatorA} {ExtA} and turn {OperatorB} {DeviceB}
+ObjectOperation {OperatorA} {ExtA} and turn {OperatorB} the {DeviceB}
+ObjectOperation {OperatorA} {ExtA} and set {DeviceB} {OperatorB}
+ObjectOperation {OperatorA} {ExtA} and set {DeviceB} to {OperatorB}
+ObjectOperation {OperatorA} {ExtA} and the {DeviceB} {OperatorB}
+ObjectOperation {OperatorA} {ExtA} and {OperatorB} the {DeviceB}
+ObjectOperation {OperatorA} {ExtA} and set the {DeviceB} {OperatorB}
+ObjectOperation {OperatorA} {ExtA} and set the {DeviceB} to {OperatorB}
+ObjectOperation turn {OperatorA} {ExtA} and turn {OperatorB} {DeviceB}
+ObjectOperation turn {OperatorA} the {ExtA} and turn {OperatorB} the {DeviceB}
+ObjectOperation set {OperatorA} {ExtA} and set {DeviceB} {OperatorB}
+ObjectOperation set {OperatorA} to {ExtA} and set {DeviceB} to {OperatorB}
+ObjectOperation {ExtA} and {DeviceB} {OperatorA}
+ObjectOperation {ExtA} and the {DeviceB} {OperatorA}
+ObjectOperation {DeviceA} and {ExtB} {OperatorA}
+ObjectOperation {ExtA} and {ExtB} {OperatorA}
+ObjectOperation set {ExtA} and {ExtB} {OperatorA}
+ObjectOperation set {ExtA} and the {DeviceB} {OperatorA}
+ObjectOperation set the {ExtA} and the {ExtB} {OperatorA}
+ObjectOperation set {ExtA} and the {ExtB} {OperatorA}
+ObjectOperation set the {ExtA} and the {DeviceB} {OperatorA}
+ObjectOperation set {DeviceA} to {NumA} and turn {OperatorB} {DeviceB}
+ObjectOperation set {DeviceA} to {NumA} percent and turn {OperatorB} {DeviceB}
+ObjectOperation set the {DeviceA} to {NumA} and turn {OperatorB} {DeviceB}
+ObjectOperation set the {DeviceA} to {NumA} percent and turn {OperatorB} {DeviceB}
+ObjectOperation set {DeviceA} to {NumA} and turn {OperatorB} the {DeviceB}
+ObjectOperation set {DeviceA} to {NumA} percent and turn {OperatorB} the {DeviceB}
+ObjectOperation set the {DeviceA} to {NumA} and turn {OperatorB} the {DeviceB}
+ObjectOperation turn {OperatorB} the {DeviceB} and set the {DeviceA} to {NumA} percent
+ObjectOperation {DeviceA} {NumA} and {OperatorB} the {DeviceB}
+ObjectOperation {DeviceA} to {NumA} percent and {OperatorB} the {DeviceB}
+ObjectOperation  {DeviceA} to {NumA} and {OperatorB} the {DeviceB}
+ObjectOperation {DeviceA} to {NumA} and {OperatorB} {DeviceB}
+ObjectOperation {DeviceA} to {NumA} percent and {OperatorB} {DeviceB}
+ObjectOperation set {DeviceA} to {NumA} percent and  {OperatorB} the {DeviceB}
+ObjectOperation set {DeviceA} to {NumA} and {OperatorB} the {DeviceB}
+ObjectOperation set {DeviceA} to {NumA} and {OperatorB} {DeviceB}
+ObjectOperation set {DeviceA} to {NumA} percent and {OperatorB} {DeviceB}
+ObjectOperation {DeviceA} to {NumA} percent and {DeviceB} {OperatorB}
+ObjectOperation {DeviceA} to {NumA} and {DeviceB} {OperatorB} and
+ObjectOperation set {DeviceA} to {NumA} percent and {DeviceB} {OperatorB}
+ObjectOperation set {DeviceA} to {NumA} and {DeviceB} {OperatorB}
+ObjectOperation set {DeviceA} {NumA} and turn {OperatorB} {DeviceB}
+ObjectOperation set {DeviceA} {NumA} percent and turn {OperatorB} {DeviceB}
+ObjectOperation set {DeviceA} to {NumA} percent and turn the {DeviceB} {OperatorB}
+ObjectOperation set {DeviceA} to {NumA} percent and turn {DeviceB} {OperatorB}
+ObjectOperation set the {DeviceA} to {NumA} percent and turn {OperatorB} the {DeviceB}
 SmartHomeOperation to set {SHCmd} to {SHParam} password {SHNum}
 SmartHomeOperation to set the {SHCmd} to {SHParam} password {SHNum}
 SmartHomeOperation set the {SHCmd} to {SHParam} password {SHNum}
