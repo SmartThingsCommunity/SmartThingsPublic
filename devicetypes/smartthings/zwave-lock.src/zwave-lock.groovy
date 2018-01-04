@@ -320,7 +320,18 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 			result << response(secure(zwave.associationV1.associationGet(groupingIdentifier:1)))
 		}
 	}
-	result ? [createEvent(map), *result] : createEvent(map)
+	if (generatesDoorLockOperationReportBeforeAlarmReport()) {
+		// we're expecting lock events to come after notification events, but for specific yale locks they come out of order
+		runIn(3, "delayLockEvent", [data: [map: map]])
+        return [:]
+	} else {
+		return result ? [createEvent(map), *result] : createEvent(map)
+	}
+}
+
+def delayLockEvent(data) {
+	log.debug "Sending cached lock operation: $data.map"
+	sendEvent(data.map)
 }
 
 /**
@@ -1659,6 +1670,19 @@ def isYaleLock() {
 }
 
 /**
+ * Returns true if this lock generates door lock operation report before alarm report, false otherwise
+ * @return true if this lock generates door lock operation report before alarm report, false otherwise
+ */
+def generatesDoorLockOperationReportBeforeAlarmReport() {
+	//Fix for ICP-2367, ICP-2366
+	if(isYaleLock() && "0007" == zwaveInfo.prod && "0001" == zwaveInfo.model) {
+		//Yale Keyless Connected Smart Door Lock
+		return true
+	}
+	return false
+}
+
+ /** 
  * Generic function for reading code Slot ID from AlarmReport command
  * @param cmd: The AlarmReport command
  * @return user code slot id
