@@ -1085,7 +1085,7 @@ def VirtualThermostat(){
 
         if(VirThermModes){
             inVirThermModes = location.currentMode in VirThermModes
-            //log.debug " inVirThermModes set to $inVirThermModes"
+            log.debug " inVirThermModes set to $inVirThermModes"
         }
 
 
@@ -1160,7 +1160,7 @@ inVirThermModes = $inVirThermModes
             def inVirThermModes_2 = false 
             if(VirThermModes_2){
                 inVirThermModes_2 = location.currentMode in VirThermModes_2
-                //log.debug " inVirThermModes set to $inVirThermModes_2"
+                log.debug " inVirThermModes set to $inVirThermModes_2"
             }
 
             log.debug """
@@ -1178,10 +1178,10 @@ inVirThermModes_2 = $inVirThermModes_2
                     if(CurrTemp_2 > CurrCSP_2 && inVirThermModes_2){
                         if(SwitchState_2 != "on" ){
                             VirThermSwitch_2?.on()
-                            //log.debug "$VirThermSwitch_2 [cool] turned on"
+                            log.debug "$VirThermSwitch_2 [cool] turned on"
                         }
                         else {
-                            //log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
+                            log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
                         }       
                     }
                 }
@@ -1189,29 +1189,29 @@ inVirThermModes_2 = $inVirThermModes_2
                     if(CurrTemp_2 < CurrHSP_2 && inVirThermModes_2){
                         if(SwitchState_2 != "on"){
                             VirThermSwitch_2?.on()
-                            //log.debug "$VirThermSwitch_2 [cool] turned on"
+                            log.debug "$VirThermSwitch_2 [cool] turned on"
                         }
                         else {
-                            //log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
+                            log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
                         }
                     }
                     else {
                         if(SwitchState_2 != "off"){
                             VirThermSwitch_2?.off()
-                            //log.debug "$VirThermSwitch_2 [heat] turned off"
+                            log.debug "$VirThermSwitch_2 [heat] turned off"
                         }
                         else {
-                            //log.debug "$VirThermSwitch_2 [heat] ALREADY turned OFF"
+                            log.debug "$VirThermSwitch_2 [heat] ALREADY turned OFF"
                         }
                     }
                 }
             }
             else { 
-                //log.debug "No motion arround VirThermSwitch_2"
+                log.debug "No motion arround $VirThermSwitch_2"
             }
             if(!inVirThermModes_2 && SwitchState_2 != "off"){
                 VirThermSwitch_2?.off()
-                //log.debug "$VirThermSwitch_2 [heat] turned off because location is not in $VirThermModes_2"
+                log.debug "$VirThermSwitch_2 [heat] turned off because location is not in $VirThermModes_2"
             }
         }
 
@@ -1235,7 +1235,7 @@ inVirThermModes_2 = $inVirThermModes_2
             def inVirThermModes_3 = false 
             if(VirThermModes_3){
                 inVirThermModes_3 = location.currentMode in VirThermModes_3
-                //log.debug " inVirThermModes set to $inVirThermModes_3"
+                log.debug " inVirThermModes set to $inVirThermModes_3"
             }
 
             log.debug """
@@ -1253,10 +1253,10 @@ inVirThermModes_3 = $inVirThermModes_3
                     if(CurrTemp_3 > CurrCSP_3 && inVirThermModes_3){
                         if(SwitchState_3 != "on" ){
                             VirThermSwitch_3?.on()
-                            //log.debug "$VirThermSwitch_3 [cool] turned on"
+                            log.debug "$VirThermSwitch_3 [cool] turned on"
                         }
                         else {
-                            //log.debug "$VirThermSwitch_3 [cool] ALREADY turned on"
+                            log.debug "$VirThermSwitch_3 [cool] ALREADY turned on"
                         }       
                     }
                 }
@@ -1264,30 +1264,30 @@ inVirThermModes_3 = $inVirThermModes_3
                     if(CurrTemp_3 < CurrHSP_3 && inVirThermModes_3){
                         if(SwitchState_3 != "on"){
                             VirThermSwitch_3?.on()
-                            //log.debug "$VirThermSwitch_3 [cool] turned on"
+                            log.debug "$VirThermSwitch_3 [cool] turned on"
                         }
                         else {
-                            //log.debug "$VirThermSwitch_3 [cool] ALREADY turned on"
+                            log.debug "$VirThermSwitch_3 [cool] ALREADY turned on"
                         }
                     }
                     else {
                         if(SwitchState_3 != "off"){
                             VirThermSwitch_3?.off()
-                            //log.debug "$VirThermSwitch_3 [heat] turned off"
+                            log.debug "$VirThermSwitch_3 [heat] turned off"
                         }
                         else {
-                            //log.debug "$VirThermSwitch_3 [heat] ALREADY turned OFF"
+                            log.debug "$VirThermSwitch_3 [heat] ALREADY turned OFF"
 
                         }
                     }
                 }
             }
             else { 
-                //log.debug "No motion arround VirThermSwitch_2"
+                log.debug "No motion arround $VirThermSwitch_3"
             }
             if(!inVirThermModes_3 && SwitchState_3 != "off"){
                 VirThermSwitch_3?.off()
-                //log.debug "$VirThermSwitch_3 [heat] turned off because location is not in $VirThermModes_3"
+                log.debug "$VirThermSwitch_3 [heat] turned off because location is not in $VirThermModes_3"
             }
         }
     }
@@ -1301,19 +1301,19 @@ inVirThermModes_3 = $inVirThermModes_3
             VirThermSwitch?.on()
             VirThermSwitch_2?.on()
             VirThermSwitch_3?.on()
-            //log.debug "CRITIAL TEMPERATURE AT VIRTHERM Turning on all electric heaters. Shutting donw in 10 minutes"
+            log.debug "CRITIAL TEMPERATURE AT VIRTHERM Turning on all electric heaters. Shutting donw in 10 minutes"
             if(state.Critical != 1){
                 runIn(600, shutdownVT)
-                //log.debug "shutdownVT scheduled"
+                log.debug "shutdownVT scheduled"
             }
             else {
-                //log.debug "shutdownVT already scheduled"
+                log.debug "shutdownVT already scheduled"
             }
             state.Critical = 1
         }
         else {
             shutdownVT() // shut down all virtual thermostats
-            //log.debug "Some contacts are open, turning off switches"
+            log.debug "Some contacts are open, turning off switches"
         }
     }
 
@@ -2051,15 +2051,15 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
                                         }
                                         else {
                                             if(!ShouldHeat){
-                                                //log.debug "no need to heat at $ThermSet"
+                                                log.debug "no need to heat at $ThermSet"
                                             }
                                             else{
-                                                //log.debug "$ThermSet already set to heat"
+                                                log.debug "$ThermSet already set to heat"
                                             }
                                         }
                                     }
                                     else {
-                                        //log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
+                                        log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
                                     }
                                 } 
                             }
@@ -2068,11 +2068,11 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
                             }
                         }
                         else {
-                            //log.debug "Not evaluating for $ThermSet because some windows are open"
+                            log.debug "Not evaluating for $ThermSet because some windows are open"
                             // check that therms are off  
 
                             def AnyON = Thermostats.findAll{ it?.currentValue("thermostatMode") != "off"}
-                            // //log.debug "there are ${AnyON.size()} untis that are still running: $AnyON"
+                            log.debug "there are ${AnyON.size()} untis that are still running: $AnyON"
 
                             def count = 0
 
@@ -2086,11 +2086,11 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
                                     }
                                     if(ThisIsExceptionTherm && !ContactExceptionIsClosed){
                                         device.setThermostatMode("off") 
-                                        //log.debug "$device TURNED OFF BECAUSE EXCEPTION CONTACT IS OPEN"
+                                        log.debug "$device TURNED OFF BECAUSE EXCEPTION CONTACT IS OPEN"
                                     }
                                     if(ThisIsExceptionTherm && !InExceptionContactMode){
                                         device.setThermostatMode("off") 
-                                        //log.debug "$device TURNED OFF BECAUSE this is not one of the exception modes"
+                                        log.debug "$device TURNED OFF BECAUSE this is not one of the exception modes"
                                     }
                                 }
                                 else {
@@ -2781,7 +2781,7 @@ def TurnOffThermostats(){
             }
             else {
 
-                //log.debug "Not turning off $ThermSet because current mode is within exception modes selected by the user"
+                log.debug "Not turning off $ThermSet because current mode is within exception modes selected by the user"
 
                 state.LatestThermostatMode = ThermState
             }
@@ -2791,11 +2791,11 @@ def TurnOffThermostats(){
 
                     ThermSet.setThermostatMode("off") 
                     state.LatestThermostatMode = "off"
-                    //log.debug "$ThermSet turned off"
+                    log.debug "$ThermSet turned off"
 
                 }
                 else {
-                    //log.debug "$ThermSet ALREADY off"
+                    log.debug "$ThermSet ALREADY off"
                 }
             }
         }
