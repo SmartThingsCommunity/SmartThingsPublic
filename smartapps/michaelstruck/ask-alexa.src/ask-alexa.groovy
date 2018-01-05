@@ -1,16 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.5a - 12/14/17 Copyright © 2017 Michael Struck
+ *  Version 2.3.6 - 1/5/18 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
- *  Version information prior to 2.3.1 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
+ *  Version information prior to 2.3.5 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
- *  Version 2.3.1 (9/13/17) Added new extention: Rooms/Groups, disabling of Device Groups, add voice to message queue
- *  Version 2.3.2 (9/22/17) Removed device group macro code, added UV index to Environmentals
- *  Version 2.3.3 (11/2/17) Extension version update; begin adding code for compound commands, removed Sonos specific memory slots (now redundent with Sonos Skill), added switch trigger for macros
- *  Version 2.3.4c (11/20/17) Continued to add compound commands; removed old speaker code.
  *  Version 2.3.5a (12/14/17) Added output of extension groups to message queue, optimized code, added optimized setup features.
+ *  Version 2.3.6 (1/5/18) Improved setup process, reducing number of steps to get program operating, changed copyright to 2018, updated WebCoRE macro to send more data to the pisto
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -699,7 +696,7 @@ def pageContCommands(){
                 href "timeIntervalInputWhisper",  title: "Whisper Only During These Times...", description: getTimeLabel(timeStartWhisper, timeEndWhisper), state: (timeStartWhisper || timeEndWhisper? "complete":null), image: imgURL() + "clock.png"
             	input "runModeWhisper", "mode", title: "Whisper Only In The Following Modes...", multiple: true, required: false, image: imgURL() + "modes.png"
             }
-            input "invocationName", title: "Invocation Name (Only Used For Examples)", defaultValue: "SmartThings", required: false 
+            input "invocationName", title: "Invocation Name", defaultValue: "Smart Things", required: false 
         }
     }
 }
@@ -831,7 +828,10 @@ def mainPageChild(){
         if (macroType) {
         	section ("Switch trigger for this macro", hideable: true, hidden: !(macroTriggerSwitch)){
             	input "macroTriggerSwitch", "capability.switch", title: "Trigger Switch", multiple: false, required: false, submitOnChange:true
-                if (macroType=="CoRE" && macroTriggerSwitch) input "triggerXParam", "text", title: "xParam To Send When Switch Triggered (optional)", description: "Use lower case for the xParam", required: false, capitalization: "none"
+                if (macroType=="CoRE" && macroTriggerSwitch){
+                	input "triggerXParam", "text", title: "xParam To Send When Switch Triggered (optional)", description: "Use lower case for the xParam", required: false, capitalization: "none"
+                	input "triggermNum", "number", title: "mNum To Send When Switch Triggered (optional)", description: "Enter a number ", required: false
+                }
                 paragraph "A momentary switch is recommended (but not required) to trigger a macro. You may associate the switch with other automations (including native Alexa Routines) to execute this macro when the switch state change. "+
                 	"Please note: No passwords are passed to this macro and no output from this macro will be heard unless you output it via a Message Queue.", image: imgURL()+"info.png"
             }
@@ -868,17 +868,19 @@ def pageCoRE() {
         section { paragraph "WebCoRE Trigger Settings", image: "https://cdn.rawgit.com/ady624/${webCoRE_handle()}/master/resources/icons/app-CoRE@2x.png" }
 		section (" "){
    			input "CoREName", "enum", title: "Choose WebCoRE Piston", options: parent.webCoRE_list('enum'), required: false, multiple: false
-        	input "cDelay", "number", title: "Default Delay (Minutes) To Trigger", range:"0..*", defaultValue: 0, required: false
+        	if (!sendmNum) input "cDelay", "number", title: "Default Delay (Minutes) To Trigger", range:"0..*", defaultValue: 0, required: false
             if (parent.pwNeeded) input "usePW", "bool", title: "Require PIN To Run This WebCoRE Macro", defaultValue: false
         }
         section("Advanced features"){
-        	paragraph "You may pass a single parameter to the WebCoRE piston by adding your list of words to proper developer slot and speaking the addition parameter when executing the piston. "+
-            	"Please see the documentation from more information.", image: parent.imgURL() + "info.png"
-        	input "advWebCore", "bool", title: "Require Additional Parameter To Run Macro", defaultValue: false, submitOnChange:true
+        	paragraph "You may pass a non-numeric parameter (xParam) to the WebCoRE piston by adding the parameters to the proper developer slot and speaking the addition parameter when executing the piston. "+
+            	"To use numeric values, enable the option below which WILL disable the ability to delay execution of this macro. Please see the documentation from more information.", image: parent.imgURL() + "info.png"
+        	input "sendmNum", "bool", title: "Send Number (mNum) to WebCore", defaultValue: false, submitOnChange:true
+            if (sendmNum) input "xferMNum", "bool", title: "Transfer Number (mNum) to xParam", defaultValue: false
+            input "advWebCore", "bool", title: "Require Additional Parameters (xParam or mNum) To Run Macro", defaultValue: false, submitOnChange:true
         }
         section("Custom acknowledgment"){
              if (!noAck) input "voicePost", "text", title: "Acknowledgment Message", description: "Enter a short statement to play after macro runs", required: false, capitalization: "sentences"
-             if (!noAck && advWebCore ) input "voicePostAdv", "text", title: "Message When No Advanced Parameter Received", required: false, capitalization: "sentences"
+             if (!noAck && advWebCore ) input "voicePostAdv", "text", title: "Message When No Advanced Parameters Received", required: false, capitalization: "sentences"
              input "noAck", "bool", title: "No Acknowledgment Message", defaultValue: false, submitOnChange: true
         }
         if (!parent.webCoRE_list('enum')){
@@ -1076,6 +1078,7 @@ mappings {
 	path("/setup") { action: [GET: "setupData"] }
     path("/flash") { action: [GET: "flash"] }
     path("/cheat") { action: [GET: "cheat"] }
+    path("/newSetup") { action: [GET: "devSetup"] }
 }
 //--------------------------------------------------------------
 def processBegin(){
@@ -1754,7 +1757,7 @@ def processMacroAction(mac, mNum, mPW, followup, xParam){
     String outputTxt = ""
     def macroType="", playContMsg, suppressContMsg
 	def macProceed= true, children = getAskAlexa(), child = children.find {it.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "") == mac}
-	if (child.usePW && pwNeeded && password && mPW != password ){
+    if (child.usePW && pwNeeded && password && mPW != password ){
 		macProceed = false
 		def pwExtra = mPW==~/undefined|null/ ? "a" : "the proper"
 		if (child.macroType == "CoRE") outputTxt = "To activate this WebCore Trigger, you must use ${pwExtra} password. %P%"
@@ -2266,7 +2269,11 @@ def getReply(devices, type, STdeviceName, op, num, param){
     return result
 }
 def displayData(display){
-	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/></head><body style="margin: 0;">${display}</body></html>"""
+	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/><link rel="stylesheet" href="http://ask-alexa.com/styles.css"></head><body style="margin: 0;">${display}</body></html>"""
+}
+def displayRaw(display){
+	render contentType: "text/html", data: "${display}"
+
 }
 //Child code pieces here---Macro Handler-------------------------------------
 def macroResults(num, cmd, colorData, param, mNum,xParam){ 
@@ -2278,17 +2285,25 @@ def macroResults(num, cmd, colorData, param, mNum,xParam){
     return result
 }
 def macroSwitchHandler(evt){
-	def xParam= triggerXParam && macroType=="CoRE" ? triggerXParam.toLowerCase() : "" 
-	parent.processMacroAction(app.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""), 0, 0, false, xParam)	
+	def xParam= triggerXParam && macroType=="CoRE" ? triggerXParam.toLowerCase() : ""
+    def mNum = triggermNum && macroType=="CoRE" ? triggermNum as int : 0
+	parent.processMacroAction(app.label.toLowerCase().replaceAll("[^a-zA-Z0-9 ]", ""), mNum, 0, false, xParam)	
 }
 //WebCoRE Handler-----------------------------------------------------------
 def WebCoREResults(sDelay,xParam){	
 	String result = ""
-    state.xParam = (xParam !="undefined" && xParam!="?" && pxParam !="null" ) ? xParam : ""
-    def xParamLog = state.xParam ? " with the extra parameter: ${state.xParam}" : "", delay
+    if (sendmNum && sDelay > 0){
+    	state.mNum=sDelay
+        if (xferMNum) xParam=sDelay
+        sDelay=0
+    }
+    def delay
+    state.xParam = !(xParam==~/undefined|\?|null/) ? xParam : ""
+    def logOutput = state.xParam || state.mNum ? " with the extra parameter" : ""
+    logOutput += state.xParam && !state.mNum ? ": ${state.xParam}" : !state.xParam && state.mNum ? ": a number value of ${state.mNum}" : state.xParam && state.mNum ? "s: ${state.xParam} and a number value of ${state.mNum}" :""
     if (cDelay>0 || sDelay>0) delay = sDelay==0 ? cDelay as int : sDelay as int
-    if (!advWebCore || (advWebCore && state.xParam)){
-        result = (!delay || delay == 0) ? "I am triggering the WEBCORE macro named '${app.label}'${xParamLog}. " : delay==1 ? "I'll trigger the '${app.label}' WEBCORE macro in ${delay} minute. " : "I'll trigger the '${app.label}' WEBCORE macro in ${delay} minutes. "
+    if (!advWebCore || (advWebCore && (state.xParam || state.mNum))){
+        result = (!delay || delay == 0) ? "I am triggering the WEBCORE macro named '${app.label}'${logOutput}. " : delay==1 ? "I'll trigger the '${app.label}' WEBCORE macro in ${delay} minute. " : "I'll trigger the '${app.label}' WEBCORE macro in ${delay} minutes. "
             if (sDelay == 9999) { 
             result = "I am cancelling all scheduled executions of the WEBCORE macro, '${app.label}'. "  
             state.scheduled = false
@@ -2304,15 +2319,17 @@ def WebCoREResults(sDelay,xParam){
     }
     else {
     	if (advWebCore && voicePostAdv) result = parent.replaceVoiceVar(voicePostAdv, delay,"",macroType,app.label, 0, xParamVar)
-        else result = "I did not hear the required additional parameter required to execute the macro, '${app.label}'. The execution was aborted. %1%"
+        else result = "I did not hear the required additional parameters required to execute the macro, '${app.label}'. The execution was aborted. %1%"
 	}
     return result
 }
 def WebCoREHandler(){ 
 	state.scheduled = false
-    def data = state.xParam ? [xParam : state.xParam] : null
+    def mNum = state.mNum ? state.mNum as int : 0
+    def data = state.xParam ? [mName: app.label, mNum: mNum, xParam : state.xParam] : [mName: app.label, mNum: mNum, xParam : null]
     parent.webCoRE_execute(CoREName,data)
     state.xParam=""
+    state.mNum=""
 }
 //Control Handler-----------------------------------------------------------
 def controlResults(sDelay){	
@@ -3205,38 +3222,169 @@ def flash(){
     return ["uid": "1", "updateDate": new Date().format("yyyy-MM-dd'T'HH:mm:ss'.0Z'"), "titleText": "Ask Alexa Flash Briefing Report", "mainText": outputTxt,
 		"redirectionUrl": "https://graph.api.smartthings.com/", "description": "Ask Alexa Flash Briefing Report"]
 }
+def fillDevJSON(slotName, listData){
+	def result = " {<br>  \"name\": \"${slotName}\",<br>"
+	result += "  \"values\": [<br>"
+    def count = listData.unique().size()
+    listData.unique().each {
+    	result += "    {<br>      \"id\": null,<br>"+
+		"      \"name\": {<br>"+
+		"        \"value\": \"${it}\",<br>"+
+		"        \"synonyms\": []<br>      }<br>    }"
+		count --
+        result += count ? ",<br>" : "<br>"
+	}
+    result+="  ]<br> }"
+	return result
+}
+def devSetup(){
+	def result = fillDevJSON("CANCEL_CMDS", fillCancelList()) +",<br>"
+    result += fillDevJSON("DEVICE_TYPE_LIST", fillTypeList()) +",<br>"
+    result += fillDevJSON("LIST_OF_DEVICES", fillDeviceList()) +",<br>"
+    result += fillDevJSON("LIST_OF_FOLLOWUPS",fillFollowupList()) +",<br>"
+    result += fillDevJSON("LIST_OF_MACROS",fillMacroList()) +",<br>"
+    result += fillDevJSON("LIST_OF_MQ",fillMQList()) +",<br>"
+    result += fillDevJSON("LIST_OF_MQCMD",msgVoc()) +",<br>"
+    result += fillDevJSON("LIST_OF_OPERATORS",fillOperatorsList()) +",<br>"
+    result += fillDevJSON("LIST_OF_PARAMS",fillParamsList()) +",<br>"
+    result += fillDevJSON("LIST_OF_SHPARAM",fillSHParamList()) +",<br>"
+    result += fillDevJSON("LIST_OF_SHCMD",fillSHCMDList()) +",<br>"
+    result += fillDevJSON("LIST_OF_WCP",["none"])  
+    displayRaw(result)
+
+}
 def setupData(){
-	def macChildren = getAskAlexa()
+	def dupCounter=0, devCodeTxt = "Click <a href='http://ask-alexa.com/cgi-bin/devSite.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${invocationName.toLowerCase()}' target='_blank'>here</a>, copy the JSON code on the page, then paste to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
+	def devDLTxt = "Or, click <a href='http://ask-alexa.com/cgi-bin/devSiteDL.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${invocationName.toLowerCase()}' target='_blank'>here</a> to download a text copy of the JSON code, then load into to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
 	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
-    def result ="<div style='padding:10px'><i><b><a href='http://aws.amazon.com' target='_blank'>Lambda</a> code variables:</b></i><br><br>var STappID = '${app.id}';<br>var STtoken = '${state.accessToken}';<br>"
+    def result ="<div style='padding:10px'><i><b>One-step Personalized Code:</b></i><br>"
+    result += "<br><b>Lambda Full Code:</b> Click <a href='http://ask-alexa.com/cgi-bin/lambda.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}' target='_blank'>here</a>, copy the code on the page, then paste to <a href='http://aws.amazon.com' target='_blank'>Lambda</a>"
+    result += "<br>You can also download a text copy of the code for backup or to use your text editor to copy/paste to Lambda. To download, click <a href='http://ask-alexa.com/cgi-bin/lambdaDL.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}' target='_blank'>here</a>"
+    result += "<br><br><b>Developer Code:</b> ${devCodeTxt}<br>${devDLTxt}<br>"
+    result += "--DevCodeWarn--"
+    result += "<br>Click <a href='http://ask-alexa.com/privacy.html' target='_blank'>here</a> to view the privacy policy regarding obtaining your personalized code.<br><br><hr>"
+    result += "<i><b><a href='http://aws.amazon.com' target='_blank'>Lambda</a> code variables:</b></i><br><br>var STappID = '${app.id}';<br>var STtoken = '${state.accessToken}';<br>"
     result += "var url='${getApiServerUrl()}/api/smartapps/installations/' + STappID + '/' ;<br><br>"
-    result += "Click <a href='http://ask-alexa.com/cgi-bin/lambda.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}' target='_blank'>here</a> to get the full code needed for Lambda (AWS) with the above variables already in place.<br><br>"
-    result += "Click <a href='http://ask-alexa.com/privacy.html' target='_blank'>here</a> to view the privacy policy regarding obtaining your personalized Lambda code.<br><br><hr>"
-    result += flash ? "<i><b><a href='http://developer.amazon.com' target='_blank'>Amazon ASK</a> Flash Briefing Skill URL:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/flash?access_token=${state.accessToken}<br><br><hr>":""
-	result += "<i><b><a href='http://developer.amazon.com' target='_blank'>Amazon ASK</a> Custom Slot Information:</b></i><br><br><b>CANCEL_CMDS</b><br><br>cancel<br>stop<br>unschedule<br><br><b>DEVICE_TYPE_LIST</b><br><br>"
+    result += flash ? "<i><b><a href='http://developer.amazon.com' target='_blank'>Amazon ASK Developer</a> Flash Briefing Skill URL:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/flash?access_token=${state.accessToken}<br><br><hr>":""
+	result += "<i><b><a href='http://developer.amazon.com' target='_blank'>Amazon ASK Developer</a> Custom Slot Information:</b></i><br><br><b>CANCEL_CMDS</b><br><br>"
+    fillCancelList().each{ result += it + "<br>"}
+    result +="<br><b>DEVICE_TYPE_LIST</b><br><br>"
     fillTypeList().each{result += it + "<br>"}
     result += "<br><b>LIST_OF_DEVICES</b><br><br>"
-    def DEVICES=[], deviceCMDlist = [], SHPARAM =[], MACROS=[], MQ=[]
-    def deviceList = getDeviceList()
-    if (deviceList) deviceList.name.each{DEVICES << it }
-    if (deviceAlias && state.aliasList) state.aliasList.each{DEVICES << it.aliasNameLC}
+    def DEVICES=fillDeviceList()
     def duplicates = DEVICES.findAll{DEVICES.count(it)>1}.unique()
     if (DEVICES && duplicates.size()){ 
-    	result += "<b>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_DEVICES:<br><br>"
+    	dupCounter ++
+        result += "<b><font color='red'>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_DEVICES:<br><br>"
         duplicates.each{result +="* " + it +" *<br><br>"}
-        result += "Be sure to have unique names for each device/alias and only use each name once within the parent app.**<br><br>" 	
+        result += "Be sure to have unique names for each device/alias and only use each name once within the parent app.**<br><br></font>" 	
     }
-    if (DEVICES) DEVICES.unique().each { result += it + "<br>" }
-	else result += "none<br>"
-	result += "<br><b>LIST_OF_FOLLOWUPS</b><br><br>password<br>pin<br><br><b>LIST_OF_OPERATORS</b><br><br>"
-    def getDevList=mapDevices(false)
+    DEVICES.unique().each { result += it + "<br>" }
+	result += "<br><b>LIST_OF_FOLLOWUPS</b><br><br>"
+    fillFollowupList().each{ result += it + "<br>"}
+    result +="<br><b>LIST_OF_OPERATORS</b><br><br>"
+    fillOperatorsList().unique().each{result += it+"<br>"}
+    result += "<br><b>LIST_OF_PARAMS</b><br><br>"
+    def PARAMS=fillParamsList()
+    duplicates = PARAMS.findAll{PARAMS.count(it)>1}.unique()
+    if (duplicates.size()){ 
+            dupCounter ++
+            result += "<b><font color='red'>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_PARAMS:<br><br>"
+            duplicates.each{result +="* " + it +" *<br><br>"}
+            def objectName = []
+            if (ecobeeCMD) objectName<<"Ecobee custom climates"
+            objectName <<"custom colors"
+            result += "Be sure to have unique names for your ${getList(objectName)}.**<br><br></font>"
+	}
+	PARAMS.unique().each {result += it + "<br>" } 
+    result +="<br><b>LIST_OF_SHPARAM</b><br><br>"
+    def SHPARAM = fillSHParamList()
+    duplicates = SHPARAM.findAll{SHPARAM.count(it)>1}.unique()
+    if (duplicates.size()){ 
+		dupCounter ++
+        result += "<b><font color='red'>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_SHPARAM:<br><br>"
+		duplicates.each{result +="* " + it +" *<br><br>"}
+		result += "Be sure to have unique names for your SmartThings modes and routines and that they don't interfer with the Smart Home Monitor commands.**<br><br></font>"
+	}
+    SHPARAM.unique().each {result += it + "<br>" }
+    result += "<br><b>LIST_OF_SHCMD</b><br><br>"
+    fillSHCMDList().each{ result += it + "<br>"}
+    result += "<br><b>LIST_OF_MACROS</b><br><br>"
+    def MACROS=fillMacroList()
+	duplicates = MACROS.findAll{MACROS.count(it)>1}.unique()
+    if (duplicates.size()){ 
+		dupCounter ++
+        result += "<b><font color='red'>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_MACROS:<br><br>"
+		duplicates.each{result +="* " + it +" *<br><br>"}
+		result += "Be sure to have unique names for each macro, macro alias, and weather report and only use each name once within the app.**<br><br></font>" 	
+	}
+    MACROS.unique().each {result += it + "<br>" }
+    result += "<br><b>LIST_OF_MQ</b><br><br>"
+    def MQ=fillMQList()
+	duplicates = MQ.findAll{MQ.count(it)>1}.unique()
+    if (duplicates.size()){ 
+		dupCounter ++
+        result += "<b><font color='red'>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_MQ:<br><br>"
+		duplicates.each{result +="* " + it +" *<br><br>"}
+		result += "Be sure to have unique names for each message queue and only use each name once within the parent app.**<br><br></font>" 	
+	}
+    MQ.unique().each {result += it + "<br>" }
+    result += "<br><b>LIST_OF_MQCMD</b><br><br>"
+    msgVoc().each{result +=it + "<br>" }
+    result +="<br><b>LIST_OF_WCP</b><br><br>This is an advanced feature. If you use WebCoRE pistons, add your extra parameters to this slot. Otherwise, just add the word 'none' to this slot"
+	result += "<br><hr><br><i><b>URL of this setup page:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}<br><br><hr>"
+	result += "<br><i><b>Lastest version of the Lambda code:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Node.js'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Node.js</a><br><br><hr>"
+    result += "<br><i><b>Lastest version of the Sample Utterances:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Sample%20Utterances'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Sample%20Utterances</a><br><br><hr>"
+    result += "<br><i><b>Lastest version of the Intent Schema:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Intent%20Schema'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Intent%20Schema</a><br><br><hr></div>"
+    def warning = dupCounter ? "<br><font color='red'>* There were errors in your Ask Alexa setup. See the red items below to resolve</font><br>" : ""
+    if (!invocationName) warning="<br><font color='red'>* You are missing the invocation name within your SmartApp. The code above will use 'smart things' as default.</font><br>"
+    result = result.replaceAll("--DevCodeWarn--", warning)
+    displayData(result)
+}
+def fillTypeList(){
+	return ["reports","report","switches","switch","dimmers","dimmer","colored lights","color","colors","speakers","speaker","water sensor","water sensors","water","lock","locks","thermostats","thermostat",
+    	"temperature sensors","modes","routines","smart home monitor","SHM","security","temperature","door","doors", "humidity", "humidity sensor", "humidity sensors","presence", "presence sensors", "motion", 
+        "motion sensor", "motion sensors", "door sensor", "door sensors", "window sensor", "window sensors", "open close sensors","colored light", "events","macro", "macros", "group", "groups", "voice reports", 
+        "voice report","control macro", "control macros","control", "controls","extension group","extension groups","core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", 
+        "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases","temperature light","temperature lights","kelvin light","kelvin lights","message queue",
+        "queue","message queues","queues","weather", "weather report", "weather reports","schedule","schedules","webcore","webcore trigger", "webcore macro","webcore macros","webcore triggers","pollution","air quality",
+        "room", "rooms","uv","uv index"]
+}
+def fillDeviceList(){
+	def deviceList = getDeviceList(), DEVICES=[]
+    if (deviceList) deviceList.name.each{DEVICES << it }
+    if (deviceAlias && state.aliasList) state.aliasList.each{DEVICES << it.aliasNameLC}
+	if (!DEVICES.size()) DEVICES<<"none"
+	return DEVICES
+}
+def fillFollowupList(){ return ["password","pin"] }
+def fillCancelList(){ return ["cancel","stop","unschedule"] }
+def fillMQList(){
+	def MQ=["primary message queue","primary"]
+	if (getAAMQ().size()){ getAAMQ().each { MQ << it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }  }    
+	//if (!MQ.size()) MQ<<"none" //Reenable when primary message queue is deprecated
+    return MQ
+}
+def fillOperatorsList(){
+	def getDevList=mapDevices(false), deviceCMDlist=[]
     if (deviceAlias) getDevList+=mapDevices(true)
     basicVoc().each{deviceCMDlist<<it}
     doorVoc().each{deviceCMDlist<<it}
     getDevList.cmd.each{list->list.each{deviceCMDlist<<it} }
-    deviceCMDlist.unique().each{result += it+"<br>"}
-    result += "<br><b>LIST_OF_PARAMS</b><br><br>"
-    def PARAMS=["heat","cool","heating","cooling","auto","automatic","AC"]
+	return deviceCMDlist
+}
+def fillSHParamList(){
+	def SHPARAM = []
+    if (listSHM || listRoutines || listModes){
+        if (listSHM) SHPARAM << "arm" << "armed stay" << "armed home" << "armed away" << "disarm" << "off"
+        if (listRoutines) listRoutines.each { if (it) SHPARAM << it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
+        if (listModes) listModes.each { if (it) SHPARAM << it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
+    }
+    if (!SHPARAM.size()) SHPARAM<<"none"
+    return SHPARAM
+}
+def fillParamsList(){
+	def PARAMS=["heat","cool","heating","cooling","auto","automatic","AC"]
     if (tstatsSel() && stelproCMD) PARAMS<< "eco"<<"comfort"
     if ((tstatsSel() && nestCMD) || vPresenceCMD) PARAMS<<"present"
     if (tstatsSel() && (nestCMD || ecobeeCMD) || vPresenceCMD) PARAMS<<"home"<<"away"
@@ -3244,37 +3392,13 @@ def setupData(){
 	if (tstats && MyEcobeeCMD){  getEcobeeCustomList(tstats).each { PARAMS<<"${it}" } }     
     if (tstatsSel() && ecobeeCMD && MyEcobeeCMD) PARAMS<<"tips"<<"tip"
     if (presenceSel() && vPresenceCMD) PARAMS<<"check in"<<"check out"<<"arrive"<<"depart"<<"not present"<<"gone"
-    if (cLightsSel() || cLightsKSel() || macChildren.size()) { STColors().each {PARAMS<<it.name.toLowerCase()}}
-    duplicates = PARAMS.findAll{PARAMS.count(it)>1}.unique()
-    if (duplicates.size()){ 
-            result += "<b>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_PARAMS:<br><br>"
-            duplicates.each{result +="* " + it +" *<br><br>"}
-            def objectName = []
-            if (sonosCMD) objectName<<"SONOS memory slots"
-            if (ecobeeCMD) objectName<<"Ecobee custom climates"
-            objectName <<"custom colors"
-            result += "Be sure to have unique names for your ${getList(objectName)}.**<br><br>"
-	}
-	PARAMS.unique().each {result += it + "<br>" } 
-    result +="<br><b>LIST_OF_SHPARAM</b><br><br>"  
-    if (listSHM || listRoutines || listModes){
-        if (listSHM) SHPARAM << "arm" << "armed stay" << "armed home" << "armed away" << "disarm" << "off"
-        if (listRoutines) listRoutines.each { if (it) SHPARAM << it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
-        if (listModes) listModes.each { if (it) SHPARAM << it.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
-        duplicates = SHPARAM.findAll{SHPARAM.count(it)>1}.unique()
-        if (duplicates.size()){ 
-            result += "<b>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_SHPARAM:<br><br>"
-            duplicates.each{result +="* " + it +" *<br><br>"}
-            result += "Be sure to have unique names for your SmartThings modes and routines and that they don't interfer with the Smart Home Monitor commands.**<br><br>"
-        }
-        SHPARAM.unique().each {result += it + "<br>" }
-    }
-    else result +="none<br>"
-    result += "<br><b>LIST_OF_SHCMD</b><br><br>routine<br>mode<br>smart home monitor<br>" 
-    if (listSHM) result +="security<br>smart home<br>SHM<br>"
-    result += "<br><b>LIST_OF_MACROS</b><br><br>"
-    if (macChildren.size()){
-        macChildren.each { 
+    if (cLightsSel() || cLightsKSel() || getAskAlexa().size()) { STColors().each {PARAMS<<it.name.toLowerCase()}}
+    return PARAMS
+}
+def fillMacroList(){
+	def MACROS = []
+	if (getAskAlexa().size()){
+        getAskAlexa().each { 
         	MACROS << it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase()
 			for (int i = 1; i<macAliasCount()+1; i++){ if (it."macAlias${i}") MACROS << it."macAlias${i}".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
 		}
@@ -3292,45 +3416,13 @@ def setupData(){
     	for (int i = 1; i<it.extAliasCount()+1; i++){ if (it."extAlias${i}") MACROS << it."extAlias${i}".replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
     } 
     if (getSCHD().size()) getSCHD().each { MACROS << it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }
-    if (MACROS.size()){
-        duplicates = MACROS.findAll{MACROS.count(it)>1}.unique()
-        if (duplicates.size()){ 
-            result += "<b>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_MACROS:<br><br>"
-            duplicates.each{result +="* " + it +" *<br><br>"}
-            result += "Be sure to have unique names for each macro, macro alias, and weather report and only use each name once within the app.**<br><br>" 	
-        }
-        MACROS.unique().each {result += it + "<br>" }
-    }
-    else result += "none<br>"
-    result += "<br><b>LIST_OF_MQ</b><br><br>"
-	MQ<<"primary message queue"<<"primary"
-	if (getAAMQ().size()){
-        getAAMQ().each { MQ << it.label.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase() }       
-        duplicates = MQ.findAll{MQ.count(it)>1}.unique()
-        if (duplicates.size()){ 
-            result += "<b>**NOTICE: </b>The following duplicate(s) are only listed once below in LIST_OF_MQ:<br><br>"
-            duplicates.each{result +="* " + it +" *<br><br>"}
-            result += "Be sure to have unique names for each message queue and only use each name once within the parent app.**<br><br>" 	
-        }
-    }
-    MQ.unique().each {result += it + "<br>" }
-    result += "<br><b>LIST_OF_MQCMD</b><br><br>"
-    msgVoc().each{result +=it + "<br>" }
-    result +="<br><b>LIST_OF_WCP</b><br><br>This is an advanced feature. If you use WebCoRE pistons, add your extra parameters to this slot. Otherwise, just add the word 'none' to this slot"
-	result += "<br><hr><br><i><b>URL of this setup page:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}<br><br><hr>"
-	result += "<br><i><b>Lastest version of the Lambda code:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Node.js'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Node.js</a><br><br><hr>"
-    result += "<br><i><b>Lastest version of the Sample Utterances:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Sample%20Utterances'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Sample%20Utterances</a><br><br><hr>"
-    result += "<br><i><b>Lastest version of the Intent Schema:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Intent%20Schema'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Intent%20Schema</a><br><br><hr></div>"
-    displayData(result)
+	if (!MACROS.size()) MACROS<<"none"
+    return MACROS
 }
-def fillTypeList(){
-	return ["reports","report","switches","switch","dimmers","dimmer","colored lights","color","colors","speakers","speaker","water sensor","water sensors","water","lock","locks","thermostats","thermostat",
-    	"temperature sensors","modes","routines","smart home monitor","SHM","security","temperature","door","doors", "humidity", "humidity sensor", "humidity sensors","presence", "presence sensors", "motion", 
-        "motion sensor", "motion sensors", "door sensor", "door sensors", "window sensor", "window sensors", "open close sensors","colored light", "events","macro", "macros", "group", "groups", "voice reports", 
-        "voice report","control macro", "control macros","control", "controls","extension group","extension groups","core","core trigger","core macro","core macros","core triggers","sensor", "sensors","shades", 
-        "window shades","shade", "window shade","acceleration", "acceleration sensor", "acceleration sensors", "alias","aliases","temperature light","temperature lights","kelvin light","kelvin lights","message queue",
-        "queue","message queues","queues","weather", "weather report", "weather reports","schedule","schedules","webcore","webcore trigger", "webcore macro","webcore macros","webcore triggers","pollution","air quality",
-        "room", "rooms","uv","uv index"]
+def fillSHCMDList(){
+	def SHCMD =["routine","mode","smart home monitor"]
+    if (listSHM) SHCMD<<"security"<<"smart home"<<"SHM"
+	return SHCMD
 }
 def getURLs(){
 	def mName = params.mName, qName = params.qName, url, result
@@ -3493,16 +3585,16 @@ private textVersion() {
     if (getRM().size()) aaRMVer="\n"+getRM()[0].textVersion()
     return "${version}${lambdaVersion}${aaMQVer}${aaRMVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
 }
-private versionInt(){ return 235 }
+private versionInt(){ return 236 }
 private LambdaReq() { return 130 }
 private mqReq() { return 107 }
 private wrReq()  { return 106 }
 private vrReq()  { return 107 }
 private schReq()  { return 103 }
 private rmReq() { return 102 }
-private versionLong(){ return "2.3.5a" }
-private versionDate(){ return "12/14/2017" }
-private textCopyright() {return "Copyright © 2017 Michael Struck" }
+private versionLong(){ return "2.3.6" }
+private versionDate(){ return "01/05/2018" }
+private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
 		"    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software distributed under the License is distributed on an 'AS IS' BASIS, "+
