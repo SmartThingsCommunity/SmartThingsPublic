@@ -28,12 +28,19 @@ metadata {
 	simulator {
 		status "active": "command: 3003, payload: FF"
 		status "inactive": "command: 3003, payload: 00"
+		status "motion":      "command: 7105, payload: 00 00 00 FF 07 08 00 00"
+		status "no motion":   "command: 7105, payload: 00 00 00 FF 07 00 01 08 00"
+		status "smoke":       "command: 7105, payload: 00 00 00 FF 01 02 00 00"
+		status "smoke clear": "command: 7105, payload: 00 00 00 FF 01 00 01 01 00"
+		status "dry notification": "command: 7105, payload: 00 00 00 FF 05 FE 00 00"
+		status "wet notification": "command: 7105, payload: 00 FF 00 FF 05 02 00 00"
+		status "wake up": "command: 8407, payload: "
 	}
 
 	tiles {
 		standardTile("sensor", "device.sensor", width: 2, height: 2) {
-			state("inactive", label:'inactive', icon:"st.unknown.zwave.sensor", backgroundColor:"#ffffff")
-			state("active", label:'active', icon:"st.unknown.zwave.sensor", backgroundColor:"#53a7c0")
+			state("inactive", label:'inactive', icon:"st.unknown.zwave.sensor", backgroundColor:"#cccccc")
+			state("active", label:'active', icon:"st.unknown.zwave.sensor", backgroundColor:"#00A0DC")
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -44,24 +51,25 @@ metadata {
 	}
 }
 
+private getCommandClassVersions() {
+	[0x20: 1, 0x30: 1, 0x31: 5, 0x32: 3, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1]
+}
+
 def parse(String description) {
 	def result = []
 	if (description.startsWith("Err")) {
 	    result = createEvent(descriptionText:description, displayed:true)
 	} else {
-		def cmd = zwave.parse(description, [0x20: 1, 0x30: 1, 0x31: 5, 0x32: 3, 0x80: 1, 0x84: 1, 0x71: 1, 0x9C: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
 	}
+	log.debug "Parsed '$description' to $result"
 	return result
 }
 
-def updated() {
-	response(zwave.wakeUpV1.wakeUpNoMoreInformation())
-}
-
-def sensorValueEvent(Short value) {
+def sensorValueEvent(value) {
 	if (value == 0) {
 		createEvent([ name: "sensor", value: "inactive" ])
 	} else if (value == 255) {
@@ -115,7 +123,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			map.unit = "lux"
 			break;
 		case 4:
-			// power
 			map.name = "power"
 			map.unit = cmd.scale == 1 ? "Btu/h" : "W"
 			break;
@@ -179,6 +186,105 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	createEvent(map)
 }
 
+def notificationEvent(String description, String value = "active") {
+	createEvent([ name: "sensor", value: value, descriptionText: description, isStateChange: true ])
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd)
+{
+	def result = []
+	if (cmd.notificationType == 0x01) {  // Smoke Alarm
+		log.debug "Changing device type to Z-Wave Smoke Alarm"
+		setDeviceType("Z-Wave Smoke Alarm")
+		switch (cmd.event) {
+			case 0x00:
+			case 0xFE:
+				result << notificationEvent("Smoke is clear", "inactive")
+				result << createEvent(name: "smoke", value: "clear")
+				break
+			case 0x01:
+			case 0x02:
+				result << notificationEvent("Smoke detected")
+				result << createEvent(name: "smoke", value: "detected")
+				break
+			case 0x03:
+				result << notificationEvent("Smoke alarm tested")
+				result << createEvent(name: "smoke", value: "tested")
+				break
+		}
+	} else if (cmd.notificationType == 0x05) {  // Water Alarm
+		switch (cmd.event) {
+		case 0x00:
+		case 0xFE:
+			result << notificationEvent("Water alarm cleared", "inactive")
+			result << createEvent(name: "water", value: "dry")
+			break
+		case 0x01:
+		case 0x02:
+			log.debug "Changing device type to Z-Wave Water Sensor"
+			setDeviceType("Z-Wave Water Sensor")
+			result << notificationEvent("Water leak detected")
+			result << createEvent(name: "water", value: "wet")
+			break
+		case 0x03:
+		case 0x04:
+			result << notificationEvent("Water level dropped")
+			break
+		case 0x05:
+			result << notificationEvent("Replace water filter")
+			break
+		case 0x06:
+			def level = ["alarm", "alarm", "below low threshold", "above high threshold", "max"][cmd.eventParameter[0]]
+			result << notificationEvent("Water flow $level")
+			break
+		case 0x07:
+			def level = ["alarm", "alarm", "below low threshold", "above high threshold", "max"][cmd.eventParameter[0]]
+			result << notificationEvent("Water pressure $level")
+			break
+		}
+	} else if (cmd.notificationType == 0x06) {  // Access Control
+		switch (cmd.event) {
+			case 0x00:
+				if (cmd.eventParametersLength && cmd.eventParameter.size() && eventParameter[0] != 0x16) {
+					result << notificationEvent("Access control event cleared", "inactive")
+				} else {
+					result << notificationEvent("$device.displayName is closed", "inactive")
+				}
+			case 0x16:
+				setDeviceType("Z-Wave Door/Window Sensor")
+				result << notificationEvent("$device.displayName is open")
+				result << createEvent(name: "contact", value: "open")
+				break
+			case 0x17:
+				setDeviceType("Z-Wave Door/Window Sensor")
+				result << notificationEvent("$device.displayName is closed")
+				result << createEvent(name: "contact", value: "closed")
+				break
+		}
+	} else if (cmd.notificationType == 0x07) {  // Home Security
+		if (cmd.event == 0x00) {
+			result << sensorValueEvent(0)
+		} else if (cmd.event == 0x01 || cmd.event == 0x02) {
+			result << sensorValueEvent(1)
+		} else if (cmd.event == 0x03) {
+			result << notificationEvent("$device.displayName covering was removed")
+		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
+			result << notificationEvent("$device.displayName detected glass breakage")
+		} else if (cmd.event == 0x07 || cmd.event == 0x08) {
+			setDeviceType("Z-Wave Motion Sensor")
+			result << notificationEvent("Motion detected")
+			result << createEvent(name: "motion", value: "active", descriptionText:"$device.displayName detected motion")
+		}
+	} else if (cmd.notificationType) {
+		def text = "Notification $cmd.notificationType: event ${([cmd.event] + cmd.eventParameter).join(", ")}"
+		result << createEvent(name: "notification$cmd.notificationType", value: "$cmd.event", descriptionText: text, displayed: false)
+	} else {
+		def value = cmd.v1AlarmLevel == 255 ? "active" : cmd.v1AlarmLevel ?: "inactive"
+		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, displayed: false)
+	}
+	result
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = []
@@ -198,11 +304,18 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	createEvent(map)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	if (encapsulatedCommand) {
+		state.sec = 1
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 {
-	def versions = [0x20: 1, 0x30: 1, 0x31: 5, 0x32: 3, 0x80: 1, 0x84: 1, 0x71: 1, 0x9C: 1]
-	// def encapsulatedCommand = cmd.encapsulatedCommand(versions)
-	def version = versions[cmd.commandClass as Integer]
+	// def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	def version = commandClassVersions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
 	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
 	if (encapsulatedCommand) {
@@ -210,14 +323,30 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	def result = null
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		result = zwaveEvent(encapsulatedCommand)
+	}
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
+	log.debug "MultiCmd with $numberOfCommands inner commands"
+	cmd.encapsulatedCommands(commandClassVersions).collect { encapsulatedCommand ->
+		zwaveEvent(encapsulatedCommand)
+	}.flatten()
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	def event = [ displayed: false ]
-	event.linkText = device.label ?: device.name
-	event.descriptionText = "$event.linkText: $cmd"
-	createEvent(event)
+	createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
 }
 
 
 def configure() {
-	zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+		zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	}
 }

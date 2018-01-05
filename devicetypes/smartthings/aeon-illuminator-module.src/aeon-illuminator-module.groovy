@@ -18,7 +18,6 @@ metadata {
 		capability "Actuator"
 		capability "Switch"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 
@@ -47,9 +46,9 @@ metadata {
 
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#79b821"
+			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#00A0DC"
 			state "turningOff", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ffffff"
 		}
 		controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 1, inactiveLabel: false) {
@@ -165,10 +164,6 @@ def setLevel(value) {
 def setLevel(value, duration) {
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
 	zwave.switchMultilevelV2.switchMultilevelSet(value: value, dimmingDuration: dimmingDuration).format()
-}
-
-def poll() {
-	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
 def refresh() {

@@ -17,23 +17,34 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
+
+		fingerprint mfr: "011F", prod: "0001", model: "0001", deviceJoinName: "Schlage Motion Sensor"  // Schlage motion
+		fingerprint mfr: "014A", prod: "0001", model: "0001", deviceJoinName: "Ecolink Motion Sensor"  // Ecolink motion
+		fingerprint mfr: "014A", prod: "0004", model: "0001", deviceJoinName: "Ecolink Motion Sensor"  // Ecolink motion +
+		fingerprint mfr: "0060", prod: "0001", model: "0002", deviceJoinName: "Everspring Motion Sensor"  // Everspring SP814
+		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor"  // Everspring HSP02
+		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor"  // Enerwave ZWN-BPC
+		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Portable Smart Motion Sensor"
 	}
 
 	simulator {
 		status "inactive": "command: 3003, payload: 00"
 		status "active": "command: 3003, payload: FF"
 	}
-	
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
+
+	tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
+				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("battery", label:'${currentValue}% battery', unit:"")
 		}
 
@@ -42,12 +53,26 @@ metadata {
 	}
 }
 
+def installed() {
+// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
+// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+private getCommandClassVersions() {
+	[0x20: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1]
+}
+
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
 	    result = createEvent(descriptionText:description)
 	} else {
-		def cmd = zwave.parse(description, [0x20: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		} else {
@@ -57,7 +82,7 @@ def parse(String description) {
 	return result
 }
 
-def sensorValueEvent(Short value) {
+def sensorValueEvent(value) {
 	if (value) {
 		createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
 	} else {
@@ -94,24 +119,24 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 {
 	def result = []
 	if (cmd.notificationType == 0x07) {
-		if (cmd.event == 0x01 || cmd.event == 0x02) {
+		if (cmd.v1AlarmType == 0x07) {  // special case for nonstandard messages from Monoprice ensors
+			result << sensorValueEvent(cmd.v1AlarmLevel)
+		} else if (cmd.event == 0x01 || cmd.event == 0x02 || cmd.event == 0x07 || cmd.event == 0x08) {
 			result << sensorValueEvent(1)
+		} else if (cmd.event == 0x00) {
+			result << sensorValueEvent(0)
 		} else if (cmd.event == 0x03) {
-			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
-			result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId))
-			if(!state.MSR) result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName covering was removed", isStateChange: true)
+			result << response(zwave.batteryV1.batteryGet())
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
-		} else if (cmd.event == 0x07) {
-			if(!state.MSR) result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
-			result << sensorValueEvent(1)
 		}
 	} else if (cmd.notificationType) {
 		def text = "Notification $cmd.notificationType: event ${([cmd.event] + cmd.eventParameter).join(", ")}"
-		result << createEvent(name: "notification$cmd.notificationType", value: "$cmd.event", descriptionText: text, displayed: false)
+		result << createEvent(name: "notification$cmd.notificationType", value: "$cmd.event", descriptionText: text, isStateChange: true, displayed: false)
 	} else {
 		def value = cmd.v1AlarmLevel == 255 ? "active" : cmd.v1AlarmLevel ?: "inactive"
-		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, displayed: false)
+		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, isStateChange: true, displayed: false)
 	}
 	result
 }
@@ -119,11 +144,15 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
+
+	if (state.MSR == "011A-0601-0901" && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
+		result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
+	}
 	if (!state.lastbat || (new Date().time) - state.lastbat > 53*60*60*1000) {
 		result << response(zwave.batteryV1.batteryGet())
-		result << response("delay 1200")
+	} else {
+		result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
-	result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	result
 }
 
@@ -164,6 +193,43 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			break;
 	}
 	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	// log.debug "encapsulated: $encapsulatedCommand"
+	if (encapsulatedCommand) {
+		state.sec = 1
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
+{
+	// def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	def version = commandClassVersions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		return zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	def result = null
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		result = zwaveEvent(encapsulatedCommand)
+	}
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
+	log.debug "MultiCmd with $numberOfCommands inner commands"
+	cmd.encapsulatedCommands(commandClassVersions).collect { encapsulatedCommand ->
+		zwaveEvent(encapsulatedCommand)
+	}.flatten()
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {

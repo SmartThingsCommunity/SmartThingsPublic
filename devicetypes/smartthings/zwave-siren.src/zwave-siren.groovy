@@ -16,7 +16,7 @@
  *  Date: 2014-07-15
  */
 metadata {
-	definition (name: "Z-Wave Siren", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 		capability "Actuator"
         capability "Alarm"
         capability "Battery"
@@ -72,7 +72,7 @@ def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 def poll() {
 	if (secondsPast(state.lastbatt, 36*60*60)) {
-		return zwave.batteryV1.batteryGet().format
+		return zwave.batteryV1.batteryGet().format()
 	} else {
 		return null
 	}

@@ -13,38 +13,46 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
+
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+
+
 metadata {
 	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE") {
-    	capability "Battery"
+		capability "Battery"
 		capability "Configuration"
-        capability "Contact Sensor"
+		capability "Contact Sensor"
 		capability "Refresh"
-        
-        command "enrollResponse"
- 
- 
+		capability "Health Check"
+		capability "Sensor"
+
+		command "enrollResponse"
+
+
+		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3010", deviceJoinName: "NYCE Door Hinge Sensor"
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
-        fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
-        fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
-        fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
+		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
+		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
+		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
 	}
- 
+
 	simulator {
- 
+
 	}
- 
-	tiles {
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			}
 		}
 
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
@@ -218,40 +226,33 @@ private Map parseReportAttributeMessage(String description) {
 }
 
 private List parseIasMessage(String description) {
-	List parsedMsg = description.split(" ")
-	String msgCode = parsedMsg[2]
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	log.debug "parseIasMessage: $description"
 
 	List resultListMap = []
 	Map resultMap_battery = [:]
 	Map resultMap_battery_state = [:]
 	Map resultMap_sensor = [:]
 
-	// Relevant bit field definitions from ZigBee spec
-	def BATTERY_BIT = ( 1 << 3 )
-	def TROUBLE_BIT = ( 1 << 6 )
-	def SENSOR_BIT = ( 1 << 0 )		// it's ALARM1 bit from the ZCL spec
-
-	// Convert hex string to integer
-	def zoneStatus = Integer.parseInt(msgCode[-4..-1],16)
-
-	log.debug "parseIasMessage: zoneStatus: ${zoneStatus}"
+	resultMap_sensor.name = "contact"
+	resultMap_sensor.value = zs.isAlarm1Set() ? "open" : "closed"
 
 	// Check each relevant bit, create map for it, and add to list
-	log.debug "parseIasMessage: Battery Status ${zoneStatus & BATTERY_BIT}"
-	log.debug "parseIasMessage: Trouble Status ${zoneStatus & TROUBLE_BIT}"
-	log.debug "parseIasMessage: Sensor Status ${zoneStatus & SENSOR_BIT}"
+	log.debug "parseIasMessage: Battery Status ${zs.battery}"
+	log.debug "parseIasMessage: Trouble Status ${zs.trouble}"
+	log.debug "parseIasMessage: Sensor Status ${zs.alarm1}"
 
 	/* 	Comment out this path to check the battery state to avoid overwriting the
 		battery value (Change log #2), but keep these conditions for later use
 	 resultMap_battery_state.name = "battery_state"
-	 if (zoneStatus & TROUBLE_BIT) {
+	 if (zs.isTroubleSet()) {
 		 resultMap_battery_state.value = "failed"
 
 		 resultMap_battery.name = "battery"
 		 resultMap_battery.value = 0
 	 }
 	 else {
-		 if (zoneStatus & BATTERY_BIT) {
+		 if (zs.isBatterySet()) {
 			 resultMap_battery_state.value = "low"
 
 			 // to generate low battery notification by the platform
@@ -269,9 +270,6 @@ private List parseIasMessage(String description) {
 	 }
 	*/
 
-	resultMap_sensor.name = "contact"
-	resultMap_sensor.value = (zoneStatus & SENSOR_BIT) ? "open" : "closed"
-
 	resultListMap << resultMap_battery_state
 	resultListMap << resultMap_battery
 	resultListMap << resultMap_sensor
@@ -279,23 +277,28 @@ private List parseIasMessage(String description) {
 	return resultListMap
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+}
+
 def configure() {
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 
-	def configCmds = [
-			//battery reporting and heartbeat
-			"zdo bind 0x${device.deviceNetworkId} 1 ${endpointId} 1 {${device.zigbeeId}} {}", "delay 200",
-			"zcl global send-me-a-report 1 0x20 0x20 600 3600 {01}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 1500",
-
-
+	def enrollCmds = [
 			// Writes CIE attribute on end device to direct reports to the hub's EUID
 			"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 			"send 0x${device.deviceNetworkId} 1 1", "delay 500",
 	]
 
 	log.debug "configure: Write IAS CIE"
-	return configCmds
+	// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	return enrollCmds + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
@@ -340,7 +343,8 @@ Integer convertHexToInt(hex) {
 
 def refresh() {
 	log.debug "Refreshing Battery"
-	[
+	def refreshCmds = [
 			"st rattr 0x${device.deviceNetworkId} ${endpointId} 1 0x20", "delay 200"
 	]
+	return refreshCmds + enrollResponse()
 }

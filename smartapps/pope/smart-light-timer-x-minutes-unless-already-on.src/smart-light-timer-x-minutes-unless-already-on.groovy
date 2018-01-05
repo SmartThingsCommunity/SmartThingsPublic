@@ -7,7 +7,7 @@
  *  If the switch is already on, if won't be affected by the timer  (Must be turned of manually)
  *  If the switch is toggled while in timeout-mode, it will remain on and ignore the timer (Must be turned of manually)
  *
- *  The timeout perid begins when the contact is closed, or motion stops, so leaving a door open won't start the timer until it's closed.
+ *  The timeout period begins when the contact is closed, or motion stops, so leaving a door open won't start the timer until it's closed.
  *
  *  Author: andersheie@gmail.com
  *  Date: 2014-08-31
@@ -37,31 +37,29 @@ preferences {
 	}
 }
 
+def installed() {
+	initialize()
+}
 
-def installed()
-{
+def updated() {
+	unsubscribe()
+	initialize()
+
+	log.debug "state: " + state.myState
+}
+
+def initialize() {
 	subscribe(switches, "switch", switchChange)
 	subscribe(motions, "motion", motionHandler)
 	subscribe(contacts, "contact", contactHandler)
-	schedule("0 * * * * ?", "scheduleCheck")
-    state.myState = "ready"
-}
 
-
-def updated()
-{
-	unsubscribe()
-	subscribe(motions, "motion", motionHandler)
-    subscribe(switches, "switch", switchChange)
-	subscribe(contacts, "contact", contactHandler)
-
-    state.myState = "ready"
-    log.debug "state: " + state.myState
+	runEvery1Minute("scheduleCheck")
+	state.myState = "ready"
 }
 
 def switchChange(evt) {
 	log.debug "SwitchChange: $evt.name: $evt.value"
-    
+
     if(evt.value == "on") {
         // Slight change of Race condition between motion or contact turning the switch on,
         // versus user turning the switch on. Since we can't pass event parameters :-(, we rely
@@ -84,7 +82,7 @@ def switchChange(evt) {
 
 def contactHandler(evt) {
 	log.debug "contactHandler: $evt.name: $evt.value"
-    
+
     if (evt.value == "open") {
         if(state.myState == "ready") {
             log.debug "Turning on lights by contact opening"
@@ -124,7 +122,7 @@ def setActiveAndSchedule() {
     unschedule()
  	state.myState = "active"
     state.inactiveAt = now()
-	schedule("0 * * * * ?", "scheduleCheck")
+	runEvery1Minute("scheduleCheck")
 }
 
 def scheduleCheck() {

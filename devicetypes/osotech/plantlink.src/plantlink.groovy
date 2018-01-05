@@ -24,6 +24,7 @@ import groovy.json.JsonBuilder
 metadata {
     definition (name: "PlantLink", namespace: "OsoTech", author: "Oso Technologies") {
         capability "Sensor"
+        capability "Health Check"
 
         command "setStatusIcon"
         command "setPlantFuelLevel"
@@ -68,6 +69,16 @@ metadata {
         main "plantStatusTextTile"
         details(['plantStatusTextTile', "plantMoistureTile", "battery", "installSmartApp"])
     }
+}
+
+def updated() {
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
+
+def installed() {
+    // Device-Watch allows 2 check-in misses from device
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def setStatusIcon(value){
@@ -120,7 +131,7 @@ def setInstallSmartApp(value){
 }
 
 def parse(String description) {
-
+	log.debug description
 	def description_map = parseDescriptionAsMap(description)
     def event_name = ""
     def measurement_map = [
@@ -129,10 +140,7 @@ def parse(String description) {
             zigbeedeviceid: device.zigbeeId,
             created: new Date().time /1000 as int
     ]
-    if (description_map.cluster == "0000"){
-    	/* version number, not used */
-        
-    } else if (description_map.cluster == "0001"){
+    if (description_map.cluster == "0001"){
         /* battery voltage in mV (device needs minimium 2.1v to run) */
         log.debug "PlantLink - id ${device.zigbeeId} battery ${description_map.value}"
         event_name = "battery_status"
@@ -158,6 +166,10 @@ def parse(String description) {
 def parseDescriptionAsMap(description) {
     (description - "read attr - ").split(",").inject([:]) { map, param ->
         def nameAndValue = param.split(":")
-        map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
+        if(nameAndValue.length == 2){
+	        map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
+        }else{
+        	map += []
+        }
     }
 }

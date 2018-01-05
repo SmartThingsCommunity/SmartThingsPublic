@@ -13,13 +13,15 @@
  */
 
 metadata {
-    definition (name: "ZigBee Switch Power", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Switch Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
         capability "Power Meter"
         capability "Sensor"
         capability "Switch"
+        capability "Health Check"
+        capability "Light"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702"
@@ -30,16 +32,16 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute ("power", key: "SECONDARY_CONTROL") {
                 attributeState "power", label:'${currentValue} W'
             }
         }
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main "switch"
@@ -50,22 +52,15 @@ metadata {
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
-
-    def resultMap = zigbee.getKnownDescription(description)
-    if (resultMap) {
-        log.info resultMap
-        if (resultMap.type == "update") {
-            log.info "$device updates: ${resultMap.value}"
-        }
-        else if (resultMap.type == "power") {
+    def event = zigbee.getEvent(description)
+    if (event) {
+        if (event.name == "power") {
             def powerValue
-            if (device.getDataValue("manufacturer") != "OSRAM") {       //OSRAM devices do not reliably update power
-                powerValue = (resultMap.value as Integer)/10            //TODO: The divisor value needs to be set as part of configuration
-                sendEvent(name: "power", value: powerValue)
-            }
+            powerValue = (event.value as Integer)/10            //TODO: The divisor value needs to be set as part of configuration
+            sendEvent(name: "power", value: powerValue)
         }
         else {
-            sendEvent(name: resultMap.type, value: resultMap.value)
+            sendEvent(event)
         }
     }
     else {
@@ -83,10 +78,28 @@ def on() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
+    Integer reportIntervalMinutes = 5
+    zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig(0,reportIntervalMinutes * 60) + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
 }
 
 def configure() {
-    log.debug "Configuring Reporting and Bindings."
-    zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() + zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
+    log.debug "in configure()"
+    return configureHealthCheck()
+}
+
+def configureHealthCheck() {
+    Integer hcIntervalMinutes = 12
+    sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    return refresh()
+}
+
+def updated() {
+    log.debug "in updated()"
+    // updated() doesn't have it's return value processed as hub commands, so we have to send them explicitly
+    def cmds = configureHealthCheck()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it)) }
+}
+
+def ping() {
+    return zigbee.onOffRefresh()
 }

@@ -18,12 +18,14 @@ metadata {
 		capability "Actuator"
 		capability "Door Control"
 		capability "Garage Door Control"
+		capability "Health Check"
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Sensor"
 
 		fingerprint deviceId: "0x4007", inClusters: "0x98"
 		fingerprint deviceId: "0x4006", inClusters: "0x98"
+		fingerprint mfr:"014F", prod:"4744", model:"3030", deviceJoinName: "Linear GoControl Garage Door Opener"
 	}
 
 	simulator {
@@ -39,11 +41,11 @@ metadata {
 
 	tiles {
 		standardTile("toggle", "device.door", width: 2, height: 2) {
-			state("unknown", label:'${name}', action:"refresh.refresh", icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', action:"door control.open", icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821", nextState:"opening")
-			state("open", label:'${name}', action:"door control.close", icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e", nextState:"closing")
-			state("opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#ffe71e")
-			state("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#ffe71e")
+			state("unknown", label:'${name}', action:"refresh.refresh", icon:"st.doors.garage.garage-open", backgroundColor:"#ffffff")
+			state("closed", label:'${name}', action:"door control.open", icon:"st.doors.garage.garage-closed", backgroundColor:"#00a0dc", nextState:"opening")
+			state("open", label:'${name}', action:"door control.close", icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing")
+			state("opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#e86d13")
+			state("closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#00a0dc")
 			
 		}
 		standardTile("open", "device.door", inactiveLabel: false, decoration: "flat") {
@@ -62,6 +64,16 @@ metadata {
 }
 
 import physicalgraph.zwave.commands.barrieroperatorv1.*
+
+def installed(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+def updated(){
+// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
 
 def parse(String description) {
 	def result = null
@@ -285,6 +297,13 @@ def open() {
 
 def close() {
 	secure(zwave.barrierOperatorV1.barrierOperatorSet(requestedBarrierState: BarrierOperatorSet.REQUESTED_BARRIER_STATE_CLOSE))
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {
