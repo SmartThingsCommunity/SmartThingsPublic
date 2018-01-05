@@ -406,7 +406,7 @@ def configure() {
 	// we do this here in case the device is in wakeup mode
 	def checkInterval = 2 * 60 * 60 + 2 * 60
 	if (reportInterval) {
-		checkInterval = 2*(timeOptionValueMap[reportInterval]/60) + (2 * 60)
+		checkInterval = 2*timeOptionValueMap[reportInterval] + (2 * 60)
 	}
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
