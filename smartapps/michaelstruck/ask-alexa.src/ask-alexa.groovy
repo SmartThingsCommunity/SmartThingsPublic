@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.6 - 1/5/18 Copyright © 2017 Michael Struck
+ *  Version 2.3.6a - 1/5/18 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.5 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.3.5a (12/14/17) Added output of extension groups to message queue, optimized code, added optimized setup features.
- *  Version 2.3.6 (1/5/18) Improved setup process, reducing number of steps to get program operating, changed copyright to 2018, updated WebCoRE macro to send more data to the pisto
+ *  Version 2.3.6a (1/5/18) Improved setup process, reducing number of steps to get program operating, changed copyright to 2018, updated WebCoRE macro to send more data to the pisto
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -3254,8 +3254,9 @@ def devSetup(){
 
 }
 def setupData(){
+	def iName = invocationName? invocationName.toLowerCase() : "smart things"
 	def dupCounter=0, devCodeTxt = "Click <a href='http://ask-alexa.com/cgi-bin/devSite.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${invocationName.toLowerCase()}' target='_blank'>here</a>, copy the JSON code on the page, then paste to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
-	def devDLTxt = "Or, click <a href='http://ask-alexa.com/cgi-bin/devSiteDL.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${invocationName.toLowerCase()}' target='_blank'>here</a> to download a text copy of the JSON code, then load into to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
+	def devDLTxt = "Or, click <a href='http://ask-alexa.com/cgi-bin/devSiteDL.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${iName}' target='_blank'>here</a> to download a text copy of the JSON code, then load into to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
 	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
     def result ="<div style='padding:10px'><i><b>One-step Personalized Code:</b></i><br>"
     result += "<br><b>Lambda Full Code:</b> Click <a href='http://ask-alexa.com/cgi-bin/lambda.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}' target='_blank'>here</a>, copy the code on the page, then paste to <a href='http://aws.amazon.com' target='_blank'>Lambda</a>"
@@ -3592,7 +3593,7 @@ private wrReq()  { return 106 }
 private vrReq()  { return 107 }
 private schReq()  { return 103 }
 private rmReq() { return 102 }
-private versionLong(){ return "2.3.6" }
+private versionLong(){ return "2.3.6a" }
 private versionDate(){ return "01/05/2018" }
 private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
