@@ -37,7 +37,7 @@ metadata {
 
 	// tile definitions
 	tiles(scale: 2){
-		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4){
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState("on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc")
 				attributeState("off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff")

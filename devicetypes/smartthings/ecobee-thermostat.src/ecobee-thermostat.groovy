@@ -124,6 +124,10 @@ metadata {
 		input "holdType", "enum", title: "Hold Type",
 				description: "When changing temperature, use Temporary (Until next transition) or Permanent hold (default)",
 				required: false, options:["Temporary", "Permanent"]
+		input "deadbandSetting", "number", title: "Minimum temperature difference between the desired Heat and Cool " +
+				"temperatures in Auto mode:\nNote! This must be the same as configured on the thermostat",
+				description: "temperature difference °F", defaultValue: 5,
+				required: false
 	}
 
 }
@@ -172,7 +176,7 @@ def generateEvent(Map results) {
 			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint" ) {
 				sendValue =  getTempInLocalScale(value, "F")  // API return temperature values in F
 				event << [value: sendValue, unit: locationScale]
-			}  else if (name=="maxCoolingSetpoint" || name=="minCoolingSetpoint" || name=="maxHeatingSetpoint" || name=="minHeatingSetpoint") {
+			} else if (name=="maxCoolingSetpoint" || name=="minCoolingSetpoint" || name=="maxHeatingSetpoint" || name=="minHeatingSetpoint") {
 				// Old attributes, keeping for backward compatibility
 				sendValue =  getTempInLocalScale(value, "F")  // API return temperature values in F
 				event << [value: sendValue, unit: locationScale, displayed: false]
@@ -465,7 +469,7 @@ def enforceSetpointLimits(setpoint, data, raise = null) {
 	def maxSetpoint = (setpoint == "heatingSetpoint") ? device.getDataValue("maxHeatingSetpointFahrenheit") : device.getDataValue("maxCoolingSetpointFahrenheit")
 	minSetpoint = minSetpoint ? Double.parseDouble(minSetpoint) : ((setpoint == "heatingSetpoint") ? 45 : 65)  // default 45 heat, 65 cool
 	maxSetpoint = maxSetpoint ? Double.parseDouble(maxSetpoint) : ((setpoint == "heatingSetpoint") ? 79 : 92)  // default 79 heat, 92 cool
-	def deadband = 5 // °F
+	def deadband = deadbandSetting ? deadbandSetting : 5 // °F
 	def delta = (locationScale == "F") ? 1 : 0.5
 	def targetValue = getTempInDeviceScale(data.targetValue, locationScale)
 	def heatingSetpoint = getTempInDeviceScale(data.heatingSetpoint, locationScale)
@@ -475,8 +479,8 @@ def enforceSetpointLimits(setpoint, data, raise = null) {
 		targetValue = maxSetpoint
 	} else if (targetValue < minSetpoint) {
 		targetValue = minSetpoint
-	} else if ((setpoint == "heatingSetpoint" && targetValue == heatingSetpoint) ||
-				(setpoint == "coolingSetpoint" && targetValue == coolingSetpoint)){
+	} else if ((raise != null) && ((setpoint == "heatingSetpoint" && targetValue == heatingSetpoint) ||
+				(setpoint == "coolingSetpoint" && targetValue == coolingSetpoint))) {
 		// Ensure targetValue differes from old. When location scale differs from device,
 		// converting between C -> F -> C may otherwise result in no change.
 		targetValue += raise ? delta : - delta
