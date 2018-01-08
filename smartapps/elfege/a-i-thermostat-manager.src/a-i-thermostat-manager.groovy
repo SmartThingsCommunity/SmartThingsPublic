@@ -1311,7 +1311,7 @@ inVirThermModes = $inVirThermModes
 
         log.debug """ Values @ virtual thermostat for $VirThermSwitch_2 are: 
 ---------------------------- 
-CurrTemp_2 = $CurrTemp_2
+CurrTemp_2 = $CurrTemp
 CurrSP 2 = $CurrSP
 Active ? : $Active
 InMotionMode ? : $InMotionMode
@@ -1422,7 +1422,7 @@ inVirThermModes_2 = $inVirThermModes_2
 
         log.debug """ Values @ virtual thermostat for $VirThermSwitch_3 are: 
 ---------------------------- 
-CurrTemp_3 = $CurrTemp_3
+CurrTemp_3 = $CurrTemp
 CurrSP 3 = $CurrSP
 Active ? : $Active
 InMotionMode ? : $InMotionMode
