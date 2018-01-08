@@ -141,16 +141,15 @@ def setWindowShade(value){
 
 //Refresh command
 def refresh() {
+	log.debug "parse() refresh"
     return zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
-    	   zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL) +
-    	   zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 250, 300, 0x01) +
-           zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 250, 300, 0x01)
-    
+    	   zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL)
+    	       
 }
 //configure reporting
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    sendEvent(name: "checkInterval", value: 300, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 3600, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     def cmds = 
     	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 3000, 3600, 0x01) +
         zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 3000, 3600, 0x01)
@@ -176,7 +175,7 @@ private Map parseReportAttributeMessage(String description) {
     Map resultMap = [:]
     if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY) {
         resultMap.name = "battery"
-        def batteryValue = Math.round(Integer.parseInt(descMap.value, 16))
+        def batteryValue = Math.round((Integer.parseInt(descMap.value, 16))/2)
         log.debug "parseDescriptionAsMap() --- Battery: $batteryValue"
         if ((batteryValue >= 0)&&(batteryValue <= 100)){
         	resultMap.value = batteryValue
