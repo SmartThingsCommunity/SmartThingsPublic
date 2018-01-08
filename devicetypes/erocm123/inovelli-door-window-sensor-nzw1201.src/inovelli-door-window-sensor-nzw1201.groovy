@@ -22,7 +22,7 @@ metadata {
         capability "Sensor"
         capability "Battery"
         capability "Configuration"
-        capability "Health Check"
+        //capability "Health Check"
         capability "Temperature Measurement"
         
         attribute "lastActivity", "String"

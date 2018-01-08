@@ -23,7 +23,7 @@ metadata {
         capability "Switch"
         capability "Polling"
         capability "Refresh"
-        capability "Health Check"
+        //capability "Health Check"
         capability "Button"
         
         attribute "lastActivity", "String"

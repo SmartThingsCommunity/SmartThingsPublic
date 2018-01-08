@@ -23,7 +23,7 @@ metadata {
         capability "Polling"
         capability "Actuator"
         capability "Sensor"
-        capability "Health Check"
+        //capability "Health Check"
         capability "Button"
         capability "Indicator"
         
