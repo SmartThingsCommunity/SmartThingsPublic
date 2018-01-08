@@ -1079,24 +1079,24 @@ def VirtualThermostat(){
     def tempcheck2 = null
     def tempcheck3 = null
     if(VirThermSensor){
-        tempcheck1 = VirThermSensor.currentValue("temperature") as double
+        tempcheck1 = VirThermSensor.currentValue("temperature") 
             }
     else {
-        tempcheck1 = VirThermTherm_1?.currentValue("temperature") as double
+        tempcheck1 = VirThermTherm_1?.currentValue("temperature") 
             }
 
     if(VirThermSensor_2){
-        tempcheck2 = VirThermSensor_2.currentValue("temperature") as double
+        tempcheck2 = VirThermSensor_2.currentValue("temperature") 
             }
     else {
-        tempcheck3 = VirThermTherm_2?.currentValue("temperature") as double
+        tempcheck3 = VirThermTherm_2?.currentValue("temperature") 
             }
 
     if(VirThermSensor_3){
-        tempcheck3 = VirThermSensor_3.currentValue("temperature") as double
+        tempcheck3 = VirThermSensor_3.currentValue("temperature") 
             }
     else {
-        tempcheck3 = VirThermTherm_3?.currentValue("temperature") as double
+        tempcheck3 = VirThermTherm_3?.currentValue("temperature") 
             }
     def tempcheckList = [tempcheck1, tempcheck2, tempcheck3]
     def VTSwList = [VirThermSwitch_1, VirThermSwitch_2, VirThermSwitch_3]
@@ -1186,7 +1186,7 @@ def VirtualThermostat(){
                 CurrSP = HSPVir
             }
             else {
-                CurrSP = VirThermTherm_1.currentValue("coolingSetpoint")
+                CurrSP = VirThermTherm_1.currentValue("heatingSetpoint")
             }
         }
 
@@ -1261,55 +1261,62 @@ inVirThermModes = $inVirThermModes
             log.debug "$VirThermSwitch_1 [heat] turned off because location is not in $VirThermModes"
         }
     }
+    // for cases when it remained on while mode changed
+    if(!InMotionMode && !Critical){
+        VirThermSwitch_1?.off()
+        log.debug "$VirThermSwitch_1 turned off due to recent mode change"
+    }
 
-    Critical = tempcheckList[1] < CriticalTemp //avoid repeated on/off's if already managed by critical
-    if(AddMoreVirT_B && ContactsAreClosed && !Critical){
 
-        if(!OtherSetP_2){
-            // this option is not compatible with motion because motion sensor 
-            // is designated by the thermostat used as SP source. 
-            def ActiveT = ActiveTest(VirThermTherm_2)
-            InMotionMode = ActiveT[1]
-            Active = ActiveT[0]
-        }
-        else {
-            Active = true
-        }
-        log.trace "$VirThermSwitch_2 Active? : $Active && ActiveT = $ActiveT"
-        def no = ""
-        if(!Active){no = "no"}else{no = ""}
-        log.debug "There's $no motion near $VirThermSwitch_2 --"
+    if(AddMoreVirT_B){
+        Critical = tempcheckList[1] < CriticalTemp //avoid repeated on/off's if already managed by critical
+        if(ContactsAreClosed && !Critical){
 
-        def CurrSP = null
-        log.debug "OtherSetP_2 = $OtherSetP_2"
-        if(coolOrHeat_2 == "cooling"){
-            if(OtherSetP_2){
-                CurrSP = CSPVir_2
+            if(!OtherSetP_2){
+                // this option is not compatible with motion because motion sensor 
+                // is designated by the thermostat used as SP source. 
+                def ActiveT = ActiveTest(VirThermTherm_2)
+                InMotionMode = ActiveT[1]
+                Active = ActiveT[0]
             }
             else {
-                CurrSP = VirThermTherm_2.currentValue("coolingSetpoint")
+                Active = true
             }
-        }
-        else {
-            // heating
-            if(OtherSetP_2){
-                CurrSP = HSPVir_2
+            log.trace "$VirThermSwitch_2 Active? : $Active && ActiveT = $ActiveT"
+            def no = ""
+            if(!Active){no = "no"}else{no = ""}
+            log.debug "There's $no motion near $VirThermSwitch_2 --"
+
+            def CurrSP = null
+            log.debug "OtherSetP_2 = $OtherSetP_2"
+            if(coolOrHeat_2 == "cooling"){
+                if(OtherSetP_2){
+                    CurrSP = CSPVir_2
+                }
+                else {
+                    CurrSP = VirThermTherm_2.currentValue("coolingSetpoint")
+                }
             }
             else {
-                CurrSP = VirThermTherm_2.currentValue("coolingSetpoint")
+                // heating
+                if(OtherSetP_2){
+                    CurrSP = HSPVir_2
+                }
+                else {
+                    CurrSP = VirThermTherm_2.currentValue("heatingSetpoint")
+                }
             }
-        }
 
-        def CurrTemp = tempcheckList[1]
-        def SwitchState_2 = VirThermSwitch_2?.currentSwitch
+            def CurrTemp = tempcheckList[1]
+            def SwitchState_2 = VirThermSwitch_2?.currentSwitch
 
-        def inVirThermModes_2 = false 
-        if(VirThermModes_2){
-            inVirThermModes_2 = location.currentMode in VirThermModes_2
-            log.debug " inVirThermModes set to $inVirThermModes_2"
-        }
+            def inVirThermModes_2 = false 
+            if(VirThermModes_2){
+                inVirThermModes_2 = location.currentMode in VirThermModes_2
+                log.debug " inVirThermModes set to $inVirThermModes_2"
+            }
 
-        log.debug """ Values @ virtual thermostat for $VirThermSwitch_2 are: 
+            log.debug """ Values @ virtual thermostat for $VirThermSwitch_2 are: 
 ---------------------------- 
 CurrTemp_2 = $CurrTemp
 CurrSP 2 = $CurrSP
@@ -1320,110 +1327,118 @@ Switch State = $SwitchState_2
 inVirThermModes_2 = $inVirThermModes_2
 ----------------------------    
 """
-        if(Active || !InMotionMode){
-            if(coolOrHeat_2 == "cooling"){
-                if(CurrTemp_2 > CurrSP && inVirThermModes_2){
-                    if(SwitchState_2 != "on" ){
-                        VirThermSwitch_2?.on()
-                        log.debug "$VirThermSwitch_2 [cool] turned on"
+            if(Active || !InMotionMode){
+                if(coolOrHeat_2 == "cooling"){
+                    if(CurrTemp > CurrSP && inVirThermModes_2){
+                        if(SwitchState_2 != "on" ){
+                            VirThermSwitch_2?.on()
+                            log.debug "$VirThermSwitch_2 [cool] turned on"
+                        }
+                        else {
+                            log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
+                        }       
                     }
                     else {
-                        log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
-                    }       
-                }
-                else {
-                    if(SwitchState_2 != "off"){
-                        VirThermSwitch_2?.off()
-                        log.debug "$VirThermSwitch_2 [cool] turned off"
-                    }
-                    else {
-                        log.debug "$VirThermSwitch_2 [cool] ALREADY turned OFF"
-                    }
-                }
-            }
-            else {
-                if(CurrTemp_2 < CurrSP && inVirThermModes_2){
-                    if(SwitchState_2 != "on"){
-                        VirThermSwitch_2?.on()
-                        log.debug "$VirThermSwitch_2 [cool] turned on"
-                    }
-                    else {
-                        log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
+                        if(SwitchState_2 != "off"){
+                            VirThermSwitch_2?.off()
+                            log.debug "$VirThermSwitch_2 [cool] turned off"
+                        }
+                        else {
+                            log.debug "$VirThermSwitch_2 [cool] ALREADY turned OFF"
+                        }
                     }
                 }
                 else {
-                    if(SwitchState_2 != "off"){
-                        VirThermSwitch_2?.off()
-                        log.debug "$VirThermSwitch_2 [heat] turned off"
+                    if(CurrTemp < CurrSP && inVirThermModes_2){
+                        if(SwitchState_2 != "on"){
+                            VirThermSwitch_2?.on()
+                            log.debug "$VirThermSwitch_2 [cool] turned on"
+                        }
+                        else {
+                            log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
+                        }
                     }
                     else {
-                        log.debug "$VirThermSwitch_2 [heat] ALREADY turned OFF"
+                        if(SwitchState_2 != "off"){
+                            VirThermSwitch_2?.off()
+                            log.debug "$VirThermSwitch_2 [heat] turned off"
+                        }
+                        else {
+                            log.debug "$VirThermSwitch_2 [heat] ALREADY turned OFF"
+                        }
                     }
                 }
             }
+            else { 
+                log.debug "No motion arround $VirThermSwitch_2"
+            }
+            if(!inVirThermModes_2 && SwitchState_2 != "off"){
+                VirThermSwitch_2?.off()
+                log.debug "$VirThermSwitch_2 [heat] turned off because location is not in $VirThermModes_2"
+            }
         }
-        else { 
-            log.debug "No motion arround $VirThermSwitch_2"
-        }
-        if(!inVirThermModes_2 && SwitchState_2 != "off"){
+        if(!InMotionMode && !Critical){
             VirThermSwitch_2?.off()
-            log.debug "$VirThermSwitch_2 [heat] turned off because location is not in $VirThermModes_2"
+            log.debug "$VirThermSwitch_2 turned off due to recent mode change"
         }
     }
 
-    Critical = tempcheckList[2] < CriticalTemp //avoid repeated on/off's if already managed by critical
-    if(AddMoreVirT_C && ContactsAreClosed && !Critical){
+    if(AddMoreVirT_C){
+        Critical = tempcheckList[2] < CriticalTemp //avoid repeated on/off's if already managed by critical
+        if(ContactsAreClosed && !Critical){
 
-        if(!OtherSetP_3){
-            // this option is not compatible with motion because motion sensor 
-            // is designated by the thermostat used as SP source. 
-            def ActiveT = ActiveTest(VirThermTherm_3)
-            InMotionMode = ActiveT[1]
-            Active = ActiveT[0]
-        }
-        else {
-            Active = true
-        }
-
-        log.trace "$VirThermSwitch_3 Active? : $Active && ActiveT = $ActiveT"
-
-        def no = ""
-        if(!Active){no = "no"}else{no = ""}
-        log.debug "There's $no motion near $VirThermSwitch_3 --"
-
-        def CurrSP = null
-        log.debug "OtherSetP_3 = $OtherSetP_3"
-        if(coolOrHeat_3 == "cooling"){
-            if(OtherSetP_3){
-                CurrSP = CSPVir_3
+            if(!OtherSetP_3){
+                // this option is not compatible with motion because motion sensor 
+                // is designated by the thermostat used as SP source. 
+                def ActiveT = ActiveTest(VirThermTherm_3)
+                InMotionMode = ActiveT[1]
+                Active = ActiveT[0]
             }
             else {
-                CurrSP = VirThermTherm_3.currentValue("coolingSetpoint")
+                Active = true
             }
-        }
-        else {
-            // heating
-            if(OtherSetP_3){
-                CurrSP = HSPVir_3
+
+            log.trace "$VirThermSwitch_3 Active? : $Active && ActiveT = $ActiveT"
+
+            def no = ""
+            if(!Active){no = "no"}else{no = ""}
+            log.debug "There's $no motion near $VirThermSwitch_3 --"
+
+            def CurrSP = null
+            log.debug "OtherSetP_3 = $OtherSetP_3"
+            if(coolOrHeat_3 == "cooling"){
+                if(OtherSetP_3){
+                    CurrSP = CSPVir_3
+                }
+                else {
+                    CurrSP = VirThermTherm_3.currentValue("coolingSetpoint")
+                }
             }
             else {
-                CurrSP = VirThermTherm_3.currentValue("coolingSetpoint")
+                // heating
+                if(OtherSetP_3){
+                    CurrSP = HSPVir_3
+                }
+                else {
+                    CurrSP = VirThermTherm_3.currentValue("heatingSetpoint")
+                }
             }
-        }
 
-        def CurrTemp = tempcheckList[2]
-        def SwitchState_3 = VirThermSwitch_3?.currentSwitch
+            def CurrTemp = tempcheckList[2]
+            def SwitchState_3 = VirThermSwitch_3?.currentSwitch
 
-        def inVirThermModes_3 = false 
-        if(VirThermModes_3){
-            inVirThermModes_3 = location.currentMode in VirThermModes_3
-            log.debug " inVirThermModes set to $inVirThermModes_3"
-        }
+            def inVirThermModes_3 = false 
+            if(VirThermModes_3){
+                inVirThermModes_3 = location.currentMode in VirThermModes_3
+                log.debug " inVirThermModes set to $inVirThermModes_3"
+            }
 
-        log.debug """ Values @ virtual thermostat for $VirThermSwitch_3 are: 
+            log.debug """ Values @ virtual thermostat for $VirThermSwitch_3 are: 
 ---------------------------- 
 CurrTemp_3 = $CurrTemp
 CurrSP 3 = $CurrSP
+$CurrSP > $CurrTemp ? (${CurrSP > CurrTemp})
+$CurrSP < $CurrTemp ? (${CurrSP > CurrTemp})
 Active ? : $Active
 InMotionMode ? : $InMotionMode
 Mode coolOrHeat = $coolOrHeat_3
@@ -1432,56 +1447,61 @@ inVirThermModes_3 = $inVirThermModes_3
 ----------------------------    
 """
 
-        if(Active || !InMotionMode){
-            if(coolOrHeat_3 == "cooling"){
-                if(CurrTemp_3 > CurrSP && inVirThermModes_3){
-                    if(SwitchState_3 != "on" ){
-                        VirThermSwitch_3?.on()
-                        log.debug "$VirThermSwitch_3 [cool] turned on"
+            if(Active || !InMotionMode){
+                if(coolOrHeat_3 == "cooling"){
+                    if(CurrTemp > CurrSP && inVirThermModes_3){
+                        if(SwitchState_3 != "on" ){
+                            VirThermSwitch_3?.on()
+                            log.debug "$VirThermSwitch_3 [cool] turned on"
+                        }
+                        else {
+                            log.debug "$VirThermSwitch_3 [cool] ALREADY turned on"
+                        }       
                     }
                     else {
-                        log.debug "$VirThermSwitch_3 [cool] ALREADY turned on"
-                    }       
-                }
-                else {
-                    if(SwitchState_3 != "off"){
-                        VirThermSwitch_3?.off()
-                        log.debug "$VirThermSwitch_3 [cool] turned off"
-                    }
-                    else {
-                        log.debug "$VirThermSwitch_3 [cool] ALREADY turned OFF"
+                        if(SwitchState_3 != "off"){
+                            VirThermSwitch_3?.off()
+                            log.debug "$VirThermSwitch_3 [cool] turned off"
+                        }
+                        else {
+                            log.debug "$VirThermSwitch_3 [cool] ALREADY turned OFF"
 
-                    }
-                }
-            }
-            else {
-                if(CurrTemp_3 < CurrSP && inVirThermModes_3){
-                    if(SwitchState_3 != "on"){
-                        VirThermSwitch_3?.on()
-                        log.debug "$VirThermSwitch_3 [heat] turned on"
-                    }
-                    else {
-                        log.debug "$VirThermSwitch_3 [heat] ALREADY turned on"
+                        }
                     }
                 }
                 else {
-                    if(SwitchState_3 != "off"){
-                        VirThermSwitch_3?.off()
-                        log.debug "$VirThermSwitch_3 [heat] turned off"
+                    if(CurrTemp < CurrSP && inVirThermModes_3){
+                        if(SwitchState_3 != "on"){
+                            VirThermSwitch_3?.on()
+                            log.debug "$VirThermSwitch_3 [heat] turned on"
+                        }
+                        else {
+                            log.debug "$VirThermSwitch_3 [heat] ALREADY turned on"
+                        }
                     }
                     else {
-                        log.debug "$VirThermSwitch_3 [heat] ALREADY turned OFF"
+                        if(SwitchState_3 != "off"){
+                            VirThermSwitch_3?.off()
+                            log.debug "$VirThermSwitch_3 [heat] turned off"
+                        }
+                        else {
+                            log.debug "$VirThermSwitch_3 [heat] ALREADY turned OFF"
 
+                        }
                     }
                 }
             }
+            else { 
+                log.debug "No motion arround $VirThermSwitch_3"
+            }
+            if(!inVirThermModes_3 && SwitchState_3 != "off"){
+                VirThermSwitch_3?.off()
+                log.debug "$VirThermSwitch_3 [heat] turned off because location is not in $VirThermModes_3"
+            }
         }
-        else { 
-            log.debug "No motion arround $VirThermSwitch_3"
-        }
-        if(!inVirThermModes_3 && SwitchState_3 != "off"){
+        if(!InMotionMode && !Critical){
             VirThermSwitch_3?.off()
-            log.debug "$VirThermSwitch_3 [heat] turned off because location is not in $VirThermModes_3"
+            log.debug "$VirThermSwitch_3 turned off due to recent mode change"
         }
     }
 
