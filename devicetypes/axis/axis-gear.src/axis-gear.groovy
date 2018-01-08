@@ -17,16 +17,18 @@ metadata {
         fingerprint profileId: "0200", inClusters: "0000, 0001, 0004, 0005, 0006, 0008, 0100, 0102", manufacturer: "AXIS", model: "GR-ZB01-W", deviceJoinName: "AXIS Gear"
         //ClusterIDs: 0000 - Basic; 0004 - Groups; 0005 - Scenes; 0006 - On/Off; 0008 - Level Control; 0100 - Shade Configuration; 0102 - Window Covering;
         //Updated 2017-06-21
-        //Updated 2017-08-24 - added power cluster 0001 - added battery, level, reporting, & health check 
+        //Updated 2017-08-24 - added power cluster 0001 - added battery, level, reporting, & health check
+        //Updated 2018-01-04 - Axis Inversion & Increased Battery Reporting interval to 1 hour (previously 5 mins)
+        //Updated 2018-01-08 - Updated battery conversion from [0-100 : 00 - 64] to [0-100 : 00-C8] to reflect firmware update
     }
    
 	tiles(scale: 2) {
         multiAttributeTile(name:"shade", type: "lighting", width: 3, height: 3) {
             tileAttribute("device.windowShade", key: "PRIMARY_CONTROL") {
-                attributeState("open",  icon:"http://i.imgur.com/4TbsR54.png", backgroundColor:"#ffcc33", nextState: "closed")
-                attributeState("partial",  icon:"http://i.imgur.com/vBA17WL.png", backgroundColor:"#ffcc33", nextState: "closed")
-                attributeState("closed",  icon:"http://i.imgur.com/mtHdMse.png", backgroundColor:"#bbbbdd", nextState: "open")
-             //label:'Open', label: 'Partial', label:'Closed'
+                attributeState("open",  action:"close", icon:"http://i.imgur.com/4TbsR54.png", backgroundColor:"#ffcc33", nextState: "closed")
+                attributeState("partial",  icon:"http://i.imgur.com/vBA17WL.png", backgroundColor:"#ffcc33")
+                attributeState("closed", action:"open",  icon:"http://i.imgur.com/mtHdMse.png", backgroundColor:"#bbbbdd", nextState: "open")
+             
              }
                 tileAttribute ("device.level", key: "VALUE_CONTROL") {
               		attributeState("VALUE_UP", action: "ShadesUp")
@@ -35,12 +37,11 @@ metadata {
    		}
         //Added a "doubled" state to toggle states between positions
         standardTile("main", "device.windowShade"){
-        	state("open", label:'Open', icon:"http://i.imgur.com/St7oRQl.png", backgroundColor:"#ffcc33", nextState: "closed")
-            state("partial", label:'Partial',  icon:"http://i.imgur.com/y0ZpmZp.png", backgroundColor:"#ffcc33", nextState: "closed")
-            state("closed", label:'Closed', icon:"http://i.imgur.com/SAiEADI.png", backgroundColor:"#bbbbdd", nextState: "open")
-            //action:"close",action:"open"
+        	state("open", label:'Open', action:"close", icon:"http://i.imgur.com/St7oRQl.png", backgroundColor:"#ffcc33", nextState: "closed")
+            state("partial", label:'Partial',  icon:"http://i.imgur.com/y0ZpmZp.png", backgroundColor:"#ffcc33")
+            state("closed", label:'Closed',action:"open", icon:"http://i.imgur.com/SAiEADI.png", backgroundColor:"#bbbbdd", nextState: "open")
         }
-	 	controlTile("mediumSlider", "device.level", "slider",decoration:"flat",height: 1, width: 3, inactiveLabel: true) {
+	 	controlTile("mediumSlider", "device.level", "slider",decoration:"flat",height:1, width: 2, inactiveLabel: true) {
             state("level", action:"setLevel")
         }
         
@@ -48,7 +49,7 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
         
-		standardTile("refresh", "device.refresh", inactiveLabel:false, decoration:"flat", width:1, height:1) {
+		standardTile("refresh", "device.refresh", inactiveLabel:false, decoration:"flat", width:2, height:1) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
@@ -69,19 +70,6 @@ private getPOWER_ATTR_BATTERY() {0x0021}
 def ShadesUp(){
 	def shadeValue = device.latestValue("level") as Integer ?: 0 
     
-    if (shadeValue > 0){
-      	shadeValue = Math.max(25 * (Math.round(shadeValue / 25) - 1), 0) as Integer
-    }else { 
-    	shadeValue = 0
-	}
-    //sendEvent(name:"level", value:shadeValue, displayed:true)
-    setLevel(shadeValue)
-    
-}
-//Custom command to decrement blind position by 25 %
-def ShadesDown(){
-	def shadeValue = device.latestValue("level") as Integer ?: 0 
-    
     if (shadeValue < 100){
       	shadeValue = Math.min(25 * (Math.round(shadeValue / 25) + 1), 100) as Integer
     }else { 
@@ -89,36 +77,48 @@ def ShadesDown(){
 	}
     //sendEvent(name:"level", value:shadeValue, displayed:true)
     setLevel(shadeValue)
+}
+
+//Custom command to decrement blind position by 25 %
+def ShadesDown(){
+	def shadeValue = device.latestValue("level") as Integer ?: 0 
     
+    if (shadeValue > 0){
+      	shadeValue = Math.max(25 * (Math.round(shadeValue / 25) - 1), 0) as Integer
+    }else { 
+    	shadeValue = 0
+	}
+    //sendEvent(name:"level", value:shadeValue, displayed:true)
+    setLevel(shadeValue)
+	   
 }
 
 //Send Command through setLevel()
 def on() {
 	//sendEvent(name:"level", value:0, displayed:true)
-    setLevel(0)  
+    setLevel(100)  
 }
 
 //Send Command through setLevel()
 def off() {
-	setLevel(100)
-    //zigbee.off()
+	setLevel(0)
 }
-//Command to set the blinf position (%) and log the event
+//Command to set the blind position (%) and log the event
 def setLevel(value) {
 	sendEvent(name:"level", value: value, displayed:true)
     def L = Math.round(value);
     def i = Integer.valueOf(L.intValue());
     setWindowShade(i)
 	zigbee.setLevel(i)
-    //refresh()
+    
 }
 //Send Command through setLevel()
 def open() {
-    setLevel(0)   
+    setLevel(100)   
 }
 //Send Command through setLevel()
 def close() {
-	setLevel(100)
+	setLevel(0)
 }
 
 //Reporting of Battery & position levels
@@ -133,28 +133,27 @@ def ping(){
 def setWindowShade(value){
  if ((value>0)&&(value<99)){
     	sendEvent(name:"windowShade", value: "partial", displayed:true)
-    } else if (value > 99){
-    	sendEvent(name:"windowShade", value: "closed", displayed:true)
-    }else{
+    } else if (value >= 99){
     	sendEvent(name:"windowShade", value: "open", displayed:true)
+    }else{
+    	sendEvent(name:"windowShade", value: "closed", displayed:true)
     }
 }
 
 //Refresh command
 def refresh() {
+	log.debug "parse() refresh"
     return zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
-    	   zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL) +
-    	   zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 250, 300, 0x01) +
-           zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 250, 300, 0x01)
-    
+    	   zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL)
+    	       
 }
 //configure reporting
 def configure() {
     log.debug "Configuring Reporting and Bindings."
-    sendEvent(name: "checkInterval", value: 300, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 3600, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     def cmds = 
-    	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 250, 300, 0x01) +
-        zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 250, 300, 0x01)
+    	zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 3000, 3600, 0x01) +
+        zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 3000, 3600, 0x01)
         log.info "configure() --- cmds: $cmds"
     return refresh + cmds
 }
@@ -177,7 +176,7 @@ private Map parseReportAttributeMessage(String description) {
     Map resultMap = [:]
     if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY) {
         resultMap.name = "battery"
-        def batteryValue = Math.round(Integer.parseInt(descMap.value, 16))
+        def batteryValue = Math.round((Integer.parseInt(descMap.value, 16))/2)
         log.debug "parseDescriptionAsMap() --- Battery: $batteryValue"
         if ((batteryValue >= 0)&&(batteryValue <= 100)){
         	resultMap.value = batteryValue
