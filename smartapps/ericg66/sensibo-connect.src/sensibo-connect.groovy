@@ -780,13 +780,21 @@ def getACState(PodUid)
                         def OnOff = stat.acState.on ? "on" : "off"
                         stat.acState.on = OnOff
 						
-						def stemp 
-						//if (stat.acState.mode=="fan"){
-						//	stemp = stat.device.measurements.temperature.toInteger()
-						//}
-						//else {
-							stemp = stat.acState.targetTemperature.toInteger()
-						//}					
+						def stemp
+                        if (stat.acState.targetTemperature == null) {
+                          stemp = stat.device.measurements.temperature.toInteger()
+                        }
+                        else {
+                          stemp = stat.acState.targetTemperature.toInteger()
+                        }
+                        
+                        def tempUnit
+                        if (stat.acState.temperatureUnit == null) {
+                          tempUnit = stat.device.temperatureUnit
+                        }
+                        else {
+                          tempUnit = stat.acState.temperatureUnit
+                        }	
 					
                         def tMode                        
                         if (OnOff=="off") {
@@ -811,7 +819,7 @@ def getACState(PodUid)
                             coolingSetpoint : stemp,
                             heatingSetpoint : stemp,
                             thermostatSetpoint : stemp,
-                            temperatureUnit : stat.acState.temperatureUnit,
+                            temperatureUnit : tempUnit,
                             swing : stat.acState.swing,
                             powerSource : battery,
                             productModel : stat.device.productModel,
