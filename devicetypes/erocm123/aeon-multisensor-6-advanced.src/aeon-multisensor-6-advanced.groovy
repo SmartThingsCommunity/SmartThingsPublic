@@ -561,7 +561,7 @@ def update_needed_settings()
        cmds << zwave.versionV1.versionGet()
     }
 
-    if (state.currentProperties."252" != [0]) {
+    if (state.currentProperties?."252" != [0]) {
         logging("Unlocking configuration.")
         cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(0, 1), parameterNumber: 252, size: 1)
         cmds << zwave.configurationV1.configurationGet(parameterNumber: 252)
