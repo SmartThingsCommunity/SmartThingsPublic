@@ -1,13 +1,13 @@
 metadata {
-    definition(name: "Sonoff-Tasmota", namespace: "BrettSheleski", author: "Brett Sheleski") {
+	definition(name: "Sonoff-Tasmota", namespace: "BrettSheleski", author: "Brett Sheleski") {
 		capability "Switch"
 		capability "Momentary"
 		capability "Polling"
 		capability "Refresh"
-    }
+	}
 
 	// UI tile definitions
-    tiles(scale: 2) {
+	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label: '${name}', action: "momentary.push", icon: "st.switches.switch.on", backgroundColor: "#79b821"
@@ -23,7 +23,7 @@ metadata {
 		details(["switch","refresh"])
 	}
 
-    preferences {
+	preferences {
 		input(name: "ipAddress", type: "string", title: "IP Address", description: "IP Address of Sonoff", displayDuringSetup: true, required: true)
 		input(name: "port", type: "number", title: "Port", description: "Port", displayDuringSetup: true, required: true, defaultValue: 80)
 		
@@ -35,107 +35,70 @@ metadata {
 			input(name: "username", type: "string", title: "Username", description: "Username", displayDuringSetup: false, required: false)
 			input(name: "password", type: "password", title: "Password", description: "Password", displayDuringSetup: false, required: false)
 		}
-    }
+	}
 }
 
 def parse(String description) {
-    log.debug "parse()"
-
-	def STATUS_PREFIX = "STATUS = ";
-	def RESULT_PREFIX = "RESULT = ";
-
 	def message = parseLanMessage(description);
-    
-	if (message?.body?.startsWith(STATUS_PREFIX)) {
-		def statusJson = message.body.substring(STATUS_PREFIX.length())
-
-		parseStatus(statusJson);
-	}
-	else if (message?.body?.startsWith(RESULT_PREFIX)) {
-		def resultJson = message.body.substring(RESULT_PREFIX.length())
-
-		parseResult(resultJson);
-	}
-}
-
-def parseStatus(String json){
-	log.debug "status: $json"
-
-	def status = new groovy.json.JsonSlurper().parseText(json);
-
-	def isOn = status.Status.Power == 1;
-
-	setSwitchState(isOn);
-}
-
-def parseResult(String json){
-	log.debug "result: $json"
-
-	def result = new groovy.json.JsonSlurper().parseText(json);
-
-	def isOn = result.POWER == "ON";
+	log.debug "parse result with raw body: $message.body";
 	
-	setSwitchState(isOn);
+	if ((message?.json?.POWER in ["ON", 1, "1"]) || (message?.json?.Status?.Power in [1, "1"])) {
+		setSwitchState(true);
+	}
+	else if ((message?.json?.POWER in ["OFF", 0, "0"]) || (message?.json?.Status?.Power in [0, "0"])) {
+		setSwitchState(false);
+	}
 }
 
-def setSwitchState(Boolean on){
+def setSwitchState(Boolean on) {
 	log.debug "The switch is " + (on ? "ON" : "OFF")
-
 	sendEvent(name: "switch", value: on ? "on" : "off");
 }
 
-def push(){
+def push() {
 	log.debug "PUSH"
 	toggle(); // push is just an alias for toggle
 }
 
-def toggle(){
+def toggle() {
 	log.debug "TOGGLE"
-    sendCommand("Power", "Toggle");
+	sendCommand("Power", "Toggle");
 }
 
-def on(){
+def on() {
 	log.debug "ON"
-    sendCommand("Power", "On");
+	sendCommand("Power", "On");
 }
 
-def off(){
+def off() {
 	log.debug "OFF"
-    sendCommand("Power", "Off");
+	sendCommand("Power", "Off");
 }
 
-def poll(){
+def poll() {
 	log.debug "POLL"
-
 	requestStatus()
-
 }
 
-def refresh(){
+def refresh() {
 	log.debug "REFRESH"
-
 	requestStatus();
 }
 
-def requestStatus(){
+def requestStatus() {
 	log.debug "getStatus()"
-
 	def result = sendCommand("Status", null);
-
 	return result;
 }
 
-private def sendCommand(String command, String payload){
+private def sendCommand(String command, String payload) {
+	log.debug "sendCommand(${command}:${payload}) to device at $ipAddress:$port"
 
-    log.debug "sendCommand(${command}:${payload})"
-
-    def hosthex = convertIPtoHex(ipAddress);
-    def porthex = convertPortToHex(port);
-
-    device.deviceNetworkId = "$hosthex:$porthex";
+	def hosthex = convertIPtoHex(ipAddress);
+	def porthex = convertPortToHex(port);
+	device.deviceNetworkId = "$hosthex:$porthex";
 
 	def path = "/cm"
-
 	if (payload){
 		path += "?cmnd=${command}%20${payload}"
 	}
@@ -145,32 +108,29 @@ private def sendCommand(String command, String payload){
 
 	if (username){
 		path += "&user=${username}"
-
 		if (password){
 			path += "&password=${password}"
 		}
 	}
 
-    def result = new physicalgraph.device.HubAction(
-        method: "GET",
-        path: path,
-        headers: [
-            HOST: "${ipAddress}:${port}"
-        ]
-    )
-
-    return result
+	def result = new physicalgraph.device.HubAction(
+		method: "GET",
+		path: path,
+		headers: [
+			HOST: "${ipAddress}:${port}"
+		]
+	)
+	return result
 }
 
 private String convertIPtoHex(ipAddress) { 
-    String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
-    log.debug "IP address entered is $ipAddress and the converted hex code is $hex"
-    return hex
-
+	String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
+	//log.debug "IP address entered is $ipAddress and the converted hex code is $hex"
+	return hex
 }
 
 private String convertPortToHex(port) {
 	String hexport = port.toString().format('%04x', port.toInteger())
-    log.debug hexport
-    return hexport
+	//log.debug "Port entered is $port and the converted hex code is $hexport"
+	return hexport
 }
