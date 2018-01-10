@@ -238,26 +238,35 @@ def processUsage(resp, data) {
     def json = resp.json
     def main = 0.0
     def production = 0.0
+    def consumption = 0.0
     if (json) {
+    	log.debug(json)
         json.each {
             if (!it.main && !it.production) {
-                updateChildDevice("${it.id}", it.label, it.avg)
+              updateChildDevice("${it.id}", it.label, it.avg)
+              consumption += it.avg
             }
             if (it.main) {
               main += it.avg
+              state.hasMains = true
             }
             if (it.production) {
+              if (it.production == "Line-side") {
+              	main += it.avg
+              }
               production += it.avg
               state.hasProduction = true
             }
-            if (!state.hasMains && !it.production) {
-            	main += it.avg
-            }
         }
-        updateChildDevice("__NET__", "Main", main)
+        if (state.hasMains && main != 0.0) {
+        	updateChildDevice("__NET__","Main",main)
+        }
+        else {
+        	updateChildDevice("__NET__", "Main", consumption + production)
+        }
         if (state.hasProduction) {
             updateChildDevice("__PRODUCTION__", "Solar", production)
-            updateChildDevice("__CONSUMPTION__", "Usage", main-production)
+            updateChildDevice("__CONSUMPTION__", "Usage", consumption)
         }
     }
 }
