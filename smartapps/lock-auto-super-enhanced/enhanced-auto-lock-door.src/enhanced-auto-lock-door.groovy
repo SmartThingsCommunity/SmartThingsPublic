@@ -5,7 +5,8 @@ definition(
     description: "Automatically locks a specific door after X minutes when closed  and unlocks it when open after X seconds.",
     category: "Safety & Security",
     iconUrl: "http://www.gharexpert.com/mid/4142010105208.jpg",
-    iconX2Url: "http://www.gharexpert.com/mid/4142010105208.jpg"
+    iconX2Url: "http://www.gharexpert.com/mid/4142010105208.jpg",
+    pausable: true
 )
 
 preferences{

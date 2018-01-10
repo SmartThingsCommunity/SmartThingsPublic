@@ -24,7 +24,8 @@ definition(
 	description: "Monitors motion sensors in bedroom and bathroom during the night and detects if occupant does not return from the bathroom after a specified period of time.",
 	category: "Family",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer@2x.png"
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer@2x.png",
+	pausable: true
 )
 preferences {
 	page(name: "configuration", title:"", content: "disclaimerPage", uninstall: true)
