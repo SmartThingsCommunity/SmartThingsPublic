@@ -171,7 +171,7 @@ def configure() {
 def setColorTemperature(value) {
     setGenericName(value)
     value = value as Integer
-    def tempInMired = (1000000 / value) as Integer
+    def tempInMired = Math.round(1000000 / value)
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
     zigbee.command(COLOR_CONTROL_CLUSTER, 0x0A, "$finalHex 0000") +
