@@ -94,6 +94,12 @@ def parse(String description) {
         if (event.name=="level" && event.value==0) {}
         else {
             if (event.name=="colorTemperature") {
+                // Because of conversion to and from mireds we get some accuracy loss so in order for UI
+                // elements to match commands, we'll just see if they're within a tolerance
+                if (event.value <= state.lastValue * 1.05 && event.value >= state.lastValue * .95) {
+                    event.value = state.lastValue
+                    state.lastValue = null
+                }
                 setGenericName(event.value)
             }
             sendEvent(event)
@@ -169,6 +175,7 @@ def setColorTemperature(value) {
         cmds << zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000")
     }
     cmds << zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
+    state.lastLevel = value
     cmds
 }
 
