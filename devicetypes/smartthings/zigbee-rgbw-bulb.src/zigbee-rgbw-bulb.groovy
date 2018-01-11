@@ -94,12 +94,6 @@ def parse(String description) {
         if (event.name=="level" && event.value==0) {}
         else {
             if (event.name=="colorTemperature") {
-                // Because of conversion to and from mireds we get some accuracy loss so in order for UI
-                // elements to match commands, we'll just see if they're within a tolerance
-                if (event.value <= state.lastValue * 1.05 && event.value >= state.lastValue * .95) {
-                    event.value = state.lastValue
-                    state.lastValue = null
-                }
                 setGenericName(event.value)
             }
             sendEvent(event)
@@ -179,8 +173,6 @@ def setColorTemperature(value) {
     value = value as Integer
     def tempInMired = Math.round(1000000 / value)
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
-
-    state.lastLevel = value
 
     zigbee.command(COLOR_CONTROL_CLUSTER, 0x0A, "$finalHex 0000") +
     zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
