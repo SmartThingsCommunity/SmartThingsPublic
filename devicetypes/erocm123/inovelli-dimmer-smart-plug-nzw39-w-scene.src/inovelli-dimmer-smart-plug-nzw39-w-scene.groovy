@@ -23,7 +23,7 @@ metadata {
         capability "Polling"
         capability "Actuator"
         capability "Sensor"
-        capability "Health Check"
+        //capability "Health Check"
         capability "Button"
         capability "Indicator"
         capability "Switch Level"
@@ -222,7 +222,7 @@ def refresh() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-    if (state.sec != 0) {
+    if (state.sec) {
         zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
     } else {
         cmd.format()
