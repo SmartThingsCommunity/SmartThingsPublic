@@ -19,7 +19,6 @@ import groovyx.net.http.ContentType
 import groovyx.net.http.Method
 import groovyx.net.http.RESTClient
 
-
 preferences {
 }
 
@@ -794,137 +793,40 @@ def modeMode(String newMode){
 def generateModeEvent(mode) {
    sendEvent(name: "mode", value: mode, descriptionText: "$device.displayName Thermostat mode is now ${mode}", displayed: true, isStateChange: true)   
 }
+   
+def returnNext(liste1, liste2, val) throws Exception
+{
+    try {
+    	def index = liste2.indexOf(val)
+        
+        if (index == -1) throw new Exception()
+        else return liste2[liste2.indexOf(val)]
+    }
+    catch(Exception e) {
+    	if (liste1.indexOf(val)+ 1 == liste1.size()) {
+           val = liste1[0]
+           }
+         else {
+           val = liste1[liste1.indexOf(val) + 1]
+         }
+         returnNext(liste1, liste2, val)
+    }	
+}
 
 def GetNextFanLevel(fanLevel, fanLevels)
 {
-	if (fanLevels == null) return "null"
-	if (!fanLevels.contains(fanLevel)){
-    	switch (fanLevel) {
-        	case "high":
-            	if (fanLevels.contains("auto")) return "auto"            	
-                if (fanLevels.contains("quiet")) return "quiet"
-                if (fanLevels.contains("medium_high")) return "medium_high"
-                if (fanLevels.contains("medium_low")) return "medium_low"
-                if (fanLevels.contains("strong")) return "strong"
-                if (fanLevels.contains("low")) return "low"
-                if (fanLevels.contains("medium")) return "medium"
-                break
-        	case "medium":
-            	if (fanLevels.contains("high")) return "high"
-                if (fanLevels.contains("auto")) return "auto"
-                if (fanLevels.contains("quiet")) return "quiet"
-                if (fanLevels.contains("medium_high")) return "medium_high"
-                if (fanLevels.contains("medium_low")) return "medium_low"
-                if (fanLevels.contains("strong")) return "strong"
-            	if (fanLevels.contains("low")) return "low"                               
-                break
-        	case "low":
-            	if (fanLevels.contains("medium")) return "medium"
-                if (fanLevels.contains("high")) return "high"
-            	if (fanLevels.contains("auto")) return "auto"
-                if (fanLevels.contains("quiet")) return "quiet"
-                if (fanLevels.contains("medium_high")) return "medium_high"
-                if (fanLevels.contains("medium_low")) return "medium_low"
-                if (fanLevels.contains("strong")) return "strong"
-                break
-        	case "auto":
-                if (fanLevels.contains("quiet")) return "quiet"
-                if (fanLevels.contains("medium_high")) return "medium_high"
-                if (fanLevels.contains("medium_low")) return "medium_low"
-                if (fanLevels.contains("strong")) return "strong"
-            	if (fanLevels.contains("low")) return "low"
-                if (fanLevels.contains("medium")) return "medium"
-            	if (fanLevels.contains("high")) return "high"                
-                break
-            case "quiet":
-            	if (fanLevels.contains("medium_high")) return "medium_high"
-                if (fanLevels.contains("medium_low")) return "medium_low"
-            	if (fanLevels.contains("strong")) return "strong"
-                if (fanLevels.contains("low")) return "low"
-                if (fanLevels.contains("medium")) return "medium"
-                if (fanLevels.contains("high")) return "high"
-                if (fanLevels.contains("auto")) return "auto"
-                break
-             case "medium_high":            	
-                if (fanLevels.contains("medium_low")) return "medium_low"
-            	if (fanLevels.contains("strong")) return "strong"
-                if (fanLevels.contains("low")) return "low"
-                if (fanLevels.contains("medium")) return "medium"
-                if (fanLevels.contains("high")) return "high"
-                if (fanLevels.contains("auto")) return "auto"
-                if (fanLevels.contains("quiet")) return "quiet"
-                break
-             case "medium_low":            	
-            	if (fanLevels.contains("strong")) return "strong"
-                if (fanLevels.contains("low")) return "low"
-                if (fanLevels.contains("medium")) return "medium"
-                if (fanLevels.contains("high")) return "high"
-                if (fanLevels.contains("auto")) return "auto"
-                if (fanLevels.contains("quiet")) return "quiet"
-                if (fanLevels.contains("medium_high")) return "medium_high"
-                break
-             case "strong":
-                if (fanLevels.contains("low")) return "low"
-                if (fanLevels.contains("medium")) return "medium"
-                if (fanLevels.contains("high")) return "high"
-                if (fanLevels.contains("auto")) return "auto"
-                if (fanLevels.contains("quiet")) return "quiet"
-                if (fanLevels.contains("medium_high")) return "medium_high"
-            	if (fanLevels.contains("medium_low")) return "medium_low"
-                break
-            default:
-                if (fanLevels.contains("auto")) return "auto"
-                if (fanLevels.contains("quiet")) return "quiet"
-                if (fanLevels.contains("medium_high")) return "medium_high"
-                if (fanLevels.contains("medium_low")) return "medium_low"
-                if (fanLevels.contains("strong")) return "strong"
-                if (fanLevels.contains("low")) return "low"
-                if (fanLevels.contains("medium")) return "medium"
-                if (fanLevels.contains("high")) return "high"
-                break
-        }
-    }    
-    return fanLevel
+	def listFanLevel = ['low','medium','high','auto','quiet','medium_high','medium_low','strong']	
+    def newFanLevel = returnNext(listFanLevel, fanLevels,fanLevel)
+    
+	return newFanLevel
 }
 
 def GetNextMode(mode, modes)
 {
-	if (modes == null) return "null"
-    if (!modes.remoteCapabilities.containsKey(mode)) {
-    	switch (mode) {
-        	case "heat":
-            	if (modes.remoteCapabilities.containsKey("cool")) return "cool"
-                if (modes.remoteCapabilities.containsKey("fan")) return "fan"
-                if (modes.remoteCapabilities.containsKey("dry")) return "dry"
-                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
-                break
-        	case "cool":
-            	if (modes.remoteCapabilities.containsKey("fan")) return "fan"
-                if (modes.remoteCapabilities.containsKey("dry")) return "dry"
-                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
-                if (modes.remoteCapabilities.containsKey("heat")) return "heat"                
-                break
-        	case "dry":
-                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
-            	if (modes.remoteCapabilities.containsKey("heat")) return "heat"
-                if (modes.remoteCapabilities.containsKey("cool")) return "cool"
-                if (modes.remoteCapabilities.containsKey("fan")) return "fan"
-                break
-        	case "fan":
-            	if (modes.remoteCapabilities.containsKey("dry")) return "dry"
-                if (modes.remoteCapabilities.containsKey("auto")) return "auto"
-                if (modes.remoteCapabilities.containsKey("heat")) return "heat"
-                if (modes.remoteCapabilities.containsKey("cool")) return "cool"
-                break
-            case "auto":
-            	if (modes.remoteCapabilities.containsKey("heat")) return "heat"
-                if (modes.remoteCapabilities.containsKey("cool")) return "cool"
-                if (modes.remoteCapabilities.containsKey("fan")) return "fan"
-                if (modes.remoteCapabilities.containsKey("dry")) return "dry"
-                break
-        }
-    }    
-    return mode
+	def listMode = ['heat','cool','fan','dry','auto']	
+    def newMode = returnNext(listMode, modes,mode)
+    
+	return newMode
 }
 
 def NextMode(sMode)
@@ -955,168 +857,11 @@ def NextMode(sMode)
     }
 }
 
-def GetNextSwingMode(swingMode, swingModes)
-{
-	if (swingModes == null) return ""
-	if (!swingModes.contains(swingMode)){
-    	switch (swingMode) {
-        	case "stopped":
-            	if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-                 break
-        	case "fixedTop":
-            	if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-                if (swingModes.contains("stopped")) return "stopped"
-                break
-        	case "fixedMiddleTop":
-				if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                break
-        	case "fixedMiddle": 
-            	if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-                if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                break
-        	case "fixedMiddleBottom": 
-            	if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-                if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                break
-        	case "fixedBottom":
-            	if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-                if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                break
-        	case "rangeTop":           
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-                if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                break               
-        	case "rangeMiddle":
-            	if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-                if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                break
-        	case "rangeBottom":  
-            	if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-                if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                break
-        	case "rangeFull":
-                if (swingModes.contains("horizontal")) return "horizontal"
-                if (swingModes.contains("both")) return "both"
-            	if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                break
-            case "horizontal":
-                if (swingModes.contains("both")) return "both"
-            	if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                break
-            case "both":                
-            	if (swingModes.contains("stopped")) return "stopped"
-                if (swingModes.contains("fixedTop")) return "fixedTop"
-                if (swingModes.contains("fixedMiddleTop")) return "fixedMiddleTop"
-                if (swingModes.contains("fixedMiddle")) return "fixedMiddle"
-                if (swingModes.contains("fixedMiddleBottom")) return "fixedMiddleBottom"
-                if (swingModes.contains("fixedBottom")) return "fixedBottom"
-                if (swingModes.contains("rangeTop")) return "rangeTop"
-                if (swingModes.contains("rangeMiddle")) return "rangeMiddle"
-                if (swingModes.contains("rangeBottom")) return "rangeBottom"
-                if (swingModes.contains("rangeFull")) return "rangeFull"
-                if (swingModes.contains("horizontal")) return "horizontal"
-                break               
-        }
-    }    
-    return swingMode
+def GetNextSwingMode(swingMode, swingModes){
+	def listSwingMode = ['stopped','fixedTop','fixedMiddleTop','fixedMiddle','fixedMiddleBottom','fixedBottom','rangeTop','rangeMiddle','rangeBottom','rangeFull','horizontal','both']	
+    def newSwingMode = returnNext(listSwingMode, swingModes,swingMode)
+    
+	return newSwingMode
 }
 
 def switchSwing() {
