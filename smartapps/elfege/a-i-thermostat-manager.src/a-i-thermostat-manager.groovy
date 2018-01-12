@@ -1080,24 +1080,24 @@ def VirtualThermostat(){
     def tempcheck3 = null
     if(VirThermSensor){
         tempcheck1 = VirThermSensor.currentValue("temperature") 
-            }
+    }
     else {
         tempcheck1 = VirThermTherm_1?.currentValue("temperature") 
-            }
+    }
 
     if(VirThermSensor_2){
         tempcheck2 = VirThermSensor_2.currentValue("temperature") 
-            }
+    }
     else {
         tempcheck3 = VirThermTherm_2?.currentValue("temperature") 
-            }
+    }
 
     if(VirThermSensor_3){
         tempcheck3 = VirThermSensor_3.currentValue("temperature") 
-            }
+    }
     else {
         tempcheck3 = VirThermTherm_3?.currentValue("temperature") 
-            }
+    }
     def tempcheckList = [tempcheck1, tempcheck2, tempcheck3]
     def VTSwList = [VirThermSwitch_1, VirThermSwitch_2, VirThermSwitch_3]
     def CriticalTemp = 65
@@ -1438,7 +1438,7 @@ inVirThermModes_2 = $inVirThermModes_2
 CurrTemp_3 = $CurrTemp
 CurrSP 3 = $CurrSP
 $CurrSP > $CurrTemp ? (${CurrSP > CurrTemp})
-$CurrSP < $CurrTemp ? (${CurrSP > CurrTemp})
+$CurrSP < $CurrTemp ? (${CurrSP < CurrTemp})
 Active ? : $Active
 InMotionMode ? : $InMotionMode
 Mode coolOrHeat = $coolOrHeat_3
@@ -1517,7 +1517,8 @@ def Evaluate(){
     def NowBedisClosed = BedSensorResults[0]
     def NowBedisOpen = BedSensorResults[1]
     def CurrMode = location.currentMode
-    // //log.debug "Location is in $CurrMode mode"
+    def inAway = CurrMode in Away
+    log.debug "Location is in $CurrMode mode"
 
     def outsideTemp = OutsideSensor?.currentValue("temperature") //as double
     //outsideTemp = Double.parseDouble(outsideTemp)
@@ -1540,6 +1541,8 @@ def Evaluate(){
     def InExceptionContactMode = location.currentMode in DoNotTurnOffModes
     log.debug """
 SomeSwAreOn.size() = ${SomeSwAreOn.size()}
+SomeSwAreOff.size() = ${SomeSwAreOff.size()}
+CurrMode in SwitchMode = ${CurrMode in SwitchMode}
 ToggleBack = $ToggleBack
 doorsOk = $doorsOk
 state.turnedOffByApp = $state.turnedOffByApp
@@ -1560,43 +1563,38 @@ NowBedisClosed = $NowBedisClosed"""
     //log.debug "contactClosed = $contactClosed"
     def inAwayMode = CurrMode in Away
 
-    if(!KeepOffAtAllTimesWhenMode() && contactClosed && ToggleBack || (ControlWithBedSensor && NowBedisClosed && ContactExceptionIsClosed)){  //  && state.turnedOffByApp == true){  
-        if(IsHeatPump && outsideTemp <= 29){
-            if(SomeSwAreOn.size() != 0){
-                ContactAndSwitch?.off()
-                log.debug "$ContactAndSwitch TURNED OFF because it's a heat pump and outside temp is too low (${outsideTemp} <= 29)"
-                state.turnedOffByApp = true
-            }
+    if(IsHeatPump && outsideTemp <= 29){
+        if(SomeSwAreOn.size() != 0){
+            ContactAndSwitch?.off()
+            log.debug "$ContactAndSwitch TURNED OFF because it's a heat pump and outside temp is too low (${outsideTemp} <= 29)"
+            state.turnedOffByApp = true
+        }
+    }
+    else if(!KeepOffAtAllTimesWhenMode() && contactClosed && ToggleBack || (ControlWithBedSensor && NowBedisClosed && ContactExceptionIsClosed)){  //  && state.turnedOffByApp == true){  
+        if(SomeSwAreOff.size() != 0){
+        //if at least one is off, turn on
+                ContactAndSwitch?.on()
+                log.debug "$ContactAndSwitch TURNED ON"
+                state.turnedOffByApp = false
         }
         else {
-            if(SomeSwAreOff.size() != 0){
-                if(IsHeatPump && outsideTemp <= 29){
-                    log.debug "heat pump mode, doing nothing for now"
-                }
-                else {
-                    ContactAndSwitch?.on()
-                    log.debug "$ContactAndSwitch TURNED ON"
-                    state.turnedOffByApp = false
-                }
-            }
-            else {
-                log.debug "$ContactAndSwitch already on"
-            }
+            log.debug "$ContactAndSwitch already on"
         }
-
     }
     else if(KeepOffAtAllTimesWhenMode() && CurrMode in SwitchMode){
-        if(SomeSwAreOff.size() != 0){
+        if(SomeSwAreOn.size() != 0){
+        // if at least one is on, turn off
             ContactAndSwitch?.off()
             log.debug "$ContactAndSwitch TURNED OFF"
             state.turnedOffByApp = true
         }
         else {
-            log.debug "$ContactAndSwitch already off"
+            log.debug "$ContactAndSwitch already off --"
         }        
     }
     else if(!contactClosed || inAwayMode){
         if(SomeSwAreOn.size() != 0){
+        // if at least one is on, turn off
             ContactAndSwitch.off()
             log.debug "$ContactAndSwitch turned off because window is open"
         }
@@ -1698,8 +1696,8 @@ AltSensorMap = $AltSensorMap"""
                 def ModeValue = ModeValueList[0]
                 def Test = ModeValueList[1]
                 //log.debug "@ loop ${loopValue}, ModeValue is $ModeValue &&& Test = $Test"
-
-                if(CurrMode in Away){
+                log.debug "inAway = $inAway"
+                if(inAway){
                     HSPSet = HSPA
 
                     CSPSet = CSPA
@@ -1773,6 +1771,9 @@ inside humidity tolerance is 60 (built-in value, not modifiable by user)
 
                 log.debug """
 Current Temperature Inside = $Inside
+defaultHSPSet = $defaultHSPSet
+defaultCSPSet = $defaultCSPSet
+inAway = $inAway
 """
 
                 /// ALGEBRA
@@ -1786,7 +1787,7 @@ Current Temperature Inside = $Inside
                 def coef = 0
 
 
-                if(adjustments == "Yes, use a linear variation"){
+                if(adjustments == "Yes, use a linear variation" && !inAway){
                     /////////////////////////COOL////////////////////  linear function for Cooling
                     xa = 75	//outside temp a
                     ya = CSPSet // desired cooling temp a 
@@ -1813,7 +1814,7 @@ Current Temperature Inside = $Inside
 
                 } 
 
-                else if(adjustments == "Yes, but use a logarithmic variation"){
+                else if(adjustments == "Yes, but use a logarithmic variation" && !inAway){
                     // logarithmic treatment 
 
                     /* concept: x = log(72)75   to what power (that is to say "x") do I have to raise 72, to get to 75?
@@ -1888,7 +1889,7 @@ Math.log(256) / Math.log(2)
 
                 ///////////////////////////////////////////////////////// motion management/////////////////////////////////////////////////////////
                 log.debug "----------------------------------------------------------motion management---------------------------------------------------"
-                if(useMotion){
+                if(useMotion && !inAway){
 
                     def HeatNoMotionVal = HeatNoMotion
                     def CoolNoMotionVal = CoolNoMotion
@@ -1921,7 +1922,7 @@ NO MOTION so $ThermSet HSP, which was $defaultHSPSet, then (if algebra) $algebra
                     }
                 }
 
-                if(!useMotion || (Active && inMotionModes)){
+                if(!useMotion || (Active && inMotionModes) && !inAway){
 
                     // no lower than defaultCSPSet 
                     //log.debug "Calculated CSPSet = $CSPSet, defaultCSPSet = $defaultCSPSet (loop $loopValue)"
@@ -1975,7 +1976,7 @@ TooHumidINSIDE = $TooHumidINSIDE
 
                 def ThisIsExceptionTherm = ThermSet.displayName in NoTurnOffOnContact  
 
-                if(ExceptionSW && "$ThermSet" == "$ExceptionSwTherm" && SwitchesOn){
+                if(ExceptionSW && "$ThermSet" == "$ExceptionSwTherm" && SwitchesOn && !inAway){
                     if(warmerorcooler == "warmer"){
                         HSPSet = HSPSet + AddDegrees
                         CSPSet = CSPSet + SubDegrees
@@ -2013,7 +2014,7 @@ NowBedisOpen = $NowBedisOpen, """
                 if(ContactAndSwitchInSameRoom && UnitToIgnore?.displayName == "${ThermContact}" && ThermSet.displayName == "${ThermContact}" && ContactAndSwitchState?.size() > O){
                     log.debug "not applying $BedSensor action because it is in the same room as $ContactAndSwitch, which is currently ON"
                 }
-                else if(KeepACon && ContactExceptionIsClosed){
+                else if(KeepACon && ContactExceptionIsClosed && !inAway){
 
                     if("${ThermSet}" == "${ThermContact}" && NowBedisClosed ){ 
                         log.debug "BedSensorManagement set to true (BedSensorManagement = $BedSensorManagement)"
@@ -2136,7 +2137,7 @@ state.CSPMap : $state.CSPMap"""
 
                 /////////////////////////SENDING COMMANDS//////////////////////////
 
-                if(ContactAndSwitchInSameRoom && UnitToIgnore?.displayName == ThermSet.displayName && ContactAndSwitchState.size() > O){
+                if(ContactAndSwitchInSameRoom && UnitToIgnore?.displayName == ThermSet.displayName && ContactAndSwitchState.size() > O  && !inAway){
                     log.debug "Turning off $ThermSet because it is in the same room as $ContactAndSwitch, which is currently ON"
                     ThermSet.setThermostatMode("off")
                 }
@@ -3060,7 +3061,7 @@ state.messageSent($state.messageSent)
         def WarmEnoughOutside = outsideTemp >= 60
 
         if(AllContactsClosed || state.ventingrun == 1){
-            //log.debug "OpenInfullWhenAway = $OpenInfullWhenAway, inAway = $inAway"
+            log.debug "OpenInfullWhenAway = $OpenInfullWhenAway, inAway = $inAway"
             if( inAway && ClosedByApp != true && OpenInfullWhenAway  && WarmEnoughOutside){
                 ClosedByApp = true
             }
