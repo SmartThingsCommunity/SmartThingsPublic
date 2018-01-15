@@ -3255,7 +3255,7 @@ def devSetup(){
 }
 def setupData(){
 	def iName = invocationName? invocationName.toLowerCase() : "smart things"
-	def dupCounter=0, devCodeTxt = "Click <a href='http://ask-alexa.com/cgi-bin/devSite.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${invocationName.toLowerCase()}' target='_blank'>here</a>, copy the JSON code on the page, then paste to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
+	def dupCounter=0, devCodeTxt = "Click <a href='http://ask-alexa.com/cgi-bin/devSite.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${iName}' target='_blank'>here</a>, copy the JSON code on the page, then paste to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
 	def devDLTxt = "Or, click <a href='http://ask-alexa.com/cgi-bin/devSiteDL.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${iName}' target='_blank'>here</a> to download a text copy of the JSON code, then load into to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
 	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
     def result ="<div style='padding:10px'><i><b>One-step Personalized Code:</b></i><br>"
