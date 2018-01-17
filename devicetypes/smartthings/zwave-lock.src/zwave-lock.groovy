@@ -51,6 +51,7 @@ metadata {
 		fingerprint mfr:"0129", prod:"8002", model:"0600", deviceJoinName: "Yale Assure Lock" //YRD416, YRD426, YRD446
 		fingerprint mfr:"0129", prod:"0007", model:"0001", deviceJoinName: "Yale Keyless Connected Smart Door Lock"
 		fingerprint mfr:"0129", prod:"8004", model:"0600", deviceJoinName: "Yale Assure Lock Push Button Deadbolt" //YRD216
+		fingerprint mfr:"0129", prod:"6600", model:"0002", deviceJoinName: "Yale Conexis Lock"
 		// Samsung
 		fingerprint mfr:"022E", prod:"0001", model:"0001", deviceJoinName: "Samsung Digital Lock" // SHP-DS705, SHP-DHP728, SHP-DHP525
 	}
@@ -1675,7 +1676,9 @@ def isYaleLock() {
  */
 def generatesDoorLockOperationReportBeforeAlarmReport() {
 	//Fix for ICP-2367, ICP-2366
-	if(isYaleLock() && "0007" == zwaveInfo.prod && "0001" == zwaveInfo.model) {
+	if(isYaleLock() && (
+			("0007" == zwaveInfo.prod && "0001" == zwaveInfo.model) ||
+			("6600" == zwaveInfo.prod && "0002" == zwaveInfo.model)) {
 		//Yale Keyless Connected Smart Door Lock
 		return true
 	}
