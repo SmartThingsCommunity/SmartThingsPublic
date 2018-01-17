@@ -465,7 +465,7 @@ private def parseAttributeResponse(String description) {
 		responseMap.name = "battery"
 		responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 		// Handling Yale locks incorrect battery reporting issue
-		if (isYaleLock()) {
+		if (reportsBatteryIncorrectly()) {
 			responseMap.value = Integer.parseInt(descMap.value, 16)
 		}
 		responseMap.descriptionText = "Battery is at ${responseMap.value}%"
@@ -1111,10 +1111,23 @@ def getLittleEndianHexString(numStr) {
  * @return true if the lock manufacturer is Yale, else false
  */
 def isYaleLock() {
-	if ("Yale" == device.getDataValue("manufacturer")) {
-		return true
-	}
-	return false
+	return "Yale" == device.getDataValue("manufacturer")
+}
+
+/**
+ * Utility function to check for specific models of Yale Lock that don't report battery correctly
+ *
+ * @return true if the lock has the bug
+ */
+def reportsBatteryIncorrectly() {
+	def badModels = [
+			"YRD220/240 TSDB",
+			"YRL220 TS LL",
+			"YRD210 PB DB",
+			"YRD220/240 TSDB",
+			"YRL210 PB LL",
+	]
+	return (isYaleLock() && device.getDataValue("model") in badModels)
 }
 
 /**
