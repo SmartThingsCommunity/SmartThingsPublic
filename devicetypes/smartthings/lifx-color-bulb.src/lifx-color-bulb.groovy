@@ -187,23 +187,25 @@ def setColorTemperature(kelvin) {
 }
 
 def on() {
-    log.debug "Device setOn"
-    parent.logErrors() {
-        if (parent.apiPUT("/lights/${selector()}/state", [power: "on"]) != null) {
-            sendEvent(name: "switch", value: "on")
-        }
-    }
-    return []
+	log.debug "Device setOn"
+	parent.logErrors() {
+    	def value = parent.apiPUT("/lights/${selector()}/state", [power: "on"])
+		if (value.status == 207 && value.data.results.status[0] == "ok") {
+			sendEvent(name: "switch", value: "on")
+		}
+	}
+	return []
 }
 
 def off() {
-    log.debug "Device setOff"
-    parent.logErrors() {
-        if (parent.apiPUT("/lights/${selector()}/state", [power: "off"]) != null) {
-            sendEvent(name: "switch", value: "off")
-        }
-    }
-    return []
+	log.debug "Device setOff"
+	parent.logErrors() {
+        def value = parent.apiPUT("/lights/${selector()}/state", [power: "off"])
+		if (value.status == 207 && value.data.results.status[0] == "ok") {
+			sendEvent(name: "switch", value: "off")
+		}
+	}
+	return []
 }
 
 def refresh() {
