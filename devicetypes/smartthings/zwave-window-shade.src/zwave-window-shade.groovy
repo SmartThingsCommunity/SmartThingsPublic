@@ -23,7 +23,6 @@ metadata {
         command "stop"
 
         capability "Switch Level"   // until we get a Window Shade Level capability
-        capability "Switch"  // temporary for use with Routines
 
         // This device handler is specifically for non-SWF position-aware window coverings
         //
