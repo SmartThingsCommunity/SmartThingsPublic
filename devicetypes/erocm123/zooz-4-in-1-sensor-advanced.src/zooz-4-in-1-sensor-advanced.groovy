@@ -82,7 +82,7 @@
 					[value: 48, color: "#C5C08B"],
 					[value: 60, color: "#DAD7B6"],
 					[value: 84, color: "#F3F2E9"],
-                    [value: 100, color: "#FFFFFF"]
+                    [value: 100, color: "#F3F2E9"]
 				]
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
@@ -152,6 +152,8 @@ def parse(String description)
 			}
         break
 	}
+    
+    //log.debug "${description} parsed to ${result}"
     
     updateStatus()
 
@@ -348,12 +350,24 @@ def updated()
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+	log.debug "AssociationReport $cmd"
+    if (zwaveHubNodeId in cmd.nodeId) state."association${cmd.groupingIdentifier}" = true
+    else state."association${cmd.groupingIdentifier}" = false
+}
+
 def sync_properties()
 {   
     def currentProperties = state.currentProperties ?: [:]
     def configuration = parseXml(configuration_model())
 
     def cmds = []
+    
+    if(!state.association1){
+       log.debug "Setting association group 1"
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:1)
+    }
     
     if(state.wakeInterval == null || state.wakeInterval != 43200){
         log.debug "Setting Wake Interval to 43200"
@@ -674,33 +688,33 @@ def configuration_model()
         <Item label="F" value="1" />
         <Item label="C" value="0" />
   </Value>
-  <Value type="list" index="7" label="Led Behavior" min="1" max="3" value="3" byteSize="1" setting_type="zwave">
+  <Value type="list" index="7" label="Led Behavior" min="1" max="4" value="4" byteSize="1" setting_type="zwave">
     <Help>
-Default: Quick Blink on Temp/PIR
+Default: Off for Temp, On with Motion
     </Help>
         <Item label="LED Off" value="1" />
         <Item label="Breathing" value="2" />
         <Item label="Quick Blink on Temp/PIR" value="3" />
         <Item label="Off for Temp, On with Motion" value="4" />
   </Value>
-  <Value type="short" byteSize="1" index="5" label="PIR reset time" min="1" max="255" value="3" setting_type="zwave">
+  <Value type="short" byteSize="1" index="5" label="PIR reset time" min="15" max="60" value="15" setting_type="zwave">
     <Help>
-Number of minutes to wait to report motion cleared after a motion event if there is no motion detected.
-Range: 1~255.
-Default: 3 minutes
+Number of seconds to wait to report motion cleared after a motion event if there is no motion detected.
+Range: 15~60.
+Default: 15 Seconds
     </Help>
   </Value>
-    <Value type="byte" byteSize="1" index="6" label="PIR motion sensitivity" min="1" max="7" value="4" setting_type="zwave">
+    <Value type="byte" byteSize="1" index="6" label="PIR motion sensitivity" min="1" max="7" value="3" setting_type="zwave">
     <Help>
 A value from 1-7, from low to high sensitivity
 Range: 1~7
-Default: 4
+Default: 3
     </Help>
   </Value>
-    <Value type="byte" byteSize="1" index="2" label="Temperature Change Report" min="1" max="50" value="1" setting_type="zwave">
+    <Value type="byte" byteSize="1" index="2" label="Temperature Change Report" min="1" max="50" value="10" setting_type="zwave">
     <Help>
 Range: 1~50
-Default: 1
+Default: 10
 Note: 
 The amount by which the temperature must change in order for the sensor to send a report. Values are in .10 (tenths) so 1 = .1, 5 = .5, etc.
     </Help>
