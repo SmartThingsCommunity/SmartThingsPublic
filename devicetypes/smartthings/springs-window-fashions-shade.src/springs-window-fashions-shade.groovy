@@ -222,14 +222,6 @@ def close() {
     //zwave.basicV1.basicSet(value: 0).format()
 }
 
-def on() {
-    open()
-}
-
-def off() {
-    close()
-}
-
 def setLevel(value, duration = null) {
     log.debug "setLevel(${value.inspect()})"
     Integer level = value as Integer
