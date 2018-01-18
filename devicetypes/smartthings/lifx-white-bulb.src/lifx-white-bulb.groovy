@@ -88,11 +88,13 @@ def setLevel(percentage) {
     }
     parent.logErrors(logObject:log) {
         def resp = parent.apiPUT("/lights/${selector()}/state", [brightness: percentage / 100, power: "on"])
-        if (resp.status < 300) {
+        if (resp.status < 300 && resp.data.results.status[0] == "ok") {
             sendEvent(name: "level", value: percentage)
             sendEvent(name: "switch", value: "on")
         } else {
             log.error("Bad setLevel result: [${resp.status}] ${resp.data}")
+            sendEvent(name: "level", value: device.currentValue("level"), isStateChange: true, displayed: false)
+            sendEvent(name: "switch.setLevel", value: device.currentValue("level"), isStateChange: true, displayed: false)
         }
     }
     return []
@@ -102,7 +104,7 @@ def setColorTemperature(kelvin) {
     log.debug "Executing 'setColorTemperature' to ${kelvin}"
     parent.logErrors() {
         def resp = parent.apiPUT("/lights/${selector()}/state", [color: "kelvin:${kelvin}", power: "on"])
-        if (resp.status < 300) {
+        if (resp.status < 300 && resp.data.results.status[0] == "ok") {
             sendEvent(name: "colorTemperature", value: kelvin)
             sendEvent(name: "color", value: "#ffffff")
             sendEvent(name: "saturation", value: 0)
@@ -117,8 +119,8 @@ def setColorTemperature(kelvin) {
 def on() {
 	log.debug "Device setOn"
 	parent.logErrors() {
-    	def value = parent.apiPUT("/lights/${selector()}/state", [power: "on"])
-		if (value.status == 207 && value.data.results.status[0] == "ok") {
+    	def resp = parent.apiPUT("/lights/${selector()}/state", [power: "on"])
+		if (resp.status < 300 && resp.data.results.status[0] == "ok") {
 			sendEvent(name: "switch", value: "on")
 		}
 	}
@@ -128,8 +130,8 @@ def on() {
 def off() {
 	log.debug "Device setOff"
 	parent.logErrors() {
-        def value = parent.apiPUT("/lights/${selector()}/state", [power: "off"])
-		if (value.status == 207 && value.data.results.status[0] == "ok") {
+        def resp = parent.apiPUT("/lights/${selector()}/state", [power: "off"])
+		if (resp.status < 300 && resp.data.results.status[0] == "ok") {
 			sendEvent(name: "switch", value: "off")
 		}
 	}
