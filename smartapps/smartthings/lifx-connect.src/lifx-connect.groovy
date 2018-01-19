@@ -78,7 +78,7 @@ def authPage() {
 		return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
 			section("Select your location") {
 				input "selectedLocationId", "enum", required:true, title:"Select location ({{count}} found)", messageArgs: [count: count], multiple:false, options:options, submitOnChange: true
-				paragraph "Devices will be added automatically from your ${vendorName} account. To add or delete devices please use the Official ${vendorName} App."
+				paragraph "Devices will be added automatically from your LIFX account. To add or delete devices please use the Official LIFX App."
 			}
 		}
 	}
