@@ -1,13 +1,14 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.6a - 1/5/18 Copyright © 2017 Michael Struck
+ *  Version 2.3.7 - 1/15/18 Copyright © 2017 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.5 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.3.5a (12/14/17) Added output of extension groups to message queue, optimized code, added optimized setup features.
- *  Version 2.3.6a (1/5/18) Improved setup process, reducing number of steps to get program operating, changed copyright to 2018, updated WebCoRE macro to send more data to the pisto
+ *  Version 2.3.6a (1/5/18) Improved setup process, reducing number of steps to get program operating, changed copyright to 2018, updated WebCoRE macro to send more data to the piston
+ *  Version 2.3.7 (1/15/18) Added section to settings to define List_of_WCP for xParams (in WebCoRE macros), update to work with MyNextManager, minor bug fixes
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -68,6 +69,11 @@ preferences {
             page name:"pageCustomColor"
             page name:"pageLimitValue"
             page name:"pageGlobalVariables"
+            page name:"pageWebCoREVar"
+            	 page name:"pagexParamAdd"
+                 	page name: "pagexParamAddFinal"
+                 page name:"pagexParamDel"
+                 	page name: "pagexParamDelFinal"
         page name:"pageAbout"
 	//Child Pages
     page name:"mainPageChild"
@@ -304,6 +310,7 @@ def pageEnviro(){
                 input "nestCMD", "bool", title: "Nest-Specific Thermostat Presence Commands (Home/Away)", defaultValue: false, submitOnChange: true
                 if (nestCMD) input "nestMGRCMD", "bool", title: "NST Manager Specific Reports (Report)", defaultValue: false
                 input "stelproCMD", "bool", title: "Stelpro Baseboard\nThermostat Modes (Eco/Comfort)", defaultValue:false
+                if (nestCMD) input "MyNestCMD", "bool", title: "MyNextTstat Specific Tips\n(Get Tips/Play Tips/Erase Tips)", defaultValue: false  
             }
     	}
         if (fooBotSel()) {
@@ -536,6 +543,8 @@ def pageSettings(){
             else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables", description: "For Amazon developer sites", image: imgURL() + "amazon.png"
         	href "pageGlobalVariables", title: "Text Field Variables", description: none, state: getGlobeVarState() ? "complete" : null
             if (cLightsSel()) href "pageCustomColor", title: "Custom Color Setup", description: customName && customHue && customSat ? customName +" (Hue: "+customHue+", Saturation: "+ customSat+")":"Tap to enter custom color name and values", state: (customName && customHue && customSat ? "complete" : null), image: imgURL() + "colors.png"
+        	href "pageWebCoREVar", title: "xParams For WebCoRE Macros", description: (state.wcp && state.wcp.size()>1) ? "${state.wcp.size()} xParams created" : (state.wcp && state.wcp.size()==1) ? "One xParam created" : "No xParams", state: state.wcp ? "complete" :null,
+            	image: "https://cdn.rawgit.com/ady624/${webCoRE_handle()}/master/resources/icons/app-CoRE@2x.png"
         }
         section("Security"){
             href "pageConfirmation", title: "Revoke/Reset Access Token", description: "Tap to confirm this action", image: imgURL() + "warning.png"
@@ -547,6 +556,65 @@ def pageSettings(){
             label title:"SmartApp Name", required:false, defaultValue: "Ask Alexa"
         }
     }
+}
+def pageWebCoREVar(){
+	dynamicPage(name: "pageWebCoREVar", install: false, uninstall: false) {
+		section { paragraph "xParams For WebCoRE Macros", image: "https://cdn.rawgit.com/ady624/${webCoRE_handle()}/master/resources/icons/app-CoRE@2x.png"}
+    	section("Add / Remove xParams") {
+           	href "pagexParamAdd", title: "Add xParam", description: "Tap to add a xParam", image: imgURL() + "add.png"
+           	if (state.wcp) href "pagexParamDel", title: "Delete a xParam", description: "Tap to delete a xParam", image: imgURL() + "delete.png"    
+        }
+        section(state.wcp && state.wcp.size()==1 ? "One xParam created" : state.wcp && state.wcp.size()>1 ? state.wcp.size() + " xParams created" : "") {
+            paragraph state.wcp && state.wcp.size()>0 ? getxParamList(): "There are no xParams created yet"            	
+        }
+    }
+}
+def pagexParamAdd(){
+	dynamicPage(name: "pagexParamAdd", uninstall: false) {      
+        section ("xParam information"){
+        	input "xParamName", "text", title: "xParam Name"
+		}
+        section(" "){ href "pagexParamAddFinal", title: "Add xParam", description: "Tap to add the above xParam to the list", image: imgURL() + "add.png" }
+        section("Please note") { paragraph "Do not use the \"<\", \"Done\" or \"Save\" buttons on this page except to go back without adding the xParam.", image: imgURL() + "caution.png" }
+	}
+}
+def pagexParamAddFinal(){
+	dynamicPage(name: "pagexParamAddFinal", uninstall: false) {
+        if (!state.wcp && state.wcp!=[]) state.wcp=[]
+        def success=false, result = ""
+        if (xParamName && state.wcp.find {it.toLowerCase()==xParamName.toLowerCase()} ) result ="'${xParamName}' is already in the list. Please choose another name."
+		else if (!xParamName) result="You did not enter a xParam. Go back and ensure all fields are filled in."
+		else {
+            state.wcp<<xParamName.toLowerCase()
+			success = true
+        }
+		section { paragraph success ? "Successfully Added xParam '${xParamName}'" : "Error Adding xParam - ${result}", image: success ? imgURL() + "check.png" : imgURL() + "caution.png" }
+        section { 
+        	href "pageWebCoREVar", title: "Tap Here To Add/Delete Another xParam", description:none 
+			href "mainPageParent", title: "Tap Here To Return To The Main Menu", description:none 
+		}
+        section("Please note") { paragraph "Do not use the \"<\", \"Done\" or \"Save\" buttons buttons on this page to go back in the interface. You may encounter undesired results. Please use the two buttons above to return to the xParam area or main menu.", image: imgURL() + "caution.png" }
+	}    
+}
+def pagexParamDel(){
+	dynamicPage(name: "pagexParamDel", uninstall: false) {
+		section { input "xParamDelete", "enum", title: "Choose xParam To Delete...", options: listxParam(), required: false, submitOnChange: true }
+        if (aliasDelete){
+        	section(" "){ href "pagexParamDelFinal", title: "Delete xParam", description: "Tap to delete the xParama", image: imgURL() + "delete.png" }
+            section("Please note") { paragraph "Do not use the \"<\", \"Done\" or \"Save\" buttons on this page except to go back without deleting the xParam.", image: imgURL() + "caution.png" }
+		}
+    }
+}
+def pagexParamDelFinal(){
+	dynamicPage(name: "pagexParamDelFinal", uninstall: false) {
+        section { paragraph "Successfully Deleted xParam '${xParamDelete}'", image: imgURL() + "check.png" }
+        section (" "){
+			state.wcp.removeAll{it==xParamDelete}
+            href "pageWebCoREVar", title: "Tap Here To Add/Delete Another xParam", description:none 
+            href "mainPageParent", title: "Tap Here To Return To The Main Menu", description:none
+        }
+        section("Please note") { paragraph "Do not use the \"<\", \"Done\" or \"Save\" buttons on this page to go back in the interface. You may encounter undesired results. Please use the two buttons above to return to the xParam area or main menu.", image: imgURL() + "caution.png" }
+	}    
 }
 def pageDeviceVoice(){
     dynamicPage(name: "pageDeviceVoice", install: false, uninstall: false) {
@@ -2025,7 +2093,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
         else {
             if (type == "thermostat"){
                 if (param =~/tip/ || op=~/tip/) {
-                	if (MyEcobeeCMD && ecobeeCMD) {
+                	if (MyEcobeeCMD && ecobeeCMD || (MyNextCMD)) {
                         if (op ==~/repeat|replay/) {
                             def currentTipNum= state.tipCount>0 ? state.tipCount : 1 
                             def previousTipNum= currentTipNum - 1                    
@@ -2269,7 +2337,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
     return result
 }
 def displayData(display){
-	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/><link rel="stylesheet" href="http://ask-alexa.com/styles.css"></head><body style="margin: 0;">${display}</body></html>"""
+	render contentType: "text/html", data: """<!DOCTYPE html><html><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/><link rel="stylesheet" href="http://ask-alexa.com/styles.css"><link rel="icon" type="image/x-icon" href="http://ask-alexa.com/favicon.ico" /></head><body style="margin: 0;">${display}</body></html>"""
 }
 def displayRaw(display){
 	render contentType: "text/html", data: "${display}"
@@ -3080,6 +3148,19 @@ def getAliasDisplayList(){
     }
     return result
 }
+def getxParamList(){
+    def count = state.wcp.size(), result=""
+    for (int i=0; i < count; i++) {
+		result += state.wcp[i]
+    	if (i < count-1) result +="\n"
+    }
+    return result
+}
+def listxParam(){
+    def result =[]
+    state.wcp.each{result << it }
+    return result
+}
 def getDeviceAliasList(aliasType){
     def result = mapDevices(true).find{it.fullListName==aliasType}, resultList =[]
     if (result) result.devices.each{ resultList <<"${it}" }
@@ -3249,12 +3330,12 @@ def devSetup(){
     result += fillDevJSON("LIST_OF_PARAMS",fillParamsList()) +",<br>"
     result += fillDevJSON("LIST_OF_SHPARAM",fillSHParamList()) +",<br>"
     result += fillDevJSON("LIST_OF_SHCMD",fillSHCMDList()) +",<br>"
-    result += fillDevJSON("LIST_OF_WCP",["none"])  
+    result += fillDevJSON("LIST_OF_WCP",fillWCPList())  
     displayRaw(result)
 
 }
 def setupData(){
-	def iName = invocationName? invocationName.toLowerCase() : "smart things"
+	def iName = invocationName ? invocationName.toLowerCase() : "smart things"
 	def dupCounter=0, devCodeTxt = "Click <a href='http://ask-alexa.com/cgi-bin/devSite.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${iName}' target='_blank'>here</a>, copy the JSON code on the page, then paste to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
 	def devDLTxt = "Or, click <a href='http://ask-alexa.com/cgi-bin/devSiteDL.php?appID=${app.id}&token=${state.accessToken}&url=${getApiServerUrl()}&invocation=${iName}' target='_blank'>here</a> to download a text copy of the JSON code, then load into to the Interaction Model Builder on the <a href='http://developer.amazon.com' target='_blank'>Amazon Developer</a> page"
 	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
@@ -3332,8 +3413,9 @@ def setupData(){
     MQ.unique().each {result += it + "<br>" }
     result += "<br><b>LIST_OF_MQCMD</b><br><br>"
     msgVoc().each{result +=it + "<br>" }
-    result +="<br><b>LIST_OF_WCP</b><br><br>This is an advanced feature. If you use WebCoRE pistons, add your extra parameters to this slot. Otherwise, just add the word 'none' to this slot"
-	result += "<br><hr><br><i><b>URL of this setup page:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}<br><br><hr>"
+    result +="<br><b>LIST_OF_WCP</b><br><br>"
+    fillWCPList().each{result+=it+"<br>"}
+    result += "<br><hr><br><i><b>URL of this setup page:</b></i><br><br>${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}<br><br><hr>"
 	result += "<br><i><b>Lastest version of the Lambda code:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Node.js'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Node.js</a><br><br><hr>"
     result += "<br><i><b>Lastest version of the Sample Utterances:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Sample%20Utterances'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Sample%20Utterances</a><br><br><hr>"
     result += "<br><i><b>Lastest version of the Intent Schema:</b></i><br><br><a href='https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Intent%20Schema'>https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/ask-alexa.src/Intent%20Schema</a><br><br><hr></div>"
@@ -3391,7 +3473,7 @@ def fillParamsList(){
     if (tstatsSel() && (nestCMD || ecobeeCMD) || vPresenceCMD) PARAMS<<"home"<<"away"
     if (tstatsSel() && ecobeeCMD) PARAMS<<"sleep"<<"resume program"
 	if (tstats && MyEcobeeCMD){  getEcobeeCustomList(tstats).each { PARAMS<<"${it}" } }     
-    if (tstatsSel() && ecobeeCMD && MyEcobeeCMD) PARAMS<<"tips"<<"tip"
+    if (tstatsSel() && ( ecobeeCMD && MyEcobeeCMD) || (MyNextCMD)) PARAMS<<"tips"<<"tip" 
     if (presenceSel() && vPresenceCMD) PARAMS<<"check in"<<"check out"<<"arrive"<<"depart"<<"not present"<<"gone"
     if (cLightsSel() || cLightsKSel() || getAskAlexa().size()) { STColors().each {PARAMS<<it.name.toLowerCase()}}
     return PARAMS
@@ -3424,6 +3506,12 @@ def fillSHCMDList(){
 	def SHCMD =["routine","mode","smart home monitor"]
     if (listSHM) SHCMD<<"security"<<"smart home"<<"SHM"
 	return SHCMD
+}
+def fillWCPList(){
+	def WCP =[]
+    if (state.wcp) state.wcp.each{WCP<<it}
+    else WCP<<"none"
+	return WCP
 }
 def getURLs(){
 	def mName = params.mName, qName = params.qName, url, result
@@ -3479,7 +3567,7 @@ private cheat(){
     if (shadesSel()) { result += "<h2><u>Doors (Valid Commands: <b>"+ getList(shadeVoc()+basicVoc()) +"</b>)</u></h2>"; shades.each{ result += it.label +"<br>" } }
     if (getCheatDisplayList("shade") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("shade") +"<br>" }
     if (tstatsSel()) { result += "<h2><u>Thermostats (Valid Commands: <b>{temperature setpoint}, "+ getList(tstatVoc()+basicVoc()) +"</b>)</u></h2>"; tstats.each{ result += it.label +"<br>" }
-    	if (ecobeeCMD && MyEcobeeCMD) result +="<br><b>* Please Note:</b> Some commands are MyEcobee specific such as Get Tips {level}, Play Tips and Erase Tips<br>"
+    	if ((ecobeeCMD && MyEcobeeCMD) || (MyNextCMD)) result +="<br><b>* Please Note:</b> Some commands are MyEcobee specific such as Get Tips {level}, Play Tips and Erase Tips<br>" 
     }
     if (getCheatDisplayList("thermostat") && deviceAlias) { result += "<br><u>Aliases</u><br>"; result += getCheatDisplayList("thermostat") +"<br>" }
     if (tempsSel()) { result += "<h2><u>Temperature Sensors (Valid Commands: <b>"+ getList(tempVoc()) +"</b>)</u></h2>"; temps.each{ result += it.label +"<br>" } }
@@ -3586,15 +3674,15 @@ private textVersion() {
     if (getRM().size()) aaRMVer="\n"+getRM()[0].textVersion()
     return "${version}${lambdaVersion}${aaMQVer}${aaRMVer}${aaSCHVer}${aaVRVer}${aaWRVer}"
 }
-private versionInt(){ return 236 }
+private versionInt(){ return 237 }
 private LambdaReq() { return 130 }
 private mqReq() { return 107 }
 private wrReq()  { return 106 }
 private vrReq()  { return 107 }
 private schReq()  { return 103 }
 private rmReq() { return 102 }
-private versionLong(){ return "2.3.6a" }
-private versionDate(){ return "01/05/2018" }
+private versionLong(){ return "2.3.7" }
+private versionDate(){ return "01/15/2018" }
 private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
