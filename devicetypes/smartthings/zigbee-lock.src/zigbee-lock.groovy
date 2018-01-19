@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import java.util.Map
+
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -26,7 +28,7 @@ metadata {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
-
+		
 		fingerprint profileId: "0104", inClusters: "0000,0001,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL220 TS LL", deviceJoinName: "Yale Touch Screen Lever Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD210 PB DB", deviceJoinName: "Yale Push Button Deadbolt Lock"
@@ -481,6 +483,7 @@ private def parseAttributeResponse(String description) {
 		} else if (value == 2) {
 			responseMap.value = "unlocked"
 			responseMap.descriptionText = "Unlocked"
+			responseMap.data = [ notify: true, notificationText: "$deviceName at ${location.name} was unlocked" ]
 		} else {
 			responseMap.value = "unknown"
 			responseMap.descriptionText = "Unknown state"
@@ -575,10 +578,17 @@ private def parseCommandResponse(String description) {
 				break
 			case 2:
 				responseMap.value = "unlocked"
+				if (responseMap.data) {
+					responseMap.data.notify = true
+				} else {
+					responseMap.data = [notify: true]
+				}
 				if(codeName) {
 					responseMap.descriptionText = "Unlocked by \"$codeName\""
+					responseMap.data.notificationText = "$deviceName at ${location.name} was unlocked by \"$codeName\""
 				} else {
 					responseMap.descriptionText = "Unlocked ${desc}"
+					responseMap.data.notificationText = "$deviceName at ${location.name} was unlocked ${desc}"
 				}
 				break
 			case 3: //Lock Failure Invalid Pin
@@ -598,7 +608,13 @@ private def parseCommandResponse(String description) {
 			case 9: // unlocked using the key
 			case 14: // unlocked using the Thumbturn
 				responseMap.value = "unlocked"
+				if (responseMap.data) {
+					responseMap.data.notify = true
+				} else {
+					responseMap.data = [notify: true]
+				}
 				responseMap.descriptionText = "Unlocked ${desc}"
+				responseMap.data.notificationText = "$deviceName at ${location.name} was unlocked ${desc}"
 				break
 			case 10: //Auto lock
 				responseMap.value = "locked"
@@ -657,6 +673,7 @@ private def parseCommandResponse(String description) {
 					responseMap.descriptionText = "Deleted all user codes"
 					responseMap.data = [notify: true, notificationText: "Deleted all user codes in $deviceName at ${location.name}"]
 					result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
+					result << createEvent(name: "lockCodesData", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodesData' attribute updated")
 				} else {
 					if (lockCodes[codeID.toString()]) {
 						codeName = getCodeName(lockCodes, codeID)
@@ -664,6 +681,7 @@ private def parseCommandResponse(String description) {
 						responseMap.descriptionText = "Deleted \"$codeName\""
 						responseMap.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 						result << codeDeletedEvent(lockCodes, codeID)
+						result << clearUserInfo(codeID)
 					}
 				}
 				break
@@ -738,6 +756,8 @@ private def parseCommandResponse(String description) {
 				} else {
 					responseMap.displayed = false
 				}
+				// setting user info with always schedule type
+				setUserInfo([codeID: "" + codeID, phoneNum: "", accessType: "always", lastUsage: new Date().getTime()])
 			}
 		} else {
 			// Code slot is empty - can happen when code creation fails or a slot is empty while scanning the lock
@@ -760,6 +780,7 @@ private def parseCommandResponse(String description) {
 				responseMap.descriptionText = "Deleted \"$codeName\""
 				responseMap.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 				result << codeDeletedEvent(lockCodes, codeID)
+				result << clearUserInfo(codeID)
 			} else {
 				// Code slot is empty - can happen when a slot is found empty while scanning the lock
 				responseMap.value = "$codeID unset"
@@ -1175,4 +1196,73 @@ private boolean isMasterCode(codeID) {
 		codeID = codeID.toInteger()
 	}
 	(codeID == 0) ? true : false
+}
+
+/**
+ * API end-point for updating the 'lockCodesData' attribute with the user info
+ *
+ * @param userInfo: Map consisting values for code id, phone number, access type, and last usage
+ */
+def setUserInfo(userInfo) {
+	log.trace "[DTH] Executing 'setUserInfo()' by ${device.displayName} with userInfo := ${userInfo}"
+	def codeID = userInfo.codeID
+	if (codeID) {
+		codeID = codeID.toString()
+		def lockCodesData = loadlockCodesData(codeID)
+		lockCodesData[codeID].lastUsage = userInfo.lastUsage
+		lockCodesData[codeID].userInfo.phoneNum = userInfo.phoneNum ?: ""
+		def accessType = userInfo.accessType
+		if (accessType) {
+			if (accessType == "always") {
+				lockCodesData[codeID].scheduleInfo = [:]
+				lockCodesData[codeID].scheduleInfo.scheduleData = [:]
+			}
+			lockCodesData[codeID].scheduleInfo.scheduleType = accessType
+		}
+		sendEvent(lockCodesDataEvent(lockCodesData))
+	}
+}
+
+/**
+ * Removes the specified code if from lockCodesData and updates the attribute
+ *
+ * @param codeID: The code slot number
+ */
+def clearUserInfo(codeID) {
+	log.trace "[DTH] Executing 'clearUserInfo()' by ${device.displayName} with codeID := $codeID"
+	def lockCodesData = parseJson(device.currentValue("lockCodesData") ?: "{}") ?: [:]
+	codeID = codeID.toString()
+	lockCodesData.remove(codeID)
+	lockCodesDataEvent(lockCodesData)
+}
+
+/**
+ * Reads the 'lockCodesData' attribute and parses the same
+ *
+ * @returns Map: The lockCodesData map
+ */
+private Map loadlockCodesData(codeID) {
+	def lockCodesData = parseJson(device.currentValue("lockCodesData") ?: "{}") ?: [:]
+	if (!lockCodesData[codeID]) {
+		lockCodesData[codeID] = [:]
+	}
+	if (!lockCodesData[codeID].userInfo) {
+		lockCodesData[codeID].userInfo = [:]
+	}
+	if (!lockCodesData[codeID].scheduleInfo) {
+		lockCodesData[codeID].scheduleInfo = [:]
+	}
+	if (!lockCodesData[codeID].scheduleInfo.scheduleData) {
+		lockCodesData[codeID].scheduleInfo.scheduleData = [:]
+	}
+	lockCodesData
+}
+
+/**
+ * Populates the 'lockCodesData' attribute by calling create event
+ *
+ * @param lockCodesData The week day schedule info in a lock
+ */
+private Map lockCodesDataEvent(lockCodesData) {
+	createEvent(name: "lockCodesData", value: util.toJson(lockCodesData), displayed: false, descriptionText: "'lockCodesData' attribute updated")
 }

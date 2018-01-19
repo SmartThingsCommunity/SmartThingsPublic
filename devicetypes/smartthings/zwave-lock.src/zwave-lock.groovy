@@ -24,7 +24,7 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 		capability "Configuration"
-
+		
 		// Generic
 		fingerprint deviceId: "0x4003", inClusters: "0x98"
 		fingerprint deviceId: "0x4004", inClusters: "0x98"
@@ -92,8 +92,19 @@ metadata {
 	}
 }
 
+import java.text.SimpleDateFormat
+
 import physicalgraph.zwave.commands.doorlockv1.*
 import physicalgraph.zwave.commands.usercodev1.*
+
+private def getSCHEDULE_TYPE_DAILY_REPEATING() { "dailyRepeating" }
+private def getSCHEDULE_TYPE_WEEK_DAY() { "weekDay" }
+private def getSCHEDULE_TYPE_YEAR_DAY() { "yearDay" }
+private def getSCHEDULE_ENTRY_LOCK_CLASS_ID() { "4E" }
+private def getUSER_TYPE_OWNER() { 1 }
+private def getUSER_TYPE_WEEK_DAY() { 4 }
+private def getUSER_TYPE_YEAR_DAY() { 3 }
+private def getMAX_CODES_TO_SCAN() { 8 }
 
 /**
  * Called on app installed
@@ -151,7 +162,16 @@ def updated() {
  */
 def configure() {
 	log.trace "[DTH] Executing 'configure()' for device ${device.displayName}"
-	def cmds = doConfigure()
+	def cmds = []
+	if (!state.configured) {
+		// configureScheduling will be called in doConfigure so this will take care of scenario when lock is paired freshly
+		cmds = doConfigure()
+	} else {
+		// In case a lock is already paired then it needs to be configured for scheduling
+		cmds << setClock()
+		cmds << configureScheduling()
+		cmds = delayBetween(cmds, 200)
+	}
 	log.debug "Configure returning with commands := $cmds"
 	cmds
 }
@@ -169,8 +189,34 @@ def doConfigure() {
 	if (isSchlageLock()) {
 		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: getSchlageLockParam().codeLength.number))
 	}
-	cmds = delayBetween(cmds, 4200)
+	cmds << setClock()
+	cmds << configureScheduling()
+	// delayBetween does the flattening
+	cmds = delayBetween(cmds, 200)
 	log.debug "Do configure returning with commands := $cmds"
+	cmds
+}
+
+/**
+ * Returns commands to be send to lock for scheduling related parameters
+ * @return - Commands to be send to lock if lock supports scheduling, empty list otherwise
+ */
+def configureScheduling() {
+	def cmds = []
+	if(device.currentValue("numberOfSlotsDailyRepeating") == null ||
+	device.currentValue("numberOfSlotsWeekDay") == null ||
+	device.currentValue("numberOfSlotsYearDay") == null) {
+		// Some schedule slots are never read before
+		if (SCHEDULE_ENTRY_LOCK_CLASS_ID in zwaveInfo.sec) {
+			log.debug "[DTH] supports ScheduleEntryLock command class"
+			cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryTypeSupportedGet())
+		} else {
+			log.debug "[DTH] doesn't support ScheduleEntryLock command class"
+			sendEvent(name: "numberOfSlotsDailyRepeating", value: 0, displayed: false, descriptionText: "No. of daily repeating slots supported is 0")
+			sendEvent(name: "numberOfSlotsWeekDay", value: 0, displayed: false, descriptionText: "No. of week day slots supported is 0")
+			sendEvent(name: "numberOfSlotsYearDay", value: 0, displayed: false, descriptionText: "No. of year day slots supported is 0")
+		}
+	}
 	cmds
 }
 
@@ -214,7 +260,6 @@ def parse(String description) {
  * @param cmd: The ConfigurationReport command to be parsed
  *
  * @return The event(s) to be sent out
- *
  */
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd)' with cmd = $cmd"
@@ -231,8 +276,60 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 			isStateChange: true, data: [lockName: deviceName, notify: true,
 				notificationText: "Deleted all user codes in $deviceName at ${location.name}"])
 			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
+			result << createEvent(name: "lockCodesData", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodesData' attribute updated")
 		}
 		result << createEvent(name:"codeLength", value: length, descriptionText: "Code length is $length", displayed: false)
+		return result
+	} else if (isKwiksetLock()) {
+		def result = []
+		def codeID = cmd.parameterNumber
+		def scheduleType = getScheduleType(codeID)
+		def lockCodes = loadLockCodes()
+		def codeName = getCodeName(lockCodes, codeID)
+		def userType = cmd.scaledConfigurationValue
+		log.trace "[DTH] Executing 'ConfigurationReport()' with codeID := $codeID, scheduleType := $scheduleType, and userType := $userType"
+		if (isScheduleScanningInProgress(codeID) || scheduleType == "always" || scheduleType == "unknown") {
+			// We will land here when the schedules are being scanned
+			if (userType == USER_TYPE_OWNER) {
+				// no schedules exists for this code
+				setUserInfo([codeID: "" + codeID, phoneNum: "", accessType: "always", lastUsage: new Date().getTime()])
+				log.trace "[DTH] ConfigurationReport() -  Schedule scanning complete for codeID := $codeID"
+				checkAndScanNextSchedule(codeID)
+			} else if (userType == USER_TYPE_YEAR_DAY) {
+				// year day schedule exists for this code
+				log.trace "[DTH] ConfigurationReport() -  Requesting year day schedule for codeID := $codeID"
+				result << response(requestYearDaySchedule(codeID))
+			} else if (userType == USER_TYPE_WEEK_DAY) {
+				// week day schedule exists for this code
+				log.trace "[DTH] ConfigurationReport() -  Requesting week day schedule for codeID := $codeID"
+				clearWeekdayScanningDataFromState(codeID)
+				result << response(requestAllWeekDaySchedule(codeID))
+			}
+		} else {
+			// We will land here when a schedule is being cleared by changing the user type
+			if (userType == USER_TYPE_OWNER) {
+				log.trace "[DTH] ConfigurationReport() -  $scheduleType deleted successfully for codeID := $codeID by changing the user type"
+				result << scheduleDeleteEvent(codeID)
+				def map = null
+				def deviceName = device.displayName
+				if (scheduleType == SCHEDULE_TYPE_YEAR_DAY) {
+					map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_YEAR_DAY deleted", descriptionText: "Cleared limited schedule for \"$codeName\"", isStateChange: true, displayed: true]
+					map.data = [lockName: deviceName, notify: true, notificationText: "Cleared limited schedule for \"$codeName\" in $deviceName at ${location.name}"]
+					result << createEvent(map)
+				} else if (scheduleType == SCHEDULE_TYPE_WEEK_DAY) {
+					map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_WEEK_DAY deleted", descriptionText: "Cleared recurring schedule for \"$codeName\"", isStateChange: true, displayed: true]
+					map.data = [lockName: deviceName, notify: true, notificationText: "Cleared recurring schedule for \"$codeName\" in $deviceName at ${location.name}"]
+					result << createEvent(map)
+				}
+			} else {
+				log.trace "[DTH] ConfigurationReport() -  $scheduleType deleted failed for codeID := $codeID by changing the user type"
+				if (scheduleType == SCHEDULE_TYPE_YEAR_DAY) {
+					result << createEvent(name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_YEAR_DAY delete failed", descriptionText: "Limited schedule delete failed for \"$codeName\"", isStateChange: true, displayed: false)
+				} else if (scheduleType == SCHEDULE_TYPE_WEEK_DAY) {
+					result << createEvent(name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_WEEK_DAY delete failed", descriptionText: "Recurring schedule delete failed for \"$codeName\"", isStateChange: true, displayed: false)
+				}
+			}
+		}
 		return result
 	}
 	return null
@@ -311,9 +408,13 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	} else if (cmd.doorLockMode == 0x01) {
 		map.value = "unlocked with timeout"
 		map.descriptionText = "Unlocked with timeout"
+		map.data.notify = true
+		map.data.notificationText = "${device.displayName} at ${location.name} was unlocked with timeout"
 	}  else {
 		map.value = "unlocked"
 		map.descriptionText = "Unlocked"
+		map.data.notify = true
+		map.data.notificationText = "${device.displayName} at ${location.name} was unlocked"
 		if (state.assoc != zwaveHubNodeId) {
 			result << response(secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)))
 			result << response(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId))
@@ -386,7 +487,7 @@ private def handleAccessAlarmReport(cmd) {
 			break
 		case 2: // Manually unlocked
 			map.descriptionText = "Unlocked manually"
-			map.data = [ method: "manual" ]
+			map.data = [ method: "manual", notify: true, notificationText: "$deviceName at ${location.name} was unlocked manually" ]
 			break
 		case 3: // Locked by command
 			map.descriptionText = "Locked"
@@ -394,7 +495,7 @@ private def handleAccessAlarmReport(cmd) {
 			break
 		case 4: // Unlocked by command
 			map.descriptionText = "Unlocked"
-			map.data = [ method: "command" ]
+			map.data = [ method: "command", notify: true, notificationText: "$deviceName at ${location.name} was unlocked" ]
 			break
 		case 5: // Locked with keypad
 			if (cmd.eventParameter || cmd.alarmLevel) {
@@ -412,7 +513,7 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad", notify: true, notificationText: "$deviceName at ${location.name} was unlocked by \"$codeName\"" ]
 			}
 			break
 		case 7:
@@ -439,6 +540,7 @@ private def handleAccessAlarmReport(cmd) {
 			map = [ name: "codeChanged", value: "all deleted", descriptionText: "Deleted all user codes", isStateChange: true ]
 			map.data = [notify: true, notificationText: "Deleted all user codes in $deviceName at ${location.name}"]
 			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
+			result << createEvent(name: "lockCodesData", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodesData' attribute updated")
 			break
 		case 0xD: // User code deleted
 			if (cmd.eventParameter || cmd.alarmLevel) {
@@ -449,6 +551,7 @@ private def handleAccessAlarmReport(cmd) {
 					map.descriptionText = "Deleted \"$codeName\""
 					map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 					result << codeDeletedEvent(lockCodes, codeID)
+					result << clearUserInfo(codeID)
 				}
 			}
 			break
@@ -606,7 +709,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad", notify: true, notificationText: "$deviceName at ${location.name} was unlocked by \"$codeName\"" ]
 			}
 			break
 		case 18: // Locked with keypad
@@ -627,7 +730,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			map.descriptionText = "Locked manually"
 			break
 		case 22: // Manually unlocked
-			map = [ name: "lock", value: "unlocked", data: [ method: "manual" ] ]
+			map = [ name: "lock", value: "unlocked", data: [ method: "manual", notify: true, notificationText: "$deviceName at ${location.name} was unlocked manually" ] ]
 			map.descriptionText = "Unlocked manually"
 			break
 		case 23:
@@ -639,7 +742,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			map.descriptionText = "Locked"
 			break
 		case 25: // Unlocked by command
-			map = [ name: "lock", value: "unlocked", data: [ method: "command" ] ]
+			map = [ name: "lock", value: "unlocked", data: [ method: "command", notify: true, notificationText: "$deviceName at ${location.name} was unlocked" ] ]
 			map.descriptionText = "Unlocked"
 			break
 		case 26:
@@ -655,6 +758,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			map = [ name: "codeChanged", value: "all deleted", descriptionText: "Deleted all user codes", isStateChange: true ]
 			map.data = [notify: true, notificationText: "Deleted all user codes in $deviceName at ${location.name}"]
 			result << createEvent(name: "lockCodes", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodes' attribute updated")
+			result << createEvent(name: "lockCodesData", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodesData' attribute updated")
 			break
 		case 33: // User code deleted
 			codeID = readCodeSlotId(cmd)
@@ -664,6 +768,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 				map.descriptionText = "Deleted \"$codeName\""
 				map.data = [ codeName: codeName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 				result << codeDeletedEvent(lockCodes, codeID)
+				result << clearUserInfo(codeID)
 			}
 			break
 		case 38: // Non Access
@@ -699,6 +804,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 130:  // Batteries replaced
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
+			result += setClock()
 			break
 		case 131: // Disabled user entered at keypad
 			map = [ descriptionText: "Code ${cmd.alarmLevel} is disabled", isStateChange: false ]
@@ -786,6 +892,7 @@ def zwaveEvent(UserCodeReport cmd) {
 			}
 		} else {
 			// We'll land here during scanning of codes
+			log.debug "Code scanning in progress for slot number := $codeID"
 			codeName = getCodeName(lockCodes, codeID)
 			def changeType = getChangeType(lockCodes, codeID)
 			if (!lockCodes[codeID]) {
@@ -796,6 +903,18 @@ def zwaveEvent(UserCodeReport cmd) {
 			map.value = "$codeID $changeType"
 			map.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
 			map.data = [ codeName: codeName, lockName: deviceName ]
+			
+			if (device.currentValue("numberOfSlotsDailyRepeating") || device.currentValue("numberOfSlotsWeekDay") || device.currentValue("numberOfSlotsYearDay")) {
+				// setting user info with unknown schedule type
+				def codesToScanSchedules = state.codesToScanSchedules
+				if (!codesToScanSchedules || (codesToScanSchedules && codesToScanSchedules.size() > 0 && codeID.toInteger() in codesToScanSchedules)) {
+					// set the access type to unknown only when we scan the schedule
+					setUserInfo([codeID: "" + codeID, phoneNum: "", accessType: "unknown", lastUsage: new Date().getTime()])
+				}
+			} else {
+				// setting user info with always schedule type
+				setUserInfo([codeID: "" + codeID, phoneNum: "", accessType: "always", lastUsage: new Date().getTime()])
+			}
 		}
 	} else if(userIdStatus == 254 && isSchlageLock()) {
 		// This is code creation/updation error for Schlage locks.
@@ -814,6 +933,7 @@ def zwaveEvent(UserCodeReport cmd) {
 					notificationText: "Deleted all user codes in $deviceName at ${location.name}"] ]
 			lockCodes = [:]
 			result << lockCodesEvent(lockCodes)
+			result << createEvent(name: "lockCodesData", value: util.toJson([:]), displayed: false, descriptionText: "'lockCodesData' attribute updated")
 		} else {
 			// code is not set
 			if (lockCodes[codeID]) {
@@ -822,6 +942,7 @@ def zwaveEvent(UserCodeReport cmd) {
 				map.descriptionText = "Deleted \"$codeName\""
 				map.data = [ codeName: codeName, lockName: deviceName, notify: true, notificationText: "Deleted \"$codeName\" in $deviceName at ${location.name}" ]
 				result << codeDeletedEvent(lockCodes, codeID)
+				result << clearUserInfo(codeID)
 			} else {
 				map.value = "$codeID unset"
 				map.displayed = false
@@ -834,12 +955,19 @@ def zwaveEvent(UserCodeReport cmd) {
 	result << createEvent(map)
 	
 	if (codeID.toInteger() == state.checkCode) {  // reloadAllCodes() was called, keep requesting the codes in order
-		if (state.checkCode + 1 > state.codes || state.checkCode >= 8) {
-			state.remove("checkCode")  // done
-			state["checkCode"] = null
-			sendEvent(name: "scanCodes", value: "Complete", descriptionText: "Code scan completed", displayed: false)
+		if (state.checkCode + 1 > state.codes || state.checkCode >= MAX_CODES_TO_SCAN) {
+			if (device.currentValue("numberOfSlotsDailyRepeating") || device.currentValue("numberOfSlotsWeekDay") || device.currentValue("numberOfSlotsYearDay")) {
+				// lock code scanning complete, start schedule scanning
+				// running after 2 seconds so that the 'lockCodes' map is populated before starting schedule scanning
+				runIn(2, startScanningSchedule)
+				//increasing it so that reloadAllCodes does not call startScanningSchedule before scanning of code 8
+				state.checkCode = state.checkCode + 1
+			} else {
+				codeScanCompleteEvent()
+			}
 		} else {
-			state.checkCode = state.checkCode + 1  // get next
+			// scan next code
+			state.checkCode = state.checkCode + 1
 			result << response(requestCode(state.checkCode))
 		}
 	}
@@ -868,7 +996,7 @@ def zwaveEvent(UsersNumberReport cmd) {
 	log.trace "[DTH] Executing 'zwaveEvent(UsersNumberReport)' with cmd = $cmd"
 	def result = [createEvent(name: "maxCodes", value: cmd.supportedUsers, displayed: false)]
 	state.codes = cmd.supportedUsers
-	if (state.checkCode) {
+	if (state.checkCode && state.checkCode <= MAX_CODES_TO_SCAN) {
 		if (state.checkCode <= cmd.supportedUsers) {
 			result << response(requestCode(state.checkCode))
 		} else {
@@ -1036,6 +1164,366 @@ def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationRejec
 }
 
 /**
+ * Responsible for parsing ScheduleEntryTypeSupportedReport command
+ *
+ * @param cmd: The ScheduleEntryTypeSupportedReport command to be parsed
+ *
+ * @return The event(s) to be sent out
+ *
+ */
+def zwaveEvent(physicalgraph.zwave.commands.scheduleentrylockv3.ScheduleEntryTypeSupportedReport cmd) {
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.scheduleentrylockv3.ScheduleEntryTypeSupportedReport cmd)' with cmd = $cmd"
+	def result = []
+	def numberOfSlotsDailyRepeating = cmd.numberOfSlotsDailyRepeating
+	def numberOfSlotsWeekDay = cmd.numberOfSlotsWeekDay
+	def numberOfSlotsYearDay = cmd.numberOfSlotsYearDay
+	if (!numberOfSlotsDailyRepeating) {
+		numberOfSlotsDailyRepeating = 0
+	}
+	if (!numberOfSlotsWeekDay) {
+		numberOfSlotsWeekDay = 0
+	}
+	if (!numberOfSlotsYearDay) {
+		numberOfSlotsYearDay = 0
+	}
+	result << createEvent(name: "numberOfSlotsDailyRepeating", value: numberOfSlotsDailyRepeating, displayed: false, descriptionText: "No. of daily repeating slots supported is ${numberOfSlotsDailyRepeating}")
+	result << createEvent(name: "numberOfSlotsWeekDay", value: numberOfSlotsWeekDay, displayed: false, descriptionText: "No. of week day slots supported is ${numberOfSlotsWeekDay}")
+	result << createEvent(name: "numberOfSlotsYearDay", value: numberOfSlotsYearDay, displayed: false, descriptionText: "No. of year day slots supported is ${numberOfSlotsYearDay}")
+	return result
+}
+
+/**
+ * Responsible for parsing ScheduleEntryLockDailyRepeatingReport command
+ *
+ * @param cmd: The ScheduleEntryLockDailyRepeatingReport command to be parsed
+ *
+ * @return The event(s) to be sent out
+ *
+ */
+def zwaveEvent(physicalgraph.zwave.commands.scheduleentrylockv3.ScheduleEntryLockDailyRepeatingReport cmd) {
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.scheduleentrylockv3.ScheduleEntryLockDailyRepeatingReport cmd)' with cmd = $cmd"
+	if (device.currentValue("numberOfSlotsDailyRepeating")) {
+		
+		def result = []
+		def codeID = cmd.userIdentifier
+		def lockCodes = loadLockCodes()
+		def codeName = getCodeName(lockCodes, codeID)
+
+		if (cmd.durationHour == 255 && cmd.durationMinute == 255 && cmd.startHour == 255 && cmd.startMinute == 255 && cmd.weekDayBitmask == 255) {
+			def scheduleType = getScheduleType(codeID)
+			if (isScheduleScanningInProgress(codeID) || scheduleType == "always" || scheduleType == "unknown") {
+				log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Schedule found empty while scanning for codeID := $codeID"
+				result << createEvent(name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_DAILY_REPEATING unset", isStateChange: false, displayed: false)
+				// For Kwikset lock, we know the type of schedule type through confugurationGet() and hence an empty schedule case will never be encountered
+				// For other locks, the schedule type is not known and hence check for year day and week day schedule now
+				if (device.currentValue("numberOfSlotsYearDay")) {
+					log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Requesting year day schedule for codeID := $codeID"
+					result << response(requestYearDaySchedule(codeID))
+				} else if (device.currentValue("numberOfSlotsWeekDay")) {
+					log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Requesting week day schedule for codeID := $codeID"
+					clearWeekdayScanningDataFromState(codeID)
+					result << response(requestAllWeekDaySchedule(codeID))
+				} else {
+					// schedule scanning for this codeID is complete
+					setUserInfo([codeID: "" + codeID, phoneNum: "", accessType: "always", lastUsage: new Date().getTime()])
+					log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Schedule scanning complete for codeID := $codeID"
+					checkAndScanNextSchedule(codeID)
+				}
+			} else {
+				log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Schedule deleted successfully for codeID := $codeID"
+				result << scheduleDeleteEvent(codeID)
+				def deviceName = device.displayName
+				def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_DAILY_REPEATING deleted", descriptionText: "Cleared recurring schedule for \"$codeName\"", isStateChange: true, displayed: true]
+				map.data = [lockName: deviceName, notify: true, notificationText: "Cleared recurring schedule for \"$codeName\" in $deviceName at ${location.name}"]
+				result << createEvent(map)
+			}
+		} else {
+			def savedStartTime = state["setDailyRepeatingStartTime$codeID"]
+			def savedEndTime = state["setDailyRepeatingEndTime$codeID"]
+			def savedWeekDayBitmask = state["setDailyRepeatingBitMask$codeID"]
+			
+			def changeType = getScheduleChangeType(codeID, SCHEDULE_TYPE_DAILY_REPEATING)
+			
+			if (savedStartTime && savedEndTime && savedWeekDayBitmask) {
+				def startTime = getWeekDayHoursAndMinutes(savedStartTime)
+				def endTime = getWeekDayHoursAndMinutes(savedEndTime)
+				
+				def startHour = startTime.hour
+				def startMin = startTime.minute
+				def endHour = endTime.hour
+				def endMin = endTime.minute
+		
+				def durMap = getDurationInHoursAndMinutes(startHour, startMin, endHour, endMin)
+				def durMin = durMap.durMin
+				def durHour = durMap.durHour
+				
+				if (cmd.durationHour == durHour && cmd.durationMinute == durMin && cmd.startHour == startHour && cmd.startMinute == startMin && cmd.weekDayBitmask == savedWeekDayBitmask) {
+					log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Schedule set successfully for codeID := $codeID"
+					result << scheduleSetEvent(codeID, SCHEDULE_TYPE_DAILY_REPEATING)
+					def deviceName = device.displayName
+					def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_DAILY_REPEATING $changeType", descriptionText: "${getStatusForDescription(changeType)} recurring schedule for \"$codeName\"", isStateChange: true, displayed: true]
+					map.data = [lockName: deviceName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" with recurring schedule in $deviceName at ${location.name}"]
+					result << createEvent(map)
+				} else {
+					log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Schedule set failed for codeID := $codeID"
+					result << createEvent(name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_DAILY_REPEATING failed", descriptionText: "Recurring schedule set failed for \"$codeName\"", isStateChange: true, displayed: false)
+				}
+			} else {
+				log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Schedule found for codeID := $codeID while scanning"
+				def endHour = cmd.startHour + cmd.durationHour
+				def endMin = cmd.startMinute + cmd.durationMinute
+				if (endMin >= 60) {
+					endMin = endMin % 60
+					endHour = endHour + 1
+				}
+				
+				state["setDailyRepeatingStartTime$codeID"] = sprintf("%02d:%02d", cmd.startHour, cmd.startMinute)
+				state["setDailyRepeatingEndTime$codeID"] = sprintf("%02d:%02d", endHour, endMin)
+				state["setDailyRepeatingBitMask$codeID"] = cmd.weekDayBitmask
+				result << scheduleSetEvent(codeID, SCHEDULE_TYPE_DAILY_REPEATING)
+				def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_DAILY_REPEATING $changeType", descriptionText: "${getStatusForDescription(changeType)} recurring schedule for \"$codeName\"", isStateChange: true, displayed: true]
+				if (changeType == "changed") {
+					map.displayed = false
+				}
+				result << createEvent(map)
+				
+				// schedule scanning for this codeID is complete
+				log.trace "[DTH] ScheduleEntryLockDailyRepeatingReport() -  Schedule scanning complete for codeID := $codeID"
+				checkAndScanNextSchedule(codeID)
+			}
+			clearDailyRepeatingScheduleDataFromState(codeID)
+		}
+
+		if (result) {
+			result = result.flatten()
+			return result
+		}
+		return null
+	}
+	return null
+}
+
+/**
+ * Responsible for parsing ScheduleEntryLockWeekDayReport command
+ *
+ * @param cmd: The ScheduleEntryLockWeekDayReport command to be parsed
+ *
+ * @return The event(s) to be sent out
+ *
+ */
+def zwaveEvent(physicalgraph.zwave.commands.scheduleentrylockv3.ScheduleEntryLockWeekDayReport cmd) {
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.scheduleentrylockv3.ScheduleEntryLockWeekDayReport cmd)' with cmd = $cmd"
+	if (device.currentValue("numberOfSlotsWeekDay")) {
+		def result = []
+		def codeID = cmd.userIdentifier
+		def lockCodes = loadLockCodes()
+		def codeName = getCodeName(lockCodes, codeID)
+		
+		def daysOfWeek = state["setWeekDayWeekDays$codeID"]
+		if (daysOfWeek && daysOfWeek.size() > 0) {
+			int dayOfWeek = cmd.dayOfWeek
+			if (dayOfWeek in daysOfWeek) {
+				def startTime = getWeekDayHoursAndMinutes(state["setWeekDayStartTime$codeID"])
+				def startHour = startTime.hour
+				def startMin = startTime.minute
+				
+				def endTime = getWeekDayHoursAndMinutes(state["setWeekDayEndTime$codeID"])
+				def endHour = endTime.hour
+				def endMin = endTime.minute
+				
+				if (cmd.startHour == startHour && cmd.startMinute == startMin && cmd.stopHour == endHour && cmd.stopMinute == endMin) {
+					daysOfWeek.removeAll { it == dayOfWeek }
+					state["setWeekDayWeekDays$codeID"] = daysOfWeek
+					if (daysOfWeek.size() == 0) {
+						log.trace "[DTH] ScheduleEntryLockWeekDayReport() -  Schedule set successfully for codeID := $codeID"
+						def changeType = getScheduleChangeType(codeID, SCHEDULE_TYPE_WEEK_DAY)
+						result << scheduleSetEvent(codeID, SCHEDULE_TYPE_WEEK_DAY)
+						def deviceName = device.displayName
+						def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_WEEK_DAY set", descriptionText: "${getStatusForDescription(changeType)} recurring schedule for \"$codeName\"", isStateChange: true, displayed: true]
+						map.data = [lockName: deviceName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" with recurring schedule in $deviceName at ${location.name}"]
+						result << createEvent(map)
+						clearWeekdayScheduleDataFromState(codeID)
+					}
+				} else {
+					log.trace "[DTH] ScheduleEntryLockWeekDayReport() -  Schedule set failed for codeID := $codeID"
+					result << createEvent(name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_WEEK_DAY failed", descriptionText: "Recurring schedule set failed for \"$codeName\"", isStateChange: true, displayed: false)
+					clearWeekdayScheduleDataFromState(codeID)
+				}
+			}
+		} else {
+			def scheduleSlotId = cmd.scheduleSlotId
+			scheduleSlotId = scheduleSlotId - 1
+			def weekDayScanCount = state["weekDayScanCount$codeID"] ?: 0
+			if (!isBitSet(weekDayScanCount, scheduleSlotId)) {
+				// setting bit to on
+				weekDayScanCount = weekDayScanCount | (1 << scheduleSlotId)
+			}
+			state["weekDayScanCount$codeID"] = weekDayScanCount
+			def weekDayBitMask = state["setWeekDayScanBitMask$codeID"] ?: 0
+			int dayOfWeek = cmd.dayOfWeek
+			if (dayOfWeek != 255) {
+				if (!isBitSet(weekDayBitMask, dayOfWeek)) {
+					// setting bit to on
+					weekDayBitMask = weekDayBitMask | (1 << dayOfWeek)
+				}
+				state["setWeekDayScanBitMask$codeID"] = weekDayBitMask
+				state["setWeekDayStartTime$codeID"] = sprintf("%02d:%02d", cmd.startHour, cmd.startMinute)
+				state["setWeekDayEndTime$codeID"] = sprintf("%02d:%02d", cmd.stopHour, cmd.stopMinute)
+			}
+			if (weekDayScanCount == 127 && weekDayBitMask != 0) {
+				// schedule scanning for this codeID is complete
+				log.trace "[DTH] ScheduleEntryLockWeekDayReport() -  Schedule found while scanning for codeID := $codeID"
+				def changeType = getScheduleChangeType(codeID, SCHEDULE_TYPE_WEEK_DAY)
+				clearWeekdayScanningDataFromState(codeID)
+				state["setWeekDayBitMask$codeID"] = weekDayBitMask
+				result << scheduleSetEvent(codeID, SCHEDULE_TYPE_WEEK_DAY)
+				def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_WEEK_DAY $changeType", descriptionText: "${getStatusForDescription(changeType)} recurring schedule for \"$codeName\"", isStateChange: true, displayed: true]
+				if (changeType == "changed") {
+					map.displayed = false
+				}
+				result << createEvent(map)
+				clearWeekdayScheduleDataFromState(codeID)
+				checkAndScanNextSchedule(codeID)
+			} else if (weekDayScanCount == 127 && weekDayBitMask == 0) {
+				def scheduleType = getScheduleType(codeID)
+				if (isScheduleScanningInProgress(codeID) || scheduleType == "always" || scheduleType == "unknown") {
+					log.trace "[DTH] ScheduleEntryLockWeekDayReport() -  Schedule found empty while scanning for codeID := $codeID"
+					// schedule scanning for this codeID is complete
+					setUserInfo([codeID: "" + codeID, phoneNum: "", accessType: "always", lastUsage: new Date().getTime()])
+					log.trace "[DTH] ScheduleEntryLockWeekDayReport() -  Schedule scanning complete for codeID := $codeID"
+					clearWeekdayScanningDataFromState(codeID)
+					checkAndScanNextSchedule(codeID)
+				} else {
+					log.trace "[DTH] ScheduleEntryLockWeekDayReport() -  Schedule deleted successfully for codeID := $codeID"
+					result << scheduleDeleteEvent(codeID)
+					def deviceName = device.displayName
+					def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_WEEK_DAY deleted", descriptionText: "Cleared recurring schedule for \"$codeName\"", isStateChange: true, displayed: true]
+					map.data = [lockName: deviceName, notify: true, notificationText: "Cleared recurring schedule for \"$codeName\" in $deviceName at ${location.name}"]
+					result << createEvent(map)
+				}
+			}
+		}
+		if (result) {
+			result = result.flatten()
+			return result
+		}
+		return null
+	}
+	return null
+}
+
+/**
+ * Responsible for parsing ScheduleEntryLockYearDayReport command
+ *
+ * @param cmd: The ScheduleEntryLockYearDayReport command to be parsed
+ *
+ * @return The event(s) to be sent out
+ *
+ */
+def zwaveEvent(physicalgraph.zwave.commands.scheduleentrylockv3.ScheduleEntryLockYearDayReport cmd) {
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.scheduleentrylockv3.ScheduleEntryLockYearDayReport cmd)' with cmd = $cmd"
+	if (device.currentValue("numberOfSlotsYearDay")) {
+		def result = []
+		def codeID = cmd.userIdentifier
+		def lockCodes = loadLockCodes()
+		def codeName = getCodeName(lockCodes, codeID)
+		
+		if (cmd.startYear == 255 && cmd.startMonth == 255 && cmd.startDay == 255 && cmd.startHour == 255 && cmd.startMinute == 255 &&
+				cmd.stopYear == 255 && cmd.stopMonth == 255 && cmd.stopDay == 255 && cmd.stopHour == 255 && cmd.stopMinute == 255) {
+			def scheduleType = getScheduleType(codeID)
+			if (isScheduleScanningInProgress(codeID) || scheduleType == "always" || scheduleType == "unknown") {
+				log.trace "[DTH] ScheduleEntryLockYearDayReport() -  Schedule found empty while scanning for codeID := $codeID"
+				result << createEvent(name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_YEAR_DAY unset", isStateChange: false, displayed: false)
+				
+				// For Kwikset lock, we know the type of schedule type through confugurationGet() and hence an empty schedule case will never be encountered
+				// For other locks, the schedule type is not known and hence check for week day schedule now
+				if (device.currentValue("numberOfSlotsWeekDay")) {
+					log.trace "[DTH] ScheduleEntryLockYearDayReport() -  Requesting week day schedule for codeID := $codeID"
+					clearWeekdayScanningDataFromState(codeID)
+					result << response(requestAllWeekDaySchedule(codeID))
+				} else {
+					// schedule scanning for this codeID is complete
+					setUserInfo([codeID: "" + codeID, phoneNum: "", accessType: "always", lastUsage: new Date().getTime()])
+					log.trace "[DTH] ScheduleEntryLockYearDayReport() -  Schedule scanning complete for codeID := $codeID"
+					checkAndScanNextSchedule(codeID)
+				}
+			} else {
+				log.trace "[DTH] ScheduleEntryLockYearDayReport() -  Schedule deleted successfully for codeID := $codeID"
+				result << scheduleDeleteEvent(codeID)
+				def deviceName = device.displayName
+				def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_YEAR_DAY deleted", descriptionText: "Cleared limited schedule for \"$codeName\"", isStateChange: true, displayed: true]
+				map.data = [lockName: deviceName, notify: true, notificationText: "Cleared limited schedule for \"$codeName\" in $deviceName at ${location.name}"]
+				result << createEvent(map)
+			}
+		} else {
+			def startDate = state["setYearDayStartDate$codeID"]
+			def startTime = state["setYearDayStartTime$codeID"]
+			def endDate = state["setYearDayStopDate$codeID"]
+			def endTime = state["setYearDayStopTime$codeID"]
+			
+			def changeType = getScheduleChangeType(codeID, SCHEDULE_TYPE_YEAR_DAY)
+			
+			if (startDate && startTime && endDate && endTime) {
+				def startDateTime = getYearDayTimeDetails(startDate, startTime)
+				def startHour = startDateTime.hour
+				def startMinute = startDateTime.minute
+				def startDay = startDateTime.day
+				def startMonth = startDateTime.month
+				def startYear = startDateTime.year.toString()
+				startYear = startYear.substring(2, startYear.length())
+				startYear = Integer.parseInt(startYear, 10)
+	
+				def endDateTime = getYearDayTimeDetails(endDate, endTime)
+				def stopHour = endDateTime.hour
+				def stopMinute = endDateTime.minute
+				def stopDay = endDateTime.day
+				def stopMonth = endDateTime.month
+				def stopYear = endDateTime.year.toString()
+				stopYear = stopYear.substring(2, stopYear.length())
+				stopYear = Integer.parseInt(stopYear, 10)
+	
+				if (cmd.startYear == startYear && cmd.startMonth == startMonth && cmd.startDay == startDay && cmd.startHour == startHour && cmd.startMinute == startMinute &&
+						cmd.stopYear == stopYear && cmd.stopMonth == stopMonth && cmd.stopDay == stopDay && cmd.stopHour == stopHour && cmd.stopMinute == stopMinute) {
+					log.trace "[DTH] ScheduleEntryLockYearDayReport() -  Schedule set successfully for codeID := $codeID"
+					result << scheduleSetEvent(codeID, SCHEDULE_TYPE_YEAR_DAY)
+					def deviceName = device.displayName
+					def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_YEAR_DAY $changeType", descriptionText: "${getStatusForDescription(changeType)} limited schedule for \"$codeName\"", isStateChange: true, displayed: true]
+					map.data = [lockName: deviceName, notify: true, notificationText: "${getStatusForDescription(changeType)} \"$codeName\" with limited schedule in $deviceName at ${location.name}"]
+					result << createEvent(map)
+				} else {
+					log.trace "[DTH] ScheduleEntryLockYearDayReport() -  Schedule set failed for codeID := $codeID"
+					result << createEvent(name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_YEAR_DAY failed", descriptionText: "Limited schedule set failed for \"$codeName\"", isStateChange: true, displayed: false)
+				}
+			} else {
+				log.trace "[DTH] ScheduleEntryLockYearDayReport() -  Schedule found while scanning for codeID := $codeID"
+				state["setYearDayStartDate$codeID"] = sprintf("20%02d-%02d-%02d", cmd.startYear, cmd.startMonth, cmd.startDay)
+				state["setYearDayStartTime$codeID"] = sprintf("%02d:%02d", cmd.startHour, cmd.startMinute)
+				state["setYearDayStopDate$codeID"] = sprintf("20%02d-%02d-%02d", cmd.stopYear, cmd.stopMonth, cmd.stopDay)
+				state["setYearDayStopTime$codeID"] = sprintf("%02d:%02d", cmd.stopHour, cmd.stopMinute)
+				result << scheduleSetEvent(codeID, SCHEDULE_TYPE_YEAR_DAY)
+				def map = [name: "scheduleChanged", value: "$codeID $SCHEDULE_TYPE_YEAR_DAY $changeType", descriptionText: "${getStatusForDescription(changeType)} limited schedule for \"$codeName\"", isStateChange: true, displayed: true]
+				if (changeType == "changed") {
+					map.displayed = false
+				}
+				result << createEvent(map)
+				
+				// schedule scanning for this codeID is complete
+				log.trace "[DTH] ScheduleEntryLockYearDayReport() -  Schedule scanning complete for codeID := $codeID"
+				checkAndScanNextSchedule(codeID)
+			}
+			clearYeardayScheduleDataFromState(codeID)
+		}
+
+		if (result) {
+			result = result.flatten()
+			return result
+		}
+		return null
+	}
+	return null
+}
+
+/**
  * Responsible for parsing zwave command
  *
  * @param cmd: The zwave command to be parsed
@@ -1088,7 +1576,11 @@ def unlockWithTimeout() {
 def ping() {
 	log.trace "[DTH] Executing ping() for device ${device.displayName}"
 	runIn(30, followupStateCheck)
-	secure(zwave.doorLockV1.doorLockOperationGet())
+	def cmds = []
+	cmds << setClock()
+	cmds << secure(zwave.doorLockV1.doorLockOperationGet())
+	cmds = delayBetween(cmds, 200)
+	cmds
 }
 
 /**
@@ -1209,12 +1701,21 @@ def reloadAllCodes() {
 	if(!device.currentValue("codeLength") && isSchlageLock()) {
 		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: getSchlageLockParam().codeLength.number))
 	}
+	if (device.currentValue("numberOfSlotsDailyRepeating") == null && SCHEDULE_ENTRY_LOCK_CLASS_ID in zwaveInfo.sec) {
+		cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryTypeSupportedGet())
+	}
 	if (!state.codes) {
 		// BUG: There might be a bug where Schlage does not return the below number of codes
 		cmds << secure(zwave.userCodeV1.usersNumberGet())
 	} else {
 		sendEvent(name: "maxCodes", value: state.codes, displayed: false)
-		cmds << requestCode(state.checkCode)
+		if (state.checkCode + 1 > state.codes || state.checkCode > MAX_CODES_TO_SCAN) {
+			// code scanning is complete but not schedule scanning
+			startScanningSchedule()
+		} else {
+			// starting code scanning
+			cmds << requestCode(state.checkCode)
+		}
 	}
 	if(cmds.size() > 1) {
 		cmds = delayBetween(cmds, 4200)
@@ -1366,6 +1867,579 @@ def deleteCode(codeID) {
 }
 
 /**
+ * API end-point for updating the 'lockCodesData' attribute with the user info
+ *
+ * @param userInfo: Map consisting values for code id, phone number, access type, and last usage
+ */
+def setUserInfo(userInfo) {
+	log.trace "[DTH] Executing 'setUserInfo()' by ${device.displayName} with userInfo := ${userInfo}"
+	def codeID = userInfo.codeID
+	if (codeID) {
+		codeID = codeID.toString()
+		def lockCodesData = loadlockCodesData(codeID)
+		lockCodesData[codeID].lastUsage = userInfo.lastUsage
+		lockCodesData[codeID].userInfo.phoneNum = userInfo.phoneNum ?: ""
+		def accessType = userInfo.accessType
+		if (accessType) {
+			if (accessType == "always") {
+				lockCodesData[codeID].scheduleInfo = [:]
+				lockCodesData[codeID].scheduleInfo.scheduleData = [:]
+			}
+			lockCodesData[codeID].scheduleInfo.scheduleType = accessType
+		}
+		sendEvent(lockCodesDataEvent(lockCodesData))
+	}
+}
+
+/**
+ * Starts the scanning of schedule for the first code present in the 'lockCodes' map
+ */
+def startScanningSchedule() {
+	log.trace "[DTH] Executing 'startScanningSchedule()' by ${device.displayName}"
+	def codesToScanSchedules = state.codesToScanSchedules
+	def codeID = -1
+	if (codesToScanSchedules && codesToScanSchedules.size() > 0) {
+		// Schedule scanning did not complete the last time. Scan the remaining schedules.
+		codeID = codesToScanSchedules[0]
+	} else {
+		def lockCodes = loadLockCodes()
+		if (lockCodes && lockCodes.size() > 0) {
+			def keySet = lockCodes.keySet()
+			codesToScanSchedules = []
+			// Saving the list of lock codes for which the schedule scanning should be executed
+			// In case the user creates schedule while the scanning is in progress, those codes need not be scanned
+			for (def i = 1; i <= MAX_CODES_TO_SCAN; i++) {
+				if (i.toString() in keySet) {
+					codesToScanSchedules << i
+				}
+			}
+			state.codesToScanSchedules = codesToScanSchedules
+			codeID = codesToScanSchedules[0]
+		}
+	}
+	log.trace "[DTH] startScanningSchedule() -  Schedule to scan := ${state.codesToScanSchedules}"
+	if (codeID != -1) {
+		scanSchedule(codeID)
+	} else {
+		// no schedule to scan - scheduling scanning complete
+		codeScanCompleteEvent()
+	}
+}
+
+/**
+ * Scans the schedule for the specified code slot number
+ * 
+ * @param codeID: The code slot number
+ */
+private def scanSchedule(codeID) {
+	if (isKwiksetLock()) {
+		// For Kwikset locks we can find out the user type and then issue the appropriate schedule get command
+		log.trace "[DTH] scanSchedule() -  Calling configurationGet() for codeID := $codeID"
+		sendHubCommand(new physicalgraph.device.HubAction(secure(zwave.configurationV2.configurationGet(parameterNumber: codeID))))
+	} else {
+		// only one of the supported schedule type should be requested from here
+		// executing get schedule for daily repeating first as Yale locks only support daily repeating
+		// executing get schedule for week day in the end as we have to execute 7 commands
+		if (device.currentValue("numberOfSlotsDailyRepeating")) {
+			log.trace "[DTH] scanSchedule() -  Requesting daily repeating schedule for codeID := $codeID"
+			sendHubCommand(new physicalgraph.device.HubAction(requestDailyRepeatingSchedule(codeID)))
+		} else if (device.currentValue("numberOfSlotsYearDay")) {
+			log.trace "[DTH] scanSchedule() -  Requesting year day schedule for codeID := $codeID"
+			sendHubCommand(new physicalgraph.device.HubAction(requestYearDaySchedule(codeID)))
+		} else if (device.currentValue("numberOfSlotsWeekDay")) {
+			log.trace "[DTH] scanSchedule() -  Requesting week day schedule for codeID := $codeID"
+			sendHubCommand(new physicalgraph.device.HubAction(requestAllWeekDaySchedule(codeID)))
+		} else {
+			setUserInfo([codeID: "" + codeID, phoneNum: "", accessType: "always", lastUsage: new Date().getTime()])
+		}
+	}
+}
+
+/**
+ * Initiates schedule scanning if there are pending user codes, else sends the scan complete event
+ *
+ * @param codeID: The code slot number
+ */
+private def checkAndScanNextSchedule(codeID) {
+	removeScannedScheduleCode(codeID)
+	if (hasSchedulesToScan()) {
+		// more schedules to scan
+		def codesToScanSchedules = state.codesToScanSchedules
+		scanSchedule(codesToScanSchedules[0])
+	} else {
+		// scheduling scanning complete
+		codeScanCompleteEvent()
+	}
+}
+
+/**
+ * Removes the scanned code from the state
+ * 
+ * @param codeID: The code slot number
+ */
+private def removeScannedScheduleCode(codeID) {
+	def codesToScanSchedules = state.codesToScanSchedules
+	codesToScanSchedules.removeAll { it == codeID }
+	log.trace "[DTH] removeScannedScheduleCode() -  Remaining schedule to scan := $codesToScanSchedules"
+	state.codesToScanSchedules = codesToScanSchedules
+}
+
+/**
+ * Checks if there are more schedules to be scanned
+ *
+ * @returns true if more schedules are to be scanned, else false
+ */
+private def hasSchedulesToScan() {
+	return state.codesToScanSchedules?.size() > 0
+}
+
+/**
+ * API end-point for setting a schedule on a lock
+ *
+ * @param schSettings: The map with schedule info
+ *
+ * @returns cmds: The commands fired for setting a schedule on a lock
+ */
+def setSchedule(schSettings) {
+	log.trace "[DTH] Executing 'setSchedule()' by ${device.displayName} with schSettings := $schSettings"
+	def cmds = []
+	cmds += setClock()
+	
+	def scheduleType = schSettings.scheduleType
+	if (scheduleType == SCHEDULE_TYPE_DAILY_REPEATING) {
+		cmds << getDailyRepeatingSetScheduleCmd(schSettings)
+	} else if (scheduleType == SCHEDULE_TYPE_WEEK_DAY) {
+		cmds << getWeekDaySetScheduleCmd(schSettings)
+	} else if (scheduleType == SCHEDULE_TYPE_YEAR_DAY) {
+		cmds << getYearDaySetScheduleCmd(schSettings)
+	}
+	cmds = cmds.flatten()
+	cmds
+}
+
+/**
+ * Clears the state and sends event for code scanning complete 
+ */
+def codeScanCompleteEvent() {
+	state["checkCode"] = null
+	state.remove("checkCode")
+	sendEvent(name: "scanCodes", value: "Complete", descriptionText: "Code scan completed", displayed: false)
+}
+
+/**
+ * API end-point for deleting a schedule on a lock
+ *
+ * @param schSettings: The map with schedule info
+ *
+ * @returns cmds: The commands fired for deleting a schedule on a lock
+ */
+def deleteSchedule(schSettings) {
+	log.trace "[DTH] Executing 'deleteSchedule()' by ${device.displayName} with schSettings := $schSettings"
+	def cmds = []
+	
+	def codeID = Integer.parseInt(schSettings.codeId, 10)
+	if (schSettings.clearSchedule) {
+		cmds << clearOldSchedule(codeID)
+		cmds = cmds.flatten()
+		return cmds
+	}
+	
+	def scheduleType = schSettings.scheduleType
+	if (isKwiksetLock()) {
+		cmds << changeUserTypeToOwner(codeID)
+	} else {
+		if (scheduleType == SCHEDULE_TYPE_DAILY_REPEATING) {
+			cmds << getDailyRepeatingDeleteScheduleCmd(codeID)
+		} else if (scheduleType == SCHEDULE_TYPE_WEEK_DAY) {
+			cmds << getWeekDayDeleteScheduleCmd(codeID)
+		} else if (scheduleType == SCHEDULE_TYPE_YEAR_DAY) {
+			cmds << getYearDayDeleteScheduleCmd(codeID)
+		}
+	}
+	
+	if (cmds) {
+		cmds = cmds.flatten()
+		return cmds
+	}
+	return null
+}
+
+/**
+ * Clears a schedule on a lock
+ *
+ * @param codeID: The code slot number
+ *
+ * @returns cmds: The commands fired for clearing a schedule on a lock
+ */
+private def clearOldSchedule(codeID) {
+	log.trace "[DTH] Executing 'clearOldSchedule()' by ${device.displayName} with codeID := $codeID"
+	def cmds = []
+	
+	if (codeID instanceof String) {
+		codeID = Integer.parseInt(codeID, 10)
+	}
+	
+	if (isKwiksetLock()) {
+		cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: codeID, configurationValue: [1]))
+	} else {
+		if (device.currentValue("numberOfSlotsDailyRepeating")) {
+			cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockDailyRepeatingSet(scheduleSlotId: 1, setAction: 0, userIdentifier: codeID))
+		}
+		if (device.currentValue("numberOfSlotsWeekDay")) {
+			for (def i = 0; i <= 6; i++) {
+				cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockWeekDaySet(setAction: 0, scheduleSlotId: (i + 1), userIdentifier: codeID))
+			}
+		}
+		if (device.currentValue("numberOfSlotsYearDay")) {
+			cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockYearDaySet(scheduleSlotId: 1, setAction: 0, userIdentifier: codeID))
+		}
+	}
+	
+	if (cmds) {
+		cmds = cmds.flatten()
+		log.trace "[DTH] 'clearOldSchedule()' returning with cmds := $cmds"
+		return cmds
+	}
+	return null
+}
+
+/**
+ * API end-point for changing the user type of a code slot to type owner. This is applicable only for Kwikset locks.
+ *
+ * @param codeID: The code slot number
+ *
+ * @returns cmds: The commands fired for changing the user type
+ */
+def changeUserTypeToOwner(codeID) {
+	if (isKwiksetLock()) {
+		if (codeID != null) {
+			def cmds = []
+			cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: codeID, configurationValue: [1]))
+			cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: codeID))
+			cmds = delayBetween(cmds, 2000)
+			return cmds
+		}
+		return null
+	}
+	return null
+}
+
+/**
+ * Returns the command(s) for setting daily repeating schedule
+ *
+ * @return The command(s) for setting daily repeating schedule
+ */
+private def getDailyRepeatingSetScheduleCmd(schSettings) {
+	if (device.currentValue("numberOfSlotsDailyRepeating")) {
+		log.trace "[DTH] Executing 'getDailyRepeatingSetScheduleCmd()' by ${device.displayName} with schSettings := $schSettings"
+		def cmds = []
+		
+		def codeID = Integer.parseInt(schSettings.codeId, 10)
+		
+		def startTime = getWeekDayHoursAndMinutes(schSettings.startTime)
+		def startHour = startTime.hour
+		def startMin = startTime.minute
+		
+		def endTime = getWeekDayHoursAndMinutes(schSettings.endTime)
+		def endHour = endTime.hour
+		def endMin = endTime.minute
+		
+		def durMap = getDurationInHoursAndMinutes(startHour, startMin, endHour, endMin)
+		def durMin = durMap.durMin
+		def durHour = durMap.durHour
+		
+		// For weekDayBitMask, the order of days is Sat, Fri, Thu, Wed, Tue, Mon, Sun with Sat as the most significant bit
+		short weekDayBitMask = schSettings.weekDayBitMask
+		
+		state["setDailyRepeatingStartTime$codeID"] = schSettings.startTime
+		state["setDailyRepeatingEndTime$codeID"] = schSettings.endTime
+		state["setDailyRepeatingBitMask$codeID"] = weekDayBitMask
+		
+		cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockDailyRepeatingSet(durationHour: durHour, durationMinute: durMin, scheduleSlotId: 1, setAction: 1,
+			startHour: startHour, startMinute: startMin, userIdentifier: codeID, weekDayBitmask: weekDayBitMask))
+		cmds << requestDailyRepeatingSchedule(codeID)
+		cmds = delayBetween(cmds, 200)
+
+		log.debug "[DTH] 'getDailyRepeatingSetScheduleCmd()' returning with commands := $cmds"
+		return cmds
+	}
+	return null
+}
+
+/**
+ * Returns the command(s) for setting week day schedule
+ *
+ * @return The command(s) for setting week day schedule
+ */
+private def getWeekDaySetScheduleCmd(schSettings) {
+	if (device.currentValue("numberOfSlotsWeekDay")) {
+		log.trace "[DTH] Executing 'getWeekDaySetScheduleCmd()' by ${device.displayName} with schSettings := $schSettings"
+		def cmds = []
+		
+		def codeID = Integer.parseInt(schSettings.codeId, 10)
+		
+		def startTime = getWeekDayHoursAndMinutes(schSettings.startTime)
+		def startHour = startTime.hour
+		def startMin = startTime.minute
+		
+		def endTime = getWeekDayHoursAndMinutes(schSettings.endTime)
+		def endHour = endTime.hour
+		def endMin = endTime.minute
+		
+		// For weekDayBitMask, the order of days is Sat, Fri, Thu, Wed, Tue, Mon, Sun with Sat as the most significant bit
+		short weekDayBitMask = schSettings.weekDayBitMask
+		
+		state["setWeekDayStartTime$codeID"] = schSettings.startTime
+		state["setWeekDayEndTime$codeID"] = schSettings.endTime
+		state["setWeekDayBitMask$codeID"] = weekDayBitMask
+		
+		def setCmds = []
+		def getCmds = []
+		def daysOfWeek = []
+		// dayOfWeek - Sunday = 0, Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4, Friday = 5, Saturday = 6
+		for (def i = 0; i <= 6; i++) {
+			if (isBitSet(weekDayBitMask, i)) {
+				daysOfWeek << i
+				setCmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockWeekDaySet(startHour: startHour, startMinute: startMin,
+					setAction: 1, scheduleSlotId: (i + 1), stopHour: endHour, stopMinute: endMin, userIdentifier: codeID, dayOfWeek: i))
+				getCmds << requestWeekDaySchedule((i + 1), codeID)
+			}
+		}
+		if (setCmds && getCmds) {
+			cmds = delayBetween(setCmds, 200) + ["delay 2000"] + delayBetween(getCmds, 200)
+			state["setWeekDayWeekDays$codeID"] = daysOfWeek
+		}
+		
+		log.debug "[DTH] 'getWeekDayScheduleSetCmd()' returning with commands := $cmds"
+		return cmds
+	}
+	return null
+}
+
+/**
+ * Returns the command(s) for setting year day schedule
+ *
+ * @return The command(s) for setting year day schedule
+ */
+private def getYearDaySetScheduleCmd(schSettings) {
+	if (device.currentValue("numberOfSlotsYearDay")) {
+		log.trace "[DTH] Executing 'getYearDaySetScheduleCmd()' by ${device.displayName} with schSettings := $schSettings"
+		def cmds = []
+		
+		def codeID = Integer.parseInt(schSettings.codeId, 10)
+		
+		def startDate = schSettings.startDate
+		def startTime = schSettings.startTime
+		def endDate = schSettings.endDate
+		def endTime = schSettings.endTime
+		
+		state["setYearDayStartDate$codeID"] = startDate
+		state["setYearDayStartTime$codeID"] = startTime
+		state["setYearDayStopDate$codeID"] = endDate
+		state["setYearDayStopTime$codeID"] = endTime
+		
+		def startDateTime = getYearDayTimeDetails(startDate, startTime)
+		def startHour = startDateTime.hour
+		def startMinute = startDateTime.minute
+		def startDay = startDateTime.day
+		def startMonth = startDateTime.month
+		def startYear = startDateTime.year.toString()
+		startYear = startYear.substring(2, startYear.length())
+		startYear = Integer.parseInt(startYear, 10)
+		
+		def endDateTime = getYearDayTimeDetails(endDate, endTime)
+		def stopHour = endDateTime.hour
+		def stopMinute = endDateTime.minute
+		def stopDay = endDateTime.day
+		def stopMonth = endDateTime.month
+		def stopYear = endDateTime.year.toString()
+		stopYear = stopYear.substring(2, stopYear.length())
+		stopYear = Integer.parseInt(stopYear, 10)
+		
+		cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockYearDaySet(scheduleSlotId: 1, setAction: 1, startDay: startDay, startHour: startHour, startMinute: startMinute,
+				startMonth: startMonth, startYear: startYear, stopDay: stopDay, stopHour: stopHour, stopMinute: stopMinute, stopMonth: stopMonth,
+				stopYear: stopYear, userIdentifier: codeID))
+		cmds << requestYearDaySchedule(codeID)
+		cmds = delayBetween(cmds, 200)
+	   
+	   log.debug "[DTH] getYearDayScheduleSetCmd() returning with commands := $cmds"
+	   return cmds
+	}
+	return null
+}
+
+/**
+ * Returns the command(s) for deleting week day schedule
+ * 
+ * @param codeID: The code slot number
+ *
+ * @return The command(s) for deleting week day schedule
+ */
+private def getDailyRepeatingDeleteScheduleCmd(codeID) {
+	log.trace "[DTH] Executing 'getDailyRepeatingDeleteScheduleCmd()' by ${device.displayName} with codeID := $codeID"
+	def cmds = []
+	cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockDailyRepeatingSet(scheduleSlotId: 1, setAction: 0, userIdentifier: codeID))
+	cmds << requestDailyRepeatingSchedule(codeID)
+	cmds = delayBetween(cmds, 200)
+
+	log.debug "[DTH] 'getDailyRepeatingDeleteScheduleCmd()' returning with commands := $cmds"
+	cmds
+}
+
+/**
+ * Returns the command(s) for deleting week day schedule
+ * 
+ * @param codeID: The code slot number
+ *
+ * @return The command(s) for deleting week day schedule
+ */
+private def getWeekDayDeleteScheduleCmd(codeID) {
+	def cmds = []
+	def setCmds = []
+	def getCmds = []
+	for (def i = 0; i <= 6; i++) {
+		setCmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockWeekDaySet(setAction: 0, scheduleSlotId: (i + 1), userIdentifier: codeID))
+		getCmds << requestWeekDaySchedule((i + 1), codeID)
+	}
+	if (setCmds && getCmds) {
+		cmds = delayBetween(setCmds, 200) + ["delay 2000"]+ delayBetween(getCmds, 200)
+	}
+
+	log.debug "[DTH] 'getWeekDayDeleteScheduleCmd()' returning with commands := $cmds"
+	return cmds
+}
+
+/**
+ * Returns the command(s) for deleting year day schedule
+ * 
+ * @param codeID: The code slot number
+ *
+ * @return The command(s) for deleting year day schedule
+ */
+private def getYearDayDeleteScheduleCmd(codeID) {
+	log.trace "[DTH] Executing 'getYearDayDeleteScheduleCmd()' by ${device.displayName}"
+	def cmds = []
+	cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockYearDaySet(scheduleSlotId: 1, setAction: 0, userIdentifier: codeID))
+	cmds << requestYearDaySchedule(codeID)
+	cmds = delayBetween(cmds, 200)
+
+	log.debug "[DTH] 'getYearDayDeleteScheduleCmd()' returning with commands := $cmds"
+	cmds
+}
+
+/**
+ * Returns the command for daily repeating schedule get
+ *
+ * @param codeID: The code slot number
+ *
+ * @return The command for daily repeating schedule get
+ */
+private def requestDailyRepeatingSchedule(codeID) {
+	log.debug "In requestDailyRepeatingSchedule() with codeID := $codeID"
+	secure(zwave.scheduleEntryLockV3.scheduleEntryLockDailyRepeatingGet(scheduleSlotId: 1, userIdentifier: codeID))
+}
+
+/**
+ * Returns the command for week day schedule get
+ *
+ * @param codeID: The code slot number
+ *
+ * @param slotID: The schedule slot number
+ *
+ * @return The command for week day schedule get
+ */
+private def requestWeekDaySchedule(slotID, codeID) {
+	secure(zwave.scheduleEntryLockV3.scheduleEntryLockWeekDayGet(scheduleSlotId: slotID, userIdentifier: codeID))
+}
+
+/**
+ * Returns the command for week day schedule get for all schedule slot ids
+ *
+ * @param codeID: The code slot number
+ *
+ * @return The command for week day schedule get for all schedule slot ids
+ */
+private def requestAllWeekDaySchedule(codeID) {
+	def cmds = []
+	for (def i = 0; i <= 6; i++) {
+		cmds << requestWeekDaySchedule((i + 1), codeID)
+	}
+	cmds = delayBetween(cmds, 200)
+	cmds
+}
+
+/**
+ * Returns the command for year day schedule get
+ *
+ * @param codeID: The code slot number
+ *
+ * @return The command for year day schedule get
+ */
+private def requestYearDaySchedule(codeID) {
+	secure(zwave.scheduleEntryLockV3.scheduleEntryLockYearDayGet(scheduleSlotId: 1, userIdentifier: codeID))
+}
+
+/**
+ * Checks if a particular bit is set in a number
+ *
+ * @param weekDayBitmask: The week day bit mask
+ *
+ * @param bitNum: The bit number to check
+ *
+ * @return - true if the bit is set, false otherwise
+ */
+def isBitSet(weekDayBitmask, bitNum) {
+	def mask = 1 << bitNum
+	if ((weekDayBitmask & mask) != 0) {
+		return true
+	}
+	return false
+}
+
+/**
+ * Calculates the duration in hours and minutes
+ *
+ * @param startHour: The start hour
+ *
+ * @param startMin: The start minute
+ *
+ * @param endHour: The end hour
+ *
+ * @param endMin: The end minute
+ *
+ * @return The map with duration in hours and minutes
+ */
+private Map getDurationInHoursAndMinutes(startHour, startMin, endHour, endMin) {
+	def startDate = new Date()
+	startDate.set(hourOfDay: startHour, minute: startMin, second: 0, year: 2000, month: 1, date: 1)
+
+	def endDate = new Date()
+	endDate.set(hourOfDay: endHour, minute: endMin, second: 0, year: 2000, month: 1, date: 1)
+
+	long difference = endDate.getTime() - startDate.getTime();
+	difference = difference / 1000
+	def durSeconds = difference % 60
+	difference = (difference - durSeconds) / 60
+	def durMin = difference % 60
+	difference = (difference - durMin) / 60
+	def durHour = difference % 24
+	return [durHour: durHour, durMin: durMin]
+}
+
+/**
+ * Removes the specified code if from lockCodesData and updates the attribute
+ *
+ * @param codeID: The code slot number
+ */
+def clearUserInfo(codeID) {
+	log.trace "[DTH] Executing 'clearUserInfo()' by ${device.displayName} with codeID := $codeID"
+	def lockCodesData = parseJson(device.currentValue("lockCodesData") ?: "{}") ?: [:]
+	codeID = codeID.toString()
+	lockCodesData.remove(codeID)
+	lockCodesDataEvent(lockCodesData)
+}
+
+/**
  * Encapsulates a command
  *
  * @param cmd: The command to be encapsulated
@@ -1491,6 +2565,37 @@ private Map lockCodesEvent(lockCodes) {
 }
 
 /**
+ * Reads the 'lockCodesData' attribute and parses the same
+ *
+ * @returns Map: The lockCodesData map
+ */
+private Map loadlockCodesData(codeID) {
+	def lockCodesData = parseJson(device.currentValue("lockCodesData") ?: "{}") ?: [:]
+	if (!lockCodesData[codeID]) {
+		lockCodesData[codeID] = [:]
+	}
+	if (!lockCodesData[codeID].userInfo) {
+		lockCodesData[codeID].userInfo = [:]
+	}
+	if (!lockCodesData[codeID].scheduleInfo) {
+		lockCodesData[codeID].scheduleInfo = [:]
+	}
+	if (!lockCodesData[codeID].scheduleInfo.scheduleData) {
+		lockCodesData[codeID].scheduleInfo.scheduleData = [:]
+	}
+	lockCodesData
+}
+
+/**
+ * Populates the 'lockCodesData' attribute by calling create event
+ *
+ * @param lockCodesData The week day schedule info in a lock
+ */
+private Map lockCodesDataEvent(lockCodesData) {
+	createEvent(name: "lockCodesData", value: util.toJson(lockCodesData), displayed: false, descriptionText: "'lockCodesData' attribute updated")
+}
+
+/**
  * Utility function to figure out if code id pertains to master code or not
  *
  * @param codeID - The slot number in which code is set
@@ -1524,6 +2629,54 @@ private def codeSetEvent(lockCodes, codeID, codeName) {
 	codeReportMap.descriptionText = "${device.displayName} code $codeID is set"
 	result << createEvent(codeReportMap)
 	result
+}
+
+/**
+ * Creates the event map for user code creation
+ *
+ * @param codeID: The code slot number
+ *
+ * @param accessType: Recurring or limited
+ *
+ * @return The list of events to be sent out
+ */
+private def scheduleSetEvent(codeID, scheduleType) {
+	// codeID seems to be an int primitive type
+	codeID = codeID.toString()
+	def lockCodesData = loadlockCodesData(codeID)
+	lockCodesData[codeID].lastUsage = new Date().getTime()
+	lockCodesData[codeID].scheduleInfo = [:]
+	lockCodesData[codeID].scheduleInfo.scheduleData = [:]
+	lockCodesData[codeID].scheduleInfo.scheduleType = scheduleType
+	if (scheduleType == SCHEDULE_TYPE_DAILY_REPEATING) {
+		lockCodesData[codeID].scheduleInfo.scheduleData = [startTime: state["setDailyRepeatingStartTime$codeID"],
+			endTime: state["setDailyRepeatingEndTime$codeID"], weekDayBitMask: state["setDailyRepeatingBitMask$codeID"]]
+	} else if (scheduleType == SCHEDULE_TYPE_WEEK_DAY) {
+		lockCodesData[codeID].scheduleInfo.scheduleData = [startTime: state["setWeekDayStartTime$codeID"],
+			endTime: state["setWeekDayEndTime$codeID"], weekDayBitMask: state["setWeekDayBitMask$codeID"]]
+	} else if (scheduleType == SCHEDULE_TYPE_YEAR_DAY) {
+		lockCodesData[codeID].scheduleInfo.scheduleData = [startDate: state["setYearDayStartDate$codeID"],
+			startTime: state["setYearDayStartTime$codeID"], stopDate: state["setYearDayStopDate$codeID"], stopTime: state["setYearDayStopTime$codeID"]]
+	}
+	lockCodesDataEvent(lockCodesData)
+}
+
+/**
+ * Creates the event map for user code creation
+ *
+ * @param codeID: The code slot number
+ *
+ * @return The list of events to be sent out
+ */
+private def scheduleDeleteEvent(codeID) {
+	// codeID seems to be an int primitive type
+	codeID = codeID.toString()
+	def lockCodesData = loadlockCodesData(codeID)
+	lockCodesData[codeID].lastUsage = new Date().getTime()
+	lockCodesData[codeID].scheduleInfo = [:]
+	lockCodesData[codeID].scheduleInfo.scheduleData = [:]
+	lockCodesData[codeID].scheduleInfo.scheduleType = "always"
+	lockCodesDataEvent(lockCodesData)
 }
 
 /**
@@ -1588,7 +2741,73 @@ private def getChangeType(lockCodes, codeID) {
 }
 
 /**
- * Method to obtain status for descriptuion based on change type
+ * Checks if a schedule change type is set or update
+ *
+ * @param codeID The code slot number
+ *
+ * @param scheduleType The schedule type to check for
+ *
+ * @return "set" or "update" basis the presence of the code id in the lockCodesData map
+ */
+private def getScheduleChangeType(codeID, scheduleType) {
+	def changeType = "set"
+	def lockCodesData = device.currentValue("lockCodesData")
+	if (lockCodesData) {
+		lockCodesData = parseJson(lockCodesData)
+		def data = lockCodesData[codeID.toString()]
+		if (data) {
+			def scheduleData = data.scheduleInfo?.scheduleData
+			if (scheduleType == SCHEDULE_TYPE_DAILY_REPEATING || scheduleType == SCHEDULE_TYPE_WEEK_DAY) {
+				if (scheduleData && scheduleData.startTime && scheduleData.endTime && scheduleData.weekDayBitMask) {
+					changeType = "changed"
+				}
+			} else if (scheduleType == SCHEDULE_TYPE_YEAR_DAY) {
+				if (scheduleData && scheduleData.startDate && scheduleData.startTime && scheduleData.stopDate && scheduleData.stopTime) {
+					changeType = "changed"
+				}
+			}
+		}
+	}
+	changeType
+}
+
+/**
+ * Checks if schedule scanning is in progress
+ *
+ * @param codeID The code slot number
+ *
+ * @return true if scanning is in progress, else false
+ */
+private def isScheduleScanningInProgress(codeID) {
+	def codesToScanSchedules = state.codesToScanSchedules
+	if (codesToScanSchedules && codeID.toInteger() in codesToScanSchedules) {
+		return true
+	}
+	return false
+}
+
+/**
+ * Returns the schedule type basis the code slot number
+ *
+ * @param codeID The code slot number
+ *
+ * @return The schedule type
+ */
+private def getScheduleType(codeID) {
+	def scheduleType = "always"
+	def lockCodesData = device.currentValue("lockCodesData")
+	if (lockCodesData) {
+		lockCodesData = parseJson(lockCodesData)
+		def data = lockCodesData[codeID.toString()]
+		if (data && data.scheduleInfo && data.scheduleInfo.scheduleType) {
+			scheduleType = data.scheduleInfo.scheduleType
+		}
+	}
+	scheduleType
+}
+
+/**
+ * Method to obtain status for description based on change type
  * @param changeType: Either "set" or "changed"
  * @return "Added" for "set", "Updated" for "changed", "" otherwise
  */
@@ -1603,6 +2822,40 @@ private def getStatusForDescription(changeType) {
 }
 
 /**
+ * Parse the time using SimpleDateFormat
+ *
+ * @param time: The time in HH:mm format
+ *
+ * @return The map with hour and minute
+ */
+private def getWeekDayHoursAndMinutes(time) {
+	def sdf = new SimpleDateFormat("HH:mm")
+	time = sdf.parse(time)
+	Calendar calendar = GregorianCalendar.getInstance()
+	calendar.setTime(time)
+	[hour: calendar.get(Calendar.HOUR_OF_DAY), minute: calendar.get(Calendar.MINUTE)]
+}
+
+/**
+ * Parse the date and time using SimpleDateFormat
+ *
+ * @param date: The date in yyyy-MM-dd format
+ *
+ * @param time: The time in HH:mm format
+ *
+ * @return The map with year, month, day, hour and minute
+ */
+private def getYearDayTimeDetails(date, time) {
+	def sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm")
+	def dateTime = sdf.parse(date + " " + time)
+	Calendar calendar = GregorianCalendar.getInstance()
+	calendar.setTime(dateTime)
+	
+	[year: calendar.get(Calendar.YEAR), month: calendar.get(Calendar.MONTH) + 1, day: calendar.get(Calendar.DAY_OF_MONTH),
+		hour: calendar.get(Calendar.HOUR_OF_DAY), minute: calendar.get(Calendar.MINUTE)]
+}
+
+/**
  * Clears the code name and pin from the state basis the code slot number
  *
  * @param codeID: The code slot number
@@ -1610,6 +2863,64 @@ private def getStatusForDescription(changeType) {
 def clearStateForSlot(codeID) {
 	state.remove("setname$codeID")
 	state["setname$codeID"] = null
+}
+
+/**
+ * Clears the daily repeating start time, end time and weekday bit mask from the state basis the code slot number
+ *
+ * @param codeID: The code slot number
+ */
+def clearDailyRepeatingScheduleDataFromState(codeID) {
+	state["setDailyRepeatingStartTime$codeID"] = null
+	state.remove("setDailyRepeatingStartTime$codeID")
+	state["setDailyRepeatingEndTime$codeID"] = null
+	state.remove("setDailyRepeatingEndTime$codeID")
+	state["setDailyRepeatingBitMask$codeID"] = null
+	state.remove("setDailyRepeatingBitMask$codeID")
+}
+
+/**
+ * Clears the week day start time, end time and weekday bit mask from the state basis the code slot number
+ *
+ * @param codeID: The code slot number
+ */
+def clearWeekdayScheduleDataFromState(codeID) {
+	state["setWeekDayStartTime$codeID"] = null
+	state.remove("setWeekDayStartTime$codeID")
+	state["setWeekDayEndTime$codeID"] = null
+	state.remove("setWeekDayEndTime$codeID")
+	state["setWeekDayBitMask$codeID"] = null
+	state.remove("setWeekDayBitMask$codeID")
+	state["setWeekDayWeekDays$codeID"] = null
+	state.remove("setWeekDayWeekDays$codeID")
+}
+
+/**
+ * Clears the week day scan count and weekday bit mask from the state basis the code slot number
+ *
+ * @param codeID: The code slot number
+ */
+def clearWeekdayScanningDataFromState(codeID) {
+	state["weekDayScanCount$codeID"] = null
+	state.remove("weekDayScanCount$codeID")
+	state["setWeekDayScanBitMask$codeID"] = null
+	state.remove("setWeekDayScanBitMask$codeID")
+}
+
+/**
+ * Clears the code name, phone number, start time, end time and weekday bitmask from the state basis the code slot number
+ *
+ * @param codeID: The code slot number
+ */
+def clearYeardayScheduleDataFromState(codeID) {
+	state["setYearDayStartDate$codeID"] = null
+	state.remove("setYearDayStartDate$codeID")
+	state["setYearDayStartTime$codeID"] = null
+	state.remove("setYearDayStartTime$codeID")
+	state["setYearDayStopDate$codeID"] = null
+	state.remove("setYearDayStopDate$codeID")
+	state["setYearDayStopTime$codeID"] = null
+	state.remove("setYearDayStopTime$codeID")
 }
 
 /**
@@ -1694,4 +3005,54 @@ def readCodeSlotId(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		return cmd.eventParameter[2]
 	}
 	return cmd.alarmLevel
+}
+
+/**
+ * Function for setting locks time and offset
+ */
+private def setClock() {
+	log.trace "In setClock"
+	def cmds = []
+
+	def commclasses = zwaveInfo.sec
+	if(commclasses.contains("4E") && commclasses.contains("8B")) {
+		def timeZoneFlag = 0
+		def timeZoneOffset = location.timeZone.getRawOffset() / 1000
+
+		if(timeZoneOffset < 0) {
+			timeZoneFlag = 1
+			timeZoneOffset = timeZoneOffset.abs()
+		}
+
+		def timeobt = timeZoneOffset.longValue()
+		def minutes = (timeobt % 3600) / 60
+		def hours = (timeobt - minutes * 60) / 3600
+
+		if(!location.timeZone.useDaylightTime() || !location.timeZone.inDaylightTime(new Date())) {
+			log.debug "Setting offset on lock hourTzo: ${hours} minuteOffsetDst: 0 minuteTzo: ${minutes} signOffsetDst: 0 signTzo: ${timeZoneFlag}"
+			cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockTimeOffsetSet(hourTzo:hours, minuteOffsetDst:0, minuteTzo:minutes, signOffsetDst:0, signTzo: timeZoneFlag))
+		} else {
+			def dstOffset = location.timeZone.dstSavings / 1000
+			def dstFlag = 0
+			if(dstOffset < 0) {
+				dstFlag = 1
+				dstOffset = dstOffset.abs()
+			}
+			def minutesDst = dstOffset  / 60
+			log.debug "Setting offset on lock hourTzo: ${hours} minuteOffsetDst: ${minutesDst} minuteTzo: ${minutes} signOffsetDst: ${dstFlag} signTzo: ${timeZoneFlag}"
+			cmds << secure(zwave.scheduleEntryLockV3.scheduleEntryLockTimeOffsetSet(hourTzo: hours, minuteOffsetDst: minutesDst, minuteTzo: minutes, signOffsetDst: dstFlag, signTzo: timeZoneFlag))
+			}
+
+		def now = new Date().toCalendar()
+		short hour = now.get(Calendar.HOUR_OF_DAY)
+		short min = now.get(Calendar.MINUTE)
+		short sec = now.get(Calendar.SECOND)
+		short day = now.get(Calendar.DAY_OF_MONTH)
+		short month = now.get(Calendar.MONTH) + 1
+		int year = now.get(Calendar.YEAR)
+
+		log.debug "Setting time on lock - $year-$month-$day $hour:$min:$sec (YYYY-MM-DD hh:mm:ss)"
+		cmds << secure(zwave.timeParametersV1.timeParametersSet(hourUtc: hour, minuteUtc: min, secondUtc: sec, day: day , month: month, year: year))
+	}
+	cmds
 }
