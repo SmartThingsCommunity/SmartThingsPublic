@@ -131,6 +131,10 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 	[name: "indicatorStatus", value: value, displayed: false]
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sceneactuatorconfv1.SceneActuatorConfReport cmd) {
+	[name: "switch", value: cmd.level ? "on" : "off", type: "physical", isStateChange: true]
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 	[name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false]
 }
