@@ -30,7 +30,8 @@ definition(
 	description: "Dim your lights up slowly, allowing you to wake up more naturally.",
 	category: "Health & Wellness",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/HealthAndWellness/App-SleepyTime.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/HealthAndWellness/App-SleepyTime@2x.png"
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/HealthAndWellness/App-SleepyTime@2x.png",
+	pausable: true
 )
 
 preferences {

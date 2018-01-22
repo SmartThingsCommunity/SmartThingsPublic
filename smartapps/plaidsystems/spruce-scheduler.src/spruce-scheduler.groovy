@@ -35,7 +35,9 @@ definition(
     category: "Green Living",
     iconUrl: "http://www.plaidsystems.com/smartthings/st_spruce_leaf_250f.png",
     iconX2Url: "http://www.plaidsystems.com/smartthings/st_spruce_leaf_250f.png",
-    iconX3Url: "http://www.plaidsystems.com/smartthings/st_spruce_leaf_250f.png")    
+    iconX3Url: "http://www.plaidsystems.com/smartthings/st_spruce_leaf_250f.png",
+    pausable: true
+)
  
 preferences {
     page(name: 'startPage')
