@@ -79,6 +79,9 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     if (event) {
+        if (event.name=="colorTemperature") {
+            setGenericName(event.value)
+        }
         sendEvent(event)
     }
     else {
@@ -148,7 +151,6 @@ def updated() {
 }
 
 def setColorTemperature(value) {
-    setGenericName(value)
     value = value as Integer
     def tempInMired = Math.round(1000000 / value)
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))

@@ -153,6 +153,7 @@ def installed() {
 }
 
 def setColorTemperature(value) {
+    // TODO: Use this method for all zigbee white lights, but also change logic in appengine-zigbee to round
     zigbee.setColorTemperature(value) + ["delay 1500"] + zigbee.colorTemperatureRefresh()
 }
 
