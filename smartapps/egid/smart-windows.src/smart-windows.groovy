@@ -23,7 +23,8 @@ definition(
 	author: "Eric Gideon",
 	description: "Compares two temperatures – indoor vs outdoor, for example – then sends an alert if windows are open (or closed!). If you don't use an external temperature device, your location will be used instead.",
 	iconUrl: "https://s3.amazonaws.com/smartthings-device-icons/Home/home9-icn.png",
-	iconX2Url: "https://s3.amazonaws.com/smartthings-device-icons/Home/home9-icn@2x.png"
+	iconX2Url: "https://s3.amazonaws.com/smartthings-device-icons/Home/home9-icn@2x.png",
+	pausable: true
 )
 
 
