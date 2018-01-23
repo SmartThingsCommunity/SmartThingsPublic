@@ -90,9 +90,9 @@ def parse(String description) {
     def event = zigbee.getEvent(description)
     if (event) {
         log.debug event
-        if (event.name=="level" && event.value==0) {}
+        if (event.name == "level" && event.value == 0) {}
         else {
-            if (event.name=="colorTemperature") {
+            if (event.name == "colorTemperature") {
                 setGenericName(event.value)
             }
             sendEvent(event)

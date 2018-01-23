@@ -78,7 +78,7 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     if (event) {
-        if (event.name=="colorTemperature") {
+        if (event.name == "colorTemperature") {
             setGenericName(event.value)
         }
         sendEvent(event)
