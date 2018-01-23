@@ -153,8 +153,13 @@ def installed() {
 }
 
 def setColorTemperature(value) {
-    // TODO: Use this method for all zigbee white lights, but also change logic in appengine-zigbee to round
-    zigbee.setColorTemperature(value) + ["delay 1500"] + zigbee.colorTemperatureRefresh()
+    value = value as Integer
+    def tempInMired = Math.round(1000000 / value)
+    def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
+
+    zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +
+    ["delay 1500"] +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
 }
 
 def setLevel(value) {

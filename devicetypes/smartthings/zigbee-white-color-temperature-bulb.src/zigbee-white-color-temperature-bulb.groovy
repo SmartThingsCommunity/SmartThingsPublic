@@ -29,7 +29,6 @@ metadata {
         capability "Light"
 
         attribute "colorName", "string"
-        command "setGenericName"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04", outClusters: "0019"
@@ -93,7 +92,7 @@ def parse(String description) {
     if (event) {
         if (event.name=="level" && event.value==0) {}
         else {
-            if (event.name=="colorTemperature") {
+            if (event.name == "colorTemperature") {
                 setGenericName(event.value)
             }
             sendEvent(event)
