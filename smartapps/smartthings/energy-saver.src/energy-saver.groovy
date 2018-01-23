@@ -17,11 +17,12 @@ definition(
     name: "Energy Saver",
     namespace: "smartthings",
     author: "SmartThings",
-		description: "Turn things off if you're using too much energy",
+    description: "Turn things off if you're using too much energy",
     category: "Green Living",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet@2x.png"
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_outlet@2x.png",
+    pausable: true
 )
 
 preferences {
