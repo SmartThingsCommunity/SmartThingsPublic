@@ -115,12 +115,6 @@ def push() {
 	sendCommand("Power", "Toggle")
 }
 
-// deprecated: there is no code that calls toggle()
-def toggle() {
-	log.warn "TOGGLE is deprecated"
-	sendCommand("Power", "Toggle")
-}
-
 def on() {
 	log.debug "ON"
 	sendCommand("Power", "On")
