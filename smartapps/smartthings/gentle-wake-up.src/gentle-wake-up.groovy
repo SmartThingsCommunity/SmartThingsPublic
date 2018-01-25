@@ -239,7 +239,9 @@ def completionPage() {
 
 		section("Notifications") {
 			input("recipients", "contact", title: "Send notifications to", required: false) {
-				input(name: "completionPhoneNumber", type: "phone", title: "Text This Number", description: "Phone number", required: false)
+				if (completionPhoneNumber) {
+					input(name: "completionPhoneNumber", type: "phone", title: "Text This Number", description: "Phone number", required: false)
+				}
 				input(name: "completionPush", type: "bool", title: "Send A Push Notification", description: "Phone number", required: false)
 			}
 			input(name: "completionMusicPlayer", type: "capability.musicPlayer", title: "Speak Using This Music Player", required: false)
