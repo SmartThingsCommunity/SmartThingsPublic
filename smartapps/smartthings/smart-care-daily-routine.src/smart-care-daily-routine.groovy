@@ -31,7 +31,7 @@ definition(
 )
 
 preferences {
-	page(name: "configuration", title:"", content: "disclaimerPage", uninstall: true)
+	page(name: "configuration", title:"", content: "disclaimerPage", install: true, uninstall: true)
 }
 
 def disclaimerPage() {
@@ -60,11 +60,11 @@ def disclaimerPage() {
 			"or use of content on the app. SMARTTHINGS INC., ITS OFFICERS, " +
 			"EMPLOYEES AND AGENTS DO NOT ACCEPT LIABILITY HOWEVER ARISING, INCLUDING LIABILITY FOR NEGLIGENCE, " +
 			"FOR ANY LOSS RESULTING FROM THE USE OF OR RELIANCE UPON THE INFORMATION AND/OR SERVICES AT ANY TIME."
-	
+
 	if (disclaimerResponse && disclaimerResponse == "I agree to these terms") {
 		configurationPage()
 	} else {
-		dynamicPage(name: "configuration", nextPage:null, uninstall: true) {
+		dynamicPage(name: "configuration") {
 			section(disclaimerText){
 				input "disclaimerResponse", "enum", title: "Accept terms", required: true,
 						options: ["I agree to these terms", "I do not agree to these terms"],
@@ -75,7 +75,7 @@ def disclaimerPage() {
 }
 
 def configurationPage(){
-	dynamicPage(name: "configuration", install: true, uninstall:true, nextPage: "configuration") {
+	dynamicPage(name: "configuration") {
 		section("Who are you checking on?") {
 			input "person1", "text", title: "Name?"
 		}
