@@ -7,6 +7,7 @@
  *  Let me know when someone knocks on the door, but ignore
  *  when someone is opening the door.
  */
+include 'localization'
 
 definition(
     name: "Door Knocker",
@@ -71,9 +72,10 @@ def doorClosed(evt) {
 
 def doorKnock() {
   if((openSensor.latestValue("contact") == "closed") &&
-     (now() - (60 * 1000) > state.lastClosed)) {
-    log.debug("${knockSensor.label ?: knockSensor.name} detected a knock.")
-    send("${knockSensor.label ?: knockSensor.name} detected a knock.")
+    (now() - (60 * 1000) > state.lastClosed)) {
+	def kSensor = knockSensor.label ?: knockSensor.name
+    log.debug("${kSensor} detected a knock.")
+    send(localization.translate("{{kSensor}} detected a knock.", [kSensor: kSensor]))
   }
 
   else {
