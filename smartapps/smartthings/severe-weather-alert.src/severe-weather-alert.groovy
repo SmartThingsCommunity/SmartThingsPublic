@@ -27,22 +27,34 @@ definition(
 )
 
 preferences {
+	page name: "mainPage", install: true, uninstall: true
+}
 
-  if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
-		section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
+def mainPage() {
+	dynamicPage(name: "mainPage") {
+		if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
+			section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
+		}
+
+		if (location.channelName != 'samsungtv') {
+			section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
+		}
+
+		if (location.contactBookEnabled || phone1 || phone2 || phone3) {
+			section("In addition to push notifications, send text alerts to...") {
+				input("recipients", "contact", title: "Send notifications to") {
+					input "phone1", "phone", title: "Phone Number 1", required: false
+					input "phone2", "phone", title: "Phone Number 2", required: false
+					input "phone3", "phone", title: "Phone Number 3", required: false
+				}
+			}
+		}
+
+		section([mobileOnly:true]) {
+			label title: "Assign a name", required: false
+			mode title: "Set for specific mode(s)"
+		}
 	}
-
-  if (location.channelName != 'samsungtv') {
-		section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
-  }
-
-	section ("In addition to push notifications, send text alerts to...") {
-      input("recipients", "contact", title: "Send notifications to") {
-          input "phone1", "phone", title: "Phone Number 1", required: false
-          input "phone2", "phone", title: "Phone Number 2", required: false
-          input "phone3", "phone", title: "Phone Number 3", required: false
-      }
-	 }
 }
 
 def installed() {
