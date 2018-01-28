@@ -1,0 +1,42 @@
+{
+    "namespace": "MichaelStruck",
+    "repoOwner": "MichaelStruck",
+    "repoName": "SmartThingsPublic",
+    "repoBranch": "master",
+    "name": "Ask Alexa",
+    "author": "Michael Struck",
+    "description": "Allows for creation of SmartThings virtual switches that can be tied to items controlled by Amazon Echo('Alexa').",
+    "category": "My Apps",
+    "videoUrl": "",
+    "photoUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
+    "bannerUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-virtual-switch-creator.src/AVSCMP.png",
+    "smartApps": {
+        "parent": {
+            "name": "Alexa Virtual Switch Creator",
+            "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
+            "published": true,
+            "oAuth": true,
+            "version": "1.0.0",
+            "appSettings": {},
+            "appUrl": "smartapps/michaelstruck/alexa-virtual-switch-creator.src/alexa-virtual-switch-creator.groovy"
+        },
+        "children": []
+    },
+    "deviceHandlers": [{
+            "name": "Alexa Switch",
+            "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
+            "published": true,
+            "version": "2.0.7",
+            "appUrl": "devicetypes/michaelstruck/alexa-switch.src/alexa-switch.groovy",
+            "optional": false
+        },
+        {
+            "name": "Momentary Button Tile ",
+            "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
+            "published": true,
+            "version": "1.0.3",
+            "appUrl": "devicetypes/michaelstruck/momentary-button-tile.src/momentary-button-tile.groovy",
+            "optional": false
+        }
+    ]
+}
