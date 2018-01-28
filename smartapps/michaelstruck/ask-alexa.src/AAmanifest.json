@@ -24,7 +24,7 @@
 	{
             "name": "Ask Alexa Message Queue",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
-            "published": true,
+            "published": false,
             "oAuth": false,
             "version": "1.0.7a",
             "appSettings": {},
@@ -34,7 +34,7 @@
 	{
             "name": "Ask Alexa Rooms/Groups",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
-            "published": true,
+            "published": false,
             "oAuth": false,
             "version": "1.0.2",
             "appSettings": {},
@@ -44,7 +44,7 @@
 	{
             "name": "Ask Alexa Schedule",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
-            "published": true,
+            "published": false,
             "oAuth": false,
             "version": "1.0.3c",
             "appSettings": {},
@@ -54,7 +54,7 @@
 	{
             "name": "Ask Alexa Voice Reports",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
-            "published": true,
+            "published": false,
             "oAuth": false,
             "version": "1.0.7",
             "appSettings": {},
@@ -64,7 +64,7 @@
 	{
             "name": "Ask Alexa Weather Reports",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
-            "published": true,
+            "published": false,
             "oAuth": false,
             "version": "1.0.7",
             "appSettings": {},
