@@ -5,7 +5,7 @@
     "repoBranch": "master",
     "name": "Alexa Helper",
     "author": "Michael Struck",
-    "description": "Voice control of your SmartThing environment using Amazon Echo and proxy virtual switches.",
+    "description": "Allows for various SmartThings devices to be tied to switches controlled by Amazon Echo('Alexa').",
     "category": "My Apps",
     "videoUrl": "",
     "photoUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
