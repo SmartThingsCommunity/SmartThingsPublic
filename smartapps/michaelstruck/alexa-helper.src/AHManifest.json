@@ -1,0 +1,53 @@
+{
+    "namespace": "MichaelStruck",
+    "repoOwner": "MichaelStruck",
+    "repoName": "SmartThingsPublic",
+    "repoBranch": "master",
+    "name": "Alexa Helper",
+    "author": "Michael Struck",
+    "description": "Voice control of your SmartThing environment using Amazon Echo and proxy virtual switches.",
+    "category": "My Apps",
+    "videoUrl": "",
+    "photoUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png"
+    "bannerUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/AHMP.png",
+    "smartApps": {
+        "parent": {
+            "name": "Alexa Helper",
+            "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
+            "published": true,
+            "oAuth": true,
+            "version": "4.5.3a",
+            "appSettings": {},
+            "appUrl": "master/smartapps/michaelstruck/alexa-helper.src/alexa-helper.groovy"
+        },
+        "children": [
+	{
+            "name": "Alexa Helper - Scenario",
+            "iconUrl":"https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
+            "published": false,
+            "oAuth": false,
+            "version": "3.0.0c",
+            "appSettings": {},
+            "appUrl": "smartapps/michaelstruck/alexa-helper-scenario.src/alexa-helper-scenario.groovy",
+            "optional": false
+        }
+	]
+    },
+    "deviceHandlers": [{
+            "name": "Alexa Switch",
+            "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
+            "published": true,
+            "version": 2.0.7",
+            "appUrl": "devicetypes/michaelstruck/alexa-switch.src/alexa-switch.groovy",
+            "optional": false
+        },
+        {
+            "name": "Nest Thermostat",
+            "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
+            "published": true,
+            "version": 1.0.3",
+            "appUrl": "devicetypes/michaelstruck/momentary-button-tile.src/momentary-button-tile.groovy",
+            "optional": false
+        }
+    ]
+}
