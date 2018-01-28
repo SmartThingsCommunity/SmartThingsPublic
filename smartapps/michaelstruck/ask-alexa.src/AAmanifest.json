@@ -5,7 +5,7 @@
     "repoBranch": "master",
     "name": "Ask Alexa",
     "author": "Michael Struck",
-    "description": "Advanced voice control of your SmartThing Environment using Amazon Echo.",
+    "description": "Provide interfacing to control and report on SmartThings devices with the Amazon Echo ('Alexa').",
     "category": "My Apps",
     "videoUrl": "",
     "photoUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/AskAlexa512.png",
