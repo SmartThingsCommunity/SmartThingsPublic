@@ -52,7 +52,7 @@
             "optional": false
         },
 	{
-            "name": "Ask Alexa Voice Reports",
+            "name": "Ask Alexa Voice Report",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
             "published": false,
             "oAuth": false,
@@ -62,7 +62,7 @@
             "optional": false
         },
 	{
-            "name": "Ask Alexa Weather Reports",
+            "name": "Ask Alexa Weather Report",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
             "published": false,
             "oAuth": false,
