@@ -33,6 +33,11 @@ metadata {
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FC0F", outClusters: "0019", "manufacturer":"OSRAM", "model":"PAR16 50 TW", deviceJoinName: "OSRAM LIGHTIFY LED PAR16 50 Tunable White"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic B40 TW - LIGHTIFY", deviceJoinName: "OSRAM LIGHTIFY Classic B40 Tunable White"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "CLA60 TW OSRAM", deviceJoinName: "OSRAM LIGHTIFY LED Classic A60 Tunable White"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 WS clear 950lm", deviceJoinName: "IKEA TRÅDFRI LED Bulb E26 WS clear 950"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb GU10 WS 400lm", deviceJoinName: "TRADFRI bulb GU10 WS 400lm"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E12 WS opal 400lm", deviceJoinName: "TRADFRI bulb E12 WS opal 400lm"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 WS opal 980lm", deviceJoinName: "TRADFRI bulb E26 WS opal 980lm"
+
     }
 
     // UI tile definitions
