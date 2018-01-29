@@ -23,7 +23,7 @@ preferences {
 }
 
 def mainPage() {
-  dynamicPage {
+  dynamicPage(name: "mainPage") {
     if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
       section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
     }
