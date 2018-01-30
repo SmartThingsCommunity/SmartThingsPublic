@@ -232,12 +232,7 @@ def setLevel(value, duration = null) {
 }
 
 def presetPosition() {
-    // SWF blinds handle this data independently
-    if (device.getDataValue("MSR")?.startsWith("026E")) {
-        zwave.switchMultilevelV1.switchMultilevelSet(value: 0xFF).format()
-    } else {
-        setLevel(preset ?: state.preset ?: 50)
-    }
+    zwave.switchMultilevelV1.switchMultilevelSet(value: 0xFF).format()
 }
 
 def stop() {
