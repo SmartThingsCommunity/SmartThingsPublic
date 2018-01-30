@@ -14,7 +14,7 @@ preferences{
 }
 
 def mainPage() {
-    dynamicPage() {
+    dynamicPage(name: "mainPage") {
         section("Select the door lock:") {
             input "lock1", "capability.lock", required: true
         }

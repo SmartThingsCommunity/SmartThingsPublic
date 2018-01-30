@@ -25,7 +25,7 @@ preferences {
 }
 
 def mainPage() {
-  dynamicPage {
+  dynamicPage(name: "mainPage") {
     section("When Someone Knocks?") {
       input name: "knockSensor", type: "capability.accelerationSensor", title: "Where?"
     }
