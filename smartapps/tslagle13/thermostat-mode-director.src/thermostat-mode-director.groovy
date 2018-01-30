@@ -328,7 +328,9 @@ def Settings() {
 
 		section( "Notifications" ) {
 			input sendPushMessage
-			input phoneNumber
+			if (settings.phoneNumber) {
+				input phoneNumber
+			}
 		}
 		section(title: "More options", hideable: true) {
 			href "timeIntervalInput", title: "Only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true

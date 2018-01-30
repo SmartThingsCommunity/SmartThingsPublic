@@ -7,6 +7,7 @@
  *  Let me know when someone knocks on the door, but ignore
  *  when someone is opening the door.
  */
+include 'localization'
 
 definition(
     name: "Door Knocker",
@@ -20,21 +21,33 @@ definition(
 )
 
 preferences {
-  section("When Someone Knocks?") {
-    input name: "knockSensor", type: "capability.accelerationSensor", title: "Where?"
-  }
+  page name: "mainPage", install: true, uninstall: true
+}
 
-  section("But not when they open this door?") {
-    input name: "openSensor", type: "capability.contactSensor", title: "Where?"
-  }
+def mainPage() {
+  dynamicPage(name: "mainPage") {
+    section("When Someone Knocks?") {
+      input name: "knockSensor", type: "capability.accelerationSensor", title: "Where?"
+    }
 
-  section("Knock Delay (defaults to 5s)?") {
-    input name: "knockDelay", type: "number", title: "How Long?", required: false
-  }
+    section("But not when they open this door?") {
+      input name: "openSensor", type: "capability.contactSensor", title: "Where?"
+    }
 
-  section("Notifications") {
-    input "sendPushMessage", "enum", title: "Send a push notification?", metadata: [values: ["Yes", "No"]], required: false
-    input "phone", "phone", title: "Send a Text Message?", required: false
+    section("Knock Delay (defaults to 5s)?") {
+      input name: "knockDelay", type: "number", title: "How Long?", required: false
+    }
+
+    section("Notifications") {
+      input "sendPushMessage", "enum", title: "Send a push notification?", metadata: [values: ["Yes", "No"]], required: false
+      if (phone) {
+        input "phone", "phone", title: "Send a Text Message?", required: false
+      }
+    }
+    section([mobileOnly:true]) {
+      label title: "Assign a name", required: false
+      mode title: "Set for specific mode(s)"
+    }
   }
 }
 
@@ -59,9 +72,10 @@ def doorClosed(evt) {
 
 def doorKnock() {
   if((openSensor.latestValue("contact") == "closed") &&
-     (now() - (60 * 1000) > state.lastClosed)) {
-    log.debug("${knockSensor.label ?: knockSensor.name} detected a knock.")
-    send("${knockSensor.label ?: knockSensor.name} detected a knock.")
+    (now() - (60 * 1000) > state.lastClosed)) {
+	def kSensor = knockSensor.label ?: knockSensor.name
+    log.debug("${kSensor} detected a knock.")
+    send(localization.translate("{{kSensor}} detected a knock.", [kSensor: kSensor]))
   }
 
   else {
