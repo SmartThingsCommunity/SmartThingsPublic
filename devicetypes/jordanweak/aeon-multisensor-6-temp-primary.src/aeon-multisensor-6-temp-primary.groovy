@@ -97,7 +97,7 @@ metadata {
       }
 		}
     
-    valueTile("motion", "device.motion", inactiveLabel: false, width: 2, height: 2) {
+    standardTile("motion", "device.motion", inactiveLabel: false, width: 2, height: 2) {
       state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC"
       state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
     }
