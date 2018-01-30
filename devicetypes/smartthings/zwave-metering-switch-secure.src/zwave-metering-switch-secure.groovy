@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Switch Secure", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition (name: "Z-Wave Metering Switch Secure", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Energy Meter"

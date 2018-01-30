@@ -170,7 +170,7 @@ def doConfigure() {
 	if (isSchlageLock()) {
 		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: getSchlageLockParam().codeLength.number))
 	}
-	cmds = delayBetween(cmds, 4200)
+	cmds = delayBetween(cmds, 30*1000)
 	log.debug "Do configure returning with commands := $cmds"
 	cmds
 }

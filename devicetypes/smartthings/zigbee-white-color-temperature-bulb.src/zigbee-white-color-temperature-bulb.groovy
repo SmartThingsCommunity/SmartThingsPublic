@@ -29,7 +29,6 @@ metadata {
         capability "Light"
 
         attribute "colorName", "string"
-        command "setGenericName"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04", outClusters: "0019"
@@ -91,9 +90,9 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     if (event) {
-        if (event.name=="level" && event.value==0) {}
+        if (event.name == "level" && event.value == 0) {}
         else {
-            if (event.name=="colorTemperature") {
+            if (event.name == "colorTemperature") {
                 setGenericName(event.value)
             }
             sendEvent(event)
@@ -156,7 +155,6 @@ def configure() {
 }
 
 def setColorTemperature(value) {
-    setGenericName(value)
     value = value as Integer
     def tempInMired = Math.round(1000000 / value)
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
@@ -190,7 +188,10 @@ def setGenericName(value){
 }
 
 def installed() {
-    if (((device.getDataValue("manufacturer") == "MRVL") && (device.getDataValue("model") == "MZ100")) || (device.getDataValue("manufacturer") == "OSRAM SYLVANIA") || (device.getDataValue("manufacturer") == "OSRAM")) {
+    if (((device.getDataValue("manufacturer") == "MRVL") && (device.getDataValue("model") == "MZ100"))
+            || (device.getDataValue("manufacturer") == "OSRAM SYLVANIA")
+            || (device.getDataValue("manufacturer") == "OSRAM")
+            || (device.getDataValue("manufacturer") == "sengled")) {
         if ((device.currentState("level")?.value == null) || (device.currentState("level")?.value == 0)) {
             sendEvent(name: "level", value: 100)
         }
