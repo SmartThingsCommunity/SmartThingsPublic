@@ -120,7 +120,7 @@ def intersectMap = [:]
 def i = 0
 for (ts != 0; i < ts; i++){
 therm = Thermostats[i]
-tColl << therm[i].collect{it.toString()} // create a non parethesized value 
+tColl << therm[i].collect{it.toString()} // create a non parenthesized value 
 intersect = tcoll.intersect(ThermSensorColl) // intersect thermostats and atl sensor
 intersectMap."$tcoll" = "$intersect"
 }                    
@@ -131,8 +131,10 @@ log.debug """ intersectMap = $intersectMap"""
                         def i = 0
                         def s = ThermSensor.size()
                         for(s > 0; i < s; i++){
-                            input(name: "Sensor${i}", type: "capability.temperatureMeasurement", title: "Select a third party sensor to control ${ThermSensor[i]}", required: true, multiple: false, description: null)
-
+                            input(name: "Sensor${i}", type: "capability.temperatureMeasurement", 
+                            title: "Select a third party sensor to control ${ThermSensor[i]}",
+                            required: true, multiple: false, description: "pick a sensor"
+                            )
                         }
                     }
                 }
@@ -147,7 +149,7 @@ log.debug """ intersectMap = $intersectMap"""
             if(AddMoreVirT_A){
 
 
-                input(name: "VirThermSwitch_1", type: "capability.switch", title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
+                input(name: "VirThermSwitch_1", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
                 input(name: "coolOrHeat", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], defaultValue: "heating")
                 input(name: "OtherSetP", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
                 if(OtherSetP){
@@ -170,7 +172,7 @@ log.debug """ intersectMap = $intersectMap"""
                 input(name: "AddMoreVirT_B", type: "bool", title: "add one more Virtual Thermostat", default: false, submitOnChange: true)
 
                 if(AddMoreVirT_B){
-                    input(name: "VirThermSwitch_2", type: "capability.switch", title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
+                    input(name: "VirThermSwitch_2", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
 
                     input(name: "coolOrHeat_2", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], required: true)
                     input(name: "OtherSetP_2", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
@@ -195,7 +197,7 @@ log.debug """ intersectMap = $intersectMap"""
 
                 input(name: "AddMoreVirT_C", type: "bool", title: "add one more Virtual Thermostat", default: false, submitOnChange: true)
                 if(AddMoreVirT_C){
-                    input(name: "VirThermSwitch_3", type: "capability.switch", title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
+                    input(name: "VirThermSwitch_3", type: "capability.switch",  multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
 
                     input(name: "coolOrHeat_3", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], required: true)
                     input(name: "OtherSetP_3", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
@@ -1193,6 +1195,7 @@ def VirtualThermostat(){
         def CurrTemp = tempcheckList[0]
 
         def SwitchState = VirThermSwitch_1?.currentSwitch
+        def SwitchStateIsOn = VirThermSwitch_1.findAll{it?.SwitchState == "on"}
 
         def inVirThermModes = false 
 
@@ -1209,13 +1212,14 @@ Active ? : $Active
 InMotionMode ? : $InMotionMode
 Mode coolOrHeat = $coolOrHeat
 Switch State = $SwitchState
+SwitchStateIsOn = $SwitchStateIsOn
 inVirThermModes = $inVirThermModes
 
 """
         if(Active || !InMotionMode){
             if(coolOrHeat == "cooling"){
                 if(CurrTemp > CurrSP && inVirThermModes){
-                    if(SwitchState != "on" ){
+                    if(!SwitchStateIsOn){
                         VirThermSwitch_1?.on()
                         log.debug "$VirThermSwitch_1 [cool] turned on"
                     }
@@ -1224,7 +1228,7 @@ inVirThermModes = $inVirThermModes
                     }       
                 }
                 else {
-                    if(SwitchState != "off"){
+                    if(SwitchStateIsOn){
                         VirThermSwitch_1?.off()
                         log.debug "$VirThermSwitch_1 [cool] turned off"
                     }
@@ -1236,7 +1240,7 @@ inVirThermModes = $inVirThermModes
             }
             else {
                 if(CurrTemp < CurrSP && inVirThermModes){
-                    if(SwitchState != "on"){
+                    if(!SwitchStateIsOn){
                         VirThermSwitch_1?.on()
                         log.debug "$VirThermSwitch_1 [heat] turned on"
                     }
@@ -1245,7 +1249,7 @@ inVirThermModes = $inVirThermModes
                     }
                 }
                 else {
-                    if(SwitchState != "off"){
+                    if(SwitchStateIsOn){
                         VirThermSwitch_1?.off()
                         log.debug "$VirThermSwitch_1 [heat] turned off"
                     }
@@ -1256,7 +1260,7 @@ inVirThermModes = $inVirThermModes
                 }
             }
         }
-        if(!inVirThermModes && SwitchState != "off"){
+        if(!inVirThermModes && SwitchStateIsOn){
             VirThermSwitch_1?.off()
             log.debug "$VirThermSwitch_1 [heat] turned off because location is not in $VirThermModes"
         }
@@ -1309,6 +1313,7 @@ inVirThermModes = $inVirThermModes
 
             def CurrTemp = tempcheckList[1]
             def SwitchState_2 = VirThermSwitch_2?.currentSwitch
+            def SwitchState_2IsOn = VirThermSwitch_2.findAll{it?.SwitchState_2 == "on"}
 
             def inVirThermModes_2 = false 
             if(VirThermModes_2){
@@ -1330,7 +1335,7 @@ inVirThermModes_2 = $inVirThermModes_2
             if(Active || !InMotionMode){
                 if(coolOrHeat_2 == "cooling"){
                     if(CurrTemp > CurrSP && inVirThermModes_2){
-                        if(SwitchState_2 != "on" ){
+                        if(!SwitchState_2IsOn ){
                             VirThermSwitch_2?.on()
                             log.debug "$VirThermSwitch_2 [cool] turned on"
                         }
@@ -1339,7 +1344,7 @@ inVirThermModes_2 = $inVirThermModes_2
                         }       
                     }
                     else {
-                        if(SwitchState_2 != "off"){
+                        if(SwitchState_2IsOn){
                             VirThermSwitch_2?.off()
                             log.debug "$VirThermSwitch_2 [cool] turned off"
                         }
@@ -1350,7 +1355,7 @@ inVirThermModes_2 = $inVirThermModes_2
                 }
                 else {
                     if(CurrTemp < CurrSP && inVirThermModes_2){
-                        if(SwitchState_2 != "on"){
+                        if(!SwitchState_2IsOn){
                             VirThermSwitch_2?.on()
                             log.debug "$VirThermSwitch_2 [cool] turned on"
                         }
@@ -1359,7 +1364,7 @@ inVirThermModes_2 = $inVirThermModes_2
                         }
                     }
                     else {
-                        if(SwitchState_2 != "off"){
+                        if(SwitchState_2IsOn){
                             VirThermSwitch_2?.off()
                             log.debug "$VirThermSwitch_2 [heat] turned off"
                         }
@@ -1372,7 +1377,7 @@ inVirThermModes_2 = $inVirThermModes_2
             else { 
                 log.debug "No motion arround $VirThermSwitch_2"
             }
-            if(!inVirThermModes_2 && SwitchState_2 != "off"){
+            if(!inVirThermModes_2 && SwitchState_2IsOn){
                 VirThermSwitch_2?.off()
                 log.debug "$VirThermSwitch_2 [heat] turned off because location is not in $VirThermModes_2"
             }
@@ -1425,7 +1430,11 @@ inVirThermModes_2 = $inVirThermModes_2
             }
 
             def CurrTemp = tempcheckList[2]
+            
+            
+            
             def SwitchState_3 = VirThermSwitch_3?.currentSwitch
+            def SwitchState_3IsOn = VirThermSwitch_3.findAll{it?.SwitchState_3 == "on"}
 
             def inVirThermModes_3 = false 
             if(VirThermModes_3){
@@ -1450,7 +1459,8 @@ inVirThermModes_3 = $inVirThermModes_3
             if(Active || !InMotionMode){
                 if(coolOrHeat_3 == "cooling"){
                     if(CurrTemp > CurrSP && inVirThermModes_3){
-                        if(SwitchState_3 != "on" ){
+                    
+                        if(!SwitchState_3IsOn){
                             VirThermSwitch_3?.on()
                             log.debug "$VirThermSwitch_3 [cool] turned on"
                         }
@@ -1459,7 +1469,7 @@ inVirThermModes_3 = $inVirThermModes_3
                         }       
                     }
                     else {
-                        if(SwitchState_3 != "off"){
+                        if(SwitchState_3IsOn){
                             VirThermSwitch_3?.off()
                             log.debug "$VirThermSwitch_3 [cool] turned off"
                         }
@@ -1471,7 +1481,7 @@ inVirThermModes_3 = $inVirThermModes_3
                 }
                 else {
                     if(CurrTemp < CurrSP && inVirThermModes_3){
-                        if(SwitchState_3 != "on"){
+                        if(!SwitchState_3IsOn){
                             VirThermSwitch_3?.on()
                             log.debug "$VirThermSwitch_3 [heat] turned on"
                         }
@@ -1480,7 +1490,7 @@ inVirThermModes_3 = $inVirThermModes_3
                         }
                     }
                     else {
-                        if(SwitchState_3 != "off"){
+                        if(SwitchState_3IsOn){
                             VirThermSwitch_3?.off()
                             log.debug "$VirThermSwitch_3 [heat] turned off"
                         }
@@ -1494,7 +1504,7 @@ inVirThermModes_3 = $inVirThermModes_3
             else { 
                 log.debug "No motion arround $VirThermSwitch_3"
             }
-            if(!inVirThermModes_3 && SwitchState_3 != "off"){
+            if(!inVirThermModes_3 && SwitchState_3IsOn){
                 VirThermSwitch_3?.off()
                 log.debug "$VirThermSwitch_3 [heat] turned off because location is not in $VirThermModes_3"
             }
@@ -1841,7 +1851,7 @@ Math.log(256) / Math.log(2)
                     xa = 60	//outside temp a
                     ya = HSPSet.toInteger() // desired heating temp a 
 
-                    xb = outsideTemp 	//outside temp b
+                    xb = 10 	//outside temp b
                     yb = HSPSet.toInteger() + 10  // desired heating temp b  
 
                     coef = (yb-ya)/(xb-xa)
