@@ -16,7 +16,7 @@ import groovy.transform.Field
 @Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
-    definition (name: "ZLL Switch", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZLL Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 
         capability "Actuator"
         capability "Configuration"
@@ -25,7 +25,7 @@ metadata {
         capability "Switch"
         capability "Health Check"
 
-        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Plug 01", deviceJoinName: "SYLVANIA Smart Plug"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Plug 01", deviceJoinName: "OSRAM SMART+ Plug"
     }
 
     // simulator metadata
@@ -43,14 +43,11 @@ metadata {
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "switch", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
-                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
             }
-            //tileAttribute ("power", key: "SECONDARY_CONTROL") {
-             //   attributeState "power", label:'${currentValue} W'
-              // }
         }
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -66,7 +63,7 @@ def parse(String description) {
 
     def resultMap = zigbee.getEvent(description)
     if (resultMap) {
-            sendEvent(resultMap)
+        sendEvent(resultMap)
     }
     else {
         log.debug "DID NOT PARSE MESSAGE for description : $description"
@@ -81,7 +78,6 @@ def off() {
 def on() {
     zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
 }
-
 
 def refresh() {
     zigbee.onOffRefresh()
@@ -119,7 +115,7 @@ def configureHealthCheck() {
 def configure() {
     log.debug "configure()"
     configureHealthCheck()
-    zigbee.onOffConfig()+ zigbee.onOffRefresh()
+    zigbee.onOffConfig() + zigbee.onOffRefresh()
 }
 
 def updated() {
