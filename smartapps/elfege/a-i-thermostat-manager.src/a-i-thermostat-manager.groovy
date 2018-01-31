@@ -132,9 +132,9 @@ log.debug """ intersectMap = $intersectMap"""
                         def s = ThermSensor.size()
                         for(s > 0; i < s; i++){
                             input(name: "Sensor${i}", type: "capability.temperatureMeasurement", 
-                            title: "Select a third party sensor to control ${ThermSensor[i]}",
-                            required: true, multiple: false, description: "pick a sensor"
-                            )
+                                  title: "Select a third party sensor to control ${ThermSensor[i]}",
+                                  required: true, multiple: false, description: "pick a sensor"
+                                 )
                         }
                     }
                 }
@@ -1158,7 +1158,7 @@ def VirtualThermostat(){
 
         if(!OtherSetP){
             // this option is not compatible with motion because motion sensor 
-            // is designated by the thermostat used as SP source. 
+            // is related to the thermostat used as SP source. 
             def ActiveT = ActiveTest(VirThermTherm_1)
             InMotionMode = ActiveT[1]
             Active = ActiveT[0]
@@ -1195,7 +1195,8 @@ def VirtualThermostat(){
         def CurrTemp = tempcheckList[0]
 
         def SwitchState = VirThermSwitch_1?.currentSwitch
-        def SwitchStateIsOn = VirThermSwitch_1.findAll{it?.SwitchState == "on"}
+        def SwitchStateIsOnSize = SwitchState.findAll{val -> val == "on" ? true : false }
+        def SwitchStateIsOn = SwitchStateIsOnSize.size() > 0
 
         def inVirThermModes = false 
 
@@ -1313,7 +1314,8 @@ inVirThermModes = $inVirThermModes
 
             def CurrTemp = tempcheckList[1]
             def SwitchState_2 = VirThermSwitch_2?.currentSwitch
-            def SwitchState_2IsOn = VirThermSwitch_2.findAll{it?.SwitchState_2 == "on"}
+            def SwitchState_2IsOnSize = SwitchState_2.findAll{val -> val == "on" ? true : false }
+            def SwitchState_2IsOn = SwitchState_2IsOnSize.size() > 0
 
             def inVirThermModes_2 = false 
             if(VirThermModes_2){
@@ -1329,6 +1331,7 @@ Active ? : $Active
 InMotionMode ? : $InMotionMode
 Mode coolOrHeat_2 = $coolOrHeat_2
 Switch State = $SwitchState_2
+SwitchState_2IsOn = $SwitchState_2IsOn
 inVirThermModes_2 = $inVirThermModes_2
 ----------------------------    
 """
@@ -1430,11 +1433,12 @@ inVirThermModes_2 = $inVirThermModes_2
             }
 
             def CurrTemp = tempcheckList[2]
-            
-            
-            
+
+
+
             def SwitchState_3 = VirThermSwitch_3?.currentSwitch
-            def SwitchState_3IsOn = VirThermSwitch_3.findAll{it?.SwitchState_3 == "on"}
+            def SwitchState_3IsOnSize = SwitchState_3.findAll{val -> val == "on" ? true : false }
+            def SwitchState_3IsOn = SwitchState_3IsOnSize.size() > 0
 
             def inVirThermModes_3 = false 
             if(VirThermModes_3){
@@ -1452,6 +1456,7 @@ Active ? : $Active
 InMotionMode ? : $InMotionMode
 Mode coolOrHeat = $coolOrHeat_3
 Switch State = $SwitchState_3
+SwitchState_3IsOn = $SwitchState_3IsOn
 inVirThermModes_3 = $inVirThermModes_3
 ----------------------------    
 """
@@ -1459,7 +1464,7 @@ inVirThermModes_3 = $inVirThermModes_3
             if(Active || !InMotionMode){
                 if(coolOrHeat_3 == "cooling"){
                     if(CurrTemp > CurrSP && inVirThermModes_3){
-                    
+
                         if(!SwitchState_3IsOn){
                             VirThermSwitch_3?.on()
                             log.debug "$VirThermSwitch_3 [cool] turned on"
@@ -1582,10 +1587,10 @@ NowBedisClosed = $NowBedisClosed"""
     }
     else if(!KeepOffAtAllTimesWhenMode() && contactClosed && ToggleBack || (ControlWithBedSensor && NowBedisClosed && ContactExceptionIsClosed)){  //  && state.turnedOffByApp == true){  
         if(SomeSwAreOff.size() != 0){
-        //if at least one is off, turn on
-                ContactAndSwitch?.on()
-                log.debug "$ContactAndSwitch TURNED ON"
-                state.turnedOffByApp = false
+            //if at least one is off, turn on
+            ContactAndSwitch?.on()
+            log.debug "$ContactAndSwitch TURNED ON"
+            state.turnedOffByApp = false
         }
         else {
             log.debug "$ContactAndSwitch already on"
@@ -1593,7 +1598,7 @@ NowBedisClosed = $NowBedisClosed"""
     }
     else if(KeepOffAtAllTimesWhenMode() && CurrMode in SwitchMode){
         if(SomeSwAreOn.size() != 0){
-        // if at least one is on, turn off
+            // if at least one is on, turn off
             ContactAndSwitch?.off()
             log.debug "$ContactAndSwitch TURNED OFF"
             state.turnedOffByApp = true
@@ -1604,7 +1609,7 @@ NowBedisClosed = $NowBedisClosed"""
     }
     else if(!contactClosed || inAwayMode){
         if(SomeSwAreOn.size() != 0){
-        // if at least one is on, turn off
+            // if at least one is on, turn off
             ContactAndSwitch.off()
             log.debug "$ContactAndSwitch turned off because window is open"
         }
@@ -1707,6 +1712,7 @@ AltSensorMap = $AltSensorMap"""
                 def Test = ModeValueList[1]
                 //log.debug "@ loop ${loopValue}, ModeValue is $ModeValue &&& Test = $Test"
                 log.debug "inAway = $inAway"
+
                 if(inAway){
                     HSPSet = HSPA
 
@@ -1728,7 +1734,7 @@ CSPSet for $ThermSet is $CSPSet
                     log.debug """HSPSet is $HSPSet (before collection) loop = $loopValue"""
                     HSPSet = HSPSet?.value
                     log.debug "HSPSet for $ThermSet is $HSPSet "
-                    HSPSet = HSPSet.toInteger()
+                    HSPSet = HSPSet?.toInteger()
 
                     def CSP = "CSP${ModeValue}${loopValue.toString()}"
                     //log.debug """CSP is $CSP """
@@ -1737,7 +1743,7 @@ CSPSet for $ThermSet is $CSPSet
                     log.debug """CSPSet is $CSPSet (before collection) loop = $loopValue"""
                     CSPSet = CSPSet?.value
                     //log.debug "CSPSet for $ThermSet is $CSPSet"
-                    CSPSet = CSPSet.toInteger()
+                    CSPSet = CSPSet?.toInteger()
                 }
                 // end of collection for modes other than Away
 
@@ -1836,7 +1842,7 @@ Math.log(256) / Math.log(2)
 => 8.0
 */
                     // log base is: CSPSet
-                    def Base = CSPSet.toInteger()
+                    def Base = CSPSet?.toInteger()
                     /////////////////////////COOL//////////////////// 
                     //outsideTemp = 90 // for test only 
                     CSPSet = (Math.log(outsideTemp) / Math.log(Base)) * CSPSet
@@ -2435,15 +2441,32 @@ def IndexValueMode(){
 
         //log.debug "ModeFound is : $ModeFound || ModeMatches = $ModeMatches || ModeInArray = $ModeInArray"
         if(ModeMatches){
-            //log.debug "MATCH!"
+            log.debug "MATCH!"
             ModeValue = "${LetterModeList[lv]}" // attribute mode letter to start writing the new variable
             ModeIndexValue = "${NumberModeList[lv]}" 
             // break this loop so it doesn't apply a match to other modes (since now ModeMatches = true)
             break
         }
+        else
+        {
+            // if home is an unknow mode mode O ("$Home") is set as default
+            if(location.currentMode in Away){
+                ModeValue = "${LetterModeList[2]}"
+                ModeIndexValue = "${NumberModeList[2]}" 
+                log.debug "ModeValue is AWAY --> $ModeValue" 
+            }
+            else {
 
-        //log.debug "mode found = $ModeValue && $ModeIndexValue"
+                ModeValue = "${LetterModeList[0]}"
+                ModeIndexValue = "${NumberModeList[0]}" 
+                log.debug "ModeValue DOESN'T MATCH ANY USER'S SELECTION. Now Defaulted to --> $ModeValue" 
+            }
+        }
+
+        log.debug "mode found = $ModeValue && $ModeIndexValue"
     }
+
+
 
     log.debug """ModeValue = $ModeValue && ModeIndexValue = $ModeIndexValue"""
 
