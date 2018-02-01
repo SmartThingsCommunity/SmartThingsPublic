@@ -10,7 +10,9 @@
     "videoUrl": "",
     "photoUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
     "bannerUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/AHMP.png",
-    "smartApps": {
+    "forumUrl": "https://community.smartthings.com/t/release-alexa-helper/",
+     "releaseType": "production",
+	"smartApps": {
         "parent": {
             "name": "Alexa Helper",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
