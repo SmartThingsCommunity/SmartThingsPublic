@@ -12,6 +12,7 @@
     "bannerUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/AHMP.png",
     "forumUrl": "https://community.smartthings.com/t/release-alexa-helper/",
      "releaseType": "production",
+      "docUrl": "http://thingsthataresmart.wiki/index.php?title=Alexa_Helper",
 	"smartApps": {
         "parent": {
             "name": "Alexa Helper",
