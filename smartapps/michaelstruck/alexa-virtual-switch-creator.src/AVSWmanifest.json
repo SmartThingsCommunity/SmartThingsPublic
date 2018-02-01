@@ -10,6 +10,8 @@
     "videoUrl": "",
     "photoUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
     "bannerUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-virtual-switch-creator.src/AVSCMP.png",
+    "forumUrl": "https://community.smartthings.com/t/release-alexa-virtual-switch-creator/",
+    "releaseType": "production",
     "smartApps": {
         "parent": {
             "name": "Alexa Virtual Switch Creator",
