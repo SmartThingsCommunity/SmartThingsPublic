@@ -12,6 +12,7 @@
     "bannerUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/AskAlexaMP.png",
     "forumUrl": "https://community.smartthings.com/t/release-ask-alexa-2-3-7/",
     "releaseType": "production",
+    "docUrl": "thingsthataresmart.wiki/index.php?title=Ask_Alexa",
     "smartApps": {
         "parent": {
             "name": "Ask Alexa",
