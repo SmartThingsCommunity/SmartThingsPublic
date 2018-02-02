@@ -53,9 +53,9 @@ metadata {
             tileAttribute ("device.windowShade", key: "PRIMARY_CONTROL") {
                 attributeState "open", label:'${name}', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
                 attributeState "closed", label:'${name}', action:"open", icon:"st.shades.shade-closed", backgroundColor:"#ffffff", nextState:"opening"
-                attributeState "partiallyOpen", label:'Open', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
-                attributeState "opening", label:'${name}', action:"stop", icon:"st.shades.shade-opening", backgroundColor:"#79b821", nextState:"partiallyOpen"
-                attributeState "closing", label:'${name}', action:"stop", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partiallyOpen"
+                attributeState "partially open", label:'Open', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
+                attributeState "opening", label:'${name}', action:"stop", icon:"st.shades.shade-opening", backgroundColor:"#79b821", nextState:"partially open"
+                attributeState "closing", label:'${name}', action:"stop", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partially open"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", action:"setLevel"
@@ -141,7 +141,7 @@ private handleLevelReport(physicalgraph.zwave.Command cmd) {
         level = 0  // unlike dimmer switches, the level isn't saved when closed
         shadeValue = "closed"
     } else {
-        shadeValue = "partiallyOpen"
+        shadeValue = "partially open"
         descriptionText = "${device.displayName} shade is ${level}% open"
     }
     def levelEvent = createEvent(name: "level", value: level, unit: "%", displayed: false)
@@ -157,7 +157,7 @@ private handleLevelReport(physicalgraph.zwave.Command cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStopLevelChange cmd) {
-    [ createEvent(name: "windowShade", value: "partiallyOpen", displayed: false, descriptionText: "$device.displayName shade stopped"),
+    [ createEvent(name: "windowShade", value: "partially open", displayed: false, descriptionText: "$device.displayName shade stopped"),
       response(zwave.switchMultilevelV1.switchMultilevelGet().format()) ]
 }
 
