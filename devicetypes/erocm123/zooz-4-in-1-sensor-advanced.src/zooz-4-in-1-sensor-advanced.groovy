@@ -187,7 +187,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpIntervalReport cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-    log.debug "Battery Report: $cmd"
+    log.debug cmd
 	def map = [ name: "battery", unit: "%" ]
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
@@ -275,7 +275,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
     log.debug "Device ${device.displayName} woke up"
 
-    def request = sync_properties()
+    def request = update_needed_settings()
     
     if (!state.lastBatteryReport || (now() - state.lastBatteryReport) / 60000 >= 60 * 24)
     {
@@ -291,8 +291,24 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
     }
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+	log.debug "AssociationReport $cmd"
+    if (zwaveHubNodeId in cmd.nodeId) state."association${cmd.groupingIdentifier}" = true
+    else state."association${cmd.groupingIdentifier}" = false
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.firmwareupdatemdv2.FirmwareMdReport cmd){
     log.debug "Firmware Report ${cmd.toString()}"
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    log.debug cmd
+    if(cmd.applicationVersion && cmd.applicationSubVersion) {
+	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
+        state.needfwUpdate = "false"
+        updateDataValue("firmware", firmware)
+        createEvent(name: "currentFirmware", value: firmware)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -331,7 +347,7 @@ def configure() {
     log.debug "Configuring Device For SmartThings Use"
     def cmds = []
 
-    cmds += sync_properties()
+    cmds += update_needed_settings()
     commands(cmds)
 }
 
@@ -345,23 +361,28 @@ def updated()
     
     updateStatus()
     
-    update_needed_settings()
+    state.needfwUpdate = ""
+    
+    def cmds = update_needed_settings()
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+    
+    response(commands(cmds))
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
-	log.debug "AssociationReport $cmd"
-    if (zwaveHubNodeId in cmd.nodeId) state."association${cmd.groupingIdentifier}" = true
-    else state."association${cmd.groupingIdentifier}" = false
-}
-
-def sync_properties()
+def update_needed_settings()
 {   
     def currentProperties = state.currentProperties ?: [:]
     def configuration = parseXml(configuration_model())
+    
+    def isUpdateNeeded = "NO"
 
     def cmds = []
+    
+    if(!state.needfwUpdate || state.needfwUpdate == "") {
+       log.debug "Requesting device firmware version"
+       cmds << zwave.versionV1.versionGet()
+    }
     
     if(!state.association1){
        log.debug "Setting association group 1"
@@ -375,18 +396,40 @@ def sync_properties()
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
     }
     
+    if (device.currentValue("temperature") == null) {
+        log.debug "Temperature report not yet received. Sending request"
+        cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
+    }
+    if (device.currentValue("humidity") == null) {
+        log.debug "Humidity report not yet received. Sending request"
+        cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
+    }
+    if (device.currentValue("illuminance") == null) {
+        log.debug "Illuminance report not yet received. Sending request"
+        cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
+    }
+    
     configuration.Value.each
-    {
-        if ( "${it.@setting_type}" == "zwave" ) {
-            if (! currentProperties."${it.@index}" || currentProperties."${it.@index}" == null)
+    {     
+        if ("${it.@setting_type}" == "zwave"){
+            if (currentProperties."${it.@index}" == null)
+            {
+                log.debug "Current value of parameter ${it.@index} is unknown"
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
+                isUpdateNeeded = "YES"
+            }
+            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger())
             { 
-                log.debug "Looking for current value of parameter ${it.@index}"
+                isUpdateNeeded = "YES"
+
+                log.debug "Parameter ${it.@index} will be updated to " + settings."${it.@index}"
+                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
+                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
                 cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
             }
         }
     }
-    
-    if (device.currentValue("needUpdate") == "YES") { cmds += update_needed_settings() }
+    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
     return cmds
 }
 
@@ -449,37 +492,6 @@ def update_current_properties(cmd)
         }
     }
     state.currentProperties = currentProperties
-}
-
-def update_needed_settings()
-{
-    def cmds = []
-    def currentProperties = state.currentProperties ?: [:]
-     
-    def configuration = parseXml(configuration_model())
-    def isUpdateNeeded = "NO"
-   
-    configuration.Value.each
-    {     
-        if ("${it.@setting_type}" == "zwave"){
-            if (currentProperties."${it.@index}" == null)
-            {
-                log.debug "Current value of parameter ${it.@index} is unknown"
-                isUpdateNeeded = "YES"
-            }
-            else if (settings."${it.@index}" != null && convertParam(it.@index.toInteger(), cmd2Integer(currentProperties."${it.@index}")) != settings."${it.@index}".toInteger())
-            { 
-                isUpdateNeeded = "YES"
-
-                log.debug "Parameter ${it.@index} will be updated to " + settings."${it.@index}"
-                def convertedConfigurationValue = convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger())
-                cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertedConfigurationValue, it.@byteSize.toInteger()), parameterNumber: it.@index.toInteger(), size: it.@byteSize.toInteger())
-                cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
-            }
-        }
-    }
-    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
-    return cmds
 }
 
 /**
@@ -697,9 +709,12 @@ Default: Off for Temp, On with Motion
         <Item label="Quick Blink on Temp/PIR" value="3" />
         <Item label="Off for Temp, On with Motion" value="4" />
   </Value>
-  <Value type="short" byteSize="1" index="5" label="PIR reset time" min="15" max="60" value="15" setting_type="zwave">
+  <Value type="short" byteSize="1" index="5" label="PIR reset time" min="1" max="255" setting_type="zwave">
     <Help>
-Number of seconds to wait to report motion cleared after a motion event if there is no motion detected.
+Number of MINUTES to wait to report motion cleared after a motion event if there is no motion detected.
+Range: 1~255.
+Default: 3 Minutes
+Firmware 17.09+: Number of SECONDS to wait to report motion cleared after a motion event if there is no motion detected.
 Range: 15~60.
 Default: 15 Seconds
     </Help>
