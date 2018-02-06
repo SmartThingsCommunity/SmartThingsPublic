@@ -141,10 +141,9 @@ def installed(){
 }
 
 def updated() {
-// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	log.debug "Updated with settings: ${settings}"
 	log.debug "${device.displayName} is now ${device.latestValue("powerSource")}"
+
 
 	def powerSource = device.latestValue("powerSource")
 
@@ -358,7 +357,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	secure(zwave.batteryV1.batteryGet())
+	if (device.latestValue("powerSource") == "dc") {
+		command(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)) //poll the temperature to ping
+	} else {
+		log.debug "Can't ping a wakeup device on battery"
+	}
 }
 
 def configure() {
@@ -406,6 +409,14 @@ def configure() {
 
 	setConfigured("true")
 
+	// set the check interval based on the report interval preference. (default 122 minutes)
+	// we do this here in case the device is in wakeup mode
+	def checkInterval = 2 * 60 * 60 + 2 * 60
+	if (reportInterval) {
+		checkInterval = 2*timeOptionValueMap[reportInterval] + (2 * 60)
+	}
+	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
@@ -423,7 +434,7 @@ private def getTimeOptionValueMap() { [
 		"1 hours"    : 1*60*60,
 		"6 hours"    : 6*60*60,
 		"12 hours"   : 12*60*60,
-		"18 hours"   : 6*60*60,
+		"18 hours"   : 18*60*60,
 		"24 hours"   : 24*60*60,
 ]}
 

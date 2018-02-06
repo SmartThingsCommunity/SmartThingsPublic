@@ -243,7 +243,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	if (cmd.sensorType == 1) {
 		// temperature
 		def cmdScale = cmd.scale == 1 ? "F" : "C"
-		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+		// overwriting the precision here to match other devices
+		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, 0)
 		map.unit = getTemperatureScale()
 		map.name = "temperature"
 		map.displayed = true
