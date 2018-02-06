@@ -147,7 +147,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-	def supportsSwitchBinary = !device.getDataValue("MSR").equals("001A-5352-0000")
 	delayBetween([
 		zwave.basicV1.basicSet(value: 0xFF).format(),
 		getSwitchStateZwaveCommand().format()
