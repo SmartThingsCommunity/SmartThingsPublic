@@ -19,7 +19,7 @@
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
             "published": true,
             "oAuth": true,
-            "version": "1.0.0",
+            "version": "1.0.1",
             "appSettings": {},
             "appUrl": "smartapps/michaelstruck/alexa-virtual-switch-creator.src/alexa-virtual-switch-creator.groovy"
         },
