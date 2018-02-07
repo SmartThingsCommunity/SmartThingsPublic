@@ -79,6 +79,7 @@ private getSATURATION_COMMAND() { 0x03 }
 private getMOVE_TO_HUE_AND_SATURATION_COMMAND() { 0x06 }
 private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
 private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
+private getMOVE_TO_COLOR_TEMPERATURE_COMMAND() { 0x0A }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
