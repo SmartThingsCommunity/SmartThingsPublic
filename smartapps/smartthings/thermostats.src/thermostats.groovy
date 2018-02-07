@@ -39,10 +39,17 @@ preferences {
 	section("Send this message (optional, sends standard status message if not specified)"){
 		input "messageText", "text", title: "Message Text", required: false
 	}
-	section("Via a push notification and/or an SMS message"){
-		input("recipients", "contact", title: "Send notifications to") {
-			input "phone", "phone", title: "Enter a phone number to get SMS", required: false
-			paragraph "If outside the US please make sure to enter the proper country code"
+
+	if (location.contactBookEnabled || phone) {
+		section("Via a push notification and/or an SMS message"){
+			input("recipients", "contact", title: "Send notifications to") {
+				input "phone", "phone", title: "Enter a phone number to get SMS", required: false
+				paragraph "If outside the US please make sure to enter the proper country code"
+				input "pushAndPhone", "enum", title: "Notify me via Push Notification", required: false, options: ["Yes", "No"]
+			}
+		}
+	} else {
+		section("Via a push notification"){
 			input "pushAndPhone", "enum", title: "Notify me via Push Notification", required: false, options: ["Yes", "No"]
 		}
 	}
