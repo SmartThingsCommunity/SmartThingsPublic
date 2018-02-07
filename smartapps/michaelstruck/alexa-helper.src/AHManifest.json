@@ -17,7 +17,7 @@
         "parent": {
             "name": "Alexa Helper",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
-            "published": true,
+            "published": false,
             "oAuth": true,
             "version": "4.5.3a",
             "appSettings": {},
