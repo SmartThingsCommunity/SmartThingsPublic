@@ -1,14 +1,14 @@
 /**
- *  Copyright 2015 SmartThings
+ *	Copyright 2015 SmartThings
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *	in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ *	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *	for the specific language governing permissions and limitations under the License.
  *
  */
 metadata {
@@ -18,6 +18,7 @@ metadata {
 		command "off"
 
 		fingerprint deviceId: "0x02"
+		fingerprint mfr:"001A", prod:"574D", model:"0000", deviceJoinName: "Eaton RF 5-Scene Keypad"
 	}
 
 	simulator {
@@ -52,7 +53,7 @@ def parse(String description) {
 		if (description.startsWith("Err 106") && !state.sec) {
 			state.sec = 0
 		}
-	    result = createEvent(descriptionText:description, displayed:true)
+		result = createEvent(descriptionText:description, displayed:true)
 	} else {
 		def cmd = zwave.parse(description)
 		if (cmd) {
