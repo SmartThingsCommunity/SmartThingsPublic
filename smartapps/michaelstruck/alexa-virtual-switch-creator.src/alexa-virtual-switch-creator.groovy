@@ -1,10 +1,11 @@
 /**
  *  Alexa Virtual Switch Creator
  *
- *  Copyright © 2017 Michael Struck
- *  Version 1.0.0 11/1/17
+ *  Copyright © 2018 Michael Struck
+ *  Version 1.0.1 2/3/18
  * 
  *  Version 1.0.0 - Initial release
+ *  Version 1.0.1 - Modified the remove statement for more context awareness
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -70,8 +71,9 @@ def pageAbout(){
         section ("SmartApp/Switch Versions") { paragraph "${textVersion()}" }    
         section ("Apache License") { paragraph "${textLicense()}" }
     	section("Instructions") { paragraph textHelp() }
-        section("Tap below to remove all switches and application"){
-        }
+        section("Tap below to remove all switches and application"){ }
+        remove ("Completely Remove ${textAppName()}","Warning","This will remove the entire application, including all of your virtual switches.\n\nYou will be unable to undo this action!\n\nIf you receive an error when attempting to remove this application, some of the switches may be in use with other SmartApps. " +
+        "You will need to remove them first to proceed with the full removal of the application.")
 	}
 }
 // Show "pageAddSwitch" page
@@ -128,13 +130,13 @@ def imgURL() { return "https://raw.githubusercontent.com/MichaelStruck/SmartThin
 //Version/Copyright/Information/Help
 private def textAppName() { return "Alexa Virtual Switch Creator" }	
 private def textVersion() {
-    def version = "Version: 1.0.0 (11/01/2017)", childVersion, deviceCount= getChildDevices().size()
+    def version = "Version: 1.0.1 (02/03/2018)", childVersion, deviceCount= getChildDevices().size()
     childVersion = state.sw1Ver && deviceCount ? "\n${state.sw1Ver}": ""
     childVersion += state.sw2Ver && deviceCount ? "\n${state.sw2Ver}": ""
     return "${version}${childVersion}"
 }
-private def versionInt(){ return 100 }
-private def textCopyright() { return "Copyright © 2017 Michael Struck" }
+private def versionInt(){ return 101 }
+private def textCopyright() { return "Copyright © 2018 Michael Struck" }
 private def textLicense() {
     def text =
 		"Licensed under the Apache License, Version 2.0 (the 'License'); "+
