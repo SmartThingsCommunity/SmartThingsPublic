@@ -29,6 +29,11 @@ definition(
 )
 
 preferences {
+  page name: "mainPage", install: true, uninstall: true
+}
+
+def mainPage() {
+  dynamicPage {
 	section("Choose one or more, when..."){
 		input "smokeDevices", "capability.smokeDetector", title: "Smoke Detected", required: false, multiple: true
 		input "carbonMonoxideDevices", "capability.carbonMonoxideDetector", title: "Carbon Monoxide Detected", required: false, multiple: true
@@ -56,6 +61,7 @@ preferences {
 	section("Minimum time between messages (optional, defaults to every message)") {
 		input "frequency", "decimal", title: "Minutes", required: false
 	}
+  }
 }
 
 def installed() {
