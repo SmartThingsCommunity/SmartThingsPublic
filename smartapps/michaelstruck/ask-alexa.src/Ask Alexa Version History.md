@@ -44,3 +44,6 @@
  *  Version 2.3.2 (9/22/17) Removed device group macro code, added UV index to Environmentals
  *  Version 2.3.3 (11/2/17) Extension version update; begin adding code for compound commands, removed Sonos specific memory slots (now redundent with Sonos Skill), added switch trigger for macros
  *  Version 2.3.4c (11/20/17) Continued to add compound commands; removed old speaker code.
+  *  Version 2.3.5a (12/14/17) Added output of extension groups to message queue, optimized code, added optimized setup features.
+ *  Version 2.3.6a (1/5/18) Improved setup process, reducing number of steps to get program operating, changed copyright to 2018, updated WebCoRE macro to send more data to the piston
+ *  Version 2.3.7 (1/15/18) Added section to settings to define List_of_WCP for xParams (in WebCoRE macros), update to work with MyNextManager, minor bug fixes
