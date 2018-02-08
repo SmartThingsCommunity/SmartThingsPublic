@@ -18,7 +18,7 @@
             "name": "Alexa Helper",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
             "published": false,
-            "oAuth": true,
+            "oAuth": false,
             "version": "4.5.3a",
             "appSettings": {},
             "appUrl": "master/smartapps/michaelstruck/alexa-helper.src/alexa-helper.groovy"
