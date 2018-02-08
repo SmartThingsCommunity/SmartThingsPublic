@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "Springs Window Fashions Shade", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Springs Window Fashions Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
         capability "Window Shade"
         capability "Battery"
         capability "Refresh"

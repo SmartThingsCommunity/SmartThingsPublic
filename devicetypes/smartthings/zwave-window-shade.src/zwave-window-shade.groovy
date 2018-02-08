@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "Z-Wave Window Shade", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Z-Wave Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
         capability "Window Shade"
         capability "Battery"
         capability "Refresh"
