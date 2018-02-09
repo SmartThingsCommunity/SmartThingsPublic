@@ -2112,7 +2112,7 @@ def getReply(devices, type, STdeviceName, op, num, param){
             }
             else if (type =="lock") {
             	def currVal =STdevice.currentValue(type)
-                if (currVal ==~/locked|unlocked/) result = "The ${STdeviceName} is currently ${currVal}'. "
+                if (currVal ==~/locked|unlocked/) result = "The ${STdeviceName} is currently ${currVal}. "
                 else result = "The lock named, '${STdeviceName}', is currently in an unknown state. It may require manual intervention to resolve. %1%"
             }
             else if (type == "humidity"){
