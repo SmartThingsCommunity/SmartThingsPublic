@@ -1,12 +1,13 @@
 /**
  *  Ask Alexa Rooms/Groups
  *
- *  Copyright © 2017 Michael Struck
- *  Version 1.0.2 10/31/17
+ *  Copyright © 2018 Michael Struck
+ *  Version 1.0.3 2/8/18
  * 
  *  Version 1.0.0 (9/13/17) - Initial release
  *  Version 1.0.1a (9/26/17) - Fixed text area variable issue
  *  Version 1.0.2 (10/31/17) - Added a summary option for switch status outputs
+ *  Version 1.0.3 (2/8/18) - Added room occupancy (beacon) capabilties
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -54,8 +55,8 @@ def mainPage() {
         }
         section ("Sensors in this room/group"){
         	href "pageTempRPT", title: "Temperature Sensors", description: getDesc("temp"), state: (temp ? "complete" : null), image: parent.imgURL() + "heating.png"
-            href "pageHumidRPT", title: "Humdity Sensors", description: getDesc("humid"), state: (humid ? "complete" : null), image: parent.imgURL() + "humidity.png"
-            href "pageSensors", title: "Other Sensors", description: getDesc("sensor"), state: ( motion || contact || water ? "complete" : null), image: parent.imgURL() + "sensor.png"
+            href "pageHumidRPT", title: "Humidity Sensors", description: getDesc("humid"), state: (humid ? "complete" : null), image: parent.imgURL() + "humidity.png"
+            href "pageSensors", title: "Other Sensors", description: getDesc("sensor"), state: ( motion || contact || water || occupy ? "complete" : null), image: parent.imgURL() + "sensor.png"
 		}
         if ((doors && shades) || (switches && tstats)){
        		section("Command options"){
@@ -72,6 +73,7 @@ def mainPage() {
 		//	paragraph "A virtual dimmer switch is recommended (but not required) to trigger a room/group. You may associate the switch with other automations (including native Alexa Routines) to turn on/off this room/group when the switch state change. ", image: imgURL()+"info.png"
 		//}
         section("Tap below to remove this room/group"){ }
+        remove("Remove Room/Group" + (app.label ? ": ${app.label}" : ""),"PLEASE NOTE","This action will only remove this room/group. Ask Alexa, other macros and extensions will remain.")
 	}
 }
 def pageSwitchRPT() {
@@ -206,6 +208,10 @@ def pageSensors() {
             input "motion", "capability.motionSensor", title: "Motion Sensors", multiple: true, required: false, submitOnChange: true
             if (motion) input "motionOnly", "bool",title: "Report Only Sensors That Read 'Active'", defaultValue: false
         }
+        section ("Occupancy sensors", hideWhenEmpty: true){
+            input "occupy", "capability.beacon", title: "Occupancy Sensors", multiple: true, required: false, submitOnChange: true
+            if (occupy) input "occupiedOnly", "bool",title: "Report Only Sensors That Read 'Occupied'", defaultValue: false
+        }
         section ("Open/Close sensors"){
             input "contact", "capability.contactSensor", title: "Open/Close Sensors", multiple: true, required: false, submitOnChange: true
             if (contact) input "openOnly", "bool",title: "Report Only Sensors That Read 'Open'", defaultValue: false
@@ -214,7 +220,6 @@ def pageSensors() {
 			input "water", "capability.waterSensor", title: "Water Sensors", multiple: true, required: false, submitOnChange: true
             if (water) input "wetOnly", "bool", title: "Report Only Water Sensors That Are 'Wet'", defaultValue: false
         }
-        
     }   
 }
 page(name: "pageExtAliases", title: "Enter alias names for this room/group"){
@@ -259,6 +264,7 @@ def getOutput(room, mNum, op, param, mPW, xParam){
         else result = colorSet(room, param, 100)
     }
     else if (op==~/on|off/ && num==0) result=onOff(room, op)
+    else if (op==~/vacant|locked|occupied|engaged|asleep/) result=occupyChg(room, op)
     else if (op==~/open|close/) result = openClose(room, op, mPW, xParam)
     else if (op==~/lock|unlock/) result = lockUnlock(room, op, mPW)
     else if (op=="toggle") result = roomToggle(room)
@@ -278,6 +284,20 @@ def getOutput(room, mNum, op, param, mPW, xParam){
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     if (outputTxt && !outputTxt.endsWith("%")) outputTxt += "%4%"
     return outputTxt
+}
+def occupyChg(room, op){
+	String result = ""
+    def deviceList, count = 0
+    deviceList = occupy
+    if (deviceList){       
+        deviceList.each {
+        	count ++
+            it."${op}"()
+        }
+        def sss= count>1 ? "s" : ""
+    	result = "I am setting the occupancy sensor${sss} to '${op}' in the group named: '${room}'. " 
+    }
+    return result
 }
 def onOff(room, op){
     String result = ""
@@ -465,7 +485,7 @@ def colorSet(room, param, num){
 }
 def roomStatus(room){
 	String result = ""
-    if ((switches && switchesRPT)  || (doors && doorsRPT ) || (locks && locksRPT) || (shades && shadesRPT) || (tstats && tstatsRPT) || temp || humid || water || contact || motion) {
+    if ((switches && switchesRPT)  || (doors && doorsRPT ) || (locks && locksRPT) || (shades && shadesRPT) || (tstats && tstatsRPT) || temp || humid || water || contact || motion || occupy) {
         if (switches && switchesRPT){
             def countOn = switches?.findAll{it.currentValue("switch")=="on"}.size() as int, countOff=switches?.findAll{it.currentValue("switch")=="off"}.size() as int, onVerb=countOn==1 ? "is" : "are", offVerb = countOff==1 ? "is" : "are"
             if (switchesRPTOn) switches.each { if (it.currentValue("switch")=="on") result += "The ${it.label} is on. " }	
@@ -530,6 +550,7 @@ def roomStatus(room){
         if (humid && humid.size() > 1) result += "The average relative humidity is " + parent.getAverage(humid, "humidity") + "%. "
         else if (humid && humid.size() ==1 ) result +="The relative humidity is ${temp.currentValue("humidity")}%. "  
 		if (motion) result += motionReport()
+        if (occupy) result += occupyReport()
         if (contact) result +=contactReport()
         if (water) result +=waterReport()
         if (result) result = "The group named, '${room}', is reporting the following: " + result
@@ -544,7 +565,7 @@ def switchList() {
     switches.each{result << it.label} 
 	return result
 }
-def motionReport(type){
+def motionReport(){
     String result =""
     def deviceList = motionOnly ?  motion.findAll{it.currentValue("motion")=="active"} : motion
     if (deviceList) {
@@ -558,7 +579,7 @@ def motionReport(type){
     }
     return result 
 }
-def contactReport(type){
+def contactReport(){
     String result =""
     def deviceList = openOnly ? contact.findAll{it.latestValue("contact")=="open"} : contact
     if (deviceList){
@@ -567,12 +588,21 @@ def contactReport(type){
     }
     return result 
 }
-def waterReport(type){
+def waterReport(){
     String result =""
     def deviceList = wetOnly ? water.findAll{it.latestValue("water")=="wet"} : water
     if (deviceList){
-    	if (wetOnly) deviceList.each { result += "'${it.label}' is read moisture is present. "}
+    	if (wetOnly) deviceList.each { result += "'${it.label}' is reading moisture is present. "}
 		else deviceList.each {result += "The '${it.label}' is reading ${it.latestValue("water")}. "}
+    }
+    return result 
+}
+def occupyReport(){
+    String result =""
+    def deviceList = occupiedOnly ? occupy.findAll{it.latestValue("occupancy")=="occupied"} : occupy
+    if (deviceList){
+    	if (occupiedOnly ) deviceList.each { result += "The occpancy sensor, '${it.label}', is reading occupied. "}
+		else deviceList.each {result += "The occpancy sensor, '${it.label}', is reading ${it.latestValue("occupancy")}. "}
     }
     return result 
 }
@@ -665,18 +695,23 @@ def getDesc(type){
             }
     	break
         case "sensor" :
-			if (motion || contact || water){
+			if (motion || contact || water || occupy){
                 result = ""
                 if (motion){
                     countNoun = motion.size()>1 ? "s" : ""
                     result+= "Motion sensor${countNoun} configured"
                 }
-                if (motion && contact) result +="\n"
+                if (motion && occupy) result +="\n"
+                if (occupy){
+                    countNoun = occupy.size()>1 ? "s" : ""
+                    result+= "Occupancy sensor${countNoun} configured"
+                }
+                if (water && (motion || occupy)) result +="\n"
                 if (contact){
                     countNoun = contact.size()>1 ? "s" : ""
                     result+= "Open/Close sensor${countNoun} configured"
-                }
-                if (water && (motion || contact)) result +="\n"
+                } 
+                if (water && (motion || contact || occupy)) result +="\n"
                 if (water){
                     countNoun = water.size()>1 ? "s" : ""
                     result+= "Water sensor${countNoun} configured"
@@ -687,6 +722,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 102 }
+private versionInt(){ return 103 }
 private def textAppName() { return "Ask Alexa Rooms/Groups" }	
-private def textVersion() { return "Rooms/Groups Version: 1.0.2 (10/31/2017)" }
+private def textVersion() { return "Rooms/Groups Version: 1.0.3 (02/08/2018)" }

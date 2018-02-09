@@ -1,8 +1,8 @@
 /**
  *  Ask Alexa Voice Report Extension
  *
- *  Copyright © 2017 Michael Struck
- *  Version 1.0.7 11/2/17
+ *  Copyright © 2018 Michael Struck
+ *  Version 1.0.8 2/3/18
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restricitions 
@@ -12,6 +12,7 @@
  *  Version 1.0.5 - (8/3/17) - Added support for Foobot Air Quality Monitor, permanently enabled voice filters
  *  Version 1.0.6a - (9/21/17) - Added UV index reporting
  *  Version 1.0.7 - (11/2/17) - Added LUX and window shade reporting along with support for custom Aeon power meter DTH
+ *  Version 1.0.8 - (2/3/18) - Added Room occupancy reporting, begin adding Echo device indentification
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -64,7 +65,7 @@ def mainPage() {
             href "pageAirReport", title: "Foobot Air Quality Report", description: getDesc("pollution"), state:(fooBot ? "complete" : null), image: parent.imgURL() + "pollution.png"
             href "pageSpeakerReport", title: "Speaker Report", description: getDesc("speaker"), state: (voiceSpeaker ? "complete": null), image: parent.imgURL() + "speaker.png"
             href "pagePresenceReport", title: "Presence Report", description:  getDesc("presence"), state:(voicePresence ? "complete": null), image : parent.imgURL() + "people.png"    
-            href "pageOtherSensors", title: "Other Sensors Report", description: getDesc("sensor"), state: (voiceWater|| voiceMotion|| voicePower || voiceAccel  ? "complete" :null), image: parent.imgURL() + "sensor.png"
+            href "pageOtherSensors", title: "Other Sensors Report", description: getDesc("sensor"), state: (voiceWater|| voiceMotion|| voicePower || voiceAccel || voiceOccupancy  ? "complete" :null), image: parent.imgURL() + "sensor.png"
             href "pageHomeReport", title: "Mode and Smart Home Monitor Report", description: getDesc("MSHM"), state: (voiceMode|| voiceSHM? "complete": null), image: parent.imgURL() + "modes.png"
             href "pageDeviceHealth", title: "Device Health Report", description:getDesc("health"), state: (voiceHealth ? "complete" : null), image: parent.imgURL() + "health.png"
             href "pageBatteryReport",title: "Battery Report", description: getDesc("battery"), state: (voiceBattery ? "complete" : null), image: parent.imgURL() + "battery.png"
@@ -83,15 +84,19 @@ def mainPage() {
             input "voiceRepFilter", "text", title: "Filter Report Output", description: "Delimit items with comma (ex. xxxxx,yyyyy,zzzzz)", required: false, capitalization: "sentences"
 			input "voiceEvtTimeDate", "bool", title: "Speak Only Time/Date During Event Reports", defaultValue: false
 		}
-        section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
+        section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runEcho || runSwitchActive || runSwitchNotActive))  {            
 			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
 			href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png", submitOnChange: true
 			input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png", submitOnChange: true
             input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
 			if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+            input "runEcho", "enum", title:"Only From These Echo Devices...", decription: "Coming soon", multiple: true, required: false, image: parent.imgURL() + "echo.png"
+            input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: parent.imgURL() + "on.png"
+			input "runSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false, image: parent.imgURL() + "off.png"
             input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
         } 
         section("Tap below to remove this message queue"){ }
+        remove("Remove Voice Report" + (app.label ? ": ${app.label}" : ""),"PLEASE NOTE","This action will only remove this voice report. Ask Alexa, other macros and extensions will remain.")
 	}
 }
 def pageMQ(){
@@ -208,7 +213,11 @@ def pageOtherSensors(){
              	input "voiceAeon", "bool", title: "Speak kWh Usage And Cost (Custom Aeon DTH)", defaultValue: false
             }
         }
-        section ("Water report", hideWhenEmpty: true) {
+        section ("Occupancy sensors", hideWhenEmpty: true) {
+            input "voiceOccupancy", "capability.beacon", title: "Occupancy Sensors To Report Their Status...", multiple: true, required: false, submitOnChange: true
+            if (voiceOccupancy) input "voiceOccupiedOnly", "bool", title: "Report Only Occupancy Sensors That Are 'Occupied'", defaultValue: false 
+        }
+        section ("Water sensors", hideWhenEmpty: true) {
             input "voiceWater", "capability.waterSensor", title: "Water Sensors To Report Their Status...", multiple: true, required: false, submitOnChange: true
             if (voiceWater) input "voiceWetOnly", "bool", title: "Report Only Water Sensors That Are 'Wet'", defaultValue: false 
         }
@@ -341,6 +350,7 @@ def getOutput(){
         outputTxt += voiceMotion && motionReport("motion") ? motionReport("motion") : ""
         outputTxt += voiceAccel && motionReport("acceleration") ? motionReport("acceleration") : ""
         outputTxt += voicePower && powerReport() ? powerReport() : ""
+        outputTxt += voiceOccupancy && occupancyReport() ? occupancyReport() : ""
         outputTxt += voiceMode ? "The current SmartThings mode is set to, '${location.currentMode}'. " : ""
         if (voiceSHM){
             def currSHM = [off : "disarmed", away: "armed away", stay: "armed home"][location.currentState("alarmSystemStatus")?.value] ?: location.currentState("alarmSystemStatus")?.value
@@ -400,7 +410,9 @@ def translateMQid(mqIDList){
     }
     return parent.getList(result)
 }
-def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
+def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll && switchesOnStatus() && switchesOffStatus()) }
+private switchesOnStatus(){ return runSwitchActive && runSwitchActive.find{it.currentValue("switch") == "off"} ? false : true }
+private switchesOffStatus(){ return runSwitchNotActive && runSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true }
 def extAliasCount() { return 3 }
 def extAliasDesc(){
 	def result =""
@@ -573,6 +585,19 @@ def presenceReport(){
     else if (!result) voicePresence.each {deviceName->result += "${deviceName} is " + deviceName.latestValue("presence") + ". " }
     if (voicePresentEvt) result += getLastEvt(voicePresence, "arrival", "present", "presence sensor")
     if (voiceGoneEvt) result += getLastEvt(voicePresence, "departure", "not present", "presence sensor")
+    return result
+}
+def occupancyReport(){
+	String result = ""
+	voiceOccupancy.each { deviceName->
+		if (voiceOccupiedOnly){
+           	if (deviceName.currentValue("occupancy")=="occupied") result += "'${deviceName}' is reading 'occupied'. "
+    	}
+        else {
+           	result += "'${deviceName}' is reading '${deviceName.currentValue("occupancy")}'. "
+       	}
+    }
+    if (result) result = "For the occupancy sensors, " + result
     return result
 }
 def motionReport(type){
@@ -770,7 +795,7 @@ def getDesc(type){
        	 	}
             break
 		case "sensor":
-        	if (voiceWater || voiceMotion || voicePower || voiceAccel){
+        	if (voiceWater || voiceMotion || voicePower || voiceAccel || voiceOccupancy){
                 def accelEvt = voiceAccelEvt ? "/Event" : ""
                 def acceleration = voiceAccelOnly ? "(Active${accelEvt})" : "(Active/Not Active${accelEvt})"
                 def water = voiceWetOnly ? "(Wet)" : "(Wet/Dry)"
@@ -779,6 +804,7 @@ def getDesc(type){
                 def motionEvt = voiceMotionEvt ? "/Event" : ""
                 def motion = voiceMotionOnly ? "(Active${motionEvt})" : "(Active/Not Active${motionEvt})"
                 def power = voicePowerOn ? "(Active)" : "(Active/Not Active)"
+                def occupancy = voiceOccupiedOnly ? "(Occupied)" : "(All Sensor States)"
                 result  = voiceAccel && voiceAccel.size()>1 ? "Acceleration sensors ${acceleration}" : voiceAccel && voiceAccel.size()==1 ? "Acceleration sensor ${acceleration}" : ""
                 if (voiceMotion) result += result && voiceMotion.size()>1 ? ", motion sensors ${motion}" : result && voiceMotion.size()==1 ? ", motion sensor ${motion}" : ""
                 if (voiceMotion) result += !result && voiceMotion.size()>1 ? "Motion sensors ${motion}" : !result && voiceMotion.size()==1 ? "Motion sensor ${motion}" : ""
@@ -786,10 +812,13 @@ def getDesc(type){
                 if (voicePower) result += !result && voicePower.size()>1 ? "Power meters ${power}" : !result && voicePower.size()==1 ? "Power meter ${power}" : ""
                 if (voiceWater)  result += result && voiceWater && voiceWater.size()>1 ? " and water sensors ${water}" : result && voiceWater && voiceWater.size()==1 ? " and water sensor ${water}" : ""
                 if (voiceWater)  result += !result && voiceWater && voiceWater.size()>1 ? "Water sensors ${water}" :!result && voiceWater && voiceWater.size()==1 ? "Water sensor ${water}" : ""
+                if (voiceOccupancy)  result += result && voiceOccupancy && voiceOccupancy.size()>1 ? " and occupancy sensors ${occupancy}" : result && voiceOccupancy  && voiceOccupancy.size()==1 ? " and occupancy sensor ${occupancy}" : ""
+                if (voiceOccupancy)  result += !result && voiceOccupancy && voiceOccupancy.size()>1 ? "Occupancy sensors ${occupancy}" :!result && voiceOccupancy  && voiceOccupancy.size()==1 ? "Occupancy sensor ${occupancy}" : ""
                 count += voiceWater ? voiceWater.size() : 0
                 count += voiceMotion ? voiceMotion.size() : 0
                 count += voicePower ? voicePower.size() : 0
                 count += voiceAccel ? voiceAccel.size() : 0
+                count += voiceOccpancy ? voiceOccupancy.size() : 0
                 result += count>1 ? " report status" : " reports status"
     		}
             break
@@ -872,6 +901,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 107}
+private versionInt(){ return 108}
 private def textAppName() { return "Ask Alexa Voice Report" }	
-private def textVersion() { return "Voice Report Version: 1.0.7 (11/2/2017)" }
+private def textVersion() { return "Voice Report Version: 1.0.8 (02/03/2018)" }
