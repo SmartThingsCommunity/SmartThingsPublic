@@ -38,7 +38,6 @@ metadata {
 		fingerprint mfr: "0063", prod: "4944", model: "3034", deviceJoinName: "GE In-Wall Smart Fan Control"
 		fingerprint mfr: "0063", prod: "4944", model: "3131", deviceJoinName: "GE In-Wall Smart Fan Control"
 		fingerprint mfr: "0039", prod: "4944", model: "3131", deviceJoinName: "Honeywell Z-Wave Plus In-Wall Fan Speed Control"
-		fingerprint mfr: "001A", prod: "4441", model: "0000", deviceJoinName: "Eaton RF Accessory Dimmer"
 		fingerprint mfr: "001A", prod: "4449", model: "0101", deviceJoinName: "Eaton RF Master Dimmer"
 	}
 
@@ -125,15 +124,6 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	if (device.getDataValue("MSR").equals("001A-4441-0000")) {
-		// Eaton Accessory dimmer sends unsolicited BasicReport together with BasicSet
-		// Values in this report are not the same as BasicSet's correct target value
-		// and their order is not always the same.
-		// As Accessory dimmer does not support HAIL command class, we always use
-		// SwitchMultilevelGet to check current level, so we can ignore all Basic Reports
-		// for this device.
-		return [:]
-	}
 	dimmerEvents(cmd)
 }
 
@@ -163,13 +153,13 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	log.debug "manufacturerId:   ${cmd.manufacturerId}"
-	log.debug "manufacturerName: ${cmd.manufacturerName}"
-	log.debug "productId:        ${cmd.productId}"
-	log.debug "productTypeId:    ${cmd.productTypeId}"
+	log.debug "manufacturerId:   $cmd.manufacturerId"
+	log.debug "manufacturerName: $cmd.manufacturerName"
+	log.debug "productId:        $cmd.productId"
+	log.debug "productTypeId:    $cmd.productTypeId"
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	updateDataValue("manufacturer", cmd.manufacturerName)
+	device.updateDataValue("MSR", msr)
+	device.updateDataValue("manufacturer", cmd.manufacturerName)
 	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
