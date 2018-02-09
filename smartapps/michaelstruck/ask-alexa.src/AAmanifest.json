@@ -19,7 +19,7 @@
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/AskAlexa512.png",
             "published": true,
             "oAuth": true,
-            "version": "2.3.7",
+            "version": "2.3.8",
             "appSettings": {},
             "appUrl": "smartapps/michaelstruck/ask-alexa.src/ask-alexa.groovy"
         },
@@ -39,7 +39,7 @@
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
             "published": false,
             "oAuth": false,
-            "version": "1.0.2",
+            "version": "1.0.3",
             "appSettings": {},
             "appUrl": "smartapps/michaelstruck/ask-alexa-rooms-groups.src/ask-alexa-rooms-groups.groovy",
             "optional": false
@@ -59,7 +59,7 @@
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
             "published": false,
             "oAuth": false,
-            "version": "1.0.7",
+            "version": "1.0.8",
             "appSettings": {},
             "appUrl": "smartapps/michaelstruck/ask-alexa-voice-report.src/ask-alexa-voice-report.groovy",
             "optional": false
