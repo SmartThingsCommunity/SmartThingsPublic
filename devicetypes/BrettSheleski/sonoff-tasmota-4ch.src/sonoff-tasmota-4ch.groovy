@@ -145,10 +145,10 @@ def parse(String description) {
 		setSwitchState2(false)
 	}
 
-	if ((resultJson?.POWER2 in ["ON", 1, "1"]) || (resultJson?.Status?.Power2 in [1, "1"])) {
+	if ((resultJson?.POWER3 in ["ON", 1, "1"]) || (resultJson?.Status?.Power3 in [1, "1"])) {
 		setSwitchState3(true)
 	}
-	else if ((resultJson?.POWER2 in ["OFF", 0, "0"]) || (resultJson?.Status?.Power2 in [0, "0"])) {
+	else if ((resultJson?.POWER3 in ["OFF", 0, "0"]) || (resultJson?.Status?.Power3 in [0, "0"])) {
 		setSwitchState3(false)
 	}
 
