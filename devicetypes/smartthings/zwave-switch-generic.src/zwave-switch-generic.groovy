@@ -38,7 +38,7 @@ metadata {
 		fingerprint mfr: "0039", prod: "4952", model: "3037", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Switch"
 		fingerprint mfr: "0039", prod: "4952", model: "3133", deviceJoinName: "Honeywell Z-Wave In-Wall Tamper Resistant Duplex Receptacle"
 		fingerprint mfr: "001A", prod: "5244", deviceJoinName: "Eaton RF Receptacle"
-		fingerprint mfr: "001A", prod: "534C", model: "0000", deviceJoinName: "Eaton RF Master Switch "
+		fingerprint mfr: "001A", prod: "534C", model: "0000", deviceJoinName: "Eaton RF Master Switch"
 	}
 
 	// simulator metadata
@@ -125,8 +125,8 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	log.debug "productId:        $cmd.productId"
 	log.debug "productTypeId:    $cmd.productTypeId"
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	device.updateDataValue("MSR", msr)
-	device.updateDataValue("manufacturer", cmd.manufacturerName)
+	updateDataValue("MSR", msr)
+	updateDataValue("manufacturer", cmd.manufacturerName)
 	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
@@ -160,12 +160,7 @@ def off() {
 }
 
 def poll() {
-	def commands = []
-	commands << zwave.switchBinaryV1.switchBinaryGet().format()
-	if (getDataValue("MSR") == null) {
-		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-	}
-	delayBetween(commands)
+	refresh()
 }
 
 /**
