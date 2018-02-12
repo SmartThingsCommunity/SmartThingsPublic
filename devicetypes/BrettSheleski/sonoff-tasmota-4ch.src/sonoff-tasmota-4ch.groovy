@@ -164,13 +164,13 @@ def parse(String description) {
 		
 		def power = resultJson.Status.Power;
 
-		def p1On = 0b0001;
-		def p2On = 0b0010;
-		def p3On = 0b0100;
-		def p4On = 0b1000;
+		int p1On = 0b0001;
+		int p2On = 0b0010;
+		int p3On = 0b0100;
+		int p4On = 0b1000;
 
 		setSwitchState((power & p1On) == p1On);
-		setSwitchState2(power & p2On) == p2On);
+		setSwitchState2((power & p2On) == p2On);
 		setSwitchState3((power & p3On) == p3On);
 		setSwitchState4((power & p4On) == p4On);
 	}
