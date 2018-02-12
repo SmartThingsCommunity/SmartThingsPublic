@@ -148,7 +148,7 @@ def parse(String description) {
 	if (resultJson?.POWER != null){
 		setSwitchState(resultJson.POWER in onStates)
 	}
-	if (resultJson?.POWER1 != null) {
+	else if (resultJson?.POWER1 != null) {
 		setSwitchState(resultJson.POWER1 in onStates)
 	}
 	else if (resultJson?.POWER2){
