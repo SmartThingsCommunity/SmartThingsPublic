@@ -16,6 +16,7 @@ metadata {
 		capability "Actuator"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 		//zw:L type:0202 mfr:001A prod:574D model:0000 ver:2.05 zwv:2.78 lib:01 cc:87,77,86,22,2D,85,72,21,70
 		fingerprint mfr: "001A", prod:"574D", model:"0000", deviceJoinName: "Eaton 5-Scene Keypad"
 	}
@@ -62,6 +63,10 @@ def installed() {
 	//use runIn to schedule the initialize method in case updated method below is also sending commands to the device
 	sendHubCommand cmds*.format(), 3100
 	runIn(50, "initialize", [overwrite: true])  // Allow set up to finish and acknowledged before proceeding
+	
+	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	response(refresh())
 }
 
 def updated() {
@@ -75,6 +80,8 @@ def updated() {
 	//correctly
 		initialize()
 	}
+	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 1 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def initialize() {
@@ -114,6 +121,17 @@ def initialize() {
 def refresh() {
 	response zwave.indicatorV1.indicatorGet().format()
 	//Indicator returns number which is a bit representation of current state of switches
+}
+
+def poll() {
+	refresh()
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def parse(String description) {

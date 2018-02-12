@@ -21,6 +21,8 @@ Works with:
 * **Actuator** - represents device has commands
 * **Refresh** - is capable of refreshing current cloud state with values retrieved from the device
 * **Sensor** - detects sensor events
+* **Health Check** - check if device is available or unavailable
+
 
 Child devices support:
 
@@ -36,9 +38,9 @@ The Eaton 5-scene keypad has blue LEDs which will all blink when the device is n
 * DO NOT press any buttons while the device LEDs are blinking sequentially. After pairing is complete the LEDs will stop blinking.
 * If all blue LEDs on the device start blinking again, press All Off button again.
 * Confirm addition of new device from SmartThings app.
-* Initial device configuration will start. It will take a while, so Hub will light LEDs from 1 to 5 to indicate which buttons are already configured.
+* Initial device configuration will start. It will take a while (about 2 minutes), so Hub will light LEDs from 1 to 5 to indicate which buttons are already configured.
 * After initial configuration ends, Handler will check if configuration was successful, and retry if neccessary.
-* Again, It will take a while, so Hub will light LEDs from 1 to 5 to indicate progress.
+* Again, It will take a while (about 2 minutes), so Hub will light LEDs from 1 to 5 to indicate progress.
 * This process may fail too. To check if set up was successful, wait for all leds to be turned off, and turn every switch on (Important note: do this without turning any switch off).
 * Now check status of all switches. If all switches are turned on, set up was successful.
 * If some switches are turned off, please enter device settings and press save to run configuration check/retry again. After this, check if malfunctioning switches started working.
