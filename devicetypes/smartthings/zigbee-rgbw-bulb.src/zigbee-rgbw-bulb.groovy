@@ -18,13 +18,12 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZigBee RGBW Bulb", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee RGBW Bulb", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
 
         capability "Actuator"
         capability "Color Control"
         capability "Color Temperature"
         capability "Configuration"
-        capability "Polling"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
@@ -32,7 +31,6 @@ metadata {
         capability "Light"
 
         attribute "colorName", "string"
-        command "setGenericName"
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Flex RGBW", deviceJoinName: "SYLVANIA Smart Flex RGBW"
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW", deviceJoinName: "OSRAM LIGHTIFY Flex RGBW"
@@ -40,6 +38,9 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY BR RGBW", deviceJoinName: "SYLVANIA Smart BR30 RGBW"
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY RT RGBW", deviceJoinName: "SYLVANIA Smart RT5/6 RGBW"
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY FLEX OUTDOOR RGBW", deviceJoinName: "SYLVANIA Smart Outdoor RGBW Flex"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01, FC08", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "RT HO RGBW", deviceJoinName: "SYLVANIA Smart RT HO RGBW"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01", outClusters: "0019", manufacturer: "LEDVANCE", model: "A19 RGBW", deviceJoinName: "SYLVANIA Smart A19 RGBW"
+
     }
 
     // UI tile definitions
@@ -89,9 +90,9 @@ def parse(String description) {
     def event = zigbee.getEvent(description)
     if (event) {
         log.debug event
-        if (event.name=="level" && event.value==0) {}
+        if (event.name == "level" && event.value == 0) {}
         else {
-            if (event.name=="colorTemperature") {
+            if (event.name == "colorTemperature") {
                 setGenericName(event.value)
             }
             sendEvent(event)
@@ -103,12 +104,12 @@ def parse(String description) {
 
         if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
-                def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
-                sendEvent(name: "hue", value: hueValue, descriptionText: "Color has changed")
+                state.hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
+                runIn(5, updateColor, [overwrite: true])
             }
             else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
-                def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
-                sendEvent(name: "saturation", value: saturationValue, descriptionText: "Color has changed", displayed: false)
+                state.saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
+                runIn(5, updateColor, [overwrite: true])
             }
         }
         else if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
@@ -125,6 +126,11 @@ def parse(String description) {
             log.debug zigbeeMap
         }
     }
+}
+
+def updateColor() {
+	sendEvent(name: "hue", value: state.hueValue, descriptionText: "Color has changed")
+	sendEvent(name: "saturation", value: state.saturationValue, descriptionText: "Color has changed", displayed: false)
 }
 
 def on() {
@@ -162,9 +168,8 @@ def configure() {
 }
 
 def setColorTemperature(value) {
-    setGenericName(value)
     value = value as Integer
-    def tempInMired = (1000000 / value) as Integer
+    def tempInMired = Math.round(1000000 / value)
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
     zigbee.command(COLOR_CONTROL_CLUSTER, 0x0A, "$finalHex 0000") +
@@ -204,9 +209,9 @@ def setColor(value){
     log.trace "setColor($value)"
     zigbee.on() +
     zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
-        getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
-    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
-    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+    getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
 }
 
 def setHue(value) {

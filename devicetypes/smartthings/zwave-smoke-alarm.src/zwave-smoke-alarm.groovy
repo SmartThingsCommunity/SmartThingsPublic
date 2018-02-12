@@ -21,8 +21,6 @@ metadata {
 
 		attribute "alarmState", "string"
 
-		fingerprint deviceId: "0xA100", inClusters: "0x20,0x80,0x70,0x85,0x71,0x72,0x86"
-		fingerprint mfr:"0138", prod:"0001", model:"0001", deviceJoinName: "First Alert Smoke Detector"
 		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)"
 	}
 
@@ -57,6 +55,10 @@ metadata {
 def installed() {
 // Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	def cmds = []
+	createSmokeOrCOEvents("allClear", cmds) // allClear to set inital states for smoke and CO
+	cmds.each { cmd -> sendEvent(cmd) }
 }
 
 def updated() {
@@ -103,6 +105,12 @@ def createSmokeOrCOEvents(name, results) {
 		case "carbonMonoxideClear":
 			text = "$device.displayName carbon monoxide is clear"
 			results << createEvent(name: "carbonMonoxide", value: "clear", descriptionText: text, displayed: false)
+			name = "clear"
+			break
+		case "allClear":
+			text = "$device.displayName all clear"
+			results << createEvent(name: "smoke",          value: "clear", descriptionText: text, displayed: false)
+			results << createEvent(name: "carbonMonoxide", value: "clear", displayed: false)
 			name = "clear"
 			break
 		case "testClear":
@@ -180,7 +188,11 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results << response(zwave.batteryV1.batteryGet(), "delay 2000", zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response([
+				zwave.batteryV1.batteryGet().format(),
+				"delay 2000",
+				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+			])
 	} else {
 		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
@@ -196,6 +208,18 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, results
 		map.value = cmd.batteryLevel
 	}
 	results << createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd, results) {
+	def encapsulatedCommand = cmd.encapsulatedCommand([ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
+	state.sec = 1
+	log.debug "encapsulated: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand, results)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		results << createEvent(descriptionText: cmd.toString())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd, results) {

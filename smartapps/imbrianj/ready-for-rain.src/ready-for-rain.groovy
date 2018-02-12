@@ -14,30 +14,43 @@ definition(
   description: "Warn if doors or windows are open when inclement weather is approaching.",
   category: "Convenience",
   iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-  iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png"
+  iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png",
+  pausable: true
 )
 
 preferences {
+  page name: "mainPage", install: true, uninstall: true
+}
 
-  if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
-		section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
-	}
+def mainPage() {
+  dynamicPage(name: "mainPage") {
+    if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
+      section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
+    }
 
-  if (location.channelName != 'samsungtv') {
-		section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
-  }
+    if (location.channelName != 'samsungtv') {
+      section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
+    }
 
-  section("Things to check?") {
-    input "sensors", "capability.contactSensor", multiple: true
-  }
+    section("Things to check?") {
+      input "sensors", "capability.contactSensor", multiple: true
+    }
 
-  section("Notifications?") {
-    input "sendPushMessage", "enum", title: "Send a push notification?", metadata: [values: ["Yes", "No"]], required: false
-    input "phone", "phone", title: "Send a Text Message?", required: false
-  }
+    section("Notifications?") {
+      input "sendPushMessage", "enum", title: "Send a push notification?", metadata: [values: ["Yes", "No"]], required: false
+      if (phone) {
+        input "phone", "phone", title: "Send a Text Message?", required: false
+      }
+    }
 
-  section("Message interval?") {
-    input name: "messageDelay", type: "number", title: "Minutes (default to every message)", required: false
+    section("Message interval?") {
+      input name: "messageDelay", type: "number", title: "Minutes (default to every message)", required: false
+    }
+
+    section([mobileOnly:true]) {
+      label title: "Assign a name", required: false
+      mode title: "Set for specific mode(s)"
+    }
   }
 }
 

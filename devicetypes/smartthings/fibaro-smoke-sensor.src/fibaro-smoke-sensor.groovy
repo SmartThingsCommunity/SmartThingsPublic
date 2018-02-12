@@ -18,6 +18,7 @@ metadata {
         capability "Sensor"
         capability "Smoke Detector" //attributes: smoke ("detected","clear","tested")
         capability "Temperature Measurement" //attributes: temperature
+        capability "Health Check"
         attribute "tamper", "enum", ["detected", "clear"]
         attribute "heatAlarm", "enum", ["overheat detected", "clear", "rapid temperature rise", "underheat detected"]
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x9C, 0x98, 0x7A", outClusters: "0x20, 0x8B"
@@ -77,15 +78,21 @@ metadata {
                 attributeState("replacement required", label:"REPLACE", icon:"st.alarm.smoke.test", backgroundColor:"#FFFF66")
                 attributeState("unknown", label:"UNKNOWN", icon:"st.alarm.smoke.test", backgroundColor:"#ffffff")
             }
-            tileAttribute ("device.battery", key: "SECONDARY_CONTROL") {
-                attributeState "battery", label:'Battery: ${currentValue}%', unit:"%"
-            }
         }
         valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "battery", label:'${currentValue}% battery', unit:"%"
         }
-        valueTile("temperature", "device.temperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "temperature", label:'${currentValue}°', unit:"C"
+        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
+            state "temperature", label: '${currentValue}°',
+                    backgroundColors: [
+                            [value: 31, color: "#153591"],
+                            [value: 44, color: "#1e9cbb"],
+                            [value: 59, color: "#90d2a7"],
+                            [value: 74, color: "#44b621"],
+                            [value: 84, color: "#f1d801"],
+                            [value: 95, color: "#d04e00"],
+                            [value: 96, color: "#bc2323"]
+                    ]
         }
         valueTile("heatAlarm", "device.heatAlarm", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "clear", label:'TEMPERATURE OK', backgroundColor:"#ffffff"
@@ -99,7 +106,7 @@ metadata {
         }
 
         main "smoke"
-        details(["smoke","temperature"])
+        details(["smoke","temperature","battery"])
     }
 }
 
@@ -160,6 +167,19 @@ def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy 
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationRejectedRequest cmd) {
     createEvent(displayed: true, descriptionText: "$device.displayName rejected the last request")
+}
+
+//crc16
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+    def versions = [0x31: 5, 0x71: 3, 0x84: 1]
+    def version = versions[cmd.commandClass as Integer]
+    def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+    def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+    if (!encapsulatedCommand) {
+        log.debug "Could not extract command from $cmd"
+    } else {
+        zwaveEvent(encapsulatedCommand)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
@@ -339,6 +359,10 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def configure() {
+    // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+    sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    //making the default state as "clear"
+    sendEvent(name: "smoke", value: "clear", displayed: false)
 // This sensor joins as a secure device if you tripple-click the button to include it
     log.debug "configure() >> isSecured() : ${isSecured()}"
     if (!isSecured()) {

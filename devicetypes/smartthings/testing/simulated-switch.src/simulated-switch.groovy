@@ -13,55 +13,55 @@
  */
 metadata {
 
-    definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob") {
-		capability "Switch"
+    definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob", runLocally: false) {
+        capability "Switch"
         capability "Relay Switch"
-		capability "Sensor"
-		capability "Actuator"
+        capability "Sensor"
+        capability "Actuator"
 
-		command "onPhysical"
-		command "offPhysical"
-	}
+        command "onPhysical"
+        command "offPhysical"
+    }
 
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "off", label: '${currentValue}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
-		}
-		standardTile("on", "device.switch", decoration: "flat") {
-			state "default", label: 'On', action: "onPhysical", backgroundColor: "#ffffff"
-		}
-		standardTile("off", "device.switch", decoration: "flat") {
-			state "default", label: 'Off', action: "offPhysical", backgroundColor: "#ffffff"
-		}
+    tiles {
+        standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+            state "off", label: '${currentValue}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+            state "on", label: '${currentValue}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
+        }
+        standardTile("on", "device.switch", decoration: "flat") {
+            state "default", label: 'On', action: "onPhysical", backgroundColor: "#ffffff"
+        }
+        standardTile("off", "device.switch", decoration: "flat") {
+            state "default", label: 'Off', action: "offPhysical", backgroundColor: "#ffffff"
+        }
         main "switch"
-		details(["switch","on","off"])
-	}
+        details(["switch","on","off"])
+    }
 }
 
 def parse(description) {
 }
 
 def on() {
-	log.debug "$version on()"
-	sendEvent(name: "switch", value: "on")
+    log.debug "$version on()"
+    sendEvent(name: "switch", value: "on")
 }
 
 def off() {
-	log.debug "$version off()"
-	sendEvent(name: "switch", value: "off")
+    log.debug "$version off()"
+    sendEvent(name: "switch", value: "off")
 }
 
 def onPhysical() {
-	log.debug "$version onPhysical()"
-	sendEvent(name: "switch", value: "on", type: "physical")
+    log.debug "$version onPhysical()"
+    sendEvent(name: "switch", value: "on", type: "physical")
 }
 
 def offPhysical() {
-	log.debug "$version offPhysical()"
-	sendEvent(name: "switch", value: "off", type: "physical")
+    log.debug "$version offPhysical()"
+    sendEvent(name: "switch", value: "off", type: "physical")
 }
 
 private getVersion() {
-	"PUBLISHED"
+    "PUBLISHED"
 }

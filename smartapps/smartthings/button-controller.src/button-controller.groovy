@@ -22,15 +22,15 @@ definition(
     description: "Control devices with buttons like the Aeon Labs Minimote",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/MyApps/Cat-MyApps@2x.png",
+    pausable: true
 )
 
 preferences {
 	page(name: "selectButton")
-	page(name: "configureButton1")
-	page(name: "configureButton2")
-	page(name: "configureButton3")
-	page(name: "configureButton4")
+	for (def i=1; i<=8; i++) {
+		page(name: "configureButton$i")
+	}
 
 	page(name: "timeIntervalInput", title: "Only during a certain time") {
 		section {
@@ -60,22 +60,45 @@ def selectButton() {
 	}
 }
 
+def createPage(pageNum) {
+	if ((state.numButton == pageNum) || (pageNum == 8))
+		state.installCondition = true
+	dynamicPage(name: "configureButton$pageNum", title: "Set up button $pageNum here",
+			nextPage: "configureButton${pageNum+1}", install: state.installCondition, uninstall: configured(), getButtonSections(pageNum))
+}
+
 def configureButton1() {
-	dynamicPage(name: "configureButton1", title: "Now let's decide how to use the first button",
-		nextPage: "configureButton2", uninstall: configured(), getButtonSections(1))
+	state.numButton = buttonDevice.currentState("numberOfButtons")?.longValue ?: 4
+	log.debug "state variable numButton: ${state.numButton}"
+	state.installCondition = false
+	createPage(1)
 }
 def configureButton2() {
-	dynamicPage(name: "configureButton2", title: "If you have a second button, set it up here",
-		nextPage: "configureButton3", uninstall: configured(), getButtonSections(2))
+	createPage(2)
 }
 
 def configureButton3() {
-	dynamicPage(name: "configureButton3", title: "If you have a third button, you can do even more here",
-		nextPage: "configureButton4", uninstall: configured(), getButtonSections(3))
+	createPage(3)
 }
+
 def configureButton4() {
-	dynamicPage(name: "configureButton4", title: "If you have a fourth button, you rule, and can set it up here",
-		install: true, uninstall: true, getButtonSections(4))
+	createPage(4)
+}
+
+def configureButton5() {
+	createPage(5)
+}
+
+def configureButton6() {
+	createPage(6)
+}
+
+def configureButton7() {
+	createPage(7)
+}
+
+def configureButton8() {
+	createPage(8)
 }
 
 def getButtonSections(buttonNumber) {

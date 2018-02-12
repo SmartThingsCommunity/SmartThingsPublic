@@ -16,7 +16,6 @@ metadata {
 		capability "Actuator"
 		capability "Indicator"
  		capability "Switch"
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
@@ -67,12 +66,12 @@ metadata {
 
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def updated(){
 		// Device-Watch simply pings if no device events received for 32min(checkInterval)
-		sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+		sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
   switch (ledIndicator) {
         case "on":
             indicatorWhenOn()
@@ -87,6 +86,7 @@ def updated(){
             indicatorWhenOn()
             break
     }
+    sendHubCommand(new physicalgraph.device.HubAction(zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()))
 }
 
 def getCommandClassVersions() {
@@ -176,18 +176,11 @@ def off() {
 	])
 }
 
-def poll() {
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-	])
-}
-
 /**
   * PING is used by Device-Watch in attempt to reach the Device
 **/
 def ping() {
-		refresh()
+    zwave.switchBinaryV1.switchBinaryGet().format()
 }
 
 def refresh() {

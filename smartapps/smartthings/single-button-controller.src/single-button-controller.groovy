@@ -13,13 +13,16 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-definition(name: "Single Button Controller",
+definition(
+    name: "Single Button Controller",
     namespace: "smartthings",
     author: "SmartThings",
     description: "Use your Aeon Panic Button to setup events when the button is used",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    category: "Reviewers")
+    category: "Reviewers",
+    pausable: true
+)
 
 preferences {
 	page(name: "selectButton")

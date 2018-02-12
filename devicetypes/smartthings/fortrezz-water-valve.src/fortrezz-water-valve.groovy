@@ -35,8 +35,8 @@ metadata {
 
 	// tile definitions
 	tiles(scale: 2) {
-		multiAttributeTile(name:"valve", type: "generic", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.valve", key: "PRIMARY_CONTROL") {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
 				attributeState "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC", nextState:"closing"
 				attributeState "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"opening"
 				attributeState "opening", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
@@ -48,19 +48,21 @@ metadata {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		main "valve"
-		details(["valve","refresh"])
+		main "contact"
+		details(["contact","refresh"])
 	}
 }
 
 def installed(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	response(refresh())
 }
 
 def updated(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def parse(String description) {
@@ -85,11 +87,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def open() {
-	zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format()
+	delayBetween([
+		zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format(),
+		zwave.switchBinaryV1.switchBinaryGet().format()
+	], 500)
 }
 
 def close() {
-	zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format()
+	delayBetween([
+		zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format(),
+		zwave.switchBinaryV1.switchBinaryGet().format()
+	], 500)
 }
 
 /**
@@ -105,6 +113,6 @@ def refresh() {
 
 def createEventWithDebug(eventMap) {
 	def event = createEvent(eventMap)
-	log.debug "Event created with ${event?.descriptionText}"
+	log.debug "Event created with ${event?.name}:${event?.value} - ${event?.descriptionText}"
 	return event
 }

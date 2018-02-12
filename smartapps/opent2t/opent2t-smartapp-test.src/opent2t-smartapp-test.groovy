@@ -2,26 +2,11 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 
-/**
- *  OpenT2T SmartApp Test
- *
- *  Copyright 2016 OpenT2T
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
- *
- */
 definition(
 		name: "OpenT2T SmartApp Test",
 		namespace: "opent2t",
-		author: "OpenT2T",
-		description: "Test app to test end to end SmartThings scenarios via OpenT2T",
+		author: "Microsoft",
+		description: "SmartApp for end to end SmartThings scenarios via OpenT2T",
 		category: "SmartThings Labs",
 		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
 		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -55,16 +40,16 @@ definition(
 
 //Device Inputs
 preferences {
-	section("Allow OpenT2T to control these things...") {
-		input "contactSensors", "capability.contactSensor", title: "Which Contact Sensors", multiple: true, required: false, hideWhenEmpty: true
-		input "garageDoors", "capability.garageDoorControl", title: "Which Garage Doors?", multiple: true, required: false, hideWhenEmpty: true
-		input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false, hideWhenEmpty: true
-		input "cameras", "capability.videoCapture", title: "Which Cameras?", multiple: true, required: false, hideWhenEmpty: true
-		input "motionSensors", "capability.motionSensor", title: "Which Motion Sensors?", multiple: true, required: false, hideWhenEmpty: true
-		input "presenceSensors", "capability.presenceSensor", title: "Which Presence Sensors", multiple: true, required: false, hideWhenEmpty: true
+	section("Allow Microsoft to control these things...") {
+//		input "contactSensors", "capability.contactSensor", title: "Which Contact Sensors", multiple: true, required: false, hideWhenEmpty: true
+//		input "garageDoors", "capability.garageDoorControl", title: "Which Garage Doors?", multiple: true, required: false, hideWhenEmpty: true
+//		input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false, hideWhenEmpty: true
+//		input "cameras", "capability.videoCapture", title: "Which Cameras?",  multiple: true, required: false, hideWhenEmpty: true
+//		input "motionSensors", "capability.motionSensor", title: "Which Motion Sensors?", multiple: true, required: false, hideWhenEmpty: true
+//		input "presenceSensors", "capability.presenceSensor", title: "Which Presence Sensors", multiple: true, required: false, hideWhenEmpty: true
 		input "switches", "capability.switch", title: "Which Switches and Lights?", multiple: true, required: false, hideWhenEmpty: true
 		input "thermostats", "capability.thermostat", title: "Which Thermostat?", multiple: true, required: false, hideWhenEmpty: true
-		input "waterSensors", "capability.waterSensor", title: "Which Water Leak Sensors?", multiple: true, required: false, hideWhenEmpty: true
+//		input "waterSensors", "capability.waterSensor", title: "Which Water Leak Sensors?", multiple: true, required: false, hideWhenEmpty: true
 	}
 }
 
@@ -82,36 +67,32 @@ def getInputs() {
 	return inputList
 }
 
+
 //API external Endpoints
 mappings {
 	path("/devices") {
-		action:
-		[
+		action: [
 				GET: "getDevices"
 		]
 	}
 	path("/devices/:id") {
-		action:
-		[
+		action: [
 				GET: "getDevice"
 		]
 	}
 	path("/update/:id") {
-		action:
-		[
+		action: [
 				PUT: "updateDevice"
 		]
 	}
 	path("/deviceSubscription") {
-		action:
-		[
+		action: [
 				POST  : "registerDeviceChange",
 				DELETE: "unregisterDeviceChange"
 		]
 	}
 	path("/locationSubscription") {
-		action:
-		[
+		action: [
 				POST  : "registerDeviceGraph",
 				DELETE: "unregisterDeviceGraph"
 		]
@@ -195,7 +176,10 @@ def registerDeviceChange() {
 				state.deviceSubscriptionMap.put(deviceId, [subscriptionEndpt])
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			} else if (!state.deviceSubscriptionMap[deviceId].contains(subscriptionEndpt)) {
-				state.deviceSubscriptionMap[deviceId] << subscriptionEndpt
+				// state.deviceSubscriptionMap[deviceId] << subscriptionEndpt
+                // For now, we will only have one subscription endpoint per device
+				state.deviceSubscriptionMap.remove(deviceId)
+				state.deviceSubscriptionMap.put(deviceId, [subscriptionEndpt])
 				log.info "Added subscription URL: ${subscriptionEndpt} for ${myDevice.displayName}"
 			}
 
@@ -308,15 +292,15 @@ def deviceEventHandler(evt) {
 	def evtDeviceType = getDeviceType(evtDevice)
 	def deviceData = [];
 
-	if (evt.data != null) {
-		def evtData = parseJson(evt.data)
-		log.info "Received event for ${evtDevice.displayName}, data: ${evtData},  description: ${evt.descriptionText}"
-	}
-
 	if (evtDeviceType == "thermostat") {
 		deviceData = [name: evtDevice.displayName, id: evtDevice.id, status: evtDevice.status, deviceType: evtDeviceType, manufacturer: evtDevice.manufacturerName, model: evtDevice.modelName, attributes: deviceAttributeList(evtDevice, evtDeviceType), locationMode: getLocationModeInfo(), locationId: location.id]
 	} else {
 		deviceData = [name: evtDevice.displayName, id: evtDevice.id, status: evtDevice.status, deviceType: evtDeviceType, manufacturer: evtDevice.manufacturerName, model: evtDevice.modelName, attributes: deviceAttributeList(evtDevice, evtDeviceType), locationId: location.id]
+	}
+    
+    if(evt.data != null){
+		def evtData = parseJson(evt.data)
+		log.info "Received event for ${evtDevice.displayName}, data: ${evtData},  description: ${evt.descriptionText}"
 	}
 
 	def params = [body: deviceData]
@@ -327,10 +311,10 @@ def deviceEventHandler(evt) {
 		params.uri = "${it}"
 		if (state.verificationKeyMap[it] != null) {
 			def key = state.verificationKeyMap[it]
-			params.header = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
+            params.headers = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
 		}
 		log.trace "POST URI: ${params.uri}"
-		log.trace "Header: ${params.header}"
+        log.trace "Headers: ${params.headers}"
 		log.trace "Payload: ${params.body}"
 		try {
 			httpPostJson(params) { resp ->
@@ -360,10 +344,10 @@ def locationEventHandler(evt) {
 				params.uri = "${it}"
 				if (state.verificationKeyMap[it] != null) {
 					def key = state.verificationKeyMap[it]
-					params.header = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
+                    params.headers = [Signature: ComputHMACValue(key, groovy.json.JsonOutput.toJson(params.body))]
 				}
 				log.trace "POST URI: ${params.uri}"
-				log.trace "Header: ${params.header}"
+				log.trace "Headers: ${params.headers}"
 				log.trace "Payload: ${params.body}"
 				try {
 					httpPostJson(params) { resp ->
@@ -382,6 +366,7 @@ def locationEventHandler(evt) {
 
 private ComputHMACValue(key, data) {
 	try {
+    	log.debug "data hased: ${data}"
 		SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA1")
 		Mac mac = Mac.getInstance("HmacSHA1")
 		mac.init(secretKeySpec)
@@ -504,7 +489,8 @@ private getDeviceType(device) {
 
 	//Loop through the device capability list to determine the device type.
 	capabilities.each { capability ->
-		switch (capability.name.toLowerCase()) {
+		switch(capability.name.toLowerCase())
+		{
 			case "switch":
 				deviceType = "switch"
 
@@ -649,7 +635,8 @@ private mapDeviceCommands(command, value) {
 			if (value == 1 || value == "1" || value == "lock") {
 				resultCommand = "lock"
 				resultValue = ""
-			} else if (value == 0 || value == "0" || value == "unlock") {
+			}
+			else if (value == 0 || value == "0" || value == "unlock") {
 				resultCommand = "unlock"
 				resultValue = ""
 			}
