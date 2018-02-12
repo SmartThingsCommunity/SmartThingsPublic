@@ -94,6 +94,20 @@ metadata {
     }
 }
 
+def installed(){
+	initialize();
+}
+
+def updated(){
+	initialize();
+}
+
+def initialize(){
+	unschedule();
+
+	runEvery1Minute(poll);
+}
+
 String testLegacyInput() {
 	String prefix = 'index:15, mac:5CCF7FBD413C, ip:C0A80206, port:0050, requestId:9f55a327-be15-43fb-91ce-c04a035a3217'
 	//String multiBody = '''STATUS = {"Status":{"Module":1, "FriendlyName":"Basement Lights", "Topic":"basement-lights", "ButtonTopic":"0", "Power":0, "PowerOnState":3, "LedState":1, "SaveData":1, "SaveState":1, "ButtonRetain":0, "PowerRetain":0}}'''
@@ -131,10 +145,10 @@ def parse(String description) {
 	}
 
 	// consume and set switch state
-	if ((resultJson?.POWER in ["ON", 1, "1"]) || (resultJson?.Status?.Power in [1, "1"])) {
+	if ((resultJson?.POWER1 in ["ON", 1, "1"]) || (resultJson?.Status?.Power1 in [1, "1"])) {
 		setSwitchState(true)
 	}
-	else if ((resultJson?.POWER in ["OFF", 0, "0"]) || (resultJson?.Status?.Power in [0, "0"])) {
+	else if ((resultJson?.POWER1 in ["OFF", 0, "0"]) || (resultJson?.Status?.Power1 in [0, "0"])) {
 		setSwitchState(false)
 	}
 
