@@ -169,10 +169,10 @@ def parse(String description) {
 		def p3On = 0b0100;
 		def p4On = 0b1000;
 
-		setSwitchState(power & p1On == p1On);
-		setSwitchState2(power & p2On == p2On);
-		setSwitchState3(power & p3On == p3On);
-		setSwitchState4(power & p4On == p4On);
+		setSwitchState((power & p1On) == p1On);
+		setSwitchState2(power & p2On) == p2On);
+		setSwitchState3((power & p3On) == p3On);
+		setSwitchState4((power & p4On) == p4On);
 	}
 	else{
 		log.error "can not parse result with header: $message.header"
