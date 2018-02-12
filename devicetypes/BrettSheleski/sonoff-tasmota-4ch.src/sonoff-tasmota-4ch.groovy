@@ -143,36 +143,41 @@ def parse(String description) {
 			resultJson = new groovy.json.JsonSlurper().parseText(message.body.substring(RESULT_PREFIX.length()))
 		}
 	}
+	def onStates = ["ON", 1, "1"];
 
-	// consume and set switch state
-	if ((resultJson?.POWER1 in ["ON", 1, "1"]) || (resultJson?.Status?.Power1 in [1, "1"])) {
-		setSwitchState(true)
+	if (resultJson?.POWER != null){
+		setSwitchState(resultJson.POWER in onStates)
 	}
-	else if ((resultJson?.POWER1 in ["OFF", 0, "0"]) || (resultJson?.Status?.Power1 in [0, "0"])) {
-		setSwitchState(false)
+	if (resultJson?.POWER1 != null) {}
+		setSwitchState(resultJson.POWER1 in onStates)
 	}
+	else if (resultJson?.POWER2){
+		setSwitchState2(resultJson.POWER2 in onStates)
+	}
+	else if (resultJson?.POWER3){
+		setSwitchState3(resultJson.POWER3 in onStates)
+	}
+	else if (resultJson?.POWER4){
+		setSwitchState4(resultJson.POWER4 in onStates)
+	}
+	else if (resultJson?.Status?.Power != null){
+		
+		def power = resultJson.Status.Power;
 
-	if ((resultJson?.POWER2 in ["ON", 1, "1"]) || (resultJson?.Status?.Power2 in [1, "1"])) {
-		setSwitchState2(true)
-	}
-	else if ((resultJson?.POWER2 in ["OFF", 0, "0"]) || (resultJson?.Status?.Power2 in [0, "0"])) {
-		setSwitchState2(false)
-	}
+		def p1On = 0b0001;
+		def p2On = 0b0010;
+		def p3On = 0b0100;
+		def p4On = 0b1000;
 
-	if ((resultJson?.POWER3 in ["ON", 1, "1"]) || (resultJson?.Status?.Power3 in [1, "1"])) {
-		setSwitchState3(true)
+		setSwitchState(power & p1On == p1On);
+		setSwitchState2(power & p2On == p2On);
+		setSwitchState3(power & p3On == p3On);
+		setSwitchState4(power & p4On == p4On);
 	}
-	else if ((resultJson?.POWER3 in ["OFF", 0, "0"]) || (resultJson?.Status?.Power3 in [0, "0"])) {
-		setSwitchState3(false)
+	else{
+		log.error "can not parse result with header: $message.header"
+		log.error "...and raw body: $message.body"
 	}
-
-	if ((resultJson?.POWER4 in ["ON", 1, "1"]) || (resultJson?.Status?.Power4 in [1, "1"])) {
-		setSwitchState4(true)
-	}
-	else if ((resultJson?.POWER4 in ["OFF", 0, "0"]) || (resultJson?.Status?.Power4 in [0, "0"])) {
-		setSwitchState4(false)
-	}
-
 }
 
 def setSwitchState(Boolean on) {
