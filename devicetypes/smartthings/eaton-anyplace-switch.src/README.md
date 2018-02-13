@@ -17,7 +17,6 @@ Works with:
 
 * **Actuator** - represents device has commands
 * **Switch** - represents a device with a switch
-* **Switch level** - device can change dimming level
 * **Sensor** - detects sensor events
 
 ## Installation
@@ -31,10 +30,13 @@ Works with:
 ## Supported Functionality
 
 * SmartThings support Eaton Anyplace Switch switch functionality.
-* SmartThings support Eaton Anyplace Switch dimmer buttons (each press changes dimmer level by set amount).
+This device type handler assumes primary device's function is handled by SmartThings using automations and smartapps.
+
+Eaton Anyplace Switch can be associated directly to other z-wave device as described in manufacturer's manual.
+If device associated to Eaton Anyplace Switch was not part of SmartThings network, it should now appear on device list.
+Eaton Anyplace Switch queries SmartThings Hub to check its state. In order to always maintain synch with other associated devices, automation that updates Eaton Anyplace Switch state based on associated devices' switch state is required.
 
 ## Deinstallation
 * Start device exlusion using SmartThings app.
 * Press the switch on/off button one time to exclude device from SmartThings.
-
 
