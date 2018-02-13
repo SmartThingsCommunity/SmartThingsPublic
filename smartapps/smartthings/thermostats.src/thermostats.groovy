@@ -33,7 +33,7 @@ preferences {
 }
 
 def mainPage() {
-  dynamicPage {
+  dynamicPage(name:"mainPage") {
 	section("Choose one or more, when..."){
 		input "smokeDevices", "capability.smokeDetector", title: "Smoke Detected", required: false, multiple: true
 		input "carbonMonoxideDevices", "capability.carbonMonoxideDetector", title: "Carbon Monoxide Detected", required: false, multiple: true
