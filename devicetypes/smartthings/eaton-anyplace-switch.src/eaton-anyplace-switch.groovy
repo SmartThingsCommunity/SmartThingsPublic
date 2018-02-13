@@ -16,28 +16,31 @@ metadata {
 	definition(name: "Eaton Anyplace Switch", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Sensor"
-		capability "Switch"
+		capability "Button"
+
+		attribute "switch", "enum", ["on", "off"]
 
 		//zw:S type:0100 mfr:001A prod:4243 model:0000 ver:3.01 zwv:3.67 lib:01 cc:72,77,86,85 ccOut:26
 		fingerprint mfr: "001A", prod: "4243", model: "0000", deviceJoinName: "Eaton Anyplace Switch"
 	}
 
-	tiles {
-		multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC", nextState: "off"
-				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "on"
+
+	tiles(scale: 2) {
+		multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.button", key: "PRIMARY_CONTROL") {
+				attributeState "default", label: ' ', action: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
 			}
 		}
 
-		main "switch"
-		details(["switch"])
+		main "rich-control"
+		details(["rich-control"])
 	}
 }
 
 def installed() {
 	// initialize state
-	sendEvent(name: "switch", value: "off")
+	sendEvent(name: "numberOfButtons", value: 1, isStateChange: true, displayed: false)
+	sendEvent(name: "switch", value: "off", isStateChange: true, displayed: false)
 }
 
 def parse(String description) {
@@ -50,22 +53,17 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicGet cmd) {
-	def currentValue = device.currentState("switch").value.equals("on") ? 255 : 0
-	response zwave.basicV1.basicReport(value: currentValue).format()
+	def currentValue = device.currentValue("switch").equals("on") ? 255 : 0
+	response(zwave.basicV1.basicReport(value: currentValue).format())
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	createEvent(name: "switch", value: cmd.value ? "on" : "off")
+	def events = []
+	events << createEvent(name: "switch", value: cmd.value ? "on" : "off", isStateChange: true, displayed: false)
+	events << createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$device.displayName button was pushed", isStateChange: true)
+	events
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[:]
-}
-
-def on() {
-	sendEvent(name: "switch", value: "on")
-}
-
-def off() {
-	sendEvent(name: "switch", value: "off")
 }
