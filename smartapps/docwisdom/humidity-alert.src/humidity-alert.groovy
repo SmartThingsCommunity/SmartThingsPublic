@@ -67,7 +67,8 @@ def humidityHandler(evt) {
 	// This may be a multisensor, so make sure we're counting only humidity events
 	def recentEvents = humiditySensor1.eventsSince(timeAgo)?.findAll { it.name == "humidity" }
 	log.trace "Found ${recentEvents?.size() ?: 0} events in the last ${deltaMinutes} minutes"
-	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= tooHumid } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= notHumidEnough } > 1
+	def alreadySentSmsTooHigh = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= tooHumid } > 1
+	def alreadySentSmsForTooLow = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= notHumidEnough } > 1
     
 	if (currentHumidity >= tooHumid) {
 		log.debug "Checking how long the humidity sensor has been reporting >= ${tooHumid}"
@@ -76,20 +77,20 @@ def humidityHandler(evt) {
 		
 
 
-		if (alreadySentSms) {
+		if (alreadySentSmsTooHigh) {
 			log.debug "Notification already sent within the last ${deltaMinutes} minutes"
 			
 		} else {
 			log.debug "Humidity Rose Above ${tooHumid}:  sending SMS and activating ${mySwitch}"
 			send("${humiditySensor1.label} sensed high humidity level of ${evt.value}")
-			switch1?.on()
+	  		switch1?.on()
 		}
 	}
 
     if (currentHumidity <= notHumidEnough) {
 		log.debug "Checking how long the humidity sensor has been reporting <= ${notHumidEnough}"
 
-		if (alreadySentSms) {
+		if (alreadySentSmsTooLow) {
 			log.debug "Notification already sent within the last ${deltaMinutes} minutes"
 			
 		} else {
