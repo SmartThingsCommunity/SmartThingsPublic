@@ -32,8 +32,8 @@ import groovy.transform.Field
 
 @Field final IntRange COLOR_TEMP_RANGE = (2200..7000)
 @Field final Integer  COLOR_TEMP_DEFAULT = COLOR_TEMP_RANGE.getFrom() + ((COLOR_TEMP_RANGE.getTo() - COLOR_TEMP_RANGE.getFrom())/2)
-@Field final Integer  COLOR_TEMP_STEP = 500
-@Field final List     COLOR_TEMP_EXTRAS = [2700]
+@Field final Integer  COLOR_TEMP_STEP = 50 // Kelvin
+@Field final List     COLOR_TEMP_EXTRAS = []
 @Field final List     COLOR_TEMP_LIST = buildColorTempList(COLOR_TEMP_RANGE, COLOR_TEMP_STEP, COLOR_TEMP_EXTRAS)
 
 @Field final Map MODE = [
@@ -247,7 +247,7 @@ metadata {
         }
 
         valueTile("colorTempControlLabel", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-            state "default", label: 'White Color Temp.\n${currentValue}K' 
+            state "default", label: 'White Color Temp.\n${currentValue}K'
         }
 
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 1, inactiveLabel: false, range: "(2200..7000)") {
