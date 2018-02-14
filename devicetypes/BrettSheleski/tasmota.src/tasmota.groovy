@@ -72,15 +72,50 @@ def spawnChildDevices(){
         def moduleId = state.module.split()[0].toInteger();
 
         switch (moduleId){
+
             case 1: // Sonoff Basic
+
+            // the next batch are mostly guesses if they work.  
+            //  I'm assuming they will provide basic functionality until more specific implementations are done
+            case 2: // Sonoff RF
+            case 3: // Sonoff SV
+            case 4: // Sonoff TH
+            case 6: // Sonoff Pow
+            case 8: // S20 Socket
+            case 9: // Slampher
+            case 10: // Sonoff Touch
+            case 11: // Sonoff LED
+            case 12: // 1 Channel
+            case 21: // Sonoff SC
+            case 22: // Sonoff BN-SZ
+            case 26: // Sonoff B1
+            case 28: // Sonoff T1 1CH
+            case 41: // Sonoff S31
                 devices[parentId + '-Power'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 1]]
                 break;
-            case 23: // Sonoff 4CH Pro
+
+            case 5: // Sonoff Dual
+            case 19: // Sonoff Dev
+            case 39: // Sonoff Dual R2
+            case 29: // Sonoff T1 2CH
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 1]]
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 2]]
+                break;
+            
             case 7: // Sonoff 4CH
+            case 13: // 4 Channel
+            
+            case 23: // Sonoff 4CH Pro
                 devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 1]]
                 devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 2]]
                 devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 3]]
                 devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 4]]
+                break;
+
+            case 30: // Sonoff T1 3CH
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 1]]
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 2]]
+                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 3]]
                 break;
 
             case 25: // Sonoff Bridge
@@ -91,32 +126,14 @@ def spawnChildDevices(){
                 }
                 break;
 
-            case 2: // Sonoff RF
-            case 3: // Sonoff SV
-            case 4: // Sonoff TH
-            case 5: // Sonoff Dual
-            case 6: // Sonoff Pow
-            case 8: // S20 Socket
-            case 9: // Slampher
-            case 10: // Sonoff Touch
-            case 11: // Sonoff LED
-            case 12: // 1 Channel
-            case 13: // 4 Channel
             case 14: // Motor C/AC
             case 15: // ElectroDragon
             case 16: // EXS Relay
             case 17: // WiOn
-            case 18: // Generic
-            case 19: // Sonoff Dev
+            case 18: // Generic (eg: Wemos D1 Mini)
             case 20: // H801
-            case 21: // Sonoff SC
-            case 22: // Sonoff BN-SZ
             case 24: // Huafan SS
-            case 26: // Sonoff B1
             case 27: // AiLight
-            case 28: // Sonoff T1 1CH
-            case 29: // Sonoff T1 2CH
-            case 30: // Sonoff T1 3CH
             case 31: // Supla Espablo
             case 32: // Witty Cloud
             case 33: // Yunshan Relay
@@ -125,9 +142,8 @@ def spawnChildDevices(){
             case 36: // KMC 70011
             case 37: // Arilux LC01
             case 38: // Arilux LC11
-            case 39: // Sonoff Dual R2
             case 40: // Arilux LC06
-            case 41: // Sonoff S31
+            
             default:
                 log.debug "Unknown Module ${state.module}"
                 break;
