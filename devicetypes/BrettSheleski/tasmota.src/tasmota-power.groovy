@@ -13,6 +13,7 @@ metadata {
 				attributeState "off", label: '${name}', action: "momentary.push", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 			}
 		}
+
 		main "switch"
 		details(["switch"])
 	}
@@ -51,9 +52,14 @@ def setPowerCallback(physicalgraph.device.HubResponse response){
 
 def updateStatus(status){
 
+	// Device power status(es) are reported back by the Status.Power property
+	// The Status.Power property contains the on/off state of all channels (in case of a Sonoff 4CH or Sonoff Dual)
+	// This is binary-encoded where each bit represents the on/off state of a particular channel
+	// EG: 7 in binary is 0111.  In this case channels 1, 2, and 3 are ON and channel 4 is OFF
+
 	def powerMask = 0b0001;
 
-	powerMask = powerMask << (state.powerChannel - 1);
+	powerMask = powerMask << (state.powerChannel - 1); // shift the bits over 
 
 	def on = (powerMask & status.Status.Power);
 
