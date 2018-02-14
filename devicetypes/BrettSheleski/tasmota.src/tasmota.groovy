@@ -127,15 +127,22 @@ def spawnChildDevices(){
         }
 
         def existingDevices = getChildDevices();
+        def deviceConfig = null;
 
         existingDevices.each{
+            deviceConfig = devices[it.deviceNetworkId];
+
             log.debug "Existing Child DEVICE : ${it}"
-            if (devices[it.deviceNetworkId]){
+            if (deviceConfig){
+
+                log.debug "CHILD OPTIONS: ${deviceConfig}"
+
+
                 // the device is already created previously.
                 // remove it from the Map so we dont create a duplicate
                 devices.remove(it.deviceNetworkId);
 
-                it.initializeChild(devices[it.deviceNetworkId].options)
+                it.initializeChild(deviceConfig["options"])
             }
             else{
                 // there's a child device with an unknown ID, delete it
@@ -156,12 +163,12 @@ def spawnChildDevices(){
 
 def poll() {
 	log.debug "POLL"
-	sendCommand("Status", null, refreshCallback)
+	sendCommand("Status", 0, refreshCallback)
 }
 
 def refresh() {
 	log.debug "REFRESH"
-	sendCommand("Status", null, refreshCallback)
+	sendCommand("Status", 0, refreshCallback)
 }
 
 def refreshCallback(physicalgraph.device.HubResponse response){
@@ -170,33 +177,34 @@ def refreshCallback(physicalgraph.device.HubResponse response){
     log.debug "JSON: ${jsobj}";
 
     // need to send jsobj to all child devices.
+
+    def childDevices = getChildDevices();
+
+    childDevices.each{
+        it.updateStatus(jsobj);
+    }
 }
-
-
-def sendCommandFromChild(String command, String payload, String deviceId, String callbackName){
-
-    sendCommand(command, payload, {response -> 
-        def children = getChildDevices();
-
-        def childDevice = children.find {
-				it.deviceNetworkId == deviceId
-			};
-
-        if (childDevice){
-            log.debug "WTF : ${childDevice}"
-            childDevice."${callbackName}}"(response);
-        }
-    })
-
-}
-
 
 def sendCommand(String command, callback) {
     return sendCommand(command, null);
 }
 
-def sendCommand(String command, String payload, callback) {
-	log.debug "sendCommand(${command}:${payload}) to device at ${state.ipAddress}:80"
+def sendCommand(String command, payload, callback) {
+	sendHubCommand(createCommand(command, payload, callback))
+}
+
+private String convertIPtoHex(ipAddress) { 
+	String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
+	return hex
+}
+
+private String convertPortToHex(port) {
+	String hexport = port.toString().format('%04x', port.toInteger())
+	return hexport
+}
+
+def createCommand(String command, payload, callback){
+    log.debug "createCommandAction(${command}:${payload}) to device at ${state.ipAddress}:80"
 
 	if (!state.ipAddress) {
 		log.warn "aborting. ip address of device not set"
@@ -233,16 +241,4 @@ def sendCommand(String command, String payload, callback) {
     ];
 
 	def hubAction = new physicalgraph.device.HubAction(params, dni, options);
-
-	sendHubCommand(hubAction)
-}
-
-private String convertIPtoHex(ipAddress) { 
-	String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
-	return hex
-}
-
-private String convertPortToHex(port) {
-	String hexport = port.toString().format('%04x', port.toInteger())
-	return hexport
 }

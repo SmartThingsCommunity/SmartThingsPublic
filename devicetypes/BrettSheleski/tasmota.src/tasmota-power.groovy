@@ -36,12 +36,32 @@ def push(){
 
 def setPower(power){
 	log.debug "Setting power to: $power"
-    parent.sendCommandFromChild("Power${state.powerChannel}", power, device.deviceNetworkId, "setPowerCallback");
+
+	def command = parent.createCommand("Power${state.powerChannel}", power, "setPowerCallback");;
+
+    sendHubCommand(command);
 }
 
 def setPowerCallback(physicalgraph.device.HubResponse response){
-	log.debug "Finished Setting power: $response"
+	log.debug "Finished Setting power, JSON: ${response.json}"
     def on = response.json.POWER == "ON";
 
-    sendEvent(name: "switch", value: on ? "on" : "off")
+    setSwitchState(on);
+}
+
+def updateStatus(status){
+
+	def powerMask = 0b0001;
+
+	powerMask = powerMask << (state.powerChannel - 1);
+
+	def on = (powerMask & status.Status.Power);
+
+	setSwitchState(on);
+}
+
+def setSwitchState(on){
+	log.debug "Setting switch to ${on ? 'ON' : 'OFF'}"
+
+	sendEvent(name: "switch", value: on ? "on" : "off")
 }
