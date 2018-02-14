@@ -17,7 +17,6 @@ metadata {
 		capability "Actuator"
 		capability "Switch"
 		capability "Power Meter"
-		capability "Polling"
 		capability "Refresh"
 		capability "Configuration"
 		capability "Sensor"
@@ -27,7 +26,7 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x25,0x32"
-		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeon Labs Micro Smart Switch"
+		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeotec Micro Smart Switch"
 	}
 
 	// simulator metadata
@@ -51,21 +50,23 @@ metadata {
 	}
 
 	// tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState("on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC")
+				attributeState("off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff")
+			}
 		}
-		valueTile("power", "device.power") {
+		valueTile("power", "device.power", width: 2, height: 2) {
 			state "default", label:'${currentValue} W'
 		}
-		valueTile("energy", "device.energy") {
+		valueTile("energy", "device.energy", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 		}
-		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat") {
+		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'reset kWh', action:"reset"
 		}
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
@@ -197,14 +198,6 @@ def off() {
 		"delay 3000",
 		zwave.meterV2.meterGet(scale: 2).format()
 	]
-}
-
-def poll() {
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.meterV2.meterGet(scale: 0).format(),
-		zwave.meterV2.meterGet(scale: 2).format()
-	])
 }
 
 /**

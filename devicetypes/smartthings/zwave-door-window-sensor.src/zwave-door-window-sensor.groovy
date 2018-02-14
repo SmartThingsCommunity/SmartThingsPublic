@@ -29,9 +29,9 @@ metadata {
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x98"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x98", outClusters: "0x5A,0x82"
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x80,0x71,0x85,0x70,0x72,0x86,0x30,0x31,0x84,0x59,0x73,0x5A,0x8F,0x98,0x7A", outClusters:"0x20" // Philio multi+
-		fingerprint mfr:"0086", prod:"0002", model:"001D", deviceJoinName: "Aeon Labs Door/Window Sensor (Gen 5)"
-		fingerprint mfr:"0086", prod:"0102", model:"0070", deviceJoinName:  "Aeon Labs Door/Window Sensor 6"
-		fingerprint mfr:"0086", prod:"0102", model:"0059", deviceJoinName: "Aeon Labs Recessed Door Sensor"
+		fingerprint mfr:"0086", prod:"0002", model:"001D", deviceJoinName: "Aeotec Door/Window Sensor (Gen 5)"
+		fingerprint mfr:"0086", prod:"0102", model:"0070", deviceJoinName: "Aeotec Door/Window Sensor 6"
+		fingerprint mfr:"0086", prod:"0102", model:"0059", deviceJoinName: "Aeotec Recessed Door Sensor"
 		fingerprint mfr:"014A", prod:"0001", model:"0002", deviceJoinName: "Ecolink Door/Window Sensor"
 		fingerprint mfr:"014A", prod:"0001", model:"0003", deviceJoinName: "Ecolink Tilt Sensor"
 		fingerprint mfr:"011A", prod:"0601", model:"0903", deviceJoinName: "Enerwave Magnetic Door/Window Sensor"
@@ -50,18 +50,24 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
-			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat",width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
 		main "contact"
 		details(["contact", "battery"])
 	}
+}
+
+private getCommandClassVersions() {
+	[0x20: 1, 0x25: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1]
 }
 
 def parse(String description) {
@@ -79,7 +85,7 @@ def parse(String description) {
 			)
 		}
 	} else if (description != "updated") {
-		def cmd = zwave.parse(description, [0x20: 1, 0x25: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -242,12 +248,40 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x25: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		state.sec = 1
 		zwaveEvent(encapsulatedCommand)
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
+{
+	// def encapsulatedCommand = cmd.encapsulatedCommand(versions)
+	def version = commandClassVersions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		return zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	def result = null
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		result = zwaveEvent(encapsulatedCommand)
+	}
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
+	log.debug "MultiCmd with $numberOfCommands inner commands"
+	cmd.encapsulatedCommands(commandClassVersions).collect { encapsulatedCommand ->
+		zwaveEvent(encapsulatedCommand)
+	}.flatten()
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {

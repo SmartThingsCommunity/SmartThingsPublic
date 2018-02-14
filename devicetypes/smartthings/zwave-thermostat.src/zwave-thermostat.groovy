@@ -28,6 +28,7 @@ metadata {
 		command "raiseHeatingSetpoint"
 		command "lowerCoolSetpoint"
 		command "raiseCoolSetpoint"
+		command "poll"
 
 		fingerprint deviceId: "0x08"
 		fingerprint inClusters: "0x43,0x40,0x44,0x31"
@@ -91,7 +92,7 @@ metadata {
 		standardTile("raiseCoolSetpoint", "device.heatingSetpoint", width:2, height:1, inactiveLabel: false, decoration: "flat") {
 			state "heatingSetpoint", action:"raiseCoolSetpoint", icon:"st.thermostat.thermostat-right"
 		}
-		valueTile("thermostatOperatingState", "device.thermostatOperatingState", width: 2, height:1, decoration: "flat") {
+		standardTile("thermostatOperatingState", "device.thermostatOperatingState", width: 2, height:1, decoration: "flat") {
 			state "thermostatOperatingState", label:'${currentValue}', backgroundColor:"#ffffff"
 		}
 		standardTile("refresh", "device.thermostatMode", width:2, height:1, inactiveLabel: false, decoration: "flat") {
@@ -105,9 +106,8 @@ metadata {
 
 def installed() {
 	// Configure device
-	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+	def cmds = [new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()),
+			new physicalgraph.device.HubAction(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())]
 	sendHubCommand(cmds)
 	runIn(3, "initialize", [overwrite: true])  // Allow configure command to be sent and acknowledged before proceeding
 }
@@ -129,7 +129,7 @@ def initialize() {
 	if (getDataValue("manufacturer") != "Honeywell") {
 		runEvery5Minutes("poll")  // This is not necessary for Honeywell Z-wave, but could be for other Z-wave thermostats
 	}
-	poll()
+	pollDevice()
 }
 
 def parse(String description)
@@ -319,17 +319,22 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 // Command Implementations
+def poll() {
+	// Call refresh which will cap the polling to once every 2 minutes
+	refresh()
+}
+
 def refresh() {
 	// Only allow refresh every 2 minutes to prevent flooding the Zwave network
 	def timeNow = now()
 	if (!state.refreshTriggeredAt || (2 * 60 * 1000 < (timeNow - state.refreshTriggeredAt))) {
 		state.refreshTriggeredAt = timeNow
 		// use runIn with overwrite to prevent multiple DTH instances run before state.refreshTriggeredAt has been saved
-		runIn(2, "poll", [overwrite: true])
+		runIn(2, "pollDevice", [overwrite: true])
 	}
 }
 
-def poll() {
+def pollDevice() {
 	def cmds = []
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
@@ -502,10 +507,11 @@ def ping() {
 def switchMode() {
 	def currentMode = device.currentValue("thermostatMode")
 	def supportedModes = state.supportedModes
-	if (supportedModes) {
+	// Old version of supportedModes was as string, make sure it gets updated
+	if (supportedModes && supportedModes.size() && supportedModes[0].size() > 1) {
 		def next = { supportedModes[supportedModes.indexOf(it) + 1] ?: supportedModes[0] }
 		def nextMode = next(currentMode)
-		runIn(2, "setThermostatMode", [data: [nextMode: nextMode], overwrite: true])
+		runIn(2, "setGetThermostatMode", [data: [nextMode: nextMode], overwrite: true])
 	} else {
 		log.warn "supportedModes not defined"
 		getSupportedModes()
@@ -514,9 +520,10 @@ def switchMode() {
 
 def switchToMode(nextMode) {
 	def supportedModes = state.supportedModes
-	if (supportedModes) {
+	// Old version of supportedModes was as string, make sure it gets updated
+	if (supportedModes && supportedModes.size() && supportedModes[0].size() > 1) {
 		if (supportedModes.contains(nextMode)) {
-			runIn(2, "setThermostatMode", [data: [nextMode: nextMode], overwrite: true])
+			runIn(2, "setGetThermostatMode", [data: [nextMode: nextMode], overwrite: true])
 		} else {
 			log.debug("ThermostatMode $nextMode is not supported by ${device.displayName}")
 		}
@@ -535,10 +542,11 @@ def getSupportedModes() {
 def switchFanMode() {
 	def currentMode = device.currentValue("thermostatFanMode")
 	def supportedFanModes = state.supportedFanModes
-	if (supportedFanModes) {
+	// Old version of supportedFanModes was as string, make sure it gets updated
+	if (supportedFanModes && supportedFanModes.size() && supportedFanModes[0].size() > 1) {
 		def next = { supportedFanModes[supportedFanModes.indexOf(it) + 1] ?: supportedFanModes[0] }
 		def nextMode = next(currentMode)
-		runIn(2, "setThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
+		runIn(2, "setGetThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
 	} else {
 		log.warn "supportedFanModes not defined"
 		getSupportedFanModes()
@@ -547,9 +555,10 @@ def switchFanMode() {
 
 def switchToFanMode(nextMode) {
 	def supportedFanModes = state.supportedFanModes
-	if (supportedFanModes) {
+	// Old version of supportedFanModes was as string, make sure it gets updated
+	if (supportedFanModes && supportedFanModes.size() && supportedFanModes[0].size() > 1) {
 		if (supportedFanModes.contains(nextMode)) {
-			runIn(2, "setThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
+			runIn(2, "setGetThermostatFanMode", [data: [nextMode: nextMode], overwrite: true])
 		} else {
 			log.debug("FanMode $nextMode is not supported by ${device.displayName}")
 		}
@@ -560,8 +569,7 @@ def switchToFanMode(nextMode) {
 }
 
 def getSupportedFanModes() {
-	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
+	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())]
 	sendHubCommand(cmds)
 }
 
@@ -577,10 +585,9 @@ def setThermostatMode(String value) {
 	switchToMode(value)
 }
 
-def setThermostatMode(data) {
-	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[data.nextMode]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())
+def setGetThermostatMode(data) {
+	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[data.nextMode]).format()),
+			new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())]
 	sendHubCommand(cmds)
 }
 
@@ -594,10 +601,9 @@ def setThermostatFanMode(String value) {
 	switchToFanMode(value)
 }
 
-def setThermostatFanMode(data) {
-	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSet(fanMode: fanModeMap[data.nextMode]).format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeGet().format())
+def setGetThermostatFanMode(data) {
+	def cmds = [new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSet(fanMode: fanModeMap[data.nextMode]).format()),
+			new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeGet().format())]
 	sendHubCommand(cmds)
 }
 
@@ -663,7 +669,7 @@ def getTempInDeviceScale(temp, scale) {
 	if (temp && scale) {
 		def deviceScale = (state.scale == 1) ? "F" : "C"
 		return (deviceScale == scale) ? temp :
-				(deviceScale == "F" ? celsiusToFahrenheit(temp) : roundC(fahrenheitToCelsius(temp)))
+				(deviceScale == "F" ? celsiusToFahrenheit(temp).toDouble().round(0).toInteger() : roundC(fahrenheitToCelsius(temp)))
 	}
 	return 0
 }

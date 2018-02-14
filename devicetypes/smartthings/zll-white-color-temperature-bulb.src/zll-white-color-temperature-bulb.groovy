@@ -28,11 +28,23 @@ metadata {
         capability "Health Check"
 
         attribute "colorName", "string"
-        command "setGenericName"
 
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, 0B04, FC0F", outClusters: "0019", "manufacturer":"OSRAM", "model":"Classic A60 TW", deviceJoinName: "OSRAM LIGHTIFY LED Classic A60 Tunable White"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FC0F", outClusters: "0019", "manufacturer":"OSRAM", "model":"PAR16 50 TW", deviceJoinName: "OSRAM LIGHTIFY LED PAR16 50 Tunable White"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Classic B40 TW - LIGHTIFY", deviceJoinName: "OSRAM LIGHTIFY Classic B40 Tunable White"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "CLA60 TW OSRAM", deviceJoinName: "OSRAM LIGHTIFY LED Classic A60 Tunable White"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 WS clear 950lm", deviceJoinName: "IKEA TRÅDFRI LED Bulb E26 WS clear 950"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb GU10 WS 400lm", deviceJoinName: "TRADFRI bulb GU10 WS 400lm"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E12 WS opal 400lm", deviceJoinName: "TRADFRI bulb E12 WS opal 400lm"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 WS opal 980lm", deviceJoinName: "TRADFRI bulb E26 WS opal 980lm"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW001", deviceJoinName: "Philips Hue White Ambiance A19"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW004", deviceJoinName: "Philips Hue White Ambiance A19"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW010", deviceJoinName: "Philips Hue White Ambiance A19"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW011", deviceJoinName: "Philips Hue White Ambiance BR30"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW012", deviceJoinName: "Philips Hue White Ambiance Candle"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW013", deviceJoinName: "Philips Hue White Ambiance Spot"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW014", deviceJoinName: "Philips Hue White Ambiance Spot"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW015", deviceJoinName: "Philips Hue White Ambiance A19"
     }
 
     // UI tile definitions
@@ -78,6 +90,9 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     if (event) {
+        if (event.name == "colorTemperature") {
+            setGenericName(event.value)
+        }
         sendEvent(event)
     }
     else {
@@ -147,9 +162,8 @@ def updated() {
 }
 
 def setColorTemperature(value) {
-    setGenericName(value)
     value = value as Integer
-    def tempInMired = (1000000 / value) as Integer
+    def tempInMired = Math.round(1000000 / value)
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
     zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +

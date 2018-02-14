@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition (name: "Aeon Multisensor 6", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Multisensor 6", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.020.00008', executeCommandsLocally: true) {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -23,14 +23,14 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
+		capability "Power Source"
+		capability "Tamper Alert"
 
-		attribute "tamper", "enum", ["detected", "clear"]
 		attribute "batteryStatus", "string"
-		attribute "powerSupply", "enum", ["USB Cable", "Battery"]
 
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A"
-		fingerprint mfr:"0086", prod:"0102", model:"0064", deviceJoinName: "Aeon Labs MultiSensor 6"
+		fingerprint mfr:"0086", prod:"0102", model:"0064", deviceJoinName: "Aeotec MultiSensor 6"
 	}
 
 	simulator {
@@ -120,36 +120,47 @@ metadata {
 			state "batteryStatus", label:'${currentValue}', unit:""
 		}
 
-		valueTile("powerSupply", "device.powerSupply", height: 2, width: 2, decoration: "flat") {
-			state "powerSupply", label:'${currentValue} powered', backgroundColor:"#ffffff"
+		valueTile("powerSource", "device.powerSource", height: 2, width: 2, decoration: "flat") {
+			state "powerSource", label:'${currentValue} powered', backgroundColor:"#ffffff"
+		}
+		valueTile("tamper", "device.tamper", height: 2, width: 2, decoration: "flat") {
+			state "clear", label:'tamper clear', backgroundColor:"#ffffff"
+			state "detected", label:'tampered', backgroundColor:"#ff0000"
 		}
 
 		main(["motion", "temperature", "humidity", "illuminance", "ultravioletIndex"])
-		details(["motion", "temperature", "humidity", "illuminance", "ultravioletIndex", "batteryStatus"])
+		details(["motion", "temperature", "humidity", "illuminance", "ultravioletIndex", "batteryStatus", "tamper"])
 	}
 }
 
 def installed(){
 // Device-Watch simply pings if no device events received for 122min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	sendEvent(name: "tamper", value: "clear", displayed: false)
 }
 
 def updated() {
-// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	log.debug "Updated with settings: ${settings}"
-	log.debug "${device.displayName} is now ${device.latestValue("powerSupply")}"
+	log.debug "${device.displayName} is now ${device.latestValue("powerSource")}"
 
-	if (device.latestValue("powerSupply") == "USB Cable") {  //case1: USB powered
-		response(configure())
-	} else if (device.latestValue("powerSupply") == "Battery") {  //case2: battery powered
-		// setConfigured("false") is used by WakeUpNotification
+
+	def powerSource = device.latestValue("powerSource")
+
+	if (!powerSource) { // Check to see if we have updated to new powerSource attr
+		def powerSupply = device.latestValue("powerSupply")
+
+		if (powerSupply) {
+			powerSource = (powerSupply == "Battery") ? "battery" : "dc"
+
+			sendEvent(name: "powerSource", value: powerSource, displayed: false)
+		}
+	}
+
+	if (powerSource == "battery") {
 		setConfigured("false") //wait until the next time device wakeup to send configure command after user change preference
-	} else { //case3: power source is not identified, ask user to properly pair the sensor again
-		log.warn "power source is not identified, check it sensor is powered by USB, if so > configure()"
-		def request = []
-		request << zwave.configurationV1.configurationGet(parameterNumber: 101)
-		response(commands(request))
+	} else { // We haven't identified the power supply, or the power supply is USB, so configure
+		response(configure())
 	}
 }
 
@@ -232,8 +243,8 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	}
 	state.lastbatt = now()
 	result << createEvent(map)
-	if (device.latestValue("powerSupply") != "USB Cable"){
-		result << createEvent(name: "batteryStatus", value: "${map.value} % battery", displayed: false)
+	if (device.latestValue("powerSource") != "dc"){
+		result << createEvent(name: "batteryStatus", value: "${map.value}% battery", displayed: false)
 	}
 	result
 }
@@ -287,16 +298,23 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	motionEvent(cmd.value)
 }
 
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def result = []
 	if (cmd.notificationType == 7) {
 		switch (cmd.event) {
 			case 0:
 				result << motionEvent(0)
-				result << createEvent(name: "tamper", value: "clear", displayed: false)
+				result << createEvent(name: "tamper", value: "clear")
 				break
 			case 3:
 				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
+				// Clear the tamper alert after 10s. This is a temporary fix for the tamper attribute until local execution handles it
+				unschedule(clearTamper)
+				runIn(10, clearTamper)
 				break
 			case 7:
 				result << motionEvent(1)
@@ -314,16 +332,16 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	def result = []
 	def value
 	if (cmd.parameterNumber == 9 && cmd.configurationValue[0] == 0) {
-		value = "USB Cable"
+		value = "dc"
 		if (!isConfigured()) {
 			log.debug("ConfigurationReport: configuring device")
 			result << response(configure())
 		}
-		result << createEvent(name: "batteryStatus", value: value, displayed: false)
-		result << createEvent(name: "powerSupply", value: value, displayed: false)
+		result << createEvent(name: "batteryStatus", value: "USB Cable", displayed: false)
+		result << createEvent(name: "powerSource", value: value, displayed: false)
 	}else if (cmd.parameterNumber == 9 && cmd.configurationValue[0] == 1) {
-		value = "Battery"
-		result << createEvent(name: "powerSupply", value: value, displayed: false)
+		value = "battery"
+		result << createEvent(name: "powerSource", value: value, displayed: false)
 	} else if (cmd.parameterNumber == 101){
 		result << response(configure())
 	}
@@ -339,7 +357,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	secure(zwave.batteryV1.batteryGet())
+	if (device.latestValue("powerSource") == "dc") {
+		command(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)) //poll the temperature to ping
+	} else {
+		log.debug "Can't ping a wakeup device on battery"
+	}
 }
 
 def configure() {
@@ -383,8 +405,17 @@ def configure() {
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x1B) //ultravioletIndex
+	request << zwave.configurationV1.configurationGet(parameterNumber: 9)
 
 	setConfigured("true")
+
+	// set the check interval based on the report interval preference. (default 122 minutes)
+	// we do this here in case the device is in wakeup mode
+	def checkInterval = 2 * 60 * 60 + 2 * 60
+	if (reportInterval) {
+		checkInterval = 2*timeOptionValueMap[reportInterval] + (2 * 60)
+	}
+	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
@@ -403,7 +434,7 @@ private def getTimeOptionValueMap() { [
 		"1 hours"    : 1*60*60,
 		"6 hours"    : 6*60*60,
 		"12 hours"   : 12*60*60,
-		"18 hours"   : 6*60*60,
+		"18 hours"   : 18*60*60,
 		"24 hours"   : 24*60*60,
 ]}
 
