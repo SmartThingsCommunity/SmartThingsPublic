@@ -53,10 +53,12 @@ private removeChildDevices(delete) {
 }
 
 def postStatus(){
-    def mainDevice = getMainDevice();
-    def status = null; // get from body of HTTP Post somehow
+    
+    def status = request?.json;
 
-    mainDevice.updateStatus(status);
+    if (status){
+        getMainDevice().updateStatus(status);
+    }
 }
 
 def initialize(){

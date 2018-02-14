@@ -163,12 +163,16 @@ def spawnChildDevices(){
 
 def poll() {
 	log.debug "POLL"
-	sendCommand("Status", 0, refreshCallback)
+	sendCommand("Status", null, refreshCallback)
 }
 
 def refresh() {
 	log.debug "REFRESH"
-	sendCommand("Status", 0, refreshCallback)
+	sendCommand("Status", null, refreshCallback)
+}
+
+def updateStatus(status){
+
 }
 
 def refreshCallback(physicalgraph.device.HubResponse response){
