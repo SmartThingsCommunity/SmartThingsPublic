@@ -75,6 +75,7 @@ preferences(oauthPage: "deviceAuthorization") {
 			input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false
 		}
 	}
+    page(name: "revokeToken", title: "You have succesfully logged out of the account.", install: false, nextPage: null)
 }
 
 mappings {
@@ -133,15 +134,25 @@ def authPage() {
 			section("Please wait while we discover your Harmony Hubs and Activities. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
 				input "selectedhubs", "enum", required:false, title:"Select Harmony Hubs (${numFoundHub} found)", multiple:true, submitOnChange: true, options:huboptions
 			}
-      // Virtual activity flag
+      	// Virtual activity flag
       	if (numFoundHub > 0 && numFoundAct > 0 && true)
 			section("You can also add activities as virtual switches for other convenient integrations") {
 				input "selectedactivities", "enum", required:false, title:"Select Harmony Activities (${numFoundAct} found)", multiple:true, submitOnChange: true, options:actoptions
 			}
+            section("") {
+                paragraph "If you have added another hub to your Logitech Harmony account you need to log out and reconnect to authorize access."
+                href "revokeToken", title: "Log out from account", description: "", state: "incomplete"
+            }
     	if (state.resethub)
 			section("Connection to the hub timed out. Please restart the hub and try again.") {}
 		}
     }
+}
+
+def revokeToken() {
+	 return dynamicPage(name: "revokeToken", title: "You have succesfully logged out of the account.") {
+     	deleteToken()
+     }
 }
 
 def callback() {
@@ -173,6 +184,12 @@ def callback() {
 			success()
 		}
 	}
+}
+
+def deleteToken() {
+	if (state?.HarmonyAccessToken) {
+		state.HarmonyAccessToken = null;
+    }
 }
 
 def init() {
