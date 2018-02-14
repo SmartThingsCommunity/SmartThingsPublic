@@ -81,7 +81,15 @@ def spawnChildDevices(){
                 devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 2]]
                 devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 3]]
                 devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 4]]
-                break
+                break;
+
+            case 25: // Sonoff Bridge
+
+                for ( i in 1..16 )
+                {
+                    devices[parentId + "-RF-Key${i}"] = [namespace : "BrettSheleski", type: "Tasmota-RF-Bridge Button", options : [keyNumber : i]]
+                }
+                break;
 
             case 2: // Sonoff RF
             case 3: // Sonoff SV
@@ -104,7 +112,6 @@ def spawnChildDevices(){
             case 21: // Sonoff SC
             case 22: // Sonoff BN-SZ
             case 24: // Huafan SS
-            case 25: // Sonoff Bridge
             case 26: // Sonoff B1
             case 27: // AiLight
             case 28: // Sonoff T1 1CH
