@@ -92,11 +92,9 @@ def getMainDevice(){
 
         deviceMap['name'] = app.label + " (Master)";
         deviceMap['label'] = deviceMap['name'];
-        /*
         deviceMap['isComponent'] = true; // prevent device from showing in device list
         deviceMap['componentName'] = 'MasterDevice'
         deviceMap['componentLabel'] = 'Master Device'
-        */
 
         childDevice = addChildDevice(namespace, deviceName, deviceId, theHubId, deviceMap)
     }

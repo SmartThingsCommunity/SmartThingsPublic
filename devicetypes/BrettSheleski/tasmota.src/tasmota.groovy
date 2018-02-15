@@ -183,10 +183,13 @@ def spawnChildDevices(){
             
             properties = [
                 label : e.value.label,
+                name : e.value.label,
                 completedSetup : true
             ];
 
-            def childDevice = addChildDevice(e.value.namespace, e.value.type, e.key, theHubId, e.value.options)
+            def childDevice = addChildDevice(e.value.namespace, e.value.type, e.key, theHubId, properties)
+
+            childDevice.initializeChild(e.value.oprions)
         }
 
     }
