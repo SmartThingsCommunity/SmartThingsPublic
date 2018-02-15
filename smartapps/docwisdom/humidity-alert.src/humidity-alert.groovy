@@ -1,8 +1,8 @@
 /**
- *  Its too humid!
+ *  Humidity Alert!
  *
- *  Copyright 2014 Brian Critchlow
- *  Based on Its too cold code by SmartThings
+ *  Copyright 201a-2018 Brian Critchlow, Larry McQueary
+ *  Based on It's too cold code by SmartThings
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
