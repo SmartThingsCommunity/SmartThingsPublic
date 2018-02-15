@@ -20,7 +20,8 @@
  *
  *	Changelog:
  *
- *	1.0	Initial Version
+ *	1.0.dd.1  Added option to set all LED's simultaneously via LED=8 (darwin@darwinsden.com)
+ *	1.0	      Initial Version
  *
  *
  *   Button Mappings:
@@ -358,20 +359,59 @@ def setStatusLed (led,color,blink) {
         case 7:
         	state.statusled7=color
             break
+        case 8:
+            // Special case - all LED's
+        	state.statusled1=color
+            state.statusled2=color
+            state.statusled3=color
+            state.statusled4=color
+            state.statusled5=color
+            state.statusled6=color
+            state.statusled7=color
+            break
+ 
     }
     
-    
+    // if this was a command to turn off all LEDs (LED 8 special case), then explicitly ensure all status LEDs are off and/or not blinking
+    if (led==8) 
+    {
+         if (color == 0)
+         {
+           for (def ledToChange = 1; ledToChange <= 7; ledToChange++)
+           {
+            // set color for all LEDs
+            cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: ledToChange+20, size: 1).format()
+           }
+         }
+         if (blink == 0)
+         {
+           cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 31, size: 1).format()
+         }
+    }
+
     if(state.statusled1==0 && state.statusled2==0 && state.statusled3==0 && state.statusled4==0 && state.statusled5==0 && state.statusled6==0 && state.statusled7==0)
     {
     	// no LEDS are set, put back to NORMAL mode
-        cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 13, size: 1).format() 
+        cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 13, size: 1).format()         
     }
     else
     {
-    	// at least one LED is set, put to status mode
-        cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 13, size: 1).format()
-        // set the LED to color
-        cmds << zwave.configurationV2.configurationSet(configurationValue: [color], parameterNumber: led+20, size: 1).format()
+       // at least one LED is set, put to status mode
+       cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 13, size: 1).format()
+       
+       if (led==8) 
+       {
+         for (def ledToChange = 1; ledToChange <= 7; ledToChange++)
+         {
+           // set color for all LEDs
+           cmds << zwave.configurationV2.configurationSet(configurationValue: [color], parameterNumber: ledToChange+20, size: 1).format()
+         }
+        }
+        else
+        {
+           // set color for specified LED
+           cmds << zwave.configurationV2.configurationSet(configurationValue: [color], parameterNumber: led+20, size: 1).format()
+        }   
         // check if LED should be blinking
         def blinkval = state.blinkval
         if(blink)
@@ -397,6 +437,9 @@ def setStatusLed (led,color,blink) {
                     break
                 case 7:
                 	blinkval = blinkval | 0x40
+                    break
+                case 8:
+                	blinkval = 0x7F
                     break
             }
         	cmds << zwave.configurationV2.configurationSet(configurationValue: [blinkval], parameterNumber: 31, size: 1).format()
@@ -428,12 +471,15 @@ def setStatusLed (led,color,blink) {
                 case 7:
                 	blinkval = blinkval | 0xBF
                     break
+                 case 8:
+                	blinkval = 0
+                    break         
             }
             cmds << zwave.configurationV2.configurationSet(configurationValue: [blinkval], parameterNumber: 31, size: 1).format()
             state.blinkval = blinkval
-        }
+        }     
     }
- 	delayBetween(cmds, 500)
+  	delayBetween(cmds, 100)
 }
 
 /*
