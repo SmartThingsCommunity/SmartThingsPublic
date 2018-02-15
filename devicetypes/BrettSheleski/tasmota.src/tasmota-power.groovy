@@ -45,7 +45,16 @@ def setPower(power){
 
 def setPowerCallback(physicalgraph.device.HubResponse response){
 	log.debug "Finished Setting power, JSON: ${response.json}"
-    def on = response.json.POWER == "ON";
+
+	def powerChannel = state.powerChannel;
+
+    def on = response.json."POWER${powerChannel}" == "ON";
+
+	if (powerChannel == 1){
+		// if this is channel 1, there may not be any other channels.
+		// In this case the property of the JSON response is just POWER (not POWER1)
+		on = on || response.json.POWER == "ON";
+	}
 
     setSwitchState(on);
 }
