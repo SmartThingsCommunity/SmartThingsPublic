@@ -11,6 +11,10 @@ definition(
 
 preferences {
 	page("mainPage", "Main Configuration"){
+        section ("SmartApp Name"){
+            label title: "Assign a name", required: true
+        }
+
 		section("Sonoff Host") {
 			input "ipAddress", "string", title: "IP Address", required: true
 		}
@@ -21,6 +25,7 @@ preferences {
 		}
 
 	}
+    
 }
 
 mappings {
@@ -83,10 +88,15 @@ def getMainDevice(){
         log.debug "FOUND child device found for ${childDevice.deviceNetworkId}"
     }
     else{
-        def deviceMap = [completedSetup: false]
+        def deviceMap = [completedSetup: true]
 
-        deviceMap['name'] = app.label + " - Master";
+        deviceMap['name'] = app.label + " (Master)";
         deviceMap['label'] = deviceMap['name'];
+        /*
+        deviceMap['isComponent'] = true; // prevent device from showing in device list
+        deviceMap['componentName'] = 'MasterDevice'
+        deviceMap['componentLabel'] = 'Master Device'
+        */
 
         childDevice = addChildDevice(namespace, deviceName, deviceId, theHubId, deviceMap)
     }
