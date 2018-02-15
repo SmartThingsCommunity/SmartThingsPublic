@@ -3,6 +3,7 @@ metadata {
 		capability "Momentary"
 		capability "Switch"
 
+		attribute "powerChannel", "number"
 	}
 
 	// UI tile definitions
@@ -14,13 +15,17 @@ metadata {
 			}
 		}
 
+		valueTile("powerChannel", "powerChannel", width: 6, height: 1) {
+			state "powerChannel", label: 'Channel ${currentValue}', backgroundColor: "#ffffff"
+		}
+
 		main "switch"
-		details(["switch"])
+		details(["switch", "powerChannel"])
 	}
 }
 
 def initializeChild(Map options){
-    state.powerChannel = options.powerChannel;
+	sendEvent(name: "powerChannel", value: options?.powerChannel)
 }
 
 def on(){
@@ -38,7 +43,9 @@ def push(){
 def setPower(power){
 	log.debug "Setting power to: $power"
 
-	def command = parent.createCommand("Power${state.powerChannel}", power, "setPowerCallback");;
+	def powerChannel = device.latestValue("powerChannel");
+
+	def command = parent.createCommand("Power${powerChannel}", power, "setPowerCallback");;
 
     sendHubCommand(command);
 }
@@ -46,7 +53,7 @@ def setPower(power){
 def setPowerCallback(physicalgraph.device.HubResponse response){
 	log.debug "Finished Setting power, JSON: ${response.json}"
 
-	def powerChannel = state.powerChannel;
+	def powerChannel = device.latestValue("powerChannel");
 
     def on = response.json."POWER${powerChannel}" == "ON";
 
@@ -66,9 +73,11 @@ def updateStatus(status){
 	// This is binary-encoded where each bit represents the on/off state of a particular channel
 	// EG: 7 in binary is 0111.  In this case channels 1, 2, and 3 are ON and channel 4 is OFF
 
+	def powerChannel = device.latestValue("powerChannel");
+
 	def powerMask = 0b0001;
 
-	powerMask = powerMask << (state.powerChannel - 1); // shift the bits over 
+	powerMask = powerMask << (powerChannel - 1); // shift the bits over 
 
 	def on = (powerMask & status.Status.Power);
 
