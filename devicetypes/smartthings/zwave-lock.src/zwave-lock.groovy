@@ -406,6 +406,7 @@ private def handleAccessAlarmReport(cmd) {
 			} else {
 				// locked by pressing the Schlage button
 				map.descriptionText = "Locked manually"
+				map.data = [ method: "keypad" ]
 			}
 			break
 		case 6: // Unlocked with keypad
