@@ -135,7 +135,7 @@ private handleLevelReport(physicalgraph.zwave.Command cmd) {
 
     def level = cmd.value as Integer
     if (level >= 99) {
-        level = 99
+        level = 100
         shadeValue = "open"
     } else if (level <= 0) {
         level = 0  // unlike dimmer switches, the level isn't saved when closed
