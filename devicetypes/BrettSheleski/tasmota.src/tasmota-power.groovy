@@ -25,6 +25,9 @@ metadata {
 }
 
 def initializeChild(Map options){
+	log.debug "OPTIONS: $options"
+
+	state.powerChannel = options?.powerChannel;
 	sendEvent(name: "powerChannel", value: options?.powerChannel)
 }
 
@@ -43,7 +46,7 @@ def push(){
 def setPower(power){
 	log.debug "Setting power to: $power"
 
-	def powerChannel = device.latestValue("powerChannel");
+	def powerChannel = state.powerChannel;
 
 	def command = parent.createCommand("Power${powerChannel}", power, "setPowerCallback");;
 
@@ -53,7 +56,7 @@ def setPower(power){
 def setPowerCallback(physicalgraph.device.HubResponse response){
 	log.debug "Finished Setting power, JSON: ${response.json}"
 
-	def powerChannel = device.latestValue("powerChannel");
+	def powerChannel = state.powerChannel;
 
     def on = response.json."POWER${powerChannel}" == "ON";
 
@@ -73,7 +76,7 @@ def updateStatus(status){
 	// This is binary-encoded where each bit represents the on/off state of a particular channel
 	// EG: 7 in binary is 0111.  In this case channels 1, 2, and 3 are ON and channel 4 is OFF
 
-	def powerChannel = device.latestValue("powerChannel");
+	def powerChannel = state.powerChannel;
 
 	def powerMask = 0b0001;
 
