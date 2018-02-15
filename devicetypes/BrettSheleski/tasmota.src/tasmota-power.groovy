@@ -77,7 +77,7 @@ def updateStatus(status){
 
 	def powerMask = 0b0001;
 
-	powerMask = powerMask << (powerChannel - 1); // shift the bits over 
+	powerMask = powerMask << ("$powerChannel".toInteger() - 1); // shift the bits over 
 
 	def on = (powerMask & status.Status.Power);
 

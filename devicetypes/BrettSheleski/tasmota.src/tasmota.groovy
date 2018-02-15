@@ -91,38 +91,38 @@ def spawnChildDevices(){
             case 26: // Sonoff B1
             case 28: // Sonoff T1 1CH
             case 41: // Sonoff S31
-                devices[parentId + '-Power'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 1]]
+                devices[parentId + '-Power'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch", options : [powerChannel : 1]]
                 break;
 
             case 5: // Sonoff Dual
             case 19: // Sonoff Dev
             case 39: // Sonoff Dual R2
             case 29: // Sonoff T1 2CH
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 2]]
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 1", options : [powerChannel : 1]]
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 2", options : [powerChannel : 2]]
                 break;
             
             case 7: // Sonoff 4CH
             case 13: // 4 Channel
             
             case 23: // Sonoff 4CH Pro
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 2]]
-                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 3]]
-                devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 4]]
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 1", options : [powerChannel : 1]]
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 2", options : [powerChannel : 2]]
+                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 3", options : [powerChannel : 3]]
+                devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 4", options : [powerChannel : 4]]
                 break;
 
             case 30: // Sonoff T1 3CH
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 2]]
-                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", options : [powerChannel : 3]]
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 1", options : [powerChannel : 1]]
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 2", options : [powerChannel : 2]]
+                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "Tasmota Switch - Channel 3", options : [powerChannel : 3]]
                 break;
 
             case 25: // Sonoff Bridge
 
                 for ( i in 1..16 )
                 {
-                    devices[parentId + "-RF-Key${i}"] = [namespace : "BrettSheleski", type: "Tasmota-RF-Bridge Button", options : [keyNumber : i]]
+                    devices[parentId + "-RF-Key${i}"] = [namespace : "BrettSheleski", type: "Tasmota-RF-Bridge Button", label : "Tasmota RF Bridge - Button ${i}", options : [keyNumber : i]]
                 }
                 break;
 
@@ -175,10 +175,18 @@ def spawnChildDevices(){
         }
 
         def theHubId = location.hubs[0].id
+        def label = null;
+        def properties = [:];
 
         for (e in devices){
             log.debug "DEVICE : ${e}"
-            def childDevice = addChildDevice(e.value.namespace, e.value.type, e.key, theHubId, e.value.options)
+            
+            properties = [
+                label : e.value.label,
+                completedSetup : true
+            ];
+
+            def childDevice = addChildDevice(e.value.namespace, e.value.type, e.key, theHubId, properties)
         }
 
     }
