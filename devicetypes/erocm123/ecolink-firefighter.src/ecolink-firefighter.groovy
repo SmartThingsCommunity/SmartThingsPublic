@@ -1,5 +1,5 @@
 /**
- *  Copyright 2015 SmartThings
+ *  Copyright 2018 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -10,7 +10,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-02-12: Added temperature capability and reading. Increased checkInterval to 6 hours. 
  */
+ 
 metadata {
 	definition (name: "Ecolink Firefighter", namespace: "erocm123", author: "Eric Maycock") {
 		capability "Smoke Detector"
@@ -19,6 +21,7 @@ metadata {
 		capability "Battery"
         capability "Tamper Alert"
 		capability "Health Check"
+        capability "Temperature Measurement"
 
 		attribute "alarmState", "string"
 
@@ -27,6 +30,11 @@ metadata {
 
 	simulator {
 	}
+    
+    preferences {
+        input "tempReportInterval", "enum", title: "Temperature Report Interval\n\nHow often you would like temperature reports to be sent from the sensor. More frequent reports will have a negative impact on battery life.\n", description: "Tap to set", required: false, options:[60: "1 Hour", 120: "2 Hours", 180: "3 Hours", 240: "4 Hours", 300: "5 Hours", 360: "6 Hours", 720: "12 Hours", 1440: "24 Hours"], defaultValue: 240
+        input "tempOffset", "decimal", title: "Temperature Offset\n\nCalibrate reported temperature by applying a negative or positive offset\nRange: -10.0 to 10.0", description: "Tap to set", required: false, range: "-10..10"
+    }
 
 	tiles (scale: 2){
 		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
@@ -37,7 +45,11 @@ metadata {
 				attributeState("tested", label:"TEST", icon:"st.alarm.smoke.test", backgroundColor:"#e86d13")
                 attributeState("detected", label:"TAMPERED", icon:"st.alarm.smoke.test", backgroundColor:"#e86d13")
 			}
+            tileAttribute("device.temperature", key: "SECONDARY_CONTROL") {
+                attributeState("default", label:'${currentValue}°',icon: "")
+            }
 		}
+        
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
@@ -48,17 +60,15 @@ metadata {
 }
 
 def installed() {
-// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
-	sendEvent(name: "checkInterval", value: 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
+	sendEvent(name: "checkInterval", value: 24 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	def cmds = []
 	createSmokeOrCOEvents("allClear", cmds) // allClear to set inital states for smoke and CO
 	cmds.each { cmd -> sendEvent(cmd) }
 }
 
 def updated() {
-// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
-	sendEvent(name: "checkInterval", value: 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 24 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
 }
 
 def parse(String description) {
@@ -71,7 +81,7 @@ def parse(String description) {
 			zwaveEvent(cmd, results)
 		}
 	}
-	log.debug "'$description' parsed to ${results.inspect()}"
+	//log.debug "'$description' parsed to ${results.inspect()}"
 	return results
 }
 
@@ -127,6 +137,13 @@ def createSmokeOrCOEvents(name, results) {
 	}
 	// This composite event is used for updating the tile
 	results << createEvent(name: "alarmState", value: name, descriptionText: text)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpIntervalReport cmd, results)
+{
+    log.debug cmd
+    state.wakeInterval = cmd.seconds
+    return results
 }
         
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
@@ -184,8 +201,6 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
 	}
 }
 
-// SensorBinary and SensorAlarm aren't tested, but included to preemptively support future smoke alarms
-//
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd, results) {
 	if (cmd.sensorType == physicalgraph.zwave.commandclasses.SensorBinaryV2.SENSOR_TYPE_SMOKE) {
 		createSmokeOrCOEvents(cmd.sensorValue ? "smoke" : "smokeClear", results)
@@ -205,7 +220,18 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
-	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
+    results << response(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1).format())
+    
+    if(state.wakeInterval == null || state.wakeInterval != (tempReportInterval? tempReportInterval.toInteger()*60:14400)){
+        log.debug "Setting Wake Interval to ${tempReportInterval? tempReportInterval.toInteger()*60:14400}"
+        results << response([
+                   zwave.wakeUpV1.wakeUpIntervalSet(seconds: tempReportInterval? tempReportInterval.toInteger()*60:14400, nodeid:zwaveHubNodeId).format(),
+                   "delay 1000",
+                   zwave.wakeUpV1.wakeUpIntervalGet().format()
+                   ])
+    }
+    
+	if (!state.lastbatt || (now() - state.lastbatt) >= 24*60*60*1000) {
 		results << response([
 				zwave.batteryV1.batteryGet().format(),
 				"delay 2000",
@@ -214,6 +240,34 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, res
 	} else {
 		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, results)
+{
+    log.debug cmd
+    def map = [:]
+    switch (cmd.sensorType) {
+        case 1:
+            map.name = "temperature"
+            def cmdScale = cmd.scale == 1 ? "F" : "C"
+            state.realTemperature = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+            map.value = getAdjustedTemp(state.realTemperature)
+            map.unit = getTemperatureScale()
+            log.debug "Temperature Report: $map.value"
+            break;
+        default:
+            map.descriptionText = cmd.toString()
+    }
+    results << createEvent(map)
+}
+
+private getAdjustedTemp(value) {
+    value = Math.round((value as Double) * 100) / 100
+    if (tempOffset) {
+       return value =  value + Math.round(tempOffset * 100) /100
+    } else {
+       return value
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, results) {
