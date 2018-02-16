@@ -20,6 +20,7 @@
  *
  *	Changelog:
  *
+ *	1.0.dd.2  Added button number labels to virtual buttons and reduced size (darwin@darwinsden.com)
  *	1.0.dd.1  Added option to set all LED's simultaneously via LED=8 (darwin@darwinsden.com)
  *	1.0	      Initial Version
  *
@@ -129,49 +130,56 @@ metadata {
 			state "level", label:'${currentValue} %', unit:"%", backgroundColor:"#ffffff"
 		}
 
-        standardTile("tapUp2", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲", backgroundColor: "#ffffff", action: "tapUp2", icon: "st.Home.home30"
+        valueTile("tapUp2", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 1\nTap\n▲▲", backgroundColor: "#ffffff", action: "tapUp2"
 		}     
  
-        standardTile("tapDown2", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼", backgroundColor: "#ffffff", action: "tapDown2", icon: "st.Home.home30"
+        valueTile("tapDown2", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 2\nTap\n▼▼", backgroundColor: "#ffffff", action: "tapDown2"
 		} 
 
-        standardTile("tapUp3", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲▲", backgroundColor: "#ffffff", action: "tapUp3", icon: "st.Home.home30"
+        valueTile("tapUp3", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 3\nTap\n▲▲▲", backgroundColor: "#ffffff", action: "tapUp3"
 		} 
 
-        standardTile("tapDown3", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼▼", backgroundColor: "#ffffff", action: "tapDown3", icon: "st.Home.home30"
+        valueTile("tapDown3", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 4\nTap\n▼▼▼", backgroundColor: "#ffffff", action: "tapDown3"
 		}
+        valueTile("tapUp1", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 7\nTap\n▲", backgroundColor: "#ffffff", action: "tapUp1"
+		}     
+ 
+        valueTile("tapDown1", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 8\nTap\n▼", backgroundColor: "#ffffff", action: "tapDown1"
+		} 
+
+        valueTile("tapUp4", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 9\nTap\n▲▲▲▲", backgroundColor: "#ffffff", action: "tapUp4"
+		} 
         
-        standardTile("tapUp4", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲▲▲", backgroundColor: "#ffffff", action: "tapUp4", icon: "st.Home.home30"
-		} 
-
-        standardTile("tapDown4", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼▼▼", backgroundColor: "#ffffff", action: "tapDown4", icon: "st.Home.home30"
+        valueTile("tapDown4", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 10\nTap\n▼▼▼▼", backgroundColor: "#ffffff", action: "tapDown4"
 		} 
         
-        standardTile("tapUp5", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▲▲▲▲▲", backgroundColor: "#ffffff", action: "tapUp5", icon: "st.Home.home30"
+        valueTile("tapUp5", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 11\nTap\n▲▲▲▲▲", backgroundColor: "#ffffff", action: "tapUp5"
 		} 
 
-        standardTile("tapDown5", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Tap ▼▼▼▼▼", backgroundColor: "#ffffff", action: "tapDown5", icon: "st.Home.home30"
+        valueTile("tapDown5", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 12\nTap\n▼▼▼▼▼", backgroundColor: "#ffffff", action: "tapDown5"
 		} 
 
-        standardTile("holdUp", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Hold ▲", backgroundColor: "#ffffff", action: "holdUp", icon: "st.Home.home30"
+        valueTile("holdUp", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 5\nHold\n▲", backgroundColor: "#ffffff", action: "holdUp"
 		} 
 
-        standardTile("holdDown", "device.button", width: 2, height: 2, decoration: "flat") {
-			state "default", label: "Hold ▼", backgroundColor: "#ffffff", action: "holdDown", icon: "st.Home.home30"
+        valueTile("holdDown", "device.button", width: 1, height: 1, decoration: "flat") {
+			state "default", label: "Button 6\nHold\n▼", backgroundColor: "#ffffff", action: "holdDown"
         }
         
 		main(["switch"])
         
-		details(["switch","tapUp2","tapUp3","tapUp4","tapUp5","holdUp","tapDown2","tapDown3","tapDown4","tapDown5","holdDown","level","firmwareVersion", "refresh"])
+		details(["switch","tapUp2","tapDown2","tapUp3","tapDown3","holdUp","holdDown","tapUp1","tapDown1","tapUp4","tapDown4","tapUp5","tapDown5","level","firmwareVersion","refresh"])
 	}
 }
 
@@ -696,6 +704,14 @@ def holdDownResponse(String buttonType) {
     sendEvent(name: "status" , value: "Hold ▼")
 	[name: "button", value: "pushed", data: [buttonNumber: "6"], descriptionText: "$device.displayName Hold-Down (button 6) pressed", 
     isStateChange: true, type: "$buttonType"]
+}
+
+def tapUp1() {
+	sendEvent(tapUp1Response("digital"))
+}
+
+def tapDown1() {
+	sendEvent(tapDown1Response("digital"))
 }
 
 def tapUp2() {
