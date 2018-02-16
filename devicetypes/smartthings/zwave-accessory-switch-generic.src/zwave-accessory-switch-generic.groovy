@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Accessory Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
+	definition(name: "Z-Wave Accessory Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Switch"
@@ -66,9 +66,8 @@ def updated() {
 
 def getCommandClassVersions() {
 	[
-		0x20: 1,  // Basic
-		0x56: 1,  // Crc16Encap
-		0x70: 1,  // Configuration
+		0x20: 1, // Basic
+		0x56: 1, // Crc16Encap
 	]
 }
 
@@ -83,7 +82,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	if (getDataValue("MSR").equals("001A-4441-0000")) {
+	if (isEatonAccessoryDimmer()) {
 		// Eaton dimmer sends unsolicited basic report with wrong value
 		// so we need to ignore it for device to work properly.
 		[:]
@@ -109,7 +108,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	updateDataValue("MSR", msr)
 	updateDataValue("manufacturer", cmd.manufacturerName)
-	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
+	[descriptionText: "$device.displayName MSR: $msr", isStateChange: false]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
@@ -142,7 +141,7 @@ def off() {
 	delayBetween([
 		zwave.basicV1.basicSet(value: 0x00).format(),
 		getSwitchStateZwaveCommand()
-	], getDataValue("MSR").equals("001A-4441-0000") ? 5000 : 100)
+	], isEatonAccessoryDimmer() ? 5000 : 100)
 }
 
 def poll() {
@@ -167,11 +166,15 @@ def refresh() {
 
 def getSwitchStateZwaveCommand() {
 	//Eaton Accessory switch 001A-5352-0000 could use indicatorGet
-	if (getDataValue("MSR").equals("001A-4441-0000")) {
+	if (isEatonAccessoryDimmer()) {
 		//Eaton dimmer
 		zwave.switchMultilevelV1.switchMultilevelGet().format()
 	} else {
 		//most devices should be able to handle this
 		zwave.basicV1.basicGet().format()
 	}
+}
+
+def isEatonAccessoryDimmer() {
+	getDataValue("MSR")?.equals("001A-4441-0000")
 }
