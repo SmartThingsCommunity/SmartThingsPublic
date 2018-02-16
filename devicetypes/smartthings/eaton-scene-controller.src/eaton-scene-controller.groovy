@@ -1,5 +1,5 @@
 /**
- *  Copyright 2017 SmartThings
+ *  Copyright 2018 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -12,13 +12,13 @@
  *
  */
 metadata {
-	definition (name: "Eaton 5-Scene Keypad", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Eaton 5-Scene Keypad", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
 		//zw:L type:0202 mfr:001A prod:574D model:0000 ver:2.05 zwv:2.78 lib:01 cc:87,77,86,22,2D,85,72,21,70
-		fingerprint mfr: "001A", prod:"574D", model:"0000", deviceJoinName: "Eaton 5-Scene Keypad"
+		fingerprint mfr: "001A", prod: "574D", model: "0000", deviceJoinName: "Eaton 5-Scene Keypad"
 	}
 
 	tiles(scale: 2) {
@@ -43,30 +43,22 @@ def installed() {
 	//Device will sometimes respond with ApplicationBusy with STATUS_TRY_AGAIN_IN_WAIT_TIME_SECONDS
 	//this can happen for any of associationSet and sceneControllerConfSet commands even with intervals over 6000ms
 	//As this process will take a while, we use controller's LED indicators to display progress.
-	cmds << zwave.indicatorV1.indicatorSet(value: 0)
-	cmds << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:1, sceneId: 1)
-	cmds << zwave.indicatorV1.indicatorSet(value: 1)
-	cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId])
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:2, sceneId: 2)
-	cmds << zwave.indicatorV1.indicatorSet(value: 3)
-	cmds << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId])
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:3, sceneId: 3)
-	cmds << zwave.indicatorV1.indicatorSet(value: 7)
-	cmds << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId])
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:4, sceneId: 4)
-	cmds << zwave.indicatorV1.indicatorSet(value: 15)
-	cmds << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId])
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration:0, groupId:5, sceneId: 5)
-	cmds << zwave.indicatorV1.indicatorSet(value: 31)
+	int indicator = 0;
+	for (int group = 1; group < 6; ++group) {
+		cmds << zwave.indicatorV1.indicatorSet(value: indicator)
+		cmds << zwave.associationV1.associationSet(groupingIdentifier: group, nodeId: [zwaveHubNodeId])
+		cmds << zwave.sceneControllerConfV1.sceneControllerConfSet(dimmingDuration: 0, groupId: group, sceneId: group)
+		indicator += 2**(5 - group)
+	}
+	cmds << zwave.indicatorV1.indicatorSet(value: indicator)
 	cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	//use runIn to schedule the initialize method in case updated method below is also sending commands to the device
 	sendHubCommand cmds*.format(), 3100
 	runIn(50, "initialize", [overwrite: true])  // Allow set up to finish and acknowledged before proceeding
-	
+
 	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	response(refresh())
+	refresh()
 }
 
 def updated() {
@@ -74,10 +66,10 @@ def updated() {
 	if (!getDataValue("manufacturer")) {
 		runIn(48, "initialize", [overwrite: true])  // installation may still be running
 	} else {
-	//If controller ignored some of associationSet and sceneControllerConfSet commands
-	//and failsafe integrated into initialize() did not manage to fix it,
-	//user can enter device settings and press save until controller starts to respond
-	//correctly
+		//If controller ignored some of associationSet and sceneControllerConfSet commands
+		//and failsafe integrated into initialize() did not manage to fix it,
+		//user can enter device settings and press save until controller starts to respond
+		//correctly
 		initialize()
 	}
 	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
@@ -92,28 +84,26 @@ def initialize() {
 	//Check if Hub is associated to groups responsible for all five switches
 	//We do this, because most likely some of associationSet and sceneControllerConfSet commands were ignored
 	//As this process will take a while, we use controller's LED indicators to display progress.
-	cmds << zwave.indicatorV1.indicatorSet(value: 0)
-	cmds << zwave.associationV1.associationGet(groupingIdentifier:1)
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:1)
-	cmds << zwave.indicatorV1.indicatorSet(value: 1)
-	cmds << zwave.associationV1.associationGet(groupingIdentifier:2)
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:2)
-	cmds << zwave.indicatorV1.indicatorSet(value: 3)
-	cmds << zwave.associationV1.associationGet(groupingIdentifier:3)
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:3)
-	cmds << zwave.indicatorV1.indicatorSet(value: 7)
-	cmds << zwave.associationV1.associationGet(groupingIdentifier:4)
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:4)
-	cmds << zwave.indicatorV1.indicatorSet(value: 15)
-	cmds << zwave.associationV1.associationGet(groupingIdentifier:5)
-	cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId:5)
-	cmds << zwave.indicatorV1.indicatorSet(value: 31)
-	cmds << zwave.indicatorV1.indicatorSet(value: 0)
-	//Make sure cloud is in sync with device
-	cmds << zwave.indicatorV1.indicatorGet()
+	//Number of retries was chosen to achieve high enough success rate
+	for (int retries = 2; retries > 0; --retries) {
+		int indicator = 0;
+		for (int group = 1; group < 6; ++group) {
+			cmds << zwave.indicatorV1.indicatorSet(value: indicator)
+			cmds << zwave.associationV1.associationGet(groupingIdentifier: group)
+			cmds << zwave.sceneControllerConfV1.sceneControllerConfGet(groupId: group)
+			indicator = indicator + (2**(5 - group))
+		}
+		cmds << zwave.indicatorV1.indicatorSet(value: indicator)
+	}
+
 	if (!getDataValue("manufacturer")) {
 		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	}
+
+	cmds << zwave.indicatorV1.indicatorSet(value: 0)
+	//Make sure cloud is in sync with device
+	cmds << zwave.indicatorV1.indicatorGet()
+
 	//Long interval to make it possible to process association set commands if necessary
 	sendHubCommand cmds*.format(), 3000
 }
@@ -144,17 +134,14 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	if (cmd.manufacturerName) {
-		updateDataValue("manufacturer", cmd.manufacturerName)
-	}
-	if (cmd.productTypeId) {
-		updateDataValue("productTypeId", cmd.productTypeId.toString())
-	}
-	// productId 0 is a valid value
-	if (cmd.productId != null) {
-		updateDataValue("productId", cmd.productId.toString())
-	}
-	return null
+	log.debug "manufacturerId:   $cmd.manufacturerId"
+	log.debug "manufacturerName: $cmd.manufacturerName"
+	log.debug "productId:        $cmd.productId"
+	log.debug "productTypeId:    $cmd.productTypeId"
+	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+	updateDataValue("MSR", msr)
+	updateDataValue("manufacturer", cmd.manufacturerName)
+	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
@@ -164,8 +151,8 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
 		// We're not associated properly to this group, try setting association two times
 		def cmds = []
 		//Set Association for this group
-		cmds << zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:[zwaveHubNodeId])
-		cmds << zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:[zwaveHubNodeId])
+		cmds << zwave.associationV1.associationSet(groupingIdentifier: cmd.groupingIdentifier, nodeId: [zwaveHubNodeId])
+		cmds << zwave.associationV1.associationSet(groupingIdentifier: cmd.groupingIdentifier, nodeId: [zwaveHubNodeId])
 		sendHubCommand cmds*.format(), 1500
 		return null
 	}
@@ -177,12 +164,9 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 		//Device sends this event when any switch is turned off
 		//Most reliable way to know which switches are still "on" is to check their status
 		def cmds = []
-		// when using All Off feature, controller will often not respond to Indicator Get command
-		// using delayed refresh proves more reliable in this case
-		cmds << new physicalgraph.device.HubAction("delay 500")
 		cmds << zwave.indicatorV1.indicatorGet().format()
 		//Indicator returns number which is a bit representation of current state of switches
-		sendHubCommand cmds, 500
+		sendHubCommand cmds
 	} else {
 		return null
 	}
@@ -197,15 +181,15 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
 def zwaveEvent(physicalgraph.zwave.commands.indicatorv1.IndicatorReport cmd) {
 	//cmd.value (0-31) is a binary representation of current switch state
 	//switch 1 - first bit
-	setSwitchState(1, (cmd.value & 1)? "on" : "off")
+	setSwitchState(1, (cmd.value & 1) ? "on" : "off")
 	//switch 2 - second bit
-	setSwitchState(2, (cmd.value & 2)? "on" : "off")
+	setSwitchState(2, (cmd.value & 2) ? "on" : "off")
 	//switch 3 - third bit
-	setSwitchState(3, (cmd.value & 4)? "on" : "off")
+	setSwitchState(3, (cmd.value & 4) ? "on" : "off")
 	//switch 4 - fourth bit
-	setSwitchState(4, (cmd.value & 8)? "on" : "off")
+	setSwitchState(4, (cmd.value & 8) ? "on" : "off")
 	//switch 5 - fifth bit
-	setSwitchState(5, (cmd.value & 16)? "on" : "off")
+	setSwitchState(5, (cmd.value & 16) ? "on" : "off")
 	return null
 }
 
@@ -258,12 +242,12 @@ void childOff(deviceNetworkId) {
 
 private setSwitchState(switchId, state) {
 	String childDni = "${device.deviceNetworkId}/$switchId"
-	def child = childDevices.find{it.deviceNetworkId == childDni}
+	def child = childDevices.find { it.deviceNetworkId == childDni }
 	if (!child) {
 		log.error "Child device $childDni not found"
 	}
 	//send event only if state changed
-	if(child?.device.currentState("switch")?.value != state) {
+	if (child?.device?.currentState("switch")?.value != state) {
 		child?.sendEvent(name: "switch", value: "$state", descriptionText: "$child.displayName was switched $state")
 	}
 }
@@ -273,8 +257,8 @@ private updateLocalSwitchState() {
 	def multiplier = 1;
 	for (int i = 1; i <= 5; ++i) {
 		String childDni = "${device.deviceNetworkId}/$i"
-		def child = childDevices.find{it.deviceNetworkId == childDni}
-		if (child?.device.currentState("switch")?.value == "on") {
+		def child = childDevices.find { it.deviceNetworkId == childDni }
+		if (child?.device?.currentState("switch")?.value == "on") {
 			binarySwitchState += multiplier
 		}
 		multiplier *= 2
@@ -285,9 +269,9 @@ private updateLocalSwitchState() {
 private addChildSwitches() {
 	for (i in 1..5) {
 		String childDni = "${device.deviceNetworkId}/$i"
-		def child = childDevices.find{it.deviceNetworkId == childDni}
+		def child = childDevices.find { it.deviceNetworkId == childDni }
 		addChildDevice("Child Switch", childDni, null,
-				[completedSetup: true, label: "$device.displayName switch $i",
-				 isComponent: true, componentName: "switch$i", componentLabel: "Switch $i"])
+			[completedSetup: true, label: "$device.displayName switch $i",
+			 isComponent   : true, componentName: "switch$i", componentLabel: "Switch $i"])
 	}
 }

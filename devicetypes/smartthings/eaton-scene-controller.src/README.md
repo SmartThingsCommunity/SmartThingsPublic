@@ -38,22 +38,19 @@ The Eaton 5-scene keypad has blue LEDs which will all blink when the device is n
 * DO NOT press any buttons while the device LEDs are blinking sequentially. After pairing is complete the LEDs will stop blinking.
 * If all blue LEDs on the device start blinking again, press All Off button again.
 * Confirm addition of new device from SmartThings app.
-* Initial device configuration will start. It will take a while (about 2 minutes), so Hub will light LEDs from 1 to 5 to indicate which buttons are already configured.
-* After initial configuration ends, Handler will check if configuration was successful, and retry if neccessary.
-* Again, It will take a while (about 2 minutes), so Hub will light LEDs from 1 to 5 to indicate progress.
+* Initial device configuration will start. It will take about a minute, so Hub will light LEDs from 5 to 1 to indicate progress.
+* After initial configuration ends, Handler will check twice if configuration was successful, and retry if neccessary. One check will take about a minute. Hub will light LEDs from 5 to 1 to indicate progress of each of those configuration checks.
 * This process may fail too. To check if set up was successful, wait for all leds to be turned off, and turn every switch on (Important note: do this without turning any switch off).
-* Now check status of all switches. If all switches are turned on, set up was successful.
-* If some switches are turned off, please enter device settings and press save to run configuration check/retry again. After this, check if malfunctioning switches started working.
-
-Repeat last step until all switches start working correctly.
+* Now check status of all switches in mobile application. If all switches are turned on, set up was successful.
+* If any switches is still turned off, please exclude Eaton 5-scene keypad from hub's z-wave network and try again.
 
 ## Supported Functionality
 
-SmartThings will treat Eaton 5-scene keypad as 5-switch remote and will support All Off button functionality.
+SmartThings will treat Eaton 5-scene keypad as 5-switch remote.
 
 ## Unsupported Functionality
 
-SmartThings does not support Dimmer functionality of Eaton 5-scene keypad.
+SmartThings does not support Dimmer and All Off functionality of Eaton 5-scene keypad. Using All Off feature will most likely cause device to be out of synch with it's cloud state.
 
 ## Deinstallation
 * Start device exlusion using SmartThings app.
