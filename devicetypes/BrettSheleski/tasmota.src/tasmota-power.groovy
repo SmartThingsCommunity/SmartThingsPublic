@@ -2,8 +2,6 @@ metadata {
 	definition(name: "Tasmota-Power", namespace: "BrettSheleski", author: "Brett Sheleski", ocfDeviceType: "oic.d.smartplug") {
 		capability "Momentary"
 		capability "Switch"
-
-		attribute "powerChannel", "number"
 	}
 
 	// UI tile definitions
@@ -22,13 +20,16 @@ metadata {
 		main "switch"
 		details(["switch", "powerChannel"])
 	}
+
+	preferences {
+		section("Main") {
+            input(name: "powerChannel", type: "number", title: "Power Channel", description: "", displayDuringSetup: true, required: true)
+		}
+	}
 }
 
 def initializeChild(Map options){
 	log.debug "OPTIONS: $options"
-
-	state.powerChannel = options?.powerChannel;
-	sendEvent(name: "powerChannel", value: options?.powerChannel)
 }
 
 def on(){
@@ -46,8 +47,6 @@ def push(){
 def setPower(power){
 	log.debug "Setting power to: $power"
 
-	def powerChannel = state.powerChannel;
-
 	def command = parent.createCommand("Power${powerChannel}", power, "setPowerCallback");;
 
     sendHubCommand(command);
@@ -55,8 +54,6 @@ def setPower(power){
 
 def setPowerCallback(physicalgraph.device.HubResponse response){
 	log.debug "Finished Setting power, JSON: ${response.json}"
-
-	def powerChannel = state.powerChannel;
 
     def on = response.json."POWER${powerChannel}" == "ON";
 
@@ -75,8 +72,6 @@ def updateStatus(status){
 	// The Status.Power property contains the on/off state of all channels (in case of a Sonoff 4CH or Sonoff Dual)
 	// This is binary-encoded where each bit represents the on/off state of a particular channel
 	// EG: 7 in binary is 0111.  In this case channels 1, 2, and 3 are ON and channel 4 is OFF
-
-	def powerChannel = state.powerChannel;
 
 	def powerMask = 0b0001;
 
