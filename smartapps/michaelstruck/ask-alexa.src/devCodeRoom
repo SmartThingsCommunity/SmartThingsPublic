@@ -1,0 +1,72 @@
+{
+  "languageModel": {
+    "types": [
+    */*Slots*/*
+    ],
+    "intents": [
+      {
+        "name": "AMAZON.CancelIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.HelpIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.NoIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.StopIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.YesIntent",
+        "samples": []
+      },
+      {
+        "name": "RoomAssociateOperation",
+        "samples": [
+          "{MRoom}",
+          "associate {MRoom}",
+          "sync {MRoom}",
+          "setup {MRoom}"
+        ],
+        "slots": [
+          {
+            "name": "MRoom",
+            "type": "LIST_OF_ROOMS"
+          }
+        ]
+      },
+      {
+        "name": "RoomOperation",
+        "samples": [
+          "turn {MCmd} the lights",
+          "turn {MCmd} the light",
+          "turn {MCmd} the switches",
+          "turn {MCmd} the switch"
+        ],
+        "slots": [
+          {
+            "name": "MNum",
+            "type": "AMAZON.NUMBER"
+          },
+          {
+            "name": "MCmd",
+            "type": "LIST_OF_OPERATORS"
+          },
+          {
+            "name": "MParam",
+            "type": "LIST_OF_PARAMS"
+          },
+          {
+            "name": "MRoom",
+            "type": "LIST_OF_ROOMS"
+          }
+        ]
+      }
+    ],
+    "invocationName": "here"
+  }
+}
