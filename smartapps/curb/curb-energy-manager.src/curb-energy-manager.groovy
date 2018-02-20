@@ -41,7 +41,7 @@ preferences {
             input("safetyMargin", "float", title: "Set Safety Margin (%)", defaultValue: 25)
       input("projectionPeriod", "float", title: "Set Projection Period (%)", defaultValue: 50)
       input("meter", "capability.energyMeter", title: "Select Monitored Circuit", multiple: false)
-            input("circuits", "capability.energyMeter", title: "Circuits to send alerts on", multiple:true, defaultValue: ALL)
+      input("circuits", "capability.energyMeter", title: "Circuits to send alerts on", multiple:true, defaultValue: ALL)
     }
   }
     page(name: "pageThree", install: true, uninstall:true) {
@@ -51,21 +51,24 @@ preferences {
             //input("cycleTimeLatency", "float", title: "Set Cycle Time Latency (minutes)", defaultValue: 5)
     }
 
-        section("Notifications") {
-            input("recipients", "contact", title: "Send notifications to", multiple:true)
-        }
+    section("Notifications"){
+          input("recipients", "contact", title: "Send notifications to") {
+              input "phone", "phone", title: "Phone Number",
+                  description: "Recieve Text Messages about your usage", required: false
+          }
+      }
   }
 }
 
 def installed() {
   resetClocking()
-  log.debug "Installed with settings: ${settings}"
+  //log.debug "Installed with settings: ${settings}"
 
   initialize()
 }
 
 def updated() {
-  log.debug "Updated with settings: ${settings}"
+  //log.debug "Updated with settings: ${settings}"
   runAutomation()
   unsubscribe()
   initialize()
@@ -100,11 +103,16 @@ def sendNotifications() {
     for(c in circuits){
         //log.debug(c)
         //log.debug(currentTotal)
+        try {
         devlist.add([pct: ((Float.parseFloat(c.currentState("power").value) / currentTotal) * 100).round(), name: c.toString()])
-         count += count
+        count += count
+        } catch (e) {
+          log.debug(e);
+        }
+
     }
 
-    log.debug(devlist)
+    //log.debug(devlist)
 
     def sorted = devlist.sort { a, b -> b.pct <=> a.pct }
     def message = "Curb Alert: Energy usage is projected to go over selected threshold."
@@ -134,7 +142,7 @@ def runAutomation() {
     def mf = new java.text.SimpleDateFormat("m")
     def minute = Integer.parseInt(mf.format(new Date())) % Integer.parseInt(timeInterval)
 
-      log.debug("in automation / minute: " + minute.toString())
+      //log.debug("in automation / minute: " + minute.toString())
 
       // First Minute, reset the whole process
     if (minute == 0) {
