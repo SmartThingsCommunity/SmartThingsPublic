@@ -27,7 +27,6 @@ definition(
 
 preferences {
     page name: "mainPage", install: true, uninstall: true
-
 }
 
 def mainPage() {
@@ -55,8 +54,7 @@ def initialize() {
         def d = addChildDevice("smartthings", virtualDeviceType, "virtual-$latestDni", theHub?.id, [completedSetup: true, label: "$virtualDeviceType $latestDni"])
         latestDni++
         state.nextDni = latestDni
-    }
-    else {
+    } else {
         log.error "Failed creating Virtual Device because the device type was missing"
     }
 }
