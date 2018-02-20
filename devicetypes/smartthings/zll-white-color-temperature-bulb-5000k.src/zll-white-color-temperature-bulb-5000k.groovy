@@ -16,7 +16,7 @@ import groovy.transform.Field
 @Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
-    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 
         capability "Actuator"
         capability "Color Temperature"

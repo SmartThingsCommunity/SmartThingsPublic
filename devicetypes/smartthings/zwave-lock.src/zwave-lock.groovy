@@ -138,7 +138,7 @@ def updated() {
 			if (!state.fw) {
 				cmds << zwave.versionV1.versionGet().format()
 			}
-			hubAction = response(delayBetween(cmds, 4200))
+			hubAction = response(delayBetween(cmds, 30*1000))
 		}
 	} catch (e) {
 		log.warn "updated() threw $e"
@@ -406,6 +406,7 @@ private def handleAccessAlarmReport(cmd) {
 			} else {
 				// locked by pressing the Schlage button
 				map.descriptionText = "Locked manually"
+				map.data = [ method: "keypad" ]
 			}
 			break
 		case 6: // Unlocked with keypad
