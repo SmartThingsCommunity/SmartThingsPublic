@@ -39,7 +39,9 @@ definition(
     category: "SmartThings Internal",
     iconUrl: "https://ifttt.com/images/channels/ifttt.png",
     iconX2Url: "https://ifttt.com/images/channels/ifttt_med.png",
-    oauth: [displayName: "IFTTT", displayLink: "https://ifttt.com"]
+    oauth: [displayName: "IFTTT", displayLink: "https://ifttt.com"],
+    usesThirdPartyAuthentication: true,
+    pausable: false
 )
 
 preferences {
