@@ -6,6 +6,7 @@ Works with:
 
 * [OSRAM Lightify LED On/Off/Dim](https://shop.smartthings.com/#!/products/osram-led-smart-bulb-on-off-dim)
 * [WeMo LED Bulb](https://support.smartthings.com/hc/en-us/articles/204259040-Belkin-WeMo-LED-Bulb-F7C033-)
+* [Leviton Lumina Dimming Wall Switch](https://home.leviton.com/products/lumina-rf-decora-0-10v-wall-switch-dimmer/)
 
 ## Table of contents
 
