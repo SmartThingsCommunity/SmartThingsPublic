@@ -259,14 +259,14 @@ def processUsage(resp, data) {
             }
         }
         if (state.hasMains && main != 0.0) {
-        	updateChildDevice("__NET__","Main",main)
+        	updateChildDevice("__NET__","Net", main)
         }
         else {
-        	updateChildDevice("__NET__", "Main", consumption + production)
+        	updateChildDevice("__NET__", "Net", consumption + production)
         }
         if (state.hasProduction) {
-            updateChildDevice("__PRODUCTION__", "Solar", production)
-            updateChildDevice("__CONSUMPTION__", "Usage", consumption)
+            updateChildDevice("__PRODUCTION__", "Production", production)
+            updateChildDevice("__CONSUMPTION__", "Consumption", consumption)
         }
     }
 }
@@ -291,10 +291,10 @@ def processDevices(resp, data) {
             	state.hasMains = true
             }
         }
-        createChildDevice("__NET__", "Main")
+        createChildDevice("__NET__", "Net")
         if (state.hasProduction) {
-            createChildDevice("__PRODUCTION__", "Solar")
-            createChildDevice("__CONSUMPTION__", "Usage")
+            createChildDevice("__PRODUCTION__", "Production")
+            createChildDevice("__CONSUMPTION__", "Consumption")
         }
     }
 }
