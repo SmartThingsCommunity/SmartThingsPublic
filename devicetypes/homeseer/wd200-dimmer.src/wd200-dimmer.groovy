@@ -20,6 +20,7 @@
  *
  *	Changelog:
  *
+ *	1.0.dd.3  Corrected bit-wise blink off operator (darwin@darwinsden.com)
  *	1.0.dd.2  Added button number labels to virtual buttons and reduced size (darwin@darwinsden.com)
  *	1.0.dd.1  Added option to set all LED's simultaneously via LED=8 (darwin@darwinsden.com)
  *	1.0	      Initial Version
@@ -462,22 +463,22 @@ def setStatusLed (led,color,blink) {
                 	blinkval = blinkval & 0xFE
                     break
                 case 2:
-                	blinkval = blinkval | 0xFD
+                	blinkval = blinkval & 0xFD
                     break
                 case 3:
-                	blinkval = blinkval | 0xFB
+                	blinkval = blinkval & 0xFB
                     break
                 case 4:
-                	blinkval = blinkval | 0xF7
+                	blinkval = blinkval & 0xF7
                     break
                 case 5:
-                	blinkval = blinkval | 0xEF
+                	blinkval = blinkval & 0xEF
                     break
                 case 6:
-                	blinkval = blinkval | 0xDF
+                	blinkval = blinkval & 0xDF
                     break
                 case 7:
-                	blinkval = blinkval | 0xBF
+                	blinkval = blinkval & 0xBF
                     break
                  case 8:
                 	blinkval = 0
