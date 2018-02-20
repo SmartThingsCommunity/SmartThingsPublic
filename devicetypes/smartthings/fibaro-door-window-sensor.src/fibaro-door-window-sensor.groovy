@@ -34,7 +34,7 @@
  * @return none
  */
  metadata {
-	definition (name: "Fibaro Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {      
+	definition (name: "Fibaro Door/Window Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 		//capability 	"Temperature Measurement"  //UNCOMMENT ME IF TEMP INSTALLED      
 		capability 	"Contact Sensor"
 		capability 	"Sensor"
