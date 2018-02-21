@@ -30,9 +30,9 @@ metadata {
 		status "test": "command: 7105, payload: 0C FF"
 		status "battery 100%": "command: 8003, payload: 64"
 		status "battery 5%": "command: 8003, payload: 05"
-		status "smokeNotification" : "command: 7105, payload: 00 00 00 FF 01 02 80 4E"
-		status "smokeClearNotification" : "command: 7105, payload: 00 00 00 FF 01 00 80 05"
-		status "smokeTestNotification" : "command: 7105, payload: 00 00 00 FF 01 03 80 05"
+		status "smokeNotification": "command: 7105, payload: 00 00 00 FF 01 02 80 4E"
+		status "smokeClearNotification": "command: 7105, payload: 00 00 00 FF 01 00 80 05"
+		status "smokeTestNotification": "command: 7105, payload: 00 00 00 FF 01 03 80 05"
 	}
 
 	tiles (scale: 2){
@@ -216,11 +216,11 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		switch (cmd.event) {
 			case 0x00:
 			case 0xFE:
-				createSmokeEvents("smokeClear",  results)
+				createSmokeEvents("smokeClear", results)
 				break
 			case 0x01:
 			case 0x02:
-				createSmokeEvents("smoke",  results)
+				createSmokeEvents("smoke", results)
 				break
 			case 0x03:
 				createSmokeEvents("tested", results)
