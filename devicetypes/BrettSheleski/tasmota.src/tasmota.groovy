@@ -15,28 +15,13 @@ metadata {
 		main "refresh"
 		details(["refresh"])
 	}
-
-	preferences {
-		section("Tasmota Host") {
-            input(name: "ipAddress", type: "string", title: "IP Address", description: "IP Address of Tasmota Device", displayDuringSetup: true, required: true)
-		}
-
-		section("Authentication") {
-			input(name: "username", type: "string", title: "Username", description: "Username", displayDuringSetup: false, required: false)
-			input(name: "password", type: "password", title: "Password (sent cleartext)", description: "Caution: password is sent cleartext", displayDuringSetup: false, required: false)
-		}
-	}
 }
 
 def parse(String description) {
 	log.debug description;
 }
 
-def initializeChild(Map options){
-    state.ipAddress = options.ipAddress;
-    state.username = options.username;
-    state.password = options.password;
-
+def initializeChild(){
     reload();
 }
 
@@ -70,6 +55,9 @@ def spawnChildDevices(){
         def parentId = parent.getId();
 
         def moduleId = state.module.split()[0].toInteger();
+        def appLabel = parent.getAppLabel();
+
+        log.debug "PARENT LABEL : $appLabel"
 
         switch (moduleId){
 
@@ -91,38 +79,38 @@ def spawnChildDevices(){
             case 26: // Sonoff B1
             case 28: // Sonoff T1 1CH
             case 41: // Sonoff S31
-                devices[parentId + '-Power'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch", options : [powerChannel : 1]]
+                devices[parentId + '-Power'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch", options : [powerChannel : 1]]
                 break;
 
             case 5: // Sonoff Dual
             case 19: // Sonoff Dev
             case 39: // Sonoff Dual R2
             case 29: // Sonoff T1 2CH
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 1", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 2", options : [powerChannel : 2]]
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 1", options : [powerChannel : 1]]
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 2", options : [powerChannel : 2]]
                 break;
             
             case 7: // Sonoff 4CH
             case 13: // 4 Channel
             
             case 23: // Sonoff 4CH Pro
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 1", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 2", options : [powerChannel : 2]]
-                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 3", options : [powerChannel : 3]]
-                devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 4", options : [powerChannel : 4]]
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 1", options : [powerChannel : 1]]
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 2", options : [powerChannel : 2]]
+                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 3", options : [powerChannel : 3]]
+                devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 4", options : [powerChannel : 4]]
                 break;
 
             case 30: // Sonoff T1 3CH
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 1", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 2", options : [powerChannel : 2]]
-                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${parent.label} Switch - Channel 3", options : [powerChannel : 3]]
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 1", options : [powerChannel : 1]]
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 2", options : [powerChannel : 2]]
+                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${appLabel} Switch - Channel 3", options : [powerChannel : 3]]
                 break;
 
             case 25: // Sonoff Bridge
 
                 for ( i in 1..16 )
                 {
-                    devices[parentId + "-RF-Key${i}"] = [namespace : "BrettSheleski", type: "Tasmota-RF-Bridge Button", label : "${parent.label} - Button ${i}", options : [keyNumber : i]]
+                    devices[parentId + "-RF-Key${i}"] = [namespace : "BrettSheleski", type: "Tasmota-RF-Bridge Button", label : "${appLabel} - Button ${i}", options : [keyNumber : i]]
                 }
                 break;
 
@@ -161,15 +149,14 @@ def spawnChildDevices(){
                 log.debug "CHILD OPTIONS: ${deviceConfig}"
 
 
+                it.initializeChild(deviceConfig["options"])
+
                 // the device is already created previously.
                 // remove it from the Map so we dont create a duplicate
                 devices.remove(it.deviceNetworkId);
-
-                it.initializeChild(deviceConfig["options"])
             }
             else{
                 // there's a child device with an unknown ID, delete it
-
                 deleteChildDevice(it.deviceNetworkId);
             }
         }
@@ -244,9 +231,16 @@ private String convertPortToHex(port) {
 }
 
 def createCommand(String command, payload, callback){
-    log.debug "createCommandAction(${command}:${payload}) to device at ${state.ipAddress}:80"
 
-	if (!state.ipAddress) {
+    def hostInfo = parent.getHostInfo();
+
+    def ipAddress = hostInfo.ipAddress;
+    def username = hostInfo.username;
+    def password = hostInfo.password;
+
+    log.debug "createCommandAction(${command}:${payload}) to device at ${ipAddress}:80"
+
+	if (!ipAddress) {
 		log.warn "aborting. ip address of device not set"
 		return null;
 	}
@@ -259,10 +253,10 @@ def createCommand(String command, payload, callback){
 		path += "?cmnd=${command}"
 	}
 
-	if (state.username){
-		path += "&user=${state.username}"
-		if (state.password){
-			path += "&password=${state.password}"
+	if (username){
+		path += "&user=${username}"
+		if (password){
+			path += "&password=${password}"
 		}
 	}
 
@@ -272,7 +266,7 @@ def createCommand(String command, payload, callback){
         method: "GET",
         path: path,
         headers: [
-            HOST: "${state.ipAddress}:80"
+            HOST: "${ipAddress}:80"
         ]
     ]
 

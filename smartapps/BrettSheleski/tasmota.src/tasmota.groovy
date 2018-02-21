@@ -6,8 +6,12 @@ definition(
     description: "SmartApp for the Sonoff-Tasmota firmware.",
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-BigButtonsAndSwitches.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-BigButtonsAndSwitches@2x.png"
-)
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-BigButtonsAndSwitches@2x.png",
+    singleInstance : false
+){
+    appSetting "username"
+    appSetting "password"
+}
 
 preferences {
 	page("mainPage", "Main Configuration"){
@@ -18,14 +22,7 @@ preferences {
 		section("Sonoff Host") {
 			input "ipAddress", "string", title: "IP Address", required: true
 		}
-
-		section("Authentication") {
-			input(name: "username", type: "string", title: "Username", description: "Username", displayDuringSetup: true, required: false)
-			input(name: "password", type: "password", title: "Password", description: "Password", displayDuringSetup: true, required: false)
-		}
-
 	}
-    
 }
 
 mappings {
@@ -69,7 +66,7 @@ def postStatus(){
 def initialize(){
     def mainDevice = getMainDevice();
 
-    mainDevice.initializeChild([ipAddress : ipAddress, username: username, password: password]);
+    mainDevice.initializeChild();
 }
 
 
@@ -90,14 +87,30 @@ def getMainDevice(){
     else{
         def deviceMap = [completedSetup: true]
 
-        deviceMap['name'] = app.label + " (Master)";
+        log.debug "CREATING child device for ${settings.label} (Master)"
+
+        deviceMap['name'] = settings.label + " (Master)";
         deviceMap['label'] = deviceMap['name'];
-        deviceMap['isComponent'] = true; // prevent device from showing in device list
-        deviceMap['componentName'] = 'MasterDevice'
-        deviceMap['componentLabel'] = 'Master Device'
+        //deviceMap['isComponent'] = true; // prevent device from showing in device list
+        //deviceMap['componentName'] = 'MasterDevice'
+        //deviceMap['componentLabel'] = 'Master Device'
 
         childDevice = addChildDevice(namespace, deviceName, deviceId, theHubId, deviceMap)
     }
 
     return childDevice;
+}
+
+def getHostInfo(){
+    return [ipAddress : settings.ipAddress, username : appSettings.username, password : appSettings.password]
+}
+
+def getAppLabel(){
+    def myLabel = settings.label;
+
+    if (myLabel == null){
+        myLabel = app.label;
+    }
+
+    return myLabel;
 }

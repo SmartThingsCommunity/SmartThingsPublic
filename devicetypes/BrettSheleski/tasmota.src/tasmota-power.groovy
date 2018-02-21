@@ -30,6 +30,8 @@ metadata {
 
 def initializeChild(Map options){
 	log.debug "OPTIONS: $options"
+
+	sendEvent(name : "powerChannel", value: options["powerChannel"]);
 }
 
 def on(){
@@ -47,17 +49,26 @@ def push(){
 def setPower(power){
 	log.debug "Setting power to: $power"
 
-	def command = parent.createCommand("Power${powerChannel}", power, "setPowerCallback");;
+	def channel = device.latestValue("powerChannel")
+	def commandName = "Power$channel";
+	def payload = power;
+
+	log.debug "COMMAND: $commandName ($payload)"
+
+	def command = parent.createCommand(commandName, payload, "setPowerCallback");;
 
     sendHubCommand(command);
 }
 
 def setPowerCallback(physicalgraph.device.HubResponse response){
-	log.debug "Finished Setting power, JSON: ${response.json}"
+	
+	def channel = device.latestValue("powerChannel")
+	
+	log.debug "Finished Setting power (channel: $channel), JSON: ${response.json}"
 
-    def on = response.json."POWER${powerChannel}" == "ON";
+    def on = response.json."POWER${channel}" == "ON";
 
-	if (powerChannel == 1){
+	if ("$channel" == "1"){
 		// if this is channel 1, there may not be any other channels.
 		// In this case the property of the JSON response is just POWER (not POWER1)
 		on = on || response.json.POWER == "ON";
@@ -74,6 +85,8 @@ def updateStatus(status){
 	// EG: 7 in binary is 0111.  In this case channels 1, 2, and 3 are ON and channel 4 is OFF
 
 	def powerMask = 0b0001;
+
+	def powerChannel = device.latestValue("powerChannel");
 
 	powerMask = powerMask << ("$powerChannel".toInteger() - 1); // shift the bits over 
 
