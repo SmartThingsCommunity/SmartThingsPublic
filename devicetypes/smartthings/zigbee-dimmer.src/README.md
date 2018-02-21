@@ -6,7 +6,7 @@ Works with:
 
 * [OSRAM Lightify LED On/Off/Dim](https://shop.smartthings.com/#!/products/osram-led-smart-bulb-on-off-dim)
 * [WeMo LED Bulb](https://support.smartthings.com/hc/en-us/articles/204259040-Belkin-WeMo-LED-Bulb-F7C033-)
-* [Aurora] (http://auroralighting.com/au/ProductDetail/AU-A1ZB120)
+* [Aurora] (https://auroralighting.com/au/ProductDetail/AU-A1ZB120)
 
 ## Table of contents
 
