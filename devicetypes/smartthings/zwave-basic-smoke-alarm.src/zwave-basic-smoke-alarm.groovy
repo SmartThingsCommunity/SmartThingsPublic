@@ -20,6 +20,8 @@ metadata {
 
 		fingerprint deviceId: "0xA100", inClusters: "0x20,0x80,0x70,0x85,0x71,0x72,0x86"
 		fingerprint mfr:"0138", prod:"0001", model:"0001", deviceJoinName: "First Alert Smoke Detector"
+		//zw:S type:0701 mfr:026F prod:0001 model:0001 ver:1.07 zwv:4.24 lib:03 cc:5E,86,72,5A,73,80,71,85,59,84 role:06 ff:8C01 ui:8C01
+		fingerprint mfr: "026F ", prod: "0001", model: "0001", deviceJoinName: "FireAngel ZST-630 Smoke Detector/Alarm"
 	}
 
 	simulator {
@@ -28,6 +30,9 @@ metadata {
 		status "test": "command: 7105, payload: 0C FF"
 		status "battery 100%": "command: 8003, payload: 64"
 		status "battery 5%": "command: 8003, payload: 05"
+		status "smokeNotification" : "command: 7105, payload: 00 00 00 FF 01 02 80 4E"
+		status "smokeClearNotification" : "command: 7105, payload: 00 00 00 FF 01 00 80 05"
+		status "smokeTestNotification" : "command: 7105, payload: 00 00 00 FF 01 03 80 05"
 	}
 
 	tiles (scale: 2){
@@ -61,12 +66,21 @@ def updated() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
+def getCommandClassVersions() {
+	[
+			0x71: 3, // Alarm
+			0x72: 1, // Manufacturer Specific
+			0x80: 1, // Battery
+			0x84: 1, // Wake Up
+	]
+}
+
 def parse(String description) {
 	def results = []
 	if (description.startsWith("Err")) {
 	    results << createEvent(descriptionText:description, displayed:true)
 	} else {
-		def cmd = zwave.parse(description, [ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			zwaveEvent(cmd, results)
 		}
@@ -178,7 +192,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, results
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd, results) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	state.sec = 1
 	log.debug "encapsulated: ${encapsulatedCommand}"
 	if (encapsulatedCommand) {
@@ -194,4 +208,23 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, results) {
 	event.linkText = device.label ?: device.name
 	event.descriptionText = "$event.linkText: $cmd"
 	results << createEvent(event)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd, results)
+{
+	if (cmd.notificationType == 0x01) {  // Smoke Alarm
+		switch (cmd.event) {
+			case 0x00:
+			case 0xFE:
+				createSmokeEvents("smokeClear",  results)
+				break
+			case 0x01:
+			case 0x02:
+				createSmokeEvents("smoke",  results)
+				break
+			case 0x03:
+				createSmokeEvents("tested", results)
+				break
+		}
+	}
 }
