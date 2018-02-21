@@ -89,7 +89,7 @@ def getMainDevice(){
 
         log.debug "CREATING child device for ${settings.label} (Master)"
 
-        deviceMap['name'] = settings.label + " (Master)";
+        deviceMap['name'] = settings.label;
         deviceMap['label'] = deviceMap['name'];
         //deviceMap['isComponent'] = true; // prevent device from showing in device list
         //deviceMap['componentName'] = 'MasterDevice'
