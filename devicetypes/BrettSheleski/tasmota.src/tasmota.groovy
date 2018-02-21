@@ -97,6 +97,8 @@ def reload(){
 
     sendCommand("module", null, getModuleCompleted);
     sendCommand("gpio", null, getGpioCompleted);
+
+    refresh();
 }
 
 def getModuleCompleted(physicalgraph.device.HubResponse response){
