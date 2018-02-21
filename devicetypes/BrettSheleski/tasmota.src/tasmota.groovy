@@ -4,16 +4,82 @@ metadata {
 		capability "Refresh"
 
         command "reload"
+
+        attribute "module", "string"
+        attribute "friendlyName", "string"
+        attribute "version", "string"
+        attribute "topic", "string"
+        attribute "groupTopic", "string"
+        attribute "ssid1", "string"
+        attribute "ssid2", "string"
+        attribute "hostname", "string"
+        attribute "macAddress", "string"
+        attribute "upTime", "string"
+        attribute "vcc", "number"
+        attribute "apSsid", "string"
+        attribute "apMac", "string"
 	}
 
 	// UI tile definitions
 	tiles(scale: 2) {
 		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label:'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+
+        valueTile("module", "module", width: 3, height: 1) {
+			state "module", label: 'Module: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("friendlyName", "friendlyName", width: 3, height: 1) {
+			state "friendlyName", label: "Friendly Name: ${currentValue}", backgroundColor: "#ffffff"
+		}
+
+        valueTile("version", "version", width: 3, height: 1) {
+			state "version", label: 'Tasmota Version: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("topic", "topic", width: 3, height: 1) {
+			state "topic", label: 'Topic: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("groupTopic", "groupTopic", width: 3, height: 1) {
+			state "groupTopic", label: "Group Topic: ${currentValue}", backgroundColor: "#ffffff"
+		}
+
+        valueTile("ssid1", "ssid1", width: 3, height: 1) {
+			state "ssid1", label: 'SSID #1: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("ssid2", "ssid2", width: 3, height: 1) {
+			state "ssid2", label: 'SSID #2: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("hostname", "hostname", width: 3, height: 1) {
+			state "hostname", label: 'Hostname: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("macAddress", "macAddress", width: 3, height: 1) {
+			state "macAddress", label: 'MAC Address: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("upTime", "upTime", width: 3, height: 1) {
+			state "upTime", label: "Up Time: ${currentValue}", backgroundColor: "#ffffff"
+		}
+
+        valueTile("vcc", "vcc", width: 3, height: 1) {
+			state "vcc", label: 'VCC: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("apSsid", "apSsid", width: 3, height: 1) {
+			state "apSsid", label: 'AP SSID: ${currentValue}', backgroundColor: "#ffffff"
+		}
+
+        valueTile("apMac", "apMac", width: 3, height: 1) {
+			state "apMac", label: 'AP MAC: ${currentValue}', backgroundColor: "#ffffff"
 		}
 
 		main "refresh"
-		details(["refresh"])
+		details(["refresh", "module", "friendlyName", "version", "topic", "groupTopic", "ssid1", "ssid2", "hostname", "macAddress", "upTime", "vcc", "apSsid", "apMac"])
 	}
 }
 
@@ -186,12 +252,12 @@ def spawnChildDevices(){
 
 def poll() {
 	log.debug "POLL"
-	sendCommand("Status", null, refreshCallback)
+	sendCommand("Status", "0", refreshCallback)
 }
 
 def refresh() {
 	log.debug "REFRESH"
-	sendCommand("Status", null, refreshCallback)
+	sendCommand("Status", "0", refreshCallback)
 }
 
 def updateStatus(status){
@@ -202,6 +268,21 @@ def refreshCallback(physicalgraph.device.HubResponse response){
     def jsobj = response?.json;
 
     log.debug "JSON: ${jsobj}";
+
+
+    sendEvent(name : "module", value : response?.json?.Status?.Module)
+    sendEvent(name : "friendlyName", value : response?.json?.Status?.FriendlyName)
+    sendEvent(name : "version", value : response?.json?.StatusFWR?.Version)
+    sendEvent(name : "topic", value : response?.json?.Status?.Topic)
+    sendEvent(name : "groupTopic", value : response?.json?.Status?.GroupTopic)
+    sendEvent(name : "ssid1", value : response?.json?.StatusLOG?.SSId1)
+    sendEvent(name : "ssid2", value : response?.json?.StatusLOG?.SSId2)
+    sendEvent(name : "hostname", value : response?.json?.StatusNET?.Hostname)
+    sendEvent(name : "macAddress", value : response?.json?.StatusNET?.Mac)
+    sendEvent(name : "upTime", value : response?.json?.StatusSTS?.UPtime)
+    sendEvent(name : "vcc", value : response?.json?.StatusSTS?.Vcc)
+    sendEvent(name : "apSsid", value : response?.json?.StatusSTS?.Wifi?.SSId)
+    sendEvent(name : "apMac", value : response?.json?.StatusSTS?.Wifi?.APMac)
 
     // need to send jsobj to all child devices.
 
