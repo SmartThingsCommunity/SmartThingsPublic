@@ -1,23 +1,21 @@
 /**
- *  Copyright 2015 SmartThings
+ *	Copyright 2015 SmartThings
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *	in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ *	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *	for the specific language governing permissions and limitations under the License.
  *
  */
 metadata {
 	definition (name: "Z-Wave Controller", namespace: "smartthings", author: "SmartThings") {
-
-		command "on"
-		command "off"
-
 		fingerprint deviceId: "0x02"
+		fingerprint mfr:"001A", prod:"574D", model:"0000", deviceJoinName: "Eaton RF 5-Scene Keypad"
+		fingerprint mfr:"001A", prod:"4243", model:"0000", deviceJoinName: "Eaton RF Anyplace Switch"
 	}
 
 	simulator {
@@ -28,15 +26,9 @@ metadata {
 		standardTile("state", "device.state", width: 2, height: 2) {
 			state 'connected', icon: "st.unknown.zwave.static-controller", backgroundColor:"#ffffff"
 		}
-		standardTile("basicOn", "device.switch", inactiveLabel:false, decoration:"flat") {
-			state "on", label:"on", action:"on", icon:"st.switches.switch.on"
-		}
-		standardTile("basicOff", "device.switch", inactiveLabel: false, decoration:"flat") {
-			state "off", label:"off", action:"off", icon:"st.switches.switch.off"
-		}
 
 		main "state"
-		details(["state", "basicOn", "basicOff"])
+		details(["state"])
 	}
 }
 
@@ -52,7 +44,7 @@ def parse(String description) {
 		if (description.startsWith("Err 106") && !state.sec) {
 			state.sec = 0
 		}
-	    result = createEvent(descriptionText:description, displayed:true)
+		result = createEvent(descriptionText:description, displayed:true)
 	} else {
 		def cmd = zwave.parse(description)
 		if (cmd) {
@@ -80,28 +72,4 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(isStateChange: true, "$device.displayName: $cmd")
-}
-
-def on() {
-	command(zwave.basicV1.basicSet(value: 0xFF))
-}
-
-def off() {
-	command(zwave.basicV1.basicSet(value: 0x00))
-}
-
-private command(physicalgraph.zwave.Command cmd) {
-	if (deviceIsSecure) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
-		cmd.format()
-	}
-}
-
-private getDeviceIsSecure() {
-	if (zwaveInfo && zwaveInfo.zw) {
-		return zwaveInfo.zw.endsWith("s")
-	} else {
-		return state.sec ? true : false
-	}
 }
