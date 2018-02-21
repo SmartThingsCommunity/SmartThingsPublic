@@ -16,7 +16,7 @@ Works with:
 ## Capabilities
 
 * **Actuator** - represents device has commands
-* **Button** - represents a device with a button
+* **Switch** - represents a device with a switch
 * **Sensor** - detects sensor events
 
 ## Installation
@@ -29,12 +29,12 @@ Works with:
 
 ## Supported Functionality
 
-* SmartThings support Eaton Anyplace Switch button functionality.
+* SmartThings support Eaton Anyplace Switch switch functionality.
 This device type handler assumes primary device's function is handled by SmartThings using automations and smartapps.
 
 Eaton Anyplace Switch can be associated directly to other z-wave device as described in manufacturer's manual.
 If device associated to Eaton Anyplace Switch was not part of SmartThings network, it should now appear on device list.
-Eaton Anyplace Switch queries SmartThings Hub to check its state. SmartThings store device's state to not entirely disable this functionality. Eaton Accessory Switch may be out of sync with associated devices - in this case to actually change their state, user will have to press Eaton Accessory Switch twice.
+Eaton Anyplace Switch queries SmartThings Hub to check its state. In order to always maintain synch with other associated devices, automation that updates Eaton Anyplace Switch state based on associated devices' switch state is required.
 
 ## Deinstallation
 * Start device exlusion using SmartThings app.
