@@ -4,7 +4,7 @@ Cloud Execution
 
 Works with: 
 
-* FireAngel ZHT-630 Heat Detector/Alarm
+* FireAngel Thermistek ZHT-630 Heat Alarm/Detector
 
 ## Table of contents
 
@@ -22,21 +22,21 @@ Works with:
 
 ## Device Health
 
-FireAngel ZHT-630 Heat Detector/Alarm is a Z-wave sleepy device and checks in every 1 hour.
+FireAngel Thermistek ZHT-630 Heat Alarm/Detector is a Z-wave sleepy device and checks in every 1 hour.
 Device-Watch allows 2 check-in misses from device plus some lag time. So Check-in interval = (2*60 + 2)mins = 122 mins.
 
 * __122min__ checkInterval
 
 ## Battery Specification
     
-FireAngel ZHT-630 Heat Detector/Alarm One CR2 battery required
+FireAngel Thermistek ZHT-630 Heat Alarm/Detector One CR2 battery required
 
 ## Troubleshooting
 
 If the device doesn't pair when trying from the SmartThings mobile app, it is possible that the device is out of range.
 Pairing needs to be tried again by placing the device closer to the hub.
 Instructions related to pairing, resetting and removing the device from SmartThings can be found in the following link:
-* [FireAngel ZHT-630 Heat Detector/Alarm Troubleshooting Tips]
+* [FireAngel Thermistek ZHT-630 Heat Alarm/Detector Troubleshooting Tips]
 ### To connect the FireAngel ZHT-630 Heat Detector/Alarm with the SmartThings Hub
 ```
 Insert the batterry into Z-Wave module (provided separately).
@@ -54,8 +54,8 @@ Tap the device to rename it and tap Done
 When finished, tap Save
 Tap Ok to confirm
 ```
-### To exclude the FireAngel ZHT-630 Heat Detector/Alarm
-If the FireAngel ZHT-630 Heat Detector/Alarm was not discovered, you may need to reset, or “exclude,” the device before it can successfully connect with the SmartThings Hub. To do this in the SmartThings mobile app:
+### To exclude the FireAngel Thermistek ZHT-630 Heat Alarm/Detector
+If the FireAngel Thermistek ZHT-630 Heat Alarm/Detector was not discovered, you may need to reset, or “exclude,” the device before it can successfully connect with the SmartThings Hub. To do this in the SmartThings mobile app:
 ```
 Tap the menu (Android) / More (iOS) 
 Tap the Hub
@@ -68,7 +68,7 @@ After the app indicates that the device was successfully removed from SmartThing
 ```
 
 ### To remove the  FireAngel ZHT-630 Heat Detector/Alarm from SmartThings
-If the FireAngel FireAngel ZHT-630 Heat Detector/Alarm is connected but not operating as normal, you may need to remove the device and reconnect it with the SmartThings Hub.
+If the FireAngel Thermistek ZHT-630 Heat Alarm/Detector is connected but not operating as normal, you may need to remove the device and reconnect it with the SmartThings Hub.
 ```
 To remove the device via the SmartThings app:
 
