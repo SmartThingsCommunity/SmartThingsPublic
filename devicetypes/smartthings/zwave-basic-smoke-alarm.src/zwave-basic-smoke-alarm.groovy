@@ -33,6 +33,8 @@ metadata {
 		status "smokeNotification": "command: 7105, payload: 00 00 00 FF 01 02 80 4E"
 		status "smokeClearNotification": "command: 7105, payload: 00 00 00 FF 01 00 80 05"
 		status "smokeTestNotification": "command: 7105, payload: 00 00 00 FF 01 03 80 05"
+		status "setkManufacturerFireAngel": "command: 7205, payload: 02 6F 00 01 00 01"
+		status "setManufacturerOther": "command: 7205, payload: 00 00 00 00 00 00"
 	}
 
 	tiles (scale: 2){
@@ -68,11 +70,21 @@ def updated() {
 
 def getCommandClassVersions() {
 	[
-			0x71: 3, // Alarm
+			0x71: alarmVersion, // Alarm
 			0x72: 1, // Manufacturer Specific
 			0x80: 1, // Battery
 			0x84: 1, // Wake Up
 	]
+}
+
+def getAlarmVersion() {
+	def alarmVersion = null
+	switch (getDataValue("MSR")) {
+		case "026F-0001-0001": alarmVersion = 3 //FireAngel ZST-630
+			break
+		default: alarmVersion = 2
+	}
+	return alarmVersion
 }
 
 def parse(String description) {
@@ -162,12 +174,14 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd, results) {
 	if (cmd.sensorType == 1) {
 		createSmokeEvents(cmd.sensorState ? "smoke" : "smokeClear", results)
-	}
-	
+	}	
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
+	if (getDataValue("MSR") == null) {
+		results << response(zwave.manufacturerSpecificV1.manufacturerSpecificGet().format())
+	}    
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
 		results << response([
 				zwave.batteryV1.batteryGet().format(),
@@ -227,4 +241,17 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 		}
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv1.ManufacturerSpecificReport cmd, results) {
+	log.debug "manufacturerId:   $cmd.manufacturerId"
+	log.debug "productId:        $cmd.productId"
+	log.debug "productTypeId:    $cmd.productTypeId"
+	log.debug "manufacturerName: $cmd.manufacturerName"
+	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
+	updateDataValue("MSR", msr)
+	if (cmd.manufacturerName) {
+		updateDataValue("manufacturer", cmd.manufacturerName)
+	}
+	results << createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
