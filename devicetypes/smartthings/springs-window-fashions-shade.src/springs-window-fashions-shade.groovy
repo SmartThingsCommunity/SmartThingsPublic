@@ -105,11 +105,11 @@ def parse(String description) {
 def getCheckInterval() {
     // These are battery-powered devices, and it's not very critical
     // to know whether they're online or not – 12 hrs
-    12 * 60 * 60
+    4 * 60 * 60
 }
 
 def installed() {
-    sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+    sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
     response(refresh())
 }
 
