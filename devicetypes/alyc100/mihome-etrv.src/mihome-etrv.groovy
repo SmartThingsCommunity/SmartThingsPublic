@@ -14,7 +14,8 @@
  *
  *
  *	VERSION HISTORY
- *  23.11.2016:	2.0 - Remove BETA status.
+ *  21.02.2018	2.1	- re run upto 5 times when set temp is not 200
+ *	23.11.2016:	2.0 - Remove BETA status.
  * 
  *	07.11.2016: 2.0 BETA Release 1.1 - Allow icon to be changed.
  *	07.11.2016: 2.0 BETA Release 1 - Version number update to match Smartapp.
@@ -39,6 +40,7 @@ metadata {
         capability "Thermostat Mode"
 		capability "Thermostat Heating Setpoint"
 		capability "Switch"
+        capability "Battery"
         
         command "heatingSetpointUp"
 		command "heatingSetpointDown"
@@ -65,9 +67,9 @@ metadata {
 					[value: 29, color: "#bc2323"]
 				]
 			}
-           
-            tileAttribute ("batteryVoltage", key: "SECONDARY_CONTROL") {
-				attributeState "batteryVoltage", label:'Battery Voltage Is ${currentValue}'
+            
+            tileAttribute ("lastupdatetemp", key: "SECONDARY_CONTROL") {
+				attributeState "default", label:'Temperature last reported ${currentValue}'
             }
 		}
         
@@ -124,9 +126,16 @@ metadata {
          valueTile("boost", "device.boostLabel", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("default", label:'${currentValue}', action:"emergencyHeat")
 		}
-        
+        valueTile("battery", "device.batteryVoltage", width: 2, height: 2) {
+			state "default", label:'Battery Voltage Is ${currentValue}', unit:"V",
+            backgroundColors:[
+               					[value: 3, color: "#44b621"],
+								[value: 2.8, color: "#f1d801"],
+								[value: 2.78, color: "#bc2323"],
+         		           ]
+        }
         main(["thermostat_small"])
-		details(["thermostat", "heatingSetpoint", "heatSliderControl", "boost", "boostSliderControl", "switch", "refresh"])
+		details(["thermostat", "heatingSetpoint", "heatSliderControl", "boost", "boostSliderControl", "switch", "refresh", "battery"])
 	}
 }
 
@@ -151,6 +160,7 @@ def parse(String description) {
 
 // handle commands
 def setHeatingSetpoint(temp) {
+	state.counter = state.counter //mc
 	log.debug "Executing 'setHeatingSetpoint with temp $temp'"
 	def latestThermostatMode = device.latestState('thermostatMode')
     
@@ -162,14 +172,28 @@ def setHeatingSetpoint(temp) {
 	}
     sendEvent(name: "boostSwitch", value: "off", displayed: false)
     def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: temp]).toString()))
-	if (resp.status != 200) {
-		log.error("Unexpected result in set temp poll(): [${resp.status}] ${resp.data}")
-        log.debug "running set temp again"
+	log.debug ("[${resp.status}] ${resp.data}")
+    if (resp.status != 200) {
+		log.error("Unexpected result in seting temp: [${resp.status}] ${resp.data}")
+// mc re-run upto 5 times
+        if (state.counter == null || state.counter >= 5) {
+			state.counter = 0
+		}
+        	if (state.counter == 5) {
+            	log.error ("error ran 5 times unsucsesfull")
+                state.counter = 0
+                return []
+               }
+		state.counter = state.counter + 1
+        log.error ("running set temp again No. ${state.counter.value} attempt")
         runIn (02, setHeatingSetpoint(temp))
-	}
-    else {
-    	runIn(1, refresh)
-    }    
+		}
+
+   	else {
+    	state.counter = 0
+        log.debug ("counter value ${state.counter.value}")
+        runIn(1, refresh)
+    } 
 }
 
 def setBoostLength(minutes) {
@@ -334,7 +358,7 @@ def poll() {
     sendEvent(name: 'thermostatOperatingState', value: resp.data.data.target_temperature == 12 ? "idle" : "heating")
     sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
     sendEvent(name: "switch", value: resp.data.data.target_temperature == 12 ? "off" : "on")
-    sendEvent(name: "batteryVoltage", value: resp.data.data.voltage == null ? "Not Available" : resp.data.data.voltage + "V")
+    sendEvent(name: "batteryVoltage", value: resp.data.data.voltage == null ? "Not Available" : resp.data.data.voltage)
     sendEvent(name: "boostLabel", value: boostLabel, displayed: false)
     sendEvent(name: "lastupdatetemp", value: resp.data.data.updated_at == null ? "Not Available" : resp.data.data.updated_at)
     
