@@ -39,8 +39,9 @@ metadata {
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "Philips", model: "LWB014", deviceJoinName: "Philips Hue White"
         fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 opal 1000lm", deviceJoinName: "TRADFRI bulb E26 opal 1000lm"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E12 W op/ch 400lm", deviceJoinName: "TRADFRI bulb E12 W op/ch 400lm"
-		//IKEA bulb monitors model as "TRADFRI bulb E17", but in reality the model is "TRADFRI bulb GU10"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E17 W op/ch 400lm", deviceJoinName: "TRADFRI bulb GU10 W op/ch 400lm"
+		//IKEA bulb GU10 monitors model as TRADFRI bulb "E17" or "GU10"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E17 W op/ch 400lm", deviceJoinName: "TRADFRI bulb 400lm"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb GU10 W 400lm", deviceJoinName: "TRADFRI bulb 400lm"
     }
 
     // simulator metadata
