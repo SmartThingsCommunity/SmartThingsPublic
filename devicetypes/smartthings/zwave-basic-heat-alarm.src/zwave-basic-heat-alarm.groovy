@@ -33,7 +33,7 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "heat", type: "lighting", width: 6, height: 4) {
 			tileAttribute("device.heat", key: "PRIMARY_CONTROL") {
-				attributeState("clear", label: "clear", icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff")
+				attributeState("cleared", label: "cleared", icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff")
 				attributeState("detected", label: "HEAT", icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13")
 				attributeState("tested", label: "TEST", icon: "st.alarm.smoke.test", backgroundColor: "#e86d13")
 			}
@@ -153,12 +153,12 @@ def createHeatEvents(name) {
 			result = createEvent(name: "heat", value: "tested", descriptionText: text)
 			break
 		case "heatClear":
-			text = "$device.displayName heat is clear"
-			result = createEvent(name: "heat", value: "clear", descriptionText: text)
+			text = "$device.displayName heat is cleared"
+			result = createEvent(name: "heat", value: "cleared", descriptionText: text)
 			break
 		case "testClear":
 			text = "$device.displayName heat cleared"
-			result = createEvent(name: "heat", value: "clear", descriptionText: text)
+			result = createEvent(name: "heat", value: "cleared", descriptionText: text)
 			break
 	}
 	return result
