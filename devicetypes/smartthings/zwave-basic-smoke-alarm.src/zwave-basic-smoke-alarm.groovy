@@ -21,7 +21,7 @@ metadata {
 		fingerprint deviceId: "0xA100", inClusters: "0x20,0x80,0x70,0x85,0x71,0x72,0x86"
 		fingerprint mfr:"0138", prod:"0001", model:"0001", deviceJoinName: "First Alert Smoke Detector"
 		//zw:S type:0701 mfr:026F prod:0001 model:0001 ver:1.07 zwv:4.24 lib:03 cc:5E,86,72,5A,73,80,71,85,59,84 role:06 ff:8C01 ui:8C01
-		fingerprint mfr: "026F ", prod: "0001", model: "0001", deviceJoinName: "FireAngel Thermoptek ZST-630 Smoke Alarm/Detector"
+		fingerprint mfr: "026F ", prod: "0001", model: "0001", deviceJoinName: "FireAngel Thermoptek Smoke Alarm"
 	}
 
 	simulator {
@@ -33,8 +33,6 @@ metadata {
 		status "smokeNotification": "command: 7105, payload: 00 00 00 FF 01 02 80 4E"
 		status "smokeClearNotification": "command: 7105, payload: 00 00 00 FF 01 00 80 05"
 		status "smokeTestNotification": "command: 7105, payload: 00 00 00 FF 01 03 80 05"
-		status "setkManufacturerFireAngel": "command: 7205, payload: 02 6F 00 01 00 01"
-		status "setManufacturerOther": "command: 7205, payload: 00 00 00 00 00 00"
 	}
 
 	tiles (scale: 2){
@@ -55,37 +53,38 @@ metadata {
 }
 
 def installed() {
-// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
 	def cmds = []
+  //This interval allows us to miss one check-in notification before marking offline
+	cmds << createEvent(name: "checkInterval", value: checkInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	createSmokeEvents("smokeClear", cmds)
 	cmds.each { cmd -> sendEvent(cmd) }
 }
 
+def getCheckInterval() {
+	def checkIntervalValue
+	switch (zwaveInfo.mfr) {
+		case "0138": checkIntervalValue = 2  //First Alert checks in every hour
+			break
+		default: checkIntervalValue = 8
+	}
+	return checkIntervalValue
+}
+
+
 def updated() {
-// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+  //This interval allows us to miss one check-in notification before marking offline
+	sendEvent(name: "checkInterval", value: checkInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def getCommandClassVersions() {
 	[
-			0x71: alarmVersion, // Alarm
+			0x71: 3, // Alarm
 			0x72: 1, // Manufacturer Specific
 			0x80: 1, // Battery
 			0x84: 1, // Wake Up
 	]
 }
 
-def getAlarmVersion() {
-	def alarmVersion = null
-	switch (getDataValue("MSR")) {
-		case "026F-0001-0001": alarmVersion = 3 //FireAngel ZST-630
-			break
-		default: alarmVersion = 2
-	}
-	return alarmVersion
-}
 
 def parse(String description) {
 	def results = []
@@ -107,64 +106,71 @@ def createSmokeEvents(name, results) {
 		case "smoke":
 			text = "$device.displayName smoke was detected!"
 			// these are displayed:false because the composite event is the one we want to see in the app
-			results << createEvent(name: "smoke",          value: "detected", descriptionText: text)
+			results << createEvent(name: "smoke", value: "detected", descriptionText: text)
 			break
 		case "tested":
 			text = "$device.displayName was tested"
-			results << createEvent(name: "smoke",          value: "tested", descriptionText: text)
+			results << createEvent(name: "smoke", value: "tested", descriptionText: text)
 			break
 		case "smokeClear":
 			text = "$device.displayName smoke is clear"
-			results << createEvent(name: "smoke",          value: "clear", descriptionText: text)
+			results << createEvent(name: "smoke", value: "clear", descriptionText: text)
 			name = "clear"
 			break
 		case "testClear":
 			text = "$device.displayName test cleared"
-			results << createEvent(name: "smoke",          value: "clear", descriptionText: text)
+			results << createEvent(name: "smoke", value: "clear", descriptionText: text)
 			name = "clear"
 			break
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
-	if (cmd.zwaveAlarmType == physicalgraph.zwave.commands.alarmv2.AlarmReport.ZWAVE_ALARM_TYPE_SMOKE) {
-		if (cmd.zwaveAlarmEvent == 3) {
-			createSmokeEvents("tested", results)
-		} else {
-			createSmokeEvents((cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "smoke" : "smokeClear", results)
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd, results) {
+	if (cmd.notificationType == 0x01) {  // Smoke Alarm
+		switch (cmd.event) {
+			case 0x00:
+			case 0xFE:
+				createSmokeEvents("smokeClear", results)
+				break
+			case 0x01:
+			case 0x02:
+				createSmokeEvents("smoke", results)
+				break
+			case 0x03:
+				createSmokeEvents("tested", results)
+				break
 		}
-	} else switch(cmd.alarmType) {
+	} else switch (cmd.v1AlarmType) {
 		case 1:
-			createSmokeEvents(cmd.alarmLevel ? "smoke" : "smokeClear", results)
+			createSmokeEvents(cmd.v1AlarmLevel ? "smoke" : "smokeClear", results)
 			break
 		case 12:  // test button pressed
-			createSmokeEvents(cmd.alarmLevel ? "tested" : "testClear", results)
+			createSmokeEvents(cmd.v1AlarmLevel ? "tested" : "testClear", results)
 			break
 		case 13:  // sent every hour -- not sure what this means, just a wake up notification?
-			if (cmd.alarmLevel == 255) {
+			if (cmd.v1AlarmLevel == 255) {
 				results << createEvent(descriptionText: "$device.displayName checked in", isStateChange: false)
 			} else {
-				results << createEvent(descriptionText: "$device.displayName code 13 is $cmd.alarmLevel", isStateChange:true, displayed:false)
+				results << createEvent(descriptionText: "$device.displayName code 13 is $cmd.v1AlarmLevel", isStateChange: true, displayed: false)
 			}
-			
+
 			// Clear smoke in case they pulled batteries and we missed the clear msg
-			if(device.currentValue("smoke") != "clear") {
+			if (device.currentValue("smoke") != "clear") {
 				createSmokeEvents("smokeClear", results)
 			}
-			
+
 			// Check battery if we don't have a recent battery event
-			if (!state.lastbatt || (now() - state.lastbatt) >= 48*60*60*1000) {
+			if (!state.lastbatt || (now() - state.lastbatt) >= 48 * 60 * 60 * 1000) {
 				results << response(zwave.batteryV1.batteryGet())
 			}
 			break
 		default:
-			results << createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
+			results << createEvent(displayed: true, descriptionText: "Alarm $cmd.v1AlarmType ${cmd.v1AlarmLevel == 255 ? 'activated' : cmd.v1AlarmLevel ?: 'deactivated'}".toString())
 			break
 	}
 }
 
 // SensorBinary and SensorAlarm aren't tested, but included to preemptively support future smoke alarms
-//
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd, results) {
 	if (cmd.sensorType == physicalgraph.zwave.commandclasses.SensorBinaryV2.SENSOR_TYPE_SMOKE) {
 		createSmokeEvents(cmd.sensorValue ? "smoke" : "smokeClear", results)
@@ -174,14 +180,12 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd, results) {
 	if (cmd.sensorType == 1) {
 		createSmokeEvents(cmd.sensorState ? "smoke" : "smokeClear", results)
-	}	
+	}
+	
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
-	if (getDataValue("MSR") == null) {
-		results << response(zwave.manufacturerSpecificV1.manufacturerSpecificGet().format())
-	}    
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
 		results << response([
 				zwave.batteryV1.batteryGet().format(),
@@ -222,36 +226,4 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, results) {
 	event.linkText = device.label ?: device.name
 	event.descriptionText = "$event.linkText: $cmd"
 	results << createEvent(event)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd, results)
-{
-	if (cmd.notificationType == 0x01) {  // Smoke Alarm
-		switch (cmd.event) {
-			case 0x00:
-			case 0xFE:
-				createSmokeEvents("smokeClear", results)
-				break
-			case 0x01:
-			case 0x02:
-				createSmokeEvents("smoke", results)
-				break
-			case 0x03:
-				createSmokeEvents("tested", results)
-				break
-		}
-	}
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv1.ManufacturerSpecificReport cmd, results) {
-	log.debug "manufacturerId:   $cmd.manufacturerId"
-	log.debug "productId:        $cmd.productId"
-	log.debug "productTypeId:    $cmd.productTypeId"
-	log.debug "manufacturerName: $cmd.manufacturerName"
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	if (cmd.manufacturerName) {
-		updateDataValue("manufacturer", cmd.manufacturerName)
-	}
-	results << createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
