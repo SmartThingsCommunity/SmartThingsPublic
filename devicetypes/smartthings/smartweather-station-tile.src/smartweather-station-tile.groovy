@@ -158,7 +158,7 @@ def parse(String description) {
 }
 
 def installed() {
-	runPeriodically(3600, poll)
+	runEvery30Minutes(poll)
 }
 
 def uninstalled() {
