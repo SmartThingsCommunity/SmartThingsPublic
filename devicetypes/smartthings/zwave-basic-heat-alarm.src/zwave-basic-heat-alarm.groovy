@@ -48,17 +48,16 @@ metadata {
 }
 
 def installed() {
-	// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
 	def cmds = []
-	createHeatEvents("heatClear", cmds)
+	// Device checks in every 4 hours, this interval allows us to miss one check-in notification before marking offline
+	cmds << createEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	cmds << createHeatEvents("heatClear")
 	cmds.each { cmd -> sendEvent(cmd) }
 }
 
 def updated() {
-	// Device checks in every hour, this interval allows us to miss one check-in notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device checks in every 4 hours, this interval allows us to miss one check-in notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def getCommandClassVersions() {
@@ -153,7 +152,7 @@ def createHeatEvents(name) {
 			result = createEvent(name: "heat", value: "tested", descriptionText: text)
 			break
 		case "heatClear":
-			text = "$device.displayName heat is cleared"
+			text = "$device.displayName heat is clear"
 			result = createEvent(name: "heat", value: "cleared", descriptionText: text)
 			break
 		case "testClear":
