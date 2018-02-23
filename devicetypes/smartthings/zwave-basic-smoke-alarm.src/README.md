@@ -23,10 +23,14 @@ Works with:
 
 ## Device Health
 
-First Alert Smoke Detector (ZSMOKE) and FireAngel Thermoptek ZST-630 Smoke Alarm/Detector are a Z-wave sleepy devices and checks in every 1 hour.
+First Alert Smoke Detector (ZSMOKE) is a Z-wave sleepy device and checks in every 1 hour.   
 Device-Watch allows 2 check-in misses from device plus some lag time. So Check-in interval = (2*60 + 2)mins = 122 mins.
 
-* __122min__ checkInterval
+FireAngel Thermoptek ZST-630 Smoke Alarm/Detector is a Z-wave sleepy device and checks in every 4 hour.
+Device-Watch allows 2 check-in misses from device plus some lag time. So Check-in interval = (8*60 + 2)mins = 482 mins.
+
+* __122min__ checkInterval for First Alert Smoke Detector 
+* __482min__ checkInterval for FireAngel Thermoptek ZST-630 Smoke Alarm/Detector
 
 ## Battery Specification
 
