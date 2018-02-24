@@ -16,7 +16,7 @@ import groovy.transform.Field
 @Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
-    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 
         capability "Actuator"
         capability "Color Temperature"
@@ -28,7 +28,6 @@ metadata {
         capability "Health Check"
 
         attribute "colorName", "string"
-        command "setGenericName"
 
         fingerprint profileId: "C05E", deviceId: "0220", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300", outClusters: "0019", manufacturer: "Eaton", model: "Halo_RL5601", deviceJoinName: "Halo RL56"
     }
@@ -78,6 +77,7 @@ def parse(String description) {
     if (event) {
         if (event.name == "colorTemperature") {
             event.unit = "K"
+            setGenericName(event.value)
         }
         sendEvent(event)
     }
@@ -152,9 +152,8 @@ def updated() {
 }
 
 def setColorTemperature(value) {
-    setGenericName(value)
     value = value as Integer
-    def tempInMired = (1000000 / value) as Integer
+    def tempInMired = Math.round(1000000 / value)
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
     zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +

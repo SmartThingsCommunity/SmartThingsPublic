@@ -31,6 +31,12 @@ metadata {
 		fingerprint mfr:"001D", prod:"1603", model:"0334", deviceJoinName: "Leviton 15A Split Duplex Receptacle"
 		fingerprint mfr:"011A", prod:"0101", model:"0102", deviceJoinName: "Enerwave On/Off Switch"
 		fingerprint mfr:"011A", prod:"0101", model:"0603", deviceJoinName: "Enerwave Duplex Receptacle"
+		fingerprint mfr:"0039", prod:"5052", model:"3038", deviceJoinName: "Honeywell Z-Wave Plug-in Switch"
+		fingerprint mfr:"0039", prod:"5052", model:"3033", deviceJoinName: "Honeywell Z-Wave Plug-in Switch (Dual Outlet)"
+		fingerprint mfr:"0039", prod:"4F50", model:"3032", deviceJoinName: "Honeywell Z-Wave Plug-in Outdoor Smart Switch"
+		fingerprint mfr:"0039", prod:"4952", model:"3036", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Switch"
+		fingerprint mfr:"0039", prod:"4952", model:"3037", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Switch"
+		fingerprint mfr:"0039", prod:"4952", model:"3133", deviceJoinName: "Honeywell Z-Wave In-Wall Tamper Resistant Duplex Receptacle"
 	}
 
 	// simulator metadata
