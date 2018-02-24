@@ -20,8 +20,11 @@ preferences {
     page name: "settings"
     page name: "Modes"
     page name: "AI"
-
-
+    page name: "Contacts_Management"
+    page name: "Micro_Location_Switch"
+    page name: "Micro_Location_Motion"
+    page name: "Windows_Control"
+    page name: "Virtual_Thermostats"
 
 }
 def pageSetup() {
@@ -39,39 +42,24 @@ def pageSetup() {
 
         section("""Manage one or more thermostats in parallel with several other features such as:
 
-- Home location mode (up to 5 modes)
+- Home location mode
 - open/close windows and/or turn on/off fans instead of AC
-- contact sensors 
-- humidity measurment
-- outside / inside temperatures amplitude
-- wind speed 
-- subjective ("feels like") outside's temperature
+- contact sensors management with possibility to differentiate behavior by room / by unit AND by open/close state. 
+- control an extra device with a "closed" state of a contact sensor (example: when you're in bed, using a bed sensor (contact me for details), use a better cooler/heater)
+- outside / inside humidity based temperature management
+- outside / inside temperatures amplitudes management
+- wind speed so you may vent your place when it's still warm outside but windy enough and not too humid
+- subjective ("feels like") outside's temperature (to determine if it's "nice outside" and therefore vent the place and avoid overusing A.C.)
 - adjust temperature with presence using motion sensors
-- switch on/off state 
-"""){  }
+- adjust temperatures with one or more switches states
+- up to 3 virtual thermostats to control some extra heaters/coolers with thermostats as temperature and Set Point references (or user defined temperature)
+""")
+
         section("Main Settings") {
-            href "settings", title: "Thermostats and other devices", description: ""
-
+            href "Mainsettings", title: "Thermostats and other devices", description: ""
             href "Modes", title: "Modes and temperatures", description: ""
-
-        }
-
-        section("Set devices and values for smart management") {
-            href "AI", title: "Artificial Intelligence: make this app adjust temperatures with different scenarios", description: ""
-
-        }
-        section(){
-            input(name:"adjustments", type: "enum", title: "Do you want to use dynamic temperatures adjustments?", 
-                  options: ["no, just go with my default settings", 
-                            "Yes, use a linear variation", "Yes, but use a logarithmic variation"], required: true, submitOnChange: true)
-            paragraph """
-linear: save power and money and remain comfortable. 
-Algorithmic: save less money but be even more comfortable"""
-
-            if(adjustments != "no, just go with my default settings"){
-                input(name:"MaxLinearHeat", type:"number", title:"Set a maximum Heating temperature", defaultValue: 78)
-                input(name:"MinLinearCool", type:"number", title:"Set a minimum cooling temperature", defaultValue: 65)
-            }
+            href "Virtual_Thermostats", title: "Virtual Thermostats", description: ""
+            href "AI", title: "A.I. settings", description: ""
 
         }
 
@@ -79,16 +67,16 @@ Algorithmic: save less money but be even more comfortable"""
             mode(title: "Set for specific mode(s)")
         }
         section(){
-            input(name:"sendPushMessage", type: "bool", title: "Send Push Notification?")
+            input(name:"sendPushMessage", type: "bool", title: "Send Push Notification")
         }
     }
 }
-def settings() {
+def Mainsettings() {
 
-    def pageName = "settings"
+    def pageName = "Mainsettings"
 
     def pageProperties = [
-        name:       "settings",
+        name:       "Mainsettings",
         title:      "Thermostats and other devices",
         nextPage:   "pageSetup",
         install: false,
@@ -140,86 +128,6 @@ log.debug """ intersectMap = $intersectMap"""
                 }
                 input(name: "turnOffWhenReached", type: "bool", title: "Turn off thermostats when desired temperature is reached?", required: false, default: false, submitOnChange: true)
             }  
-        }
-        section("Virtual Thermostat") { 
-            def MyThermostats = []
-            Thermostats.each {MyThermostats << "$it"}
-
-            input(name: "AddMoreVirT_A", type: "bool", title: "add a Virtual Thermostat", default: false, submitOnChange: true)
-            if(AddMoreVirT_A){
-
-
-                input(name: "VirThermSwitch_1", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
-                input(name: "coolOrHeat", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], defaultValue: "heating")
-                input(name: "OtherSetP", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
-                if(OtherSetP){
-                    if(coolOrHeat == "heating"){
-                        input(name: "HSPVir", type: "decimal", title: "Set Heating temperature", required: true,  defaultValue: setH)
-                    }
-                    else {
-                        input(name: "CSPVir", type: "decimal", title: "Set Cooling temperature", required: true,  defaultValue: setH)
-                    }
-                }
-                else {
-                    input(name: "VirThermTherm_1", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
-                }
-                input(name: "AltSensorVirTherm", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
-                if(AltSensorVirTherm){
-                    input(name: "VirThermSensor", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
-                }
-                input(name: "VirThermModes", type: "mode", title: "Run only in these modes", multiple: true, required: false)
-
-                input(name: "AddMoreVirT_B", type: "bool", title: "add one more Virtual Thermostat", default: false, submitOnChange: true)
-
-                if(AddMoreVirT_B){
-                    input(name: "VirThermSwitch_2", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
-
-                    input(name: "coolOrHeat_2", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], required: true)
-                    input(name: "OtherSetP_2", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
-                    if(OtherSetP_2){
-                        if(coolOrHeat_2 == "heating"){
-                            input(name: "HSPVir_2", type: "decimal", title: "Set Heating temperature", required: true,  defaultValue: setH)
-                        }
-                        else {
-                            input(name: "CSPVir_2", type: "decimal", title: "Set Cooling temperature", required: true,  defaultValue: setH)
-                        }
-                    }
-                    else {
-                        input(name: "VirThermTherm_2", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
-                    }
-                    input(name: "AltSensorVirTherm_2", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
-                    if(AltSensorVirTherm_2){
-                        input(name: "VirThermSensor_2", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
-                    }
-                    input(name: "VirThermModes_2", type: "mode", title: "Run only in these modes", multiple: true, required: false)
-
-                }
-
-                input(name: "AddMoreVirT_C", type: "bool", title: "add one more Virtual Thermostat", default: false, submitOnChange: true)
-                if(AddMoreVirT_C){
-                    input(name: "VirThermSwitch_3", type: "capability.switch",  multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
-
-                    input(name: "coolOrHeat_3", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], required: true)
-                    input(name: "OtherSetP_3", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
-                    if(OtherSetP_3){
-                        if(coolOrHeat_3 == "heating"){
-                            input(name: "HSPVir_3", type: "decimal", title: "Set Heating temperature", required: true,  defaultValue: setH)
-                        }
-                        else {
-                            input(name: "CSPVir_3", type: "decimal", title: "Set Cooling temperature", required: true,  defaultValue: setH)
-                        }
-                    }
-                    else {
-                        input(name: "VirThermTherm_3", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
-                    }
-                    input(name: "AltSensorVirTherm_3", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
-                    if(AltSensorVirTherm_3){
-                        input(name: "VirThermSensor_3", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
-                    }
-                    input(name: "VirThermModes_3", type: "mode", title: "Run only in these modes", multiple: true, required: false)
-
-                }
-            }
         }
     }
 }
@@ -319,7 +227,170 @@ def AI() {
         install: false,
         uninstall: true
     ]
+    dynamicPage(pageProperties) {
+        section("Select an outside sensor"){
+            paragraph """
+This sensor is essential to the A.I. of this app. 
+if you do not have an outside temperature measurment device, you can 
+allways create a SmartWeater virtual device. It is actually recommended 
+for it is more reliable in many aspects than a physical device located outside
+Visit Smartthings community which contains many pages indicating how to proceed step by step"""
 
+            input(name: "OutsideSensor", type: "capability.temperatureMeasurement", title: "Pick a sensor for Outside's temperature", required: true, multiple: false, description: null, submitOnChange: true)        
+
+            def hasHumidity = OutsideSensor?.hasAttribute("humidity")
+            //log.debug "hasHumidity is $hasHumidity .."
+            if(hasHumidity){
+                //input(name: "HumidityMeasurement", type: "capability.relativeHumidityMeasurement", title: "Pick an outside humidity sensor", required: true, multiple: false, description: null)
+                input(name: "HumidityTolerance", type: "number", title: "set a humidity tolerance threshold", required: true, description: "set a humidity threshold")
+                paragraph """
+This level of humidity will determine how to modulate several values such as, for example, 
+cooling set points. The more humid, the more the AC will be 'sensitive' 
+and run, the less humid, the less it'll run (and if this option has 
+been picked elsewhere, it'll prefer to open the windows or activate a fan)"""
+            }
+        }
+        section("algebra"){
+            input(name:"adjustments", type: "enum", title: "Do you want to use dynamic temperatures adjustments?", 
+                  options: ["no, just go with my default settings", 
+                            "Yes, use a linear variation", "Yes, but use a logarithmic variation"], required: true, submitOnChange: true)
+            paragraph """
+linear: save power and money and remain comfortable. 
+Algorithmic: save less money but be even more comfortable"""
+
+            if(adjustments != "no, just go with my default settings"){
+                input(name:"MaxLinearHeat", type:"number", title:"Set a maximum Heating temperature", defaultValue: 78)
+                input(name:"MinLinearCool", type:"number", title:"Set a minimum cooling temperature", defaultValue: 65)
+            }
+
+        }
+
+        section("A.I. Settings") {
+            href "Contacts_Management", title: "Manage some contact sensors", description: ""
+            href "Micro_Location_Switch", title: "Set points change with switches status", description: ""
+            href "Micro_Location_Motion", title: "Set points change with motion", description: ""
+            href "Windows_Control", title: "Save power with some fans or windows", description: ""
+
+        }
+    }
+}
+
+def Virtual_Thermostats() {
+    def pageName = "Virtual_Thermostats"
+
+    def pageProperties = [
+        name:       "Virtual_Thermostats",
+        title:      "Virtual Thermostats",
+        nextPage:   "AI",
+        install: false,
+        uninstall: true
+    ]
+    dynamicPage(pageProperties) {
+        section("Virtual Thermostat") { 
+            if(Thermostats.size() != 0 && Maincontacts){
+                def MyThermostats = []
+                Thermostats.each {MyThermostats << "$it"}
+
+                input(name: "AddMoreVirT_A", type: "bool", title: "add a Virtual Thermostat", default: false, submitOnChange: true)
+                if(AddMoreVirT_A){
+
+
+                    input(name: "VirThermSwitch_1", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
+                    input(name: "coolOrHeat", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], defaultValue: "heating")
+                    input(name: "OtherSetP", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
+                    if(OtherSetP){
+                        if(coolOrHeat == "heating"){
+                            input(name: "HSPVir", type: "decimal", title: "Set Heating temperature", required: true,  defaultValue: setH)
+                        }
+                        else {
+                            input(name: "CSPVir", type: "decimal", title: "Set Cooling temperature", required: true,  defaultValue: setH)
+                        }
+                    }
+                    else {
+                        input(name: "VirThermTherm_1", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
+                    }
+                    input(name: "AltSensorVirTherm", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
+                    if(AltSensorVirTherm){
+                        input(name: "VirThermSensor", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
+                    }
+                    input(name: "VirThermModes", type: "mode", title: "Run only in these modes", multiple: true, required: false)
+
+                    input(name: "AddMoreVirT_B", type: "bool", title: "add one more Virtual Thermostat", default: false, submitOnChange: true)
+
+                    if(AddMoreVirT_B){
+                        input(name: "VirThermSwitch_2", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
+
+                        input(name: "coolOrHeat_2", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], required: true)
+                        input(name: "OtherSetP_2", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
+                        if(OtherSetP_2){
+                            if(coolOrHeat_2 == "heating"){
+                                input(name: "HSPVir_2", type: "decimal", title: "Set Heating temperature", required: true,  defaultValue: setH)
+                            }
+                            else {
+                                input(name: "CSPVir_2", type: "decimal", title: "Set Cooling temperature", required: true,  defaultValue: setH)
+                            }
+                        }
+                        else {
+                            input(name: "VirThermTherm_2", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
+                        }
+                        input(name: "AltSensorVirTherm_2", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
+                        if(AltSensorVirTherm_2){
+                            input(name: "VirThermSensor_2", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
+                        }
+                        input(name: "VirThermModes_2", type: "mode", title: "Run only in these modes", multiple: true, required: false)
+
+                    }
+
+                    input(name: "AddMoreVirT_C", type: "bool", title: "add one more Virtual Thermostat", default: false, submitOnChange: true)
+                    if(AddMoreVirT_C){
+                        input(name: "VirThermSwitch_3", type: "capability.switch",  multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
+
+                        input(name: "coolOrHeat_3", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], required: true)
+                        input(name: "OtherSetP_3", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
+                        if(OtherSetP_3){
+                            if(coolOrHeat_3 == "heating"){
+                                input(name: "HSPVir_3", type: "decimal", title: "Set Heating temperature", required: true,  defaultValue: setH)
+                            }
+                            else {
+                                input(name: "CSPVir_3", type: "decimal", title: "Set Cooling temperature", required: true,  defaultValue: setH)
+                            }
+                        }
+                        else {
+                            input(name: "VirThermTherm_3", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
+                        }
+                        input(name: "AltSensorVirTherm_3", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
+                        if(AltSensorVirTherm_3){
+                            input(name: "VirThermSensor_3", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
+                        }
+                        input(name: "VirThermModes_3", type: "mode", title: "Run only in these modes", multiple: true, required: false)
+
+                    }
+                }
+            }
+            else {
+                if(!Maincontacts && Thermostats.size() != 0){
+                    paragraph "You must set contact sensors first. Go back to the contact sensor management page"
+                }
+                else if(!Maincontacts && Thermostats.size() == 0){
+                    paragraph "You must finish setting your thermostats and contact sensors before setting any virtual thermostat."
+                }
+                else {
+                    paragraph "You haven't set any thermostat yet. Go back to main settings"
+                }
+            }
+        }
+    }
+}
+def Contacts_Management(){
+    def pageName = "Contacts_Management"
+
+    def pageProperties = [
+        name:       "Contacts_Management",
+        title:      "Manage some contact sensors",
+        nextPage:   "AI",
+        install: false,
+        uninstall: true
+    ]
     dynamicPage(pageProperties) {
         section("Turn off thermostats when these contacts are open"){
 
@@ -446,28 +517,6 @@ Do you wish to bind it to the same rule and have it controled exclusively with $
                 input(name: "FollowException", type: "bool", title: "yes? no?", default: false, submitOnChange: true)
             }
         }
-        section("Select an outside sensor"){
-            paragraph """
-This sensor is essential to the A.I. of this app. 
-if you do not have an outside temperature measurment device, you can 
-allways create a SmartWeater virtual device. It is actually recommended 
-for it is more reliable in many aspects than a physical device located outside
-Visit Smartthings community which contains many pages indicating how to proceed step by step"""
-
-            input(name: "OutsideSensor", type: "capability.temperatureMeasurement", title: "Pick a sensor for Outside's temperature", required: true, multiple: false, description: null, submitOnChange: true)        
-
-            def hasHumidity = OutsideSensor?.hasAttribute("humidity")
-            //log.debug "hasHumidity is $hasHumidity .."
-            if(hasHumidity){
-                //input(name: "HumidityMeasurement", type: "capability.relativeHumidityMeasurement", title: "Pick an outside humidity sensor", required: true, multiple: false, description: null)
-                input(name: "HumidityTolerance", type: "number", title: "set a humidity tolerance threshold", required: true, description: "set a humidity threshold")
-                paragraph """
-This level of humidity will determine how to modulate several values such as, for example, 
-cooling set points. The more humid, the more the AC will be 'sensitive' 
-and run, the less humid, the less it'll run (and if this option has 
-been picked elsewhere, it'll prefer to open the windows or activate a fan)"""
-            }
-        }
         section("Keep a unit running when a contact sensor is CLOSED"){
             input(name: "KeepACon", type: "bool", title: "Use specific settings when a different contact is CLOSED", default: false, submitOnChange: true, description: "")
             if(KeepACon){
@@ -494,154 +543,109 @@ been picked elsewhere, it'll prefer to open the windows or activate a fan)"""
 
             }
         }
-        section("Modify setpoints with a switch on/off status"){  
-            input(name: "ExceptionSW", type : "bool", 
-                  title: "Apply different settings for a specific thermostat when a switch is on", 
-                  defaut: false, 
-                  submitOnChange: true)
+    }
+}
 
-            if(ExceptionSW){  
+def Micro_Location_Switch() {
+    def pageName = "Micro_Location_Switch"
+
+    def pageProperties = [
+        name:       "Micro_Location_Switch",
+        title:      "Set points change with switches status",
+        nextPage:   "AI",
+        install: false,
+        uninstall: true
+    ]
+    dynamicPage(pageProperties) {
+        if(Thermostats.size() != 0){
+            section("Adjust Temperature with a switch on/off status"){  
+                input(name: "ExceptionSW", type : "bool", 
+                      title: "Apply different settings for a specific thermostat when a switch is on", 
+                      defaut: false, 
+                      submitOnChange: true)
+
+                if(ExceptionSW){  
+                    def MyThermostats = []
+                    Thermostats.each {MyThermostats << "$it"}
+                    input(name: "ExceptionSwTherm", 
+                          type: "enum", 
+                          options: MyThermostats.sort(),
+                          multiple: false, 
+                          title: "", 
+                          submitOnChange: true, 
+                          description: "select which thermostat")
+
+                    input(name: "warmerorcooler", type : "enum", title: "Have this room Warmer or cooler?", 
+                          required: true, options: ["warmer", "cooler", "more heating, cooler cooling"], submitOnChange: true)
+                    input(name: "CtrlSwt", type: "capability.switch", title: "Adjust $ExceptionSwTherm settings When this switch is on", required: true, submitOnChange: true)
+                    input(name: "CtrlSwtModes", type: "mode", title: "only when location is in one of these modes", multiple: true)
+
+
+                    if(warmerorcooler == "more heating, cooler cooling"){
+                        input(name: "AddDegrees", type: "decimal", title: "Add this value to $ExceptionSwTherm heat setting When $CtrlSwt is on", required: true, range: "1..5")
+                        input(name: "SubDegrees", type: "decimal", title: "Substract this value to $ExceptionSwTherm cooling setting When $CtrlSwt is on", required: true, range: "1..5")                     
+                    }
+                    else if(warmerorcooler == "warmer"){
+                        input(name: "AddDegrees", type: "decimal", title: "Add this value to $ExceptionSwTherm for both cooling and heating settings When $CtrlSwt is on", required: true, submitOnChange: true, range: "1..5")
+                        def set = AddDegrees?.toInteger()
+                        input(name: "SubDegrees", type: "decimal", title:"Enter here the same value than above", description: "enter here the same value than above", required: true, defaultValue: set, range: "1..5")  
+                        if(AddDegrees){
+                            log.info "SubDegrees = $SubDegrees"
+                        }
+                    }
+                    else if(warmerorcooler == "cooler"){        
+                        input(name: "SubDegrees", type: "decimal", title: "Substract this value to $Thermostat_1 for both cooling and heating settings When $CtrlSwt is on", required: true, submitOnChange: true, range: "1..5")
+                        def set = SubDegrees?.toInteger()
+                        input(name: "AddDegrees", type: "decimal", title:"Enter the same value", description: "enter here the same value than above", required: true, defaultValue: set, range: "1..5")  
+                        if(AddDegrees){
+                            log.info "AddDegrees = $AddDegrees"
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            paragraph "You haven't set any thermostat yet. Go back to main settings"
+        }
+    }
+}
+def Micro_Location_Motion(){
+    def pageName = "Micro_Location_Motion"
+
+    def pageProperties = [
+        name:       "Micro_Location_Motion",
+        title:      "Set points change with motion",
+        nextPage:   "AI",
+        install: false,
+        uninstall: true
+    ]
+    dynamicPage(pageProperties) {
+        if(Thermostats.size() != 0){
+            section("Adjust Temperatures With Motion"){
                 def MyThermostats = []
                 Thermostats.each {MyThermostats << "$it"}
-                input(name: "ExceptionSwTherm", 
-                      type: "enum", 
-                      options: MyThermostats.sort(),
-                      multiple: false, 
-                      title: "", 
-                      submitOnChange: true, 
-                      description: "select which thermostat")
+                input(name: "useMotion", type: "bool", title: "Use motion sensors to adjust Thermostats settings when inactive", submitOnChange: true, default: false)
 
-                input(name: "warmerorcooler", type : "enum", title: "Have this room Warmer or cooler?", 
-                      required: true, options: ["warmer", "cooler", "more heating, cooler cooling"], submitOnChange: true)
-                input(name: "CtrlSwt", type: "capability.switch", title: "Adjust $ExceptionSwTherm settings When this switch is on", required: true, submitOnChange: true)
-                input(name: "CtrlSwtModes", type: "mode", title: "only when location is in one of these modes", multiple: true)
+                if(useMotion){
+                    // //log.debug "motion management"
+                    // list all modes minus $Away
+                    def i = 0
+                    state.modes = []
+                    def allModes = location.modes
+                    def amS = allModes.size()
+                    //log.debug "allModes size: = ${amS}"
 
-
-                if(warmerorcooler == "more heating, cooler cooling"){
-                    input(name: "AddDegrees", type: "decimal", title: "Add this value to $ExceptionSwTherm heat setting When $CtrlSwt is on", required: true, range: "1..5")
-                    input(name: "SubDegrees", type: "decimal", title: "Substract this value to $ExceptionSwTherm cooling setting When $CtrlSwt is on", required: true, range: "1..5")                     
-                }
-                else if(warmerorcooler == "warmer"){
-                    input(name: "AddDegrees", type: "decimal", title: "Add this value to $ExceptionSwTherm for both cooling and heating settings When $CtrlSwt is on", required: true, submitOnChange: true, range: "1..5")
-                    def set = AddDegrees?.toInteger()
-                    input(name: "SubDegrees", type: "decimal", title:"Enter here the same value than above", description: "enter here the same value than above", required: true, defaultValue: set, range: "1..5")  
-                    if(AddDegrees){
-                        log.info "SubDegrees = $SubDegrees"
-                    }
-                }
-                else if(warmerorcooler == "cooler"){        
-                    input(name: "SubDegrees", type: "decimal", title: "Substract this value to $Thermostat_1 for both cooling and heating settings When $CtrlSwt is on", required: true, submitOnChange: true, range: "1..5")
-                    def set = SubDegrees?.toInteger()
-                    input(name: "AddDegrees", type: "decimal", title:"Enter the same value", description: "enter here the same value than above", required: true, defaultValue: set, range: "1..5")  
-                    if(AddDegrees){
-                        log.info "AddDegrees = $AddDegrees"
-                    }
-                }
-            }
-        }
-        section("Save power by turning on some fans or by opening some windows when outside's temperature is nice"){
-
-            paragraph "this section is optimized for windows management but can also be used with fans"
-            input(name: "Actuators", type: "capability.switch", required: true, multiple: true, title: "select some fan or windows switches that you want to control with outside's temperature", submitOnChange: true)
-            input(name: "NotWindows", type: "bool", title: "Those devices ($Actuators) are NOT windows", default: false, submitOnChange: true)
-            if(!NotWindows){
-                def HasStop = Actuators?.hasCommand("stop") || Actuators?.hasCommand("Stop") 
-                if(HasStop){
-                    input(name: "OperatingTime", type: "number", title: "Should I stop opening operation after this amount of time?", 
-                          required: false, description: "time in seconds")
-                }     
-            }
-            if(Actuators){
-                input(name: "OutsideTempLowThres", type: "number", title: "Outside temperature above which I open windows/turn on Fans", required: true, description: "Outside Temp's Low Threshold")
-                input(name: "OutsideTempHighThres", type: "number", title: "Outside temperature above which I keep windows/fans closed/off", required: true, description: "Outside Temp's High Threshold")
-                input(name: "ExceptACMode1", type: "mode", title: "if location is in this mode, lower outside temperature High Threshold", required: false, multiple: false, submitOnChange: true)
-                if(ExceptACMode1){
-                    input(name: "ExceptHighThreshold1", type: "number", title: "pick an offset value for $ExceptACMode1 mode", required: true)
-                }
-                input(name: "ExceptACMode2", type: "mode", title: "if location is in this mode, lower Outside Temp's High Threshold", required: false, multiple: false, submitOnChange: true)
-                if(ExceptACMode2){
-                    input(name: "ExceptHighThreshold2", type: "number", title: "pick an offset value for $ExceptACMode2 mode", required: true)
-                }
-                input(name: "OffSet", type: "decimal", title: "You set Critical Temp at: ${CriticalTemp}. Close windows / turn off fans when inside temp is inferior or equal to this value + OffSet ", required: true, description: "Set OffSet Value")
-                paragraph """
-if within margin then open windows / turn on fans, but not if inside's temp is lower than heat setting minus offset. 
-Reference measurment is taken from $XtraTempSensor. You may also chose to open windows at full lenght whenever outside's temperature 
-allows for it, instead of only when cooling is required (see below)"""
-                input(name: "OpenWhenEverPermitted", type: "bool", title: "Open in full whenever it is nice outside?", default: false, submitOnChange: true)
-                input(name: "OpenInfullWhenAway", type: "bool", title: "Open in full whenever you're away and it's not cold outside?", default: false, submitOnChange: true)
-                if(OpenInfullWhenAway){
-                    paragraph "Be aware that you have selected $Away as your AWAY mode. Make sure this is the mode for when there's nobody home"
-                }
-            }
-            if(Actuators && !NotWindows){
-                input(name: "Venting", type: "bool", title: "Allow A.I. to temporarily vent the place when wheather permits it", default: false, submitOnChange: true)
-                if(Venting){
-                    def MyWindows = []
-                    Actuators?.each {MyWindows << "$it"}
-
-
-                    paragraph """this option will allow your windows to temporarilly but safely override 
-the temperature thresholds you set above and will use outside cool air to cool your 
-place and never allow for the A.C. to do it while it's cold enough outside. """
-
-                    input(name: "ActuatorsVenting", type: "capability.switch",
-                          title: "using these windows...", 
-
-                          multiple: true,
-                          submitOnChange: true,
-                          required: true
-                         )
-                    input(name: "VentingModes", type: "mode", title: "Under which modes should this be happening?", required: true, multiple: true, submitOnChange: true)
-
-
-                    input(name: "VentingException", type: "bool", title: "Set some exceptions", default: false, submitOnChange: true)
-                    if(VentingException){
-                        input(name: "ActuatorsVentingException", type: "capability.switch", required: true, 
-                              multiple: true, 
-                              title: "Make an exception for these windows", 
-                              submitOnChange: true, 
-                              defaultValue: "$ActuatorException"
-                             )
-                        def ActuatorsVentingCOLL = ActuatorsVenting.collect{ it.toString() }
-                        def ActuatorsVentingExceptionCOLL = ActuatorsVentingException.collect{ it.toString() }
-                        def Intersection = ActuatorsVentingExceptionCOLL.intersect(ActuatorsVenting)
-                        def WarningSame = Intersection.size() != 0
-                        if(WarningSame){
-                            paragraph "WARNING! IDENTICAL DEVICES!"
-                            //log.debug "WARNING! IDENTICAL DEVICES!"
+                    for(amS != 0; i < amS; i++){
+                        if(allModes[i] in Away){
+                            //log.debug "${allModes[i]} Skipped"
                         }
                         else {
-                            input(name: "VentingModesException", type: "mode", required: true, multiple: true, title: "DO NOT OPEN $ActuatorsVentingException Under these modes", submitOnChange: true)
-                        }       
+                            state.modes << ["${allModes[i]}"]
+                        }
                     }
-                }
-            }
-        }
-        section("Micro Location"){
-            def MyThermostats = []
-            Thermostats.each {MyThermostats << "$it"}
-            input(name: "useMotion", type: "bool", title: "Use motion sensors to adjust Thermostats settings when inactive", submitOnChange: true, default: false)
 
-            if(useMotion){
-                // //log.debug "motion management"
-                // list all modes minus $Away
-                def i = 0
-                state.modes = []
-                def allModes = location.modes
-                def amS = allModes.size()
-                //log.debug "allModes size: = ${amS}"
-
-                for(amS != 0; i < amS; i++){
-                    if(allModes[i] in Away){
-                        //log.debug "${allModes[i]} Skipped"
-                    }
-                    else {
-                        state.modes << ["${allModes[i]}"]
-                    }
-                }
-
-                //log.debug "all location modes available are: = $state.modes"
-                /*
+                    //log.debug "all location modes available are: = $state.modes"
+                    /*
 input(
 name: "howmanySensors", 
 type: "number", 
@@ -651,66 +655,167 @@ submitOnChange: true,
 defaultValue: "${Thermostats.size()}"
 )*/
 
-                //log.debug "thermMotion list is : $thermMotion"
-                def ts = Thermostats.size()
+                    //log.debug "thermMotion list is : $thermMotion"
+                    def ts = Thermostats.size()
 
-                input(name: "HeatNoMotion", type: "number", title: "Substract this amount of degrees to heat setting", required: true, defaultValue: 2)
-                input(name: "CoolNoMotion", type: "number", title: "Add this amount of degrees to cooling setting", required: true, defaultValue: 2)  
-
-
-                i = 0
-                for(ts > 0; i < ts; i++){
-
-                    input(name: "thermMotion${i}", type: "enum",
-                          title: "For this thermostat...", 
-                          description: "pick your thermostat",
-                          options: MyThermostats.sort(),
-                          multiple: false,
-                          required: true,
-                          defaultValue: "${MyThermostats[i]}"
-
-                         )
+                    input(name: "HeatNoMotion", type: "number", title: "Substract this amount of degrees to heat setting", required: true, defaultValue: 2)
+                    input(name: "CoolNoMotion", type: "number", title: "Add this amount of degrees to cooling setting", required: true, defaultValue: 2)  
 
 
-                    input(name: "MotionSensor${i}", type: "capability.motionSensor", 
-                          multiple: true, 
-                          title: "Select the sensors to use with ${Thermostats[i]}", 
-                          description: "pick a sensor", 
-                          required: true,
-                          //submitOnChange: true,
-                          //defaultValue: "${state.MotionSensor[i]}"
+                    i = 0
+                    for(ts > 0; i < ts; i++){
 
-                         )
+                        input(name: "thermMotion${i}", type: "enum",
+                              title: "For this thermostat...", 
+                              description: "pick your thermostat",
+                              options: MyThermostats.sort(),
+                              multiple: false,
+                              required: true,
+                              defaultValue: "${MyThermostats[i]}"
 
-                    def reference = MyThermostats[i]
-                    input(
-                        name: "MotionModes${i}", type: "mode", 
-                        title: "Use motion only if home is in these modes", 
-                        multiple: true, 
-                        description: "select a mode", 
-                        required: true  , 
-                        // submitOnChange: true,
-                        //defaultValue: "${state.MotionModesAndItsThermMap.reference}"
-                    )
+                             )
 
 
-                    paragraph "_______________________________"
+                        input(name: "MotionSensor${i}", type: "capability.motionSensor", 
+                              multiple: true, 
+                              title: "Select the sensors to use with ${Thermostats[i]}", 
+                              description: "pick a sensor", 
+                              required: true,
+                              //submitOnChange: true,
+                              //defaultValue: "${state.MotionSensor[i]}"
+
+                             )
+
+                        def reference = MyThermostats[i]
+                        input(
+                            name: "MotionModes${i}", type: "mode", 
+                            title: "Use motion only if home is in these modes", 
+                            multiple: true, 
+                            description: "select a mode", 
+                            required: true  , 
+                            // submitOnChange: true,
+                            //defaultValue: "${state.MotionModesAndItsThermMap.reference}"
+                        )
+
+
+                        paragraph "_______________________________"
+
+
+                    }
+
+                    input (name:"minutesMotion", type:"number", title: "For how long there must be no motion for those settings to apply? ", 
+                           range: "2..999", 
+                           description: "time in minutes",
+                           required: false)
+                    paragraph "this timer will apply indifferently to all selected motion sensors"
 
 
                 }
-
-
-                input (name:"minutesMotion", type:"number", title: "For how long there must be no motion for those settings to apply? ", 
-                       range: "2..999", 
-                       description: "time in minutes",
-                       required: false)
-                paragraph "this timer will apply indifferently to all selected motion sensors"
-
-
             }
+        }
+        else {
+            paragraph "You haven't set any thermostat yet. Go back to main settings"
+        } 
+    }
+}
+def Windows_Control(){
+    def pageName = "Windows_Control"
+
+    def pageProperties = [
+        name:       "Windows_Control",
+        title:      "Save Power With Fans or Windows",
+        nextPage:   "AI",
+        install: false,
+        uninstall: true
+    ]
+
+    dynamicPage(pageProperties) {
+        if(Thermostats.size() != 0){
+            section("Save power by turning on some fans or by opening some windows when outside's temperature is nice"){
+
+                paragraph "this section is optimized for windows management but can also be used with fans"
+                input(name: "Actuators", type: "capability.switch", required: true, multiple: true, title: "select some fan or windows switches that you want to control with outside's temperature", submitOnChange: true)
+                input(name: "NotWindows", type: "bool", title: "Those devices ($Actuators) are NOT windows", default: false, submitOnChange: true)
+                if(!NotWindows){
+                    def HasStop = Actuators?.hasCommand("stop") || Actuators?.hasCommand("Stop") 
+                    if(HasStop){
+                        input(name: "OperatingTime", type: "number", title: "Should I stop opening operation after this amount of time?", 
+                              required: false, description: "time in seconds")
+                    }     
+                }
+                if(Actuators){
+                    input(name: "OutsideTempLowThres", type: "number", title: "Outside temperature above which I open windows/turn on Fans", required: true, description: "Outside Temp's Low Threshold")
+                    input(name: "OutsideTempHighThres", type: "number", title: "Outside temperature above which I keep windows/fans closed/off", required: true, description: "Outside Temp's High Threshold")
+                    input(name: "ExceptACMode1", type: "mode", title: "if location is in this mode, lower outside temperature High Threshold", required: false, multiple: false, submitOnChange: true)
+                    if(ExceptACMode1){
+                        input(name: "ExceptHighThreshold1", type: "number", title: "pick an offset value for $ExceptACMode1 mode", required: true)
+                    }
+                    input(name: "ExceptACMode2", type: "mode", title: "if location is in this mode, lower Outside Temp's High Threshold", required: false, multiple: false, submitOnChange: true)
+                    if(ExceptACMode2){
+                        input(name: "ExceptHighThreshold2", type: "number", title: "pick an offset value for $ExceptACMode2 mode", required: true)
+                    }
+                    input(name: "OffSet", type: "decimal", title: "You set Critical Temp at: ${CriticalTemp}. Close windows / turn off fans when inside temp is inferior or equal to this value + OffSet ", required: true, description: "Set OffSet Value")
+                    paragraph """
+if within margin then open windows / turn on fans, but not if inside's temp is lower than heat setting minus offset. 
+Reference measurment is taken from $XtraTempSensor. You may also chose to open windows at full lenght whenever outside's temperature 
+allows for it, instead of only when cooling is required (see below)"""
+                    input(name: "OpenWhenEverPermitted", type: "bool", title: "Open in full whenever it is nice outside?", default: false, submitOnChange: true)
+                    input(name: "OpenInfullWhenAway", type: "bool", title: "Open in full whenever you're away and it's not cold outside?", default: false, submitOnChange: true)
+                    if(OpenInfullWhenAway){
+                        paragraph "Be aware that you have selected $Away as your AWAY mode. Make sure this is the mode for when there's nobody home"
+                    }
+                }
+                if(Actuators && !NotWindows){
+                    input(name: "Venting", type: "bool", title: "Allow A.I. to temporarily vent the place when wheather permits it", default: false, submitOnChange: true)
+                    if(Venting){
+                        def MyWindows = []
+                        Actuators?.each {MyWindows << "$it"}
+
+
+                        paragraph """this option will allow your windows to temporarilly but safely override 
+the temperature thresholds you set above and will use outside cool air to cool your 
+place and never allow for the A.C. to do it while it's cold enough outside. """
+
+                        input(name: "ActuatorsVenting", type: "capability.switch",
+                              title: "using these windows...", 
+
+                              multiple: true,
+                              submitOnChange: true,
+                              required: true
+                             )
+                        input(name: "VentingModes", type: "mode", title: "Under which modes should this be happening?", required: true, multiple: true, submitOnChange: true)
+
+
+                        input(name: "VentingException", type: "bool", title: "Set some exceptions", default: false, submitOnChange: true)
+                        if(VentingException){
+                            input(name: "ActuatorsVentingException", type: "capability.switch", required: true, 
+                                  multiple: true, 
+                                  title: "Make an exception for these windows", 
+                                  submitOnChange: true, 
+                                  defaultValue: "$ActuatorException"
+                                 )
+                            def ActuatorsVentingCOLL = ActuatorsVenting.collect{ it.toString() }
+                            def ActuatorsVentingExceptionCOLL = ActuatorsVentingException.collect{ it.toString() }
+                            def Intersection = ActuatorsVentingExceptionCOLL.intersect(ActuatorsVenting)
+                            def WarningSame = Intersection.size() != 0
+                            if(WarningSame){
+                                paragraph "WARNING! IDENTICAL DEVICES!"
+                                //log.debug "WARNING! IDENTICAL DEVICES!"
+                            }
+                            else {
+                                input(name: "VentingModesException", type: "mode", required: true, multiple: true, title: "DO NOT OPEN $ActuatorsVentingException Under these modes", submitOnChange: true)
+                            }       
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            paragraph "You haven't set any thermostat yet. Go back to main settings"
         }
     }
 }
+////////////////////////////////////// END OF SETTINGS ///////////////////////////////
 
 // install and updated
 def installed() {	 
@@ -1127,7 +1232,7 @@ def VirtualThermostat(){
             Critical = tempcheckList[i] < CriticalTemp
             if(Critical){
                 log.trace "VT Critical loop $i"
-                if(thisSwt?.currentSwitch != "on"){
+                if("off" in thisSwt?.currentSwitch){
                     thisSwt?.on()         
                     def message = "CRITICAL TEMPERATURE (${tempcheckList[i]}F) AT VIRTHERM Turning on $thisSwt"
                     log.info message
@@ -1144,7 +1249,7 @@ def VirtualThermostat(){
             else {
                 state.CriticalMessageSent[i] = false
                 //shutdownVT() // shut down all virtual thermostats
-                if(thisSwt?.currentSwitch != "off"){
+                if("on" in thisSwt?.currentSwitch){
                     thisSwt?.off() 
                 }
                 log.debug "Some contacts are open, turning off $thisSwt"
@@ -1576,38 +1681,24 @@ NowBedisClosed = $NowBedisClosed"""
         //log.debug "contactClosed = $contactClosed (ALL CONTACTS)"
     }
     //log.debug "contactClosed = $contactClosed"
-    def inAwayMode = CurrMode in Away
+    def inAwayMode = CurrMode in SwitchMode
 
-    if(IsHeatPump && outsideTemp <= 29){
-        if(SomeSwAreOn.size() != 0){
-            ContactAndSwitch?.off()
-            log.debug "$ContactAndSwitch TURNED OFF because it's a heat pump and outside temp is too low (${outsideTemp} <= 29)"
-            state.turnedOffByApp = true
-        }
-    }
-    else if(!KeepOffAtAllTimesWhenMode() && contactClosed && ToggleBack || (ControlWithBedSensor && NowBedisClosed && ContactExceptionIsClosed)){  //  && state.turnedOffByApp == true){  
-        if(SomeSwAreOff.size() != 0){
-            //if at least one is off, turn on
-            ContactAndSwitch?.on()
-            log.debug "$ContactAndSwitch TURNED ON"
-            state.turnedOffByApp = false
-        }
-        else {
-            log.debug "$ContactAndSwitch already on"
-        }
-    }
-    else if(KeepOffAtAllTimesWhenMode() && CurrMode in SwitchMode){
+
+    //////////////////////// EXCEPTION AC (sort of vir therm) /////////////////////////////////
+    // turn off is away mode (and if this option selected by user)
+    if(KeepOffAtAllTimesWhenMode() && inAwayMode){
         if(SomeSwAreOn.size() != 0){
             // if at least one is on, turn off
             ContactAndSwitch?.off()
-            log.debug "$ContactAndSwitch TURNED OFF"
+            log.debug "$ContactAndSwitch TURNED OFF Because Home is in $SwitchMode mode"
             state.turnedOffByApp = true
         }
         else {
             log.debug "$ContactAndSwitch already off --"
-        }        
+        } 
     }
-    else if(!contactClosed || inAwayMode){
+    else if(!contactClosed){
+        // previous lines take care of knowing if contactClosed must include contact exception
         if(SomeSwAreOn.size() != 0){
             // if at least one is on, turn off
             ContactAndSwitch.off()
@@ -1615,11 +1706,31 @@ NowBedisClosed = $NowBedisClosed"""
         }
         else {
             log.debug "$ContactAndSwitch already off --"
-        }      
+        }             
+    }
+    else if(contactClosed || (ControlWithBedSensor && NowBedisClosed && contactClosed)) {
 
+        if(IsHeatPump && outsideTemp <= 29){
+            if(SomeSwAreOn.size() != 0){
+                ContactAndSwitch?.off()
+                log.debug "$ContactAndSwitch TURNED OFF because it's a heat pump and outside temp is too low (${outsideTemp} <= 29)"
+                state.turnedOffByApp = true
+            }
+        }
+        else if(ToggleBack) {   
+            if(SomeSwAreOff.size() != 0){
+                //if at least one is off, turn on
+                ContactAndSwitch?.on()
+                log.debug "$ContactAndSwitch TURNED ON"
+                state.turnedOffByApp = false
+            }
+            else {
+                log.debug "$ContactAndSwitch already on"
+            }
+        }       
     }
 
-
+    //// MAIN //// 
     if(doorsOk || ContactExceptionIsClosed ){
 
         def inCtrlSwtchMode = CurrMode in CtrlSwtModes
@@ -3100,11 +3211,12 @@ state.messageSent($state.messageSent)
             }
             if(ClosedByApp) {
                 Actuators?.on()
+                state.OpenByApp = true
+                state.ClosedByApp = false // so it doesn't open again
+
                 if(inAway && OpenInfullWhenAway){
                     ActuatorException?.on()
                 }
-                state.OpenByApp = true
-                state.ClosedByApp = false // so it doesn't open again
 
                 //log.debug "opening windows"
                 if(!NotWindows){
@@ -3327,7 +3439,7 @@ itscooling = $itscooling"""
 
             // open windows just to cool down a little while it's cold outside but too hot inside instead of using AC 
             if(state.ventingrun == 0){
-                //log.debug "VENTING THE HOUSE because NeedVenting = $NeedVenting"
+                log.debug "VENTING THE HOUSE because NeedVenting = $NeedVenting"
                 TurnOffThermostats()
                 ActuatorsVenting?.on()
 
@@ -3344,7 +3456,7 @@ itscooling = $itscooling"""
 
             }
             else {
-                //log.debug "not opening because state.ventingrun is $state.ventingrun"
+                log.debug "not opening because state.ventingrun is $state.ventingrun"
 
 
                 if(!ContactsClosed && AverageCurrTemp - 2 > AverageCSPSet && AverageCurrTemp < AverageCSPSet + 4){
