@@ -22,7 +22,8 @@ def installed() {
 }
 
 def uninstalled() {
-    settings."s${settings.sCapability}".setAssociationGroup(groupNumber, [])
+    settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [], 0, settings.endpoint)
+    settings."s${settings.sCapability}".processAssociations()
 }
 
 def updated() {
@@ -35,7 +36,15 @@ def initialize() {
     if (!overrideLabel) {
         app.updateLabel(defaultLabel())
     }
-    settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [])
+    def addNodes = settings."d${settings.dCapability}".deviceNetworkId - (state.previousNodes? state.previousNodes : [])
+    def delNodes = (state.previousNodes? state.previousNodes : []) - settings."d${settings.dCapability}".deviceNetworkId
+    if (addNodes)
+        settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [], 1, settings.endpoint)
+    if (delNodes)
+        settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [], 0, settings.endpoint)
+    settings."s${settings.sCapability}".processAssociations()
+        
+    state.previousNodes = settings."d${settings.dCapability}".deviceNetworkId
 }
 
 def mainPage() {
@@ -87,6 +96,10 @@ def associationInputs() {
     }
     section("Options") {
         input "groupNumber", "enum", title: "Which group number?", multiple: false, required: true, options: returnGroups()
+        input "multiChannel", "bool", title: "MultiChannel Association?", required: false, submitOnChange: true
+        if (multiChannel) {
+            input "endpoint", "number", title: "Endpoint ID", required: multiChannel
+        }
     }
 }
 
