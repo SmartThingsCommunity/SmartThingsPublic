@@ -1,13 +1,13 @@
 /**
-*  Version 0.1 - First version arms/home/disarm the alarm
+*Version 0.2 - Added guide to use on settings page  
+*Version 0.1 - First version arms/home/disarm the alarm
 */
 preferences {
-
-input("userName", "text", title: "Username", description: "Your username for Yale Home System")
-input("password", "password", title: "Password", description: "Your Password for Yale Home System")
-
-
+	input("userName", "text", title: "Username", description: "Your username for Yale Home System")
+	input("password", "password", title: "Password", description: "Your Password for Yale Home System")
+    input description: "Once you have filled in your details--- -use “Switch off” to Disarm in any mode –use “Lock” to Home Arm (Arm Stay) –use “Switch on” to Fully Arm (Arm away).", title: "Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 }
+
 metadata {
 definition (name: "YALE ALARM SWITCH", namespace: "smartthings", author: "Tapion1ives") {
 
