@@ -43,8 +43,24 @@ def uninstalled() {
 
 def postStatus(){
     
-    def status = request?.json;
+    def status = request?.JSON;
 
+    def splitTopic = "${status?.topic}".split("/");
+
+    def mqttPrefix = splitTopic[0];
+    def mqttTopic = splitTopic[1];
+    def mqttSuffix = splitTopic[2];
+
+    def targetDevice =  tasmotaDevices.find { it.currentValue("topic") == mqttTopic };
+
+    if (targetDevice){
+        log.debug "UPDATING DEVICE: ${targetDevice}"
+
+        targetDevice.updateStatus(status.payload);
+    }
+    else{
+        log.debug "NO DEVICE CONFIGURED FOR TOPIC: ${mqttTopic}";
+    }
 }
 
 def initialize(){

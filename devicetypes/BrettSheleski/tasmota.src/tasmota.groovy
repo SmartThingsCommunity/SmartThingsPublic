@@ -4,6 +4,7 @@ metadata {
 		capability "Refresh"
 
         command "reload"
+        command "updateStatus"
 
         attribute "module", "string"
         attribute "friendlyName", "string"
@@ -278,7 +279,10 @@ def refresh() {
 }
 
 def updateStatus(status){
+    // it doesnt look like what we get from status contains necessary information
+    // So let's make our own HTTP call to get all status changes.
 
+    refresh();
 }
 
 def refreshCallback(physicalgraph.device.HubResponse response){
