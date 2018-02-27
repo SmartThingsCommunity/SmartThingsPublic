@@ -62,7 +62,7 @@ metadata {
 		}
 
 		valueTile("humidity", "device.humidity", decoration: "flat") {
-			state "default", label:'${currentValue}% humidity', icon:"st.Weather.weather12"
+			state "default", label:'${currentValue}% humidity'
 		}
 
 		standardTile("weatherIcon", "device.weatherIcon", decoration: "flat") {
