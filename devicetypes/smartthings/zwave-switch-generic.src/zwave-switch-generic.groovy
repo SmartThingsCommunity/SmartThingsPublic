@@ -37,6 +37,7 @@ metadata {
 		fingerprint mfr:"0039", prod:"4952", model:"3036", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Switch"
 		fingerprint mfr:"0039", prod:"4952", model:"3037", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Switch"
 		fingerprint mfr:"0039", prod:"4952", model:"3133", deviceJoinName: "Honeywell Z-Wave In-Wall Tamper Resistant Duplex Receptacle"
+		fingerprint mfr:"001A", prod:"5352", model:"0000", deviceJoinName: "Eaton RF Accessory Switch"
 	}
 
 	// simulator metadata
@@ -102,15 +103,15 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
@@ -152,22 +153,22 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def on() {
 	delayBetween([
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
+			zwave.basicV1.basicSet(value: 0xFF).format(),
+			zwave.basicV1.basicGet().format()
 	])
 }
 
 def off() {
 	delayBetween([
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
+			zwave.basicV1.basicSet(value: 0x00).format(),
+			zwave.basicV1.basicGet().format()
 	])
 }
 
 def poll() {
 	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
+			zwave.basicV1.basicGet().format(),
+			zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	])
 }
 
@@ -180,8 +181,8 @@ def ping() {
 
 def refresh() {
 	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
+			zwave.basicV1.basicGet().format(),
+			zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	])
 }
 
