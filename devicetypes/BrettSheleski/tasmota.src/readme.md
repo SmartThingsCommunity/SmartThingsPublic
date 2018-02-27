@@ -103,7 +103,7 @@ See the table below of devices this device handler should work with.
 | Sonoff BN-SZ | | | |
 | Sonoff 4CH Pro | | | |
 | Huafan SS | | | |
-| Sonoff Bridge | Working | @BrettSheleski | |
+| Sonoff Bridge | Working | [@BrettSheleski](https://github.com/BrettSheleski) | |
 | Sonoff B1 | | | |
 | AiLight | | | |
 | Sonoff T1 1CH | | | |
