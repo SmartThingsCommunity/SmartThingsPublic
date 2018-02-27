@@ -1,7 +1,7 @@
 /**
  *  Inovelli Dimmer NZW31
  *  Author: Eric Maycock (erocm123)
- *  Date: 2017-12-15
+ *  Date: 2018-02-26
  *
  *  Copyright 2017 Eric Maycock
  *
@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02.
+ *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src
  */
  
 metadata {
@@ -23,12 +25,15 @@ metadata {
         capability "Polling"
         capability "Actuator"
         capability "Sensor"
-        //capability "Health Check"
+        capability "Health Check"
         capability "Indicator"
         capability "Switch Level"
+        capability "Configuration"
         
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
+        
+        command "setAssociationGroup"
 
         fingerprint mfr: "0312", prod: "0118", model: "1E1C", deviceJoinName: "Inovelli Dimmer"
         fingerprint mfr: "015D", prod: "0118", model: "1E1C", deviceJoinName: "Inovelli Dimmer"
@@ -78,14 +83,30 @@ metadata {
 }
 
 def installed() {
+    log.debug "installed()"
     refresh()
 }
 
+def configure() {
+    log.debug "configure()"
+    def cmds = initialize()
+    commands(cmds)
+}
+
 def updated() {
+    if (!state.lastRan || now() >= state.lastRan + 2000) {
+        log.debug "updated()"
+        state.lastRan = now()
+        def cmds = initialize()
+        response(commands(cmds))
+    } else {
+        log.debug "updated() ran within the last 2 seconds. Skipping execution."
+    }
+}
+
+def initialize() {
     sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-    def cmds = []
-    cmds << zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
-    cmds << zwave.associationV2.associationGet(groupingIdentifier: 1)
+    def cmds = processAssociations()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [dimmingStep? dimmingStep.toInteger() : 1], parameterNumber: 1, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: [minimumLevel? minimumLevel.toInteger() : 1], parameterNumber: 2, size: 1)
@@ -96,7 +117,7 @@ def updated() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff? autoOff.toInteger() : 0, parameterNumber: 5, size: 2)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
-    response(commands(cmds))
+    return cmds
 }
 
 def parse(description) {
@@ -217,4 +238,78 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private commands(commands, delay=500) {
     delayBetween(commands.collect{ command(it) }, delay)
+}
+
+def setDefaultAssociations() {
+    state.associationGroups = 3
+    def smartThingsHubID = zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )
+    state.defaultG1 = [smartThingsHubID]
+    state.defaultG2 = []
+    state.defaultG3 = []
+}
+
+def setAssociationGroup(group, nodes, action, endpoint = null){
+    if (!state."desiredAssociation${group}") {
+        state."desiredAssociation${group}" = nodes
+    } else {
+        switch (action) {
+            case 0:
+                state."desiredAssociation${group}" = state."desiredAssociation${group}" - nodes
+            break
+            case 1:
+                state."desiredAssociation${group}" = state."desiredAssociation${group}" + nodes
+            break
+        }
+    }
+}
+
+def processAssociations(){
+   def cmds = []
+   setDefaultAssociations()
+   def supportedGroupings = 5
+   if (state.supportedGroupings) {
+       supportedGroupings = state.supportedGroupings
+   } else {
+       log.debug "Getting supported association groups from device"
+       cmds <<  zwave.associationV2.associationGroupingsGet()
+   }
+   for (int i = 1; i <= supportedGroupings; i++){
+      if(state."actualAssociation${i}" != null){
+         if(state."desiredAssociation${i}" != null || state."defaultG${i}") {
+            def refreshGroup = false
+            ((state."desiredAssociation${i}"? state."desiredAssociation${i}" : [] + state."defaultG${i}") - state."actualAssociation${i}").each {
+                log.debug "Adding node $it to group $i"
+                cmds << zwave.associationV2.associationSet(groupingIdentifier:i, nodeId:Integer.parseInt(it,16))
+                refreshGroup = true
+            }
+            ((state."actualAssociation${i}" - state."defaultG${i}") - state."desiredAssociation${i}").each {
+                log.debug "Removing node $it from group $i"
+                cmds << zwave.associationV2.associationRemove(groupingIdentifier:i, nodeId:Integer.parseInt(it,16))
+                refreshGroup = true
+            }
+            if (refreshGroup == true) cmds << zwave.associationV2.associationGet(groupingIdentifier:i)
+            else log.debug "There are no association actions to complete for group $i"
+         }
+      } else {
+         log.debug "Association info not known for group $i. Requesting info from device."
+         cmds << zwave.associationV2.associationGet(groupingIdentifier:i)
+      }
+   }
+   return cmds
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+    def temp = []
+    if (cmd.nodeId != []) {
+       cmd.nodeId.each {
+          temp += it.toString().format( '%02x', it.toInteger() ).toUpperCase()
+       }
+    } 
+    state."actualAssociation${cmd.groupingIdentifier}" = temp
+    updateDataValue("associationGroup${cmd.groupingIdentifier}", "$temp")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationGroupingsReport cmd) {
+    sendEvent(name: "groups", value: cmd.supportedGroupings)
+    state.supportedGroupings = cmd.supportedGroupings
 }
