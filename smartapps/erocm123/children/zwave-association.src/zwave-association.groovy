@@ -23,7 +23,7 @@ def installed() {
 
 def uninstalled() {
     settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [], 0, settings.endpoint)
-    settings."s${settings.sCapability}".processAssociations()
+    settings."s${settings.sCapability}".configure()
 }
 
 def updated() {
@@ -42,7 +42,7 @@ def initialize() {
         settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [], 1, settings.endpoint)
     if (delNodes)
         settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [], 0, settings.endpoint)
-    settings."s${settings.sCapability}".processAssociations()
+    settings."s${settings.sCapability}".configure()
         
     state.previousNodes = settings."d${settings.dCapability}".deviceNetworkId
 }
