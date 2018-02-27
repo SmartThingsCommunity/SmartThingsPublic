@@ -1,6 +1,12 @@
 # Sonoff-Tasmota
 SmartThings device handler for Sonoff-Tasmota firmware (https://github.com/arendst/Sonoff-Tasmota).
 
+# New Device Handler Implementation Available
+Please see the new 'Tasmota' device handler implementation.
+https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/BrettSheleski/tasmota.src
+
+This device handler should continue to function, but no meaningful further development will occur.
+
 ## Instructions
 ### Add Device Handler
 1. Log in to the SmartThings IDE (https://graph.api.smartthings.com/)
