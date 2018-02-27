@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
+	definition(name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Health Check"
@@ -39,6 +39,7 @@ metadata {
 		fingerprint mfr: "0063", prod: "4944", model: "3131", deviceJoinName: "GE In-Wall Smart Fan Control"
 		fingerprint mfr: "0039", prod: "4944", model: "3131", deviceJoinName: "Honeywell Z-Wave Plus In-Wall Fan Speed Control"
 		fingerprint mfr: "001A", prod: "4449", model: "0101", deviceJoinName: "Eaton RF Master Dimmer"
+		fingerprint mfr: "001A", prod: "4449", model: "0003", deviceJoinName: "Eaton RF Dimmer Receptacle"
 	}
 
 	simulator {
@@ -89,7 +90,13 @@ metadata {
 def installed() {
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	response(refresh())
+	def commands = refresh()
+	if (zwaveInfo.mfr.equals("001A")) {
+		commands << "delay 100"
+		//for Eaton dimmers parameter 7 is ramp time. We set it to 1s for devices to work correctly with local execution
+		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 7, size: 1).format()
+	}
+	response(commands)
 }
 
 def updated() {
@@ -220,7 +227,7 @@ def setLevel(value, duration) {
 }
 
 def poll() {
-	zwave.switchMultilevelV1.switchMultilevelGet().format()
+	refresh()
 }
 
 /**
