@@ -8,13 +8,19 @@ You will need to install the 'Tasmota' device handler along with other device ha
 ### Tasmota
 This is device handler is required for all module types.  This device handler determines your Tasmota-device's module and spawns child SmartThings devices accordingly.
 
+For Sonoff RF Bride modules, sixteen Button child devices will be created.
+
+### Tasmota-Power
+This device handler is used to define the devices that get spawned for switch-like devices.  It is used for the following device types (possibly/probably more):
+
 For Sonoff Basic modules, a single Switch child devices will be created.
 
 For Sonoff Dual modules, two Switch child devices will be created.
 
 For Sonoff 4ch modules, four Switch child devices will be created
 
-For Sonoff RF Bride modules, sixteen Button child devices will be created.
+### Tasmota-RF-Bridge Button
+This device handler is used to define the deives that get spawned for the Sonoff RF Bridge device.  Each instance of this device handler corresponds to one of the 16 commands that can be captured/sent by the Sonoff RF Bridge.
 
 ### Example installation for Sonoff Basic
 In addition to the Tasmota device handler, the Tasmota-Power device handler will also need to be installed.
