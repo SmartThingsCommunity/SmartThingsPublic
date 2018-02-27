@@ -63,3 +63,62 @@ For Sonoff-Basic, Sonoff-4CH, and Sonoff Dual devices this is required
 14.  Click save
 
 After adding and configuring the Tasmota device to your SmartThings account, you should be able to open the SmartThings app and you will see the device you created, as well as a device with the same name followed by the `Switch` suffix.  The `Switch` device will be the device you would normally interact with.
+
+
+## SmartApp
+
+Since Tasmota devices may also be triggered via external sources (not using the SmartThings app) the SmartThings device will need to know of device state-changes.
+
+To accomplish this a SmartThings SmartApp is in development to expose an HTTP endpoint which can be called to update the state of the Tasmota device(s).
+
+See here:  https://github.com/BrettSheleski/SmartThingsPublic/tree/master/smartapps/BrettSheleski/tasmota.src
+
+## Supported Devices
+See the table below of devices this device handler should work with.
+
+
+
+|Module |Status  | Tester(s) | Note   |
+|---|---|---|---|
+| Sonoff Basic   | Working   | @BrettSheleski   | |
+| Sonoff RF | Should Work (Untested)   | | |
+| Sonoff SV   | Should Work (Untested)   | | |
+| Sonoff TH | | | |
+| Sonoff Dual | | | |
+| Sonoff 4CH | | | |
+| S20 Socket | | | |
+| Slampher | | | |
+| Sonoff Touch | | | |
+| Sonoff LED | | | |
+| Sonoff 1 Channel | | | |
+| 4CH | | | |
+| Motor C/AC | | | |
+| ElectroDragon | | | |
+| EXS Relay | | | |
+| WiOn | | | |
+| Generic | | | |
+| Sonoff Dev | | | |
+| H801 | | | |
+| Sonoff SC | | | |
+| Sonoff BN-SZ | | | |
+| Sonoff 4CH Pro | | | |
+| Huafan SS | | | |
+| Sonoff Bridge | Working | @BrettSheleski | |
+| Sonoff B1 | | | |
+| AiLight | | | |
+| Sonoff T1 1CH | | | |
+| Sonoff T1 2CH | | | |
+| Sonoff T1 3CH | | | |
+| Supla Espablo | | | |
+| Witty Cloud | | | |
+| Yunshan Relay | | | |
+| MagicHome | | | |
+| Luani HVIO | | | |
+| KMC 70011 | | | |
+| Arilux LC01 | | | |
+| Arilux LC11 | | | |
+| Sonoff Dual R2 | | | |
+| Arilux LC06 | | | |
+| Sonoff S31 | | | |
+
+
