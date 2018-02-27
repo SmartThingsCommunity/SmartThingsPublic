@@ -12,14 +12,9 @@ definition(
 preferences {
 
 	section("Input Devices") {
-		input "inputSensor", "capability.contactSensor", title: "Sensor", required: true, multiple: false
-		input "outputButton", "capability.momentary", title: "Button", required: true, multiple: false
+		input "contactSensor", "capability.contactSensor", title: "Sensor", required: true, multiple: false
+		input "button", "capability.momentary", title: "Button", required: true, multiple: false
 	}
-
-	section ("Device ID"){
-		input "garageDoorNetworkId", "string", title:"Device ID", required: true, defaultValue: UUID.randomUUID().toString()
-	}
-
 }
 
 def installed(){
@@ -32,14 +27,10 @@ def updated(){
 }
 
 def initialize(){
-	subscribe(inputSensor, "contact.open", handleSensorOpened);
-	subscribe(inputSensor, "contact.close", handleSensorClosed);
+	subscribe(contactSensor, "contact.open", handleSensorOpened);
+	subscribe(contactSensor, "contact.closed", handleSensorClosed);
 
 	def garageDoorOpener = getGarageDoorOpener();
-
-	if (garageDoorOpener == null){
-		addChildDevice("BrettSheleski", "BYO Garage Door Opener", garageDoorNetworkId);
-	}
 	
 	subscribeToCommand(garageDoorOpener, "open", garageDoorOpen);
 	subscribeToCommand(garageDoorOpener, "close", garageDoorClose);
@@ -48,18 +39,45 @@ def initialize(){
 }
 
 def getGarageDoorOpener(){
-	getChildDevices(true).each
-	{
-		if (it.getDeviceNetworkId() == garageDoorNetworkId)
-        {
-			return it;
-        }
+	def deviceId = "${app.id}-garage-door";
+
+	log.debug "Device ID: ${deviceId}";
+
+	def childDevice = childDevices.find {
+		it.deviceNetworkId == deviceId
+	};
+
+	if (childDevice == null){
+
+		def theHubId = location.hubs[0].id
+        def label = null;
+        def properties = [:];
+		def namespace = "BrettSheleski";
+		def deviceTypeName = "BYO Garage Door Opener";
+
+		log.debug "DEVICE : ${e}"
+		
+		properties = [
+			label : "BYO Garage Door",
+			name : "BYO Garage Door",
+			completedSetup : true
+		];
+
+		log.debug "Creating Child Device"
+
+		childDevice = addChildDevice(namespace, deviceTypeName, deviceId, theHubId, properties)
+
+		log.debug "Created Child Device: ${childDevice}"
+	}
+	else{
+		log.debug "Found Child Device: ${childDevice}"
 	}
 
-    return null;
+    return childDevice;
 }
 
 def handleSensorOpened(evt){
+	log.debug "The Sensor is opened"
 
 	def garageDoorOpener = getGarageDoorOpener();
 
@@ -67,6 +85,7 @@ def handleSensorOpened(evt){
 }
 
 def handleSensorClosed(evt){
+	log.debug "The Sensor is closed"
 
 	def garageDoorOpener = getGarageDoorOpener();
 
@@ -74,6 +93,8 @@ def handleSensorClosed(evt){
 }
 
 def garageDoorOpen(evt){
+
+	log.debug "Opening the garage door"
 	if (!isDoorOpen()){
 		outputButton.push();
 
@@ -81,9 +102,14 @@ def garageDoorOpen(evt){
 
 		garageDoorOpener.sendEvent(name: "door", value: "opening");
 	}
+	else{
+		log.debug "The door is already open.  Nothing to do."
+	}
 }
 
 def garageDoorClose(evt){
+
+	log.debug "Closing the garage door"
 	if (!isDoorClosed()){
 		outputButton.push();
 
@@ -91,12 +117,23 @@ def garageDoorClose(evt){
 
 		garageDoorOpener.sendEvent(name: "door", value: "closing");
 	}
+	else{
+		log.debug "The door is already closed.  Nothing to do."
+	}
 }
 
 def isDoorOpen(){
-	return inputSensor.currentValue("contact") == "open";
+	def currentVal = contactSensor.currentValue("contact")
+
+	log.debug "Sensor state: ${currentVal}"
+
+	return currentVal == "open";
 }
 
 def isDoorClosed(){
-	return inputSensor.currentValue("contact") == "closed";
+	def currentVal = contactSensor.currentValue("contact")
+
+	log.debug "Sensor state: ${currentVal}"
+
+	return currentVal == "closed";
 }
