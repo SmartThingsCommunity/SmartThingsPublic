@@ -1,7 +1,6 @@
 /**
- *  Curb Smart Energy Max Plus
  *
- *  Copyright 2017 Neil Zumwalde
+ *  Copyright 2017 Curb, Inc
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,7 +13,14 @@
  *
  */
 
-definition(name: "CURB Energy Manager", namespace: "curb", author: "Neil Zumwalde", description: "Maximize your energy savings with CURB!", category: "", iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png", iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png", iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png")
+definition(name: "CURB Energy Manager",
+  namespace: "curb",
+  author: "Curb",
+  description: "Maximize your energy savings with CURB",
+  category: "Green Living",
+  iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
+  iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
+  iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png")
 
 preferences {
   page(name: "pageOne", nextPage: "pageTwo") {
@@ -24,173 +30,161 @@ preferences {
     }
     section("When to run") {
       input("weekdays", "enum", title: "Set Days of Week", multiple: true, required: true,
-              options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                defaultValue: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+        options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        defaultValue: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
       input("hours", "enum", title: "Select Times of Day", multiple: true, required: true,
-              options: [[0 : "12am"], [1 : "1am"], [2 : "2am"], [3 : "3am"], [4 : "4am"], [5 : "5am"], [6 : "6am"], [7 : "7am"], [8 : "8am"], [9 : "9am"],
-                [10 : "10am"], [11 : "11am"], [12 : "12pm"], [13 : "1pm"], [14 : "2pm"], [15 : "3pm"], [16 : "4pm"], [17 : "5pm"], [18 : "6pm"], [19 : "7pm"],
-                [20 : "8pm"], [21 : "9pm"], [22 : "10pm"], [23 : "11pm"]],
-                defaultValue: [15, 16, 17, 18, 19])
+        options: [[0 : "12am"], [1 : "1am"], [2 : "2am"],
+          [3 : "3am"], [4 : "4am"], [5 : "5am"], [6 : "6am"],
+          [7 : "7am"], [8 : "8am"], [9 : "9am"], [10 : "10am"],
+          [11 : "11am"], [12 : "12pm"], [13 : "1pm"], [14 : "2pm"],
+          [15 : "3pm"], [16 : "4pm"], [17 : "5pm"], [18 : "6pm"],
+          [19 : "7pm"], [20 : "8pm"], [21 : "9pm"], [22 : "10pm"], [23 : "11pm"]])
     }
   }
   page(name: "pageTwo", nextPage: "pageThree" ) {
     section("Threshold Settings") {
       input("timeInterval", "enum", title: "Select Measurement Interval", multiple: false,
-              options: [[15 : "15 minutes"], [30 : "30 minutes"], [60 : "60 minutes"]], defaultValue: 30)
-      input("kwhThreshold", "float", title: "Set Threshold Usage (kWh)")
-            input("safetyMargin", "float", title: "Set Safety Margin (%)", defaultValue: 25)
-      input("projectionPeriod", "float", title: "Set Projection Period (%)", defaultValue: 50)
-      input("meter", "capability.energyMeter", title: "Select Monitored Circuit", multiple: false)
-      input("circuits", "capability.energyMeter", title: "Circuits to send alerts on", multiple:true, defaultValue: ALL)
+              options: [[15 : "15 minutes"], [30 : "30 minutes"], [60 : "60 minutes"]],
+              defaultValue: 30)
+      input("kwhThreshold", "float", title: "Set Threshold Usage (kW)")
+      input("safetyMargin", "float", title: "Set Safety Margin (%)", defaultValue: 25)
+      input("projectionPeriod", "float", title: "Set Projection Period (%)", defaultValue: 0)
+      input("meter", "capability.powerMeter", title: "Select Power Meter to Trigger throttling on ('Net' in most cases)", multiple: false)
+      input("circuits", "capability.powerMeter", title: "Circuits to send alerts on", multiple:true)
     }
   }
-    page(name: "pageThree", install: true, uninstall:true) {
+  page(name: "pageThree", install: true, uninstall: true) {
     section("Controlled Appliances") {
       input("thermostats", "capability.thermostat", title: "Select your Thermostat", multiple: true, required: false)
       input("switches", "capability.switch", title: "Select your Load Controllers", multiple: true, required: false)
-            //input("cycleTimeLatency", "float", title: "Set Cycle Time Latency (minutes)", defaultValue: 5)
     }
 
-    section("Notifications"){
-          input("recipients", "contact", title: "Send notifications to") {
-              input "phone", "phone", title: "Phone Number",
-                  description: "Recieve Text Messages about your usage", required: false
-          }
-      }
+    section("Send Push Notification?") {
+      input( "sendPush", "bool", required: false, title: "Send Push Notification?")
+    }
   }
 }
 
 def installed() {
-  resetClocking()
-  //log.debug "Installed with settings: ${settings}"
-
-  initialize()
+  resetClocking();
+  initialize();
 }
 
 def updated() {
-  //log.debug "Updated with settings: ${settings}"
-  runAutomation()
-  unsubscribe()
-  initialize()
+  runAutomation();
+  unsubscribe();
+  initialize();
 }
 
 def initialize() {
-  subscribe(meter, "power", checkEnergyMonitor)
-  runEvery1Minute(runAutomation)
-
+  subscribe(meter, "power", checkEnergyMonitor);
+  runEvery1Minute(runAutomation);
 }
 
+// Returns true if we are in a selected automation time
 def checkRunning() {
-  def df = new java.text.SimpleDateFormat("EEEE")
-  df.setTimeZone(location.timeZone)
-  if (weekdays.contains(df.format(new Date()))) {
-    def hf = new java.text.SimpleDateFormat("H")
-    hf.setTimeZone(location.timeZone)
+  def df = new java.text.SimpleDateFormat("EEEE");
+  df.setTimeZone(location.timeZone);
+
+  if (weekdays.contains( df.format(new Date()) )) {
+    // We're in an enabled weekday
+    def hf = new java.text.SimpleDateFormat("H");
+    hf.setTimeZone(location.timeZone);
+
     if (hours.contains(hf.format(new Date()).toString())) {
+      // We're in an enabled hour
       return true
     }
   }
   return false
 }
 
+// Creates the message and sends the push notification
 def sendNotifications() {
-  //log.debug("notifying")
-    //log.debug(recipients)
-    def devlist = []
-    //log.debug(circuits)
-    def count = 0
-    def currentTotal = Float.parseFloat(meter.currentState("power").value)
-    for(c in circuits){
-        //log.debug(c)
-        //log.debug(currentTotal)
-        try {
-        devlist.add([pct: ((Float.parseFloat(c.currentState("power").value) / currentTotal) * 100).round(), name: c.toString()])
-        count += count
-        } catch (e) {
-          log.debug(e);
-        }
+  def devlist = []
+  def count = 0
+  def currentTotal = Float.parseFloat(meter.currentState("power").value)
+  def message = "Curb Alert: Energy usage is projected to go over selected threshold."
 
+  for(c in circuits) {
+    try {
+      if (c.toString() == "Net") { continue }
+      if (c.toString() == "Consumption") { continue }
+      devlist.add([ pct: ((Float.parseFloat(c.currentState("power").value) / currentTotal) * 100).round(), name: c.toString() ])
+      count += count
+    } catch (e) {
+      // sometimes we get circuits with no power value
+      log.debug(e);
     }
-
-    //log.debug(devlist)
-
-    def sorted = devlist.sort { a, b -> b.pct <=> a.pct }
-    def message = "Curb Alert: Energy usage is projected to go over selected threshold."
-    //log.debug(devlist.size())
-    if (devlist.size() > 3)
-    {
-      message = "Curb Alert: Energy usage is projected to go over selected threshold. Your biggest consumers currently are: ${sorted[0].name} ${sorted[0].pct}%, ${sorted[1].name} ${sorted[1].pct}%, and ${sorted[2].name} ${sorted[2].pct}%"
-    }
-  sendNotificationToContacts(message, recipients)
+  }
+  if (devlist.size() > 3) {
+      def sorted = devlist.sort { a, b -> b.pct <=> a.pct }
+      message += "Your biggest consumers currently are: ${sorted[0].name} ${sorted[0].pct}%, ${sorted[1].name} ${sorted[1].pct}%, and ${sorted[2].name} ${sorted[2].pct}%"
+  }
+  sendPush(message)
 }
 
+// Resets the absolute time window
 def resetClocking() {
-  //log.debug("resetting the clock")
   state.readings = []
-  for (int i = 0; i < Integer.parseInt(timeInterval); i++) {
-    state.readings[i] = null
-  }
   state.usage = 0
-  //log.debug(state)
-  if (state.throttling == true){
+  if (state.throttling == true) {
     stopThrottlingUsage()
   }
 }
 
+//
 def runAutomation() {
-  if (enabled){
-    def mf = new java.text.SimpleDateFormat("m")
-    def minute = Integer.parseInt(mf.format(new Date())) % Integer.parseInt(timeInterval)
+  if ( !enabled ) { return }
+  if ( !checkRunning() ) { return }
 
-      //log.debug("in automation / minute: " + minute.toString())
+  def mf = new java.text.SimpleDateFormat("m")
+  def minute = Integer.parseInt(mf.format(new Date())) % Integer.parseInt(timeInterval)
+  def samples = 0.0
+  state.usage = 0.0
 
-      // First Minute, reset the whole process
-    if (minute == 0) {
-      resetClocking()
-    }
-
-      //we're still in the projection period. don't do anything
-      if (minute < Float.parseFloat(timeInterval) * (Float.parseFloat(projectionPeriod) / 100) )
-      {
-        return
-      }
-
-    state.usage = 0.0
-    def samples = 0.0
-    for (int i = 0; i < Integer.parseInt(timeInterval); i++) {
-      if (state.readings[i] != null) {
-        samples = samples + 1.0
-        state.usage = state.usage + (state.readings[i] / 60 / 1000)
-      }
-    }
-    //log.debug("samples:" + samples.toString())
-    //log.debug("usage:" + state.usage.toString())
-
-    if (samples != 0.0) {
-        def avgedUsage = minute * ( state.usage / samples )
-          //log.debug(avgedUsage)
-          def safetyThreshold = ( Float.parseFloat(kwhThreshold) * ( 1 - (Float.parseFloat(safetyMargin) / 100)))
-          //log.debug(safetyThreshold)
-        if (avgedUsage > safetyThreshold) {
-        throttleUsage()
-      }
-    }
+  if (minute == 0) {
+    // This is the first minute of the process, reset variables
+    resetClocking()
   }
-}
 
-def checkEnergyMonitor(evt) {
-  if (!checkRunning()) {
+  if (minute < Float.parseFloat(timeInterval) * (Float.parseFloat(projectionPeriod) / 100) ) {
+    //We're in the projection period. Do not throttle
     return
   }
 
+  for (int i = 0; i < Integer.parseInt(timeInterval); i++) {
+    if (state.readings[i] != null) {
+      samples = samples + 1.0
+      log.debug(samples)
+      state.usage = state.usage + (state.readings[i] / 1000)
+      log.debug(state.usage)
+    }
+  }
+
+  if (samples != 0.0) {
+    def avgedUsage = minute * ( state.usage / samples ) / Float.parseFloat(timeInterval)
+    log.debug("minute: " + minute)
+    log.debug("usage: " + avgedUsage)
+    def safetyThreshold = ( Float.parseFloat(kwhThreshold) * ( 1 - (Float.parseFloat(safetyMargin) / 100)))
+    log.debug(safetyThreshold)
+    if (avgedUsage > safetyThreshold) {
+      throttleUsage()
+    }
+  }
+
+}
+
+// Saves power reading in circular buffer
+def checkEnergyMonitor(evt) {
   def mf = new java.text.SimpleDateFormat("m")
   def minute = Integer.parseInt(mf.format(new Date())) % Integer.parseInt(timeInterval)
 
   def power = meter.currentState("power").value
   state.readings[minute] = Float.parseFloat(power)
-  //log.debug(state)
 }
 
+// Gets and saves the current controller state for use during state restore
 def captureContollerStates() {
   if (!state.throttling) {
     for (t in thermostats) {
@@ -199,12 +193,30 @@ def captureContollerStates() {
     for (s in switches) {
       state[s.id] = s.currentState("switch").value
     }
-    //log.debug "state: ${state}"
   }
 }
 
-def restoreControllerStates() {
-  if (!state.throttling) {
+// Sets thermostats
+def throttleUsage() {
+  if (state.throttling) {
+    return
+  }
+  captureContollerStates()
+  sendNotifications()
+  state.throttling = true
+
+  for (t in thermostats) {
+    t.off()
+  }
+
+  for (s in switches) {
+    s.off()
+  }
+}
+
+// Restores controller states to previously stored values
+def stopThrottlingUsage() {
+    state.throttling = false
     for (t in thermostats) {
       if (!state[t.id]) {
         continue
@@ -218,31 +230,4 @@ def restoreControllerStates() {
       }
       state[s.id] == "on" ? s.on() : s.off()
     }
-  }
-}
-
-def throttleUsage() {
-
-  if (state.throttling) {
-    return
-  }
-  captureContollerStates()
-  sendNotifications()
-  state.throttling = true
-  //log.debug "throttling usage"
-
-
-  for (t in thermostats) {
-    t.off()
-  }
-
-  for (s in switches) {
-    s.off()
-  }
-}
-
-def stopThrottlingUsage() {
-    state.throttling = false
-    //log.debug "resuming normal operations"
-    restoreControllerStates()
 }

@@ -1,5 +1,4 @@
 /**
- *  Curb (Connect)
  *
  *  Copyright 2017 Curb
  *
@@ -21,7 +20,7 @@ definition(
     namespace: "curb",
     author: "Curb",
     description: "Gain insight into energy usage throughout your home.",
-    category: "",
+    category: "Green Living",
     iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
@@ -184,13 +183,11 @@ def updateSelectedLocationId() {
 }
 
 def updateChildDevice(dni, label, value) {
-    try {
-        def existingDevice = getChildDevice(dni)
-        existingDevice.handlePower(value)
-    } catch (e) {
-    	createChildDevice(dni, label)
-        log.error "Error creating or updating device: ${e}"
+    def device = getChildDevice(dni)
+    if (device == null) {
+      device = createChildDevice(dni, label)
     }
+    device.handlePower(value)
 }
 
 def createChildDevice(dni, label) {
@@ -240,7 +237,6 @@ def processUsage(resp, data) {
     def production = 0.0
     def consumption = 0.0
     if (json) {
-    	log.debug(json)
         json.each {
             if (!it.main && !it.production) {
               updateChildDevice("${it.id}", it.label, it.avg)
@@ -252,21 +248,21 @@ def processUsage(resp, data) {
             }
             if (it.production) {
               if (it.production == "Line-side") {
-              	main += it.avg
+                main += it.avg
               }
               production += it.avg
               state.hasProduction = true
             }
         }
         if (state.hasMains && main != 0.0) {
-        	updateChildDevice("__NET__","Net", main)
+            updateChildDevice("__NET__", "Total Power Grid Impact", main)
         }
         else {
-        	updateChildDevice("__NET__", "Net", consumption + production)
+            updateChildDevice("__NET__", "Total Power Grid Impact", consumption + production)
         }
         if (state.hasProduction) {
-            updateChildDevice("__PRODUCTION__", "Production", production)
-            updateChildDevice("__CONSUMPTION__", "Consumption", consumption)
+            updateChildDevice("__PRODUCTION__", "Total Power Production", production)
+            updateChildDevice("__CONSUMPTION__", "Total Power Usage", consumption)
         }
     }
 }
@@ -288,13 +284,17 @@ def processDevices(resp, data) {
                 state.hasProduction = true
             }
             if (it.main) {
-            	state.hasMains = true
+              state.hasMains = true
             }
         }
-        createChildDevice("__NET__", "Net")
+
         if (state.hasProduction) {
-            createChildDevice("__PRODUCTION__", "Production")
-            createChildDevice("__CONSUMPTION__", "Consumption")
+            createChildDevice("__NET__", "Total Power Grid Impact")
+            createChildDevice("__PRODUCTION__", "Total Power Production")
+            createChildDevice("__CONSUMPTION__", "Total Power Usage")
+        } else {
+            //If they don't have production, just call NET Total Power Usage
+            createChildDevice("__NET__", "Total Power Usage")
         }
     }
 }
@@ -321,7 +321,7 @@ def processKwh(resp, data) {
               production += it.kwhr
             }
             if (!state.hasMains && !it.production) {
-            	main += it.kwhr
+              main += it.kwhr
             }
         }
         getChildDevice("__NET__").handleKwhBilling(main)
