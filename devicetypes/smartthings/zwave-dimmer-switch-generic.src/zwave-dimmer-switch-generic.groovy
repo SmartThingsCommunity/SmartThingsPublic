@@ -38,6 +38,7 @@ metadata {
 		fingerprint mfr:"0063", prod:"4944", model:"3034", deviceJoinName: "GE In-Wall Smart Fan Control"
 		fingerprint mfr:"0063", prod:"4944", model:"3131", deviceJoinName: "GE In-Wall Smart Fan Control"
 		fingerprint mfr:"0039", prod:"4944", model:"3131", deviceJoinName: "Honeywell Z-Wave Plus In-Wall Fan Speed Control"
+		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Smart Dimmer 6"
 	}
 
 	simulator {
