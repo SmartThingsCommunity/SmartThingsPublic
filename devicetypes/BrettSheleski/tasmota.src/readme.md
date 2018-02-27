@@ -122,3 +122,12 @@ See the table below of devices this device handler should work with.
 | Sonoff S31 | | | |
 
 
+
+
+# Future
+The Tasmota device handler will also read the GPIO configuration of the Tasmota device and spawn additional child devices accordingly.
+
+# Contribute
+Since I do not have all the modules that the Sonoff-Tasmota firmware supports, I will not be able to test all the devices, nor will I be able to implement any necessary child-device-handlers that would make the implementation complete.
+
+There is a Tasmota-Base device handler intended to be used as a starting point to create device handlers with.  Hopefully others will be able to use this to help further the project.  
