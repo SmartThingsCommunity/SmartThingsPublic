@@ -108,8 +108,8 @@ def sendNotifications() {
 
   for(c in circuits) {
     try {
-      if (c.toString() == "Net") { continue }
-      if (c.toString() == "Consumption") { continue }
+      if (c.toString() == "Total Power Usage") { continue }
+      if (c.toString() == "Total Power Grid Impact") { continue }
       devlist.add([ pct: ((Float.parseFloat(c.currentState("power").value) / currentTotal) * 100).round(), name: c.toString() ])
       count += count
     } catch (e) {
