@@ -96,10 +96,10 @@ def associationInputs() {
     }
     section("Options") {
         input "groupNumber", "enum", title: "Which group number?", multiple: false, required: true, options: returnGroups()
-        input "multiChannel", "bool", title: "MultiChannel Association?", required: false, submitOnChange: true
-        if (multiChannel) {
-            input "endpoint", "number", title: "Endpoint ID", required: multiChannel
-        }
+        //input "multiChannel", "bool", title: "MultiChannel Association?", required: false, submitOnChange: true
+        //if (multiChannel) {
+        //    input "endpoint", "number", title: "Endpoint ID", required: multiChannel
+        //}
     }
 }
 
