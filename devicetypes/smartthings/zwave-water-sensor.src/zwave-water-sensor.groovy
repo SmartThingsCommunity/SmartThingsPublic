@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture") {
+	definition (name: "Z-Wave Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", runLocally: true, minHubCoreVersion: '000.017.0012') {
 		capability "Water Sensor"
 		capability "Sensor"
 		capability "Battery"
