@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "Springs Window Fashions Remote", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Springs Window Fashions Remote", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller") {
 
         capability "Battery"
 
