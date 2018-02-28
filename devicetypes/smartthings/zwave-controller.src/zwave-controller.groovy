@@ -38,13 +38,10 @@ metadata {
 		main "state"
 		details(["state", "basicOn", "basicOff"])
 	}
-
-	fingerprint mfr:"026E", prod:"5643", model:"5A31", deviceJoinName: "2 Button Window Remote"
-	fingerprint mfr:"026E", prod:"4252", model:"5A31", deviceJoinName: "3 Button Window Remote"
 }
 
 def installed() {
-	if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+	if (zwaveInfo.zw?.cc?.contains("84")) {
 		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
 }
