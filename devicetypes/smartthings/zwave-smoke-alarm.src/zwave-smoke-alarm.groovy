@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Smoke Alarm", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012') {
+	definition (name: "Z-Wave Smoke Alarm", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Smoke Detector"
 		capability "Carbon Monoxide Detector"
 		capability "Sensor"
@@ -149,12 +149,12 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
 			} else {
 				results << createEvent(descriptionText: "$device.displayName code 13 is $cmd.alarmLevel", isStateChange:true, displayed:false)
 			}
-			
+
 			// Clear smoke in case they pulled batteries and we missed the clear msg
 			if(device.currentValue("smoke") != "clear") {
 				createSmokeOrCOEvents("smokeClear", results)
 			}
-			
+
 			// Check battery if we don't have a recent battery event
 			if (!state.lastbatt || (now() - state.lastbatt) >= 48*60*60*1000) {
 				results << response(zwave.batteryV1.batteryGet())
@@ -182,7 +182,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd,
 	} else if (cmd.sensorType == 2) {
 		createSmokeOrCOEvents(cmd.sensorState ? "carbonMonoxide" : "carbonMonoxideClear", results)
 	}
-	
+
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {

@@ -15,7 +15,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012') {
+	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
