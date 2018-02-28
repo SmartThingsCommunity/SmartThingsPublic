@@ -14,7 +14,8 @@
  *
  *
  *	VERSION HISTORY
- *  21.02.2018	2.1	- re run upto 5 times when set temp is not 200
+ *  	28.02.2018	2.2 - Added battery indication tile to to warn of low battery
+ *	21.02.2018	2.1	- re run upto 5 times when set temp is not 200
  *	23.11.2016:	2.0 - Remove BETA status.
  * 
  *	07.11.2016: 2.0 BETA Release 1.1 - Allow icon to be changed.
@@ -69,7 +70,7 @@ metadata {
 			}
             
             tileAttribute ("lastupdatetemp", key: "SECONDARY_CONTROL") {
-				attributeState "default", label:'Temperature last reported ${currentValue}'
+				attributeState "default", label:'eTRV last seen ${currentValue}'
             }
 		}
         
@@ -160,7 +161,7 @@ def parse(String description) {
 
 // handle commands
 def setHeatingSetpoint(temp) {
-	state.counter = state.counter //mc
+	state.counter = state.counter
 	log.debug "Executing 'setHeatingSetpoint with temp $temp'"
 	def latestThermostatMode = device.latestState('thermostatMode')
     
@@ -368,5 +369,5 @@ def poll() {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	runIn(03, poll)
+	runIn(02, poll)
 }
