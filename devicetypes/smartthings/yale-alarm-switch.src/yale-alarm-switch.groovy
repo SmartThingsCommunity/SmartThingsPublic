@@ -5,7 +5,7 @@
 preferences {
 	input("userName", "text", title: "Username", description: "Your username for Yale Home System")
 	input("password", "password", title: "Password", description: "Your Password for Yale Home System")
-    input description: "Once you have filled in your details--- -use “Switch off” to Disarm in any mode –use “Lock” to Home Arm (Arm Stay) –use “Switch on” to Fully Arm (Arm away).", title: "Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+    input description: "Once you have filled in your details ----use “Switch off” to Disarm in any mode ----use “Lock” to Home Arm (Arm Stay) ----use “Switch on” to Fully Arm (Arm away).", title: "Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 }
 
 metadata {
@@ -23,16 +23,16 @@ tiles {
 	standardTile("toggle", "device.status", width: 2, height: 2) {
 		state("unknown", label:'${name}', action:"device.refresh", icon:"st.Office.office9", backgroundColor:"#ffa81e")
 		state("Armed Stay", label:'${name}', action:"switch.off", icon:"st.Home.home4", backgroundColor:"#79b821", nextState:"Disarmed")
-		state("Disarmed", label:'${name}', action:"lock.lock", icon:"st.Home.home2", backgroundColor:"#a8a8a8", nextState:"Armed Away")
+		state("Disarmed", label:'${name}', action:"switch.on", icon:"st.Home.home2", backgroundColor:"#a8a8a8")//, nextState:"Armed Away")
 		state("Armed Away", label:'${name}', action:"switch.off", icon:"st.Home.home3", backgroundColor:"#79b821", nextState:"Disarmed")
         state("Arming", label:'${name}', icon:"st.Home.home4", backgroundColor:"#ffa81e")
 		state("Disarming", label:'${name}', icon:"st.Home.home2", backgroundColor:"#ffa81e")
      	}
 	standardTile("statusstay", "device.status", inactiveLabel: false, decoration: "flat") {
-		state "default", label:'Arm Stay', action:"switch.on", icon:"st.Home.home4"
+		state "default", label:'Arm Stay', action:"lock.lock", icon:"st.Home.home4"
 	}
 	standardTile("statusaway", "device.status", inactiveLabel: false, decoration: "flat") {
-		state "default", label:'Arm Away', action:"lock.lock", icon:"st.Home.home3"
+		state "default", label:'Arm Away', action:"switch.on", icon:"st.Home.home3"
 	}
 	standardTile("statusdisarm", "device.status", inactiveLabel: false, decoration: "flat") {
 		state "default", label:'Disarm', action:"switch.off", icon:"st.Home.home2"
