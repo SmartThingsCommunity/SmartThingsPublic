@@ -1,7 +1,7 @@
 /**
  *  Inovelli Door/Window Sensor NZW1201
  *  Author: Eric Maycock (erocm123)
- *  Date: 2017-08-17
+ *  Date: 2018-02-26
  *
  *  Copyright 2017 Eric Maycock
  *
@@ -14,6 +14,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-02-26: Added support for Z-Wave Association Tool SmartApp.
+ *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src
+ *
  */
 
 metadata {
@@ -22,11 +25,13 @@ metadata {
         capability "Sensor"
         capability "Battery"
         capability "Configuration"
-        //capability "Health Check"
+        capability "Health Check"
         capability "Temperature Measurement"
         
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
+        
+        command "setAssociationGroup"
 
         fingerprint mfr:"015D", prod:"2003", model:"B41C", deviceJoinName: "Inovelli Door/Window Sensor"
         fingerprint mfr:"0312", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Door/Window Sensor"
@@ -39,7 +44,7 @@ metadata {
     }
     
     preferences {
-        input "tempReportInterval", "enum", title: "Temperature Report Interval\n\nHow often you would like temperature reports to be sent from the sensor. More frequent reports will have a negative impact on battery life.\nRange: 1 to 3600", description: "Tap to set", required: false, options:[10: "10 Minutes", 30: "30 Minutes", 60: "1 Hour", 120: "2 Hours", 180: "3 Hours", 240: "4 Hours", 300: "5 Hours", 360: "6 Hours", 720: "12 Hours", 1440: "24 Hours"], defaultValue: 180
+        input "tempReportInterval", "enum", title: "Temperature Report Interval\n\nHow often you would like temperature reports to be sent from the sensor. More frequent reports will have a negative impact on battery life.\n", description: "Tap to set", required: false, options:[10: "10 Minutes", 30: "30 Minutes", 60: "1 Hour", 120: "2 Hours", 180: "3 Hours", 240: "4 Hours", 300: "5 Hours", 360: "6 Hours", 720: "12 Hours", 1440: "24 Hours"], defaultValue: 180
         input "tempOffset", "number", title: "Temperature Offset\n\nCalibrate reported temperature by applying a negative or positive offset\nRange: -10 to 10", description: "Tap to set", required: false, range: "-10..10"
     }
 
@@ -102,27 +107,38 @@ def parse(String description) {
 }
 
 def installed() {
-    // Device-Watch simply pings if no device events received for 482min(checkInterval)
-    sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
+    log.debug "installed()"
+    def cmds = [zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)]
+    commands(cmds)
+}
+
+def configure() {
+    log.debug "configure()"
+    def cmds = initialize()
+    commands(cmds)
 }
 
 def updated() {
-    // Device-Watch simply pings if no device events received for 482min(checkInterval)
-    sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-    if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
-    def cmds = []
-    if (!state.MSR) {
-        cmds = [
-            command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()),
-            "delay 1200",
-            zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-        ]
-    } else if (!state.lastbat) {
-        cmds = []
+    if (!state.lastRan || now() >= state.lastRan + 2000) {
+        log.debug "updated()"
+        state.lastRan = now()
+        def cmds = initialize()
+        response(commands(cmds))
     } else {
-        cmds = [zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+        log.debug "updated() ran within the last 2 seconds. Skipping execution."
     }
-    response(cmds)
+}
+
+def initialize() {
+    sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
+    def cmds = processAssociations()
+    cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
+    if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
+    if (!state.MSR) {
+        cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+    }
+    cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
+	return cmds
 }
 
 private getAdjustedTemp(value) {
@@ -132,13 +148,6 @@ private getAdjustedTemp(value) {
     } else {
        return value
     }
-}
-
-def configure() {
-    commands([
-        zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW),
-        zwave.manufacturerSpecificV2.manufacturerSpecificGet()
-    ], 1000)
 }
 
 def sensorValueEvent(value) {
@@ -200,28 +209,27 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
-    def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
-    def cmds = []
+    log.debug "${device.displayName} woke up"
+    def cmds = processAssociations()
     if (!state.MSR) {
-        cmds << command(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
-        cmds << "delay 1200"
+        cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
     }
     
-    cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1).format()
+    cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
     
-    if(state.wakeInterval == null || state.wakeInterval != (tempReportInterval? tempReportInterval.toInteger()*60:10800)){
+    if(!state.wakeInterval == null || state.wakeInterval != (tempReportInterval? tempReportInterval.toInteger()*60:10800)){
         log.debug "Setting Wake Interval to ${tempReportInterval? tempReportInterval.toInteger()*60:10800}"
-        cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: tempReportInterval? tempReportInterval.toInteger()*60:10800, nodeid:zwaveHubNodeId).format()
-        cmds << zwave.wakeUpV1.wakeUpIntervalGet().format()
+        cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: tempReportInterval? tempReportInterval.toInteger()*60:10800, nodeid:zwaveHubNodeId)
+        cmds << zwave.wakeUpV1.wakeUpIntervalGet()
     }
 
     if (!state.lastbat || now() - state.lastbat > 53*60*60*1000) {
-        cmds << command(zwave.batteryV1.batteryGet())
-    } else { // If we check the battery state we will send NoMoreInfo in the handler for BatteryReport so that we definitely get the report
-        cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-    }
+        cmds << zwave.batteryV1.batteryGet()
+    } 
+    
+    cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
 
-    [event, response(cmds)]
+    [event, response(commands(cmds))]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
@@ -296,4 +304,80 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private commands(commands, delay=200) {
     delayBetween(commands.collect{ command(it) }, delay)
+}
+
+def setDefaultAssociations() {
+    state.associationGroups = 3
+    def smartThingsHubID = zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )
+    state.defaultG1 = [smartThingsHubID]
+    state.defaultG2 = []
+    state.defaultG3 = []
+}
+
+def setAssociationGroup(group, nodes, action, endpoint = null){
+    if (!state."desiredAssociation${group}") {
+        state."desiredAssociation${group}" = nodes
+    } else {
+        switch (action) {
+            case 0:
+                state."desiredAssociation${group}" = state."desiredAssociation${group}" - nodes
+            break
+            case 1:
+                state."desiredAssociation${group}" = state."desiredAssociation${group}" + nodes
+            break
+        }
+    }
+}
+
+def processAssociations(){
+   def cmds = []
+   setDefaultAssociations()
+   def supportedGroupings = 5
+   if (state.supportedGroupings) {
+       supportedGroupings = state.supportedGroupings
+   } else {
+       log.debug "Getting supported association groups from device"
+       cmds <<  zwave.associationV2.associationGroupingsGet()
+   }
+   for (int i = 1; i <= supportedGroupings; i++){
+      if(state."actualAssociation${i}" != null){
+         if(state."desiredAssociation${i}" != null || state."defaultG${i}") {
+            def refreshGroup = false
+            ((state."desiredAssociation${i}"? state."desiredAssociation${i}" : [] + state."defaultG${i}") - state."actualAssociation${i}").each {
+                log.debug "Adding node $it to group $i"
+                cmds << zwave.associationV2.associationSet(groupingIdentifier:i, nodeId:Integer.parseInt(it,16))
+                refreshGroup = true
+            }
+            ((state."actualAssociation${i}" - state."defaultG${i}") - state."desiredAssociation${i}").each {
+                log.debug "Removing node $it from group $i"
+                cmds << zwave.associationV2.associationRemove(groupingIdentifier:i, nodeId:Integer.parseInt(it,16))
+                refreshGroup = true
+            }
+            if (refreshGroup == true) cmds << zwave.associationV2.associationGet(groupingIdentifier:i)
+            else log.debug "There are no association actions to complete for group $i"
+         }
+      } else {
+         log.debug "Association info not known for group $i. Requesting info from device."
+         cmds << zwave.associationV2.associationGet(groupingIdentifier:i)
+      }
+   }
+   return cmds
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+    def temp = []
+    if (cmd.nodeId != []) {
+       cmd.nodeId.each {
+          temp += it.toString().format( '%02x', it.toInteger() ).toUpperCase()
+       }
+    } 
+    state."actualAssociation${cmd.groupingIdentifier}" = temp
+    log.debug "Associations for Group ${cmd.groupingIdentifier}: ${temp}"
+    updateDataValue("associationGroup${cmd.groupingIdentifier}", "$temp")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationGroupingsReport cmd) {
+    sendEvent(name: "groups", value: cmd.supportedGroupings)
+    log.debug "Supported association groups: ${cmd.supportedGroupings}"
+    state.supportedGroupings = cmd.supportedGroupings
 }

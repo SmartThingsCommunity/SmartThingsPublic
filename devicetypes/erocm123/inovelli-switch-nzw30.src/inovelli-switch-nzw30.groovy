@@ -260,10 +260,12 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
        }
     } 
     state."actualAssociation${cmd.groupingIdentifier}" = temp
+    log.debug "Associations for Group ${cmd.groupingIdentifier}: ${temp}"
     updateDataValue("associationGroup${cmd.groupingIdentifier}", "$temp")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationGroupingsReport cmd) {
     sendEvent(name: "groups", value: cmd.supportedGroupings)
+    log.debug "Supported association groups: ${cmd.supportedGroupings}"
     state.supportedGroupings = cmd.supportedGroupings
 }
