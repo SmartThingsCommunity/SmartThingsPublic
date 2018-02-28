@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Controller", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Controller", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012') {
 
 		command "on"
 		command "off"

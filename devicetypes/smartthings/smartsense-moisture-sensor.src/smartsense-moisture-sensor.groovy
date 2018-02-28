@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 
 metadata {
-	definition(name: "SmartSense Moisture Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "SmartSense Moisture Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012') {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
