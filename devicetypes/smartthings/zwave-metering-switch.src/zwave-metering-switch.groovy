@@ -28,7 +28,7 @@ metadata {
 
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeon Labs Micro Smart Switch"
-        fingerprint mfr:"0086", prod:"0103", model:"0074", deviceJoinName: "Aeon Labs Nano Switch"
+    fingerprint mfr:"0086", prod:"0103", model:"0074", deviceJoinName: "Aeon Labs Nano Switch"
 	}
 
 	// simulator metadata
@@ -224,7 +224,7 @@ def configure() {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2)))    // basic report cc
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 1)))   // report power in watts
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 60)))  // every 5 min
-        result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 2)))   // report energy in kWh
+    result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 2)))   // report energy in kWh
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 60)))  // every 5 min
 	}
     result << response(encap(meterGet(scale: 0)))
