@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+	definition(name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 		capability "Switch"
 		capability "Polling"
 		capability "Power Meter"
@@ -31,11 +31,11 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x32"
-		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Micro Smart Dimmer 2E"
+		fingerprint mfr: "0086", prod: "0003", model: "001B", deviceJoinName: "Aeotec Micro Smart Dimmer 2E"
 	}
 
 	simulator {
-		status "on":  "command: 2603, payload: FF"
+		status "on": "command: 2603, payload: FF"
 		status "off": "command: 2603, payload: 00"
 		status "09%": "command: 2603, payload: 09"
 		status "10%": "command: 2603, payload: 0A"
@@ -58,32 +58,32 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
-				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
+				attributeState "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
+				attributeState "turningOff", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "turningOn"
 			}
-			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-				attributeState "level", action:"switch level.setLevel"
+			tileAttribute("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action: "switch level.setLevel"
 			}
 		}
 		valueTile("power", "device.power", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
+			state "default", label: '${currentValue} W'
 		}
 		valueTile("energy", "device.energy", width: 2, height: 2) {
-			state "default", label:'${currentValue} kWh'
+			state "default", label: '${currentValue} kWh'
 		}
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'reset kWh', action:"reset"
+			state "default", label: 'reset kWh', action: "reset"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 	}
 
-	main(["switch","power","energy"])
+	main(["switch", "power", "energy"])
 	details(["switch", "power", "energy", "refresh", "reset"])
 }
 
@@ -104,12 +104,12 @@ def parse(String description) {
 		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
-	        log.debug("'$description' parsed to $result")
+			log.debug("'$description' parsed to $result")
 		} else {
 			log.debug("Couldn't zwave.parse '$description'")
 		}
 	}
-    result
+	result
 }
 
 def installed() {
@@ -217,7 +217,7 @@ def refresh() {
 }
 
 def setLevel(level) {
-	if(level > 99) level = 99
+	if (level > 99) level = 99
 	delayBetween([
 		zwave.basicV1.basicSet(value: level).format(),
 		zwave.switchMultilevelV1.switchMultilevelGet().format()
