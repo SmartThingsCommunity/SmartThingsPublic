@@ -20,6 +20,7 @@
  *
  *	Changelog:
  *
+ *	1.0.dd.4  Updated all LED option to use LED=0 (8 will be depricated) and increased delay by 500ms
  *	1.0.dd.3  Corrected bit-wise blink off operator (darwin@darwinsden.com)
  *	1.0.dd.2  Added button number labels to virtual buttons and reduced size (darwin@darwinsden.com)
  *	1.0.dd.1  Added option to set all LED's simultaneously via LED=8 (darwin@darwinsden.com)
@@ -368,7 +369,7 @@ def setStatusLed (led,color,blink) {
         case 7:
         	state.statusled7=color
             break
-        case 8:
+        case 0 | 8:
             // Special case - all LED's
         	state.statusled1=color
             state.statusled2=color
@@ -381,8 +382,8 @@ def setStatusLed (led,color,blink) {
  
     }
     
-    // if this was a command to turn off all LEDs (LED 8 special case), then explicitly ensure all status LEDs are off and/or not blinking
-    if (led==8) 
+    // if this was a command to turn off all LEDs (LED 0 special case), then explicitly ensure all status LEDs are off and/or not blinking
+    if (led==8 | led == 0) 
     {
          if (color == 0)
          {
@@ -408,7 +409,7 @@ def setStatusLed (led,color,blink) {
        // at least one LED is set, put to status mode
        cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 13, size: 1).format()
        
-       if (led==8) 
+       if (led==8 | led==0) 
        {
          for (def ledToChange = 1; ledToChange <= 7; ledToChange++)
          {
@@ -423,6 +424,7 @@ def setStatusLed (led,color,blink) {
         }   
         // check if LED should be blinking
         def blinkval = state.blinkval
+
         if(blink)
         {
             switch(led) {
@@ -447,6 +449,7 @@ def setStatusLed (led,color,blink) {
                 case 7:
                 	blinkval = blinkval | 0x40
                     break
+                case 0:
                 case 8:
                 	blinkval = 0x7F
                     break
@@ -458,6 +461,7 @@ def setStatusLed (led,color,blink) {
         }
         else
         {
+        
         	switch(led) {
             	case 1:
                 	blinkval = blinkval & 0xFE
@@ -480,7 +484,8 @@ def setStatusLed (led,color,blink) {
                 case 7:
                 	blinkval = blinkval & 0xBF
                     break
-                 case 8:
+                case 0:  
+                case 8:
                 	blinkval = 0
                     break         
             }
@@ -488,7 +493,7 @@ def setStatusLed (led,color,blink) {
             state.blinkval = blinkval
         }     
     }
-  	delayBetween(cmds, 100)
+  	delayBetween(cmds, 150)
 }
 
 /*
