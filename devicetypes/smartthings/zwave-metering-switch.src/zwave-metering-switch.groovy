@@ -28,7 +28,7 @@ metadata {
 
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeon Labs Micro Smart Switch"
-    fingerprint mfr:"0086", prod:"0103", model:"0074", deviceJoinName: "Aeon Labs Nano Switch"
+        fingerprint mfr:"0086", prod:"0103", model:"0074", deviceJoinName: "Aeon Labs Nano Switch"
 	}
 
 	// simulator metadata
@@ -77,12 +77,14 @@ metadata {
 }
 
 def installed() {
+	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 }
 
 def updated() {
+	log.debug "updated()"
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	try {
@@ -95,7 +97,7 @@ def updated() {
 def getCommandClassVersions() {
 	[
 		0x20: 1,  // Basic
-		0x32: 3,  // Meter
+		0x32: isNano() ? 3 : 1,  // Meter
 		0x56: 1,  // Crc16Encap
         0x70: 1,  // Configuration
 		0x72: 2,  // ManufacturerSpecific
@@ -104,6 +106,7 @@ def getCommandClassVersions() {
 
 // parse events into attributes
 def parse(String description) {
+	log.debug "parse() - description: "+description
 	def result = null
 	if (description != "updated") {
 		def cmd = zwave.parse(description, commandClassVersions)
@@ -168,113 +171,152 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-	def versions = commandClassVersions
-	def version = versions[cmd.commandClass as Integer]
-	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
-	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
-	if (encapsulatedCommand) {
-		zwaveEvent(encapsulatedCommand)
-	}
-}
-
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "$device.displayName: Unhandled: $cmd"
 	[:]
 }
 
 def on() {
-	[
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		"delay 3000",
-		meterGet(scale: 2).format()
-	]
+	encapSequence([
+		zwave.basicV1.basicSet(value: 0xFF),
+		zwave.switchBinaryV1.switchBinaryGet(),
+		meterGet(scale: 2)
+	], 3000)
 }
 
 def off() {
-	[
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		"delay 3000",
-		meterGet(scale: 2).format()
-	]
+	encapSequence([
+		zwave.basicV1.basicSet(value: 0x00),
+		zwave.switchBinaryV1.switchBinaryGet(),
+		meterGet(scale: 2)
+	], 3000)
 }
 
 def poll() {
-    log.debug "Poll..."
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		meterGet(scale: 0).format(),
-		meterGet(scale: 2).format()
-	])
+    log.debug "poll()"
+	refresh()
 }
 
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	log.debug "ping() called"
+	log.debug "ping()"
 	refresh()
 }
 
 def refresh() {
-    log.debug "Refresh..."
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		meterGet(scale: 0).format(),
-		meterGet(scale: 2).format()
+    log.debug "refresh()"
+	encapSequence([
+		zwave.switchBinaryV1.switchBinaryGet(),
+		meterGet(scale: 0),
+		meterGet(scale: 2)
 	])
 }
 
 def configure() {
-    log.debug "Configure..."
+    log.debug "configure()"
     def result = []
-
-    zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
 
     log.debug "Configure zwaveInfo: "+zwaveInfo
 
     if (zwaveInfo.mfr == "0086") {  // Aeon Labs meter
-		result << response(delayBetween([
-            zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2).format(),    // basic report cc
-			zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 1).format(),   // report power in watts
-			zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-            zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 2).format(),   // report energy in kWh
-			zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-            //zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 2).format(),  // no third report
-			//zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-			meterGet(scale: 0).format(),
-			meterGet(scale: 2).format(),
-		]))
-	} else {
-		result << response(delayBetween([
-			meterGet(scale: 0).format(),
-			meterGet(scale: 2).format(),
-		]))
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2)))    // basic report cc
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 1)))   // report power in watts
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 60)))  // every 5 min
+        result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 2)))   // report energy in kWh
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 60)))  // every 5 min
 	}
-
+    result << response(encap(meterGet(scale: 0)))
+    result << response(encap(meterGet(scale: 2)))
     result
 }
 
 def reset() {
-	return [
-		meterReset().format(),
-		meterGet(scale: 0).format()
-	]
+	encapSequence([
+		meterReset(),
+		meterGet(scale: 0)
+	])
 }
 
 def meterGet(scale)
 {
-    return (isNano() ? zwave.meterV3.meterGet(scale) : zwave.meterV2.meterGet(scale))
+    return zwave.meterV2.meterGet(scale)
 }
 
 def meterReset()
 {
-    return (isNano() ? zwave.meterV3.meterReset() : zwave.meterV2.meterReset())
+    return zwave.meterV2.meterReset()
 }
 
 def isNano()
 {
     return (zwaveInfo.mfr == "0086" && zwaveInfo.prod == "0103")
+}
+
+/*
+ * Security encapsulation support:
+ */
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+    def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+    if (encapsulatedCommand) {
+        log.debug "Parsed SecurityMessageEncapsulation into: ${encapsulatedCommand}"
+        zwaveEvent(encapsulatedCommand)
+    } else {
+        log.warn "Unable to extract Secure command from $cmd"
+    }
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+    def version = commandClassVersions[cmd.commandClass as Integer]
+    def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+    def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+    if (encapsulatedCommand) {
+        log.debug "Parsed Crc16Encap into: ${encapsulatedCommand}"
+        zwaveEvent(encapsulatedCommand)
+    } else {
+        log.warn "Unable to extract CRC16 command from $cmd"
+    }
+}
+
+private secEncap(physicalgraph.zwave.Command cmd) {
+    log.debug "encapsulating command using Secure Encapsulation, command: $cmd"
+    zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crcEncap(physicalgraph.zwave.Command cmd) {
+    log.debug "encapsulating command using CRC16 Encapsulation, command: $cmd"
+    zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
+private multiEncap(physicalgraph.zwave.Command cmd, Integer ep) {
+    log.debug "encapsulating command using MultiChannel Encapsulation, ep: $ep command: $cmd"
+    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:ep).encapsulate(cmd)
+}
+
+private encap(physicalgraph.zwave.Command cmd, Integer ep) {
+    encap(multiEncap(cmd, ep))
+}
+
+private encap(List encapList) {
+    encap(encapList[0], encapList[1])
+}
+
+private encap(Map encapMap) {
+    encap(encapMap.cmd, encapMap.ep)
+}
+
+private encap(physicalgraph.zwave.Command cmd) {
+    if (zwaveInfo.zw.contains("s")) {
+        secEncap(cmd)
+    } else if (zwaveInfo.cc.contains("56")){
+        crcEncap(cmd)
+    } else {
+        log.debug "no encapsulation supported for command: $cmd"
+        cmd.format()
+    }
+}
+
+private encapSequence(cmds, Integer delay=250) {
+    delayBetween(cmds.collect{ encap(it) }, delay)
 }
