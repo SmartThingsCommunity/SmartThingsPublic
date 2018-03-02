@@ -1,9 +1,9 @@
  /**
  *  Inovelli Dimmer NZW31 w/Scene
  *  Author: Eric Maycock (erocm123)
- *  Date: 2017-07-15
+ *  Date: 2018-03-01
  *
- *  Copyright 2017 Eric Maycock
+ *  Copyright 2018 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,6 +14,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-03-01: Added support for additional configuration options (default level - local & z-wave) and child devices
+ *              for adjusting configuration options from other SmartApps.
+ *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02.
+ *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src
  */
  
 metadata {
@@ -23,11 +27,12 @@ metadata {
         capability "Polling"
         capability "Actuator"
         capability "Sensor"
-        //capability "Health Check"
+        capability "Health Check"
         capability "Button"
         capability "Holdable Button"
         capability "Indicator"
         capability "Switch Level"
+        capability "Configuration"
         
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
@@ -44,6 +49,8 @@ metadata {
         command "pressDownX5"
         command "holdUp"
         command "holdDown"
+        
+        command "setAssociationGroup"
 
         fingerprint mfr: "015D", prod: "B111", model: "251C", deviceJoinName: "Inovelli Dimmer"
         fingerprint mfr: "051D", prod: "B111", model: "251C", deviceJoinName: "Inovelli Dimmer"
@@ -58,9 +65,17 @@ metadata {
         input "minimumLevel", "number", title: "Minimum Level\n\nMinimum dimming level for attached light\nRange: 1 to 99", description: "Tap to set", required: false, range: "1..99"
         input "dimmingStep", "number", title: "Dimming Step Size\n\nPercentage of step when switch is dimming up or down\nRange: 1 to 99", description: "Tap to set", required: false, range: "1..99"
         input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:\n", description: "Tap to set", required: false, options:[1: "On", 0: "Off", 2: "Disable"], defaultValue: 1
-        input "invert", "enum", title: "Invert Switch", description: "Tap to set", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
+        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:", description: "Tap to set", required: false, options:[1: "On", 0: "Off", 2: "Disable", 3: "Always On"], defaultValue: 1
+        input "invert", "enum", title: "Invert Switch\n\nInvert on & off on the physical switch", description: "Tap to set", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
+        input "defaultLocal", "number", title: "Default Level (Local)\n\nDefault level when light is turned on at the switch\nRange: 0 to 99\nNote: 0 = Previous Level\n(Firmware 1.02+)", description: "Tap to set", required: false, range: "0..99"
+        input "defaultZWave", "number", title: "Default Level (Z-Wave)\n\nDefault level when light is turned on via Z-Wave command\nRange: 0 to 99\nNote: 0 = Previous Level\n(Firmware 1.02+)", description: "Tap to set", required: false, range: "0..99"
+        //input "disableLocal", "enum", title: "Disable Local Control\n\nDisable ability to control switch from the wall\n(Firmware 1.02+)", description: "Tap to set", required: false, options:[0: "Yes", 1: "No"], defaultValue: 1
+        input description: "Use the below options to enable child devices for the specified settings. This will allow you to adjust these settings using SmartApps such as Smart Lighting. If any of the options are enabled, make sure you have the appropriate child device handlers installed.\n(Firmware 1.02+)", title: "Child Devices", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input "enableDefaultLocalChild", "bool", title: "Default Local Level", description: "", required: false
+        input "enableDefaultZWaveChild", "bool", title: "Default Z-Wave Level", description: "", required: false
+        //input "enableDisableLocalChild", "bool", title: "Disable Local Control", description: "", required: false
         input description: "1 pushed - Up 1x click\n2 pushed - Up 2x click\n3 pushed - Up 3x click\n4 pushed - Up 4x click\n5 pushed - Up 5x click\n6 pushed - Up held\n\n1 held - Down 1x click\n2 held - Down 2x click\n3 held - Down 3x click\n4 held - Down 4x click\n5 held - Down 5x click\n6 held - Down held", title: "Button Mappings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input description: "Use the \"Z-Wave Association Tool\" SmartApp to set device associations.\n(Firmware 1.02+)\n\nGroup 2: Sends on/off commands to associated devices when switch is pressed (BASIC_SET).\n\nGroup 3: Sends dim/brighten commands to associated devices when switch is pressed (SWITCH_MULTILEVEL_SET).", title: "Associations", displayDuringSetup: false, type: "paragraph", element: "paragraph"
     }
     
     tiles {
@@ -123,8 +138,8 @@ metadata {
             state "default", label: 'Last Activity: ${currentValue}',icon: "st.Health & Wellness.health9"
         }
         
-        valueTile("blank", "device.blank", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-            state "default", label: '', icon: ""
+        valueTile("status", "device.status", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+            state "default", label: '${currentValue}', icon: ""
         }
         
         valueTile("info", "device.info", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
@@ -137,16 +152,149 @@ metadata {
     }
 }
 
+private channelNumber(String dni) {
+    dni.split("-e")[-1] as Integer
+}
+
+private sendAlert(data) {
+    sendEvent(
+        descriptionText: data.message,
+        eventType: "ALERT",
+        name: "failedOperation",
+        value: "failed",
+        displayed: true,
+    )
+}
+
+void childSetLevel(String dni, value) {
+    def valueaux = value as Integer
+    def level = Math.max(Math.min(valueaux, 99), 0)
+    log.debug "Setting Default Level for ${channelNumber(dni) == 1? "Local" : "Z-Wave"} Control to ${level}"
+    def cmds = []
+    cmds << new physicalgraph.device.HubAction(command(zwave.configurationV1.configurationSet(scaledConfigurationValue: value, parameterNumber: channelNumber(dni), size: 1) ))
+    cmds << new physicalgraph.device.HubAction(command(zwave.configurationV1.configurationGet(parameterNumber: channelNumber(dni) )))
+	sendHubCommand(cmds, 1000)
+}
+
+void childOn(String dni) {
+    log.debug "childOn($dni)"
+    childSetLevel(dni, 99)
+}
+
+void childOff(String dni) {
+    log.debug "childOff($dni)"
+    childSetLevel(dni, 0)
+}
+
+void childRefresh(String dni) {
+    log.debug "childRefresh($dni)"
+}
+
+def childExists(ep) {
+    def children = childDevices
+    def childDevice = children.find{it.deviceNetworkId.endsWith(ep)}
+    if (childDevice) 
+        return true
+    else
+        return false
+}
+
 def installed() {
+    log.debug "installed()"
     refresh()
 }
 
+def configure() {
+    log.debug "configure()"
+    def cmds = initialize()
+    commands(cmds)
+}
+
 def updated() {
+    if (!state.lastRan || now() >= state.lastRan + 2000) {
+        log.debug "updated()"
+        state.lastRan = now()
+        def cmds = initialize()
+        response(commands(cmds))
+    } else {
+        log.debug "updated() ran within the last 2 seconds. Skipping execution."
+    }
+}
+
+def initialize() {
     sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
     sendEvent(name: "numberOfButtons", value: 6, displayed: true)
-    def cmds = []
-    cmds << zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
-    cmds << zwave.associationV2.associationGet(groupingIdentifier: 1)
+    
+    if (enableDefaultLocalChild && !childExists("ep8")) {
+    try {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep8", null,
+                [completedSetup: true, label: "${device.displayName} (Default Local Level)",
+                isComponent: true, componentName: "e8", componentLabel: "Default Local Level"])
+    } catch (e) {
+        runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
+    }
+    } else if (!enableDefaultLocalChild && childExists("ep8")) {
+        log.debug "Trying to delete child device ep8. If this fails it is likely that there is a SmartApp using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep8")}
+        try {
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+        } catch (e) {
+            runIn(3, "sendAlert", [data: [message: "Failed to delete child device. Make sure the device is not in use by any SmartApp."]])
+        }
+    }
+    if (enableDefaultZWaveChild && !childExists("ep9")) {
+    try {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep9", null,
+                [completedSetup: true, label: "${device.displayName} (Default Z-Wave Level)",
+                isComponent: true, componentName: "e9", componentLabel: "Default Z-Wave Level"])
+    } catch (e) {
+        runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
+    }
+    } else if (!enableDefaultLocalChild && childExists("ep9")) {
+        log.debug "Trying to delete child device ep9. If this fails it is likely that there is a SmartApp using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep9")}
+        try {
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+        } catch (e) {
+            runIn(3, "sendAlert", [data: [message: "Failed to delete child device. Make sure the device is not in use by any SmartApp."]])
+        }
+    }
+    if (enableDisableLocalChild && !childExists("ep101")) {
+    try {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep101", null,
+                [completedSetup: true, label: "${device.displayName} (Disable Local Control)",
+                isComponent: true, componentName: "e101", componentLabel: "Disable Local Control"])
+    } catch (e) {
+        runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
+    }
+    } else if (!enableDisableLocalChild && childExists("ep101")) {
+        log.debug "Trying to delete child device ep101. If this fails it is likely that there is a SmartApp using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep101")}
+        try {
+            if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+        } catch (e) {
+            runIn(3, "sendAlert", [data: [message: "Failed to delete child device. Make sure the device is not in use by any SmartApp."]])
+        }
+    }
+    if (device.label != state.oldLabel) {
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("e8")}
+        if (childDevice)
+        childDevice.setLabel("${device.displayName} (Default Local Level)")
+        childDevice = children.find{it.deviceNetworkId.endsWith("e9")}
+        if (childDevice)
+        childDevice.setLabel("${device.displayName} (Default Z-Wave Level)")
+        childDevice = children.find{it.deviceNetworkId.endsWith("e101")}
+        if (childDevice)
+        childDevice.setLabel("${device.displayName} (Disable Local Control)")
+        state.oldLabel = device.label
+    }
+    
+    def cmds = processAssociations()
+    cmds << zwave.versionV1.versionGet()
     cmds << zwave.configurationV1.configurationSet(configurationValue: [dimmingStep? dimmingStep.toInteger() : 1], parameterNumber: 1, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: [minimumLevel? minimumLevel.toInteger() : 1], parameterNumber: 2, size: 1)
@@ -157,7 +305,70 @@ def updated() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff? autoOff.toInteger() : 0, parameterNumber: 5, size: 2)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
-    response(commands(cmds))
+    if (state.defaultLocal != settings.defaultLocal) {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: defaultLocal? defaultLocal.toInteger() : 0, parameterNumber: 8, size: 1)
+        cmds << zwave.configurationV1.configurationGet(parameterNumber: 8)
+    }
+    if (state.defaultZWave != settings.defaultZWave) {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: defaultZWave? defaultZWave.toInteger() : 0, parameterNumber: 9, size: 1)
+        cmds << zwave.configurationV1.configurationGet(parameterNumber: 9)
+    }
+    if (state.disableLocal != settings.disableLocal) {
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: disableLocal? disableLocal.toInteger() : 1, parameterNumber: 101, size: 1)
+        cmds << zwave.configurationV1.configurationGet(parameterNumber: 101)
+    }
+    state.defaultLocal = settings.defaultLocal
+    state.defaultZWave = settings.defaultZWave
+    state.disableLocal = settings.disableLocal
+    return cmds
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+    log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
+    def integerValue = cmd2Integer(cmd.configurationValue)
+    switch (cmd.parameterNumber) {
+        case 8:
+            def children = childDevices
+            def childDevice = children.find{it.deviceNetworkId.endsWith("e8")}
+            if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: integerValue > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: integerValue)            
+            }
+        break
+        case 9:
+            def children = childDevices
+            def childDevice = children.find{it.deviceNetworkId.endsWith("e9")}
+            if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: integerValue > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: integerValue)
+            }
+        break
+        case 101:
+            def children = childDevices
+            def childDevice = children.find{it.deviceNetworkId.endsWith("e101")}
+            if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: integerValue > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: integerValue)
+            }
+        break
+    }
+}
+
+def cmd2Integer(array) {
+    switch(array.size()) {
+        case 1:
+            array[0]
+            break
+        case 2:
+            ((array[0] & 0xFF) << 8) | (array[1] & 0xFF)
+            break
+        case 3:
+            ((array[0] & 0xFF) << 16) | ((array[1] & 0xFF) << 8) | (array[2] & 0xFF)
+            break
+        case 4:
+            ((array[0] & 0xFF) << 24) | ((array[1] & 0xFF) << 16) | ((array[2] & 0xFF) << 8) | (array[3] & 0xFF)
+            break
+    }
 }
 
 def parse(description) {
@@ -354,4 +565,90 @@ def holdUp() {
 
 def holdDown() {
     sendEvent(buttonEvent(6, "held"))
+}
+
+def setDefaultAssociations() {
+    state.associationGroups = 3
+    def smartThingsHubID = zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )
+    state.defaultG1 = [smartThingsHubID]
+    state.defaultG2 = []
+    state.defaultG3 = []
+}
+
+def setAssociationGroup(group, nodes, action, endpoint = null){
+    if (!state."desiredAssociation${group}") {
+        state."desiredAssociation${group}" = nodes
+    } else {
+        switch (action) {
+            case 0:
+                state."desiredAssociation${group}" = state."desiredAssociation${group}" - nodes
+            break
+            case 1:
+                state."desiredAssociation${group}" = state."desiredAssociation${group}" + nodes
+            break
+        }
+    }
+}
+
+def processAssociations(){
+   def cmds = []
+   setDefaultAssociations()
+   def supportedGroupings = 5
+   if (state.supportedGroupings) {
+       supportedGroupings = state.supportedGroupings
+   } else {
+       log.debug "Getting supported association groups from device"
+       cmds <<  zwave.associationV2.associationGroupingsGet()
+   }
+   for (int i = 1; i <= supportedGroupings; i++){
+      if(state."actualAssociation${i}" != null){
+         if(state."desiredAssociation${i}" != null || state."defaultG${i}") {
+            def refreshGroup = false
+            ((state."desiredAssociation${i}"? state."desiredAssociation${i}" : [] + state."defaultG${i}") - state."actualAssociation${i}").each {
+                log.debug "Adding node $it to group $i"
+                cmds << zwave.associationV2.associationSet(groupingIdentifier:i, nodeId:Integer.parseInt(it,16))
+                refreshGroup = true
+            }
+            ((state."actualAssociation${i}" - state."defaultG${i}") - state."desiredAssociation${i}").each {
+                log.debug "Removing node $it from group $i"
+                cmds << zwave.associationV2.associationRemove(groupingIdentifier:i, nodeId:Integer.parseInt(it,16))
+                refreshGroup = true
+            }
+            if (refreshGroup == true) cmds << zwave.associationV2.associationGet(groupingIdentifier:i)
+            else log.debug "There are no association actions to complete for group $i"
+         }
+      } else {
+         log.debug "Association info not known for group $i. Requesting info from device."
+         cmds << zwave.associationV2.associationGet(groupingIdentifier:i)
+      }
+   }
+   return cmds
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+    def temp = []
+    if (cmd.nodeId != []) {
+       cmd.nodeId.each {
+          temp += it.toString().format( '%02x', it.toInteger() ).toUpperCase()
+       }
+    } 
+    state."actualAssociation${cmd.groupingIdentifier}" = temp
+    log.debug "Associations for Group ${cmd.groupingIdentifier}: ${temp}"
+    updateDataValue("associationGroup${cmd.groupingIdentifier}", "$temp")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationGroupingsReport cmd) {
+    sendEvent(name: "groups", value: cmd.supportedGroupings)
+    log.debug "Supported association groups: ${cmd.supportedGroupings}"
+    state.supportedGroupings = cmd.supportedGroupings
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    log.debug cmd
+    if(cmd.applicationVersion && cmd.applicationSubVersion) {
+	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
+        state.needfwUpdate = "false"
+        sendEvent(name: "status", value: "fw: ${firmware}")
+        updateDataValue("firmware", firmware)
+    }
 }
