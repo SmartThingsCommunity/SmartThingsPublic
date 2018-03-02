@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: false, minHubCoreVersion: '000.019.00012', executeCommandsLocally: false) {
+	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
 		capability "Switch"
 		capability "Polling"
 		capability "Power Meter"
