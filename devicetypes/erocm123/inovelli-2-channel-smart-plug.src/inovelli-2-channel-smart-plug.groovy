@@ -222,7 +222,7 @@ def updated() {
 		}
 		state.oldLabel = device.label
 	}
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "needUpdate", value: device.currentValue("needUpdate"), displayed: false, isStateChange: true)
 }
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -252,13 +252,19 @@ private channelNumber(String dni) {
 }
 private void createChildDevices() {
 	state.oldLabel = device.label
-	for (i in 1..2) {
-		addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep${i}", null, [completedSetup: true, label: "${device.displayName} (CH${i})",
-																						 isComponent: true, componentName: "ep$i", componentLabel: "Channel $i"
-		])
+	try {
+		for (i in 1..2) {
+			addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep${i}", null, [completedSetup: true, label: "${device.displayName} (CH${i})",
+				isComponent: false, componentName: "ep$i", componentLabel: "Channel $i"
+			])
+		}
+	} catch (e) {
+		runIn(2, "sendAlert")
 	}
 }
-
+private sendAlert() {
+	sendEvent(descriptionText: "Child device creation failed. Please make sure that the \"Switch Child Device\" is installed and published.", eventType: "ALERT", name: "childDeviceCreation", value: "failed", displayed: true, )
+}
 private def logging(message, level) {
 	if (logLevel != "0") {
 		switch (logLevel) {
