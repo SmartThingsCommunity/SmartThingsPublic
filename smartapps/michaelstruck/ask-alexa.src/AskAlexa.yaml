@@ -1,0 +1,17 @@
+﻿AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Serverless Specification template describing your function.
+Resources:
+  AskAlexa:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: .
+      Description: ''
+      MemorySize: 128
+      Timeout: 20
+      Role: 'arn:aws:iam::916828603738:role/lambda_basic_execution'
+      Events:
+        AlexaSkillEvent:
+          Type: AlexaSkill
