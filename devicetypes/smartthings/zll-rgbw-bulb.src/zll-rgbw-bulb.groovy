@@ -161,6 +161,12 @@ def configureHealthCheck() {
     }
 }
 
+def healthPoll() {
+	log.debug "healthPoll()"
+	def cmds = refresh()
+	cmds.each { sendHubCommand(new physicalgraph.device.HubAction(it)) }
+}
+
 def configure() {
     log.debug "Configuring Reporting and Bindings."
     configureHealthCheck()

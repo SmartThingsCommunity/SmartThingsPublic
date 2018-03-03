@@ -112,7 +112,6 @@ def poll() {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	unschedule()
 	configureHealthCheck()
 	return zigbee.levelRefresh()
 }
