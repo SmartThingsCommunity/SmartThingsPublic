@@ -149,8 +149,21 @@ def ping() {
     refreshAttributes()
 }
 
+def configureHealthCheck() {
+    Integer hcIntervalMinutes = 12
+    if (!hasConfiguredHealthCheck) {
+        log.debug "Configuring Health Check, Reporting"
+        unschedule("healthPoll")
+        runEvery5Minutes("healthPoll")
+        // Device-Watch allows 2 check-in misses from device
+        sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+        hasConfiguredHealthCheck = true
+    }
+}
+
 def configure() {
     log.debug "Configuring Reporting and Bindings."
+    configureHealthCheck()
     configureAttributes() + refreshAttributes()
 }
 
@@ -168,11 +181,11 @@ def refreshAttributes() {
 }
 
 def updated() {
-    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    configureHealthCheck()
 }
 
 def installed() {
-    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    configureHealthCheck()
 }
 
 def setColorTemperature(value) {

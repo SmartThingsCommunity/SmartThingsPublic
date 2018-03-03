@@ -19,7 +19,6 @@ metadata {
 		capability "Actuator"
 		capability "Color Control"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
@@ -110,7 +109,21 @@ def configure() {
 }
 
 def ping() {
+	unschedule()
+	configureHealthCheck()
 	refreshAttributes()
+}
+
+def configureHealthCheck() {
+	Integer hcIntervalMinutes = 12
+	if (!hasConfiguredHealthCheck) {
+		log.debug "Configuring Health Check, Reporting"
+		unschedule("healthPoll")
+		runEvery5Minutes("healthPoll")
+		// Device-Watch allows 2 check-in misses from device
+		sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+		hasConfiguredHealthCheck = true
+	}
 }
 
 def configureAttributes() {
@@ -126,11 +139,11 @@ def refreshAttributes() {
 }
 
 def updated() {
-	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	configureHealthCheck()
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	configureHealthCheck()
 }
 
 def setLevel(value) {

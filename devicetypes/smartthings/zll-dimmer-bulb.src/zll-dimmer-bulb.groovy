@@ -13,13 +13,12 @@
  */
 import groovy.transform.Field
 
-@Field Boolean hasConfiguredHealthCheck = false             
+@Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
 	definition(name: "ZLL Dimmer Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 		capability "Actuator"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
@@ -113,6 +112,8 @@ def poll() {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
+	unschedule()
+	configureHealthCheck()
 	return zigbee.levelRefresh()
 }
 

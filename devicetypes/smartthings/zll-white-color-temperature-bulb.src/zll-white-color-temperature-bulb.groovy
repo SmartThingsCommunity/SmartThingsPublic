@@ -21,7 +21,6 @@ metadata {
 		capability "Actuator"
 		capability "Color Temperature"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
@@ -129,7 +128,9 @@ def poll() {
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
-def ping() {
+ def ping() {
+ 	unschedule()
+ 	configureHealthCheck()
 	return zigbee.levelRefresh()
 }
 
