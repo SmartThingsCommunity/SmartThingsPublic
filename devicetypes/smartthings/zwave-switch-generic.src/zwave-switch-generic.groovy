@@ -40,7 +40,7 @@ metadata {
 		fingerprint mfr: "001A", prod: "5244", deviceJoinName: "Eaton RF Receptacle"
 		fingerprint mfr: "001A", prod: "534C", model: "0000", deviceJoinName: "Eaton RF Master Switch"
 		fingerprint mfr: "001A", prod: "5354", model: "0003", deviceJoinName: "Eaton RF Appliance Plug-In Module"
-    fingerprint mfr: "001A", prod: "5352", model: "0000", deviceJoinName: "Eaton RF Accessory Switch"
+    		fingerprint mfr: "001A", prod: "5352", model: "0000", deviceJoinName: "Eaton RF Accessory Switch"
 	}
 
 	// simulator metadata
