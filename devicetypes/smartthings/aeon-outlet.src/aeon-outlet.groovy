@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Aeon Outlet", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Outlet", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"

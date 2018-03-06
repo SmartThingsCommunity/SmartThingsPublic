@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition (name: "Z-Wave Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Indicator"
  		capability "Switch"
