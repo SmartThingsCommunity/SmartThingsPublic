@@ -13,7 +13,7 @@
  */
 metadata {
 
-	definition (name: "Z-Wave Relay", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Relay", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Switch"
 		capability "Polling"

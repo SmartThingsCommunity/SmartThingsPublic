@@ -17,142 +17,121 @@
  *  Date: 2013-04-30
  */
 definition(
-    name: "Sunrise/Sunset",
-    namespace: "smartthings",
-    author: "SmartThings",
-    description: "Changes mode and controls lights based on local sunrise and sunset times.",
-    category: "Mode Magic",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/rise-and-shine.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/rise-and-shine@2x.png"
+        name: "Sunrise/Sunset",
+        namespace: "smartthings",
+        author: "SmartThings",
+        description: "Changes mode and controls lights based on local sunrise and sunset times.",
+        category: "Mode Magic",
+        iconUrl: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/rise-and-shine.png",
+        iconX2Url: "https://s3.amazonaws.com/smartapp-icons/ModeMagic/rise-and-shine@2x.png"
 )
 
 preferences {
-	section ("At sunrise...") {
-		input "sunriseMode", "mode", title: "Change mode to?", required: false
-		input "sunriseOn", "capability.switch", title: "Turn on?", required: false, multiple: true
-		input "sunriseOff", "capability.switch", title: "Turn off?", required: false, multiple: true
-	}
-	section ("At sunset...") {
-		input "sunsetMode", "mode", title: "Change mode to?", required: false
-		input "sunsetOn", "capability.switch", title: "Turn on?", required: false, multiple: true
-		input "sunsetOff", "capability.switch", title: "Turn off?", required: false, multiple: true
-	}
-	section ("Sunrise offset (optional)...") {
-		input "sunriseOffsetValue", "text", title: "HH:MM", required: false
-		input "sunriseOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
-	}
-	section ("Sunset offset (optional)...") {
-		input "sunsetOffsetValue", "text", title: "HH:MM", required: false
-		input "sunsetOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
-	}
-	section ("Zip code (optional, defaults to location coordinates)...") {
-		input "zipCode", "text", required: false
-	}
-	section( "Notifications" ) {
+    section ("At sunrise...") {
+        input "sunriseMode", "mode", title: "Change mode to?", required: false
+        input "sunriseOn", "capability.switch", title: "Turn on?", required: false, multiple: true
+        input "sunriseOff", "capability.switch", title: "Turn off?", required: false, multiple: true
+    }
+    section ("At sunset...") {
+        input "sunsetMode", "mode", title: "Change mode to?", required: false
+        input "sunsetOn", "capability.switch", title: "Turn on?", required: false, multiple: true
+        input "sunsetOff", "capability.switch", title: "Turn off?", required: false, multiple: true
+    }
+    section ("Sunrise offset (optional)...") {
+        input "sunriseOffsetValue", "text", title: "HH:MM", required: false
+        input "sunriseOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
+    }
+    section ("Sunset offset (optional)...") {
+        input "sunsetOffsetValue", "text", title: "HH:MM", required: false
+        input "sunsetOffsetDir", "enum", title: "Before or After", required: false, options: ["Before","After"]
+    }
+    section ("Zip code (optional, defaults to location coordinates)...") {
+        input "zipCode", "text", required: false
+    }
+    section( "Notifications" ) {
         input("recipients", "contact", title: "Send notifications to") {
             input "sendPushMessage", "enum", title: "Send a push notification?", options: ["Yes", "No"], required: false
             input "phoneNumber", "phone", title: "Send a text message?", required: false
         }
-	}
+    }
 
 }
 
 def installed() {
-	initialize()
+    initialize()
 }
 
 def updated() {
-	unsubscribe()
-	//unschedule handled in astroCheck method
-	initialize()
+    unsubscribe()
+    unschedule()
+    initialize()
 }
 
 def initialize() {
-	subscribe(location, "position", locationPositionChange)
-	subscribe(location, "sunriseTime", sunriseSunsetTimeHandler)
-	subscribe(location, "sunsetTime", sunriseSunsetTimeHandler)
+    subscribe(location, "position", locationPositionChange)
+    subscribe(location, "sunriseTime", sunriseTimeHandler)
+    subscribe(location, "sunsetTime", sunsetTimeHandler)
 
-	astroCheck()
+    //Run today too
+    scheduleWithOffset(location.currentValue("sunsetTime"), sunsetOffsetValue, sunsetOffsetDir, "sunsetHandler")
+    scheduleWithOffset(location.currentValue("sunriseTime"), sunriseOffsetValue, sunriseOffsetDir, "sunriseHandler")
 }
 
 def locationPositionChange(evt) {
-	log.trace "locationChange()"
-	astroCheck()
+    log.trace "locationChange()"
+    updated()
 }
 
-def sunriseSunsetTimeHandler(evt) {
-	log.trace "sunriseSunsetTimeHandler()"
-	astroCheck()
+def sunsetTimeHandler(evt) {
+    log.trace "sunsetTimeHandler()"
+    scheduleWithOffset(evt.value, sunsetOffsetValue, sunsetOffsetDir, "sunsetHandler")
 }
 
-def astroCheck() {
-	def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: sunriseOffset, sunsetOffset: sunsetOffset)
+def sunriseTimeHandler(evt) {
+    log.trace "sunriseTimeHandler()"
+    scheduleWithOffset(evt.value, sunriseOffsetValue, sunriseOffsetDir, "sunriseHandler")
+}
 
-	def now = new Date()
-	def riseTime = s.sunrise
-	def setTime = s.sunset
-	log.debug "riseTime: $riseTime"
-	log.debug "setTime: $setTime"
+def scheduleWithOffset(nextSunriseSunsetTime, offset, offsetDir, handlerName) {
+    def nextSunriseSunsetTimeDate = Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", nextSunriseSunsetTime)
+    def offsetTime = new Date(nextSunriseSunsetTimeDate.time + getOffset(offset, offsetDir))
 
-	if (state.riseTime != riseTime.time) {
-		unschedule("sunriseHandler")
-
-		if(riseTime.before(now)) {
-			riseTime = riseTime.next()
-		}
-
-		state.riseTime = riseTime.time
-
-		log.info "scheduling sunrise handler for $riseTime"
-		schedule(riseTime, sunriseHandler)
-	}
-
-	if (state.setTime != setTime.time) {
-		unschedule("sunsetHandler")
-
-	    if(setTime.before(now)) {
-		    setTime = setTime.next()
-	    }
-
-		state.setTime = setTime.time
-
-		log.info "scheduling sunset handler for $setTime"
-	    schedule(setTime, sunsetHandler)
-	}
+    log.debug "scheduling $handlerName for $offsetTime"
+    runOnce(offsetTime, handlerName)
 }
 
 def sunriseHandler() {
-	log.info "Executing sunrise handler"
-	if (sunriseOn) {
-		sunriseOn.on()
-	}
-	if (sunriseOff) {
-		sunriseOff.off()
-	}
-	changeMode(sunriseMode)
+    log.info "Executing sunrise handler"
+    if (sunriseOn) {
+        sunriseOn.on()
+    }
+    if (sunriseOff) {
+        sunriseOff.off()
+    }
+    changeMode(sunriseMode)
 }
 
 def sunsetHandler() {
-	log.info "Executing sunset handler"
-	if (sunsetOn) {
-		sunsetOn.on()
-	}
-	if (sunsetOff) {
-		sunsetOff.off()
-	}
-	changeMode(sunsetMode)
+    log.info "Executing sunset handler"
+    if (sunsetOn) {
+        sunsetOn.on()
+    }
+    if (sunsetOff) {
+        sunsetOff.off()
+    }
+    changeMode(sunsetMode)
 }
 
 def changeMode(newMode) {
-	if (newMode && location.mode != newMode) {
-		if (location.modes?.find{it.name == newMode}) {
-			setLocationMode(newMode)
-			send "${label} has changed the mode to '${newMode}'"
-		}
-		else {
-			send "${label} tried to change to undefined mode '${newMode}'"
-		}
-	}
+    if (newMode && location.mode != newMode) {
+        if (location.modes?.find{it.name == newMode}) {
+            setLocationMode(newMode)
+            send "${label} has changed the mode to '${newMode}'"
+        }
+        else {
+            send "${label} tried to change to undefined mode '${newMode}'"
+        }
+    }
 }
 
 private send(msg) {
@@ -172,18 +151,42 @@ private send(msg) {
         }
     }
 
-	log.debug msg
+    log.debug msg
 }
 
 private getLabel() {
-	app.label ?: "SmartThings"
+    app.label ?: "SmartThings"
 }
 
-private getSunriseOffset() {
-	sunriseOffsetValue ? (sunriseOffsetDir == "Before" ? "-$sunriseOffsetValue" : sunriseOffsetValue) : null
+private getOffset(String offsetValue, String offsetDir) {
+    def timeOffsetMillis = calculateTimeOffsetMillis(offsetValue)
+    if (offsetDir == "Before") {
+        return -timeOffsetMillis
+    }
+    return timeOffsetMillis
 }
 
-private getSunsetOffset() {
-	sunsetOffsetValue ? (sunsetOffsetDir == "Before" ? "-$sunsetOffsetValue" : sunsetOffsetValue) : null
-}
+private calculateTimeOffsetMillis(String offset) {
+    def result = 0
+    if (!offset) {
+        return result
+    }
 
+    def before = offset.startsWith('-')
+    if (before || offset.startsWith('+')) {
+        offset = offset[1..-1]
+    }
+
+    if (offset.isNumber()) {
+        result = Math.round((offset as Double) * 60000L)
+    } else if (offset.contains(":")) {
+        def segs = offset.split(":")
+        result = (segs[0].toLong() * 3600000L) + (segs[1].toLong() * 60000L)
+    }
+
+    if (before) {
+        result = -result
+    }
+
+    result
+}

@@ -16,7 +16,7 @@
  *  Date: 2013-03-09
  */
 metadata {
-	definition (name: "SmartSense Garage Door Multi", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Garage Door Multi", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Three Axis"
 		capability "Contact Sensor"
 		capability "Acceleration Sensor"
