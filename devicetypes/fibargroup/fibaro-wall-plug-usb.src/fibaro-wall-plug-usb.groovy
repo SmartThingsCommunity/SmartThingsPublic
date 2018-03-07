@@ -38,6 +38,10 @@ metadata {
     }
 }
 
+def installed() {
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: parent.hubID])
+}
+
 def reset() {
     parent.childReset()
 }
