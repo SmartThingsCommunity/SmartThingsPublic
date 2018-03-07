@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
@@ -26,12 +26,12 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x25,0x32"
-		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeotec Micro Smart Switch"
+		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Micro Smart Switch"
 	}
 
 	// simulator metadata
 	simulator {
-		status "on":  "command: 2003, payload: FF"
+		status "on": "command: 2003, payload: FF"
 		status "off": "command: 2003, payload: 00"
 
 		for (int i = 0; i <= 10000; i += 1000) {
@@ -51,27 +51,27 @@ metadata {
 
 	// tile definitions
 	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
+		multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState("on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC")
 				attributeState("off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff")
 			}
 		}
 		valueTile("power", "device.power", width: 2, height: 2) {
-			state "default", label:'${currentValue} W'
+			state "default", label: '${currentValue} W'
 		}
 		valueTile("energy", "device.energy", width: 2, height: 2) {
-			state "default", label:'${currentValue} kWh'
+			state "default", label: '${currentValue} kWh'
 		}
 		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'reset kWh', action:"reset"
+			state "default", label: 'reset kWh', action: "reset"
 		}
 		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-		main(["switch","power","energy"])
-		details(["switch","power","energy","refresh","reset"])
+		main(["switch", "power", "energy"])
+		details(["switch", "power", "energy", "refresh", "reset"])
 	}
 }
 
@@ -87,7 +87,9 @@ def updated() {
 		if (!state.MSR) {
 			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
 		}
-	} catch (e) { log.debug e }
+	} catch (e) {
+		log.debug e
+	}
 }
 
 def getCommandClassVersions() {
@@ -101,7 +103,7 @@ def getCommandClassVersions() {
 
 def parse(String description) {
 	def result = null
-	if(description == "updated") return
+	if (description == "updated") return
 	def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
 		result = zwaveEvent(cmd)
@@ -119,8 +121,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	def evt = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
 	if (evt.isStateChange) {
 		[evt, response(["delay 3000", zwave.meterV2.meterGet(scale: 2).format()])]
@@ -129,8 +130,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 }
 
