@@ -104,8 +104,8 @@ def resetMotionTile() {
 // Event handlers and supporting functions
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
     logging("${device.displayName} - NotificationReport received for ${cmd.event}, parameter value: ${cmd.eventParameter[0]}", "info")
-    def lastTime = new Date().format("yyyy MMM dd EEE h:mm:ss a")
-    //def lastTime = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
+    def lastTime = location.timeZone ? new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone) : new Date().format("yyyy MMM dd EEE h:mm:ss")
+    log.debug "last time: "+lastTime
     if (cmd.notificationType == 7) {
         if (cmd.event == 0) {
             sendEvent(name: (cmd.eventParameter[0] == 3) ? "tamper" : "motion", value: (cmd.eventParameter[0] == 3) ? "clear" :"inactive")
