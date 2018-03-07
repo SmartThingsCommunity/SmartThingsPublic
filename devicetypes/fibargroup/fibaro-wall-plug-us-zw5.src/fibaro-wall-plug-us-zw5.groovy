@@ -12,7 +12,10 @@ metadata {
         command "reset"
         command "refresh"
 
-        fingerprint type: "1001", mfr: "0072", cc:"5E,55,98,9F,6C,56", sec:"86,25,85,8E,59,72,5A,73,32,70,71,75,60,7A"
+        //fingerprint type: "1001", mfr: "0072", cc:"5E,55,98,9F,6C,56", sec:"86,25,85,8E,59,72,5A,73,32,70,71,75,60,7A"
+        fingerprint mfr: "010F", prod: "1401", model: "2000"
+        fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x55, 0x98, 0x9F, 0x22, 0x56, 0x7A, 0x6C", outClusters: "0x86, 0x25, 0x85, 0x8E, 0x59, 0x72, 0x5A, 0x73, 0x32, 0x70, 0x6C, 0x71, 0x75, 0x60"
+
     }
 
     tiles (scale: 2) {
@@ -125,6 +128,8 @@ def childRefresh(){
 //Configuration and synchronization
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
     def cmds = []
     log.warn "Executing updated"
     if (!childDevices) {
