@@ -174,7 +174,7 @@ def ping() {
 
 def refresh() {
 	def commands = []
-	commands << zwave.switchBinaryV1.switchBinaryGet().format()
+	commands << zwave.basicV1.basicGet().format()
 	if (getDataValue("MSR") == null) {
 		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	}
