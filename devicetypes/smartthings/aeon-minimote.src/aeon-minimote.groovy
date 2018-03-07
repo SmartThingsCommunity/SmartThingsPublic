@@ -148,7 +148,7 @@ def initialize() {
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..4) {
-		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
+		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", device.hubId,
 				[completedSetup: true, label: "${device.displayName} button ${i}",
 				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
 	}
