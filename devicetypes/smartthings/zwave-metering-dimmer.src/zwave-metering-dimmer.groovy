@@ -296,10 +296,6 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
     zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 }
 
-private encap(physicalgraph.zwave.Command cmd, Integer ep) {
-    encap(multiEncap(cmd, ep))
-}
-
 private encap(List encapList) {
     encap(encapList[0], encapList[1])
 }
