@@ -16,7 +16,7 @@ metadata {
         command "resetMotionTile"
         command "forceSync"
 
-        fingerprint mfr: "010F", prod: "0801"
+        fingerprint mfr: "010F", prod: "0801", model: "2001"
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x20, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x30, 0x9C, 0x98, 0x7A"
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x20, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x30, 0x9C, 0x7A"
     }
@@ -104,7 +104,8 @@ def resetMotionTile() {
 // Event handlers and supporting functions
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
     logging("${device.displayName} - NotificationReport received for ${cmd.event}, parameter value: ${cmd.eventParameter[0]}", "info")
-    def lastTime = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
+    def lastTime = new Date().format("yyyy MMM dd EEE h:mm:ss a")
+    //def lastTime = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
     if (cmd.notificationType == 7) {
         if (cmd.event == 0) {
             sendEvent(name: (cmd.eventParameter[0] == 3) ? "tamper" : "motion", value: (cmd.eventParameter[0] == 3) ? "clear" :"inactive")
