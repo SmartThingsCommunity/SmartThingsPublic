@@ -27,6 +27,7 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
+		fingerprint profileId: "0104", inClusters: "0000,0001,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL220 TS LL", deviceJoinName: "Yale Touch Screen Lever Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD210 PB DB", deviceJoinName: "Yale Push Button Deadbolt Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
@@ -242,9 +243,9 @@ def reloadAllCodes() {
 	sendEvent(lockCodesEvent(lockCodes))
 	def cmds = validateAttributes()
 	if (isYaleLock()) {
-		state.checkCode = 1
+		state.checkCode = state.checkCode ?: 1
 	} else {
-		state.checkCode = 0
+		state.checkCode = state.checkCode ?: 0
 	}
 	cmds += requestCode(state.checkCode)
 	
@@ -310,9 +311,8 @@ def validateAttributes() {
 		cmds += zigbee.configureReporting(CLUSTER_ALARM, ALARM_ATTR_ALARM_COUNT,
 				DataType.UINT16, 0, 21600, null)
 	}
-	if (state.attrSendPinOta == null || state.attrSendPinOta == 0) {
-		cmds += zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
-	}
+	// DOORLOCK_ATTR_SEND_PIN_OTA is sometimes getting reset to 0. Hence, writing it explicitly to 1.
+	cmds += zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
 	if(!device.currentValue("maxCodes")) {
 		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_NUM_PIN_USERS)
 	}
@@ -321,9 +321,6 @@ def validateAttributes() {
 	}
 	if(!device.currentValue("maxCodeLength")) {
 		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_MAX_PIN_LENGTH)
-	}
-	if (state.attrSendPinOta == null || state.attrSendPinOta == 0) {
-		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA)
 	}
 	cmds = cmds.flatten()
 	log.trace "validateAttributes returning commands list: " + cmds
@@ -345,7 +342,8 @@ def deleteCode(codeID) {
 		// Calling user code get when deleting a code because some Kwikset locks do not generate
 		// programming event when a code is deleted manually on the lock.
 		// This will also help in resolving the failure cases during deletion of a lock code.
-		cmds = zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_CLEAR_USER_CODE, getLittleEndianHexString(codeID))
+		cmds = zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
+		cmds += zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_CLEAR_USER_CODE, getLittleEndianHexString(codeID))
 		cmds += requestCode(codeID)
 	} else {
 		log.warn "Zigbee DTH - Invalid input: Unable to delete slot number $codeID"
@@ -496,9 +494,6 @@ private def parseAttributeResponse(String description) {
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_NUM_PIN_USERS && descMap.value) {
 		def maxCodes = Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodes", value: maxCodes, descriptionText: "Maximum Number of user codes supported is ${maxCodes}", displayed: false]
-	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_SEND_PIN_OTA && descMap.value) {
-		state.attrSendPinOta = Integer.parseInt(descMap.value, 16)
-		return null
 	} else {
 		log.trace "ZigBee DTH - parseAttributeResponse() - ignoring attribute response"
 		return null
@@ -534,7 +529,14 @@ private def parseCommandResponse(String description) {
 	def cmd = descMap.commandInt
 	def clusterInt = descMap.clusterInt
 	
-	if (clusterInt == CLUSTER_DOORLOCK && cmd == DOORLOCK_RESPONSE_OPERATION_EVENT) {
+	if (clusterInt == CLUSTER_DOORLOCK && (cmd == DOORLOCK_CMD_LOCK_DOOR || cmd == DOORLOCK_CMD_UNLOCK_DOOR)) {
+		log.trace "ZigBee DTH - Executing DOOR LOCK/UNLOCK SUCCESS for device ${deviceName} with description map:- $descMap"
+		// Reading lock state with a delay of 4200 as some locks do not report their state change
+		def cmdList = []
+		cmdList << "delay 4200"
+		cmdList << zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE).first()
+		result << response(cmdList)
+	} else if (clusterInt == CLUSTER_DOORLOCK && cmd == DOORLOCK_RESPONSE_OPERATION_EVENT) {
 		log.trace "ZigBee DTH - Executing DOORLOCK_RESPONSE_OPERATION_EVENT for device ${deviceName} with description map:- $descMap"
 		def eventSource = Integer.parseInt(data[0], 16)
 		def eventCode = Integer.parseInt(data[1], 16)
@@ -548,7 +550,7 @@ private def parseCommandResponse(String description) {
 		
 		if (eventSource == 0) {
 			def codeID = Integer.parseInt(data[3] + data[2], 16)
-			if (!isValidCodeID(codeID)) {
+			if (!isValidCodeID(codeID, true)) {
 				// invalid code slot number reported by lock
 				log.debug "Invalid slot number := $codeID"
 				return null
@@ -556,7 +558,6 @@ private def parseCommandResponse(String description) {
 			codeName = getCodeName(lockCodes, codeID)
 			responseMap.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 		} else if (eventSource == 1) {
-			desc = "via app"
 			responseMap.data = [ method: "command" ]
 		} else if (eventSource == 2) {
 			desc = "manually"
@@ -728,10 +729,15 @@ private def parseCommandResponse(String description) {
 				// This will be applicable when a slot is found occupied during scanning of lock
 				// Populating the 'lockCodes' attribute after scanning a code slot
 				log.debug "Scanning lock - code $codeID is occupied"
-				responseMap.value = "$codeID set"
-				responseMap.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
+				def changeType = getChangeType(lockCodes, codeID)
+				responseMap.value = "$codeID $changeType"
+				responseMap.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
 				responseMap.data = [ codeName: codeName ]
-				result << codeSetEvent(lockCodes, codeID, codeName)
+				if ("set" == changeType) {
+					result << codeSetEvent(lockCodes, codeID, codeName)
+				} else {
+					responseMap.displayed = false
+				}
 			}
 		} else {
 			// Code slot is empty - can happen when code creation fails or a slot is empty while scanning the lock
@@ -758,7 +764,6 @@ private def parseCommandResponse(String description) {
 				// Code slot is empty - can happen when a slot is found empty while scanning the lock
 				responseMap.value = "$codeID unset"
 				responseMap.descriptionText = "Code slot $codeID found empty during scanning"
-				responseMap.isStateChange = false
 				responseMap.displayed = false
 			}
 		}
@@ -946,12 +951,17 @@ private def getCodeFromOctet(data) {
  * Checks if the slot number is within the allowed limits
  *
  * @param codeID The code slot number
+ * 
+ * @param allowMasterCode Flag to indicate if master code slot should be allowed as a valid slot
  *
  * @return true if valid, false if not
  */
-private boolean isValidCodeID(codeID) {
+private boolean isValidCodeID(codeID, allowMasterCode = false) {
 	def defaultMaxCodes = isYaleLock() ? 250 : 30
 	def minCodeId = isYaleLock() ? 1 : 0
+	if (allowMasterCode) {
+		minCodeId = 0
+	}
 	def maxCodes = device.currentValue("maxCodes") ?: defaultMaxCodes
 	if (codeID.toInteger() >= minCodeId && codeID.toInteger() <= maxCodes) {
 		return true

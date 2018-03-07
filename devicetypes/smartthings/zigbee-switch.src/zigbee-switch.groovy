@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+    definition (name: "ZigBee Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
