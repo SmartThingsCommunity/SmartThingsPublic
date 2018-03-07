@@ -67,7 +67,7 @@ def authPage() {
 	}
 
 	def redirectUrl = buildRedirectUrl
-	log.debug "RedirectUrl = ${redirectUrl}"
+	//log.debug "RedirectUrl = ${redirectUrl}"
 	// get rid of next button until the user is actually auth'd
 	if (!oauthTokenProvided) {
 		return dynamicPage(name: "auth", title: "Login", nextPage: "", uninstall:uninstallAllowed) {
@@ -77,24 +77,43 @@ def authPage() {
 			}
 		}
 	} else {
+    	state.ecobeeDeviceList = [:]
 		def stats = getEcobeeThermostats()
-		log.debug "thermostat list: $stats"
-		log.debug "sensor list: ${sensorsDiscovered()}"
-		return dynamicPage(name: "auth", title: "Select Your Thermostats", uninstall: true) {
-			section("") {
-				paragraph "Tap below to see the list of ecobee thermostats available in your ecobee account and select the ones you want to connect to SmartThings."
-				input(name: "thermostats", title:"Select Your Thermostats", type: "enum", required:true, multiple:true, description: "Tap to choose", metadata:[values:stats])
-			}
+        def sensors = sensorsDiscovered() ?: []
+        def switches = switchesDiscovered() ?: []
+        def allDevices = (stats?:[]) + (sensors?:[]) + (switches?:[])
+        allDevices = allDevices.sort { it.value.toLowerCase() }
+    	def preselected = allDevices.collect{it.key}        
+        
+        def pageTitle
+        def inputTitle = "Use these Ecobee Devices:"
+        def p1
 
-			def options = sensorsDiscovered() ?: []
-			def numFound = options.size() ?: 0
-			if (numFound > 0)  {
-				section("") {
-					paragraph "Tap below to see the list of ecobee sensors available in your ecobee account and select the ones you want to connect to SmartThings."
-					input(name: "ecobeesensors", title: "Select Ecobee Sensors ({{numFound}} found)", messageArgs: [numFound: numFound], type: "enum", required:false, description: "Tap to choose", multiple:true, options:options)
-				}
-			}
-		}
+        if ( !selectedDevices ) {
+        	pageTitle = "Connect Your Ecobee Devices"
+            p1 = "If you wish to not add any of the devices listed below, tap on the list and then unselect that device. Once acceptable, tap 'Done'."
+        } else {
+        	pageTitle = "Connected Ecobee Devices"
+            p1 = "If you wish to add or remove device(s), tap the list below and then choose which device(s). Once acceptable, tap 'Done'."
+        }
+              
+		return dynamicPage(name: "auth", title: "Select Your Ecobee Devices", install: true, uninstall: true) {                 
+       		section("") {
+            	paragraph p1, image: vendorIcon
+            }
+            section("Devices") {
+            	input(
+                	name: "selectedDevices",
+                	title: "Connect these Ecobee Devices:",
+                	type: "enum",
+                	required: false,
+                	multiple: true,
+                	description: "Tap to choose",
+                	options: allDevices,
+					defaultValue: preselected
+            	)
+        	}
+        }
 	}
 }
 
@@ -134,6 +153,10 @@ def callback() {
 			atomicState.refreshToken = resp.data.refresh_token
 			atomicState.authToken = resp.data.access_token
 		}
+        
+        if ( atomicState.authToken ) {
+        	obtainJsonToken() //get jwt for switch+ devices
+        }
 
 		if (atomicState.authToken) {
 			success()
@@ -144,7 +167,28 @@ def callback() {
 	} else {
 		log.error "callback() failed oauthState != atomicState.oauthInitState"
 	}
+}
 
+boolean obtainJsonToken() {
+	boolean status = false
+	def tokenParams = [
+		grant_type: 	"refresh_token",
+		refresh_token:	atomicState.refreshToken,
+		client_id : 	smartThingsClientId,
+		ecobee_type:	"jwt"
+	]
+    def tokenUrl = "https://api.ecobee.com/token?${toQueryString(tokenParams)}"
+    try {
+    	httpPost(uri: tokenUrl) { resp ->
+			log.debug "jwt response: ${resp.data}"
+			atomicState.refreshToken = resp.data.refresh_token
+			atomicState.authToken = resp.data.access_token
+            status = true
+		}
+    } catch (e) {
+    	log.error "Unable to obtain Json Token. Response Code: ${e.response.data.status.code}"
+    }
+    status
 }
 
 def success() {
@@ -259,16 +303,19 @@ def getEcobeeThermostats() {
 		httpGet(deviceListParams) { resp ->
 			if (resp.status == 200) {
 				resp.data.thermostatList.each { stat ->
+                	//log.warn "stat: $stat"
 					atomicState.remoteSensors = atomicState.remoteSensors == null ? stat.remoteSensors : atomicState.remoteSensors <<  stat.remoteSensors
 					def dni = [app.id, stat.identifier].join('.')
 					stats[dni] = getThermostatDisplayName(stat)
+                    state.ecobeeDeviceList[dni] = [ "deviceType": "thermostat", "name": getThermostatDisplayName(stat) ]                    
+                    //log.warn "remote sensors: ${stat.remoteSensors}"
 				}
 			} else {
 				log.debug "http status: ${resp.status}"
 			}
 		}
 	} catch (groovyx.net.http.HttpResponseException e) {
-        log.trace "Exception polling children: " + e.response.data.status
+        log.trace "[SM] getEcobeeThermostats() Exception polling children: " + e.response.data.status
         if (e.response.data.status.code == 14) {
             atomicState.action = "getEcobeeThermostats"
             log.debug "Refreshing your auth_token!"
@@ -279,15 +326,60 @@ def getEcobeeThermostats() {
 	return stats
 }
 
+Map switchesDiscovered() {
+	def map = [:]
+	def switchListParams = [
+		uri: apiEndpoint + "/ea/devices",
+		headers: ["Content-Type": "application/json;charset=UTF-8", "Authorization": "Bearer ${atomicState.authToken}"],
+	]
+    def switches = [:]
+
+	try {
+		httpGet(switchListParams) { resp ->
+            log.debug "http status: ${resp.status}"
+			if (resp.status == 200) {
+            	switches = resp.data.devices            
+            	//log.debug "get device list response data:  ${resp.data.devices}"
+			} else {
+				log.warn "Unable to get switch device list!"
+			}
+		}
+	} catch (groovyx.net.http.HttpResponseException e) {
+        log.trace "Exception getting switches from account: " + e.getCause()
+        if (e.response.data.status.code == 14) {
+            atomicState.action = "switchesDiscovered"
+            log.debug "Refreshing your auth_token!"
+            refreshAuthToken()
+        }
+    }
+	
+    if ( switches ) {
+    	state.switchList= [:]
+    	switches.each {
+        	if ( it.type == "LIGHT_SWITCH" ) {
+            	state.switchList[it?.identifier] = it
+				def value = "${it?.name}"
+				def key = it?.identifier
+				map["${key}"] = value  
+                state.ecobeeDeviceList["${key}"] = [ "deviceType": "switch", "name": value ]
+            }
+        }
+    }
+    //log.debug "state.switchList: ${state.switchList}"
+	atomicState.switches = map
+	return map
+}
+
 Map sensorsDiscovered() {
 	def map = [:]
-	log.debug "list ${atomicState.remoteSensors}"
+	//log.debug "list ${atomicState.remoteSensors}"
 	atomicState.remoteSensors.each { sensors ->
 		sensors.each {
 			if (it.type != "thermostat") {
 				def value = "${it?.name}"
 				def key = "ecobee_sensor-"+ it?.id + "-" + it?.code
 				map["${key}"] = value
+                state.ecobeeDeviceList["${key}"] = [ "deviceType": "sensor", "name": value ]
 			}
 		}
 	}
@@ -317,57 +409,75 @@ def updated() {
 	initialize()
 }
 
+private removeChildDevice(childDevice) {
+	log.trace "[SM] Executing removeChildDevice()"
+
+    log.debug "[SM] removeChildDevice() - Delete this: ${delete}"
+    delete.each {
+        deleteChildDevice(childDevice.device.deviceNetworkId)
+    }
+    if (!settings['selectedDevices']) //empty list, bail, service manager will be deleted with no devices
+    	return
+    def newDeviceList = settings['selectedDevices'] - childDevice.device.deviceNetworkId
+    app.updateSetting("selectedDevices", newDeviceList)
+}
+
+private getDeviceFiles() {
+	def files = [ 
+    	"thermostat": "Ecobee Thermostat",
+        "sensor": "Ecobee Sensor",
+        "switch": "Ecobee Switch"
+    ] 
+}
+
+def getDeviceFileName(deviceType) {
+	//log.trace "[SM] Executing getDeviceFileName() with $deviceType"
+	def found = deviceFiles.find { key, value -> key == deviceType }
+    return found.value
+}
+
+def getSelectedDevices() {
+	log.trace "[SM] Executing getSelectedDevices() with ${settings.selectedDevices}"    
+	return settings.selectedDevices?.flatten()
+}
+
 def initialize() {
-	log.debug "initialize"
-	def devices = thermostats.collect { dni ->
-		def d = getChildDevice(dni)
-		if(!d) {
-			d = addChildDevice(app.namespace, getChildName(), dni, null, ["label":"${atomicState.thermostats[dni]}" ?: "Ecobee Thermostat"])
-			log.debug "created ${d.displayName} with id $dni"
-		} else {
-			log.debug "found ${d.displayName} with id $dni already exists"
-		}
-		return d
+	log.trace "[SM] Executing initialize()"
+    log.debug "[SM] initialize() - settings=${settings.selectedDevices}"
+
+    selectedDevices.each() { dni ->		//'selectedDevices' comes from the user selection and is global
+    	def existingDevice = getChildDevice(dni)
+        if( !existingDevice ) {
+        	def newDevice = state.ecobeeDeviceList[dni]
+            //def deviceType = newDevice.deviceType
+        	def d = addChildDevice(app.namespace, getDeviceFileName(newDevice.deviceType), dni, null, ["label":"${newDevice.name}"])
+            log.debug "[SM] initialize() - Created ${d.displayName} with dni: ${d.deviceNetworkId}"
+        } else {
+        	log.debug "[SM] initialize() - ${existingDevice.displayName} with dni: $dni already exists"
+        }
+    }
+    
+    def delete
+    // Delete any that are no longer in settings
+	if(!selectedDevices) {
+		log.debug "[SM] initialize() - No selected devices, deleting all previously installed devices."
+		delete = getAllChildDevices()
+	} else {
+		delete = getChildDevices().findAll { !selectedDevices.contains(it.deviceNetworkId) }
 	}
-
-	def sensors = ecobeesensors.collect { dni ->
-		def d = getChildDevice(dni)
-		if(!d) {
-			d = addChildDevice(app.namespace, getSensorChildName(), dni, null, ["label":"${atomicState.sensors[dni]}" ?:"Ecobee Sensor"])
-			log.debug "created ${d.displayName} with id $dni"
-		} else {
-			log.debug "found ${d.displayName} with id $dni already exists"
-		}
-		return d
-	}
-	log.debug "created ${devices.size()} thermostats and ${sensors.size()} sensors."
-
-	def delete  // Delete any that are no longer in settings
-	if(!thermostats && !ecobeesensors) {
-		log.debug "delete thermostats ands sensors"
-		delete = getAllChildDevices() //inherits from SmartApp (data-management)
-	} else { //delete only thermostat
-		log.debug "delete individual thermostat and sensor"
-		if (!ecobeesensors) {
-			delete = getChildDevices().findAll { !thermostats.contains(it.deviceNetworkId) }
-		} else {
-			delete = getChildDevices().findAll { !thermostats.contains(it.deviceNetworkId) && !ecobeesensors.contains(it.deviceNetworkId)}
-		}
-	}
-	log.warn "delete: ${delete}, deleting ${delete.size()} thermostats"
-	delete.each { deleteChildDevice(it.deviceNetworkId) } //inherits from SmartApp (data-management)
-
-	//send activity feeds to tell that device is connected
-	def notificationMessage = "is connected to SmartThings"
-	sendActivityFeeds(notificationMessage)
-	atomicState.timeSendPush = null
-	atomicState.reAttempt = 0
-
-	pollHandler() //first time polling data data from thermostat
-
-	//automatically update devices status every 5 mins
-	runEvery5Minutes("poll")
-
+	log.debug "[SM] initialize() - deleting ${delete.size()} devices"
+	delete.each {
+    	log.debug "[SM] initialize() - deleting ${delete.displayName}"
+        deleteChildDevice(it.deviceNetworkId)
+    }
+    
+    //if there is devices left, initiate healhPoll
+    if (getAllChildDevices()) {
+    	pollHandler() //first time polling data data from thermostat
+		//automatically update devices status every 5 mins
+        unschedule()
+		runEvery5Minutes("poll")
+    }
 }
 
 def pollHandler() {
@@ -386,13 +496,10 @@ def pollHandler() {
 }
 
 def pollChildren(child = null) {
-    def thermostatIdsString = getChildDeviceIdsString()
-    log.debug "polling children: $thermostatIdsString"
-
     def requestBody = [
         selection: [
-            selectionType: "thermostats",
-            selectionMatch: thermostatIdsString,
+            selectionType: "registered",
+            selectionMatch: "", //thermostatIdsString,
             includeExtendedRuntime: true,
             includeSettings: true,
             includeRuntime: true,
@@ -422,7 +529,7 @@ def pollChildren(child = null) {
             }
 		}
 	} catch (groovyx.net.http.HttpResponseException e) {
-		log.trace "Exception polling children: " + e.response.data.status
+		log.trace "[SM] pollChildren() Exception polling children: " + e.response.data.status
         if (e.response.data.status.code == 14) {
             atomicState.action = "pollChildren"
             log.debug "Refreshing your auth_token!"
@@ -434,6 +541,7 @@ def pollChildren(child = null) {
 
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
 def pollChild() {
+
 	def devices = getChildDevices()
 
 	if (pollChildren()) {
@@ -444,7 +552,10 @@ def pollChild() {
 					log.debug "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
 					child.generateEvent(tData.data) //parse received message from parent
 				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
-					log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
+                	if ( state.switchList.find { it.key == child.device.deviceNetworkId } ) { //is a smartswitch
+                    	return
+                    }
+					log.error "[SM] pollChild() ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
 					return null
 				}
 			}
@@ -458,6 +569,66 @@ def pollChild() {
 
 void poll() {
 	pollChild()
+    pollSwitches()
+}
+
+void controlSwitch( dni, desiredState ) {
+	
+	def d = getChildDevice(dni)
+    log.trace "[SM] Executing 'on' controlSwitch for ${d.device.displayName}"
+    def body = [ "on": desiredState ]
+	def params = [
+		uri: apiEndpoint + "/ea/devices/ls/$dni/state",
+		headers: ["Content-Type": "application/json;charset=UTF-8", "Authorization": "Bearer ${atomicState.authToken}"],
+        body: toJson(body)
+	]
+    
+    try {
+    	httpPut(params) { resp ->    
+    		log.debug "RESPONSE CODE: ${resp.status}"
+        }
+    } catch (groovyx.net.http.HttpResponseException e) {
+		//log.warn "Code=${e.getStatusCode()}"
+        if (e.getStatusCode() == 401) {
+        	if ( state.tokenRefreshTries < 2 ) {
+            	log.debug "Refreshing your auth_token!"
+                state.tokenRefreshTries++
+                atomicState.action = "pollChildren"
+            	refreshAuthToken()
+                controlSwitch( dni, desiredState )
+            } else {
+            	log.error "Error Refreshing your auth_token! Unable to control your switch: ${d.device.displayName}"              
+            }
+        }
+    	if ( e.getStatusCode() == 200 ) {
+        	log.debug "Ecobee response to switch control = 'Success' for ${d.device.displayName}"
+            def switchState = desiredState == true ? "on" : "off"
+            d.sendEvent(name:"switch", value: switchState)
+            state.tokenRefreshTries = 0
+        } else if ( e.getStatusCode() != 401 ) {
+    		log.error "Exception from device control response: " + e.getCause()       
+        	log.error "Exception from device control getMessage: " + e.getMessage()        
+        }
+    }
+    runIn(10, pollSwitches, [overwrite: true])
+}
+
+def pollSwitches() {
+	log.trace "[SM] Executing 'pollSwitches()'"
+	switchesDiscovered()
+	def switches = state.switchList
+    switches.each() {
+    	def childSwitch = getChildDevice(it.key)
+        def switchInfo = it.value
+        def switchState = switchInfo.state.on == true ? "on" : "off"
+        if ( childSwitch ) {
+            log.debug "[SM] pollSwitches updating ${childSwitch.device.displayName} to $switchState"
+        	childSwitch.sendEvent(name:"switch", value: switchState)
+        } else {
+        	log.info "[SM] pollSwitches received data for non-smarthings switch, ingoring"
+        }
+    }
+    return null
 }
 
 def availableModes(child) {
@@ -508,8 +679,7 @@ def updateSensorData() {
 				it.capability.each {
 					if (it.type == "temperature") {
 						if (it.value == "unknown") {
-							// setting to 0 as "--" is not a valid number depite 0 being a valid value
-							temperature = 0
+							temperature = "--"
 						} else {
 							if (location.temperatureScale == "F") {
 								temperature = Math.round(it.value.toDouble() / 10)
@@ -529,16 +699,12 @@ def updateSensorData() {
 				def dni = "ecobee_sensor-"+ it?.id + "-" + it?.code
 				def d = getChildDevice(dni)
 				if(d) {
-					d.sendEvent(name:"temperature", value: temperature, unit: location.temperatureScale)
+					d.sendEvent(name:"temperature", value: temperature)
 					d.sendEvent(name:"motion", value: occupancy)
 				}
 			}
 		}
 	}
-}
-
-def getChildDeviceIdsString() {
-	return thermostats.collect { it.split(/\./).last() }.join(',')
 }
 
 def toJson(Map m) {
@@ -603,6 +769,7 @@ private void saveTokenAndResumeAction(json) {
     if (json) {
         atomicState.refreshToken = json?.refresh_token
         atomicState.authToken = json?.access_token
+        obtainJsonToken()
         if (atomicState.action) {
             log.debug "got refresh token, executing next action: ${atomicState.action}"
             "${atomicState.action}"()
@@ -778,12 +945,14 @@ private boolean sendCommandToEcobee(Map bodyParams) {
 
 def getChildName()           { return "Ecobee Thermostat" }
 def getSensorChildName()     { return "Ecobee Sensor" }
+def getSwitchChildName()     { return "Ecobee Switch" }
 def getServerUrl()           { return "https://graph.api.smartthings.com" }
 def getShardUrl()            { return getApiServerUrl() }
 def getCallbackUrl()         { return "https://graph.api.smartthings.com/oauth/callback" }
 def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
 def getApiEndpoint()         { return "https://api.ecobee.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
+private getVendorIcon() 	 { return "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png" }
 
 //send both push notification and mobile activity feeds
 def sendPushAndFeeds(notificationMessage) {
