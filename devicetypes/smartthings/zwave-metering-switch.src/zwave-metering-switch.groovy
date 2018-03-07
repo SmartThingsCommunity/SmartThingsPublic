@@ -27,6 +27,7 @@ metadata {
 
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Micro Smart Switch"
+		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch"
 	}
 
 	// simulator metadata
@@ -95,7 +96,7 @@ def updated() {
 def getCommandClassVersions() {
 	[
 		0x20: 1,  // Basic
-		0x32: 1,  // SwitchMultilevel
+		0x32: 3,  // Meter
 		0x56: 1,  // Crc16Encap
 		0x72: 2,  // ManufacturerSpecific
 	]
@@ -111,7 +112,7 @@ def parse(String description) {
 	return result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	if (cmd.scale == 0) {
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 	} else if (cmd.scale == 1) {
@@ -213,7 +214,7 @@ def refresh() {
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.meterV2.meterGet(scale: 0).format(),
 		zwave.meterV2.meterGet(scale: 2).format()
-	])
+	], 500)
 }
 
 def configure() {
