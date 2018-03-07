@@ -14,7 +14,7 @@ metadata {
         attribute "temperatureAlarm", "string"
         attribute "coLevel", "number"
 
-        fingerprint mfr: "010F", prod: "1201"
+        fingerprint mfr: "010F", prod: "1201", model: "1000"
         fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x73,0x80,0x22,0x56,0x31,0x98,0x7A,0x5A,0x85,0x84,0x71,0x70,0x8E,0x9C,0x86,0x72"
         fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x73,0x80,0x22,0x56,0x31,0x7A,0x5A,0x85,0x84,0x71,0x70,0x8E,0x9C,0x86,0x72"
     }
@@ -122,6 +122,7 @@ def updated() {
 def configure() {
     def cmds = []
     sendEvent(name: "coLevel", unit: "ppm", value: 0, displayed: true)
+    sendEvent(name: "carbonMonoxide", value: "clear", displayed: "true")
     cmds << zwave.batteryV1.batteryGet()
     cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
     cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
