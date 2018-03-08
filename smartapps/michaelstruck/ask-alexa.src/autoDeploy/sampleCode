@@ -1,0 +1,24 @@
+def pageSetup(){
+	dynamicPage(name: "pageSetup", install: false, uninstall: false) {
+		section { paragraph "Setup Ask Alexa", image: imgURL() + "setup.png"}
+    	section("Setup parameters") {
+           	input "azRegion", "enum", title: "Select Amazon Region/Datacenter Location", description: "Choose the Amazon datecenter closest to you", options:["US-E":"US East","US-W":"US West","EU":"EU"], required: false, multiple: false, defaultValue:"US-E", submitOnChange: true
+            input "invocationName", title: "Skill Invocation Name", defaultValue: "Smart Things", required: false, submitOnChange: true
+        }
+        section("Manual Amazon Lambda and skill installation"){
+        	if (!state.accessToken) paragraph "**You must enable OAuth via the IDE to setup this app**"
+            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables", description: "For Amazon developer sites", image: imgURL() + "amazon.png"
+        }
+		    if (azRegion && invocationName){
+            section("Automated Amazon Lambda and skill installation"){
+                input "createRoomSkills", "enum", title:"Create Secondary Room Skills",  description: "Choose additional shortcut skills for rooms", options:["here":"Here", "room":"Room", "group":"Group"], required: false, multiple: true 
+                href url: "xxx", title:"Auto-Deploy Lambda/Skills", description:"Coming soon", image: imgURL() + "deploy.png"
+            }
+        }
+        section("Help") {
+        	if (!state.accessToken) paragraph "**You must enable OAuth via the IDE to produce the command cheat sheet**"
+            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/cheat?access_token=${state.accessToken}", style:"embedded", required:false, title:"Display Ask Alexa Cheat Sheet", 
+            	description: "Use Live Logging in the SmartThings IDE to obtain the URL for use on your computer browser.", image: imgURL() + "list.png"
+        }
+    }
+}
