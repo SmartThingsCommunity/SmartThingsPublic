@@ -205,7 +205,7 @@ def installed() {
 	// Check for new devices and remove old ones every 3 hours
 	runEvery3Hours('updateDevices')
     // execute refresh method every minute
-    schedule("0 0/1 * * * ?", refreshDevices)
+    schedule("22 0/1 * * * ?", refreshDevices)
 }
 
 // called after settings are changed
@@ -214,7 +214,7 @@ def updated() {
 	initialize()
     unschedule()
     runEvery3Hours('updateDevices')
-    schedule("35 0/2 * * * ?", refreshDevices)
+    schedule("22 0/2 * * * ?", refreshDevices)
 }
 
 def uninstalled() {
