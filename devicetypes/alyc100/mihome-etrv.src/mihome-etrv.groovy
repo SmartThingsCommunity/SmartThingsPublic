@@ -14,8 +14,7 @@
  *
  *
  *	VERSION HISTORY
- *  	28.02.2018	2.2 - Added battery indication tile to to warn of low battery
- *	21.02.2018	2.1	- re run upto 5 times when set temp is not 200
+ *  21.02.2018	2.1	- re run upto 5 times when set temp is not 200
  *	23.11.2016:	2.0 - Remove BETA status.
  * 
  *	07.11.2016: 2.0 BETA Release 1.1 - Allow icon to be changed.
@@ -70,7 +69,7 @@ metadata {
 			}
             
             tileAttribute ("lastupdatetemp", key: "SECONDARY_CONTROL") {
-				attributeState "default", label:'eTRV last seen ${currentValue}'
+				attributeState "default", label:'Device last seen ${currentValue}'
             }
 		}
         
@@ -161,7 +160,7 @@ def parse(String description) {
 
 // handle commands
 def setHeatingSetpoint(temp) {
-	state.counter = state.counter
+	state.counter = state.counter //mc
 	log.debug "Executing 'setHeatingSetpoint with temp $temp'"
 	def latestThermostatMode = device.latestState('thermostatMode')
     
@@ -177,7 +176,7 @@ def setHeatingSetpoint(temp) {
     if (resp.status != 200) {
 		log.error("Unexpected result in seting temp: [${resp.status}] ${resp.data}")
 // mc re-run upto 5 times
-        if (state.counter == null || state.counter >= 5) {
+        if (state.counter == null || state.counter >= 6) {
 			state.counter = 0
 		}
         	if (state.counter == 5) {
@@ -187,6 +186,7 @@ def setHeatingSetpoint(temp) {
                }
 		state.counter = state.counter + 1
         log.error ("running set temp again No. ${state.counter.value} attempt")
+        sendEvent(name: "setHeatingSetpoint", value: state.counter == 4 ? "error setting 5 times" : "error in setting '${state.counter}' attempt")
         runIn (02, setHeatingSetpoint(temp))
 		}
 
@@ -369,5 +369,5 @@ def poll() {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	runIn(02, poll)
+	runIn(03, poll)
 }

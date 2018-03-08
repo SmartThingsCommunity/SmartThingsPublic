@@ -114,8 +114,8 @@ def on() {
     def resp = parent.apiGET("/subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
 		log.error("Unexpected result in on poll(): [${resp.status}] ${resp.data}")
- // mc re-run upto 5 times
-        if (state.counter == null || state.counter >= 5) {
+  // mc re-run upto 5 times
+        if (state.counter == null || state.counter >= 6) {
 			state.counter = 0
 		}
         	if (state.counter == 5) {
@@ -124,7 +124,8 @@ def on() {
                 return []
                }
 		state.counter = state.counter + 1
-        log.error ("running on again ${state.counter.value} attempt")
+        sendEvent(name: "switch", value: state.counter == 4 ? "error on 5 times" : "error on '${state.counter}' attempt")
+        log.error ("runnting on again ${state.counter.value} attempt")
         runIn (02, on)
 		}
 
@@ -147,8 +148,8 @@ def off() {
     def resp = parent.apiGET("/subdevices/power_off?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
 		log.error("Unexpected result in off poll(): [${resp.status}] ${resp.data}")
-// mc re-run upto 5 times
-        if (state.counter == null || state.counter >= 5) {
+        // mc re-run upto 5 times
+        if (state.counter == null || state.counter >= 6) {
 			state.counter = 0
 		}
         	if (state.counter == 5) {
@@ -157,6 +158,7 @@ def off() {
                 return []
                }
 		state.counter = state.counter + 1
+        sendEvent(name: "switch", value: state.counter == 4 ? "error on 5 times" : "error off '${state.counter}' attempt")
         log.error ("running off again ${state.counter.value} attempt")
 		runIn (02, off)
 		}
