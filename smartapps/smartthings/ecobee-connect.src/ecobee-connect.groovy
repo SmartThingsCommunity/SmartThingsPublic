@@ -411,13 +411,6 @@ def updated() {
 
 private removeChildDevice(childDevice) {
 	log.trace "[SM] Executing removeChildDevice()"
-
-    log.debug "[SM] removeChildDevice() - Delete this: ${delete}"
-    delete.each {
-        deleteChildDevice(childDevice.device.deviceNetworkId)
-    }
-    if (!settings['selectedDevices']) //empty list, bail, service manager will be deleted with no devices
-    	return
     def newDeviceList = settings['selectedDevices'] - childDevice.device.deviceNetworkId
     app.updateSetting("selectedDevices", newDeviceList)
 }
