@@ -24,9 +24,10 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
-
+		capability "Health Check"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
+		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "Neo Coolcam Siren Alarm"
 	}
 
 	simulator {
@@ -56,6 +57,16 @@ metadata {
 		main "alarm"
 		details(["alarm", "off", "battery", "refresh"])
 	}
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
+	// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -119,9 +130,20 @@ def both() {
 	on()
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	log.debug "ping() called"
+	refresh()
+}
+
 def refresh() {
 	log.debug "sending battery refresh command"
-	zwave.batteryV1.batteryGet().format()
+	[
+		zwave.basicV1.basicGet().format(),
+		zwave.batteryV1.batteryGet().format()
+	]
 }
 
 def parse(String description) {
@@ -152,7 +174,6 @@ def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 		createEvent([name: "alarm", value: alarmValue, type: "digital"])
 	]
 }
-
 
 def createEvents(physicalgraph.zwave.Command cmd) {
 	log.warn "UNEXPECTED COMMAND: $cmd"
