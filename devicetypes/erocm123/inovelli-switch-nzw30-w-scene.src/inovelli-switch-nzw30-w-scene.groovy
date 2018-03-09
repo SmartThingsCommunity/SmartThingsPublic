@@ -1,7 +1,7 @@
  /**
- *  Inovelli Switch NZW30 w/Scene
+ *  Inovelli Switch NZW30/NZW30T w/Scene
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-03-01
+ *  Date: 2018-03-08
  *
  *  Copyright 2018 Eric Maycock
  *
@@ -14,7 +14,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02.
+ *  2018-03-08: Added support for local protection to disable local control. Requires firmware 1.03+.
+ *              Also merging handler from NZW30T as they are identical other than the LED indicator.
+ *              Child device creation option added for local control setting. Child device must be installed:
+ *              https://github.com/erocm123/SmartThingsPublic/blob/master/devicetypes/erocm123/switch-level-child-device.src
+ *       
+ *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02+.
  *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src
  */
  
@@ -52,6 +57,7 @@ metadata {
 		fingerprint mfr: "015D", prod: "B111", model: "1E1C", deviceJoinName: "Inovelli Switch"
         fingerprint mfr: "015D", prod: "1E00", model: "1E00", deviceJoinName: "Inovelli Switch"
         fingerprint mfr: "0312", prod: "1E00", model: "1E00", deviceJoinName: "Inovelli Switch"
+        fingerprint mfr: "0312", prod: "1E02", model: "1E02", deviceJoinName: "Inovelli Switch" // Toggle version NZW30T
 	}
 
 	simulator {
@@ -59,12 +65,11 @@ metadata {
     
     preferences {
         input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:\n", description: "Tap to set", required: false, options:[1: "On", 0: "Off", 2: "Disable", 3: "Always On"], defaultValue: 1
+        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is: (Paddle Switch Only)\n", description: "Tap to set", required: false, options:[1: "On", 0: "Off", 2: "Disable", 3: "Always On"], defaultValue: 1
         input "invert", "enum", title: "Invert Switch\n\nInvert on & off on the physical switch", description: "Tap to set", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
-        //input "disableLocal", "enum", title: "Disable Local Control\n\nDisable ability to control switch from the wall\n(Firmware 1.02+)", description: "Tap to set", required: false, options:[0: "Yes", 1: "No"], defaultValue: 1
-        //input description: "Use the below options to enable child devices for the specified settings. This will allow you to adjust these settings using SmartApps such as Smart Lighting. If any of the options are enabled, make sure you have the appropriate child device handlers installed.\n(Firmware 1.02+)", title: "Child Devices", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        //input "enableDisableLocalChild", "bool", title: "Disable Local Control", description: "", required: false
-        
+        input "disableLocal", "enum", title: "Disable Local Control\n\nDisable ability to control switch from the wall\n(Firmware 1.02+)", description: "Tap to set", required: false, options:[2: "Yes", 0: "No"], defaultValue: 1
+        input description: "Use the below options to enable child devices for the specified settings. This will allow you to adjust these settings using SmartApps such as Smart Lighting. If any of the options are enabled, make sure you have the appropriate child device handlers installed.\n(Firmware 1.02+)", title: "Child Devices", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input "enableDisableLocalChild", "bool", title: "Disable Local Control", description: "", required: false
         input description: "1 pushed - Up 1x click\n2 pushed - Up 2x click\n3 pushed - Up 3x click\n4 pushed - Up 4x click\n5 pushed - Up 5x click\n6 pushed - Up held\n\n1 held - Down 1x click\n2 held - Down 2x click\n3 held - Down 3x click\n4 held - Down 4x click\n5 held - Down 5x click\n6 held - Down held", title: "Button Mappings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         input description: "Use the \"Z-Wave Association Tool\" SmartApp to set device associations. (Firmware 1.02+)\n\nGroup 2: Sends on/off commands to associated devices when switch is pressed (BASIC_SET).", title: "Associations", displayDuringSetup: false, type: "paragraph", element: "paragraph"
     }
@@ -132,7 +137,7 @@ metadata {
 }
 
 private channelNumber(String dni) {
-    dni.split("-e")[-1] as Integer
+    dni.split("-ep")[-1] as Integer
 }
 
 private sendAlert(data) {
@@ -147,11 +152,14 @@ private sendAlert(data) {
 
 void childSetLevel(String dni, value) {
     def valueaux = value as Integer
-    def level = Math.max(Math.min(valueaux, 99), 0)
-    log.debug "Setting Default Level for ${channelNumber(dni) == 1? "Local" : "Z-Wave"} Control to ${level}"
+    def level = Math.max(Math.min(valueaux, 99), 0)    
     def cmds = []
-    cmds << new physicalgraph.device.HubAction(command(zwave.configurationV1.configurationSet(scaledConfigurationValue: value, parameterNumber: channelNumber(dni), size: 1) ))
-    cmds << new physicalgraph.device.HubAction(command(zwave.configurationV1.configurationGet(parameterNumber: channelNumber(dni) )))
+    switch (channelNumber(dni)) {
+        case 101:
+            cmds << new physicalgraph.device.HubAction(command(zwave.protectionV2.protectionSet(localProtectionState : level > 0 ? 2 : 0, rfProtectionState: 0) ))
+            cmds << new physicalgraph.device.HubAction(command(zwave.protectionV2.protectionGet() ))
+        break
+    }
 	sendHubCommand(cmds, 1000)
 }
 
@@ -208,7 +216,7 @@ def initialize() {
     try {
         addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep101", null,
                 [completedSetup: true, label: "${device.displayName} (Disable Local Control)",
-                isComponent: true, componentName: "e101", componentLabel: "Disable Local Control"])
+                isComponent: true, componentName: "ep101", componentLabel: "Disable Local Control"])
     } catch (e) {
         runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
     }
@@ -238,11 +246,9 @@ def initialize() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff? autoOff.toInteger() : 0, parameterNumber: 5, size: 2)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
-    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: disableRelay? disableRelay.toInteger() : 1, parameterNumber: 101, size: 1)
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 101)
 	if (state.disableLocal != settings.disableLocal) {
-        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: disableLocal? disableLocal.toInteger() : 1, parameterNumber: 101, size: 1)
-        cmds << zwave.configurationV1.configurationGet(parameterNumber: 101)
+        cmds << zwave.protectionV2.protectionSet(localProtectionState : disableLocal? disableLocal.toInteger() : 0, rfProtectionState: 0)
+        cmds << zwave.protectionV2.protectionGet()
     }
     state.disableLocal = settings.disableLocal
     return cmds
@@ -318,17 +324,6 @@ def buttonEvent(button, value, type = "digital") {
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
     log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
-    def integerValue = cmd2Integer(cmd.configurationValue)
-    switch (cmd.parameterNumber) {
-        case 101:
-            def children = childDevices
-            def childDevice = children.find{it.deviceNetworkId.endsWith("e101")}
-            if (childDevice) {
-            childDevice.sendEvent(name: "switch", value: integerValue > 0 ? "on" : "off")
-            childDevice.sendEvent(name: "level", value: integerValue)
-            }
-        break
-    }
 }
 
 def cmd2Integer(array) {
@@ -522,5 +517,15 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
         state.needfwUpdate = "false"
         sendEvent(name: "status", value: "fw: ${firmware}")
         updateDataValue("firmware", firmware)
+    }
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.protectionv2.ProtectionReport cmd) {
+    log.debug cmd
+    def integerValue = cmd.localProtectionState
+    def children = childDevices
+    def childDevice = children.find{it.deviceNetworkId.endsWith("ep101")}
+    if (childDevice) {
+        childDevice.sendEvent(name: "switch", value: integerValue > 0 ? "on" : "off")        
     }
 }
