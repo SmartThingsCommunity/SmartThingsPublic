@@ -180,14 +180,14 @@ def setHeatingSetpoint(temp) {
 			state.counter = 0
 		}
         	if (state.counter == 5) {
-            	log.error ("error ran 5 times unsucsesfull")
+            	log.error ("ERROR - Tryed setting temp 5 times unsucsesfully")
                 state.counter = 0
                 return []
                }
 		state.counter = state.counter + 1
         log.error ("running set temp again No. ${state.counter.value} attempt")
         sendEvent(name: "setHeatingSetpoint", value: state.counter == 4 ? "error setting 5 times" : "error in setting '${state.counter}' attempt")
-        runIn (02, setHeatingSetpoint(temp))
+        runIn (05, setHeatingSetpoint(temp))
 		}
 
    	else {
@@ -369,5 +369,5 @@ def poll() {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	runIn(03, poll)
+	runIn(02, poll)
 }

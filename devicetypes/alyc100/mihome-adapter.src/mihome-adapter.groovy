@@ -119,14 +119,14 @@ def on() {
 			state.counter = 0
 		}
         	if (state.counter == 5) {
-            	log.error ("error ran 5 times unsucsesfull")
+            	log.error ("ERROR - Tryed turning on 5 times unsucsesfuly")
                 state.counter = 0
                 return []
                }
 		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: state.counter == 4 ? "error on 5 times" : "error on '${state.counter}' attempt")
+        sendEvent(name: "switch", value: state.counter == 4 ? "ERROR - Tryed turning on 5 times unsucsesfuly" : "error on '${state.counter}' try")
         log.error ("runnting on again ${state.counter.value} attempt")
-        runIn (02, on)
+        runIn (06, on)
 		}
 
    	else {
@@ -158,9 +158,9 @@ def off() {
                 return []
                }
 		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: state.counter == 4 ? "error on 5 times" : "error off '${state.counter}' attempt")
+        sendEvent(name: "switch", value: state.counter == 4 ? "ERROR - Tryed off 5 times" : "error off '${state.counter}' try")
         log.error ("running off again ${state.counter.value} attempt")
-		runIn (02, off)
+		runIn (06, off)
 		}
 
    	else {
