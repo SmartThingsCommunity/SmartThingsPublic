@@ -44,8 +44,7 @@ metadata {
         }
         standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
-        
+        }       
         main(["switch"])
         details(["rich-control", "refresh"])
     }
