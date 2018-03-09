@@ -163,6 +163,7 @@ private axisEvent() {
 // Parameter configuration, synchronization and verification
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     logging("${device.displayName} - Executing updated()","info")
 
     if ( settings.tamperOperatingMode as Integer == 0 ) {
