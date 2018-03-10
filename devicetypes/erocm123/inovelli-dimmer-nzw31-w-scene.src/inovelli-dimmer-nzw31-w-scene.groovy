@@ -409,24 +409,23 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-    createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
+    dimmerEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-    createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd) {
     dimmerEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-    dimmerEvents(cmd)
+    // Since SmartThings isn't filtering duplicate events, we are skipping these
+    // Switch is sending BasicReport as well (which we will use)
+    //dimmerEvents(cmd)
 }
 
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
     def value = (cmd.value ? "on" : "off")
-    def result = [createEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")]
+    def result = [createEvent(name: "switch", value: value)]
+    state.previousValue = value
     if (cmd.value) {
         result << createEvent(name: "level", value: cmd.value, unit: "%")
     }
