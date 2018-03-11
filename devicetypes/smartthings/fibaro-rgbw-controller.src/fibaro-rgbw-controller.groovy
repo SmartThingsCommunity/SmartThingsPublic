@@ -730,7 +730,7 @@ def hueToRgb(v1, v2, vh) {
 	if (vh > 1) { vh -= 1 }
 	if ((6 * vh) < 1) { return (v1 + (v2 - v1) * 6 * vh) }
     if ((2 * vh) < 1) { return (v2) }
-    if ((3 * vh) < 2) { return (v1 + (v2 - $v1) * ((2 / 3 - vh) * 6)) }
+    if ((3 * vh) < 2) { return (v1 + (v2 - v1) * ((2 / 3 - vh) * 6)) }
     return (v1)
 }
 
