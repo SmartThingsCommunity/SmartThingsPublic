@@ -1319,7 +1319,7 @@ inVirThermModes = $inVirThermModes
             log.debug "$VirThermSwitch_1 [heat] turned off because location is not in $VirThermModes"
         }
     }
-  
+
     if(AddMoreVirT_B){
         Critical = tempcheckList[1] < CriticalTemp //avoid repeated on/off's if already managed by critical
         if(ContactsAreClosed && !Critical){
@@ -1702,9 +1702,9 @@ def Evaluate(){
 
     log.trace "EVALUATE()"
 
-    def BedSensorResults = BedSensorStatus()
-    def NowBedisClosed = BedSensorResults[0]
-    def NowBedisOpen = BedSensorResults[1]
+    //def BedSensorResults = 
+    //def NowBedisClosed = BedSensorResults[0]
+    def ConsideredOpen = BedSensorStatus() // bed sensor management
     def CurrMode = location.currentMode
     def inAway = CurrMode in Away
     log.debug "Location is in $CurrMode mode"
@@ -1739,7 +1739,9 @@ FollowException = $FollowException
 InExceptionContactMode = $InExceptionContactMode 
 DoNotTurnOffModes = $DoNotTurnOffModes
 ContactExceptionIsClosed = $ContactExceptionIsClosed
-NowBedisClosed = $NowBedisClosed"""
+
+ConsideredOpen = $ConsideredOpen
+"""
 
     if(ContactException && FollowException && InExceptionContactMode){
         contactClosed = ContactExceptionIsClosed
@@ -1777,7 +1779,7 @@ NowBedisClosed = $NowBedisClosed"""
             log.debug "$ContactAndSwitch already off --"
         }             
     }
-    else if(contactClosed || (ControlWithBedSensor && NowBedisClosed && contactClosed)) {
+    else if(contactClosed || (ControlWithBedSensor && !ConsideredOpen && contactClosed)) {
 
         if(IsHeatPump && outsideTemp <= 29){
             if(SomeSwAreOn.size() != 0){
@@ -1987,10 +1989,10 @@ inAway = $inAway
                     log.debug "LINEAR"
                     /////////////////////////COOL////////////////////  linear function for Cooling
                     xa = 75	//outside temp a
-                    ya = CSPSet // desired cooling temp a 
+                    ya = MaxLinearCool // desired cooling temp a 
 
                     xb = 100 		//outside temp b
-                    yb = CSPSet + 5  // desired cooling temp b  
+                    yb = MinLinearCool // desired cooling temp b  
 
                     // take humidity into account
                     // if outside humidity is higher than .... 
@@ -2009,6 +2011,31 @@ inAway = $inAway
                         log.info "b is: $b ---------------------------------------"
                     //
 
+                    //////////////////////////LINEAR HEAT/////////////////////////////// 
+                    log.debug "LINEAR HEAT --"
+                    xa = 40	//outside temp a
+                    ya = MinLinearHeat // min desired heating temp a 
+
+                    xb = 35 	//outside temp b
+                    yb = MaxLinearHeat  // max desired heating temp b  
+
+                    coef = (yb-ya)/(xb-xa)
+                    b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b
+
+
+                    HSPSet = coef*outsideTemp + b 
+                    log.info "linear HSPSet FLOAT = $HSPSet"
+                    HSPSet = HSPSet.toInteger()
+
+                    log.debug """
+outsideTemp is $outsideTemp 
+b is: $b 
+slope: $coef 
+MinLinearHeat = $MinLinearHeat
+MaxLinearHeat = $MaxLinearHeat
+linear HSPSet for $ThermSet = $HSPSet """
+
+
                 } 
 
                 else if(adjustments == "Yes, but use a logarithmic variation" && !inAway){
@@ -2022,61 +2049,48 @@ Where log can be a logarithm function in any base, n is the number and b is the 
 Math.log(256) / Math.log(2)
 => 8.0
 */
+
+                    ////////////////// LOGARITHMIC COOL ///////////////// 
                     // log base is: CSPSet
                     def Base = CSPSet?.toInteger()
                     /////////////////////////COOL//////////////////// 
                     //outsideTemp = 90 // for test only 
                     CSPSet = (Math.log(outsideTemp) / Math.log(Base)) * CSPSet
-                    //log.debug "Logarithmic CSPSet = $CSPSet"
-                    //CSPSet = Math.round(CSPSet)
-                    //CSPSet = CSPSet.toInteger()
-                    //log.debug "Integer CSPSet = $CSPSet"
+                    log.debug "Logarithmic CSPSet = $CSPSet"
+
+
+                    /////////////////// LOGARITHMIC HEAT ///////////////// 
+                    // log base is: the average desired temperature
+                    Base = (MinLinearHeat + MaxLinearHeat)/3
+                    /////////////////////////COOL//////////////////// 
+                    //outsideTemp = 90 // for test only 
+                    HSPSet = (Math.log(Base) / Math.log(outsideTemp)) * HSPSet
+                    log.debug "Logarithmic HSPSet = $HSPSet"
 
 
                 }
-                /////////////////////////HEAT//////////////////// ALWAYS linear function for heating... for now... 
-                if((adjustments == "Yes, but use a logarithmic variation" || adjustments == "Yes, use a linear variation") && !inAway){
-                    log.debug "LINEAR HEAT"
-                    xa = 60	//outside temp a
-                    ya = MinLinearHeat // min desired heating temp a 
-
-                    xb = 40 	//outside temp b
-                    yb = MaxLinearHeat  // max desired heating temp b  
-
-                    coef = (yb-ya)/(xb-xa)
-                    b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b
-
-                    log.info "b is: $b ---------------------------------------"
-                    HSPSet = coef*outsideTemp + b 
-                    HSPSet = HSPSet.toInteger()
-
-                    log.debug "linear HSPSet for $ThermSet = $HSPSet && MaxLinearHeat = $MaxLinearHeat"
-
-                    if(HSPSet > MaxLinearHeat){
-                        HSPSet = MaxLinearHeat
-                        def message = "$ThermSet heating set point is too high, brought back to MaxLinearHeat: ${MaxLinearHeat}F"
-                        log.info message
-                        if(state.sendalert != 1){
-                            send(message)
-                            state.sendalert = 1
-                        }
+        ///////////////////////////// END OF ALGEBRA ////////////////////////////////////////////
+                /////////////////////////// HEAT MAXIMA MINIMA ///////////////////////
+                if(HSPSet > MaxLinearHeat){
+                    HSPSet = MaxLinearHeat
+                    def message = "$ThermSet heating set point is too high, brought back to your prefered Maximum: ${MaxLinearHeat}F"
+                    log.info message
+                    if(state.sendalert != 1){
+                        send(message)
+                        state.sendalert = 1
                     }
-                    else if(HSPSet < MinLinearHeat){
-                        HSPSet = MinLinearHeat
-                        def message = "$ThermSet heating set point is too low, brought back to MinLinearHeat: ${MaxLinearHeat}F"
-                        log.info message
-                        if(state.sendalert != 1){
-                            send(message)
-                            state.sendalert = 1
-                        }
+                }
+                else if(HSPSet < MinLinearHeat){
+                    HSPSet = MinLinearHeat
+                    def message = "$ThermSet heating set point is too low, brought back to your prefered Minimum: ${MinLinearHeat}F"
+                    log.info message
+                    if(state.sendalert != 1){
+                        send(message)
+                        state.sendalert = 1
                     }
                 }
 
-
-                //log.debug "end of algebra" 
-
-                ///////////////////humidity and thresholds///////////////////
-
+                ///////////////////HUMIDITY ///////////////////
                 if(TooHumid && Inside - 2 >= outsideTemp && Active){
                     CSPSet = CSPSet - 1 
                     log.debug "Substracting 2 degrees to new CSP because it is too humid OUTSIDE"
@@ -2214,15 +2228,14 @@ TooHumidINSIDE = $TooHumidINSIDE
                 }
 
                 log.debug """
-NowBedisClosed = $NowBedisClosed, 
-NowBedisOpen = $NowBedisOpen, """
+ConsideredOpen = $ConsideredOpen, """
 
                 if(ContactAndSwitchInSameRoom && UnitToIgnore?.displayName == "${ThermContact}" && ThermSet.displayName == "${ThermContact}" && ContactAndSwitchState?.size() > O){
                     log.debug "not applying $BedSensor action because it is in the same room as $ContactAndSwitch, which is currently ON"
                 }
                 else if(KeepACon && ContactExceptionIsClosed && !inAway){
 
-                    if("${ThermSet}" == "${ThermContact}" && NowBedisClosed ){ 
+                    if("${ThermSet}" == "${ThermContact}" && !ConsideredOpen ){ 
                         log.debug "BedSensorManagement set to true (BedSensorManagement = $BedSensorManagement)"
                         BedSensorManagement = true 
 
@@ -2823,13 +2836,9 @@ def ChangedModeHandler(evt) {
 
     state.recentModeChange = true
     state.ventingrun = 0
-    runIn(60, recentModeChangeFALSE)
 
     updated()
 
-}
-def recentModeChangeFALSE(){
-    state.recentModeChange = false
 }
 
 // A.I. and micro location evt management
@@ -2867,7 +2876,7 @@ def BedSensorHandler(evt){
     log.debug """$evt.device is $evt.value 
 BedSensor is $BedSensor------------------------------------------------------------------------"""
 
-    // Evaluate()
+    Evaluate()
 
 }
 
@@ -2906,21 +2915,27 @@ def FeelsLikeHandler(evt){
 }
 
 
-////////////////////////////////////// TIMING ///////////////////////////////
+////////////////////////////////////// BED SENSOR ///////////////////////////////
 def Timer() {
     def minutes = findFalseAlarmThreshold() 
-    def deltaMinutes = minutes as Long
+    def deltaMinutes = minutes * 60000 as Long
 
-    def ContactsEvents = BedSensor?.collect{ it.eventsSince(new Date(now() - (60000 * deltaMinutes))) }.flatten()
+    //def ContactsEvents = BedSensor?.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten()
     // def ContactsEvents = BedSensor?.collect{ it.eventsSince(new Date(now() - (60000 * deltaMinutes))) }.flatten() // needs for loop to distinguish events per device
     //BedSensor[0].statesBetween("contact", start, end, [max: 200]))
-
-    log.debug """
-Timer Found ${ContactsEvents.size()} events in the last $minutes minutes"
-"""
-    def size = ContactsEvents.size()
+    def BedSensorEvents = []
+    def SensorSize = BedSensor.size()
+    def iteration = 0 
+    def size = 0
+    for(SensorSize > 0; iteration < SensorSize; iteration++){
+        BedSensorEvents[iteration] = BedSensor[iteration].eventsSince(new Date(now() - deltaMinutes)) 
+        def thisiteration = BedSensorEvents[iteration]
+        log.debug "BedSensorEvents[$iteration] = ${thisiteration}"      
+        def thisSensorIteration = BedSensor[iteration]
+        size = thisiteration.size()
+        log.debug "Timer Found ${thisiteration.size() ?: 0} events in the last $minutes minutes at ${thisSensorIteration}"
+    }
     return size
-
 }
 private findFalseAlarmThreshold() {
     // In Groovy, the return statement is implied, and not required.
@@ -2929,63 +2944,75 @@ private findFalseAlarmThreshold() {
     // return our default value of 2
     (falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold : 2
 }
+def dNchForAWhileRESET(){
+    state.doNotChangeForAWhile = false
+    log.debug "doNotChangeForAWhile RESET to false"
+}
 
-////////////////////////////////////// BED SENSOR ///////////////////////////////
 def BedSensorStatus(){
-    def ConsideredOpen = true // has to be true by default in case no contacts selected
-    def BedSensorAreClosed = false // has to be false by default in case no contacts selected
+
+    def minutes = findFalseAlarmThreshold() 
+    def delay = minutes * 60 // this one must be in seconds
+
+
+    // such sensors can return unstable values (open/close/open/close)
+    // when it is under a certain weight, values will be consistently closed
+    // so when unstable it means that there's no more substantial weight on it
+    // so what we want to do here is consider it as open every time it's unstable
+    // and closed when stable (only 1 event within the false alarm time frame)
 
     if(BedSensor){
 
-        def CurrentContacts = BedSensor.currentValue("contact")    
-        def ClosedContacts = CurrentContacts.findAll { val ->
-            val == "closed" ? true : false}
+        def doNotChangeForAWhile = state.doNotChangeForAWhile // this value allows to keep ConsideredOpen false for the duration of false alarmthreshold
+        log.debug "doNotChangeForAWhile = $doNotChangeForAWhile"
+        if(!doNotChangeForAWhile){
 
-        if(ClosedContacts.size() == BedSensor.size()){
-            BedSensorAreClosed = true
-        }
+            // find if any device within the list of [BedSensor] is open
+            def CurrentContacts = BedSensor.currentValue("contact")
+            def Open = CurrentContacts.findAll { val ->
+                val == "open" ? true : false}
 
-        //log.debug "${ClosedContacts.size()} sensors out of ${BedSensor.size()} are closed SO BedSensorAreClosed = $BedSensorAreClosed"
-        def ContactsEventsSize = Timer()
+            // set isOpen as true if any is open 
+            boolean isOpen = Open.size() >= 1
+            log.debug "Open SIZE = ${Open.size()}, isOpen = $isOpen"
 
-        def Open = BedSensor.findAll{it.currentValue("contact") == "open"}
+            // get the size of events within false alarm threshold
+            def ContactsEventsSize = Timer()
+            log.debug "ContactsEventsSize = ${ContactsEventsSize} "  
 
-        boolean isOpen = Open.size() != 0 && !BedSensorAreClosed
-        //log.debug "Open = ${Open}, isOpen = $isOpen"
+            if(!isOpen && ContactsEventsSize == 1) { 
+                // if last status is closed while there has been only 1 event
+                // then it's a prolonged closed status (someone is sitting or lying down here)
 
-        if(isOpen && ContactsEventsSize > 1){
-            ConsideredOpen = false
-            //log.debug "too many events in the last couple minutes"
-        }
-        else if (isOpen && ContactsEventsSize == 1){  
-
-            def Map = [:]
-            def i = Thermostats.size()
-            def loopV = 0
-            def Therm = null
-            for(i != 0; loopV < i; loopV++){
-                Therm = Thermostats[loopV]
-                log.info "Therm is $Therm"
-                Map << ["$Therm": loopV]
+                state.ConsideredOpen = false
+                state.doNotChangeForAWhile = true // record the value 
+                runIn(delay, dNchForAWhileRESET) // schedule to reset this value to false within False Alarm Threshold
+                log.debug "Only one OPEN event within the last $minutes minutes: $BedSensor is now considered closed"
             }
-
-
-            def KeyValueForThisTherm = Map.find { it.key == "$ThermContact"}
-            log.info "devices is/are ------------------- $KeyValueForThisTherm.value"
-            def ThermNumber = KeyValueForThisTherm.value
-            ThermNumber = KeyValueForThisTherm.value.toInteger()
-
-
-            //state.AppMgtMap.remove("$ThermContact")
-            // state.AppMgtMap["$ThermContact"] = false 
-
-            ConsideredOpen = true
-            //log.debug "Only one event within the last couple minutes"
-
+            else {
+                // it's either simply open or a mess of status changes, in both cases, consider it open
+                state.ConsideredOpen = true
+            }
         }
+        else {
+            log.debug "still within false alarm threshold, not changing bedsensor status "
+        }
+
+        // if events are less than 1 and sensor is open
+        // then it means that it is to be considered as open
+        // then none of the conditions above apply 
+        // so default value ConsideredOpen = true remains 
+
+
     }
-    //log.debug "BedSensorAreClosed = $BedSensorAreClosed, ConsideredOpen = $ConsideredOpen"
-    return [BedSensorAreClosed, ConsideredOpen]
+    else {
+        state.ConsideredOpen = true 
+    }
+
+    boolean ConsideredOpen = state.ConsideredOpen
+
+    log.debug "ConsideredOpen = $ConsideredOpen"
+    return ConsideredOpen
 }
 
 ////////////////////////////////////// CONTACTS AND WINDOWS MANAGEMENT ///////////////////////////////
@@ -3821,5 +3848,3 @@ def send(msg){
 
     //log.debug msg
 }
-
-
