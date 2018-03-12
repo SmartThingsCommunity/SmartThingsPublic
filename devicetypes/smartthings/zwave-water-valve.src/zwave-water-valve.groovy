@@ -22,6 +22,7 @@ metadata {
 
 		fingerprint deviceId: "0x1006", inClusters: "0x25"
 		fingerprint mfr: "0173", prod: "0003", model: "0002", deviceJoinName: "Leak Intelligence Leak Gopher Water Shutoff Valve"
+		fingerprint mfr: "021F", prod: "0003", model: "0002", deviceJoinName: "Dome Water Main Shut-off"
 	}
 
 	// simulator metadata
