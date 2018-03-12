@@ -27,6 +27,7 @@ metadata {
 		capability "Health Check"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
+		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "Neo Coolcam Siren Alarm"
 		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren"
 	}
 
@@ -61,12 +62,12 @@ metadata {
 
 def installed() {
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	sendEvent(name: "checkInterval", value: 0 * 60 * 60 + 17 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	sendEvent(name: "checkInterval", value: 0 * 60 * 60 + 17 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
