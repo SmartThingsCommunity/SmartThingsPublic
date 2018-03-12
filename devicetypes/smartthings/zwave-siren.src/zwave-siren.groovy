@@ -16,15 +16,14 @@
  *  Date: 2014-07-15
  */
 metadata {
-	definition (name: "Z-Wave Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Z-Wave Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
-        capability "Alarm"
-        capability "Battery"
-        capability "Polling"
-        capability "Refresh"
-        capability "Sensor"
+		capability "Alarm"
+		capability "Battery"
+		capability "Polling"
+		capability "Refresh"
+		capability "Sensor"
 		capability "Switch"
-
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
 	}
@@ -40,26 +39,26 @@ metadata {
 
 	tiles {
 		standardTile("alarm", "device.alarm", width: 2, height: 2) {
-			state "off", label:'off', action:'alarm.strobe', icon:"st.alarm.alarm.alarm", backgroundColor:"#ffffff"
-			state "both", label:'alarm!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
+			state "off", label: 'off', action: 'alarm.strobe', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
+			state "both", label: 'alarm!', action: 'alarm.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#e86d13"
 		}
 		standardTile("off", "device.alarm", inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"alarm.off", icon:"st.secondary.off"
+			state "default", label: '', action: "alarm.off", icon: "st.secondary.off"
 		}
-        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
-			state "battery", label:'${currentValue}% battery', unit:""
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+			state "battery", label: '${currentValue}% battery', unit: ""
 		}
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-        
+
 		main "alarm"
-		details(["alarm","off","battery","refresh"])
+		details(["alarm", "off", "battery", "refresh"])
 	}
 }
 
 def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-	def map = [ name: "battery", unit: "%" ]
+	def map = [name: "battery", unit: "%"]
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
 		map.descriptionText = "$device.displayName has a low battery"
@@ -71,7 +70,7 @@ def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def poll() {
-	if (secondsPast(state.lastbatt, 36*60*60)) {
+	if (secondsPast(state.lastbatt, 36 * 60 * 60)) {
 		return zwave.batteryV1.batteryGet().format()
 	} else {
 		return null
@@ -135,20 +134,16 @@ def parse(String description) {
 	return result
 }
 
-def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
-{
+def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	def switchValue = cmd.value ? "on" : "off"
 	def alarmValue
 	if (cmd.value == 0) {
 		alarmValue = "off"
-	}
-	else if (cmd.value <= 33) {
+	} else if (cmd.value <= 33) {
 		alarmValue = "strobe"
-	}
-	else if (cmd.value <= 66) {
+	} else if (cmd.value <= 66) {
 		alarmValue = "siren"
-	}
-	else {
+	} else {
 		alarmValue = "both"
 	}
 	[
@@ -156,7 +151,6 @@ def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 		createEvent([name: "alarm", value: alarmValue, type: "digital"])
 	]
 }
-
 
 def createEvents(physicalgraph.zwave.Command cmd) {
 	log.warn "UNEXPECTED COMMAND: $cmd"
