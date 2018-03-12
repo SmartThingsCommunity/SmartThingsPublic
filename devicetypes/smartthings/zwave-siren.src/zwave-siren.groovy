@@ -24,8 +24,10 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
+		capability "Health Check"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
+		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren"
 	}
 
 	simulator {
@@ -55,6 +57,16 @@ metadata {
 		main "alarm"
 		details(["alarm", "off", "battery", "refresh"])
 	}
+}
+
+def installed() {
+	// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "checkInterval", value: 0 * 60 * 60 + 17 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
+	// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "checkInterval", value: 0 * 60 * 60 + 17 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -118,9 +130,20 @@ def both() {
 	on()
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	log.debug "ping() called"
+	refresh()
+}
+
 def refresh() {
 	log.debug "sending battery refresh command"
-	zwave.batteryV1.batteryGet().format()
+	[
+		zwave.basicV1.basicGet().format(),
+		zwave.batteryV1.batteryGet().format()
+	]
 }
 
 def parse(String description) {
