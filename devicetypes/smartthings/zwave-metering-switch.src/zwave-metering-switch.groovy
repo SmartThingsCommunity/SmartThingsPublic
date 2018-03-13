@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
@@ -27,6 +27,8 @@ metadata {
 
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr:"0086", prod:"0003", model:"0012", deviceJoinName: "Aeotec Micro Smart Switch"
+		fingerprint mfr:"0086", prod:"0103", model:"0060", deviceJoinName: "Aeotec Smart Switch 6"
+
 	}
 
 	// simulator metadata
