@@ -216,8 +216,8 @@ private multiStatusEvent(String statusValue, boolean force = false, boolean disp
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-    def paramKey = parameterMap().find( {it.num == cmd.parameterNumber } ).key
-    logging("${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state?."$paramKey".value, "info")
+    def paramKey = parameterMap().find( {it.num == cmd.parameterNumber } )?.key
+    logging("${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state?."$paramKey"?.value, "info")
     state."$paramKey"?.state = (state."$paramKey"?.value == cmd.scaledConfigurationValue) ? "synced" : "incorrect"
     syncNext()
 }
