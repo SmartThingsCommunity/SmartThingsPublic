@@ -15,7 +15,7 @@
  */
 
 definition(
-    name: "Virtual Device Manager",
+    name: "Virtual Device Creator",
     namespace: "smartthings",
     author: "SmartThings",
     description: "Creates virtual devices",
@@ -28,15 +28,17 @@ definition(
 
 
 preferences {
-    page name: "mainPage", install: true, uninstall: true
+    page name: "mainPage", title: "Click save to create a new virtual device.", install: true, uninstall: true
 }
 
 def mainPage() {
     dynamicPage(name: "mainPage") {
         section {
+            paragraph "You have created ${state.nextDni? state.nextDni - 1 : 0} virtual devices through this app"
             input "virtualDeviceType", "enum", title: "Which type of virtual device do you want to create?", multiple: false, required: true, options: ["Virtual Switch", "Virtual Dimmer Switch"]
             input "theHub", "hub", title: "Select the hub (required for local execution) (Optional)", multiple: false, required: false
         }
+        remove("Remove All Virtual Devices", "This will remove all virtual devices created through this app.")
     }
 }
 
