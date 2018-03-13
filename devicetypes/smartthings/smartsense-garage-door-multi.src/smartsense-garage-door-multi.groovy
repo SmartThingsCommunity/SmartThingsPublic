@@ -213,7 +213,7 @@ private List parseOrientationMessage(String description) {
 	// Looks for Z-axis orientation as virtual contact state
 	def a = xyz.value.split(',').collect{it.toInteger()}
 	def absValueZ = Math.abs(a[2])
-	log.debug "absValueXY: $absValueXY, absValueZ: $absValueZ"
+	log.debug "absValueZ: $absValueZ"
 
 
 	if (absValueZ > 825) {
