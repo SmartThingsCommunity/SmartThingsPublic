@@ -10,7 +10,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Generic Z-Wave Motion/Light Sensor"
+ *  Generic Z-Wave Motion/Light Sensor
  *
  *  Author: SmartThings
  *  Date: 2018-03-12
@@ -20,7 +20,6 @@ metadata {
 	definition(name: "Z-Wave Motion/Light Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Motion Sensor"
 		capability "Illuminance Measurement"
-		capability "Configuration"
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
@@ -79,34 +78,28 @@ def updated() {
 
 def configure() {
 	// Device wakes up every deviceCheckInterval hours, this interval allows us to miss one wakeup notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * deviceCheckInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * deviceWakeInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	response(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1).format())
 }
 
-def getDeviceCheckInterval() {
-	def deviceCheckIntervalValue = 4
+def getDeviceWakeUpInterval() {
+	def deviceWakeIntervalValue = 4
 	switch (zwaveInfo?.mfr) {
-		case "021F": deviceCheckIntervalValue = 12  //Dome reports once in 12h
+		case "021F": deviceWakeIntervalValue = 12  //Dome reports once in 12h
 			break
-		case "0258": deviceCheckIntervalValue = 12  //Coolcam Neo reports once in 12h
+		case "0258": deviceWakeIntervalValue = 12  //Coolcam Neo reports once in 12h
 			break
-		default: deviceCheckIntervalValue = 4 //Default Z-Wave battery device reports once in 4h
+		default: deviceWakeIntervalValue = 4 //Default Z-Wave battery device reports once in 4h
 	}
-	return deviceCheckIntervalValue
+	return deviceWakeIntervalValue
 }
 
 private getCommandClassVersions() {
 	[
 			0x71: 3,  // Notification
-			0x5E: 2,  // ZwaveplusInfo
-			0x59: 1,  // AssociationGrpInfo
-			0x85: 2,  // Association
 			0x20: 1,  // Basic
 			0x80: 1,  // Battery
-			0x70: 1,  // Configuration
-			0x5A: 1,  // DeviceResetLocally
 			0x72: 2,  // ManufacturerSpecific
-			0x73: 1,  // Powerlevel
 			0x31: 5,  // SensorMultilevel
 			0x84: 2,  // WakeUp
 			0x30: 2   //Sensor Binary
@@ -178,19 +171,18 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	return results
 }
 
-
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def results = []
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
-	if (!state.lastbatt || (now() - state.lastbatt) >= 56 * 60 * 60 * 1000) {
-		results << response([zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1).format(),
-							 "delay 1000",
+	results << response(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1).format())
+	if (!state.lastbatt || (now() - state.lastbatt) >= 10 * 60 * 60 * 1000) {
+		results << response(["delay 1000",
 							 zwave.batteryV1.batteryGet().format(),
 							 "delay 2000",
 							 zwave.wakeUpV2.wakeUpNoMoreInformation().format()
 		])
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(zwave.wakeUpV2.wakeUpNoMoreInformation().format())
 	}
 	return results
 }
