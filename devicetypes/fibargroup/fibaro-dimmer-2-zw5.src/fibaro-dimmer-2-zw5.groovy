@@ -17,7 +17,7 @@ metadata {
 
         attribute "errorMode", "string"
 
-        fingerprint mfr: "010F", prod: "0102"
+        fingerprint mfr: "010F", prod: "0102", model: "2000"
         fingerprint deviceId: "0x1101", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x31,0x32,0x71,0x56,0x98,0x7A,0x20,0x5A,0x85,0x26,0x8E,0x60,0x70,0x75,0x27"
         fingerprint deviceId: "0x1101", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x31,0x32,0x71,0x56,0x7A,0x20,0x5A,0x85,0x26,0x8E,0x60,0x70,0x75,0x27"
     }
@@ -127,6 +127,7 @@ def clearError() {
 
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     def cmds = []
     logging("${device.displayName} - Executing updated()","info")
 
@@ -216,8 +217,8 @@ private multiStatusEvent(String statusValue, boolean force = false, boolean disp
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
     def paramKey = parameterMap().find( {it.num == cmd.parameterNumber } ).key
-    logging("${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state."$paramKey".value, "info")
-    state."$paramKey".state = (state."$paramKey".value == cmd.scaledConfigurationValue) ? "synced" : "incorrect"
+    logging("${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state?."$paramKey".value, "info")
+    state."$paramKey"?.state = (state."$paramKey"?.value == cmd.scaledConfigurationValue) ? "synced" : "incorrect"
     syncNext()
 }
 
