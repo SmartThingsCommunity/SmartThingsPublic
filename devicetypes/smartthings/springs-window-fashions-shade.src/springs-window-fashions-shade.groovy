@@ -187,7 +187,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     def map = [ name: "battery", unit: "%" ]
-    if (cmd.batteryLevel == 0xFF) {
+    if (cmd.batteryLevel == 0xFF || cmd.batteryLevel == 0) {
         map.value = 1
         map.descriptionText = "${device.displayName} has a low battery"
         map.isStateChange = true
@@ -195,7 +195,13 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
         map.value = cmd.batteryLevel
     }
     state.lastbatt = now()
-    createEvent(map)
+    if (map.value <= 1 && device.latestValue("battery") - map.value > 20) {
+        // Springs shades sometimes erroneously report a low battery when rapidly actuated manually. They'll still
+        // refuse to actuate after one of these reports, but this will limit the bad data that gets surfaced
+        log.warn "Erroneous battery report dropped from ${device.latestValue("battery")} to $map.value. Not reporting"
+    } else {
+        createEvent(map)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
