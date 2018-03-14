@@ -170,7 +170,7 @@ def Modes(){
                 def i = 0
                 if(LetAIdoIt){          
                     setC = 72
-                    setH = 70
+                    setH = 72
                     setCA = 80
                     setHA = 66
                 }
@@ -1630,14 +1630,16 @@ SensorThermMap = $SensorThermMap
         def SensorSize = TheSensor.size()
         def iteration = 0 
         for(SensorSize > 0; iteration < SensorSize; iteration++){
-            motionEvents[iteration] = TheSensor[iteration].eventsSince(new Date(now() - deltaMinutes)) 
-            def thisiteration = motionEvents[iteration]
-            log.debug "motionEvents[$iteration] = ${thisiteration}"
-            Active = motionEvents.size() != 0 // if any of the device returns a list that is not nul then true
-            result << ["${TheSensor}": "$Active"] // record value for each device // might no longer be needed thankg to this exta for loop /// to be checked 
-            def thisSensorIteration = TheSensor[iteration]
+            def thisItSensor = TheSensor[iteration]
+            def Evts4thisiteration = thisItSensor.eventsSince(new Date(now() - deltaMinutes)) 
+
+            log.debug "motionEvents for $thisItSensor = ${Evts4thisiteration}"
+            Active = Evts4thisiteration.size() != 0 
+            log.debug "Active motionEvents list at for loop = $motionEvents"
+            result << ["${TheSensor}": "$Active"] // record value for the group to which this de // if any of the multiple devices had motion then the value 'true' superceeds"
+
             log.debug """
-Found ${thisiteration.size() ?: 0} events in the last $minutesMotion minutes at ${thisSensorIteration}
+Found ${Evts4thisiteration.size() ?: 0} events in the last $minutesMotion minutes at ${thisItSensor}
 deltaMinutes = $deltaMinutes"""
         }
     }
@@ -1662,7 +1664,9 @@ def ActiveTest(ThermSet) {
 
         def CurrMode = location.currentMode
 
+        // find the sensor related to this therm
         TheSensor = SensorThermMap.find{it.key == "${ThermSet}"}
+        // what is its sensor value
         TheSensor = TheSensor?.value
 
         def MotionModes = MotionModesAndItsThermMap.find{it.key == "${ThermSet}"}
@@ -2069,7 +2073,7 @@ Math.log(256) / Math.log(2)
 
 
                 }
-        ///////////////////////////// END OF ALGEBRA ////////////////////////////////////////////
+                ///////////////////////////// END OF ALGEBRA ////////////////////////////////////////////
                 /////////////////////////// HEAT MAXIMA MINIMA ///////////////////////
                 if(HSPSet > MaxLinearHeat){
                     HSPSet = MaxLinearHeat
@@ -2953,7 +2957,8 @@ def BedSensorStatus(){
 
     def minutes = findFalseAlarmThreshold() 
     def delay = minutes * 60 // this one must be in seconds
-
+    def ContactsEventsSize = null
+    boolean ConsideredOpen = true // IF NO BED SENSOR ALWAYS CONSIDERED OPEN
 
     // such sensors can return unstable values (open/close/open/close)
     // when it is under a certain weight, values will be consistently closed
@@ -2962,40 +2967,42 @@ def BedSensorStatus(){
     // and closed when stable (only 1 event within the false alarm time frame)
 
     if(BedSensor){
+        // find if any device within the list of [BedSensor] is open
+        def CurrentContacts = BedSensor.currentValue("contact")
+        def Open = CurrentContacts.findAll { val ->
+            val == "open" ? true : false}
+        // set isOpen as true if any is open 
+        boolean isOpen = Open.size() >= 1
+        log.debug "Open SIZE = ${Open.size()}, isOpen = $isOpen"
+        // get the size of events within false alarm threshold
+        ContactsEventsSize = Timer()
+        log.debug "ContactsEventsSize = ${ContactsEventsSize} "  
 
-        def doNotChangeForAWhile = state.doNotChangeForAWhile // this value allows to keep ConsideredOpen false for the duration of false alarmthreshold
-        log.debug "doNotChangeForAWhile = $doNotChangeForAWhile"
-        if(!doNotChangeForAWhile){
 
-            // find if any device within the list of [BedSensor] is open
-            def CurrentContacts = BedSensor.currentValue("contact")
-            def Open = CurrentContacts.findAll { val ->
-                val == "open" ? true : false}
+        // if 1 event within time threshold then proceed or closed  
+        if(ContactsEventsSize == 1){
 
-            // set isOpen as true if any is open 
-            boolean isOpen = Open.size() >= 1
-            log.debug "Open SIZE = ${Open.size()}, isOpen = $isOpen"
-
-            // get the size of events within false alarm threshold
-            def ContactsEventsSize = Timer()
-            log.debug "ContactsEventsSize = ${ContactsEventsSize} "  
-
-            if(!isOpen && ContactsEventsSize == 1) { 
+            if(!isOpen) { 
                 // if last status is closed while there has been only 1 event
                 // then it's a prolonged closed status (someone is sitting or lying down here)
 
-                state.ConsideredOpen = false
-                state.doNotChangeForAWhile = true // record the value 
-                runIn(delay, dNchForAWhileRESET) // schedule to reset this value to false within False Alarm Threshold
+                ConsideredOpen = false
+
                 log.debug "Only one OPEN event within the last $minutes minutes: $BedSensor is now considered closed"
             }
             else {
                 // it's either simply open or a mess of status changes, in both cases, consider it open
-                state.ConsideredOpen = true
+                ConsideredOpen = true
             }
         }
         else {
-            log.debug "still within false alarm threshold, not changing bedsensor status "
+
+            if(isOpen && ContactsEventsSize == 0) { 
+                ConsideredOpen = true // has been open for as long as time threshold, so now considered open
+            }
+            else {
+                log.debug "more than 1 event within time threshold, not changing bedsensor status "
+            }
         }
 
         // if events are less than 1 and sensor is open
@@ -3003,14 +3010,8 @@ def BedSensorStatus(){
         // then none of the conditions above apply 
         // so default value ConsideredOpen = true remains 
 
-
     }
-    else {
-        state.ConsideredOpen = true 
-    }
-
-    boolean ConsideredOpen = state.ConsideredOpen
-
+    
     log.debug "ConsideredOpen = $ConsideredOpen"
     return ConsideredOpen
 }
