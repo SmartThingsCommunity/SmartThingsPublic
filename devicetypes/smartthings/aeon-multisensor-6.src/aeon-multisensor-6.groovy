@@ -313,8 +313,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			case 3:
 				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
 				// Clear the tamper alert after 10s. This is a temporary fix for the tamper attribute until local execution handles it
-				unschedule(clearTamper)
-				runIn(10, clearTamper)
+				unschedule(clearTamper, [forceForLocallyExecuting: true])
+				runIn(10, clearTamper, [forceForLocallyExecuting: true])
 				break
 			case 7:
 				result << motionEvent(1)
