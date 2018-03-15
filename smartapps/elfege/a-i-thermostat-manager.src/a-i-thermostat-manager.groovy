@@ -1260,17 +1260,19 @@ def VirtualThermostat(){
 
         log.debug """Values @ virtual thermostat for $VirThermSwitch_1 are: 
 ---------------------------- 
+Switch name = $VirThermSwitch_1
 CurrTemp = $CurrTemp
 CurrSP  = $CurrSP
 Active ? : $Active
 InMotionMode ? : $InMotionMode
 Mode coolOrHeat = $coolOrHeat
+${if(OtherSetP){log.debug "motion marked as active due to independante SP"} else {log.debug "room's thermostat's setting applies"}}
+inVirThermModes = $inVirThermModes
 Switch State = $SwitchState
 SwitchStateIsOn = $SwitchStateIsOn
-inVirThermModes = $inVirThermModes
-
+---------------------------- 
 """
-        if(Active || !InMotionMode){
+        if(Active && InMotionMode){
             if(coolOrHeat == "cooling"){
                 if(CurrTemp > CurrSP && inVirThermModes){
                     if(!SwitchStateIsOn){
@@ -1312,6 +1314,12 @@ inVirThermModes = $inVirThermModes
 
                     }
                 }
+            }
+        }
+        else {
+            if(SwitchStateIsOn){
+                VirThermSwitch_1?.off()
+                log.debug "$VirThermSwitch_1 [heat] turned off"
             }
         }
         if(!inVirThermModes && SwitchStateIsOn){
@@ -1372,17 +1380,20 @@ inVirThermModes = $inVirThermModes
 
             log.debug """ Values @ virtual thermostat for $VirThermSwitch_2 are: 
 ---------------------------- 
+Switch name = $VirThermSwitch_2
 CurrTemp_2 = $CurrTemp
 CurrSP 2 = $CurrSP
 Active ? : $Active
 InMotionMode ? : $InMotionMode
 Mode coolOrHeat_2 = $coolOrHeat_2
+${if(OtherSetP_2){log.debug "motion marked as active due to independante SP"} else {log.debug "room's thermostat's setting applies"}}
+inVirThermModes_2 = $inVirThermModes_2
 Switch State = $SwitchState_2
 SwitchState_2IsOn = $SwitchState_2IsOn
-inVirThermModes_2 = $inVirThermModes_2
+
 ----------------------------    
 """
-            if(Active || !InMotionMode){
+            if(Active && InMotionMode){
                 if(coolOrHeat_2 == "cooling"){
                     if(CurrTemp > CurrSP && inVirThermModes_2){
                         if(!SwitchState_2IsOn ){
@@ -1426,6 +1437,10 @@ inVirThermModes_2 = $inVirThermModes_2
             }
             else { 
                 log.debug "No motion arround $VirThermSwitch_2"
+                if(SwitchState_2IsOn){
+                    VirThermSwitch_2?.off()
+                    log.debug "$VirThermSwitch_2 [heat] turned off"
+                }
             }
             if(!inVirThermModes_2 && SwitchState_2IsOn){
                 VirThermSwitch_2?.off()
@@ -1481,8 +1496,6 @@ inVirThermModes_2 = $inVirThermModes_2
 
             def CurrTemp = tempcheckList[2]
 
-
-
             def SwitchState_3 = VirThermSwitch_3?.currentSwitch
             def SwitchState_3IsOnSize = SwitchState_3.findAll{val -> val == "on" ? true : false }
             def SwitchState_3IsOn = SwitchState_3IsOnSize.size() > 0
@@ -1495,20 +1508,22 @@ inVirThermModes_2 = $inVirThermModes_2
 
             log.debug """ Values @ virtual thermostat for $VirThermSwitch_3 are: 
 ---------------------------- 
+Switch name = $VirThermSwitch_3
 CurrTemp_3 = $CurrTemp
 CurrSP 3 = $CurrSP
 $CurrSP > $CurrTemp ? (${CurrSP > CurrTemp})
 $CurrSP < $CurrTemp ? (${CurrSP < CurrTemp})
 Active ? : $Active
+${if(OtherSetP_3){log.debug "motion marked as active due to independante SP"} else {log.debug "room's thermostat's setting applies"}}
 InMotionMode ? : $InMotionMode
 Mode coolOrHeat = $coolOrHeat_3
+inVirThermModes_3 = $inVirThermModes_3
 Switch State = $SwitchState_3
 SwitchState_3IsOn = $SwitchState_3IsOn
-inVirThermModes_3 = $inVirThermModes_3
 ----------------------------    
 """
 
-            if(Active || !InMotionMode){
+            if(Active && InMotionMode){
                 if(coolOrHeat_3 == "cooling"){
                     if(CurrTemp > CurrSP && inVirThermModes_3){
 
@@ -1555,13 +1570,14 @@ inVirThermModes_3 = $inVirThermModes_3
             }
             else { 
                 log.debug "No motion arround $VirThermSwitch_3"
+                if(SwitchState_3IsOn){
+                    VirThermSwitch_3?.off()
+                    log.debug "$VirThermSwitch_3 [heat] turned off"
+                }
             }
-            if(!inVirThermModes_3 && SwitchState_3IsOn){
-                VirThermSwitch_3?.off()
-                log.debug "$VirThermSwitch_3 [heat] turned off because location is not in $VirThermModes_3"
-            }
+
         }
-        if(!InMotionMode && !Critical){
+        if(!inVirThermModes_3 && !Critical){
             VirThermSwitch_3?.off()
             log.debug "$VirThermSwitch_3 turned off due to recent mode change"
         }
@@ -1680,7 +1696,16 @@ def ActiveTest(ThermSet) {
         def ActiveFind = ActiveMap.find{it.key == "${TheSensor}"}
 
         Active = ActiveFind?.value
-        Active = "$Active" == "true"
+        if(Active != null){
+            Active = "$Active" == "true"
+        } 
+        else {
+            // there's no corresponding thermostat (may happen with virtual thermostats)
+            Active = true
+            inMotionModes = true
+            log.debug """Active defaulted to true because map didn't contain the requested reference.
+this should be possible only within virtual thermostat's requests ----------------------"""
+        }
 
         log.trace """
 CurrMode is $CurrMode
@@ -2920,7 +2945,7 @@ def FeelsLikeHandler(evt){
 
 
 ////////////////////////////////////// BED SENSOR ///////////////////////////////
-def Timer() {
+def BedSensorEvtSize() {
     def minutes = findFalseAlarmThreshold() 
     def deltaMinutes = minutes * 60000 as Long
 
@@ -2931,13 +2956,17 @@ def Timer() {
     def SensorSize = BedSensor.size()
     def iteration = 0 
     def size = 0
+    def ThisBedSensorIt = null
+    def evts4thisiteration = 0
     for(SensorSize > 0; iteration < SensorSize; iteration++){
-        BedSensorEvents[iteration] = BedSensor[iteration].eventsSince(new Date(now() - deltaMinutes)) 
-        def thisiteration = BedSensorEvents[iteration]
-        log.debug "BedSensorEvents[$iteration] = ${thisiteration}"      
-        def thisSensorIteration = BedSensor[iteration]
-        size = thisiteration.size()
-        log.debug "Timer Found ${thisiteration.size() ?: 0} events in the last $minutes minutes at ${thisSensorIteration}"
+
+        ThisBedSensorIt = BedSensor[iteration]
+        BedSensorEvents[iteration] = ThisBedSensorIt.eventsSince(new Date(now() - deltaMinutes)) 
+        evts4thisiteration = BedSensorEvents[iteration]
+        log.debug "$ThisBedSensorIt events = ${evts4thisiteration}"      
+
+        size = evts4thisiteration?.size()
+        log.debug "Timer Found ${size} events in the last $minutes minutes at ${ThisBedSensorIt}"
     }
     return size
 }
@@ -2975,43 +3004,25 @@ def BedSensorStatus(){
         boolean isOpen = Open.size() >= 1
         log.debug "Open SIZE = ${Open.size()}, isOpen = $isOpen"
         // get the size of events within false alarm threshold
-        ContactsEventsSize = Timer()
+
         log.debug "ContactsEventsSize = ${ContactsEventsSize} "  
 
 
         // if 1 event within time threshold then proceed or closed  
-        if(ContactsEventsSize == 1){
-
-            if(!isOpen) { 
-                // if last status is closed while there has been only 1 event
-                // then it's a prolonged closed status (someone is sitting or lying down here)
-
-                ConsideredOpen = false
-
-                log.debug "Only one OPEN event within the last $minutes minutes: $BedSensor is now considered closed"
-            }
-            else {
-                // it's either simply open or a mess of status changes, in both cases, consider it open
-                ConsideredOpen = true
-            }
+        if(!isOpen && BedSensorEvtSize() <= 1){
+            // if last status is closed while there has been only 1 event or less,
+            // then it's a prolonged closed status (someone is sitting or lying down here)
+            ConsideredOpen = false
+            log.debug "Only one OPEN event within the last $minutes minutes: $BedSensor is now considered closed"
         }
-        else {
-
-            if(isOpen && ContactsEventsSize == 0) { 
-                ConsideredOpen = true // has been open for as long as time threshold, so now considered open
-            }
-            else {
-                log.debug "more than 1 event within time threshold, not changing bedsensor status "
-            }
+        else if(isOpen && BedSensorEvtSize() == 0) { 
+            /// this means thermostat won't go back to normal settings before an excess of time superior to thershold. 
+            ConsideredOpen = true // has been declared as open for longer than the time threshold, so now considered open
         }
-
-        // if events are less than 1 and sensor is open
-        // then it means that it is to be considered as open
-        // then none of the conditions above apply 
-        // so default value ConsideredOpen = true remains 
-
+        if(BedSensorEvtSize() > 1){
+            ConsideredOpen = false // reconfirm status because someone is still on the bed but moving around
+        }
     }
-    
     log.debug "ConsideredOpen = $ConsideredOpen"
     return ConsideredOpen
 }
