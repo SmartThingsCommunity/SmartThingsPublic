@@ -99,7 +99,7 @@ def poll() {
 
 def refresh() {
 	log.debug "Executing adapter'refresh'"
-	runIn(02, poll) //was poll()
+	poll()
 }
 
 def on() {
@@ -115,23 +115,23 @@ def on() {
     if (resp.status != 200) {
 		log.error("Unexpected result in on poll(): [${resp.status}] ${resp.data}")
   // mc re-run upto 5 times
-        if (state.counter == null || state.counter >= 6) {
+        if (state.counter == null || state.counter >= 7) {
 			state.counter = 0
 		}
-        	if (state.counter == 5) {
-            	log.error ("ERROR - Tryed turning on 5 times unsucsesfuly")
+        	if (state.counter == 6) {
+            	sendEvent(name: "switch", value: state.counter < 6 ? "shouldnt go hear" : "error on '${state.counter}' times please try again later")
                 state.counter = 0
                 return []
                }
 		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: state.counter == 4 ? "ERROR - Tryed turning on 5 times unsucsesfuly" : "error on '${state.counter}' try")
+        sendEvent(name: "switch", value: state.counter > 1 ? "error on '${state.counter}' re-try" : "dont go hear")
         log.error ("runnting on again ${state.counter.value} attempt")
-        runIn (06, on)
+        runIn (7, on)
 		}
 
    	else {
     	state.counter = 0
-        log.debug ("counter value ${state.counter.value}")
+       // log.debug ("counter value ${state.counter.value}")
         refresh()
     } 
 }
@@ -149,25 +149,25 @@ def off() {
     if (resp.status != 200) {
 		log.error("Unexpected result in off poll(): [${resp.status}] ${resp.data}")
         // mc re-run upto 5 times
-        if (state.counter == null || state.counter >= 6) {
+        if (state.counter == null || state.counter >= 7) {
 			state.counter = 0
 		}
-        	if (state.counter == 5) {
-            	log.error ("error ran 5 times unsucsesfull")
+        	if (state.counter == 6) {
+            	sendEvent(name: "switch", value: state.counter < 6 ? "shouldnt go hear" : "error off '${state.counter}' times please try again later")
                 state.counter = 0
                 return []
                }
 		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: state.counter == 4 ? "ERROR - Tryed off 5 times" : "error off '${state.counter}' try")
+        sendEvent(name: "switch", value: state.counter > 1 ? "error off '${state.counter}' re-try" : "dont go hear")
         log.error ("running off again ${state.counter.value} attempt")
-		runIn (06, off)
+		runIn (9, off)
 		}
 
    	else {
     	state.counter = 0
-        log.debug ("counter value ${state.counter.value}")
+        //log.debug ("counter value ${state.counter.value}")
         refresh()
-    } 
+    }
 }
 
 

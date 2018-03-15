@@ -68,9 +68,9 @@ metadata {
 				]
 			}
             
-            tileAttribute ("lastupdatetemp", key: "SECONDARY_CONTROL") {
-				attributeState "default", label:'Device last seen ${currentValue}'
-            }
+          //  tileAttribute ("lastupdatetemp", key: "SECONDARY_CONTROL") {
+		//		attributeState "default", label:'Device last seen ${currentValue}'
+        //    }
 		}
         
         valueTile("thermostat_small", "device.temperature", width: 2, height: 2, canChangeIcon: true) {
@@ -103,11 +103,19 @@ metadata {
 			state("default", label:'refresh', action:"polling.poll", icon:"st.secondary.refresh-icon")
 		}
  
-        controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 4, inactiveLabel: false, range:"(12..30)") {
+        controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false, range:"(12..30)") {
 			state "setHeatingSetpoint", label:'Set temperature to', action:"setHeatingSetpoint"
 		}
         
-        controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 4, inactiveLabel: false, range:"(60..300)") {
+        valueTile("battery", "device.batteryVoltage", width: 2, height: 2) {
+			state "default", label:'Battery Voltage Is ${currentValue}', unit:"V",
+            backgroundColors:[
+               					[value: 3, color: "#44b621"],
+								[value: 2.8, color: "#f1d801"],
+								[value: 2.78, color: "#bc2323"],
+         		           ]
+        }
+        controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 2, inactiveLabel: false, range:"(60..300)") {
 			state ("setBoostLength", label:'Set boost length to', action:"setBoostLength")
 		}
         
@@ -126,16 +134,9 @@ metadata {
          valueTile("boost", "device.boostLabel", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("default", label:'${currentValue}', action:"emergencyHeat")
 		}
-        valueTile("battery", "device.batteryVoltage", width: 2, height: 2) {
-			state "default", label:'Battery Voltage Is ${currentValue}', unit:"V",
-            backgroundColors:[
-               					[value: 3, color: "#44b621"],
-								[value: 2.8, color: "#f1d801"],
-								[value: 2.78, color: "#bc2323"],
-         		           ]
-        }
+
         main(["thermostat_small"])
-		details(["thermostat", "heatingSetpoint", "heatSliderControl", "boost", "boostSliderControl", "switch", "refresh", "battery"])
+		details(["thermostat", "heatingSetpoint", "heatSliderControl", "battery", "boost", "boostSliderControl", "switch", "refresh"])
 	}
 }
 
@@ -161,7 +162,7 @@ def parse(String description) {
 // handle commands
 def setHeatingSetpoint(temp) {
 	state.counter = state.counter //mc
-	log.debug "Executing 'setHeatingSetpoint with temp $temp'"
+	//log.debug "Executing 'setHeatingSetpoint with temp $temp'"
 	def latestThermostatMode = device.latestState('thermostatMode')
     
     if (temp < 12) {
@@ -172,28 +173,28 @@ def setHeatingSetpoint(temp) {
 	}
     sendEvent(name: "boostSwitch", value: "off", displayed: false)
     def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: temp]).toString()))
-	log.debug ("[${resp.status}] ${resp.data}")
+	//log.debug ("[${resp.status}] ${resp.data}")
     if (resp.status != 200) {
 		log.error("Unexpected result in seting temp: [${resp.status}] ${resp.data}")
 // mc re-run upto 5 times
-        if (state.counter == null || state.counter >= 6) {
+        if (state.counter == null || state.counter >= 7) {
 			state.counter = 0
 		}
-        	if (state.counter == 5) {
+        	if (state.counter == 6) {
             	log.error ("ERROR - Tryed setting temp 5 times unsucsesfully")
+                sendEvent(name: "setHeatingSetpoint", value: state.counter < 6 ? "shouldnt go hear" : "error setting temp '${state.counter}' times please try again later")
                 state.counter = 0
                 return []
                }
 		state.counter = state.counter + 1
         log.error ("running set temp again No. ${state.counter.value} attempt")
-        sendEvent(name: "setHeatingSetpoint", value: state.counter == 4 ? "error setting 5 times" : "error in setting '${state.counter}' attempt")
-        runIn (05, setHeatingSetpoint(temp))
+        sendEvent(name: "setHeatingSetpoint", value: state.counter >1 ? "error in setting temp '${state.counter}' re-try" : "dont go hear")
+        runIn (19, setHeatingSetpoint(temp))
 		}
 
    	else {
     	state.counter = 0
-        log.debug ("counter value ${state.counter.value}")
-        runIn(1, refresh)
+        runIn(3, refresh)
     } 
 }
 
@@ -328,14 +329,14 @@ def poll() {
     log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
     
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
-	log.debug ("response : [${resp.status}] ${resp.data}")
+	//log.debug ("response : [${resp.status}] ${resp.data}")
     if (resp.status != 200) {
 		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
-        log.debug "re executing poll"
-        runIn(02, poll)
+        //log.debug "re executing poll"
+        //runIn(30, poll)
 		return []
 	}
-    
+    log.debug "All good ${device} ${resp.status}"
     //Boost button label
     if (state.boostLength == null || state.boostLength == '')
     {
@@ -347,7 +348,7 @@ def poll() {
 	sendEvent(name: "temperature", value: resp.data.data.last_temperature, unit: "C", state: "heat")
     sendEvent(name: "heatingSetpoint", value: resp.data.data.target_temperature, unit: "C", state: "heat")
     def boostSwitch = device.currentValue("boostSwitch")
-    log.debug "boostSwitch: $boostSwitch"
+    //log.debug "boostSwitch: $boostSwitch"
     if (boostSwitch != null && boostSwitch == "on") {
     	sendEvent(name: "thermostatMode", value: "emergency heat")
         boostLabel = "Boosting"
@@ -361,13 +362,12 @@ def poll() {
     sendEvent(name: "switch", value: resp.data.data.target_temperature == 12 ? "off" : "on")
     sendEvent(name: "batteryVoltage", value: resp.data.data.voltage == null ? "Not Available" : resp.data.data.voltage)
     sendEvent(name: "boostLabel", value: boostLabel, displayed: false)
-    sendEvent(name: "lastupdatetemp", value: resp.data.data.updated_at == null ? "Not Available" : resp.data.data.updated_at)
-    
+   // sendEvent(name: "lastupdatetemp", value: resp.data.data.updated_at == null ? "Not Available" : resp.data.data.updated_at)
     return []
 	
 }
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	runIn(02, poll)
+	poll()
 }
