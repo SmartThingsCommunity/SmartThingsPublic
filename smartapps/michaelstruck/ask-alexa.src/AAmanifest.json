@@ -69,7 +69,7 @@
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
             "published": false,
             "oAuth": false,
-            "version": "1.0.7",
+            "version": "1.0.8",
             "appSettings": {},
             "appUrl": "smartapps/michaelstruck/ask-alexa-weather-report.src/ask-alexa-weather-report.groovy",
             "optional": false
