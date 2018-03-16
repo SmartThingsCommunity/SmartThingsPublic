@@ -1155,7 +1155,6 @@ def VirtualThermostat(){
     def tempcheckList = [tempcheck1, tempcheck2, tempcheck3]
     def VTSwList = [VirThermSwitch_1, VirThermSwitch_2, VirThermSwitch_3]
     def CriticalTemp = 65
-    def InMotionMode = true
 
     // critical temp will work only if at least on the VT is a heater
     def coolOrHeat = [coolOrHeat, coolOrHeat_2, coolOrHeat_3]
@@ -1213,7 +1212,6 @@ def VirtualThermostat(){
             // this option is not compatible with motion because motion sensor 
             // is related to the thermostat used as SP source. 
             def ActiveT = ActiveTest(VirThermTherm_1)
-            InMotionMode = ActiveT[1]
             Active = ActiveT[0]
         }
         else {
@@ -1251,28 +1249,25 @@ def VirtualThermostat(){
         def SwitchStateIsOnSize = SwitchState.findAll{val -> val == "on" ? true : false }
         def SwitchStateIsOn = SwitchStateIsOnSize.size() > 0
 
-        def inVirThermModes = false 
-
+        def inVirThermModes = true 
         if(VirThermModes){
             inVirThermModes = location.currentMode in VirThermModes
             log.debug " inVirThermModes set to $inVirThermModes"
         }
-
+        if(OtherSetP){log.debug "motion marked as active due to independent SP"} else {log.debug "room's thermostat's setting applies"}
         log.debug """Values @ virtual thermostat for $VirThermSwitch_1 are: 
 ---------------------------- 
 Switch name = $VirThermSwitch_1
 CurrTemp = $CurrTemp
 CurrSP  = $CurrSP
 Active ? : $Active
-InMotionMode ? : $InMotionMode
 Mode coolOrHeat = $coolOrHeat
-${if(OtherSetP){log.debug "motion marked as active due to independante SP"} else {log.debug "room's thermostat's setting applies"}}
 inVirThermModes = $inVirThermModes
 Switch State = $SwitchState
 SwitchStateIsOn = $SwitchStateIsOn
 ---------------------------- 
 """
-        if(Active && InMotionMode){
+        if(Active && inVirThermModes){
             if(coolOrHeat == "cooling"){
                 if(CurrTemp > CurrSP && inVirThermModes){
                     if(!SwitchStateIsOn){
@@ -1316,15 +1311,9 @@ SwitchStateIsOn = $SwitchStateIsOn
                 }
             }
         }
-        else {
-            if(SwitchStateIsOn){
-                VirThermSwitch_1?.off()
-                log.debug "$VirThermSwitch_1 [heat] turned off"
-            }
-        }
-        if(!inVirThermModes && SwitchStateIsOn){
+        else if(!Critical && SwitchStateIsOn){
             VirThermSwitch_1?.off()
-            log.debug "$VirThermSwitch_1 [heat] turned off because location is not in $VirThermModes"
+            log.debug "$VirThermSwitch_1 turned off because location is not in $VirThermSwitch_1 or because there's no motion"
         }
     }
 
@@ -1336,7 +1325,6 @@ SwitchStateIsOn = $SwitchStateIsOn
                 // this option is not compatible with motion because motion sensor 
                 // is designated by the thermostat used as SP source. 
                 def ActiveT = ActiveTest(VirThermTherm_2)
-                InMotionMode = ActiveT[1]
                 Active = ActiveT[0]
             }
             else {
@@ -1372,30 +1360,29 @@ SwitchStateIsOn = $SwitchStateIsOn
             def SwitchState_2IsOnSize = SwitchState_2.findAll{val -> val == "on" ? true : false }
             def SwitchState_2IsOn = SwitchState_2IsOnSize.size() > 0
 
-            def inVirThermModes_2 = false 
+            def inVirThermModes_2 = true 
             if(VirThermModes_2){
                 inVirThermModes_2 = location.currentMode in VirThermModes_2
                 log.debug " inVirThermModes set to $inVirThermModes_2"
             }
 
+            if(OtherSetP_2){log.debug "motion marked as active due to independent SP"} else {log.debug "room's thermostat's setting applies"}
             log.debug """ Values @ virtual thermostat for $VirThermSwitch_2 are: 
 ---------------------------- 
 Switch name = $VirThermSwitch_2
 CurrTemp_2 = $CurrTemp
 CurrSP 2 = $CurrSP
 Active ? : $Active
-InMotionMode ? : $InMotionMode
 Mode coolOrHeat_2 = $coolOrHeat_2
-${if(OtherSetP_2){log.debug "motion marked as active due to independante SP"} else {log.debug "room's thermostat's setting applies"}}
 inVirThermModes_2 = $inVirThermModes_2
 Switch State = $SwitchState_2
 SwitchState_2IsOn = $SwitchState_2IsOn
 
 ----------------------------    
 """
-            if(Active && InMotionMode){
+            if(Active && inVirThermModes_2){
                 if(coolOrHeat_2 == "cooling"){
-                    if(CurrTemp > CurrSP && inVirThermModes_2){
+                    if(CurrTemp > CurrSP){
                         if(!SwitchState_2IsOn ){
                             VirThermSwitch_2?.on()
                             log.debug "$VirThermSwitch_2 [cool] turned on"
@@ -1415,13 +1402,13 @@ SwitchState_2IsOn = $SwitchState_2IsOn
                     }
                 }
                 else {
-                    if(CurrTemp < CurrSP && inVirThermModes_2){
+                    if(CurrTemp < CurrSP){
                         if(!SwitchState_2IsOn){
                             VirThermSwitch_2?.on()
-                            log.debug "$VirThermSwitch_2 [cool] turned on"
+                            log.debug "$VirThermSwitch_2 [heat] turned on"
                         }
                         else {
-                            log.debug "$VirThermSwitch_2 [cool] ALREADY turned on"
+                            log.debug "$VirThermSwitch_2 [heat] ALREADY turned on"
                         }
                     }
                     else {
@@ -1435,22 +1422,12 @@ SwitchState_2IsOn = $SwitchState_2IsOn
                     }
                 }
             }
-            else { 
-                log.debug "No motion arround $VirThermSwitch_2"
-                if(SwitchState_2IsOn){
-                    VirThermSwitch_2?.off()
-                    log.debug "$VirThermSwitch_2 [heat] turned off"
-                }
-            }
-            if(!inVirThermModes_2 && SwitchState_2IsOn){
+            else if(!Critical && SwitchState_2IsOn){
                 VirThermSwitch_2?.off()
-                log.debug "$VirThermSwitch_2 [heat] turned off because location is not in $VirThermModes_2"
+                log.debug "$VirThermSwitch_2 [heat] turned off because location is not in $VirThermModes_2 or because there's no motion"
             }
         }
-        if(!InMotionMode && !Critical){
-            VirThermSwitch_2?.off()
-            log.debug "$VirThermSwitch_2 turned off due to recent mode change"
-        }
+
     }
 
     if(AddMoreVirT_C){
@@ -1461,7 +1438,6 @@ SwitchState_2IsOn = $SwitchState_2IsOn
                 // this option is not compatible with motion because motion sensor 
                 // is designated by the thermostat used as SP source. 
                 def ActiveT = ActiveTest(VirThermTherm_3)
-                InMotionMode = ActiveT[1]
                 Active = ActiveT[0]
             }
             else {
@@ -1500,11 +1476,13 @@ SwitchState_2IsOn = $SwitchState_2IsOn
             def SwitchState_3IsOnSize = SwitchState_3.findAll{val -> val == "on" ? true : false }
             def SwitchState_3IsOn = SwitchState_3IsOnSize.size() > 0
 
-            def inVirThermModes_3 = false 
+            def inVirThermModes_3 = true // default value for when no modes selected 
             if(VirThermModes_3){
                 inVirThermModes_3 = location.currentMode in VirThermModes_3
                 log.debug " inVirThermModes set to $inVirThermModes_3"
             }
+
+            if(OtherSetP_3){log.debug "motion marked as active due to independent SP"} else {log.debug "room's thermostat's setting applies"}
 
             log.debug """ Values @ virtual thermostat for $VirThermSwitch_3 are: 
 ---------------------------- 
@@ -1514,8 +1492,6 @@ CurrSP 3 = $CurrSP
 $CurrSP > $CurrTemp ? (${CurrSP > CurrTemp})
 $CurrSP < $CurrTemp ? (${CurrSP < CurrTemp})
 Active ? : $Active
-${if(OtherSetP_3){log.debug "motion marked as active due to independante SP"} else {log.debug "room's thermostat's setting applies"}}
-InMotionMode ? : $InMotionMode
 Mode coolOrHeat = $coolOrHeat_3
 inVirThermModes_3 = $inVirThermModes_3
 Switch State = $SwitchState_3
@@ -1523,7 +1499,7 @@ SwitchState_3IsOn = $SwitchState_3IsOn
 ----------------------------    
 """
 
-            if(Active && InMotionMode){
+            if(Active && inVirThermModes_3){
                 if(coolOrHeat_3 == "cooling"){
                     if(CurrTemp > CurrSP && inVirThermModes_3){
 
@@ -1568,19 +1544,12 @@ SwitchState_3IsOn = $SwitchState_3IsOn
                     }
                 }
             }
-            else { 
-                log.debug "No motion arround $VirThermSwitch_3"
-                if(SwitchState_3IsOn){
-                    VirThermSwitch_3?.off()
-                    log.debug "$VirThermSwitch_3 [heat] turned off"
-                }
+            else if(!Critical && SwitchState_3IsOn){
+                VirThermSwitch_3?.off()
+                log.debug "$VirThermSwitch_3 [heat] turned off because location is not in $VirThermModes_3 or because there's no motion"
             }
+        }
 
-        }
-        if(!inVirThermModes_3 && !Critical){
-            VirThermSwitch_3?.off()
-            log.debug "$VirThermSwitch_3 turned off due to recent mode change"
-        }
     }
 
     CheckWindows()
@@ -1630,17 +1599,17 @@ SensorThermMap = $SensorThermMap
 
     def motionEvents = []
     def result = [:]
-    def Active = false
+    boolean Active = false
+
     for(t > 0; i < t; i++){
 
         def TheSensor = "MotionSensor${i}" // this is a list in itself since multiple = true
         def TheSensorB4 = settings.find{it.key == TheSensor}
 
         TheSensor = TheSensorB4?.value
-        log.debug "TheSensorB4 = $TheSensorB4 |TheSensor = $TheSensor"
+        log.debug "TheSensor = $TheSensor"
 
-        //motionEvents = TheSensor.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten() // this one works but need to work on distinguishing each it with for loop and size anyway
-
+        //motionEvents = TheSensor.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten() // this one works but need to work but we need iteration of TheSensor
 
         // collect events for each sensor within the list that TheSensor object may be made of when user selected multiple sensors to relate to one thermostat
         def SensorSize = TheSensor.size()
@@ -1649,14 +1618,18 @@ SensorThermMap = $SensorThermMap
             def thisItSensor = TheSensor[iteration]
             def Evts4thisiteration = thisItSensor.eventsSince(new Date(now() - deltaMinutes)) 
 
-            log.debug "motionEvents for $thisItSensor = ${Evts4thisiteration}"
-            Active = Evts4thisiteration.size() != 0 
-            log.debug "Active motionEvents list at for loop = $motionEvents"
-            result << ["${TheSensor}": "$Active"] // record value for the group to which this de // if any of the multiple devices had motion then the value 'true' superceeds"
 
-            log.debug """
-Found ${Evts4thisiteration.size() ?: 0} events in the last $minutesMotion minutes at ${thisItSensor}
-deltaMinutes = $deltaMinutes"""
+            Active = Evts4thisiteration.size() > 0 
+            log.debug "motion Events for $thisItSensor = ${Evts4thisiteration} and Active is then set as $Active"
+
+            result << ["${TheSensor}": "$Active"] // record value for the group to which this device belongs // 
+
+            log.debug """Found ${Evts4thisiteration.size() ?: 0} events in the last $minutesMotion minutes at ${thisItSensor} deltaMinutes = $deltaMinutes"""
+
+            if(Active){
+                log.debug "BREAK" // if any of the multiple devices returned motion evts then the value 'true' superceeds
+                break
+            }
         }
     }
 
@@ -1686,11 +1659,11 @@ def ActiveTest(ThermSet) {
         TheSensor = TheSensor?.value
 
         def MotionModes = MotionModesAndItsThermMap.find{it.key == "${ThermSet}"}
-        //log.debug "MotionModes before value called: $MotionModes"
+        log.debug "MotionModes before value called: $MotionModes"
         MotionModes = MotionModes?.value
 
         inMotionModes = MotionModes.find("$CurrMode") == "$CurrMode"
-        //log.debug "inMotionModes after value called: $inMotionModes"
+        log.debug "inMotionModes after value called: $inMotionModes"
 
         def ActiveMap = MotionTest() 
         def ActiveFind = ActiveMap.find{it.key == "${TheSensor}"}
