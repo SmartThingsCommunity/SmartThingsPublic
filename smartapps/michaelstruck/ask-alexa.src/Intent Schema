@@ -87,6 +87,10 @@
         {
           "name": "xParam",
           "type": "LIST_OF_WCP"
+        },
+        {
+          "name": "MType",
+          "type": "DEVICE_TYPE_LIST"
         }
       ],
       "intent": "MacroOperation"
@@ -145,6 +149,14 @@
         {
           "name": "ParamB",
           "type": "LIST_OF_PARAMS"
+        },
+        {
+          "name": "OTypeA",
+          "type": "DEVICE_TYPE_LIST"
+        },
+        {
+          "name": "OTypeB",
+          "type": "DEVICE_TYPE_LIST"
         }
       ],
       "intent": "ObjectOperation"
