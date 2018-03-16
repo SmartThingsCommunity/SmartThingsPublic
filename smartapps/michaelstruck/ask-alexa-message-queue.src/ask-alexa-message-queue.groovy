@@ -1,8 +1,8 @@
 /**
  *  Ask Alexa Message Queue Extension
  *
- *  Copyright © 2017 Michael Struck
- *  Version 1.0.7a 10/17/17
+ *  Copyright © 2018 Michael Struck
+ *  Version 1.0.8 3/11/18
  * 
  *  Version 1.0.0 (3/31/17) - Initial release
  *  Version 1.0.1 (4/12/17) - Refresh macro list after update from child app (for partner integration)
@@ -13,6 +13,7 @@
  *  Version 1.0.5 (7/21/17) - Changed REST URL icon and display for consistency
  *  Version 1.0.6a (8/22/17) - Added voice options to Message Queue
  *  Version 1.0.7a (10/17/17) - Put 'purge' logging message into proper location to reduce Live Logging clutter
+ *  Version 1.0.8 (3/11/18) - Added echo device indentification restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -48,9 +49,9 @@ def mainPage() {
         	input "msgQueueOrder", "enum", title: "Message Play Back Order (Alexa)", options:[0:"Oldest to newest", 1:"Newest to oldest"], defaultValue: 0 
             input "msgQueueDateSuppress", "bool", title: "Remove Time/Date From Message Review", defaultValue: false
         }
-        section ("Message notification - Alexa", hideable: true, hidden: true){
-			input "msgQueueNotifyAlexa", "bool", title: "Alexa Notifications (Audio and Visual)", defaultValue: false
-            paragraph "This function is not yet available - Coming soon!"            
+        section ("Message notification - Alexa", hideable: true, hidden: !(mqEcho)){
+            input "mqEcho", "enum", title:"Choose Echo Devices", options:parent.rmCheck(mqEcho), multiple: true, required: false
+            paragraph "This ability is not yet available - Coming soon!", image: parent.imgURL() + "info.png"       
         }
         section ("Message notification - audio", hideable: true, hidden: !(mqSpeaker||mqSynth)){
         	input "mqSpeaker", "capability.musicPlayer", title: "Choose Speakers", multiple: true, required: false, submitOnChange: true
@@ -84,13 +85,13 @@ def mainPage() {
         	if (mqFeed || mqSMS || mqPush || mqContacts) input "restrictMobile", "bool", title: "Apply Restrictions To Mobile Notification", defaultValue: false, submitOnChange: true
         }
         if (restrictMobile || restrictVisual || restrictAudio){
-            section("Message queue restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive)) {            
-				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png"
+            section("Message notification restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive)) {            
+				input "runDay", "enum", options: parent.dayOfWeek(), title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png"
 				href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png"
 				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png"
                 input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
 				if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
-            	input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: parent.imgURL() + "on.png"
+                input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: parent.imgURL() + "on.png"
 				input "runSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false, image: parent.imgURL() + "off.png"
             }
         }
@@ -99,6 +100,8 @@ def mainPage() {
 				title:"REST URL", description: "Tap to display the REST URL / send it to Live Logging", image: parent.imgURL() + "network.png"
         }
         section("Tap below to remove this message queue"){ }
+        remove("Remove Message Queue" + (app.label ? ": ${app.label}" : ""),"PLEASE NOTE","This action will only remove this message queue. Ask Alexa, other macros and extensions will remain.")
+	
 	}
 }
 page(name: "timeIntervalInput", title: "Only during a certain time") {
@@ -130,7 +133,7 @@ def msgHandler(date, descriptionText, unit, value, overwrite, expires, notifyOnl
 		if (!mqAlertType || mqAlertType ==~/0|2/) msgTxt += msgTxt ? ": "+ descriptionText : descriptionText
     }
     if (mqSpeaker && mqVolume && ((restrictAudio && getOkToRun())||!restrictAudio)) {
-		def msgSFX, outputVoice = mqVoice ?: "Salli", msgVoice = textToSpeech (msgTxt, outputVoice)
+		def msgSFX, outputVoice = mqVoice ?: "Salli", msgVoice = msgTxt ? textToSpeech (msgTxt, outputVoice) : msgTxt
 		if (mqAlertType == "3" || mqAppendSound) msgSFX = parent.sfxLookup(mqAlertSound)
 		mqSpeaker?.setLevel(mqVolume as int)            
 		if (mqAlertType != "3" && !mqAppendSound) mqSpeaker?.playTrack (msgVoice.uri)
@@ -168,9 +171,10 @@ def msgDeleteHandler(unit, value){
 	else log.debug "The '${app.label}' message queue is empty. No messages were deleted."
 }
 //Message Queue Reply
-def msgQueueReply(cmd){
+def msgQueueReply(cmd, echoID){
 	log.debug "-'${app.label}' Message Queue Response-"
     log.debug "Message Queue Command: " + cmd
+    log.debug "Echo ID: " + (echoID !="undefined" ? "ID received" :"Simulator or unknown device")
     String result = ""
 	purgeMQ()
     def msgCount = state.msgQueue ? state.msgQueue.size() : 0, msgS= msgCount==0 || msgCount>1 ? " messages" : " message"
@@ -244,6 +248,6 @@ private switchesOffStatus(){
 	return runSwitchNotActive && runSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true	
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 107 }
+private versionInt(){ return 108 }
 private def textAppName() { return "Ask Alexa Message Queue" }	
-private def textVersion() { return "Message Queue Version: 1.0.7a (10/17/2017)" }
+private def textVersion() { return "Message Queue Version: 1.0.8 (03/11/2018)" }

@@ -2,8 +2,8 @@
  *  Ask Alexa Weather Report Extension
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
- *  Copyright © 2017 Michael Struck
- *  Version 1.0.6 8/03/17
+ *  Copyright © 2018 Michael Struck
+ *  Version 1.0.7 3/11/18
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
@@ -12,6 +12,7 @@
  *  Version 1.0.4 - (7/11/17) Allow suppression of continuation messages.
  *  Version 1.0.5 - (8/3/17) Fixed issue due to changes in Weather Undergroud API
  *  Version 1.0.6 - (12/14/17) Added additional restrictions to playback for more in-app automation opportunities.
+ *  Version 1.0.7 - (3/11/18) Added Echo indentification to restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -73,17 +74,20 @@ def mainPage() {
 				if (!overRideMsg) input "suppressCont", "bool", title:"Suppress Continuation Messages (But Still Allow Continuation Commands)", defaultValue: false 
             }
         }
-        section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive)) {            
-			input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
+        section("Restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runEcho || runSwitchActive || runSwitchNotActive)) {            
+			input "runDay", "enum", options: parent.dayOfWeek(), title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
 			href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png", submitOnChange: true
 			input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png", submitOnChange: true
             input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
 			if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+            input "runEcho", "enum", title:"Only From These Echo Devices...", options: parent.getRmLists(), multiple: true, required: false, image: parent.imgURL() + "echo.png"
             input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: parent.imgURL() + "on.png"
 			input "runSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false, image: parent.imgURL() + "off.png"
             input "muteRestrictions", "bool", title: "Mute Restriction Messages In Extension Group", defaultValue: false
         }
         section("Tap below to remove this message queue"){ }
+        remove("Remove Weather Report" + (app.label ? ": ${app.label}" : ""),"PLEASE NOTE","This action will only remove this weather report. Ask Alexa, other macros and extensions will remain.")
+	
 	}
 }
 def pageMQ(){
@@ -108,9 +112,7 @@ page(name: "timeIntervalInput", title: "Only during a certain time") {
 }
 page(name: "pageExtAliases", title: "Enter alias names for this weather report"){
 	section {
-    	for (int i = 1; i < extAliasCount()+1; i++){
-        	input "extAlias${i}", "text", title: "Weather Report Alias Name ${i}", required: false
-		}
+    	for (int i = 1; i < extAliasCount()+1; i++){ input "extAlias${i}", "text", title: "Weather Report Alias Name ${i}", required: false }
     }
 }
 def pageWeatherCurrent(){
@@ -232,7 +234,8 @@ def translateMQid(mqIDList){
     }
     return parent.getList(result)
 }
-def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll && switchesOnStatus() && switchesOffStatus()) }
+def getOkToRun(echoID){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && getOkEcho(echoID) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll && switchesOnStatus() && switchesOffStatus()) }
+def getOkEcho(echoID) { return !runEcho || runEcho.contains(echoID) }
 private switchesOnStatus(){ return runSwitchActive && runSwitchActive.find{it.currentValue("switch") == "off"} ? false : true }
 private switchesOffStatus(){ return runSwitchNotActive && runSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true }
 private currWeatherSel() { return voiceWeatherTemp || voiceWeatherHumid || voiceWeatherDew || voiceWeatherSolar || voiceWeatherVisiblity || voiceWeatherPrecip }
@@ -605,6 +608,6 @@ private tideInfo() {
     return msg		
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 106 }
+private versionInt(){ return 107 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.6 (12/14/2017)" }
+private def textVersion() { return "Weather Report Version: 1.0.7 (03/11/2018)" }

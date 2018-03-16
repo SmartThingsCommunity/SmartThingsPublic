@@ -1,13 +1,14 @@
 /**
  *  Ask Alexa Schedules Extension
  *
- *  Copyright © 2017 Michael Struck
- *  Version 1.0.3c 7/6/17
+ *  Copyright © 2018 Michael Struck
+ *  Version 1.0.4 3/11/18
  * 
  *  Version 1.0.0 (6/1/17) - Initial release
  *  Version 1.0.1 (6/8/17) - Fixed custom schedule issue. Added %age% variable for birthdays/anniversaries
  *  Version 1.0.2 (6/15/17) - Added %age% variable for any text field
  *  Version 1.0.3c (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
+ *  Version 1.0.4 (3/11/18) - Updated to 2018 version, modified "remove" button
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -135,12 +136,14 @@ def mainPage() {
             if (remindersOK()) href "pageReminder", title: "Action Reminders", description: remindDesc(), state: schRemind() ? "complete" : null, required:false, image: checkDate("remind").expired || checkDate("remind").warning ? parent.imgURL() + "caution.png" : null
         }
         if (schType ==~/complex|custom/){
-        	section("Schedule restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople)) {            
-				input "runDay", "enum", options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
+        	section("Schedule restrictions", hideable: true, hidden: !(runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive)) {            
+				input "runDay", "enum", options: parent.dayOfWeek(), title: "Only Certain Days Of The Week...",  multiple: true, required: false, image: parent.imgURL() + "calendar.png", submitOnChange: true
 				href "timeIntervalInput", title: "Only During Certain Times...", description: parent.getTimeLabel(timeStart, timeEnd), state: (timeStart || timeEnd ? "complete":null), image: parent.imgURL() + "clock.png", submitOnChange: true
 				input "runMode", "mode", title: "Only In The Following Modes...", multiple: true, required: false, image: parent.imgURL() + "modes.png", submitOnChange: true
                 input "runPeople", "capability.presenceSensor", title: "Only When Present...", multiple: true, required: false, submitOnChange: true, image: parent.imgURL() + "people.png"
 				if (runPeople && runPeople.size()>1) input "runPresAll", "bool", title: "Off=Any Present; On=All Present", defaultValue: false
+            	input "runSwitchActive", "capability.switch", title: "Only When Switches Are On...", multiple: true, required: false, image: parent.imgURL() + "on.png"
+				input "runSwitchNotActive", "capability.switch", title: "Only When Switches Are Off...", multiple: true, required: false, image: parent.imgURL() + "off.png"
             }
 		}
 		if ((schType ==~/single|bd/) ||  (schType =="simple" && schReType) || (schType =="complex" && schReType) || (schType=="custom" && cronValidate())) { 
@@ -159,7 +162,7 @@ def mainPage() {
                     def extraTxtEnd1 = schEnd() ? "the time you specified in the \"End Date\" ": "you stop it "
                     if (schCount) extraTxtEnd1 +="or until you reach the maxium recurrence count of ${schCount}"
                     def extraTxtEnd2 = (schEnd() || schCount) && deleteExpired ? " This schedule will auto delete after the maximum count (if set) or the \"End Time/Date\" is reached.":""
-                    def restrictions = runDay || timeStart || timeEnd || runMode || runPeople ? " and only within the parameters set in the restrictions area.": "."
+                    def restrictions = runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive ? " and only within the parameters set in the restrictions area.": "."
                     paragraph "This schedule will begin the recurrence interval ${extraTxtStart} (if the status is \"On\"). The action will continue to recur until ${extraTxtEnd1}${restrictions}${extraTxtEnd2}"
                 }
                 else if (schType =="bd"){
@@ -169,7 +172,7 @@ def mainPage() {
                 else if (schType=="custom" && cronValidate()){
                     def extraTxtEnd1 = schCount ? " or until you reach the maxium recurrence count of ${schCount}":""
                     def extraTxtEnd2 = schCount ? " Please note that if you are re-editing this schedule the current run count will be reset upon tapping \"Done\".":""
-                    def restrictions = runDay || timeStart || timeEnd || runMode || runPeople ? " and only within the parameters set in the restrictions area.": "."
+                    def restrictions = runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive? " and only within the parameters set in the restrictions area.": "."
                     def extraTxtEnd3 = schCount && deleteExpired ? " This schedule will auto delete 2 minutes after the maximum count is reached.":""
                     paragraph "This custom schedule will recur at the interval in your cron expression${extraTxtEnd1}${restrictions}${extraTxtEnd2}" +
                         " For short recurrence cron intervals SmartThings may start the first occurance after a random time before repeating the subsequent intervals.${extraTxtEnd3}"
@@ -177,6 +180,8 @@ def mainPage() {
         	}
         }
         section("Tap below to remove this schedule"){ }
+        remove("Remove Schedule" + (app.label ? ": ${app.label}" : ""),"PLEASE NOTE","This action will only remove this schedule. Ask Alexa, other macros and extensions will remain.")
+	
 	}
 }
 page(name: "timeIntervalInput", title: "Only during a certain time") {
@@ -602,7 +607,7 @@ def getSchdDesc(){
         result += schAction=="WR" ? "a weather report will be sent to the message ${mqCount}. ":""
         result += schAction=="WR" && schWeather ? "The weather advisory feature is turned on for this report, and will only notify when the report is an advisory. " : ""
         result += schAction=="purge" ? "the message ${schMsgQue} will purge. ":""
-        if (schType=="complex" && (runDay || timeStart || timeEnd || runMode || runPeople)) result += "In addition, this schedule has restrictions applied that will limit when it recurs. "
+        if (schType=="complex" && (runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive)) result += "In addition, this schedule has restrictions applied that will limit when it recurs. "
     	if (schType==~/simple|complex/ && schCount) result +="Finally, there is a maximum number of times this schedule will run. Right now you have used ${state.runCount} of ${schCount}. "
     }
     else if (schStatus=="Off") result += "and is currently off. "
@@ -658,7 +663,7 @@ def getShortDesc(){
     if (remindersOK() && !checkDate("remind").expired && checkDate("remind").result) result +="Reminders for this action are active. " 
     if (getStatus()=="Expired" && schCount && state.runCount >= schCount) result = "after reaching the maximum run count of ${schCount}. "
     else if (getStatus() =="On" && schCount && state.runCount < schCount) result += "Schedule has run ${state.runCount} of ${schCount} times. "
-    if ((runDay || timeStart || timeEnd || runMode || runPeople) &&  (schType==~/complex|custom/)) result +="Restrictions applied that may affect recurrance. "
+    if ((runDay || timeStart || timeEnd || runMode || runPeople || runSwitchActive || runSwitchNotActive) &&  (schType==~/complex|custom/)) result +="Restrictions applied that may affect recurrance. "
     if (deleteExpired) result += "Will auto-delete when it expires. "
     return result
 }
@@ -710,7 +715,9 @@ def fillStartTime(){
     year = new Date(epDT).format("yy", location.timeZone) 
     state.startTimeDate =["Epoch":epDT,"Year":year, "Month":month, "MonthFull":monthFull,"Day":day, "DayNum":dayNum<7 ? dayNum+1: 1, "DayFull": dayFull, "Hour":hour, "Min": minutes]
 }
-def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll) }
+def getOkToRun(){ def result = (!runMode || runMode.contains(location.mode)) && parent.getDayOk(runDay) && parent.getTimeOk(timeStart,timeEnd) && parent.getPeopleOk(runPeople,runPresAll && switchesOnStatus() && switchesOffStatus()) }
+private switchesOnStatus(){ return runSwitchActive && runSwitchActive.find{it.currentValue("switch") == "off"} ? false : true }
+private switchesOffStatus(){ return runSwitchNotActive && runSwitchNotActive.find{it.currentValue("switch") == "on"} ? false : true }
 def remindersOK() {return getStatus()==~/On|Off/ && ((schType==~/simple|complex/ && schReType==~/week|month|year/) || (schType=="single" && checkDate("end").result && !checkDate("end").expired) || schType==~/custom|bd/) } 
 def checkDate(type){
 	def result=true, warning=false, expired = false, dateOrder=true
@@ -900,6 +907,6 @@ def translateMQid(mqIDList){
     return parent.getList(result)
 }
 //Versions
-private versionInt(){ return 103 }
+private versionInt(){ return 104 }
 private def textAppName() { return "Ask Alexa Schedules" }	
-private def textVersion() { return "Schedules Version: 1.0.3c (07/06/2017)" }
+private def textVersion() { return "Schedules Version: 1.0.4 (03/11/2018)" }

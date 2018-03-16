@@ -2,12 +2,13 @@
  *  Ask Alexa Rooms/Groups
  *
  *  Copyright © 2018 Michael Struck
- *  Version 1.0.3 2/8/18
+ *  Version 1.0.4 3/9/18
  * 
  *  Version 1.0.0 (9/13/17) - Initial release
  *  Version 1.0.1a (9/26/17) - Fixed text area variable issue
  *  Version 1.0.2 (10/31/17) - Added a summary option for switch status outputs
  *  Version 1.0.3 (2/8/18) - Added room occupancy (beacon) capabilties
+ *  Version 1.0.4 (3/9/18) - Added Echo indentification, fixed code issues with xParam
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -39,21 +40,24 @@ preferences {
     page name:"pageTempRPT"
     page name:"pageHumidRPT"
     page name:"pageSensors"
+    page name:"pageExtAliases"
+    page name:"pageEchoAliasDelete"
 }
 //Show main page
 def mainPage() {
 	dynamicPage(name: "mainPage", title:"Ask Alexa Rooms/Groups Options", install: true, uninstall: true) {
+        if (!state.rmEchos) state.rmEchos=[]
         section {
         	label title:"Room/Group Name (Required)", required: true, image: parent.imgURL() + "room.png"
             href "pageExtAliases", title: "Room/Group Aliases", description: extAliasDesc(), state: extAliasState()
         }
-        section ("Devices to control this room/group"){
+        section ("Devices to control this room / group"){
         	href "pageSwitchRPT", title: "Lights/Switches/Dimmers", description: getDesc("switch"), state: (switches ? "complete" : null), image: parent.imgURL() + "power.png"
             href "pageDoorRPT", title: "Doors/Locks", description: getDesc("door"), state: (locks||doors ? "complete" : null), image: parent.imgURL() + "lock.png"
             href "pageShadeRPT", title: "Window Shades", description: getDesc("shade"), state: (shades ? "complete" : null), image: parent.imgURL() + "shade.png"
             href "pageTstatRPT", title: "Thermostats", description: getDesc("tstat"), state: (tstats ? "complete" : null), image: parent.imgURL() + "temp.png"
         }
-        section ("Sensors in this room/group"){
+        section ("Sensors in this room / group"){
         	href "pageTempRPT", title: "Temperature Sensors", description: getDesc("temp"), state: (temp ? "complete" : null), image: parent.imgURL() + "heating.png"
             href "pageHumidRPT", title: "Humidity Sensors", description: getDesc("humid"), state: (humid ? "complete" : null), image: parent.imgURL() + "humidity.png"
             href "pageSensors", title: "Other Sensors", description: getDesc("sensor"), state: ( motion || contact || water || occupy ? "complete" : null), image: parent.imgURL() + "sensor.png"
@@ -72,7 +76,7 @@ def mainPage() {
 		//	input "rmTriggerSwitch", "capability.switch", title: "Trigger Switch", multiple: false, required: false, submitOnChange:true
 		//	paragraph "A virtual dimmer switch is recommended (but not required) to trigger a room/group. You may associate the switch with other automations (including native Alexa Routines) to turn on/off this room/group when the switch state change. ", image: imgURL()+"info.png"
 		//}
-        section("Tap below to remove this room/group"){ }
+        section("Tap below to remove this room / group"){ }
         remove("Remove Room/Group" + (app.label ? ": ${app.label}" : ""),"PLEASE NOTE","This action will only remove this room/group. Ask Alexa, other macros and extensions will remain.")
 	}
 }
@@ -222,11 +226,38 @@ def pageSensors() {
         }
     }   
 }
-page(name: "pageExtAliases", title: "Enter alias names for this room/group"){
-	section {
-    	for (int i = 1; i < extAliasCount()+1; i++){
-        	input "extAlias${i}", "text", title: "Room/Group Alias Name ${i}", required: false
-		}
+def pageExtAliases() {
+    dynamicPage(name: "pageExtAliases", title: "Enter alias names for this room/group"){
+        section {
+            for (int i = 1; i < extAliasCount()+1; i++){
+                input "extAlias${i}", "text", title: "Room/Group Alias Name ${i}", required: false
+            }
+        }
+        if (state.rmEchos.size()){
+            section("Echo devices associated with this room / group"){
+                def echoName="", count=0
+                state.rmEchos.each{	
+                	echoName+="● "+ it[0..15] + "......." + it[-15..-1]
+                    count ++
+                    if (count<getEchoAliasCount()) echoName+="\n"
+                }
+                paragraph echoName
+            }
+            section("Delete Echo devices associated with this room / group"){
+            	href "pageEchoAliasDelete", title: "Delete Echo Device Associations", description: "Tap to delete associations", image: parent.imgURL() + "delete.png"
+                paragraph "Please note that if you delete an Echo association for this room and you have restrictions based on this Echo, you may run into permission issues with Ask Alexa. "+
+                	"It is recommended you remove all restrictions before removing Echo associations.", image: parent.imgURL()+"caution.png"
+        	}
+        }
+	}
+}
+def pageEchoAliasDelete() {
+    dynamicPage(name: "pageEchoAliasDelete", title: "Associations deleted"){
+        state.rmEchos=[]
+        section{
+            paragraph "You have deleted your Echo devices from this room/group. To setup new associations, simply say 'Alexa, tell ${parent.invocationName} to setup ${app.label}.'", image: parent.imgURL()+"info.png"
+            href "mainPage", title: "Tap Here To Return To The Room/Group Main Menu", description:none
+        }
     }
 }
 def installed() {
@@ -238,7 +269,7 @@ def updated() {
 }
 def initialize() { }
 //Main Handlers
-def getOutput(room, mNum, op, param, mPW, xParam){
+def getOutput(room, mNum, op, param, mPW, echoID){
 	String outputTxt = "", result = ""
     if ((tstats && switches && setCMD == "tstats") || (tstats && !switches && (setCMD == "tstats" || !setCMD))){
     	if (tstatHeat && !tstatCool) param="heating"
@@ -254,32 +285,46 @@ def getOutput(room, mNum, op, param, mPW, xParam){
         if (op=="medium" && parent.dimmerMed) num = parent.dimmerMed else if (op=="medium" && !parent.dimmerMed) num = 0 
         if (op=="high" && parent.dimmerHigh) num = parent.dimmerHigh else if (op=="high" && !parent.dimmerhigh) num = 0 
         if (num==0) result = "You don't have a default value set up for the '${op}' level. I am not making any changes to '${room}'. %1%"
-        else if (num > 0 && param ==~/null|undefined/) result = levelSet(room, num,xParam)
+        else if (num > 0 && param ==~/null|undefined/) result = levelSet(room, num)
         else if (num > 0 && param ==~/heating|cooling|heat|cool/) result=setTemp(room, op, param, num)
         else if (num > 0 && param !="undefined" && param != "null" && param != "heating" && param != "cooling" && param != "heat" && param != "cool" ) result = colorSet(room, param, num)
     }
     else if (op == "maximum") {
-    	if (param ==~/null|undefined/) result = levelSet(room, 100, xParam)
+    	if (param ==~/null|undefined/) result = levelSet(room, 100)
         else if (param ==~/heating|cooling|heat|cool/) result=setTemp(room, op, param, num)
         else result = colorSet(room, param, 100)
     }
+    else if (parent.rmVoc().contains(op)) {
+    	if (echoID != "undefined") {
+        	if (state.rmEchos.contains(echoID)) result="This Echo device is already associated with the group, '${app.label}'. I am taking no action. %1%"
+            else{
+                if (!parent.doRmCheck(echoID)){
+                    state.rmEchos<<echoID
+                    result = "I am associating this Echo device with the group named: ${room}. You may now reference this group by using the phrase: 'in here', 'this room', or, 'this group', instead of using: '${room}', when giving commands to the group. "
+                    if (state.rmEchos.size()>1) result +="Please note: You have more than one Echo device associated with this group. Please check your Ask Alexa SmartApp for more information. "
+                }
+            	else result="You can not associate this Echo device to, ${room}, because it is already associated with the group, '${parent.doRmCheck(echoID)}'. Each Echo device can only be associated with one group at a time. %1%"
+        	}
+        }	
+        else result ="You are using a simulator or the Echo device you are speaking to is not indentifying itself. I am unable to associate this Echo device with: '${room}'. %1%"
+    }
     else if (op==~/on|off/ && num==0) result=onOff(room, op)
-    else if (op==~/vacant|locked|occupied|engaged|asleep/) result=occupyChg(room, op)
-    else if (op==~/open|close/) result = openClose(room, op, mPW, xParam)
-    else if (op==~/lock|unlock/) result = lockUnlock(room, op, mPW)
+    else if (parent.occVoc().contains(op)) result=occupyChg(room, op)
+    else if (parent.doorVoc().contains(op)) result = openClose(room, op, mPW)
+    else if (parent.lockVoc().contains(op)) result = lockUnlock(room, op, mPW)
     else if (op=="toggle") result = roomToggle(room)
     else if (op==~/increase|raise|up|decrease|down|lower|brighten|dim/ && param==~/null|undefined/) result=increaseDecrease(room, op)
     else if (op==~/undefined|status|null/ && num==0 && param ==~/null|undefined/) {
     	op="status"
         result = roomStatus(room)
     }
-    else if (num && param ==~/null|undefined/ && switches && !tstats) result = levelSet(room, num, xParam)
+    else if (num && param ==~/null|undefined/ && switches && !tstats) result = levelSet(room, num)
     else if (num && param ==~/null|undefined/ && !switches && tstats) result = setTemp(room, op, param, num)
     else if (num && param ==~/null|undefined/ && switches && tstats && setCMD=="tstats") result = setTemp(room, op, param, num)
-    else if (num && param ==~/null|undefined/ && switches && tstats && setCMD=="dimmers") result = levelSet(room, num, xParam)
+    else if (num && param ==~/null|undefined/ && switches && tstats && setCMD=="dimmers") result = levelSet(room, num)
     else if (param !="undefined" && param != "null") result = colorSet(room, param, num)
     else result="I did not understand what you wanted to do with the room, '${room}'. %1%"
-    if (op !="status") outputTxt = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","","Room", room, 0, xParam) : noAck ? " " : result 
+    if (op !="status") outputTxt = voicePost && !noAck ? parent.replaceVoiceVar(voicePost,"","","Room", room, 0, "") : noAck ? " " : result 
     else outputTxt = result
     if (outputTxt && !outputTxt.endsWith("%") && !outputTxt.endsWith(" ")) outputTxt += " "
     if (outputTxt && !outputTxt.endsWith("%")) outputTxt += "%4%"
@@ -344,10 +389,10 @@ def lockUnlock(room, op, mPW){
         def sss= count>1 ? "s" : ""
         result = "I am ${op}ing the device${sss} in the group named: '${room}'. "
     }
-    else result = "You don't have any locks in the group named '${room}' to ${op}. %1%"
+    else result = "You don't have any locks in the group named, '${room}'. %1%"
 	return result
 }
-def openClose(room, op, mPW, xParam){
+def openClose(room, op, mPW){
     String result = ""
     def deviceList, noun = "doors or window shades"
     if (shades && doors){
@@ -403,7 +448,7 @@ def setTemp(room, op, param, num){
     else result = "You don't have any thermostats to set in the group named: '${room}'. %1%"
     return result
 }
-def levelSet(room, num, xParam){
+def levelSet(room, num){
 	String result = ""
     def lvl = num as int, deviceList = switches.findAll{it.getSupportedCommands().name.contains("setLevel")}, count = deviceList.size() as int
     if (deviceList) {
@@ -554,12 +599,18 @@ def roomStatus(room){
         if (contact) result +=contactReport()
         if (water) result +=waterReport()
         if (result) result = "The group named, '${room}', is reporting the following: " + result
-        else result = "None of the devices in the group named, '${room}' are reporting information. This may be normal based on your set up. %1%"
+        else result = "None of the devices in the group named, '${room}', are reporting information. This may be normal based on your set up. %1%"
     }
-    else result = "There are no devices set up to report status in the '${room}' group. %1%"
+    else result = "There are no devices set up to report status in the group named: '${room}'. %1%"
     return result 
 }
 //Common Code
+def getEchoAliasCount(){ return state.rmEchos.size() }
+def getEchoAliasList(){
+	def result=[]
+    state.rmEchos.each {result<<it}
+    return result   
+}
 def switchList() { 
 	def result=[]
     switches.each{result << it.label} 
@@ -613,14 +664,19 @@ def extAliasDesc(){
 		result += settings."extAlias${i}" ? settings."extAlias${i}" : ""
 		result += (result && settings."extAlias${i+1}") ? "\n" : ""
 	}
+    if (state.rmEchos.size()) {
+    	if (result) result+="\n"
+    	result += getEchoAliasCount()==1 ? "One Echo device associated with this room" : getEchoAliasCount() +" Echo devices associated with this room"
+    }
     result = result ? "Alias Names currently configured; Tap to edit:\n"+result :"Tap to add alias names to this room/group"
     return result
 }
 def extAliasState(){
-	def count = 0
+    def count = 0
     for (int i= 1; i<extAliasCount()+1; i++){
     	if (settings."extAlias${i}") count ++
     }
+    count +=getEchoAliasCount()
     return count ? "complete" : null
 }
 def getDesc(type){
@@ -722,6 +778,6 @@ def getDesc(type){
     return result
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 103 }
+private versionInt(){ return 104 }
 private def textAppName() { return "Ask Alexa Rooms/Groups" }	
-private def textVersion() { return "Rooms/Groups Version: 1.0.3 (02/08/2018)" }
+private def textVersion() { return "Rooms/Groups Version: 1.0.4 (03/09/2018)" }
