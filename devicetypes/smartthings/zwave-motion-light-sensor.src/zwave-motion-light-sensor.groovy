@@ -78,7 +78,7 @@ def updated() {
 
 def configure() {
 	// Device wakes up every deviceCheckInterval hours, this interval allows us to miss one wakeup notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * deviceWakeInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * deviceWakeUpInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	response(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1).format())
 }
 
@@ -178,12 +178,10 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	if (!state.lastbatt || (now() - state.lastbatt) >= 10 * 60 * 60 * 1000) {
 		results << response(["delay 1000",
 							 zwave.batteryV1.batteryGet().format(),
-							 "delay 2000",
-							 zwave.wakeUpV2.wakeUpNoMoreInformation().format()
+							 "delay 2000"
 		])
-	} else {
-		results << response(zwave.wakeUpV2.wakeUpNoMoreInformation().format())
 	}
+	results << response(zwave.wakeUpV2.wakeUpNoMoreInformation().format())
 	return results
 }
 
