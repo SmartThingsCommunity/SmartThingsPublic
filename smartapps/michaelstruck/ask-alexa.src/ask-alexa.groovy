@@ -1301,7 +1301,6 @@ def processBegin(){
     state.lambdaCode = "Lambda Code Version: ${ver} (${date})"
     def LambdaVersion = lVer as int
     def OOD = LambdaVersion != LambdaReq() ? "true" : null
-    log.debug OOD
     def persType = Personality ?: "Normal"
     def pName = personalName ? personalName.replaceAll("%people%", getVariableList().people) : ""
     if (randomSnarkName && Personality=="Snarky" ) {
