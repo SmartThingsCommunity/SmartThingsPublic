@@ -3,7 +3,7 @@
  *  Special thanks to Barry Burke for Weather Underground Integration
  *
  *  Copyright © 2018 Michael Struck
- *  Version 1.0.7 3/11/18
+ *  Version 1.0.8 3/16/18
  * 
  *  Version 1.0.0 - Initial release
  *  Version 1.0.1 - Updated icon, added restrictions
@@ -12,7 +12,8 @@
  *  Version 1.0.4 - (7/11/17) Allow suppression of continuation messages.
  *  Version 1.0.5 - (8/3/17) Fixed issue due to changes in Weather Undergroud API
  *  Version 1.0.6 - (12/14/17) Added additional restrictions to playback for more in-app automation opportunities.
- *  Version 1.0.7 - (3/11/18) Added Echo indentification to restrictions
+ *	Version 1.0.7a (10/17/17) Put 'purge' logging message into proper location to reduce Live Logging clutter 
+ *  Version 1.0.8 - (3/16/18) Added Echo indentification to restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -608,6 +609,6 @@ private tideInfo() {
     return msg		
 }
 //Version/Copyright/Information/Help
-private versionInt(){ return 107 }
+private versionInt(){ return 108 }
 private def textAppName() { return "Ask Alexa Weather Report" }	
-private def textVersion() { return "Weather Report Version: 1.0.7 (03/11/2018)" }
+private def textVersion() { return "Weather Report Version: 1.0.8 (03/16/2018)" }
