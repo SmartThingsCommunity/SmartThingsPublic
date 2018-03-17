@@ -100,8 +100,7 @@ exports.handler = function( event, context ) {
                 } 
                 else if (intentName == "DeviceOperation") { 
                     var Operator = event.request.intent.slots.Operator.value; 
-                    var Device = event.request.intent.slots.Device.value; 
-                    var Num = event.request.intent.slots.Num.value; 
+                    var Device = event.request.intent.slots.Device.value;                     var Num = event.request.intent.slots.Num.value; 
                     var Param = event.request.intent.slots.Param.value; 
                     url += 'd?Device=' +  Device  + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param + "&echoID="+ echoDev;   
                     process = true; 
