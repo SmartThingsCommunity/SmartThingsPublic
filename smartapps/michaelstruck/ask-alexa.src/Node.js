@@ -52,14 +52,13 @@ exports.handler = function( event, context ) {
     var STappID = '';
     var STtoken = '';
     var url=''; 
-    //--------------------------------------------------------------------------------------- 
-    var cardName =""; 
+    //---------------------------------------------------------------------------------------     var cardName =""; 
     var endSession = true; 
     var processedText; 
     var icon;
     var echoDev = event.context.System.device.deviceId;
     //Get SmartThings parameters 
-    var beginURL = url + 'b?Ver=' + versionTxt + '&Date=' + versionDate + '&lVer=' + versionNum + '&access_token=' + STtoken+ "&echoID="+ echoDev ;
+    var beginURL = url + 'b?Ver=' + versionTxt + '&Date=' + versionDate + '&lVer=' + versionNum + '&access_token=' + STtoken+ "&echoID="+ echoDev;
     https.get( beginURL, function( response ) { 
         response.on( 'data', function( data ) { 
             var beginJSON = JSON.parse(data); 
@@ -95,7 +94,7 @@ exports.handler = function( event, context ) {
                     var RParam = event.request.intent.slots.MParam.value;
                     var RType = event.request.intent.slots.MType.value;
                     var RName = RCmd && RCmd.match(/associate|link|sync|setup/) ? event.request.intent.slots.MRoom.value : "here";
-                    url += 'm?Macro=' + RName + '&Param=' + RParam + '&Cmd=' + RCmd + '&Num=' + RNum + "&Type=" + RType + "&echoID="+ echoDev ; 
+                    url += 'm?Macro=' + RName + '&Param=' + RParam + '&Cmd=' + RCmd + '&Num=' + RNum + "&Type=" + RType + "&echoID="+ echoDev; 
                     process = true; 
                     cardName = "SmartThings Room Operation";  
                 } 
@@ -104,7 +103,7 @@ exports.handler = function( event, context ) {
                     var Device = event.request.intent.slots.Device.value; 
                     var Num = event.request.intent.slots.Num.value; 
                     var Param = event.request.intent.slots.Param.value; 
-                    url += 'd?Device=' +  Device  + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param + "&echoID="+ echoDev ;   
+                    url += 'd?Device=' +  Device  + '&Operator=' + Operator + '&Num=' + Num + '&Param=' + Param + "&echoID="+ echoDev;   
                     process = true; 
                     cardName = "SmartThings Devices"; 
                 } 
@@ -123,14 +122,14 @@ exports.handler = function( event, context ) {
                     var Type2 = event.request.intent.slots.OTypeB.value;
                     if (!Object1) Object1=Ext1; 
                     if (!Object2) Object2=Ext2; 
-                    url += 'o?Object1=' + Object1 + '&Operator1=' + Operator1 + '&Num1=' + Num1 + '&Param1=' + Param1 + '&Object2=' + Object2 + '&Operator2=' + Operator2 + '&Num2=' + Num2 + '&Param2=' + Param2 + "&Type1=" + Type1 + "&Type2=" + Type2 + "&echoID="+ echoDev ;  
+                    url += 'o?Object1=' + Object1 + '&Operator1=' + Operator1 + '&Num1=' + Num1 + '&Param1=' + Param1 + '&Object2=' + Object2 + '&Operator2=' + Operator2 + '&Num2=' + Num2 + '&Param2=' + Param2 + "&Type1=" + Type1 + "&Type2=" + Type2 + "&echoID="+ echoDev;  
                     process = true; 
                     cardName = "SmartThings Compound Command"; 
                 } 
                 else if (intentName == "FollowUpOperation") { 
                     var FType = event.request.intent.slots.FType.value; 
                     var Data = event.request.intent.slots.Data.value; 
-                    url += 'f?Type=' + FType + '&Data=' + Data + "&echoID="+ echoDev ; 
+                    url += 'f?Type=' + FType + '&Data=' + Data + "&echoID="+ echoDev; 
                     process = true; 
                     cardName = "SmartThings Follow up"; 
                 } 
@@ -143,7 +142,7 @@ exports.handler = function( event, context ) {
                  else if (intentName == "MQOperation") { 
                     var Queue = event.request.intent.slots.Queue.value; 
                     var MQCmd = event.request.intent.slots.MQCmd.value; 
-                    url += 'q?Queue=' + Queue + "&MQCmd=" + MQCmd + "&echoID="+ echoDev ; 
+                    url += 'q?Queue=' + Queue + "&MQCmd=" + MQCmd + "&echoID="+ echoDev; 
                     process = true; 
                     cardName = "SmartThings Message Queue"; 
                 } 
@@ -157,7 +156,7 @@ exports.handler = function( event, context ) {
                     var MType = event.request.intent.slots.MType.value;
                     var xParam = event.request.intent.slots.xParam.value; 
                     if (Cancel) {MNum = 9999} 
-                    url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Type=' + MType + '&Num=' + MNum + '&MPW=' + MPW + "&xParam="+xParam + "&echoID="+ echoDev ; 
+                    url += 'm?Macro=' + Macro + '&Param=' + MParam + '&Cmd=' + MCmd + '&Type=' + MType + '&Num=' + MNum + '&MPW=' + MPW + "&xParam="+xParam + "&echoID="+ echoDev; 
                     process = true; 
                     cardName = "SmartThings Macros/Extensions"; 
                 } 
@@ -165,7 +164,7 @@ exports.handler = function( event, context ) {
                     var SHCmd = event.request.intent.slots.SHCmd.value; 
                     var SHParam = event.request.intent.slots.SHParam.value; 
                     var SHNum = event.request.intent.slots.SHNum.value; 
-                    url += 'h?SHCmd=' + SHCmd + '&SHParam=' + SHParam + '&SHNum=' + SHNum + "&echoID="+ echoDev ; 
+                    url += 'h?SHCmd=' + SHCmd + '&SHParam=' + SHParam + '&SHNum=' + SHNum + "&echoID="+ echoDev; 
                     process = true; 
                     cardName = "SmartThings Home Operation"; 
                 } 
