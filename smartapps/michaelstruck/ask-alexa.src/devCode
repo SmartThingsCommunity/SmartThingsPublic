@@ -127,6 +127,8 @@
           "to {Operator} the {Device} brightness",
           "to {Operator} the {Device} level",
           "to {Operator} the {Device} password {Num}",
+          "{Operator} the {Device} password {Num}",
+          "to {Operator} {Device} password {Num}",
           "to {Operator} the {Device} temperature",
           "to {Operator} the {Device} {Param} temperature",
           "to {Operator} the {Device} volume",
