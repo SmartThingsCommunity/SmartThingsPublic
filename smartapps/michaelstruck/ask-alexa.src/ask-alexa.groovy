@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.9a - 3/16/18 Copyright © 2018 Michael Struck
+ *  Version 2.3.9b - 3/17/18 Copyright © 2018 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.8 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.3.8 (2/8/18) Added occupancy sensors to main devices and macros, updated code for new ST actions and restrictions for playback, setup data now sends POST data
- *  Version 2.3.9a (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
+ *  Version 2.3.9b (3/17/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -1406,7 +1406,7 @@ def processObjects(){
     if (obj1==~resList() && echoID !="undefined" && doRmCheck(echoID)) obj1=doRmCheck(echoID).toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")
     if (obj2==~resList() && echoID !="undefined" && doRmCheck(echoID)) obj2=doRmCheck(echoID).toLowerCase().replaceAll("[^a-zA-Z0-9 ]", "")
     if ((obj1==~resList() || obj2==~resList()) && echoID =="undefined") outputTxt="I could not identify the Echo device you are speaking to. I did not take any action on this compound command. %1%"
-    else if ((obj1=~/room|here|group/ || obj2==~/room|here|group|this room|in here|this group/) && echoID !="undefined" && !doRmCheck(echoID)) outputTxt ="You have not set up this Echo device with a room or group yet. I did not take any action on this compound command. To set up this Echo device with a group, simply say, 'associate', and the group name.  %1%"  
+    else if ((obj1==~/room|here|group|this room|in here|this group/ || obj2==~/room|here|group|this room|in here|this group/) && echoID !="undefined" && !doRmCheck(echoID)) outputTxt ="You have not set up this Echo device with a room or group yet. I did not take any action on this compound command. To set up this Echo device with a group, simply say, 'associate', and the group name.  %1%"  
 	if (outputTxt) sendJSON (outputTxt,"caution")
     else { 
         if (op1==~/status|undefined|null/ && param1==~/undefined|null/ && numVal1==~/undefined|null/) op1="status"
@@ -4059,8 +4059,8 @@ private wrReq() { return 108 }
 private vrReq() { return 109 }
 private schReq() { return 104 }
 private rmReq() { return 104 }
-private versionLong(){ return "2.3.9a" }
-private versionDate(){ return "03/16/2018" }
+private versionLong(){ return "2.3.9b" }
+private versionDate(){ return "03/17/2018" }
 private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
