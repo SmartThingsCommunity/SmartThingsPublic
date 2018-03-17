@@ -1,4 +1,5 @@
 
+
 /**
  * ---------------------------------------------------------------
  * Instructions:
@@ -53,7 +54,8 @@ exports.handler = function( event, context ) {
     var STappID = '';
     var STtoken = '';
     var url=''; 
-    //---------------------------------------------------------------------------------------     var cardName =""; 
+    //---------------------------------------------------------------------------------------     
+    var cardName =""; 
     var endSession = true; 
     var processedText; 
     var icon;
