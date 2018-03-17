@@ -4059,7 +4059,7 @@ private wrReq() { return 108 }
 private vrReq() { return 109 }
 private schReq() { return 104 }
 private rmReq() { return 104 }
-private versionLong(){ return "2.3.9" }
+private versionLong(){ return "2.3.9a" }
 private versionDate(){ return "03/16/2018" }
 private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
