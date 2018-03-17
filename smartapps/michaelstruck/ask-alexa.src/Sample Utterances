@@ -77,7 +77,6 @@ DeviceOperation the {Operator} of the {Device}
 DeviceOperation {Operator} {Device}
 DeviceOperation {Operator} {Device} by {Num}
 DeviceOperation {Operator} {Device} password {Num}
-DeviceOperation to {Operator} the {Device} password {Num}
 DeviceOperation {Operator} the {Device} password {Num}
 DeviceOperation to {Operator} {Device} password {Num}
 DeviceOperation {Operator} {Device} {Param}
