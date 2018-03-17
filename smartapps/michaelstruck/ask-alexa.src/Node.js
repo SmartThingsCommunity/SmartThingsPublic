@@ -70,8 +70,7 @@ exports.handler = function( event, context ) {
             var STver = beginJSON.SmartAppVer; 
             var IName = beginJSON.IName; 
             var pName = beginJSON.pName; 
-            var whisper = beginJSON.whisper; 
-            var speed = beginJSON.speed; 
+            var whisper = beginJSON.whisper;             var speed = beginJSON.speed; 
             var pitch = beginJSON.pitch; 
             var mute = beginJSON.mute;
             var disabled = beginJSON.disabled; 
@@ -137,7 +136,7 @@ exports.handler = function( event, context ) {
                 } 
                 else if (intentName == "ListOperation") { 
                     var Type = event.request.intent.slots.Type.value; 
-                    url += 'l?Type=' + Type + "&echoID="+ echoDev ; 
+                    url += 'l?Type=' + Type + "&echoID="+ echoDev; 
                     process = true; 
                     cardName = "SmartThings List Command"; 
                 } 
