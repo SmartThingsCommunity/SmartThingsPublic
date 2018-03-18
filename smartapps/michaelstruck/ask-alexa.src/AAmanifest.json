@@ -1,4 +1,4 @@
-{
+a{
     "namespace": "MichaelStruck",
     "repoOwner": "MichaelStruck",
     "repoName": "SmartThingsPublic",
@@ -39,7 +39,7 @@
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/ext@2x.png",
             "published": false,
             "oAuth": false,
-            "version": "1.0.4",
+            "version": "1.0.4a",
             "appSettings": {},
             "appUrl": "smartapps/michaelstruck/ask-alexa-rooms-groups.src/ask-alexa-rooms-groups.groovy",
             "optional": false
