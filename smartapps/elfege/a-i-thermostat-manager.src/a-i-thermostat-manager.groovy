@@ -26,6 +26,7 @@ preferences {
     page name: "Windows_Control"
     page name: "Virtual_Thermostats"
 
+
 }
 def pageSetup() {
 
@@ -535,8 +536,10 @@ Do you wish to bind it to the same rule and have it controled exclusively with $
                         //log.debug "WRONG DEVICE"
                         paragraph "WRONG DEVICE! You selected a contact that is already being used by this app. Please select a different contact or uncheck this option" 
                     }
-                    input(name: "HSPSetBedSensor", type: "decimal", title: "Set Heating temperature", required: true)
-                    input(name: "CSPSetBedSensor", type: "decimal", title: "Set Cooling temperature", required: true)
+                    else {
+                        input(name: "HSPSetBedSensor", type: "decimal", title: "Set Heating temperature", required: true, submitOnChange: true )
+                        input(name: "CSPSetBedSensor", type: "decimal", title: "Set Cooling temperature", required: true, submitOnChange: true )
+                    }
                 }
                 if(ContactAndSwitch){
                     input "ControlWithBedSensor", "bool", title: "Keep $ContactAndSwitch on when $BedSensor is closed", default: false
@@ -1741,7 +1744,7 @@ FollowException = $FollowException
 InExceptionContactMode = $InExceptionContactMode 
 DoNotTurnOffModes = $DoNotTurnOffModes
 ContactExceptionIsClosed = $ContactExceptionIsClosed
-
+ControlWithBedSensor = $ControlWithBedSensor
 ConsideredOpen = $ConsideredOpen
 """
 
@@ -1754,13 +1757,27 @@ ConsideredOpen = $ConsideredOpen
         //log.debug "contactClosed = $contactClosed (ALL CONTACTS)"
     }
     //log.debug "contactClosed = $contactClosed"
-    def inAwayMode = CurrMode in SwitchMode
+    def inOffMode = CurrMode in SwitchMode
 
 
     //////////////////////// EXCEPTION AC (sort of vir therm) /////////////////////////////////
-    // turn off is away mode (and if this option selected by user)
-    if(KeepOffAtAllTimesWhenMode() && inAwayMode){
-        if(SomeSwAreOn.size() != 0){
+    // turn off if inOffMode (and if this option selected by user)
+    if(KeepOffAtAllTimesWhenMode() && inOffMode){
+        // but not if user wants to keep it on while sitting on their bed
+
+        if(ControlWithBedSensor && !ConsideredOpen){
+            log.debug """Current mode is in $SwitchMode, BUT $BedSensor is still CLOSED 
+so $ContactAndSwitch stays on until it opens
+"""
+            // therefore make sure it is on
+            if(SomeSwAreOff.size() != 0){
+                //if at least one is off, turn on
+                ContactAndSwitch?.on()
+                log.debug "$ContactAndSwitch TURNED BACK ON because $BedSensor is closed"
+                state.turnedOffByApp = false
+            }
+        }
+        else if(SomeSwAreOn.size() != 0){
             // if at least one is on, turn off
             ContactAndSwitch?.off()
             log.debug "$ContactAndSwitch TURNED OFF Because Home is in $SwitchMode mode"
@@ -1781,7 +1798,7 @@ ConsideredOpen = $ConsideredOpen
             log.debug "$ContactAndSwitch already off --"
         }             
     }
-    else if(contactClosed || (ControlWithBedSensor && !ConsideredOpen && contactClosed)) {
+    else if(contactClosed) {
 
         if(IsHeatPump && outsideTemp <= 29){
             if(SomeSwAreOn.size() != 0){
@@ -2222,20 +2239,8 @@ TooHumidINSIDE = $TooHumidINSIDE
                 def BedSensorManagement = false
                 //log.debug "BedSensorManagement defaulted to false (BedSensorManagement = $BedSensorManagement)"
 
-
-                def CurrentContactAndSwitch = ContactAndSwitch.currentSwitch
-                //log.debug "$ContactAndSwitch currentSwitch = $currentSwitch"
-                def ContactAndSwitchState = CurrentContactAndSwitch.findAll { switchVal ->
-                    switchVal == "on" ? true : false
-                }
-
-                log.debug """
-ConsideredOpen = $ConsideredOpen, """
-
-                if(ContactAndSwitchInSameRoom && UnitToIgnore?.displayName == "${ThermContact}" && ThermSet.displayName == "${ThermContact}" && ContactAndSwitchState?.size() > O){
-                    log.debug "not applying $BedSensor action because it is in the same room as $ContactAndSwitch, which is currently ON"
-                }
-                else if(KeepACon && ContactExceptionIsClosed && !inAway){
+                ////
+                if(KeepACon && ContactExceptionIsClosed && !inAway){
 
                     if("${ThermSet}" == "${ThermContact}" && !ConsideredOpen ){ 
                         log.debug "BedSensorManagement set to true (BedSensorManagement = $BedSensorManagement)"
@@ -2357,8 +2362,25 @@ state.CSPMap : $state.CSPMap"""
 
 
                 /////////////////////////SENDING COMMANDS//////////////////////////
-
-                if(ContactAndSwitchInSameRoom && UnitToIgnore?.displayName == ThermSet.displayName && ContactAndSwitchState.size() > O  && !inAway){
+                // find unit to ignore within list of UnitToIgnore[]
+                // because UnitToIgnore is a list we collect it using a for loop
+                def s = UnitToIgnore.size()
+                def i = 0
+                boolean FoundUnitToIgnore = false
+                for(!FoundUnitToIgnore ; i < s ; i++){
+                    FoundUnitToIgnore = UnitToIgnore[i].displayName == ThermSet.displayName
+                }
+                boolean ContactAndSwitchAreOn = SomeSwAreOn.size() != 0
+                log.debug """
+ConsideredOpen = $ConsideredOpen, 
+ContactAndSwitchInSameRoom = $ContactAndSwitchInSameRoom
+UnitToIgnore = $UnitToIgnore
+SomeSwAreOn.size() = ${SomeSwAreOn.size()}
+ContactAndSwitch are on = $ContactAndSwitchAreOn
+ThermSet.displayName == $ThermContact = ${ThermSet.displayName == "$ThermContact" }
+FoundUnitToIgnore = $FoundUnitToIgnore
+"""
+                if(ContactAndSwitchInSameRoom && FoundUnitToIgnore && ContactAndSwitchAreOn  && !inAway){
                     log.debug "Turning off $ThermSet because it is in the same room as $ContactAndSwitch, which is currently ON"
                     ThermSet.setThermostatMode("off")
                 }
