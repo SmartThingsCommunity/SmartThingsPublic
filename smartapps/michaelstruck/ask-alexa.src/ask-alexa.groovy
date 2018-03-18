@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.9b - 3/17/18 Copyright © 2018 Michael Struck
+ *  Version 2.3.9c - 3/16/18 Copyright © 2018 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.8 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.3.8 (2/8/18) Added occupancy sensors to main devices and macros, updated code for new ST actions and restrictions for playback, setup data now sends POST data
- *  Version 2.3.9b (3/17/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
+ *  Version 2.3.9c (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -927,7 +927,7 @@ def pageGlobalVariables(){
         section ("Random responses"){
         	href "pageRandom1", title: "Random Responses 1 (%random1%)", description: getRandDesc(1), state: random1A || random1B|| random1C? "complete" : null
             href "pageRandom2", title: "Random Responses 2 (%random2%)", description: getRandDesc(2), state: random2A || random2B|| random2C? "complete" : null
-            href "pageRandom2", title: "Random Responses 3 (%random3%)", description: getRandDesc(3), state: random3A || random3B|| random3C? "complete" : null
+            href "pageRandom3", title: "Random Responses 3 (%random3%)", description: getRandDesc(3), state: random3A || random3B|| random3C? "complete" : null
         }
         section ("Built-in variables"){
         	paragraph "The following variables are built in:\n\n%time% - Time the variable is called\n%day% - Day of the week\n%date% - Full date\n" +
@@ -1519,7 +1519,8 @@ def processObjectsAction(obj1, obj2, op1, op2, numVal1, numVal2, param1, param2,
     else if (count2 > 1 && count1 ==1) outputTxt ="The name, '${obj2}', is used multiple times in your Ask Alexa SmartApp. Please rename or remove duplicate items so I may properly utlize them. "
     else if (count2 > 1 && count1 > 1) outputTxt ="The names, '${obj1}' and '${obj2}', are used multiple times in your Ask Alexa SmartApp. Please rename or remove duplicate items so I may properly utlize them. "
     else if (!count1 || !count2) {
-    	if (!count1 && count2) outputTxt = "I had some problems finding, '${obj1}'. I did not take any action on this compound command. %1%"
+    	if (!count1 && count2 && !(obj1==~/undefined|null|\?/)) outputTxt = "I had some problems finding, '${obj1}'. I did not take any action on this compound command. %1%"
+        else if (!count1 && count2 && obj1==~/undefined|null|\?/) outputTxt = "I had some problems finding one of the devices you specified. I did not take any action on this compound command. %1%"
     	else if (count1 && !count2) outputTxt = "I had some problems finding, '${obj2}'. I did not take any action on this compound command. %1%"
     	else if (!count1 && !count2) outputTxt = "I had some problems finding both '${obj1}' and '${obj2}'. I did not take any action on this compound command. %1%"
     }
@@ -4059,8 +4060,8 @@ private wrReq() { return 108 }
 private vrReq() { return 109 }
 private schReq() { return 104 }
 private rmReq() { return 104 }
-private versionLong(){ return "2.3.9b" }
-private versionDate(){ return "03/17/2018" }
+private versionLong(){ return "2.3.9c" }
+private versionDate(){ return "03/16/2018" }
 private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
 	def text = "Licensed under the Apache License, Version 2.0 (the 'License'); you may not use this file except in compliance with the License. You may obtain a copy of the License at\n\n"+
