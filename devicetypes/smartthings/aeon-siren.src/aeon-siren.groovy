@@ -16,7 +16,7 @@
  *	Date: 2014-07-15
  */
 metadata {
- definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
+ definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 	capability "Actuator"
 	capability "Alarm"
 	capability "Switch"
@@ -24,7 +24,7 @@ metadata {
 
 	command "test"
 
-	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98", deviceJoinName: "Aeon Labs Siren (Gen 5)"
+	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98", deviceJoinName: "Aeotec Siren (Gen 5)"
  }
 
  simulator {

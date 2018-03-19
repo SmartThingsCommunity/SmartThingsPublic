@@ -31,7 +31,9 @@ definition(
 		category: "SmartThings Labs",
 		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
 		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
-		singleInstance: true
+		singleInstance: true,
+        usesThirdPartyAuthentication: true,
+        pausable: false
 ) {
 	appSetting "clientId"
 }
@@ -506,7 +508,8 @@ def updateSensorData() {
 				it.capability.each {
 					if (it.type == "temperature") {
 						if (it.value == "unknown") {
-							temperature = "--"
+							// setting to 0 as "--" is not a valid number depite 0 being a valid value
+							temperature = 0
 						} else {
 							if (location.temperatureScale == "F") {
 								temperature = Math.round(it.value.toDouble() / 10)
@@ -526,7 +529,7 @@ def updateSensorData() {
 				def dni = "ecobee_sensor-"+ it?.id + "-" + it?.code
 				def d = getChildDevice(dni)
 				if(d) {
-					d.sendEvent(name:"temperature", value: temperature)
+					d.sendEvent(name:"temperature", value: temperature, unit: location.temperatureScale)
 					d.sendEvent(name:"motion", value: occupancy)
 				}
 			}

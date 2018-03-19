@@ -12,13 +12,12 @@
  *
  */
 metadata {
-	definition (name: "Aeon Illuminator Module", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Illuminator Module", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Energy Meter"
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Switch"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 
@@ -165,10 +164,6 @@ def setLevel(value) {
 def setLevel(value, duration) {
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
 	zwave.switchMultilevelV2.switchMultilevelSet(value: value, dimmingDuration: dimmingDuration).format()
-}
-
-def poll() {
-	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
 def refresh() {

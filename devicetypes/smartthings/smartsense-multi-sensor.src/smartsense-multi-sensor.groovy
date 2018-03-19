@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 
 		capability "Three Axis"
 		capability "Battery"
@@ -127,10 +127,13 @@ def parse(String description) {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
 				maps << getBatteryResult(Integer.parseInt(descMap.value, 16))
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = translateZoneStatus(zs)
 			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 				if (descMap.data[0] == "00") {
 					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
-					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 				} else {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
@@ -273,8 +276,10 @@ private Map getBatteryResult(rawValue) {
 			def pct = batteryMap[volts]
 			result.value = pct
 		} else {
+			def useOldBatt = shouldUseOldBatteryReporting()
 			def minVolts = 2.1
-			def maxVolts = 2.7
+			def maxVolts = useOldBatt ? 3.0 : 2.7
+
 			// Get the current battery percentage as a multiplier 0 - 1
 			def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
 			// Find the corresponding voltage from our range
@@ -285,15 +290,16 @@ private Map getBatteryResult(rawValue) {
 			// OR we have received the same reading twice in a row
 			// OR we don't currently have a battery reading
 			// OR the value we just received is at least 2 steps off from the last reported value
-			if(state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+			// OR the device's firmware is older than 1.15.7
+			if(useOldBatt || state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				def roundedPct = Math.round(pct * 100)
 				if (roundedPct <= 0)
 					roundedPct = 1
 				result.value = Math.min(100, roundedPct)
 			} else {
-				// Don't update as we want to smooth the battery values
-				result = null
+				// Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
+				result.value = device.currentState("battery").value
 			}
 			state.lastVolts = volts
 		}
@@ -326,7 +332,7 @@ List<Map> garageEvent(zValue) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def refresh() {
@@ -343,7 +349,7 @@ def refresh() {
 def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
 	def configCmds = []
@@ -411,6 +417,25 @@ private getManufacturerCode() {
 	} else {
 		return "0x104E"
 	}
+}
+
+private shouldUseOldBatteryReporting() {
+	def isFwVersionLess = true // By default use the old battery reporting
+	def deviceFwVer = "${device.getFirmwareVersion()}"
+	def deviceVersion = deviceFwVer.tokenize('.')  // We expect the format ###.###.### where ### is some integer
+
+	if (deviceVersion.size() == 3) {
+		def targetVersion = [1, 15, 7] // Centralite Firmware 1.15.7 contains battery smoothing fixes, so versions before that should NOT be smoothed
+		def devMajor = deviceVersion[0] as int
+		def devMinor = deviceVersion[1] as int
+		def devBuild = deviceVersion[2] as int
+
+		isFwVersionLess = ((devMajor < targetVersion[0]) ||
+			(devMajor == targetVersion[0] && devMinor < targetVersion[1]) ||
+			(devMajor == targetVersion[0] && devMinor == targetVersion[1] && devBuild < targetVersion[2]))
+	}
+
+	return isFwVersionLess // If f/w version is less than 1.15.7 then do NOT smooth battery reports and use the old reporting
 }
 
 private hexToInt(value) {

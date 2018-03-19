@@ -29,7 +29,8 @@ definition(
     description: "Monitor a set of presence sensors and activate routines based on whether your home is empty or occupied.  Each presence status change will check against the current 'sun state' to run routines based on occupancy and whether the sun is up or down.",
     category: "Convenience",
     iconUrl: "http://icons.iconarchive.com/icons/icons8/ios7/512/Very-Basic-Home-Filled-icon.png",
-    iconX2Url: "http://icons.iconarchive.com/icons/icons8/ios7/512/Very-Basic-Home-Filled-icon.png"
+    iconX2Url: "http://icons.iconarchive.com/icons/icons8/ios7/512/Very-Basic-Home-Filled-icon.png",
+    pausable: true
 )
 
 preferences {

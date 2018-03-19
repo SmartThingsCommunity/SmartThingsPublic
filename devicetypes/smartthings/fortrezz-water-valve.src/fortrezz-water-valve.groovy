@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Fortrezz Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve") {
+	definition (name: "Fortrezz Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Valve"

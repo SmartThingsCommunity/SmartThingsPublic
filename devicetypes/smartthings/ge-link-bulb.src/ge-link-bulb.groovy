@@ -42,7 +42,7 @@
  */
 
 metadata {
-    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 
         capability "Actuator"
         capability "Configuration"
