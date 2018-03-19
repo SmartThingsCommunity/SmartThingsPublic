@@ -248,8 +248,11 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-    log.debug "VersionReport"
-    def timeDate = new Date().format("yyyy MMM dd EEE HH:mm:ss", location.timeZone)
+    log.debug "BatteryReport"
+    log.debug "cmd: "+cmd
+    log.debug "location: "+location
+    def timeDate = new Date().format("yyyy MMM dd EEE HH:mm:ss")
+    //def timeDate = new Date().format("yyyy MMM dd EEE HH:mm:ss", location.timeZone)
     sendEvent(name: "batteryStatus", value: "Battery: $cmd.batteryLevel%\n($timeDate)")
 }
 
@@ -263,7 +266,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
                 map.name = "water"
                 map.value = "wet"
                 map.descriptionText = "${device.displayName} is ${map.value}"
-                state.lastAlarmDate = "\n"+new Date().format("yyyy MMM dd EEE HH:mm:ss", location.timeZone)
+                state.lastAlarmDate = "\n"+new Date().format("yyyy MMM dd EEE HH:mm:ss")
+                //state.lastAlarmDate = "\n"+new Date().format("yyyy MMM dd EEE HH:mm:ss", location.timeZone)
                 multiStatusEvent(alarmInfo + state.lastAlarmDate)
                 break
 
