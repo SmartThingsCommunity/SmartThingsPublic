@@ -123,7 +123,7 @@ private Map parseCatchAllMessage(String description) {
                 	Map descMap = zigbee.parseDescriptionAsMap(description)
 					// someone who understands Zigbee better than me should refactor this whole DTH to bring it up to date
 					if (descMap?.attrInt = 0x0002) {
-						resultMap.name: "contact"
+						resultMap.name = "contact"
 						def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 						resultMap.value = zs.isAlarm1Set() ? "open" : "closed"
 					}
