@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Lock", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Lock", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Lock"
 		capability "Polling"
@@ -138,7 +138,7 @@ def updated() {
 			if (!state.fw) {
 				cmds << zwave.versionV1.versionGet().format()
 			}
-			hubAction = response(delayBetween(cmds, 4200))
+			hubAction = response(delayBetween(cmds, 30*1000))
 		}
 	} catch (e) {
 		log.warn "updated() threw $e"

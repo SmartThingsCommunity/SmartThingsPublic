@@ -38,7 +38,7 @@
  * @return none
  */
  metadata {
-	definition (name: "Fibaro Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion") {
+	definition (name: "Fibaro Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 		capability 	"Motion Sensor"
 		capability 	"Temperature Measurement"
 		capability 	"Acceleration Sensor"

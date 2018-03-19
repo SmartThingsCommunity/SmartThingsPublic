@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 
 		capability "Three Axis"
 		capability "Battery"
@@ -127,10 +127,13 @@ def parse(String description) {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
 				maps << getBatteryResult(Integer.parseInt(descMap.value, 16))
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = translateZoneStatus(zs)
 			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 				if (descMap.data[0] == "00") {
 					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
-					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 				} else {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
@@ -329,7 +332,7 @@ List<Map> garageEvent(zValue) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def refresh() {
@@ -346,7 +349,7 @@ def refresh() {
 def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
 	def configCmds = []
