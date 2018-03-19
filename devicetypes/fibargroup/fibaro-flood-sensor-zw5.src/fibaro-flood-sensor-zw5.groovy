@@ -251,8 +251,9 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     log.debug "BatteryReport"
     log.debug "cmd: "+cmd
     log.debug "location: "+location
-    def timeDate = new Date().format("yyyy MMM dd EEE HH:mm:ss")
+    def timeDate = location.timeZone ? new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone) : new Date().format("yyyy MMM dd EEE h:mm:ss")
     //def timeDate = new Date().format("yyyy MMM dd EEE HH:mm:ss", location.timeZone)
+    sendEvent(name: "battery", value: cmd.batteryLevel)
     sendEvent(name: "batteryStatus", value: "Battery: $cmd.batteryLevel%\n($timeDate)")
 }
 
@@ -282,11 +283,13 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
         switch (cmd.event) {
             case 0:
                 map.descriptionText = "${device.displayName}: tamper alarm has been deactivated"
+                sendEvent(name: "tamper", value: "clear")
                 sendEvent(name: "batteryStatus", value: "Tamper alarm inactive")
                 break
 
             case 3:
                 map.descriptionText = "${device.displayName}: tamper alarm activated"
+                sendEvent(name: "tamper", value: "detected")
                 sendEvent(name: "batteryStatus", value: "Tamper alarm activated")
                 break
         }
@@ -492,7 +495,7 @@ private Map cmdVersions() {
 def configure() {
     state.lastAlarmDate = "-"
     def cmds = []
-
+    sendEvent(name: "water", value: "dry", displayed: "true")
     cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 21600, nodeid: zwaveHubNodeId)//FGFS' default wake up interval
     cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
     cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
