@@ -99,10 +99,17 @@ def refresh() {
     encapSequence(cmds,1000)
 }
 
+def installed() {
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def ping() {
+	  refresh()
+}
+
 //Configuration and synchronization
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     def cmds = []
     logging("Executing updated()","info")
 
@@ -113,6 +120,7 @@ def updated() {
 }
 
 def configure() {
+    sendEvent(name: "switch", value: "off", displayed: "true")
     encap(zwave.basicV1.basicSet(value: 0))
 }
 
