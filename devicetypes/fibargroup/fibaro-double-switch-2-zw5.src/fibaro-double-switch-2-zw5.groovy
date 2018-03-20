@@ -12,7 +12,7 @@ metadata {
 
         command "reset"
         command "refresh"
-        fingerprint mfr: "010F", prod: "0203"
+        fingerprint mfr: "010F", prod: "0203", model: "2000"
         fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x98,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
         fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
     }
@@ -132,6 +132,14 @@ Integer getState(String key) {
     state."$key".value
 }
 
+def installed(){
+  sendEvent(name: "checkInterval", value: 500, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def ping() {
+    refresh
+}
+
 //Configuration and synchronization
 
 def updated() {
@@ -238,12 +246,16 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 private createChildDevices() {
     logging("${device.displayName} - executing createChildDevices()","info")
-    addChildDevice(
+    try {
+        addChildDevice(
             "Fibaro Double Switch 2 - USB",
             "${device.deviceNetworkId}-2",
             null,
             [completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false, componentName: "ch2", componentLabel: "Channel 2"]
-    )
+        )
+    } catch (Exception e) {
+        logging("${device.displayName} - error attempting to create child device: "+e, "debug")
+    }
 }
 
 private physicalgraph.app.ChildDeviceWrapper getChild(Integer childNum) {
