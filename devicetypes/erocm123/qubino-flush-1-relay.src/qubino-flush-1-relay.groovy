@@ -188,16 +188,11 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
     state."association${cmd.groupingIdentifier}" = cmd.nodeId[0]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
-    logging("SensorBinaryReport: $cmd", 2)
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
     logging("NotificationReport: $cmd", 2)
     def result
-	
-	
-	if (cmd.notificationType == 2) {
+
+	if (cmd.notificationType == 3) {
     def children = childDevices
 	def childDevice = children.find{it.deviceNetworkId.endsWith("-i2")}
 		switch (cmd.event) {
@@ -468,16 +463,16 @@ def update_needed_settings()
      
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
-    
-    if(!state.association9 || state.association9 == "" || state.association9 != 1){
-       logging("Setting association group 9", 1)
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:9, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:9)
+
+    if(!state.association4 || state.association4 == "" || state.association4 != 1){
+       logging("Setting association group 4", 1)
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
     }
-    if(!state.association6 || state.association6 == "" || state.association6 != 1){
-       logging("Setting association group 6", 1)
-       cmds << zwave.associationV2.associationSet(groupingIdentifier:6, nodeId:zwaveHubNodeId)
-       cmds << zwave.associationV2.associationGet(groupingIdentifier:6)
+    if(!state.association7 || state.association7 == "" || state.association7 != 1){
+       logging("Setting association group 7", 1)
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:7, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:7)
     }
 
     configuration.Value.each
