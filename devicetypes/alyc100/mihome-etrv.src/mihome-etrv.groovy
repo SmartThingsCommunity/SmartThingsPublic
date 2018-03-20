@@ -46,6 +46,8 @@ metadata {
 		command "heatingSetpointDown"
         command "setHeatingSetpoint"
         command "setBoostLength"
+        
+        attribute "lastCheckin", "String"
 	}
 
 	simulator {
@@ -68,9 +70,9 @@ metadata {
 				]
 			}
             
-          //  tileAttribute ("lastupdatetemp", key: "SECONDARY_CONTROL") {
-		//		attributeState "default", label:'Device last seen ${currentValue}'
-        //    }
+          tileAttribute("device.lastCheckin", key: "SECONDARY_CONTROL") {
+               	attributeState("default", label:'${currentValue}')
+           	}
 		}
         
         valueTile("thermostat_small", "device.temperature", width: 2, height: 2, canChangeIcon: true) {
@@ -139,16 +141,59 @@ metadata {
         main(["thermostat_small"])
 		details(["thermostat", "heatingSetpoint", "heatSliderControl", "battery", "boost", "boostSliderControl", "switch", "refresh"])
 	}
-}
+       def rates = [:]
+	rates << ["5" : "Refresh every 5 minutes (eTRVs)"]
+	rates << ["10" : "Refresh every 10 minutes (power mon.)"]	
+	rates << ["15" : "Refresh every 15 minutes (socets)"]
+	rates << ["30" : "Refresh every 30 minutes (default)"]
 
+	preferences {
+		section(title: "Check-in Interval") {
+        paragraph "Run a Check-in procedure every so often."
+        input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
+		}
+        section(title: "Check-in Info") {
+            paragraph "Display check-in info"
+            input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "MM/dd/yyyy h:mm", "MM-dd-yyyy h:mm", "dd/MM/yyyy h:mm", "dd-MM-yyyy h:mm"], description: "Show last check-in info.", defaultValue: "dd/MM/yyyy h:mm", required: true
+        }
+	}
+}
+//	===== Update when installed or setting changed =====
 def installed() {
 	log.debug "Executing 'installed'"
     state.boostLength = 60
+    update()
+}
+
+def updated() {
+	unschedule()
+    runIn(2, update)
+}
+
+def update() {
+	switch(refreshRate) {
+		case "5":
+			runEvery5Minutes(refresh)
+			log.info "Refresh Scheduled for every 5 minutes"
+			break
+		case "10":
+			runEvery10Minutes(refresh)
+			log.info "Refresh Scheduled for every 10 minutes"
+			break
+		case "15":
+			runEvery15Minutes(refresh)
+			log.info "Refresh Scheduled for every 15 minutes"
+			break
+		default:
+			runEvery30Minutes(refresh)
+			log.info "Refresh Scheduled for every 30 minutes"
+	}
 }
 
 def uninstalled() {
     unschedule()
 }
+
 
 // parse events into attributes
 def parse(String description) {
@@ -162,7 +207,7 @@ def parse(String description) {
 
 // handle commands
 def setHeatingSetpoint(temp) {
-	//state.counter = state.counter //mc
+	state.counter = state.counter
 	log.info "Executing setHeatingSetpoint with temp $temp"
 	def latestThermostatMode = device.latestState('thermostatMode')
     
@@ -177,27 +222,24 @@ def setHeatingSetpoint(temp) {
 	log.debug "setting response ${resp.status}"
     if (resp.status != 200) {
 		log.error "Unexpected result in seting temp ${resp.status} ${resp.data}"
-// mc re-run upto 5 times
         if (state.counter == null || state.counter >= 7) {
 			state.counter = 0
 		}
-        	if (state.counter == 6) {
-            	log.error "ERROR - Tryed setting temp ${state.counter} times unsucsesfully"
-                sendEvent(name: "setHeatingSetpoint", value: state.counter <= 5 ? "shouldnt go hear" : "error setting temp ${state.counter} times please try again later")
-                state.counter = 0
+        	if (state.Counter == 6) {
+            	sendEvent(name: "switch", value: "offline", descriptionText: "error on ${state.Counter} try")
+                state.Counter = 0
                 sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
                 return []
-              }
+			}
 		state.counter = state.counter + 1
-        log.error "running set temp again No. ${state.counter.value} attempt"
-        sendEvent(name: "setHeatingSetpoint", value: state.counter >= 1 ? "error in setting temp ${state.counter} try" : "dont go hear")
+        sendEvent(name: "switch", value: "$temp" , descriptionText: "error on ${state.OnCounter} try")
+        log.warn "runnting set temp ${state.OnCounter} attempt"
         runIn(11, setHeatingSetpoint(temp))
-		}
-
+	}
    	else {
     	state.counter = 0
         log.info "setting temp all good"
-        runIn(01, refresh)
+       	sendEvent(name: "heatingSetpoint", value: resp.data.data.target_temperature, unit: "C", state: "heat")
     } 
 }
 
@@ -219,7 +261,8 @@ def setBoostLength(minutes) {
 		setThermostatMode('emergency heat')
     }
     else {
-    	refresh()
+    	log.debug "done setBoostLength  ${minutes} minutes"
+        //refresh()
     }    
 }
 
@@ -311,11 +354,12 @@ def setThermostatMode(mode) {
 		runIn(02, setThermostatMode(mode), [overwrite: true])
         }
    	 	else {
-    		refresh()
+    		log.info "All good boosting to 21- ${resp.status}"
     	}  
         //Schedule boost switch off
         schedule(now() + (state.boostLength * 60000), stopBoost)
-    } else {
+    } 
+    else {
     	unschedule(stopBoost)
         sendEvent(name: "boostSwitch", value: "off", displayed: false)
     	def lastHeatingSetPoint = 21
@@ -329,7 +373,7 @@ def setThermostatMode(mode) {
 }
 
 def poll() {
-    log.debug "Executing poll for ${device} ${this} ${device.deviceNetworkId}"
+    //log.debug "Executing poll for ${device} ${this} ${device.deviceNetworkId}"
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
     if (resp.status != 200) {
 		log.error "Unexpected result in poll ${resp.status} ${resp.data}"
@@ -360,8 +404,19 @@ def poll() {
     sendEvent(name: "switch", value: resp.data.data.target_temperature == 12 ? "off" : "on")
     sendEvent(name: "batteryVoltage", value: resp.data.data.voltage == null ? "Not Available" : resp.data.data.voltage)
     sendEvent(name: "boostLabel", value: boostLabel, displayed: false)
-    //return []
+    def lastRefreshed = state.lastRefreshed
+    state.lastRefreshed = now()
+    def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
+    def now = ''
+    if (checkinInfoFormat != 'Hide') {
+        try {
+            now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}a", location.timeZone)
+        } catch (all) { }
+    }
+    sendEvent(name: "lastCheckin", value: now, displayed: false)
 }
+
+
 
 def refresh() {
 	log.info "Executing refresh"
