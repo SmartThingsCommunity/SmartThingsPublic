@@ -204,21 +204,18 @@ def installed() {
 	log.debug "installed"
 	initialize()
 	// Check for new devices and remove old ones every 3 hours
-	runEvery3Hours(updateDevices, [overwrite: true])
-    // execute refresh method every minute
-    runEvery1Minute(refreshDevices, [overwrite: true])
-    //schedule("22 0/2 * * * ?", refreshDevices)
-}
+	runEvery3Hours(updateDevices)
+    runEvery5Minutes(refreshDevices)
+    }
 
 // called after settings are changed
 def updated() {
-	log.debug "updated"
+	unschedule()
+    log.debug "updated"
 	initialize()
-    unschedule()
     runEvery3Hours(updateDevices, [overwrite: true])
-    //schedule("22 0/2 * * * ?", refreshDevices)
-    runEvery1Minute(refreshDevices, [overwrite: true])
-}
+    runEvery5Minutes(refreshDevices, [overwrite: true])
+   }
 
 def uninstalled() {
 	log.info("Uninstalling, removing child devices...")
@@ -234,7 +231,11 @@ private removeChildDevices(devices) {
 
 // called after Done is hit after selecting a Location
 def initialize() {
-	log.debug "initialize"
+	//state.counter = state.counter
+    //state.OnCounter = state.OnCounter
+    //state.offCounter = state.offCounter
+    atomicState.refreshCounter = 0
+    log.debug "initialize"
 	if (selectedETRVs) {
 		addETRV()
 	}
@@ -627,23 +628,25 @@ def addMotion() {
 }
 
 def refreshDevices() {
-	log.info("SmartApp Executing refresh Devices...")
-    if (atomicState.refreshCounter == null || atomicState.refreshCounter >= 5) {
+	log.info "SmartApp Executing refresh Devices"
+    if (atomicState.refreshCounter == null || atomicState.refreshCounter >= 2) {
     	atomicState.refreshCounter = 0
     } else {
     	atomicState.refreshCounter = atomicState.refreshCounter + 1
     }
-	getChildDevices().each { device ->
-    	if (atomicState.refreshCounter == 5) {
-        	log.info("SmartApp Refreshing device ${device.name} ...")
+	log.debug "counter ${atomicState.refreshCounter}"
+    getChildDevices().each { device ->
+    	   	if (atomicState.refreshCounter == 2) {
+        	log.debug "SmartApp Refreshing device ${device.name}"
             try {
     			device.refresh()
         	} catch (e) {
         		//WORKAROUND - Catch unexplained exception when refreshing devices.
-        		logResponse(e.response)
+        		log.error("something went wroung ", e)
         	}
         } else if (device.name.contains("eTRV") || device.name.contains("Monitor") || device.name.contains("Motion Sensor") || device.name.contains("Adapter Plus")) {
-        	log.info("HF Refreshing device ${device.name} ...")
+        	//log.debug "counter ${atomicState.refreshCounter}"
+            log.debug "HF Refreshing device ${device.name}" 
 			device.refresh()
         }
 	}
