@@ -137,7 +137,7 @@ def installed(){
 }
 
 def ping() {
-    refresh
+    refresh()
 }
 
 //Configuration and synchronization
