@@ -205,17 +205,19 @@ def installed() {
 	initialize()
 	// Check for new devices and remove old ones every 3 hours
 	runEvery3Hours(updateDevices)
-    runEvery5Minutes(refreshDevices)
+    //runEvery5Minutes(refreshDevices)
     }
 
 // called after settings are changed
 def updated() {
-	unschedule()
+	unschedule(updateDevices)
+    unschedule(refreshDevices)
+    unschedule()
     log.debug "updated"
 	initialize()
-    runEvery3Hours(updateDevices, [overwrite: true])
-    runEvery5Minutes(refreshDevices, [overwrite: true])
-   }
+    runEvery3Hours(updateDevices)
+    log.info "Refresh Scheduled for every 3 Hours"
+}
 
 def uninstalled() {
 	log.info("Uninstalling, removing child devices...")
@@ -231,11 +233,7 @@ private removeChildDevices(devices) {
 
 // called after Done is hit after selecting a Location
 def initialize() {
-	//state.counter = state.counter
-    //state.OnCounter = state.OnCounter
-    //state.offCounter = state.offCounter
-    atomicState.refreshCounter = 0
-    log.debug "initialize"
+	log.debug "initialize"
 	if (selectedETRVs) {
 		addETRV()
 	}
@@ -628,37 +626,21 @@ def addMotion() {
 }
 
 def refreshDevices() {
-	log.info "SmartApp Executing refresh Devices"
-    if (atomicState.refreshCounter == null || atomicState.refreshCounter >= 2) {
-    	atomicState.refreshCounter = 0
-    } else {
-    	atomicState.refreshCounter = atomicState.refreshCounter + 1
-    }
-	log.debug "counter ${atomicState.refreshCounter}"
-    getChildDevices().each { device ->
-    	   	if (atomicState.refreshCounter == 2) {
-        	log.debug "SmartApp Refreshing device ${device.name}"
-            try {
-    			device.refresh()
-        	} catch (e) {
-        		//WORKAROUND - Catch unexplained exception when refreshing devices.
-        		log.error("something went wroung ", e)
-        	}
-        } else if (device.name.contains("eTRV") || device.name.contains("Monitor") || device.name.contains("Motion Sensor") || device.name.contains("Adapter Plus")) {
-        	//log.debug "counter ${atomicState.refreshCounter}"
-            log.debug "HF Refreshing device ${device.name}" 
-			device.refresh()
-        }
-	}
+	log.error "nothing happening"
+	//getChildDevices().each { device ->
+    //	   	if (device.name.contains("eTRV") || device.name.contains("Monitor") || device.name.contains("Motion Sensor") || device.name.contains("Adapter Plus")) {
+	//			log.debug "HF Refreshing device ${device.name}"
+    //          device.refresh()
+    //  	}
 }
 
 def devicesList() {
 	logErrors([]) {
 		def resp = apiGET("/subdevices/list")
 		if (resp.status == 200) {
-        	
 			return resp.data.data
-		} else {
+		} 
+        else {
 			log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
 			return []
 		}
@@ -714,8 +696,10 @@ Map apiRequestHeaders() {
 }
 
 def logResponse(response) {
-	log.info("Status: ${response.status}")
-	//log.info("Body: ${response.data}")
+	if (response.status != 200) {
+    	log.error "Status: ${response.status}"
+    }
+    log.info "All good: ${response.status}"
 }
 
 def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
