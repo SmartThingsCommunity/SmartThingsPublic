@@ -96,8 +96,8 @@ def scheduleWithOffset(nextSunriseSunsetTime, offset, offsetDir, handlerName) {
     def nextSunriseSunsetTimeDate = Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", nextSunriseSunsetTime)
     def offsetTime = new Date(nextSunriseSunsetTimeDate.time + getOffset(offset, offsetDir))
 
-    log.debug "scheduling $handlerName for $offsetTime"
-    runOnce(offsetTime, handlerName)
+    log.debug "scheduling Sunrise/Sunset for $offsetTime"
+    runOnce(offsetTime, handlerName, [overwrite: false])
 }
 
 def sunriseHandler() {
