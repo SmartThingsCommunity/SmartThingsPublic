@@ -46,6 +46,11 @@ metadata {
         valueTile("reset", "device.energy", decoration: "flat", width: 2, height: 2) {
             state "reset", label:'reset\nkWh', action:"reset"
         }
+
+        valueTile("scene", "device.scene", decoration: "flat", width: 2, height: 2) {
+             state "default", label:'Scene: ${currentValue}'
+        }
+
         standardTile("errorMode", "device.errorMode", decoration: "flat", width: 2, height: 2) {
             state "default", label:'No errors.', action:"clearError", icon: "st.secondary.tools", backgroundColor: "#ffffff"
             state "overheat", label:'Overheat!', action:"clearError", icon: "st.secondary.tools", backgroundColor: "#ff0000"
@@ -125,9 +130,16 @@ def clearError() {
     sendEvent(name: "errorMode", value: "clear")
 }
 
+def ping(){
+    refresh()
+}
+
+def installed(){
+  sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     def cmds = []
     logging("${device.displayName} - Executing updated()","info")
 
@@ -262,6 +274,16 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
     }
     multiStatusEvent("${(device.currentValue("power") ?: "0.0")} W | ${(device.currentValue("energy") ?: "0.00")} kWh")
 }
+
+def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
+    logging("zwaveEvent(): Scene Activation Set received: ${cmd}","trace")
+    def result = []
+    result << createEvent(name: "scene", value: "$cmd.sceneId", data: [switchType: "$settings.param20"], descriptionText: "Scene id ${cmd.sceneId} was activated", isStateChange: true)
+    logging("Scene #${cmd.sceneId} was activated.","info")
+
+    return result
+}
+
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
     logging("${device.displayName} - CentralSceneNotification received, sceneNumber: ${cmd.sceneNumber} keyAttributes: ${cmd.keyAttributes}","info")
