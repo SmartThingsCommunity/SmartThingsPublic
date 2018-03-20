@@ -24,8 +24,8 @@
  */
 metadata {
 	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
-		capability "Actuator"
-		capability "Polling"
+		//capability "Actuator"
+		//capability "Polling"
 		capability "Refresh"
 		capability "Switch"
         
@@ -36,58 +36,63 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"rich-control", type:"lighting", width:6, height:4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"on"
-                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"off"
-                 attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
-                 attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+                 attributeState "on", label:'${name}', action:"off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "off", label:'${name}', action:"on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+                 attributeState "turningOn", label:'${name}', icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+                 attributeState "turningOff", label:'${name}', icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
                  attributeState "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
  			}
         }
         
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-            state "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"off"
-            state "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"on"
-            state "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
-            state "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
+        	state "on", label:'${name}', action:"off", icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+            state "off", label:'${name}', action:"on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+            state "turningOn", label:'${name}', icon:"st.Home.home30", backgroundColor:"#79b821", nextState:"turningOff"
+        	state "turningOff", label:'${name}', icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
+          	state "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
         }
 
         standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
-            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+            state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
         }
         
-        standardTile("onButton", "device.onButton", inactiveLabel: false, width: 2, height: 2) {
+        standardTile("onButton", "device.switch", inactiveLabel: false, width: 2, height: 2) {
 			state("default", label:'On', action:"on")
         }
-        
-        standardTile("offButton", "device.offButton", inactiveLabel: false, width: 2, height: 2) {
+     
+        standardTile("offButton", "device.switch", inactiveLabel: false, width: 2, height: 2) {
 			state("default", label:'Off', action:"off")
         }
         
-        main(["switch"])
+        main("switch")
         details(["rich-control", "onButton", "offButton", "refresh"])
 	}
 }
 
 // parse events into attributes
 def parse(String description) {
-	log.debug "Parsing '${description}'"
+	log.debug "Parsing ${description}"
 	// TODO: handle 'switch' attribute
+}
 
+def initialize() {
+    state.OnCounter = 0
+    state.offCounter = 0
 }
 
 // handle commands
 def poll() {
-	log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
+	log.debug "Executing poll for ${device} ${this} ${device.deviceNetworkId}"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
     	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
-    } else {
-    	body = [id: device.deviceNetworkId.toInteger()]
     }
+    //else {
+    	body = [id: device.deviceNetworkId.toInteger()]
+    //}
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
-	if (resp.status != 200) {
-		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
+    if (resp.status != 200) {
+		log.error "Unexpected result in poll ${resp.status} ${resp.data}"
         //sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
 		return []
 	}
@@ -95,16 +100,18 @@ def poll() {
     if (power_state != null) {
     	sendEvent(name: "switch", value: power_state == 0 ? "off" : "on")
     }
+	log.info "POLL All good ${resp.status} ${device}"
 }
 
+
 def refresh() {
-	log.debug "Executing adapter'refresh'"
-	poll()
+	log.info "Executing adapter refresh"
+	runIn(03, poll)
 }
 
 def on() {
-	state.counter = state.counter //mc
-	log.debug "Executing 'on'"
+	state.OnCounter = state.OnCounter
+	log.info "Executing on"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
     	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
@@ -113,32 +120,33 @@ def on() {
     }
     def resp = parent.apiGET("/subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
-		log.error("Unexpected result in on poll(): [${resp.status}] ${resp.data}")
+    	//state.OnCounter = 0
+		log.error "Unexpected result in on poll ${resp.status} ${resp.data}"
   // mc re-run upto 5 times
-        if (state.counter == null || state.counter >= 7) {
-			state.counter = 0
+        if (state.OnCounter == null || state.OnCounter >= 7) {
+			state.OnCounter = 0
 		}
-        	if (state.counter == 6) {
-            	sendEvent(name: "switch", value: state.counter < 6 ? "shouldnt go hear" : "error on '${state.counter}' times please try again later")
-                state.counter = 0
+        	if (state.OnCounter == 6) {
+            	sendEvent(name: "switch", value: state.OnCounter <= 5 ? "shouldnt go hear" : "error on ${state.OnCounter} times please try again later")
+                state.OnCounter = 0
+                sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
                 return []
                }
-		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: state.counter > 1 ? "error on '${state.counter}' re-try" : "dont go hear")
-        log.error ("runnting on again ${state.counter.value} attempt")
-        runIn (7, on)
+		state.OnCounter = state.OnCounter + 1
+        sendEvent(name: "switch", value: state.OnCounter >= 1 ? "error on ${state.OnCounter} try" : "dont go hear")
+        log.warn "runnting on again ${state.OnCounter} attempt"
+        runIn(013, on)
 		}
-
    	else {
-    	state.counter = 0
-       // log.debug ("counter value ${state.counter.value}")
-        refresh()
+    	state.OnCounter = 0
+        log.info "ON All good ${resp.status}"
+        runIn(01, refresh)
     } 
 }
 
 def off() {
-	state.counter = state.counter //mc
-	log.debug "Executing 'off'"
+	state.Offcounter = state.Offcounter
+	log.info "Executing off"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
     	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
@@ -147,29 +155,32 @@ def off() {
     }
     def resp = parent.apiGET("/subdevices/power_off?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
-		log.error("Unexpected result in off poll(): [${resp.status}] ${resp.data}")
+    	log.error "Unexpected result in off poll ${resp.status} ${resp.data}"
         // mc re-run upto 5 times
-        if (state.counter == null || state.counter >= 7) {
-			state.counter = 0
+        if (state.Offcounter == null || state.Offcounter >= 7) {
+			state.Offcounter = 0
 		}
-        	if (state.counter == 6) {
-            	sendEvent(name: "switch", value: state.counter < 6 ? "shouldnt go hear" : "error off '${state.counter}' times please try again later")
-                state.counter = 0
+        	if (state.Offcounter == 6) {
+            	sendEvent(name: "switch", value: state.Offcounter <= 5 ? "shouldnt go hear" : "error off ${state.Offcounter} times please try again later")
+                state.Offcounter = 0
+                sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
                 return []
                }
-		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: state.counter > 1 ? "error off '${state.counter}' re-try" : "dont go hear")
-        log.error ("running off again ${state.counter.value} attempt")
-		runIn (9, off)
+		state.Offcounter = state.Offcounter + 1
+        sendEvent(name: "switch", value: state.Offcounter >= 1 ? "error off ${state.Offcounter} try" : "dont go hear")
+        log.warn "running off again ${state.Offcounter} attempt"
+		runIn(07, off)
 		}
-
    	else {
-    	state.counter = 0
-        //log.debug ("counter value ${state.counter.value}")
-        refresh()
+    	state.Offcounter = 0
+        log.debug "OFF All good ${resp.status}"
+        runIn(01, refresh)
     }
 }
 
+def uninstalled() {
+    unschedule()
+}
 
 
 
