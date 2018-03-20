@@ -30,7 +30,6 @@ metadata {
 		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor"  // Everspring HSP02
 		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor"  // Enerwave ZWN-BPC
 		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Portable Smart Motion Sensor"
-		fingerprint mfr: "014F", prod: "2002", model: "0203", deviceJoinName: "Linear PIR Motion Sensor"
 	}
 
 	simulator {

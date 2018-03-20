@@ -33,6 +33,7 @@ metadata {
 		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x98, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x80, 0x71, 0x31, 0x70, 0x84, 0x7A"
 		fingerprint type:"8C07", inClusters: "5E,98,86,72,5A,31,71"
 		fingerprint mfr:"0109", prod:"2002", model:"0205"  // not using deviceJoinName because it's sold under different brand names
+		fingerprint mfr: "014F", prod: "2002", model: "0203", deviceJoinName: "Linear PIR Motion Sensor"
 	}
 
 	tiles(scale: 2) {
@@ -74,7 +75,7 @@ def configure() {
 	log.debug "configure()"
 	def cmds = []
 
-	if (state.sec != 1) {
+	if (!isSecured()) {
 		// secure inclusion may not be complete yet
 		cmds << "delay 1000"
 	}
@@ -317,7 +318,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	if (state.sec == 0) {  // default to secure
+	if (!isSecured()) {  // default to secure
 		cmd.format()
 	} else {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
@@ -326,4 +327,12 @@ private secure(physicalgraph.zwave.Command cmd) {
 
 private secureSequence(commands, delay=200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
+}
+
+private isSecured() {
+	if (zwaveInfo && zwaveInfo.zw) {
+		return zwaveInfo.zw.endsWith("s")
+	} else {
+		return state.sec == 1
+	}
 }
