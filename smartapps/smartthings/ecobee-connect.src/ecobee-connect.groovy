@@ -77,7 +77,7 @@ def authPage() {
 			}
 		}
 	} else {
-    	state.ecobeeDeviceList = [:]
+    	atomicState.ecobeeDeviceList = [:]
 		def stats = getEcobeeThermostats()
         def sensors = sensorsDiscovered() ?: []
         def switches = switchesDiscovered() ?: []
@@ -307,7 +307,7 @@ def getEcobeeThermostats() {
 					atomicState.remoteSensors = atomicState.remoteSensors == null ? stat.remoteSensors : atomicState.remoteSensors <<  stat.remoteSensors
 					def dni = [app.id, stat.identifier].join('.')
 					stats[dni] = getThermostatDisplayName(stat)
-                    state.ecobeeDeviceList[dni] = [ "deviceType": "thermostat", "name": getThermostatDisplayName(stat) ]                    
+                    atomicState.ecobeeDeviceList[dni] = [ "deviceType": "thermostat", "name": getThermostatDisplayName(stat) ]                    
                     //log.warn "remote sensors: ${stat.remoteSensors}"
 				}
 			} else {
@@ -354,18 +354,18 @@ Map switchesDiscovered() {
     }
 	
     if ( switches ) {
-    	state.switchList= [:]
+    	atomicState.switchList= [:]
     	switches.each {
         	if ( it.type == "LIGHT_SWITCH" ) {
-            	state.switchList[it?.identifier] = it
+            	atomicState.switchList[it?.identifier] = it
 				def value = "${it?.name}"
 				def key = it?.identifier
 				map["${key}"] = value  
-                state.ecobeeDeviceList["${key}"] = [ "deviceType": "switch", "name": value ]
+                atomicState.ecobeeDeviceList["${key}"] = [ "deviceType": "switch", "name": value ]
             }
         }
     }
-    //log.debug "state.switchList: ${state.switchList}"
+    //log.debug "atomicState.switchList: ${atomicState.switchList}"
 	atomicState.switches = map
 	return map
 }
@@ -379,7 +379,7 @@ Map sensorsDiscovered() {
 				def value = "${it?.name}"
 				def key = "ecobee_sensor-"+ it?.id + "-" + it?.code
 				map["${key}"] = value
-                state.ecobeeDeviceList["${key}"] = [ "deviceType": "sensor", "name": value ]
+                atomicState.ecobeeDeviceList["${key}"] = [ "deviceType": "sensor", "name": value ]
 			}
 		}
 	}
@@ -441,7 +441,7 @@ def initialize() {
     selectedDevices.each() { dni ->		//'selectedDevices' comes from the user selection and is global
     	def existingDevice = getChildDevice(dni)
         if( !existingDevice ) {
-        	def newDevice = state.ecobeeDeviceList[dni]
+        	def newDevice = atomicState.ecobeeDeviceList[dni]
             //def deviceType = newDevice.deviceType
         	def d = addChildDevice(app.namespace, getDeviceFileName(newDevice.deviceType), dni, null, ["label":"${newDevice.name}"])
             log.debug "[SM] initialize() - Created ${d.displayName} with dni: ${d.deviceNetworkId}"
@@ -545,7 +545,7 @@ def pollChild() {
 					log.debug "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
 					child.generateEvent(tData.data) //parse received message from parent
 				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
-                	if ( state.switchList.find { it.key == child.device.deviceNetworkId } ) { //is a smartswitch
+                	if ( atomicState.switchList.find { it.key == child.device.deviceNetworkId } ) { //is a smartswitch
                     	return
                     }
 					log.error "[SM] pollChild() ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
@@ -583,9 +583,9 @@ void controlSwitch( dni, desiredState ) {
     } catch (groovyx.net.http.HttpResponseException e) {
 		//log.warn "Code=${e.getStatusCode()}"
         if (e.getStatusCode() == 401) {
-        	if ( state.tokenRefreshTries < 2 ) {
+        	if ( atomicState.tokenRefreshTries < 2 ) {
             	log.debug "Refreshing your auth_token!"
-                state.tokenRefreshTries++
+                atomicState.tokenRefreshTries++
                 atomicState.action = "pollChildren"
             	refreshAuthToken()
                 controlSwitch( dni, desiredState )
@@ -597,7 +597,7 @@ void controlSwitch( dni, desiredState ) {
         	log.debug "Ecobee response to switch control = 'Success' for ${d.device.displayName}"
             def switchState = desiredState == true ? "on" : "off"
             d.sendEvent(name:"switch", value: switchState)
-            state.tokenRefreshTries = 0
+            atomicState.tokenRefreshTries = 0
         } else if ( e.getStatusCode() != 401 ) {
     		log.error "Exception from device control response: " + e.getCause()       
         	log.error "Exception from device control getMessage: " + e.getMessage()        
@@ -609,7 +609,7 @@ void controlSwitch( dni, desiredState ) {
 def pollSwitches() {
 	log.trace "[SM] Executing 'pollSwitches()'"
 	switchesDiscovered()
-	def switches = state.switchList
+	def switches = atomicState.switchList
     switches.each() {
     	def childSwitch = getChildDevice(it.key)
         def switchInfo = it.value
@@ -672,7 +672,8 @@ def updateSensorData() {
 				it.capability.each {
 					if (it.type == "temperature") {
 						if (it.value == "unknown") {
-							temperature = "--"
+							// setting to 0 as "--" is not a valid number depite 0 being a valid value
+							temperature = 0
 						} else {
 							if (location.temperatureScale == "F") {
 								temperature = Math.round(it.value.toDouble() / 10)
@@ -692,7 +693,7 @@ def updateSensorData() {
 				def dni = "ecobee_sensor-"+ it?.id + "-" + it?.code
 				def d = getChildDevice(dni)
 				if(d) {
-					d.sendEvent(name:"temperature", value: temperature)
+					d.sendEvent(name:"temperature", value: temperature, unit: location.temperatureScale)
 					d.sendEvent(name:"motion", value: occupancy)
 				}
 			}
