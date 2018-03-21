@@ -21,8 +21,8 @@ metadata {
     tiles (scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 3, height: 4){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "off", label: '', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff", nextState:"turningOn"
-                attributeState "on", label: '', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc", nextState:"turningOff"
+                attributeState "off", label: '${name}', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff", nextState:"turningOn"
+                attributeState "on", label: '${name}', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc", nextState:"turningOff"
             }
             tileAttribute("device.multiStatus", key:"SECONDARY_CONTROL") {
                 attributeState("multiStatus", label:'${currentValue}')
@@ -37,11 +37,13 @@ metadata {
         valueTile("reset", "device.energy", decoration: "flat", width: 2, height: 2) {
             state "reset", label:'reset\nkWh', action:"reset"
         }
-        standardTile("main", "device.switch", decoration: "flat", canChangeIcon: true) {
-            state "off", label: 'off', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
-            state "on", label: 'on', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc"
-        }
-        main "main"
+
+        //standardTile("main", "device.switch", decoration: "flat", canChangeIcon: true) {
+            //state "off", label: 'off', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
+            //state "on", label: 'on', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc"
+        //}
+
+        main(["switch","power","energy"])
         details(["switch","power","energy","reset"])
     }
 
@@ -116,6 +118,16 @@ def refresh() {
     cmds << zwave.meterV3.meterGet(scale: 0)
     cmds << zwave.meterV3.meterGet(scale: 2)
     encapSequence(cmds,1000)
+}
+
+def ping() {
+    log.debug "ping()"
+    refresh()
+}
+
+def installed(){
+    log.debug "installed()"
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 //Configuration and synchronization
