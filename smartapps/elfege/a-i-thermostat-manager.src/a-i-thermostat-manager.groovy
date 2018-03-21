@@ -2999,7 +2999,7 @@ def BedSensorStatus(){
         // get the size of events within false alarm threshold
 
         log.debug """
-        ContactsEventsSize = ${ContactsEventsSize} 
+        ContactsEventsSize = ${BedSensorEvtSize()} 
         bedsensor state.attempt = $state.attempt"""  
 
 
@@ -3027,11 +3027,11 @@ def BedSensorStatus(){
                 send("false alarm state.attempt = $state.attempt")
             }
         }
-        if(BedSensorEvtSize() > 1){
+        /*if(BedSensorEvtSize() > 1){
             ConsideredOpen = false // reconfirm status because someone is still on the bed but moving around
             state.attempt = 0      
-            //log.debug "state.attempt reset to 0"
-        }
+            log.debug "someone's moving on the bed"
+        }*/
     }
     log.debug "ConsideredOpen = $ConsideredOpen"
     return ConsideredOpen
