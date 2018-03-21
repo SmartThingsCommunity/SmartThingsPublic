@@ -858,6 +858,8 @@ def updated() {
     state.LastTimeMessageSent = now() as Long // for causes of !OkToOpen message
     state.CriticalMessageSent = [false, false, false]
 
+    state.attempt = 0 // bed sensor attempts before declaring open as true
+
     log.info "updated with settings = $settings"
 
 
@@ -2092,20 +2094,20 @@ Math.log(256) / Math.log(2)
                 /////////////////////////// HEAT MAXIMA MINIMA ///////////////////////
                 if(HSPSet > MaxLinearHeat){
                     HSPSet = MaxLinearHeat
-                    def message = "$ThermSet heating set point is too high, brought back to your prefered Maximum: ${MaxLinearHeat}F"
+                    def message = "$ThermSet heating set point is too high, brought back to your prefered Maximum: ${MaxLinearHeat}F | sendalert = $state.sendalert"
                     log.info message
-                    if(state.sendalert != 1){
-                        send(message)
-                        state.sendalert = 1
+                    if(state.sendalert == 0){
+                        state.sendalert = state.sendalert + 1
+                        send(message)         
                     }
                 }
                 else if(HSPSet < MinLinearHeat){
                     HSPSet = MinLinearHeat
-                    def message = "$ThermSet heating set point is too low, brought back to your prefered Minimum: ${MinLinearHeat}F"
+                    def message = "$ThermSet heating set point is too low, brought back to your prefered Minimum: ${MinLinearHeat}F | sendalert = $state.sendalert"
                     log.info message
-                    if(state.sendalert != 1){
-                        send(message)
-                        state.sendalert = 1
+                    if(state.sendalert == 0){
+                        state.sendalert = state.sendalert + 1
+                        send(message)     
                     }
                 }
 
@@ -2775,8 +2777,6 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
 }
 def contactHandlerClosed(evt) {
 
-    state.attempts = 0 // for future reset of thisiswindowsmgt()
-
     def message = ""
 
     //log.debug "$evt.device is $evt.value" 
@@ -2809,8 +2809,6 @@ def contactHandlerClosed(evt) {
 } 
 def contactHandlerOpen(evt) {
     //log.debug "$evt.device is now $evt.value, Turning off all thermostats in $TimeBeforeClosing seconds"
-
-    state.attempts = 0 // reset of thisiswindowsmgt()
 
     runIn(TimeBeforeClosing, TurnOffThermostats)  
     def message = ""
@@ -2985,8 +2983,8 @@ def BedSensorStatus(){
     boolean ConsideredOpen = true // IF NO BED SENSOR ALWAYS CONSIDERED OPEN
 
     // such sensors can return unstable values (open/close/open/close)
-    // when it is under a certain weight, values will be consistently closed
-    // so when unstable it means that there's no more substantial weight on it
+    // when it is under a certain weight, values will tend be consistently closed
+    // so when unstable it mostly means that there's no more substantial weight on it
     // so what we want to do here is consider it as open every time it's unstable
     // and closed when stable (only 1 event within the false alarm time frame)
 
@@ -3000,7 +2998,9 @@ def BedSensorStatus(){
         log.debug "Open SIZE = ${Open.size()}, isOpen = $isOpen"
         // get the size of events within false alarm threshold
 
-        log.debug "ContactsEventsSize = ${ContactsEventsSize} "  
+        log.debug """
+        ContactsEventsSize = ${ContactsEventsSize} 
+        bedsensor state.attempt = $state.attempt"""  
 
 
         // if 1 event within time threshold then proceed or closed  
@@ -3008,14 +3008,29 @@ def BedSensorStatus(){
             // if last status is closed while there has been only 1 event or less,
             // then it's a prolonged closed status (someone is sitting or lying down here)
             ConsideredOpen = false
+            state.attempt = 0
             log.debug "Only one OPEN event within the last $minutes minutes: $BedSensor is now considered closed"
         }
-        else if(isOpen && BedSensorEvtSize() == 0) { 
+        else if(isOpen && BedSensorEvtSize() == 0 && state.attempt < 3) { 
+
             /// this means thermostat won't go back to normal settings before an excess of time superior to thershold. 
-            ConsideredOpen = true // has been declared as open for longer than the time threshold, so now considered open
+            // But not the first time so it doesn't declare true while the sensor is returning several 1/0 events after a while with 0 event
+            // without this limitation then it would declare true while someone started moving around on top of the bed 
+            // without actualy leaving it. 
+            state.attempt = state.attempt + 1 // state.attempt will return 1 only after this loop is done so it'll need 2 attempts
+            
+            if(state.attempt > 1){ 
+                ConsideredOpen = true // sensor returned open for longer than the time threshold and for more than two times in a row, so now considered open
+            }
+            else {
+                log.debug "false alarm"
+                send("false alarm state.attempt = $state.attempt")
+            }
         }
         if(BedSensorEvtSize() > 1){
             ConsideredOpen = false // reconfirm status because someone is still on the bed but moving around
+            state.attempt = 0      
+            //log.debug "state.attempt reset to 0"
         }
     }
     log.debug "ConsideredOpen = $ConsideredOpen"
