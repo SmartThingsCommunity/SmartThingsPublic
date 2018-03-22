@@ -284,7 +284,7 @@ def Virtual_Thermostats() {
     def pageProperties = [
         name:       "Virtual_Thermostats",
         title:      "Virtual Thermostats",
-        nextPage:   "AI",
+        nextPage:   "pageSetup",
         install: false,
         uninstall: true
     ]
@@ -296,9 +296,7 @@ def Virtual_Thermostats() {
 
                 input(name: "AddMoreVirT_A", type: "bool", title: "add a Virtual Thermostat", default: false, submitOnChange: true)
                 if(AddMoreVirT_A){
-
-
-                    input(name: "VirThermSwitch_1", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
+					input(name: "VirThermSwitch_1", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
                     input(name: "coolOrHeat", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], defaultValue: "heating")
                     input(name: "OtherSetP", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
                     if(OtherSetP){
@@ -313,8 +311,8 @@ def Virtual_Thermostats() {
                         input(name: "VirThermTherm_1", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
                     }
                     input(name: "AltSensorVirTherm", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
-                    if(AltSensorVirTherm){
-                        input(name: "VirThermSensor", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
+                    if(AltSensorVirTherm  || OtherSetP){
+                        input(name: "VirThermSensor", type: "capability.temperatureMeasurement", title: "Select a temperature sensor", multiple: false, required: true)
                     }
                     input(name: "VirThermModes", type: "mode", title: "Run only in these modes", multiple: true, required: false)
 
@@ -337,8 +335,8 @@ def Virtual_Thermostats() {
                             input(name: "VirThermTherm_2", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
                         }
                         input(name: "AltSensorVirTherm_2", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
-                        if(AltSensorVirTherm_2){
-                            input(name: "VirThermSensor_2", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
+                        if(AltSensorVirTherm_2 || OtherSetP_2){
+                            input(name: "VirThermSensor_2", type: "capability.temperatureMeasurement", title: "Select a temperature sensor", multiple: false, required: true)
                         }
                         input(name: "VirThermModes_2", type: "mode", title: "Run only in these modes", multiple: true, required: false)
 
@@ -362,8 +360,8 @@ def Virtual_Thermostats() {
                             input(name: "VirThermTherm_3", type: "capability.thermostat", title: "Select the thermostat used as set point reference", multiple: false, required: true)
                         }
                         input(name: "AltSensorVirTherm_3", type: "bool", title: "Read temperature from a third party sensor", required: false, default: false, submitOnChange: true)
-                        if(AltSensorVirTherm_3){
-                            input(name: "VirThermSensor_3", type: "capability.temperatureMeasurement", title: "Select a sensor", multiple: false, required: true)
+                        if(AltSensorVirTherm_3 || OtherSetP_3){
+                            input(name: "VirThermSensor_3", type: "capability.temperatureMeasurement", title: "Select a temperature sensor", multiple: false, required: true)
                         }
                         input(name: "VirThermModes_3", type: "mode", title: "Run only in these modes", multiple: true, required: false)
 
@@ -545,6 +543,7 @@ Do you wish to bind it to the same rule and have it controled exclusively with $
                     input "ControlWithBedSensor", "bool", title: "Keep $ContactAndSwitch on when $BedSensor is closed", default: false
                 }
                 input "falseAlarmThreshold", "decimal", title: "False alarm threshold", required: false, description: "Number of minutes (default is 2 min)"
+                paragraph "This time threshold is required for reliability of this feature. Any setting inferior to default minimum will result in applying default value"
 
             }
         }
@@ -2304,7 +2303,6 @@ CSPSetBedSensor = $CSPSetBedSensor
 HSPSetBedSensor = $HSPSetBedSensor
 CSPok = $CSPok
 HSPok = $HSPok
-ContactAndSwitchState.size() = $ContactAndSwitchState.size()
 """
                     }
 
@@ -2966,9 +2964,9 @@ def BedSensorEvtSize() {
 private findFalseAlarmThreshold() {
     // In Groovy, the return statement is implied, and not required.
     // We check to see if the variable we set in the preferences
-    // is defined and non-empty, and if it is, return it.  Otherwise,
-    // return our default value of 2
-    (falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold : 2
+    // is defined and non-empty and superior to 2, and if it is, return it. 
+    //  Otherwise, return our default value of 2
+    (falseAlarmThreshold > 2 && falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold : 2
 }
 def dNchForAWhileRESET(){
     state.doNotChangeForAWhile = false
@@ -2990,6 +2988,7 @@ def BedSensorStatus(){
 
     if(BedSensor){
         // find if any device within the list of [BedSensor] is open
+
         def CurrentContacts = BedSensor.currentValue("contact")
         def Open = CurrentContacts.findAll { val ->
             val == "open" ? true : false}
@@ -2998,40 +2997,31 @@ def BedSensorStatus(){
         log.debug "Open SIZE = ${Open.size()}, isOpen = $isOpen"
         // get the size of events within false alarm threshold
 
-        log.debug """
-        ContactsEventsSize = ${BedSensorEvtSize()} 
-        bedsensor state.attempt = $state.attempt"""  
+        def evts = BedSensorEvtSize()
+        log.debug "BedSensor events within time thres. = ${evts}"  
 
 
         // if 1 event within time threshold then proceed or closed  
-        if(!isOpen && BedSensorEvtSize() <= 1){
-            // if last status is closed while there has been only 1 event or less,
+        if(!isOpen){
+            // if last status is closed while there has been no event during false alarm threshold,
             // then it's a prolonged closed status (someone is sitting or lying down here)
-            ConsideredOpen = false
-            state.attempt = 0
-            log.debug "Only one OPEN event within the last $minutes minutes: $BedSensor is now considered closed"
-        }
-        else if(isOpen && BedSensorEvtSize() == 0 && state.attempt < 3) { 
-
-            /// this means thermostat won't go back to normal settings before an excess of time superior to thershold. 
-            // But not the first time so it doesn't declare true while the sensor is returning several 1/0 events after a while with 0 event
-            // without this limitation then it would declare true while someone started moving around on top of the bed 
-            // without actualy leaving it. 
-            state.attempt = state.attempt + 1 // state.attempt will return 1 only after this loop is done so it'll need 2 attempts
-            
-            if(state.attempt > 1){ 
-                ConsideredOpen = true // sensor returned open for longer than the time threshold and for more than two times in a row, so now considered open
+            if(evts == 0){
+                ConsideredOpen = false
+                state.attempt = 0
+                log.debug "no event within the last $minutes minutes && $BedSensor is still closed, so it is now considered as closed"
             }
             else {
-                log.debug "false alarm"
-                send("false alarm state.attempt = $state.attempt")
+                log.debug "too many events, doing nothing"
             }
         }
-        /*if(BedSensorEvtSize() > 1){
-            ConsideredOpen = false // reconfirm status because someone is still on the bed but moving around
-            state.attempt = 0      
-            log.debug "someone's moving on the bed"
-        }*/
+        else if(isOpen && evts == 0) { 
+
+            /// this means thermostat won't go back to normal settings before an excess of time superior to thershold. 
+                      
+            ConsideredOpen = true // 
+            log.debug "no event within the last $minutes minutes && $BedSensor is still open, so it is now considered as closed"
+
+        }
     }
     log.debug "ConsideredOpen = $ConsideredOpen"
     return ConsideredOpen
