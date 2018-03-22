@@ -33,7 +33,6 @@ metadata {
 		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x98, 0x86, 0x72, 0x5A, 0x85, 0x59, 0x73, 0x80, 0x71, 0x31, 0x70, 0x84, 0x7A"
 		fingerprint type:"8C07", inClusters: "5E,98,86,72,5A,31,71"
 		fingerprint mfr:"0109", prod:"2002", model:"0205"  // not using deviceJoinName because it's sold under different brand names
-		fingerprint mfr: "014F", prod: "2002", model: "0203", deviceJoinName: "Linear PIR Motion Sensor"
 	}
 
 	tiles(scale: 2) {
