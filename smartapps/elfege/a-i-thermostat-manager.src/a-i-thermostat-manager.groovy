@@ -296,7 +296,7 @@ def Virtual_Thermostats() {
 
                 input(name: "AddMoreVirT_A", type: "bool", title: "add a Virtual Thermostat", default: false, submitOnChange: true)
                 if(AddMoreVirT_A){
-					input(name: "VirThermSwitch_1", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
+                    input(name: "VirThermSwitch_1", type: "capability.switch", multiple: true, title: "Control a switch in parallel with one of your thermostat's setpoints", required: true, submitOnChange: true)
                     input(name: "coolOrHeat", type: "enum", title: "Cooling or Heating?", options: ["cooling", "heating"], defaultValue: "heating")
                     input(name: "OtherSetP", type: "bool", title: "Set points are specific to this heater", default: false, submitOnChange: true)
                     if(OtherSetP){
@@ -1130,6 +1130,7 @@ refms = $refms
 def VirtualThermostat(){
     log.info "virtual thermostat"
     def Active = null
+    def UseMotion = false
     def ContactsAreClosed = AllContactsAreClosed()
     // critical temp safety check 
 
@@ -1212,15 +1213,19 @@ def VirtualThermostat(){
     Critical = tempcheckList[0] < CriticalTemp //avoid repeated on/off's if already managed by critical
     if(ContactsAreClosed && !Critical){
 
+        def ActiveT = ActiveTest(VirThermTherm_1)
+        UseMotion = ActiveT[1]
+
         if(!OtherSetP){
             // this option is not compatible with motion because motion sensor 
-            // is related to the thermostat used as SP source. 
-            def ActiveT = ActiveTest(VirThermTherm_1)
+            // is related to the thermostat used as SP source.     
             Active = ActiveT[0]
         }
         else {
             Active = true
         }
+
+        
 
         log.trace "$VirThermSwitch_1 Active? : $Active"
         def no = ""
@@ -1271,7 +1276,7 @@ Switch State = $SwitchState
 SwitchStateIsOn = $SwitchStateIsOn
 ---------------------------- 
 """
-        if(Active && inVirThermModes){
+        if((Active || !UseMotion) && inVirThermModes){
             if(coolOrHeat == "cooling"){
                 if(CurrTemp > CurrSP && inVirThermModes){
                     if(!SwitchStateIsOn){
@@ -1324,16 +1329,19 @@ SwitchStateIsOn = $SwitchStateIsOn
     if(AddMoreVirT_B){
         Critical = tempcheckList[1] < CriticalTemp //avoid repeated on/off's if already managed by critical
         if(ContactsAreClosed && !Critical){
+            def ActiveT = ActiveTest(VirThermTherm_2)
+            UseMotion = ActiveT[1]
 
             if(!OtherSetP_2){
                 // this option is not compatible with motion because motion sensor 
                 // is designated by the thermostat used as SP source. 
-                def ActiveT = ActiveTest(VirThermTherm_2)
+
                 Active = ActiveT[0]
             }
             else {
                 Active = true
             }
+
             log.trace "$VirThermSwitch_2 Active? : $Active && ActiveT = $ActiveT"
             def no = ""
             if(!Active){no = "no"}else{no = ""}
@@ -1384,7 +1392,7 @@ SwitchState_2IsOn = $SwitchState_2IsOn
 
 ----------------------------    
 """
-            if(Active && inVirThermModes_2){
+            if((Active || !UseMotion) && inVirThermModes_2){
                 if(coolOrHeat_2 == "cooling"){
                     if(CurrTemp > CurrSP){
                         if(!SwitchState_2IsOn ){
@@ -1437,11 +1445,12 @@ SwitchState_2IsOn = $SwitchState_2IsOn
     if(AddMoreVirT_C){
         Critical = tempcheckList[2] < CriticalTemp //avoid repeated on/off's if already managed by critical
         if(ContactsAreClosed && !Critical){
-
+            def ActiveT = ActiveTest(VirThermTherm_3)
+            UseMotion = ActiveT[1]
             if(!OtherSetP_3){
                 // this option is not compatible with motion because motion sensor 
                 // is designated by the thermostat used as SP source. 
-                def ActiveT = ActiveTest(VirThermTherm_3)
+
                 Active = ActiveT[0]
             }
             else {
@@ -1503,7 +1512,7 @@ SwitchState_3IsOn = $SwitchState_3IsOn
 ----------------------------    
 """
 
-            if(Active && inVirThermModes_3){
+            if((Active || !UseMotion) && inVirThermModes_3){
                 if(coolOrHeat_3 == "cooling"){
                     if(CurrTemp > CurrSP && inVirThermModes_3){
 
@@ -3017,7 +3026,7 @@ def BedSensorStatus(){
         else if(isOpen && evts == 0) { 
 
             /// this means thermostat won't go back to normal settings before an excess of time superior to thershold. 
-                      
+
             ConsideredOpen = true // 
             log.debug "no event within the last $minutes minutes && $BedSensor is still open, so it is now considered as closed"
 
