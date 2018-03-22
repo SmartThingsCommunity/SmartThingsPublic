@@ -23,6 +23,7 @@ metadata {
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
 		fingerprint mfr: "001D", prod: "1A02", model: "0334", deviceJoinName: "Leviton Appliance Module"
+		fingerprint mfr: "001D", prod: "3401", model: "0001", deviceJoinName: "Leviton Switch" //Leviton DZ15S
 		fingerprint mfr: "0063", prod: "4F50", model: "3031", deviceJoinName: "GE Plug-in Outdoor Switch"
 		fingerprint mfr: "001D", prod: "1D04", model: "0334", deviceJoinName: "Leviton Outlet"
 		fingerprint mfr: "001D", prod: "1C02", model: "0334", deviceJoinName: "Leviton Switch"
@@ -40,7 +41,7 @@ metadata {
 		fingerprint mfr: "001A", prod: "5244", deviceJoinName: "Eaton RF Receptacle"
 		fingerprint mfr: "001A", prod: "534C", model: "0000", deviceJoinName: "Eaton RF Master Switch"
 		fingerprint mfr: "001A", prod: "5354", model: "0003", deviceJoinName: "Eaton RF Appliance Plug-In Module"
-    		fingerprint mfr: "001A", prod: "5352", model: "0000", deviceJoinName: "Eaton RF Accessory Switch"
+		fingerprint mfr: "001A", prod: "5352", model: "0000", deviceJoinName: "Eaton RF Accessory Switch"
 	}
 
 	// simulator metadata
