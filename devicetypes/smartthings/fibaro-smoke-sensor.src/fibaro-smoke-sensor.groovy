@@ -106,7 +106,7 @@ metadata {
         }
 
         main "smoke"
-        details(["smoke","temperature","battery"])
+        details(["smoke","temperature","battery","tamper","heatAlarm"])
     }
 }
 
