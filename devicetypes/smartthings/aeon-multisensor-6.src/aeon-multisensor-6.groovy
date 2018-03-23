@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition (name: "Aeon Multisensor 6", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Multisensor 6", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.020.00008', executeCommandsLocally: true) {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -30,7 +30,7 @@ metadata {
 
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A"
-		fingerprint mfr:"0086", prod:"0102", model:"0064", deviceJoinName: "Aeon Labs MultiSensor 6"
+		fingerprint mfr:"0086", prod:"0102", model:"0064", deviceJoinName: "Aeotec MultiSensor 6"
 	}
 
 	simulator {
@@ -141,10 +141,9 @@ def installed(){
 }
 
 def updated() {
-// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	log.debug "Updated with settings: ${settings}"
 	log.debug "${device.displayName} is now ${device.latestValue("powerSource")}"
+
 
 	def powerSource = device.latestValue("powerSource")
 
@@ -157,7 +156,7 @@ def updated() {
 			sendEvent(name: "powerSource", value: powerSource, displayed: false)
 		}
 	}
-	
+
 	if (powerSource == "battery") {
 		setConfigured("false") //wait until the next time device wakeup to send configure command after user change preference
 	} else { // We haven't identified the power supply, or the power supply is USB, so configure
@@ -299,6 +298,10 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	motionEvent(cmd.value)
 }
 
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def result = []
 	if (cmd.notificationType == 7) {
@@ -309,6 +312,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 			case 3:
 				result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
+				// Clear the tamper alert after 10s. This is a temporary fix for the tamper attribute until local execution handles it
+				unschedule(clearTamper, [forceForLocallyExecuting: true])
+				runIn(10, clearTamper, [forceForLocallyExecuting: true])
 				break
 			case 7:
 				result << motionEvent(1)
@@ -351,7 +357,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	secure(zwave.batteryV1.batteryGet())
+	if (device.latestValue("powerSource") == "dc") {
+		command(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)) //poll the temperature to ping
+	} else {
+		log.debug "Can't ping a wakeup device on battery"
+	}
 }
 
 def configure() {
@@ -399,6 +409,14 @@ def configure() {
 
 	setConfigured("true")
 
+	// set the check interval based on the report interval preference. (default 122 minutes)
+	// we do this here in case the device is in wakeup mode
+	def checkInterval = 2 * 60 * 60 + 2 * 60
+	if (reportInterval) {
+		checkInterval = 2*timeOptionValueMap[reportInterval] + (2 * 60)
+	}
+	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
 	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
@@ -416,7 +434,7 @@ private def getTimeOptionValueMap() { [
 		"1 hours"    : 1*60*60,
 		"6 hours"    : 6*60*60,
 		"12 hours"   : 12*60*60,
-		"18 hours"   : 6*60*60,
+		"18 hours"   : 18*60*60,
 		"24 hours"   : 24*60*60,
 ]}
 

@@ -18,12 +18,11 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZigBee RGB Bulb", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "ZigBee RGB Bulb", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, ocfDeviceType: "oic.d.light") {
 
 		capability "Actuator"
 		capability "Color Control"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"

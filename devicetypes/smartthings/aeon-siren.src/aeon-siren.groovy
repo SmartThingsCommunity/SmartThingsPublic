@@ -16,7 +16,7 @@
  *	Date: 2014-07-15
  */
 metadata {
- definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
+ definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 	capability "Actuator"
 	capability "Alarm"
 	capability "Switch"
@@ -24,7 +24,7 @@ metadata {
 
 	command "test"
 
-	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98", deviceJoinName: "Aeon Labs Siren (Gen 5)"
+	fingerprint deviceId: "0x1005", inClusters: "0x5E,0x98", deviceJoinName: "Aeotec Siren (Gen 5)"
  }
 
  simulator {
@@ -49,8 +49,9 @@ metadata {
 	}
 
 	preferences {
-		input "sound", "number", title: "Siren sound (1-5)", range: "1..5", defaultValue: 1, required: true//, displayDuringSetup: true  // don't display during setup until defaultValue is shown
-		input "volume", "number", title: "Volume (1-3)", range: "1..3", defaultValue: 3, required: true//, displayDuringSetup: true
+		// PROB-1673 Since there is a bug with how defaultValue and range are handled together, we won't rely on defaultValue and won't set required, but will use the default values in the code below when needed.
+		input "sound", "number", title: "Siren sound (1-5)", range: "1..5" //, defaultValue: 1, required: true//, displayDuringSetup: true  // don't display during setup until defaultValue is shown
+		input "volume", "number", title: "Volume (1-3)", range: "1..3" //, defaultValue: 3, required: true//, displayDuringSetup: true
 	}
 
 	main "alarm"
@@ -96,9 +97,23 @@ def updated() {
 def parse(String description) {
 	log.debug "parse($description)"
 	def result = null
-	def cmd = zwave.parse(description, [0x98: 1, 0x20: 1, 0x70: 1])
-	if (cmd) {
-		result = zwaveEvent(cmd)
+	if (description.startsWith("Err")) {
+		if (state.sec) {
+			result = createEvent(descriptionText:description, displayed:false)
+		} else {
+			result = createEvent(
+					descriptionText: "This device failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
+					eventType: "ALERT",
+					name: "secureInclusion",
+					value: "failed",
+					displayed: true,
+			)
+		}
+	} else {
+		def cmd = zwave.parse(description, [0x98: 1, 0x20: 1, 0x70: 1])
+		if (cmd) {
+			result = zwaveEvent(cmd)
+		}
 	}
 	log.debug "Parse returned ${result?.inspect()}"
 	return result
