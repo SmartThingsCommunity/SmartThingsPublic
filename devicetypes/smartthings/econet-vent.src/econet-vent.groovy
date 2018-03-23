@@ -123,7 +123,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def text = "$device.displayName is ${cmd.value ? "open" : "closed"}"
 	def switchEvent = createEvent(name: "switch", value: (cmd.value ? "on" : "off"), descriptionText: text)
-	def levelEvent = createEvent(name:"level", value: cmd.value, unit:"%")
+	def levelEvent = createEvent(name:"level", value: cmd.value == 99 ? 100 : cmd.value , unit:"%")
 	[switchEvent, levelEvent]
 }
 

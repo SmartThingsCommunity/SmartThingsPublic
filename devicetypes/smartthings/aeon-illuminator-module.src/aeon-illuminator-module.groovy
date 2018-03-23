@@ -120,7 +120,7 @@ def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {
 	if (cmd.value > 15) {
 		def item2 = new LinkedHashMap(item1)
 		item2.name = "level"
-		item2.value = cmd.value as String
+		item2.value = (cmd.value == 99 ? 100 : cmd.value) as String
 		item2.unit = "%"
 		item2.descriptionText = "${item1.linkText} dimmed ${item2.value} %"
 		item2.canBeCurrentState = true
