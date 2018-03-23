@@ -138,6 +138,13 @@ void installed() {
     sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "cloud"], displayed: false)
 }
 
+
+//remove from the selected devices list in SM
+void uninstalled() {
+    log.trace "[DTH] Executing uninstalled() for device=${this.device.displayName}"
+    parent?.removeChildDevice(this)
+}
+
 // Device Watch will ping the device to proactively determine if the device has gone offline
 // If the device was online the last time we refreshed, trigger another refresh as part of the ping.
 def ping() {
