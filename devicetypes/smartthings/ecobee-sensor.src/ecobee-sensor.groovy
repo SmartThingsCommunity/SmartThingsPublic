@@ -25,7 +25,7 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
       			tileAttribute ("device.temperature", key: "PRIMARY_CONTROL") {
-			  	attributeState "temperature", label:'${currentValue}°', icon: "st.alarm.temperature.normal",
+			  	attributeState "temperature", label:'${currentValue}°',
 					backgroundColors:[
 						// Celsius
 						[value: 0, color: "#153591"],
@@ -70,10 +70,4 @@ void poll() {
 	log.debug "Executing 'poll' using parent SmartApp"
 	parent.pollChild()
 
-}
-
-//remove from the selected devices list in SM
-void uninstalled() {
-    log.trace "[DTH] Executing uninstalled() for device=${this.device.displayName}"
-    parent?.removeChildDevice(this)
 }
