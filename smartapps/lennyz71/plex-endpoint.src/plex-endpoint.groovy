@@ -15,7 +15,7 @@
  */
 definition(
     name: "Plex_EndPoint",
-    namespace: "LennyZ71",
+    namespace: "lennyz71",
     author: "Lenny Cunningham",
     description: "Webservice Endpoint for Plex",
     category: "Convenience",
