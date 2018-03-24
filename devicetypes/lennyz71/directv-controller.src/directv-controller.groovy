@@ -23,8 +23,12 @@
  */
 
 metadata {
-	definition (name: "DirecTV Controller", namespace: "LennyZ71", author: "lenny.cunningham@gmail.com") {
+	definition (name: "DirecTV Controller", namespace: "lennyz71", author: "lenny.cunningham@gmail.com") {
+		capability "Actuator"
 		capability "Switch"
+		capability "Refresh"
+		capability "Sensor"
+		capability "Music Player"
         
         command "list"
         command "guide"
@@ -62,9 +66,35 @@ metadata {
     }
 
 	tiles(scale: 2) {
-    	valueTile("getTuned", "device.floatAsText", width: 4, height: 2) {
-        	state "val", label: '${currentValue}', defaultState: "'Getting tuned"
-        }        
+    	multiAttributeTile(name: "mediaMulti", type:"mediaPlayer", width:6, height:4) {
+			tileAttribute("device.status", key: "PRIMARY_CONTROL") {
+				attributeState("paused", label:"Paused",)
+				attributeState("playing", label:"Playing")
+				attributeState("stopped", label:"Stopped")
+			}
+			tileAttribute("device.status", key: "MEDIA_STATUS") {
+				attributeState("paused", label:"Paused", action:"music Player.play", nextState: "playing")
+				attributeState("playing", label:"Playing", action:"music Player.pause", nextState: "paused")
+				attributeState("stopped", label:"Stopped", action:"music Player.play", nextState: "playing")
+			}
+			tileAttribute("device.status", key: "PREVIOUS_TRACK") {
+				attributeState("status", action:"music Player.previousTrack", defaultState: true)
+			}
+			tileAttribute("device.status", key: "NEXT_TRACK") {
+				attributeState("status", action:"music Player.nextTrack", defaultState: true)
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState("level", action:"music Player.setLevel")
+			}
+			tileAttribute ("device.mute", key: "MEDIA_MUTED") {
+				attributeState("unmuted", action:"music Player.mute", nextState: "muted")
+				attributeState("muted", action:"music Player.unmute", nextState: "unmuted")
+			}
+			tileAttribute("device.getTuned", key: "MARQUEE") {
+				attributeState("val", label:"${currentValue}", defaultState: true)
+			}
+		}
+     
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true) {
             state "on", label: '${name}', action:"switch.off", backgroundColor: "#79b821", icon:"st.Electronics.electronics18"
             state "off", label: '${name}', action:"switch.on", backgroundColor: "#ffffff", icon:"st.Electronics.electronics18"
@@ -78,13 +108,13 @@ metadata {
         standardTile("prev", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'Prev', action:"prev", icon:""
         }
-        standardTile("guide", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        standardTile("guide", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'Guide', action:"guide", icon:""
         }
-        standardTile("list", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        standardTile("list", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'List', action:"list", icon:""
         }
-        standardTile("exit", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        standardTile("exit", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'Exit', action:"exit", icon:""
         }
         standardTile("up", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
@@ -107,47 +137,132 @@ metadata {
         }
         standardTile("record", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'Record', action:"record", icon:""
-        }        
-        standardTile("red", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        }
+        standardTile("record1", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'Record', action:"record", icon:""
+        }
+        standardTile("red", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'Red', action:"red", icon:"st.colors.red"
+        }
+        standardTile("green", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'Red', action:"red", icon:"st.colors.green"
+        }
+        standardTile("yellow", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'Red', action:"red", icon:"st.colors.yellow"
+        }
+        standardTile("blue", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'Red', action:"red", icon:"st.colors.blue"
         }
         standardTile("info", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'Info', action:"info", icon:""
         }        
-        standardTile("replay", "device.switch", width: 3, height: 2, , decoration: "flat", canChangeIcon: false) {
+        standardTile("replay", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'', action:"replay", icon:"st.secondary.refresh-icon"
         }        
-        standardTile("advance", "device.switch", width: 3, height: 2, , decoration: "flat", canChangeIcon: false) {
-        	state "default", label:'', action:"advance", icon:"st.sonos.next-btn"
+        standardTile("advance", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'Advance', action:"advance", icon:""
         }        
         standardTile("rew", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'', action:"rew", icon:"st.sonos.previous-btn"
         }        
         standardTile("play", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'', action:"play", icon:"st.sonos.play-btn"
-        }        
+        }
+        standardTile("stop", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'', action:"play", icon:"st.sonos.stop-btn"
+        }
+        standardTile("active", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'Active', action:"active", icon:""
+        }
         standardTile("ffwd", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
         	state "default", label:'', action:"ffwd", icon:"st.sonos.next-btn"
-        }        
+        }
+        standardTile("refresh", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'REFRESH', action:"refresh", icon:""
+        }
+        standardTile("back", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'', action:"back", icon:"st.sonos.back-btn"
+        }
+        standardTile("pause", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'', action:"pause", icon:"st.sonos.pause-btn"
+        }
+        standardTile("dash", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'Dash', action:"dash", icon:"st.sonos.dash-btn"
+        }
+        standardTile("enter", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'Enter', action:"enter", icon:"st.sonos.enter-btn"
+        }
+        standardTile("pause1", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'', action:"pause", icon:"st.sonos.pause-btn"
+        }
+        standardTile("1", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'1', action:"1", icon:""
+        }
+        standardTile("2", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'2', action:"2", icon:""
+        }
+        standardTile("3", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'3', action:"3", icon:""
+        }
+        standardTile("4", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'4', action:"4", icon:""
+        }
+        standardTile("5", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'5', action:"5", icon:""
+        }
+        standardTile("6", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'6', action:"6", icon:""
+        }
+        standardTile("7", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'7', action:"7", icon:""
+        }
+        standardTile("8", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'8', action:"8", icon:""
+        }
+        standardTile("9", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'9', action:"9", icon:""
+        }
+        standardTile("0", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'0', action:"0", icon:""
+        }
+        standardTile("blank1x1", "device.switch", width: 1, height: 1, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'', action:"", icon:""
+        }
+        standardTile("blank1x2", "device.switch", width: 2, height: 1, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'', action:"", icon:""
+        }
+        standardTile("blank2x2", "device.switch", width: 2, height: 2, , decoration: "flat", canChangeIcon: false) {
+        	state "default", label:'', action:"", icon:""
+        }
 
         main "switch"
         
 		details([
-        "switch",
-        "guide","menu","list",
-        "record","up","exit",
-        "left","select","right",
-        "red","down","info",
-        "chup","chdown","prev",
-        "replay","advance",
+        "mediaMulti",
+        "blank2x2","switch","refresh",
+        "replay","stop","advance",
         "rew","play","ffwd",
+        "blank1x1","pause1","blank1x2","record1","blank1x1",
+        "blank1x1","guide","active","list","exit","blank1x1",
+        "blank2x2","up","blank2x2",
+        "left","select","right",
+        "blank2x2","down","blank2x2",
+        "back","menu","info",
+        "blank1x1","red","green","yellow","blue","blank1x1",
+        "blank2x2","blank2x2","chup",
+        "blank2x2","blank2x2","chdown",
+        "blank1x1","blank1x1","blank1x1","blank1x1","blank1x1","blank1x1",
+        "1","2","3",
+        "4","5","6",
+        "7","8","9",
+        "dash","0","enter"
         ])
 	}
     
     preferences {
 		input("destIp", "text", title: "IP", description: "The device IP", displayDuringSetup: true, required:true)
 		input("destPort", "number", title: "Port", description: "The port you wish to connect", displayDuringSetup: true, required:true)
-    	input("destAddr", "number", title: "Client Addr", description: "Enter 0 if controlling main unit. Enter MAC address without colons of unit to control a remote unit.", displayDuringSetup: true, required:true)
+    	input("destAddr", "string", title: "Client MAC Addr (w/o :)", description: "Enter 0 if controlling main unit. Enter MAC address without colons of unit to control a remote unit.", displayDuringSetup: true, required:true)
 	}
 }
 
@@ -178,24 +293,44 @@ def installed() {
     log.debug "localSrvPortTCP: ${hub.localSrvPortTCP}"
 }
 
+def refresh() {
+	getTuned()
+}
+
+
 //  There is no real parser for this device
-// ST cannot interpret the raw packet return, and thus we cannot 
+//  ST cannot interpret the raw packet return, and thus we cannot 
 //  do anything with the return data.  
 //  http://community.smartthings.com/t/raw-tcp-socket-communications-with-sendhubcommand/4710/10
 //
 def parse(description) {
 	log.debug "Parsing '${description}'"
     def msg = parseLanMessage(description)
+    //log.debug "MSG: '${msg}'"
 
     def headersAsString = msg.header // => headers as a string
-    def headerMap = msg.headers      // => headers as a Map
-    def body = msg.body              // => request body as a string
-    def status = msg.status          // => http status code of the response
-    def json = msg.json              // => any JSON included in response body, as a data structure of lists and maps
-    def xml = msg.xml                // => any XML included in response body, as a document tree structure
-    def data = msg.data
+    //log.debug "headerAsString '${headerAsString}'"
     
-    log.debug "Data '${data}'"
+    def headerMap = msg.headers      // => headers as a Map
+    //log.debug "headerMap '${headerMap}'"
+    
+    def body = msg.body              // => request body as a string
+    //log.debug "body '${body}'"
+    
+    def status = msg.status          // => http status code of the response
+    //log.debug "status '${status}'"
+    
+    def json = msg.json              // => any JSON included in response body, as a data structure of lists and maps
+    log.debug "json '${json.title}'"
+    sendEvent(name: "getTuned", value: "${json.title}")
+    
+    def xml = msg.xml                // => any XML included in response body, as a document tree structure
+    //log.debug "xml '${xml}'"
+    
+    def data = msg.data    
+    //log.debug "Data '${data}'"
+    
+    
 }
 
 def on() {
@@ -354,27 +489,87 @@ def enter() {
 }
 
 def sendKeyPress(key) {
-	def requestString = "/remote/processKey?key=${key}&hold=keyPress"
+	def requestString = "/remote/processKey?key=${key}&hold=keyPress&clientAddr=$destAddr"
     log.debug "sendKeyPress('${requestString}')"
-    request(requestString)
+    return request(requestString)
 }
 
 def request(body) {
     def hubAction = new physicalgraph.device.HubAction(
    	 		'method' : 'GET',
     		'path' : "${body} HTTP/1.1\r\n\r\n",
-        	'headers' : [ HOST: "$destIp:$destPort" ],
-            'query' : [clientAddr: "$destAddr"]
+        	'headers' : [ 
+            	HOST: "$destIp:$destPort"
+             ]
 		) 
     return hubAction
 }
 
 def getTuned() {
+	log.trace 'getTuned'
     def result = new physicalgraph.device.HubAction(
+    		'headers' : [ HOST: "$destIp:$destPort" ],
    	 		'method' : 'GET',
-    		'path' : "/tv/getTuned HTTP/1.1\r\n\r\n",
-        	'headers' : [ HOST: "$destIp:$destPort" ],
-            'query' : [clientAddr: "$destAddr"]
+    		'path' : "/tv/getTuned?clientAddr=$destAddr",
+            //query : [clientAddr: "$destAddr"]
 		) 
     return result
+}
+
+/* Helper functions to get the network device ID */
+private String NetworkDeviceId(){
+    def iphex = convertIPtoHex('192.168.1.240').toUpperCase()
+    def porthex = convertPortToHex(8080)
+    log.info "DeviceId Info:  $iphex:$porthex"
+    //addChildDevice("lennyz71", "DirecTV Genie Client", "$iphex:$porthex", device.hub.id, [label:"DirecTV $iphex", name:"DirecTV $iphex"])
+    return "$iphex:$porthex" 
+}
+
+private String convertIPtoHex(ipAddress) { 
+    String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
+    //log.debug "IP address entered is $ipAddress and the converted hex code is $hex"
+    return hex
+
+}
+
+private String convertPortToHex(port) {
+    String hexport = port.toString().format( '%04x', port.toInteger() )
+    //log.debug hexport
+    return hexport
+}
+
+// gets the address of the Hub
+private getCallBackAddress() {
+    return device.hub.getDataValue("localIP") + ":" + device.hub.getDataValue("localSrvPortTCP")
+}
+
+// gets the address of the device
+private getHostAddress() {
+    def ip = getDataValue("ip")
+    def port = getDataValue("port")
+
+    if (!ip || !port) {
+        def parts = device.deviceNetworkId.split(":")
+        if (parts.length == 2) {
+            ip = parts[0]
+            port = parts[1]
+        } else {
+            log.warn "Can't figure out ip and port for device: ${device.id}"
+        }
+    }
+
+    log.debug "Using IP: $ip and port: $port for device: ${device.id}"
+    return convertHexToIP(ip) + ":" + convertHexToInt(port)
+}
+
+private Integer convertHexToInt(hex) {
+    def converted = Integer.parseInt(hex,16)
+    log.info "Converted Port ${converted}"
+    return converted
+}
+
+private String convertHexToIP(hex) {
+    def converted = [convertHexToInt(hex[0..1]),convertHexToInt(hex[2..3]),convertHexToInt(hex[4..5]),convertHexToInt(hex[6..7])].join(".")
+	log.info "Converted IP ${converted}"
+    return converted
 }
