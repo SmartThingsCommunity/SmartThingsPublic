@@ -17,7 +17,7 @@ home more comfortable than you ever thought possible. You might however get surp
 preferences {
 
     page name: "pageSetup"
-    page name: "settings"
+    page name: "Mainsettings"
     page name: "Modes"
     page name: "AI"
     page name: "Contacts_Management"
@@ -88,7 +88,8 @@ def Mainsettings() {
 
         section("Select the thermostats you want to control") { 
 
-            input(name: "Thermostats", type: "capability.thermostat", title: "select thermostats", required: false, multiple: true, description: null, submitOnChange: true)
+            input(name: "Thermostats", type: "capability.thermostat", title: "select your thermostats", required: true, multiple: true, description: null, submitOnChange: true)
+            
             if(Thermostats){
 
                 input(name: "AltSensor", type: "bool", title: "Control some thermostat's states using a third party sensor", required: false, default: false, submitOnChange: true)
@@ -1342,7 +1343,7 @@ SwitchStateIsOn = $SwitchStateIsOn
                 Active = true
             }
 
-            log.trace "$VirThermSwitch_2 Active? : $Active && ActiveT = $ActiveT"
+            log.trace "$VirThermSwitch_2 Active? : $Active && ActiveT = $ActiveT || may always return true if OtherSetP_2 = true ($OtherSetP_2) or if UseMotion = false ($UseMotion)"
             def no = ""
             if(!Active){no = "no"}else{no = ""}
             log.debug "There's $no motion near $VirThermSwitch_2 --"
@@ -1457,7 +1458,7 @@ SwitchState_2IsOn = $SwitchState_2IsOn
                 Active = true
             }
 
-            log.trace "$VirThermSwitch_3 Active? : $Active && ActiveT = $ActiveT"
+            log.trace "$VirThermSwitch_3 Active? : $Active && ActiveT = $ActiveT  || may always return true if OtherSetP_2 = true ($OtherSetP_2) or if UseMotion = false ($UseMotion)"
 
             def no = ""
             if(!Active){no = "no"}else{no = ""}
@@ -2100,7 +2101,7 @@ Math.log(256) / Math.log(2)
                 }
                 ///////////////////////////// END OF ALGEBRA ////////////////////////////////////////////
                 /////////////////////////// HEAT MAXIMA MINIMA ///////////////////////
-                if(HSPSet > MaxLinearHeat){
+                if(HSPSet > MaxLinearHeat && (Active || !inMotionModes) && !inAway){
                     HSPSet = MaxLinearHeat
                     def message = "$ThermSet heating set point is too high, brought back to your prefered Maximum: ${MaxLinearHeat}F | sendalert = $state.sendalert"
                     log.info message
@@ -2109,7 +2110,7 @@ Math.log(256) / Math.log(2)
                         send(message)         
                     }
                 }
-                else if(HSPSet < MinLinearHeat){
+                else if(HSPSet < MinLinearHeat && (Active || !inMotionModes) && !inAway){
                     HSPSet = MinLinearHeat
                     def message = "$ThermSet heating set point is too low, brought back to your prefered Minimum: ${MinLinearHeat}F | sendalert = $state.sendalert"
                     log.info message
@@ -2120,7 +2121,7 @@ Math.log(256) / Math.log(2)
                 }
 
                 ///////////////////HUMIDITY ///////////////////
-                if(TooHumid && Inside - 2 >= outsideTemp && Active){
+                if(TooHumid && Inside - 2 >= outsideTemp && (Active || !inMotionModes) && !inAway){
                     CSPSet = CSPSet - 1 
                     log.debug "Substracting 2 degrees to new CSP because it is too humid OUTSIDE"
                 }
@@ -2128,7 +2129,7 @@ Math.log(256) / Math.log(2)
                     log.debug "not too humid outside"
                 }
 
-                if(TooHumidINSIDE && Inside - 2 >= outsideTemp && Active){
+                if(TooHumidINSIDE && Inside - 2 >= outsideTemp && (Active || !inMotionModes) && !inAway){
                     CSPSet = CSPSet - 1 
                     log.debug "Substracting 1 degree to new CSP because it is too humid INSIDE"
                 }
