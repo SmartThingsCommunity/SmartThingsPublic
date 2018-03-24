@@ -89,7 +89,7 @@ def Mainsettings() {
         section("Select the thermostats you want to control") { 
 
             input(name: "Thermostats", type: "capability.thermostat", title: "select your thermostats", required: true, multiple: true, description: null, submitOnChange: true)
-            
+
             if(Thermostats){
 
                 input(name: "AltSensor", type: "bool", title: "Control some thermostat's states using a third party sensor", required: false, default: false, submitOnChange: true)
@@ -1226,7 +1226,7 @@ def VirtualThermostat(){
             Active = true
         }
 
-        
+
 
         log.trace "$VirThermSwitch_1 Active? : $Active"
         def no = ""
@@ -2903,10 +2903,9 @@ def ContactAndSwitchHandler(evt){
 }
 def BedSensorHandler(evt){
 
-    log.debug """$evt.device is $evt.value 
-BedSensor is $BedSensor------------------------------------------------------------------------"""
+    log.debug """$evt.device is $evt.value """
 
-    Evaluate()
+    //Evaluate() // do not evaluate immediately otherwise we get mixed evt count results
 
 }
 
@@ -2997,6 +2996,7 @@ def BedSensorStatus(){
     // and closed when stable (only 1 event within the false alarm time frame)
 
     if(BedSensor){
+        ConsideredOpen = false // false by default to avoid false open statuses
         // find if any device within the list of [BedSensor] is open
 
         def CurrentContacts = BedSensor.currentValue("contact")
@@ -3010,27 +3010,30 @@ def BedSensorStatus(){
         def evts = BedSensorEvtSize()
         log.debug "BedSensor events within time thres. = ${evts}"  
 
+        if(evts > 1) {
+            log.debug "too many events (evts = $evts), doing nothing"
+            ConsideredOpen = false // someone is moving around on the bed
+            //send("Someone is moving on the bed like a fool...") 
+        }
+        else {
+            // if 1 event within time threshold then proceed or closed  
+            if(!isOpen && evts == 0){
+                // if last status is closed while there has been no event during false alarm threshold,
+                // then it's a prolonged closed status (someone is sitting or lying down here)
 
-        // if 1 event within time threshold then proceed or closed  
-        if(!isOpen){
-            // if last status is closed while there has been no event during false alarm threshold,
-            // then it's a prolonged closed status (someone is sitting or lying down here)
-            if(evts == 0){
                 ConsideredOpen = false
                 state.attempt = 0
                 log.debug "no event within the last $minutes minutes && $BedSensor is still closed, so it is now considered as closed"
+
             }
-            else {
-                log.debug "too many events, doing nothing"
+            else if(isOpen && evts == 0) { 
+
+                /// this means thermostat won't go back to normal settings before an excess of time superior to thershold. 
+
+                ConsideredOpen = true // 
+                log.debug "no event within the last $minutes minutes && $BedSensor is still open, so it is now considered as closed"
+
             }
-        }
-        else if(isOpen && evts == 0) { 
-
-            /// this means thermostat won't go back to normal settings before an excess of time superior to thershold. 
-
-            ConsideredOpen = true // 
-            log.debug "no event within the last $minutes minutes && $BedSensor is still open, so it is now considered as closed"
-
         }
     }
     log.debug "ConsideredOpen = $ConsideredOpen"
