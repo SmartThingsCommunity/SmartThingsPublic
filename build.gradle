@@ -9,7 +9,7 @@ apply plugin: 'smartthings-slack'
 
 buildscript {
     dependencies {
-        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.8"
+        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.12"
     }
     repositories {
         mavenLocal()
@@ -19,7 +19,7 @@ buildscript {
                 username smartThingsArtifactoryUserName
                 password smartThingsArtifactoryPassword
             }
-            url "https://artifactory.smartthings.com/libs-release-local"
+            url "https://smartthings.jfrog.io/smartthings/libs-release-local"
         }
     }
 }
@@ -32,7 +32,7 @@ repositories {
             username smartThingsArtifactoryUserName
             password smartThingsArtifactoryPassword
         }
-        url "https://artifactory.smartthings.com/libs-release-local"
+        url "https://smartthings.jfrog.io/smartthings/libs-release-local"
     }
 }
 
@@ -51,10 +51,10 @@ sourceSets {
 
 dependencies {
     devicetypesCompile 'org.codehaus.groovy:groovy-all:2.4.7'
-    devicetypesCompile 'smartthings:appengine-z-wave:0.1.2'
-    devicetypesCompile 'smartthings:appengine-zigbee:0.1.11'
+    devicetypesCompile 'smartthings:appengine-z-wave:0.1.3'
+    devicetypesCompile 'smartthings:appengine-zigbee:0.1.12'
     smartappsCompile 'org.codehaus.groovy:groovy-all:2.4.7'
-    smartappsCompile 'smartthings:appengine-common:0.1.8'
+    smartappsCompile 'smartthings:appengine-common:0.1.9'
     smartappsCompile 'org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'
     smartappsCompile 'org.grails:grails-web:2.3.11'
     smartappsCompile 'org.json:json:20140107'
@@ -74,19 +74,19 @@ slackSendMessage {
     String username
     switch (branch) {
         case 'master':
-            username = 'Hickory'
+            username = 'DEV'
             iconUrl = wolverine
             color = '#35D0F2'
             messageText = 'Began deployment of _SmartThingsPublic[master]_ branch to the _Dev_ environments.'
             break
         case 'staging':
-            username = 'Dickory'
+            username = 'STG'
             iconUrl = beach
             color = '#FFDE20'
             messageText = 'Began deployment of _SmartThingsPublic[staging]_ branch to the _Staging_ environments.'
             break
         case 'production':
-            username = 'Dock'
+            username = 'PRD'
             iconUrl = drinks
             color = '#FF1D23'
             messageText = 'Began deployment of _SmartThingsPublic[production]_ branch to the _Prod_ environments.'

@@ -26,8 +26,8 @@ metadata {
 	tiles(scale: 2) {
 		// You only get a presence tile view when the size is 3x3 otherwise it's a value tile
 		standardTile("presence", "device.presence", width: 3, height: 3, canChangeBackground: true) {
-			state("present", labelIcon:"st.presence.tile.mobile-present", backgroundColor:"#53a7c0")
-			state("not present", labelIcon:"st.presence.tile.mobile-not-present", backgroundColor:"#ebeef2")
+			state("present", labelIcon:"st.presence.tile.mobile-present", backgroundColor:"#00A0DC")
+			state("not present", labelIcon:"st.presence.tile.mobile-not-present", backgroundColor:"#cccccc")
 		}
 
 		standardTile("notPresentBtn", "device.fake", width: 3, height: 3, decoration: "flat") {
@@ -35,7 +35,7 @@ metadata {
 		}
 
 		standardTile("presentBtn", "device.fake", width: 3, height: 3, decoration: "flat") {
-			state("present", label:'present', backgroundColor:"#53a7c0", action:"arrived")
+			state("present", label:'present', backgroundColor:"#00A0DC", action:"arrived")
 		}
 
 		main("presence")

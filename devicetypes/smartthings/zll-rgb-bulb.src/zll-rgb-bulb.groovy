@@ -1,5 +1,5 @@
 /**
- *  Copyright 2016 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -11,9 +11,10 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZLL RGB Bulb", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "ZLL RGB Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 
 		capability "Actuator"
 		capability "Color Control"
@@ -22,15 +23,16 @@ metadata {
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
+		capability "Health Check"
 	}
 
 	// UI tile definitions
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -54,6 +56,7 @@ private getATTRIBUTE_HUE() { 0x0000 }
 private getATTRIBUTE_SATURATION() { 0x0001 }
 private getHUE_COMMAND() { 0x00 }
 private getSATURATION_COMMAND() { 0x03 }
+private getMOVE_TO_HUE_AND_SATURATION_COMMAND() { 0x06 }
 private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
 
 // Parse incoming device messages to generate events
@@ -71,11 +74,11 @@ def parse(String description) {
 
 		if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
 			if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
-				def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 360)
+				def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "hue", value: hueValue, displayed:false)
 			}
 			else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
-				def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 255 * 100)
+				def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "saturation", value: saturationValue, displayed:false)
 			}
 		}
@@ -106,29 +109,59 @@ def configure() {
 	configureAttributes() + refreshAttributes()
 }
 
+def ping() {
+	refreshAttributes()
+}
+
 def configureAttributes() {
-	zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE, 0x20, 1, 3600, 0x01) + zigbee.configureReporting(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION, 0x20, 1, 3600, 0x01)
+	zigbee.onOffConfig() +
+	zigbee.levelConfig()
 }
 
 def refreshAttributes() {
-	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+	zigbee.onOffRefresh() +
+	zigbee.levelRefresh() +
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+}
+
+def updated() {
+	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
+
+def installed() {
+	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def setLevel(value) {
-	zigbee.setLevel(value) + ["delay 1500"] + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+}
+
+private getScaledHue(value) {
+	zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
+}
+
+private getScaledSaturation(value) {
+	zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
 }
 
 def setColor(value){
 	log.trace "setColor($value)"
-	zigbee.on() + setHue(value.hue) + ["delay 300"] + setSaturation(value.saturation) + ["delay 2000"] + refreshAttributes()
+	zigbee.on() +
+	zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_HUE_AND_SATURATION_COMMAND,
+		getScaledHue(value.hue), getScaledSaturation(value.saturation), "0000") +
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
 def setHue(value) {
-	def scaledHueValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
-	zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, scaledHueValue, "00", "0500") + ["delay 1500"] + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)      //payload-> hue value, direction (00-> shortest distance), transition time (1/10th second) (0500 in U16 reads 5)
+	//payload-> hue value, direction (00-> shortest distance), transition time (1/10th second)
+	zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, getScaledHue(value), "00", "0000") +
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
 }
 
 def setSaturation(value) {
-	def scaledSatValue = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
-	zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, scaledSatValue, "0500") + ["delay 1500"] + zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)      //payload-> sat value, transition time
+	//payload-> sat value, transition time
+	zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, getScaledSaturation(value), "0000") +
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }

@@ -14,47 +14,62 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Door/Window Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.") {
+	definition (name: "Fibaro Door/Window Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Battery"
 		capability "Contact Sensor"
 		capability "Sensor"
         capability "Configuration"
         capability "Tamper Alert"
+		capability "Health Check"
 
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x85, 0x59, 0x22, 0x20, 0x80, 0x70, 0x56, 0x5A, 0x7A, 0x72, 0x8E, 0x71, 0x73, 0x98, 0x2B, 0x9C, 0x30, 0x86, 0x84", outClusters: ""
 	}
 
 	simulator {
-		
+
 	}
-        
+
     tiles(scale: 2) {
     	multiAttributeTile(name:"FGK", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
         	tileAttribute("device.contact", key:"PRIMARY_CONTROL") {
-            	attributeState("open", icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-                attributeState("closed", icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+                attributeState("open", label: "open", icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+                attributeState("closed", label: "closed", icon:"st.contact.contact.closed", backgroundColor:"#00a0dc")
             }
-            
+
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
-				attributeState("active", label:'tamper active', backgroundColor:"#53a7c0")
-				attributeState("inactive", label:'tamper inactive', backgroundColor:"#ffffff")
-			}  
+				attributeState("detected", label:'tampered', backgroundColor:"#00A0DC")
+				attributeState("clear", label:'tamper clear', backgroundColor:"#CCCCCC")
+			}
         }
-                
-        valueTile("battery", "device.battery", inactiveLabel: false, , width: 2, height: 2, decoration: "flat") {
+
+        valueTile("battery", "device.battery", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
             state "battery", label:'${currentValue}% battery', unit:""
         }
-        
+
         main "FGK"
         details(["FGK","battery"])
     }
 }
 
+def installed() {
+	sendEvent(name: "tamper", value: "clear", displayed: false)
+}
+
+def updated() {
+	def tamperValue = device.latestValue("tamper")
+    
+    if (tamperValue == "active") {
+    	sendEvent(name: "tamper", value: "detected", displayed: false)
+    } else if (tamperValue == "inactive") {
+    	sendEvent(name: "tamper", value: "clear", displayed: false)
+    }
+}
+
 // parse events into attributes
 def parse(String description) {
-	log.debug "Parsing '${description}'"   
+	log.debug "Parsing '${description}'"
     def result = []
-    
+
     if (description.startsWith("Err 106")) {
 		if (state.sec) {
 			result = createEvent(descriptionText:description, displayed:false)
@@ -71,7 +86,7 @@ def parse(String description) {
 		return null
 	} else {
     	def cmd = zwave.parse(description, [0x56: 1, 0x71: 3, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1, 0x98: 1])
-    
+
     	if (cmd) {
     		log.debug "Parsed '${cmd}'"
         	zwaveEvent(cmd)
@@ -109,35 +124,35 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
     //(parameter 20 was not changed before device's re-inclusion)
     def map = [:]
     if (cmd.notificationType == 6) {
-    	switch (cmd.event) {                
+    	switch (cmd.event) {
         	case 22:
             	map.name = "contact"
                 map.value = "open"
-                map.descriptionText = "${device.displayName}: is open"
+                map.descriptionText = "${device.displayName} is open"
             	break
-                
+
             case 23:
             	map.name = "contact"
                 map.value = "closed"
-                map.descriptionText = "${device.displayName}: is closed"
+                map.descriptionText = "${device.displayName} is closed"
             	break
         }
     } else if (cmd.notificationType == 7) {
     	switch (cmd.event) {
         	case 0:
             	map.name = "tamper"
-                map.value = "inactive"
-                map.descriptionText = "${device.displayName}: tamper alarm has been deactivated"
+                map.value = "clear"
+                map.descriptionText = "Tamper alert cleared"
 				break
-                
+
         	case 3:
             	map.name = "tamper"
-                map.value = "active"
-                map.descriptionText = "${device.displayName}: tamper alarm activated"
+                map.value = "detected"
+                map.descriptionText = "Tamper alert: sensor removed or covering opened"
             	break
         }
     }
-    
+
     createEvent(map)
 }
 
@@ -150,7 +165,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	createEvent(map)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {    
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
     def cmds = []
     cmds << encap(zwave.batteryV1.batteryGet())
@@ -159,32 +174,32 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     [event, response(cmds)]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) { 
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	log.debug "manufacturerId:   ${cmd.manufacturerId}"
     log.debug "manufacturerName: ${cmd.manufacturerName}"
     log.debug "productId:        ${cmd.productId}"
     log.debug "productTypeId:    ${cmd.productTypeId}"
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecificReport cmd) { 
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecificReport cmd) {
 	log.debug "deviceIdData:                ${cmd.deviceIdData}"
     log.debug "deviceIdDataFormat:          ${cmd.deviceIdDataFormat}"
     log.debug "deviceIdDataLengthIndicator: ${cmd.deviceIdDataLengthIndicator}"
     log.debug "deviceIdType:                ${cmd.deviceIdType}"
-    
+
     if (cmd.deviceIdType == 1 && cmd.deviceIdDataFormat == 1) {//serial number in binary format
 		String serialNumber = "h'"
-        
+
         cmd.deviceIdData.each{ data ->
         	serialNumber += "${String.format("%02X", data)}"
         }
-        
+
         updateDataValue("serialNumber", serialNumber)
         log.debug "${device.displayName} - serial number: ${serialNumber}"
     }
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {	
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     updateDataValue("version", "${cmd.applicationVersion}.${cmd.applicationSubVersion}")
     log.debug "applicationVersion:      ${cmd.applicationVersion}"
     log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
@@ -197,19 +212,37 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 	log.info "${device.displayName}: received command: $cmd - device has reset itself"
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
+	def map = [:]
+	map.value = cmd.sensorValue ? "open" : "closed"
+	map.name = "contact"
+	if (map.value == "open") {
+		map.descriptionText = "${device.displayName} is open"
+	}
+	else {
+		map.descriptionText = "${device.displayName} is closed"
+	}
+	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	log.debug "Catchall reached for cmd: $cmd"
+}
+
 def configure() {
 	log.debug "Executing 'configure'"
-    
+	// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
     def cmds = []
-    
+
     cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds:21600, nodeid: zwaveHubNodeId)//FGK's default wake up interval
-    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
     cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
-    cmds += zwave.versionV1.versionGet()
     cmds += zwave.batteryV1.batteryGet()
     cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId: [zwaveHubNodeId])
-    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
-    
+    cmds += zwave.sensorBinaryV2.sensorBinaryGet()
+	cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
+
     encapSequence(cmds, 500)
 }
 
@@ -228,7 +261,7 @@ private encapSequence(commands, delay=200) {
 
 private encap(physicalgraph.zwave.Command cmd) {
     def secureClasses = [0x20, 0x2B, 0x30, 0x5A, 0x70, 0x71, 0x84, 0x85, 0x8E, 0x9C]
-    
+
     //todo: check if secure inclusion was successful
     //if not do not send security-encapsulated command
 	if (secureClasses.find{ it == cmd.commandClassId }) {

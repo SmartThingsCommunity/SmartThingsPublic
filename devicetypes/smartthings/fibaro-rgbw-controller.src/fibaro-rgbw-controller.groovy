@@ -29,10 +29,10 @@
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-		capability "Configuration" 
+		capability "Configuration"
 		capability "Color Control"
         capability "Power Meter"
-       
+
         command "getDeviceData"
         command "softwhite"
         command "daylight"
@@ -54,12 +54,12 @@
         command "setAdjustedColor"
         command "setWhiteLevel"
         command "test"
-        
+
         attribute "whiteLevel", "string"
-      
+
 		fingerprint deviceId: "0x1101", inClusters: "0x27,0x72,0x86,0x26,0x60,0x70,0x32,0x31,0x85,0x33"
 	}
-    
+
     simulator {
     	status "on":  "command: 2003, payload: FF"
     	status "off": "command: 2003, payload: 00"
@@ -84,14 +84,14 @@
 		}
 		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
 			state "level", action:"switch level.setLevel"
-		}     
+		}
 		controlTile("whiteSliderControl", "device.whiteLevel", "slider", height: 1, width: 3, inactiveLabel: false) {
             state "whiteLevel", action:"setWhiteLevel", label:'White Level'
         }
 		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-        	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821", nextState:"turningOff"
+        	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC", nextState:"turningOff"
             state "off", label:'${name}', action:"switch.on", icon:"st.illuminance.illuminance.dark", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "turningOn", label:'${name}', icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821"
+            state "turningOn", label:'${name}', icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC"
             state "turningOff", label:'${name}', icon:"st.illuminance.illuminance.dark", backgroundColor:"#ffffff"
         }
         valueTile("power", "device.power", decoration: "flat") {
@@ -183,24 +183,24 @@
 		valueTile("hue", "device.hue", inactiveLabel: false, decoration: "flat") {
 			state "hue", label: 'Hue ${currentValue}   '
 		}
-        
+
         main(["switch"])
-        details(["switch", 
-                 "levelSliderControl", 
-                 "rgbSelector", 
-                 "whiteSliderControl", 
+        details(["switch",
+                 "levelSliderControl",
+                 "rgbSelector",
+                 "whiteSliderControl",
                  /*"softwhite",
                  "daylight",
                  "warmwhite",
-                 "red", 
-                 "green", 
+                 "red",
+                 "green",
                  "blue",
                  "white",
                  "cyan",
                  "magenta",
                  "orange",
                  "purple",
-                 "yellow",                 
+                 "yellow",
                  "fireplace",
                  "storm",
                  "deepfade",
@@ -214,7 +214,7 @@
 
 def setAdjustedColor(value) {
 	log.debug "setAdjustedColor: ${value}"
-    
+
     toggleTiles("off") //turn off the hard color tiles
 
     def level = device.latestValue("level")
@@ -223,19 +223,19 @@ def setAdjustedColor(value) {
     log.debug "level is: ${level}"
     value.level = level
 
-	def c = hexToRgb(value.hex) 
+	def c = hexToRgb(value.hex)
 	value.rh = hex(c.r * (level/100))
 	value.gh = hex(c.g * (level/100))
 	value.bh = hex(c.b * (level/100))
-	
-    setColor(value)  
+
+    setColor(value)
 }
 
 def setColor(value) {
 	log.debug "setColor: ${value}"
     log.debug "hue is: ${value.hue}"
     log.debug "saturation is: ${value.saturation}"
-    
+
     if (value.size() < 8)
     	toggleTiles("off")
 
@@ -246,22 +246,22 @@ def setColor(value) {
         value.gh = hex(rgb.g)
         value.bh = hex(rgb.b)
     }
-    
+
     if ((value.size() == 3) && (value.hue != null) && (value.saturation != null) && (value.level)) { //user passed in a level value too from outside (App)
     	def rgb = hslToRGB(value.hue, value.saturation, 0.5)
         value.hex = rgbToHex(rgb)
         value.rh = hex(rgb.r * value.level/100)
         value.gh = hex(rgb.g * value.level/100)
-        value.bh = hex(rgb.b * value.level/100)       
+        value.bh = hex(rgb.b * value.level/100)
     }
-    
+
     if (( value.size() == 1) && (value.hex)) { //being called from outside of device (App) with only hex
 		def rgbInt = hexToRgb(value.hex)
         value.rh = hex(rgbInt.r)
         value.gh = hex(rgbInt.g)
         value.bh = hex(rgbInt.b)
     }
-    
+
     if (( value.size() == 2) && (value.hex) && (value.level)) { //being called from outside of device (App) with only hex and level
 
         def rgbInt = hexToRgb(value.hex)
@@ -269,7 +269,7 @@ def setColor(value) {
         value.gh = hex(rgbInt.g * value.level/100)
         value.bh = hex(rgbInt.b * value.level/100)
     }
-    
+
     if (( value.size() == 1) && (value.colorName)) { //being called from outside of device (App) with only color name
         def colorData = getColorData(value.colorName)
         value.rh = colorData.rh
@@ -277,7 +277,7 @@ def setColor(value) {
         value.bh = colorData.bh
         value.hex = "#${value.rh}${value.gh}${value.bh}"
     }
-    
+
     if (( value.size() == 2) && (value.colorName) && (value.level)) { //being called from outside of device (App) with only color name and level
 		def colorData = getColorData(value.colorName)
         value.rh = hex(colorData.r * value.level/100)
@@ -285,7 +285,7 @@ def setColor(value) {
         value.bh = hex(colorData.b * value.level/100)
         value.hex = "#${hex(colorData.r)}${hex(colorData.g)}${hex(colorData.b)}"
     }
-    
+
     if (( value.size() == 3) && (value.red != null) && (value.green != null) && (value.blue != null)) { //being called from outside of device (App) with only color values (0-255)
         value.rh = hex(value.red)
         value.gh = hex(value.green)
@@ -299,36 +299,42 @@ def setColor(value) {
         value.bh = hex(value.blue * value.level/100)
         value.hex = "#${hex(value.red)}${hex(value.green)}${hex(value.blue)}"
     }
-    
-	sendEvent(name: "hue", value: value.hue, displayed: false)
-	sendEvent(name: "saturation", value: value.saturation, displayed: false)
-	sendEvent(name: "color", value: value.hex, displayed: false)
-	if (value.level) {
-		sendEvent(name: "level", value: value.level)
-	}
-	if (value.switch) {
-		sendEvent(name: "switch", value: value.switch)
-	}
-	   
+
+    if(value.hue) {
+        sendEvent(name: "hue", value: value.hue, displayed: false)
+    }
+    if(value.saturation) {
+        sendEvent(name: "saturation", value: value.saturation, displayed: false)
+    }
+    if(value.hex?.trim()) {
+        sendEvent(name: "color", value: value.hex, displayed: false)
+    }
+    if (value.level) {
+        sendEvent(name: "level", value: value.level)
+    }
+    if (value.switch?.trim()) {
+        sendEvent(name: "switch", value: value.switch)
+    }
+
     sendRGB(value.rh, value.gh, value.bh)
 }
 
 def setLevel(level) {
 	log.debug "setLevel($level)"
-    
+
 	if (level == 0) { off() }
 	else if (device.latestValue("switch") == "off") { on() }
-    
+
     def colorHex = device.latestValue("color")
     if (colorHex == null)
 		colorHex = "#FFFFFF"
-        
+
     def c = hexToRgb(colorHex)
-    
+
     def r = hex(c.r * (level/100))
     def g = hex(c.g * (level/100))
     def b = hex(c.b * (level/100))
-    
+
 	sendEvent(name: "level", value: level)
     sendEvent(name: "setLevel", value: level, displayed: false)
 	sendRGB(r, g, b)
@@ -337,14 +343,14 @@ def setLevel(level) {
 
 def setWhiteLevel(value) {
 	log.debug "setWhiteLevel: ${value}"
-    def level = Math.min(value as Integer, 99)    
+    def level = Math.min(value as Integer, 99)
     level = 255 * level/99 as Integer
     def channel = 0
 
 	if (device.latestValue("switch") == "off") { on() }
-    
+
     sendEvent(name: "whiteLevel", value: value)
-    sendWhite(channel, value)       
+    sendWhite(channel, value)
 }
 
 def sendWhite(channel, value) {
@@ -367,20 +373,20 @@ def sendRGBW(redHex, greenHex, blueHex, whiteHex) {
 
 def configure() {
 	log.debug "Configuring Device For SmartThings Use"
-    
 
-    
+
+
     def cmds = []
-    
+
     // send associate to group 3 to get sensor data reported only to hub
     cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId]).format()
-    
-    
+
+
     //cmds << sendEvent(name: "level", value: 50)
     //cmds << on()
     //cmds << doColorButton("Green")
     delayBetween(cmds, 500)
-    
+
 }
 
 def parse(String description) {
@@ -411,11 +417,11 @@ def parse(String description) {
 
 def getDeviceData() {
     def cmd = []
-    
-    cmd << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet()) 
+
+    cmd << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
     cmd << response(zwave.versionV1.versionGet())
 	cmd << response(zwave.firmwareUpdateMdV1.firmwareMdGet())
-    
+
     delayBetween(cmd, 500)
 }
 
@@ -426,7 +432,7 @@ def createEvent(physicalgraph.zwave.commands.manufacturerspecificv2.Manufacturer
     log.debug "productTypeId:    ${cmd.productTypeId}"
 }
 
-def createEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd, Map item1) {	
+def createEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd, Map item1) {
     updateDataValue("applicationVersion", "${cmd.applicationVersion}")
     log.debug "applicationVersion:      ${cmd.applicationVersion}"
     log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
@@ -435,13 +441,13 @@ def createEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd, Map it
     log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
 }
 
-def createEvent(physicalgraph.zwave.commands.firmwareupdatemdv1.FirmwareMdReport cmd, Map item1) { 
+def createEvent(physicalgraph.zwave.commands.firmwareupdatemdv1.FirmwareMdReport cmd, Map item1) {
     log.debug "checksum:       ${cmd.checksum}"
     log.debug "firmwareId:     ${cmd.firmwareId}"
     log.debug "manufacturerId: ${cmd.manufacturerId}"
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.colorcontrolv1.CapabilityReport cmd, Map item1) { 
+def zwaveEvent(physicalgraph.zwave.commands.colorcontrolv1.CapabilityReport cmd, Map item1) {
 
 	log.debug "In CapabilityReport"
 }
@@ -546,7 +552,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
      def value = "when off"
      if (cmd.configurationValue[0] == 1) {value = "when on"}
      if (cmd.configurationValue[0] == 2) {value = "never"}
-     [name: "indicatorStatus", value: value, display: false]
+     [name: "indicatorStatus", value: value, displayed: false]
 }
 */
 def createEvent(physicalgraph.zwave.Command cmd,  Map map) {
@@ -557,7 +563,7 @@ def createEvent(physicalgraph.zwave.Command cmd,  Map map) {
 def on() {
 	log.debug "on()"
 	sendEvent(name: "switch", value: "on")
-	delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(), 
+	delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(),
     			  zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
@@ -593,7 +599,7 @@ def refresh() {
  * @return none
  */
 def updateZwaveParam(params) {
-	if ( params ) {   
+	if ( params ) {
         def pNumber = params.paramNumber
         def pSize	= params.size
         def pValue	= [params.value]
@@ -601,9 +607,9 @@ def updateZwaveParam(params) {
 
 		def cmds = []
         cmds << zwave.configurationV1.configurationSet(configurationValue: pValue, parameterNumber: pNumber, size: pSize).format()
-        
+
         cmds << zwave.configurationV1.configurationGet(parameterNumber: pNumber).format()
-        delayBetween(cmds, 1500)        
+        delayBetween(cmds, 1500)
     }
 }
 
@@ -612,22 +618,22 @@ def test() {
     //value = [hue: 0, saturation: 100, level: 5]
     //value = [red: 255, green: 0, blue: 255, level: 60]
 	//setColor(value)
-    
+
     def cmd = []
-    
+
     if ( !state.cnt ) {
     	state.cnt = 6
     } else {
     	state.cnt = state.cnt + 1
     }
-    
+
     if ( state.cnt > 10 )
     	state.cnt = 6
-    
+
     // run programmed light show
 	cmd << zwave.configurationV1.configurationSet(configurationValue: [state.cnt], parameterNumber: 72, size: 1).format()
-    cmd << zwave.configurationV1.configurationGet(parameterNumber: 72).format()  
-    
+    cmd << zwave.configurationV1.configurationGet(parameterNumber: 72).format()
+
     delayBetween(cmd, 500)
 
 }
@@ -638,23 +644,23 @@ def colorNameToRgb(color) {
         [name:"Soft White",	r: 255, g: 241, b: 224	],
         [name:"Daylight", 	r: 255, g: 255, b: 251	],
         [name:"Warm White", r: 255, g: 244, b: 229	],
-        
+
         [name:"Red", 		r: 255, g: 0,	b: 0	],
 		[name:"Green", 		r: 0, 	g: 255,	b: 0	],
         [name:"Blue", 		r: 0, 	g: 0,	b: 255	],
-        
+
 		[name:"Cyan", 		r: 0, 	g: 255,	b: 255	],
-        [name:"Magenta", 	r: 255, g: 0,	b: 33	],       
+        [name:"Magenta", 	r: 255, g: 0,	b: 33	],
         [name:"Orange", 	r: 255, g: 102, b: 0	],
-        
+
         [name:"Purple", 	r: 170, g: 0,	b: 255	],
 		[name:"Yellow", 	r: 255, g: 255, b: 0	],
         [name:"White", 		r: 255, g: 255, b: 255	]
 	]
-    
-    def colorData = [:]    
+
+    def colorData = [:]
     colorData = colors.find { it.name == color }
-    
+
     colorData
 }
 
@@ -670,7 +676,7 @@ def hexToRgb(colorHex) {
 	def rrInt = Integer.parseInt(colorHex.substring(1,3),16)
     def ggInt = Integer.parseInt(colorHex.substring(3,5),16)
     def bbInt = Integer.parseInt(colorHex.substring(5,7),16)
-    
+
     def colorData = [:]
     colorData = [r: rrInt, g: ggInt, b: bbInt]
     colorData
@@ -681,7 +687,7 @@ def rgbToHex(rgb) {
     def g = hex(rgb.g)
     def b = hex(rgb.b)
     def hexColor = "#${r}${g}${b}"
-    
+
     hexColor
 }
 
@@ -689,11 +695,11 @@ def hslToRGB(float var_h, float var_s, float var_l) {
 	float h = var_h / 100
     float s = var_s / 100
     float l = var_l
-    
+
     def r = 0
     def g = 0
     def b = 0
-    
+
 	if (s == 0) {
     	r = l * 255
         g = l * 255
@@ -705,26 +711,26 @@ def hslToRGB(float var_h, float var_s, float var_l) {
         } else {
         	var_2 = (l + s) - (s * l)
         }
-                
+
         float var_1 = 2 * l - var_2
-        
+
         r = 255 * hueToRgb(var_1, var_2, h + (1 / 3))
         g = 255 * hueToRgb(var_1, var_2, h)
-        b = 255 * hueToRgb(var_1, var_2, h - (1 / 3))    
+        b = 255 * hueToRgb(var_1, var_2, h - (1 / 3))
     }
-    
+
     def rgb = [:]
     rgb = [r: r, g: g, b: b]
 
-    rgb 
+    rgb
 }
 
 def hueToRgb(v1, v2, vh) {
-	if (vh < 0) { vh += 1 }            
+	if (vh < 0) { vh += 1 }
 	if (vh > 1) { vh -= 1 }
 	if ((6 * vh) < 1) { return (v1 + (v2 - v1) * 6 * vh) }
     if ((2 * vh) < 1) { return (v2) }
-    if ((3 * vh) < 2) { return (v1 + (v2 - $v1) * ((2 / 3 - vh) * 6)) }    
+    if ((3 * vh) < 2) { return (v1 + (v2 - v1) * ((2 / 3 - vh) * 6)) }
     return (v1)
 }
 
@@ -735,49 +741,49 @@ def rgbToHSL(rgb) {
     def h = 0
     def s = 0
     def l = 0
-    
+
     def var_min = [r,g,b].min()
     def var_max = [r,g,b].max()
     def del_max = var_max - var_min
-    
+
     l = (var_max + var_min) / 2
-    
+
     if (del_max == 0) {
             h = 0
             s = 0
     } else {
-    	if (l < 0.5) { s = del_max / (var_max + var_min) } 
+    	if (l < 0.5) { s = del_max / (var_max + var_min) }
         else { s = del_max / (2 - var_max - var_min) }
 
         def del_r = (((var_max - r) / 6) + (del_max / 2)) / del_max
         def del_g = (((var_max - g) / 6) + (del_max / 2)) / del_max
         def del_b = (((var_max - b) / 6) + (del_max / 2)) / del_max
 
-        if (r == var_max) { h = del_b - del_g } 
-        else if (g == var_max) { h = (1 / 3) + del_r - del_b } 
+        if (r == var_max) { h = del_b - del_g }
+        else if (g == var_max) { h = (1 / 3) + del_r - del_b }
         else if (b == var_max) { h = (2 / 3) + del_g - del_r }
-        
+
 		if (h < 0) { h += 1 }
         if (h > 1) { h -= 1 }
 	}
-    def hsl = [:]    
+    def hsl = [:]
     hsl = [h: h * 100, s: s * 100, l: l]
-    
+
     hsl
 }
 
 def getColorData(colorName) {
 	log.debug "getColorData: ${colorName}"
-    
+
     def colorRGB = colorNameToRgb(colorName)
     def colorHex = rgbToHex(colorRGB)
 	def colorHSL = rgbToHSL(colorRGB)
-        
+
     def colorData = [:]
-    colorData = [h: colorHSL.h, 
-    			 s: colorHSL.s, 
-                 l: device.latestValue("level"), 
-                 r: colorRGB.r, 
+    colorData = [h: colorHSL.h,
+    			 s: colorHSL.s,
+                 l: device.latestValue("level"),
+                 r: colorRGB.r,
                  g: colorRGB.g,
                  b: colorRGB.b,
                  rh: hex(colorRGB.r),
@@ -785,8 +791,8 @@ def getColorData(colorName) {
                  bh: hex(colorRGB.b),
                  hex: colorHex,
                  alpha: 1]
-     
-     colorData                 
+
+     colorData
 }
 
 def doColorButton(colorName) {
@@ -798,7 +804,7 @@ def doColorButton(colorName) {
     def maxLevel = hex(99)
 
     toggleTiles(colorName.toLowerCase().replaceAll("\\s",""))
-    
+
     if 		( colorName == "Fire Place" ) 	{ updateZwaveParam([paramNumber:72, value:6,  size:1]) }
 	else if ( colorName == "Storm" ) 		{ updateZwaveParam([paramNumber:72, value:7,  size:1]) }
     else if ( colorName == "Deep Fade" ) 	{ updateZwaveParam([paramNumber:72, value:8,  size:1]) }
@@ -808,8 +814,8 @@ def doColorButton(colorName) {
     else if ( colorName == "Daylight" ) 	{ String.format("33050400${maxLevel}02${maxLevel}03${maxLevel}04${maxLevel}%02X", 100) }
     else {
 		def c = getColorData(colorName)
-		def newValue = ["hue": c.h, "saturation": c.s, "level": level, "red": c.r, "green": c.g, "blue": c.b, "hex": c.hex, "alpha": c.alpha]  
-    	setColor(newValue)            
+		def newValue = ["hue": c.h, "saturation": c.s, "level": level, "red": c.r, "green": c.g, "blue": c.b, "hex": c.hex, "alpha": c.alpha]
+    	setColor(newValue)
     	def r = hex(c.r * (level/100))
     	def g = hex(c.g * (level/100))
     	def b = hex(c.b * (level/100))
@@ -823,19 +829,19 @@ def toggleTiles(color) {
 	if ( !state.colorTiles ) {
     	state.colorTiles = ["softwhite","daylight","warmwhite","red","green","blue","cyan","magenta","orange","purple","yellow","white","fireplace","storm","deepfade","litefade","police"]
     }
-    
+
     def cmds = []
-    
+
     state.colorTiles.each({
     	if ( it == color ) {
         	log.debug "Turning ${it} on"
-            cmds << sendEvent(name: it, value: "on${it}", display: True, descriptionText: "${device.displayName} ${color} is 'ON'", isStateChange: true)
+            cmds << sendEvent(name: it, value: "on${it}", displayed: True, descriptionText: "${device.displayName} ${color} is 'ON'", isStateChange: true)
         } else {
         	//log.debug "Turning ${it} off"
         	cmds << sendEvent(name: it, value: "off${it}", displayed: false)
         }
     })
-    
+
     delayBetween(cmds, 2500)
 }
 

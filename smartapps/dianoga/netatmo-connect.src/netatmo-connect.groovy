@@ -5,7 +5,6 @@ import java.text.DecimalFormat
 import groovy.json.JsonSlurper
 
 private getApiUrl()			{ "https://api.netatmo.com" }
-private getVendorName()		{ "netatmo" }
 private getVendorAuthPath()	{ "${apiUrl}/oauth2/authorize?" }
 private getVendorTokenPath(){ "${apiUrl}/oauth2/token" }
 private getVendorIcon()		{ "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1%402x.png" }
@@ -14,14 +13,13 @@ private getClientSecret()	{ appSettings.clientSecret }
 private getServerUrl() 		{ appSettings.serverUrl }
 private getShardUrl()		{ return getApiServerUrl() }
 private getCallbackUrl()	{ "${serverUrl}/oauth/callback" }
-private getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${shardUrl}" }
+private getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
 
-// Automatically generated. Make future change here.
 definition(
 	name: "Netatmo (Connect)",
 	namespace: "dianoga",
 	author: "Brian Steere",
-	description: "Netatmo Integration",
+	description: "Integrate your Netatmo devices with SmartThings",
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/netamo-icon-1%402x.png",
@@ -44,15 +42,16 @@ mappings {
 }
 
 def authPage() {
-	log.debug "In authPage"
+	// log.debug "running authPage()"
 
 	def description
 	def uninstallAllowed = false
 	def oauthTokenProvided = false
 
-	if (!state.accessToken) {
-		log.debug "About to create access token."
-		state.accessToken = createAccessToken()
+	// If an access token doesn't exist, create one
+	if (!atomicState.accessToken) {
+		atomicState.accessToken = createAccessToken()
+        log.debug "Created access token"
 	}
 
 	if (canInstallLabs()) {
@@ -60,36 +59,32 @@ def authPage() {
 		def redirectUrl = getBuildRedirectUrl()
 		// log.debug "Redirect url = ${redirectUrl}"
 
-		if (state.authToken) {
-			description = "Tap 'Next' to proceed"
+		if (atomicState.authToken) {
+			description = "Tap 'Next' to select devices"
 			uninstallAllowed = true
 			oauthTokenProvided = true
 		} else {
-			description = "Click to enter Credentials."
+			description = "Tap to enter credentials"
 		}
 
 		if (!oauthTokenProvided) {
-			log.debug "Show the login page"
+			log.debug "Showing the login page"
 			return dynamicPage(name: "Credentials", title: "Authorize Connection", nextPage:"listDevices", uninstall: uninstallAllowed, install:false) {
 				section() {
-					paragraph "Tap below to log in to the netatmo and authorize SmartThings access."
-					href url:redirectUrl, style:"embedded", required:false, title:"Connect to ${getVendorName()}:", description:description
+					paragraph "Tap below to login to Netatmo and authorize SmartThings access"
+					href url:redirectUrl, style:"embedded", required:false, title:"Connect to Netatmo", description:description
 				}
 			}
 		} else {
-			log.debug "Show the devices page"
-			return dynamicPage(name: "Credentials", title: "Credentials Accepted!", nextPage:"listDevices", uninstall: uninstallAllowed, install:false) {
+			log.debug "Showing the devices page"
+			return dynamicPage(name: "Credentials", title: "Connected", nextPage:"listDevices", uninstall: uninstallAllowed, install:false) {
 				section() {
-					input(name:"Devices", style:"embedded", required:false, title:"${getVendorName()} is now connected to SmartThings!", description:description) 
+					input(name:"Devices", style:"embedded", required:false, title:"Netatmo is connected to SmartThings", description:description) 
 				}
 			}
 		}
 	} else {
-		def upgradeNeeded = """To use SmartThings Labs, your Hub should be completely up to date.
-
-To update your Hub, access Location Settings in the Main Menu (tap the gear next to your location name), select your Hub, and choose "Update Hub"."""
-
-
+		def upgradeNeeded = """To use SmartThings Labs, your Hub should be completely up to date. To update your Hub, access Location Settings in the Main Menu (tap the gear next to your location name), select your Hub, and choose "Update Hub"."""
 		return dynamicPage(name:"Credentials", title:"Upgrade needed!", nextPage:"", install:false, uninstall: true) {
 			section {
 				paragraph "$upgradeNeeded"
@@ -100,15 +95,15 @@ To update your Hub, access Location Settings in the Main Menu (tap the gear next
 }
 
 def oauthInitUrl() {
-	log.debug "In oauthInitUrl"
+	// log.debug "runing oauthInitUrl()"
 
-	state.oauthInitState = UUID.randomUUID().toString()
+	atomicState.oauthInitState = UUID.randomUUID().toString()
 
 	def oauthParams = [
 		response_type: "code",
 		client_id: getClientId(),
 		client_secret: getClientSecret(),
-		state: state.oauthInitState,
+		state: atomicState.oauthInitState,
 		redirect_uri: getCallbackUrl(),
 		scope: "read_station"
 	]
@@ -119,73 +114,72 @@ def oauthInitUrl() {
 }
 
 def callback() {
-	// log.debug "callback()>> params: $params, params.code ${params.code}"
+	// log.debug "running callback()"
 
 	def code = params.code
 	def oauthState = params.state
 
-	if (oauthState == state.oauthInitState) {
+	if (oauthState == atomicState.oauthInitState) {
 
 		def tokenParams = [
+        	grant_type: "authorization_code",
 			client_secret: getClientSecret(),
 			client_id : getClientId(),
-			grant_type: "authorization_code",
-			redirect_uri: getCallbackUrl(),
 			code: code,
-			scope: "read_station"
+			scope: "read_station",
+            redirect_uri: getCallbackUrl()
 		]
 
 		// log.debug "TOKEN URL: ${getVendorTokenPath() + toQueryString(tokenParams)}"
 
 		def tokenUrl = getVendorTokenPath()
-		def params = [
+		def requestTokenParams = [
 			uri: tokenUrl,
-			contentType: 'application/x-www-form-urlencoded',
+			requestContentType: 'application/x-www-form-urlencoded',
 			body: tokenParams
 		]
+    
+		// log.debug "PARAMS: ${requestTokenParams}"
 
-		// log.debug "PARAMS: ${params}"
+		try {
+            httpPost(requestTokenParams) { resp ->
+                //log.debug "Data: ${resp.data}"
+                atomicState.refreshToken = resp.data.refresh_token
+                atomicState.authToken = resp.data.access_token
+                // resp.data.expires_in is in milliseconds so we need to convert it to seconds
+                atomicState.tokenExpires = now() + (resp.data.expires_in * 1000)
+            }
+        } catch (e) {
+			      log.debug "callback() failed: $e"
+        }
 
-		httpPost(params) { resp ->
-
-			def slurper = new JsonSlurper()
-
-			resp.data.each { key, value ->
-				def data = slurper.parseText(key)
-
-				state.refreshToken = data.refresh_token
-				state.authToken = data.access_token
-				state.tokenExpires = now() + (data.expires_in * 1000)
-				// log.debug "swapped token: $resp.data"
-			}
-		}
-
-		// Handle success and failure here, and render stuff accordingly
-		if (state.authToken) {
+		// If we successfully got an authToken run sucess(), else fail()
+		if (atomicState.authToken) {
 			success()
 		} else {
 			fail()
 		}
 
 	} else {
-		log.error "callback() failed oauthState != state.oauthInitState"
+		log.error "callback() failed oauthState != atomicState.oauthInitState"
 	}
 }
 
 def success() {
-	log.debug "in success"
+	log.debug "OAuth flow succeeded"
 	def message = """
-	<p>We have located your """ + getVendorName() + """ account.</p>
-	<p>Tap 'Done' to continue to Devices.</p>
+	<p>Success!</p>
+	<p>Tap 'Done' to continue</p>
 	"""
 	connectionStatus(message)
 }
 
 def fail() {
-	log.debug "in fail"
+	log.debug "OAuth flow failed"
+    atomicState.authToken = null
 	def message = """
-	<p>The connection could not be established!</p>
-	<p>Click 'Done' to return to the menu.</p>
+	<p>Error</p>
+	<p>Tap 'Done' to return</p>
 	"""
 	connectionStatus(message)
 }
@@ -197,13 +191,12 @@ def connectionStatus(message, redirectUrl = null) {
 			<meta http-equiv="refresh" content="3; url=${redirectUrl}" />
 		"""
 	}
-
 	def html = """
 		<!DOCTYPE html>
 		<html>
 		<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>${getVendorName()} Connection</title>
+		<title>Netatmo Connection</title>
 		<style type="text/css">
 			* { box-sizing: border-box; }
 			@font-face {
@@ -229,7 +222,6 @@ def connectionStatus(message, redirectUrl = null) {
 			.container {
 				width: 100%;
 				padding: 40px;
-				/*background: #eee;*/
 				text-align: center;
 			}
 			img {
@@ -245,14 +237,9 @@ def connectionStatus(message, redirectUrl = null) {
 				color: #666666;
 				margin-bottom: 0;
 			}
-			/*
-			p:last-child {
-				margin-top: 0px;
-			}
-			*/
 			span {
 				font-family: 'Swiss 721 W01 Light';
-				}
+			}
 		</style>
 		</head>
 		<body>
@@ -269,46 +256,47 @@ def connectionStatus(message, redirectUrl = null) {
 }
 
 def refreshToken() {
-	log.debug "In refreshToken"
+	// Check if atomicState has a refresh token
+	if (atomicState.refreshToken) {
+        log.debug "running refreshToken()"
 
-	def oauthParams = [
-		client_secret: getClientSecret(),
-		client_id: getClientId(),
-		grant_type: "refresh_token",
-		refresh_token: state.refreshToken
-	]
+        def oauthParams = [
+            grant_type: "refresh_token",
+            refresh_token: atomicState.refreshToken,
+            client_secret: getClientSecret(),
+            client_id: getClientId(),
+        ]
 
-	def tokenUrl = getVendorTokenPath()
-	def params = [
-		uri: tokenUrl,
-		contentType: 'application/x-www-form-urlencoded',
-		body: oauthParams,
-	]
+        def tokenUrl = getVendorTokenPath()
+        
+        def requestOauthParams = [
+            uri: tokenUrl,
+            requestContentType: 'application/x-www-form-urlencoded',
+            body: oauthParams
+        ]
+        
+        // log.debug "PARAMS: ${requestOauthParams}"
 
-	// OAuth Step 2: Request access token with our client Secret and OAuth "Code"
-	try {
-		httpPost(params) { response ->
-			def slurper = new JsonSlurper();
+        try {
+            httpPost(requestOauthParams) { resp ->
+            	//log.debug "Data: ${resp.data}"
+                atomicState.refreshToken = resp.data.refresh_token
+                atomicState.authToken = resp.data.access_token
+                // resp.data.expires_in is in milliseconds so we need to convert it to seconds
+                atomicState.tokenExpires = now() + (resp.data.expires_in * 1000)
+                return true
+            }
+        } catch (e) {
+            log.debug "refreshToken() failed: $e"
+        }
 
-			response.data.each {key, value ->
-				def data = slurper.parseText(key);
-				// log.debug "Data: $data"
-
-				state.refreshToken = data.refresh_token
-				state.accessToken = data.access_token
-				state.tokenExpires = now() + (data.expires_in * 1000)
-				return true
-			}
-
-		}
-	} catch (Exception e) {
-		log.debug "Error: $e"
-	}
-
-	// We didn't get an access token
-	if ( !state.accessToken ) {
-		return false
-	}
+        // If we didn't get an authToken
+        if (!atomicState.authToken) {
+            return false
+        }
+	} else {
+    	return false
+    }
 }
 
 String toQueryString(Map m) {
@@ -317,13 +305,11 @@ String toQueryString(Map m) {
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-
 	initialize()
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-
 	unsubscribe()
 	unschedule()
 	initialize()
@@ -331,9 +317,9 @@ def updated() {
 
 def initialize() {
 	log.debug "Initialized with settings: ${settings}"
-
+    
 	// Pull the latest device info into state
-	getDeviceList();
+	getDeviceList()
 
 	settings.devices.each {
 		def deviceId = it
@@ -367,57 +353,56 @@ def initialize() {
 	def delete = getChildDevices().findAll { !settings.devices.contains(it.deviceNetworkId) }
 	log.debug "Delete: $delete"
 	delete.each { deleteChildDevice(it.deviceNetworkId) }
-
-	// Do the initial poll
+    
+	// Run initial poll and schedule future polls
 	poll()
-	// Schedule it to run every 5 minutes
 	runEvery5Minutes("poll")
 }
 
 def uninstalled() {
-	log.debug "In uninstalled"
-
+	log.debug "Uninstalling"
 	removeChildDevices(getChildDevices())
 }
 
 def getDeviceList() {
-	log.debug "In getDeviceList"
+	if (atomicState.authToken) {
+    
+        log.debug "Getting stations data"
 
-	def deviceList = [:]
-	state.deviceDetail = [:]
-	state.deviceState = [:]
+        def deviceList = [:]
+        state.deviceDetail = [:]
+        state.deviceState = [:]
 
-	apiGet("/api/devicelist") { response ->
-		response.data.body.devices.each { value ->
-			def key = value._id
-			deviceList[key] = "${value.station_name}: ${value.module_name}"
-			state.deviceDetail[key] = value
-            state.deviceState[key] = value.dashboard_data
-		}
-		response.data.body.modules.each { value ->
-			def key = value._id
-			deviceList[key] = "${state.deviceDetail[value.main_device].station_name}: ${value.module_name}"
-			state.deviceDetail[key] = value
-            state.deviceState[key] = value.dashboard_data
-		}
-	}
-
-	return deviceList.sort() { it.value.toLowerCase() }
+        apiGet("/api/getstationsdata") { resp ->
+            resp.data.body.devices.each { value ->
+                def key = value._id
+                deviceList[key] = "${value.station_name}: ${value.module_name}"
+                state.deviceDetail[key] = value
+                state.deviceState[key] = value.dashboard_data
+                value.modules.each { value2 ->            
+                    def key2 = value2._id
+                    deviceList[key2] = "${value.station_name}: ${value2.module_name}"
+                    state.deviceDetail[key2] = value2
+                    state.deviceState[key2] = value2.dashboard_data            
+                }
+            }
+        }
+        
+        return deviceList.sort() { it.value.toLowerCase() }
+        
+	} else {
+    	return null
+  }
 }
 
 private removeChildDevices(delete) {
-	log.debug "In removeChildDevices"
-
-	log.debug "deleting ${delete.size()} devices"
-
+	log.debug "Removing ${delete.size()} devices"
 	delete.each {
 		deleteChildDevice(it.deviceNetworkId)
 	}
 }
 
 def createChildDevice(deviceFile, dni, name, label) {
-	log.debug "In createChildDevice"
-
 	try {
 		def existingDevice = getChildDevice(dni)
 		if(!existingDevice) {
@@ -432,13 +417,13 @@ def createChildDevice(deviceFile, dni, name, label) {
 }
 
 def listDevices() {
-	log.debug "In listDevices"
+	log.debug "Listing devices"
 
 	def devices = getDeviceList()
 
-	dynamicPage(name: "listDevices", title: "Choose devices", install: true) {
+	dynamicPage(name: "listDevices", title: "Choose Devices", install: true) {
 		section("Devices") {
-			input "devices", "enum", title: "Select Device(s)", required: false, multiple: true, options: devices
+			input "devices", "enum", title: "Select Devices", required: false, multiple: true, options: devices
 		}
 
         section("Preferences") {
@@ -448,30 +433,36 @@ def listDevices() {
 }
 
 def apiGet(String path, Map query, Closure callback) {
-	if(now() >= state.tokenExpires) {
-		refreshToken();
+	log.debug "running apiGet()"
+    
+    // If the current time is over the expiration time, request a new token
+	if(now() >= atomicState.tokenExpires) {
+    	atomicState.authToken = null
+		refreshToken()
 	}
 
-	query['access_token'] = state.accessToken
-	def params = [
+	def queryParam = [
+    	access_token: atomicState.authToken
+    ]
+    
+	def apiGetParams = [
 		uri: getApiUrl(),
 		path: path,
-		'query': query
+		query: queryParam
 	]
-	// log.debug "API Get: $params"
+    
+	// log.debug "apiGet(): $apiGetParams"
 
 	try {
-		httpGet(params)	{ response ->
-			callback.call(response)
+		httpGet(apiGetParams) { resp ->
+			callback.call(resp)
 		}
-	} catch (Exception e) {
-		// This is most likely due to an invalid token. Try to refresh it and try again.
-		log.debug "apiGet: Call failed $e"
-		if(refreshToken()) {
-			log.debug "apiGet: Trying again after refreshing token"
-			httpGet(params)	{ response ->
-				callback.call(response)
-			}
+	} catch (e) {
+		log.debug "apiGet() failed: $e"
+        // Netatmo API has rate limits so a failure here doesn't necessarily mean our token has expired, but we will check anyways
+        if(now() >= atomicState.tokenExpires) {
+    		atomicState.authToken = null
+			refreshToken()
 		}
 	}
 }
@@ -481,10 +472,12 @@ def apiGet(String path, Closure callback) {
 }
 
 def poll() {
-	log.debug "In Poll"
-	getDeviceList();
+	log.debug "Polling..."
+    
+	getDeviceList()
+    
 	def children = getChildDevices()
-    log.debug "State: ${state.deviceState}"
+    //log.debug "State: ${state.deviceState}"
 
 	settings.devices.each { deviceId ->
 		def detail = state?.deviceDetail[deviceId]
@@ -540,15 +533,13 @@ def rainToPref(rain) {
 }
 
 def debugEvent(message, displayEvent) {
-
 	def results = [
 		name: "appdebug",
 		descriptionText: message,
 		displayed: displayEvent
 	]
 	log.debug "Generating AppDebug Event: ${results}"
-	sendEvent (results)
-
+	sendEvent(results)
 }
 
 private Boolean canInstallLabs() {

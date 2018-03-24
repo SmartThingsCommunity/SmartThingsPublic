@@ -42,9 +42,9 @@ metadata {
 
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
+			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 		}
 		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false) {
@@ -144,15 +144,19 @@ def off() {
 }
 
 def setLevel(value) {
+	def valueaux = value as Integer
+	def level = Math.max(Math.min(valueaux, 99), 0)
 	secureSequence([
-		zwave.basicV1.basicSet(value: value),
+		zwave.basicV1.basicSet(value: level),
 		zwave.switchMultilevelV1.switchMultilevelGet()
 	])
 }
 
 def setLevel(value, duration) {
+	def valueaux = value as Integer
+	def level = Math.max(Math.min(valueaux, 99), 0)
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
-	secure(zwave.switchMultilevelV2.switchMultilevelSet(value: value, dimmingDuration: dimmingDuration))
+	secure(zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration))
 }
 
 def refresh() {

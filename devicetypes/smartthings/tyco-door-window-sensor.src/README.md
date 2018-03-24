@@ -1,6 +1,6 @@
 # Tyco Door Window Sensor
 
-
+Cloud Execution
 
 Works with: 
 
@@ -23,10 +23,11 @@ Works with:
 
 ## Device Health
 
-Contact sensor with maxReportTime of 5 mins.
+Tyco Door Window Sensor with reporting interval of 5 mins.
 Check-in interval is double the value of maxReportTime for Zigbee device. 
 This gives the device twice the amount of time to respond before it is marked as offline.
-Check-in interval = 12 min
+
+* __12min__ checkInterval
 
 ## Battery Specification
 

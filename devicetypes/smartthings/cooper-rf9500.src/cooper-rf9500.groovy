@@ -12,11 +12,11 @@
  *
  */
 metadata {
-	definition (name: "Cooper RF9500", namespace: "smartthings", author: "juano23@gmail.com") {
+	definition (name: "Cooper RF9500", namespace: "smartthings", author: "juano23@gmail.com", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Button"
-        capability "Actuator"
+		capability "Actuator"
 
 		//fingerprint deviceId: "0x1200", inClusters: "0x77 0x86 0x75 0x73 0x85 0x72 0xEF", outClusters: "0x26"
 	}
@@ -36,7 +36,7 @@ metadata {
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label: '${name}', action: "switch.on", icon: "st.Home.home30", backgroundColor: "#ffffff"
-			state "on", label: '${name}', action: "switch.off", icon: "st.Home.home30", backgroundColor: "#79b821"
+			state "on", label: '${name}', action: "switch.off", icon: "st.Home.home30", backgroundColor: "#00a0dc"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -74,20 +74,20 @@ def off() {
 }
 
 def levelup() {
-	def curlevel = device.currentValue('level') as Integer 
+	def curlevel = device.currentValue('level') as Integer
 	if (curlevel <= 90)
-    	setLevel(curlevel + 10);     
+    	setLevel(curlevel + 10);
 }
 
 def leveldown() {
-	def curlevel = device.currentValue('level') as Integer 
+	def curlevel = device.currentValue('level') as Integer
 	if (curlevel >= 10)
-    	setLevel(curlevel - 10)    
+    	setLevel(curlevel - 10)
 }
 
 def setLevel(value) {
 	log.trace "setLevel($value)"
-	sendEvent(name: "level", value: value) 
+	sendEvent(name: "level", value: value)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
@@ -106,11 +106,11 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelS
 	if (cmd.upDown == true) {
 		Integer buttonid = 2
         leveldown()
-		checkbuttonEvent(buttonid)		
+		checkbuttonEvent(buttonid)
     } else if (cmd.upDown == false) {
 		Integer buttonid = 3
         levelup()
-		checkbuttonEvent(buttonid)       
+		checkbuttonEvent(buttonid)
 	}
 }
 
@@ -140,12 +140,12 @@ def buttonEvent(button) {
     def result = []
 	if (button == 1) {
     	def mystate = device.currentValue('switch');
-        if (mystate == "on") 
+        if (mystate == "on")
             off()
         else
-            on()   
+            on()
     }
-    updateState("currentButton", "$button")   
+    updateState("currentButton", "$button")
         // update the device state, recording the button press
         result << createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
     result
@@ -181,4 +181,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def updateState(String name, String value) {
 	state[name] = value
 	device.updateDataValue(name, value)
+}
+
+
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	sendEvent(name: "numberOfButtons", value: 3)
 }

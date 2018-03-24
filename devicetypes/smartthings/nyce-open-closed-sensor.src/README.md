@@ -1,6 +1,6 @@
 # Nyce Door/Window Sensor (Open/Close Sensor)
 
-
+Cloud Execution
 
 Works with:
 
@@ -23,7 +23,11 @@ Works with:
 
 ## Device Health
 
-A Category C2 Nyce Door/Window sensor that has 12min check-in interval
+Nyce Door/Window sensor with reporting interval of 5 min.
+SmartThings platform will ping the device after `checkInterval` seconds of inactivity in last attempt to reach the device before marking it `OFFLINE` 
+ 
+* __12min__ checkInterval
+
 
 ## Battery Specification
 

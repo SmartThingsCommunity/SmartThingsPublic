@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Controller", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Controller", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 
 		command "on"
 		command "off"
@@ -40,37 +40,68 @@ metadata {
 	}
 }
 
+def installed() {
+	if (zwaveInfo.cc?.contains("84")) {
+		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	}
+}
+
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
+		if (description.startsWith("Err 106") && !state.sec) {
+			state.sec = 0
+		}
 	    result = createEvent(descriptionText:description, displayed:true)
 	} else {
 		def cmd = zwave.parse(description)
 		if (cmd) {
-			result = createEvent(zwaveEvent(cmd))
+			result = zwaveEvent(cmd)
 		}
 	}
 	return result
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
+	def result = []
+	result << createEvent(descriptionText: "${device.displayName} woke up", isStateChange: true)
+	result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	result
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def event = [isStateChange: true]
-	event.linkText = device.label ?: device.name
-	event.descriptionText = "$event.linkText: ${cmd.encapsulatedCommand()} [secure]"
-	event
+	state.sec = 1
+	createEvent(isStateChange: true, descriptionText: "$device.displayName: ${cmd.encapsulatedCommand()} [secure]")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	createEvent(isStateChange: true, descriptionText: "$device.displayName: ${cmd.encapsulatedCommand()}")
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	def event = [isStateChange: true]
-	event.linkText = device.label ?: device.name
-	event.descriptionText = "$event.linkText: $cmd"
-	event
+	createEvent(isStateChange: true, descriptionText: "$device.displayName: $cmd")
 }
 
 def on() {
-	zwave.basicV1.basicSet(value: 0xFF).format()
+	command(zwave.basicV1.basicSet(value: 0xFF))
 }
 
 def off() {
-	zwave.basicV1.basicSet(value: 0x00).format()
+	command(zwave.basicV1.basicSet(value: 0x00))
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (deviceIsSecure) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private getDeviceIsSecure() {
+	if (zwaveInfo && zwaveInfo.zw) {
+		return zwaveInfo.zw.endsWith("s")
+	} else {
+		return state.sec ? true : false
+	}
 }
