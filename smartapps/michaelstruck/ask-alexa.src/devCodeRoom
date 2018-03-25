@@ -1,1 +1,156 @@
-holding area
+{
+  "languageModel": {
+    "types": [
+    */*Slots*/*
+    ],    
+    "intents": [
+      {
+        "name": "AMAZON.CancelIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.HelpIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.NoIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.StopIntent",
+        "samples": []
+      },
+      {
+        "name": "AMAZON.YesIntent",
+        "samples": []
+      },
+      {
+        "name": "FollowUpOperation",
+        "samples": [
+          "{FType} {Data}"
+        ],
+        "slots": [
+          {
+            "name": "FType",
+            "type": "LIST_OF_FOLLOWUPS"
+          },
+          {
+            "name": "Data",
+            "type": "AMAZON.NUMBER"
+          }
+        ]
+      },
+      {
+        "name": "RoomOperation",
+        "samples": [
+          "{MCmd}",
+          "to {MCmd}",
+          "turn {MCmd} the {MType}",
+          "{MCmd} the {MType}",
+          "turn {MCmd}",
+          "to {MCmd} the {MType}",
+          "turn {MCmd} all the {MType}",
+          "{MCmd} all the {MType}",
+          "turn {MCmd} everything",
+          "to {MCmd} all the {MType}",
+          "to {MCmd} everything",
+          "set the {MType} to {MNum}",
+          "set the {MType} to {MNum} percent",
+          "set {MType} to {MNum}",
+          "set {MType} to {MNum} percent",
+          "{MNum}",
+          "{MNum} degrees",
+          "{MNum} percent",
+          "set the {MType} to {MParam}",
+          "set {MType} to {MParam}",
+          "{MParam}",
+          "{MParam} mode",
+          "{MParam} to {MNum}",
+          "{MParam} to {MNum} degrees",
+          "{MParam} and {MNum}",
+          "{MParam} and {MNum} percent",
+          "{MParam} of {MNum}",
+          "{MParam} of {MNum} degrees",
+          "set {MNum} degrees {MParam}",
+          "set {MNum}",
+          "set {MNum} degrees",
+          "set {MNum} percent",
+          "set {MParam}",
+          "set {MParam} mode",
+          "set {MParam} to {MNum}",
+          "set {MParam} to {MNum} degrees",
+          "set {MParam} and {MNum}",
+          "set {MParam} and {MNum} percent",
+          "set {MParam} of {MNum}",
+          "set {MParam} of {MNum} degrees",
+          "set the {MNum} degrees",
+          "set the {MNum} percent",
+          "set the {MParam}",
+          "set the {MParam} mode",
+          "set the {MType} {MParam} to {MNum}",
+          "set {MType} {MParam} to {MNum}",
+          "set the {MParam} and {MNum}",
+          "set the {MParam} and {MNum} percent",
+          "set the {MParam} of {MNum}",
+          "set the {MParam} of {MNum} degrees",
+          "set the {MParam} {MNum}",
+          "set the {MParam} {MNum} degrees",
+          "turn {MNum}",
+          "turn {MNum} percent",
+          "set {MCmd}",
+          "set the {MCmd}",
+          "to turn {MCmd} the {MType} and {MNum}",
+          "{MCmd} {MNum}",
+          "to turn the {MType} {MCmd} and {MNum}",
+          "to turn the {MNum} and {MCmd}",
+          "{MType} {MCmd} {MNum}",
+          "{MCmd} and {MNum}",
+          "set {MCmd} {MNum}",
+          "to set {MCmd} {MNum}",
+          "to set the {MCmd} {MNum}",
+          "set the {MType} to {MParam} and {MNum}",
+          "set the {MType} to {MParam} and {MNum} percent",
+          "set the {MType} to {MNum} percent and {MParam}",
+          "set the  {MType} to {MParam} and {MNum}",
+          "set the  {MType} to {MParam} and {MNum} percent",
+          "set the  {MType} to {MNum} percent and {MParam}",
+          "{MRoom}",
+          "{MCmd} {MRoom}",
+          "{MCmd} the {MRoom}",
+          "{MCmd} with {MRoom}",
+          "{MCmd} with the {MRoom}",
+          "{MCmd} this {MType} with {MRoom}",
+          "{MCmd} this {MType} with the {MRoom}",
+          "{MCmd} the {MType} with {MRoom}",
+          "{MCmd} the {MType} with the {MRoom}",
+          "ask about",
+          "ask",
+          "what is the {MType}"
+        ],
+        "slots": [
+          {
+            "name": "MNum",
+            "type": "AMAZON.NUMBER"
+          },
+          {
+            "name": "MCmd",
+            "type": "LIST_OF_OPERATORS"
+          },
+          {
+            "name": "MParam",
+            "type": "LIST_OF_PARAMS"
+          },
+          {
+            "name": "MRoom",
+            "type": "LIST_OF_ROOMS"
+          },
+          {
+            "name": "MType",
+            "type": "DEVICE_TYPE_LIST"
+          }
+        ]
+      }
+    ],
+    "invocationName": "here"
+  }
+}
