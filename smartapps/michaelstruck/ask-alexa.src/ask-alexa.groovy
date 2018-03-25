@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.9c - 3/16/18 Copyright © 2018 Michael Struck
+ *  Version 2.3.9d - 3/16/18 Copyright © 2018 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.8 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.3.8 (2/8/18) Added occupancy sensors to main devices and macros, updated code for new ST actions and restrictions for playback, setup data now sends POST data
- *  Version 2.3.9c (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
+ *  Version 2.3.9d (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -632,7 +632,8 @@ def pageSetup(){
         }
         section("Manual Amazon Lambda and skill installation"){
         	if (!state.accessToken) paragraph "**You must enable OAuth via the IDE to setup this app**"
-            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables", description: "For Amazon developer sites", image: imgURL() + "amazon.png"
+            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/setupLink?access_token=${state.accessToken}", style:"embedded", required:false, title:"Setup Variables Link",
+            	description: "Use Live Logging in the SmartThings IDE to obtain the URL for use on your computer browser.", image: imgURL() + "amazon.png"
         }
 		/*if (azRegion && invocationName){
             section("Automated Amazon Lambda and skill installation"){
@@ -642,7 +643,7 @@ def pageSetup(){
         }*/
         section("Help") {
         	if (!state.accessToken) paragraph "**You must enable OAuth via the IDE to produce the command cheat sheet**"
-            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/cheat?access_token=${state.accessToken}", style:"embedded", required:false, title:"Display Ask Alexa Cheat Sheet", 
+            else href url:"${getApiServerUrl()}/api/smartapps/installations/${app.id}/cheatLink?access_token=${state.accessToken}", style:"embedded", required:false, title:"Display Ask Alexa Cheat Sheet", 
             	description: "Use Live Logging in the SmartThings IDE to obtain the URL for use on your computer browser.", image: imgURL() + "list.png"
         }
     }
@@ -1272,6 +1273,8 @@ mappings {
     path("/f") { action: [GET: "processFollowup"] }
     path("/q") { action: [GET: "processMQ"] }
     path("/mq") {action: [GET: "extMQ"] }
+    path("/cheatLink") { action: [GET: "cheatLink"] }
+    path("/setupLink") { action: [GET: "setupLink"] }
 	path("/setup") { action: [GET: "setupData"] }
     path("/flash") { action: [GET: "flash"] }
     path("/cheat") { action: [GET: "cheat"] }
@@ -3625,6 +3628,18 @@ def roomsList(result=""){
     fillRoomList().unique().each{result+=it+"<br>"}
     displayMiniHTML(result)
 }
+def setupLink() { showLink("setup") }
+def cheatLink() { showLink("cheat") }
+def showLink(type){
+	def siteLink = "${getApiServerUrl()}/api/smartapps/installations/${app.id}/${type}?access_token=${state.accessToken}"
+    def siteType = type =="setup" ? "Setup web page" : "Cheat sheet web page"
+    log.info "${siteType} located at : ${siteLink}"
+	def result ="""<div style='padding:10px'><h1>See your SmartThings IDE Live Logging for the URL of the <i>${siteType}</i> so you may display it on your computer browser</h1>
+    <b>${siteType} URL:</b><textarea rows='4' style='width: 99%'>${siteLink}</textarea><br><br><br>
+    <button onclick="location.reload();">Reload this page to display URL on Live Logging again</button>
+    <br><br><br>Click '<' above to return to the Ask Alexa SmartApp.</div>"""
+    displayData(result)
+}
 def setupData(){
 	def iName = invocationName ? invocationName.toLowerCase() : "smart things"
     def httpPOSTAWS ="<form name='Lambda' action='https://ask-alexa.com/cgi-bin/lambda.php' method='POST' target='_blank'><input type='hidden' name='appID' value='${app.id}'>" +
@@ -3637,8 +3652,7 @@ def setupData(){
         "<input type='hidden' name='token' value='${state.accessToken}'><input type='hidden' name='url' value='${getApiServerUrl()}'><input type='submit' value='Download Developer Code'></form>"
 	def dupCounter=0, devCodeTxt = "Click the button below, copy the JSON code on the page, then paste to the Interaction Model Builder on the <a href='https://developer.amazon.com' target='_blank'>Amazon Developer</a> page<br>${httpPOSTDev}"
 	def devDLTxt = "Or, click the botton below to download a text copy of the JSON code, then load into to the Interaction Model Builder on the <a href='https://developer.amazon.com' target='_blank'>Amazon Developer</a> page<br>${httpPOSTDevDL}"
-	log.info "Set up web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/setup?access_token=${state.accessToken}"
-    def result ="<div style='padding:10px'><i><b>One-step Personalized Code (Main Ask Alexa Skill):</b></i><br>"
+	def result ="<div style='padding:10px'><i><b>One-step Personalized Code (Main Ask Alexa Skill):</b></i><br>"
     result += "<br><b>Lambda Full Code:</b><br>Click button below, copy the code on the page, then paste to <a href='http://aws.amazon.com' target='_blank'>AWS Lambda</a><br>${httpPOSTAWS}"
     result += "You can also download a text copy of the code for backup or to use your text editor to copy/paste to AWS Lambda. To download, click the button below<br>${httpPOSTAWSDL}"
     result += "<br><br><b>Developer Code:</b><br>${devCodeTxt}${devDLTxt}<br>"
@@ -3924,8 +3938,7 @@ def findDeviceReserverd(devResCount=0) {
 }
 private resList() {def resList =/room|group|here|this room|this group|in here|echo/}
 private cheat(){
-	log.info "Cheat sheet web page located at : ${getApiServerUrl()}/api/smartapps/installations/${app.id}/cheat?access_token=${state.accessToken}"
-    def result ="<div style='padding:10px'><h2><i><b>Ask Alexa Device/Command 'Cheat Sheet'</b></i></h2>To expand on this sheet, please see the <a href='http://thingsthataresmart.wiki/index.php?title=Ask_Alexa#Ask_Alexa_Usage' target='_blank'>Things That Are Smart Wiki</a><br>"
+	def result ="<div style='padding:10px'><h2><i><b>Ask Alexa Device/Command 'Cheat Sheet'</b></i></h2>To expand on this sheet, please see the <a href='http://thingsthataresmart.wiki/index.php?title=Ask_Alexa#Ask_Alexa_Usage' target='_blank'>Things That Are Smart Wiki</a><br>"
 	result += "Most commands will begin with 'Alexa, ask ${invocationName}' or 'Alexa, tell ${invocationName}' and then the command and device. For example:<br>"
     result +="<i>'Alexa, tell ${invocationName} to Open {DoorName}</i>'<br><i>'Alexa, ask ${invocationName} the {SwitchName} status'</i><br><br><hr>"
     if (switchesSel()) { result += "<h2><u>Switches</u> (Valid Commands: <b>" + getList(switchVoc()+basicVoc()) + "</b>)</h2>"; switches.each{ result += it.label +"<br>" } }
@@ -4060,7 +4073,7 @@ private wrReq() { return 108 }
 private vrReq() { return 109 }
 private schReq() { return 104 }
 private rmReq() { return 104 }
-private versionLong(){ return "2.3.9c" }
+private versionLong(){ return "2.3.9d" }
 private versionDate(){ return "03/16/2018" }
 private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
