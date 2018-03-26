@@ -14,6 +14,7 @@
  *
  *	Author: SmartThings
  */
+import groovy.json.JsonOutput
 metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Sensor"
@@ -61,19 +62,30 @@ metadata {
 	}
 }
 
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+	updateDataValue("EnrolledUTDH", "true")
+}
+
+void installed() {
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	parent.setSensorName(device.label, device.deviceNetworkId)
+	initialize()
+}
+
+// Called when the DTH is uninstalled, is this true for cirrus/gadfly integrations?
+// Informs parent to purge its associated data
+def uninstalled() {
+	log.debug "uninstalled() parent.purgeChildDevice($device.deviceNetworkId)"
+	// purge DTH from parent
+	parent?.purgeChildDevice(this)
+}
+
 def refresh() {
-	log.debug "refresh called"
-	poll()
-}
-
-void poll() {
-	log.debug "Executing 'poll' using parent SmartApp"
-	parent.pollChild()
-
-}
-
-//remove from the selected devices list in SM
-void uninstalled() {
-    log.trace "[DTH] Executing uninstalled() for device=${this.device.displayName}"
-    parent?.removeChildDevice(this)
+	log.debug "refresh, calling parent poll"
+	parent.poll()
 }
