@@ -80,7 +80,7 @@ See the table below of devices this device handler should work with.
 
 |Module |Status  | Tester(s) | Note   |
 |---|---|---|---|
-| Sonoff Basic   | Working   | @BrettSheleski   | |
+| Sonoff Basic   | Working   | [@BrettSheleski](https://github.com/BrettSheleski)   | |
 | Sonoff RF | Should Work (Untested)   | | |
 | Sonoff SV   | Should Work (Untested)   | | |
 | Sonoff TH | | | |
@@ -107,7 +107,7 @@ See the table below of devices this device handler should work with.
 | Sonoff B1 | | | |
 | AiLight | | | |
 | Sonoff T1 1CH | | | |
-| Sonoff T1 2CH | | | |
+| Sonoff T1 2CH | Working | [@BornInThe50s](https://github.com/BornInThe50s) | |
 | Sonoff T1 3CH | | | |
 | Supla Espablo | | | |
 | Witty Cloud | | | |
