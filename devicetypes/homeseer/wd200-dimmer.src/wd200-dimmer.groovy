@@ -20,10 +20,11 @@
  *
  *	Changelog:
  *
- *	1.0.dd.4  Updated all LED option to use LED=0 (8 will be depricated) and increased delay by 500ms
- *	1.0.dd.3  Corrected bit-wise blink off operator (darwin@darwinsden.com)
- *	1.0.dd.2  Added button number labels to virtual buttons and reduced size (darwin@darwinsden.com)
- *	1.0.dd.1  Added option to set all LED's simultaneously via LED=8 (darwin@darwinsden.com)
+ *	1.0.dd.5  26-Mar-2018 Corrected issue where turning off LEDs did not return switch to Normal mode
+ *	1.0.dd.4  28-Feb-2018 Updated all LED option to use LED=0 (8 will be depricated) and increased delay by 50ms
+ *	1.0.dd.3  19-Feb-2018 Corrected bit-wise blink off operator (darwin@darwinsden.com)
+ *	1.0.dd.2  16-Feb 2018 Added button number labels to virtual buttons and reduced size (darwin@darwinsden.com)
+ *	1.0.dd.1  15-Feb 2018 Added option to set all LED's simultaneously via LED=8 (darwin@darwinsden.com)
  *	1.0	      Initial Version
  *
  *
@@ -369,7 +370,8 @@ def setStatusLed (led,color,blink) {
         case 7:
         	state.statusled7=color
             break
-        case 0 | 8:
+        case 0:
+        case 8:
             // Special case - all LED's
         	state.statusled1=color
             state.statusled2=color
