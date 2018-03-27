@@ -1,5 +1,5 @@
 /**
- *  HomeSeer HS-WD100+
+ *  HomeSeer HS-WD200+
  *
  *  Copyright 2018 HomeSeer
  *
@@ -20,12 +20,13 @@
  *
  *	Changelog:
  *
- *	1.0.dd.5  26-Mar-2018 Corrected issue where turning off LEDs did not return switch to Normal mode
- *	1.0.dd.4  28-Feb-2018 Updated all LED option to use LED=0 (8 will be depricated) and increased delay by 50ms
+ *	1.0.dd.5  26-Mar-2018 Corrected issues: 1) Turning off all LEDs did not return switch to Normal mode,
+ *                        2) Turning off last lit LED would set Normal mode, but leave LED state as on (darwin@darwinsden.com)
+ *	1.0.dd.4  28-Feb-2018 Updated all LED option to use LED=0 (8 will be depricated) and increased delay by 50ms (darwin@darwinsden.com)
  *	1.0.dd.3  19-Feb-2018 Corrected bit-wise blink off operator (darwin@darwinsden.com)
  *	1.0.dd.2  16-Feb 2018 Added button number labels to virtual buttons and reduced size (darwin@darwinsden.com)
- *	1.0.dd.1  15-Feb 2018 Added option to set all LED's simultaneously via LED=8 (darwin@darwinsden.com)
- *	1.0	      Initial Version
+ *	1.0.dd.1  15-Feb 2018 Added option to set all LED's simultaneously(darwin@darwinsden.com)
+ *	1.0	      Jan    2017 Initial Version
  *
  *
  *   Button Mappings:
@@ -383,23 +384,6 @@ def setStatusLed (led,color,blink) {
             break
  
     }
-    
-    // if this was a command to turn off all LEDs (LED 0 special case), then explicitly ensure all status LEDs are off and/or not blinking
-    if (led==8 | led == 0) 
-    {
-         if (color == 0)
-         {
-           for (def ledToChange = 1; ledToChange <= 7; ledToChange++)
-           {
-            // set color for all LEDs
-            cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: ledToChange+20, size: 1).format()
-           }
-         }
-         if (blink == 0)
-         {
-           cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 31, size: 1).format()
-         }
-    }
 
     if(state.statusled1==0 && state.statusled2==0 && state.statusled3==0 && state.statusled4==0 && state.statusled5==0 && state.statusled6==0 && state.statusled7==0)
     {
@@ -410,25 +394,27 @@ def setStatusLed (led,color,blink) {
     {
        // at least one LED is set, put to status mode
        cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 13, size: 1).format()
-       
-       if (led==8 | led==0) 
-       {
+    }
+    
+    if (led==8 | led==0) 
+    {
          for (def ledToChange = 1; ledToChange <= 7; ledToChange++)
          {
            // set color for all LEDs
            cmds << zwave.configurationV2.configurationSet(configurationValue: [color], parameterNumber: ledToChange+20, size: 1).format()
          }
-        }
-        else
-        {
+    }
+    else
+    {
            // set color for specified LED
            cmds << zwave.configurationV2.configurationSet(configurationValue: [color], parameterNumber: led+20, size: 1).format()
-        }   
-        // check if LED should be blinking
-        def blinkval = state.blinkval
+    }   
+    
+    // check if LED should be blinking
+    def blinkval = state.blinkval
 
-        if(blink)
-        {
+    if(blink)
+    {
             switch(led) {
             	case 1:
                 	blinkval = blinkval | 0x1
@@ -460,9 +446,9 @@ def setStatusLed (led,color,blink) {
             // set blink speed, also enables blink, 1=100ms blink frequency
             cmds << zwave.configurationV2.configurationSet(configurationValue: [5], parameterNumber: 30, size: 1).format()
             state.blinkval = blinkval
-        }
-        else
-        {
+     }
+     else
+     {
         
         	switch(led) {
             	case 1:
@@ -493,8 +479,7 @@ def setStatusLed (led,color,blink) {
             }
             cmds << zwave.configurationV2.configurationSet(configurationValue: [blinkval], parameterNumber: 31, size: 1).format()
             state.blinkval = blinkval
-        }     
-    }
+    }     
   	delayBetween(cmds, 150)
 }
 
