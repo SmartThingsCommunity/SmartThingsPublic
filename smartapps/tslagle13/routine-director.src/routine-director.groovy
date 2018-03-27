@@ -143,18 +143,18 @@ def changeSunMode(newMode) {
     if (allOk) {
 
         if (everyoneIsAway()) /*&& (state.sunMode == "sunrise")*/ {
-            log.info("Home is Empty  Setting New Away Mode")
+            log.debug("Home is Empty  Setting New Away Mode")
             def delay = (falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold * 60 : 10 * 60
             setAway()
         }
 /*
         else if (everyoneIsAway() && (state.sunMode == "sunset")) {
-            log.info("Home is Empty  Setting New Away Mode")
+            log.debug("Home is Empty  Setting New Away Mode")
             def delay = (falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold * 60 : 10 * 60
             setAway()
         }*/
         else if (anyoneIsHome()) {
-            log.info("Home is Occupied Setting New Home Mode")
+            log.debug("Home is Occupied Setting New Home Mode")
             setHome()
 
 
@@ -169,7 +169,7 @@ def presence(evt) {
             log.debug("Checking if everyone is away")
 
             if (everyoneIsAway()) {
-                log.info("Nobody is home, running away sequence")
+                log.debug("Nobody is home, running away sequence")
                 def delay = (falseAlarmThreshold != null && falseAlarmThreshold != "") ? falseAlarmThreshold * 60 : 10 * 60
                 runIn(delay, "setAway")
             }
@@ -177,7 +177,7 @@ def presence(evt) {
         else {
             def lastTime = state[evt.deviceId]
             if (lastTime == null || now() - lastTime >= 1 * 60000) {
-                log.info("Someone is home, running home sequence")
+                log.debug("Someone is home, running home sequence")
                 setHome()
             }
             state[evt.deviceId] = now()
@@ -191,7 +191,7 @@ def setAway() {
     if (everyoneIsAway()) {
         if (state.sunMode == "sunset") {
             def message = "Performing \"${awayNight}\" for you as requested."
-            log.info(message)
+            log.debug(message)
             sendAway(message)
             location.helloHome.execute(settings.awayNight)
             state.homestate = "away"
@@ -199,7 +199,7 @@ def setAway() {
         }
         else if (state.sunMode == "sunrise") {
             def message = "Performing \"${awayDay}\" for you as requested."
-            log.info(message)
+            log.debug(message)
             sendAway(message)
             location.helloHome.execute(settings.awayDay)
             state.homestate = "away"
@@ -212,12 +212,12 @@ def setAway() {
 
 //set home mode when house is occupied
 def setHome() {
-    log.info("Setting Home Mode!!")
+    log.debug("Setting Home Mode!!")
     if (anyoneIsHome()) {
         if (state.sunMode == "sunset") {
             if (state.homestate != "homeNight") {
                 def message = "Performing \"${homeNight}\" for you as requested."
-                log.info(message)
+                log.debug(message)
                 sendHome(message)
                 location.helloHome.execute(settings.homeNight)
                 state.homestate = "homeNight"
@@ -227,7 +227,7 @@ def setHome() {
         if (state.sunMode == "sunrise") {
             if (state.homestate != "homeDay") {
                 def message = "Performing \"${homeDay}\" for you as requested."
-                log.info(message)
+                log.debug(message)
                 sendHome(message)
                 location.helloHome.execute(settings.homeDay)
                 state.homestate = "homeDay"
@@ -269,8 +269,8 @@ def sendAway(msg) {
         	sendPush(msg)
         	if(phone){
             		sendSms(phone, msg)
-        	}	
-        }    
+        	}
+        }
     }
 
     log.debug(msg)
@@ -286,7 +286,7 @@ def sendHome(msg) {
                 if(phone){
             		sendSms(phone, msg)
         	}
-        }    
+        }
     }
 
     log.debug(msg)
