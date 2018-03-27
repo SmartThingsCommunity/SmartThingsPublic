@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "NEO Coolcam Light Switch", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Z-Wave Dual Switch", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Light"
@@ -20,7 +20,9 @@ metadata {
 		capability "Sensor"
 		capability "Switch"
 
-		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Light Switch"
+		// This DTH uses 2 switch endpoints. Parent DTH controlls endpoint 1 so please use '1' at the end of deviceJoinName
+		// Child device (isComponent : false) representing endpoint 2 will substitude 1 with 2 for easier identification.
+		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Light Switch 1"
 	}
 
 	// tile definitions
@@ -42,7 +44,13 @@ metadata {
 }
 
 def installed() {
-	def componentLabel = "NEO Coolcam Light Switch ep2"
+	def componentLabel
+	if (device.displayName.endsWith('1')) {
+		componentLabel = device.displayName.substring(0, device.displayName.length() - 1) + '2'
+	} else {
+		// no '1' at the end of deviceJoinName - use 2 to indicate second switch anyway
+		componentLabel = device.displayName + " 2"
+	}
 	try {
 		String dni = "${device.deviceNetworkId}-ep2"
 		addChildDevice("Binary Switch Endpoint", dni, device.hub.id,
@@ -62,9 +70,13 @@ def updated() {
 def configure() {
 	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
 	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	response([zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1]).format(),
-			  "delay 100",
-			  zwave.basicV1.basicGet().format()])
+	def commands = []
+	if (zwaveInfo.mfr.equals("0258")) {
+		commands << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [0]).format()
+		commands << "delay 100"
+	}
+	commands << zwave.basicV1.basicGet().format()
+	response(commands)
 }
 
 def parse(String description) {
@@ -115,16 +127,20 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
+	// parent DTH conrols endpoint 1
+	def endpointNumber = 1
 	delayBetween([
-		zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
+		encap(endpointNumber, zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF)),
+		encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
 	])
 }
 
 def off() {
+	// parent DTH conrols endpoint 1
+	def endpointNumber = 1
 	delayBetween([
-		zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
+		encap(endpointNumber, zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00)),
+		encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
 	])
 }
 
@@ -136,7 +152,9 @@ def ping() {
 }
 
 def refresh() {
-	zwave.switchBinaryV1.switchBinaryGet().format()
+	// parent DTH conrols endpoint 1
+	def endpointNumber = 1
+	encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
 }
 
 // sendCommand is called by endpoint 2 child device handler
@@ -158,7 +176,7 @@ def encap(endpointNumber, cmd) {
 		cmd
 	} else {
 		def header = "600D00"
-		String.format("%s%02X%s", header, 2, cmd)
+		String.format("%s%02X%s", header, endpointNumber, cmd)
 	}
 }
 
