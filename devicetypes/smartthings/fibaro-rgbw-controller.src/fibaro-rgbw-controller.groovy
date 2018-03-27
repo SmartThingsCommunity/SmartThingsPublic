@@ -32,6 +32,7 @@
 		capability "Configuration"
 		capability "Color Control"
         capability "Power Meter"
+        capability "Color Temperature"
 
         command "getDeviceData"
         command "softwhite"
@@ -54,8 +55,6 @@
         command "setAdjustedColor"
         command "setWhiteLevel"
         command "test"
-
-        attribute "whiteLevel", "string"
 
 		fingerprint deviceId: "0x1101", inClusters: "0x27,0x72,0x86,0x26,0x60,0x70,0x32,0x31,0x85,0x33"
 	}
@@ -85,8 +84,8 @@
 		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
 			state "level", action:"switch level.setLevel"
 		}
-		controlTile("whiteSliderControl", "device.whiteLevel", "slider", height: 1, width: 3, inactiveLabel: false) {
-            state "whiteLevel", action:"setWhiteLevel", label:'White Level'
+        controlTile("colorTempControl", "device.colorTemperature", "slider", height: 1, width: 2, inactiveLabel: false) {
+            state "colorTemperature", action:"setColorTemperature"
         }
 		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
         	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC", nextState:"turningOff"
@@ -188,7 +187,7 @@
         details(["switch",
                  "levelSliderControl",
                  "rgbSelector",
-                 "whiteSliderControl",
+                 "colorTempControl",
                  /*"softwhite",
                  "daylight",
                  "warmwhite",
@@ -231,6 +230,21 @@ def setAdjustedColor(value) {
     setColor(value)
 }
 
+/**
+ * Possible input fields:
+ * - level
+ * - hue
+ * - saturation
+ * - hex
+ * - colorName
+ * - red
+ * - green
+ * - blue
+ * - switch
+ *
+ * @param value
+ * @return
+ */
 def setColor(value) {
 	log.debug "setColor: ${value}"
     log.debug "hue is: ${value.hue}"
@@ -239,65 +253,19 @@ def setColor(value) {
     if (value.size() < 8)
     	toggleTiles("off")
 
-    if (( value.size() == 2) && (value.hue != null) && (value.saturation != null)) { //assuming we're being called from outside of device (App)
-    	def rgb = hslToRGB(value.hue, value.saturation, 0.5)
-        value.hex = rgbToHex(rgb)
-        value.rh = hex(rgb.r)
-        value.gh = hex(rgb.g)
-        value.bh = hex(rgb.b)
+    def rgb = [r: 0, g: 0, b: 0]
+    if (value.hue && value.saturation) {
+        rgb = hslToRGB(value.hue, value.saturation)
+    } else if (value.hex) {
+        rgb = hexToRGB(value.hex)
+    } else if (value.colorName) {
+        rgb = getColorData(value.colorName)
+    } else if (value.red && value.green && value.blue) {
+        rgb = [r: value.red, g: value.green, b: value.blue]
     }
 
-    if ((value.size() == 3) && (value.hue != null) && (value.saturation != null) && (value.level)) { //user passed in a level value too from outside (App)
-    	def rgb = hslToRGB(value.hue, value.saturation, 0.5)
-        value.hex = rgbToHex(rgb)
-        value.rh = hex(rgb.r * value.level/100)
-        value.gh = hex(rgb.g * value.level/100)
-        value.bh = hex(rgb.b * value.level/100)
-    }
-
-    if (( value.size() == 1) && (value.hex)) { //being called from outside of device (App) with only hex
-		def rgbInt = hexToRgb(value.hex)
-        value.rh = hex(rgbInt.r)
-        value.gh = hex(rgbInt.g)
-        value.bh = hex(rgbInt.b)
-    }
-
-    if (( value.size() == 2) && (value.hex) && (value.level)) { //being called from outside of device (App) with only hex and level
-
-        def rgbInt = hexToRgb(value.hex)
-        value.rh = hex(rgbInt.r * value.level/100)
-        value.gh = hex(rgbInt.g * value.level/100)
-        value.bh = hex(rgbInt.b * value.level/100)
-    }
-
-    if (( value.size() == 1) && (value.colorName)) { //being called from outside of device (App) with only color name
-        def colorData = getColorData(value.colorName)
-        value.rh = colorData.rh
-        value.gh = colorData.gh
-        value.bh = colorData.bh
-        value.hex = "#${value.rh}${value.gh}${value.bh}"
-    }
-
-    if (( value.size() == 2) && (value.colorName) && (value.level)) { //being called from outside of device (App) with only color name and level
-		def colorData = getColorData(value.colorName)
-        value.rh = hex(colorData.r * value.level/100)
-        value.gh = hex(colorData.g * value.level/100)
-        value.bh = hex(colorData.b * value.level/100)
-        value.hex = "#${hex(colorData.r)}${hex(colorData.g)}${hex(colorData.b)}"
-    }
-
-    if (( value.size() == 3) && (value.red != null) && (value.green != null) && (value.blue != null)) { //being called from outside of device (App) with only color values (0-255)
-        value.rh = hex(value.red)
-        value.gh = hex(value.green)
-        value.bh = hex(value.blue)
-        value.hex = "#${value.rh}${value.gh}${value.bh}"
-    }
-
-    if (( value.size() == 4) && (value.red != null) && (value.green != null) && (value.blue != null) && (value.level)) { //being called from outside of device (App) with only color values (0-255) and level
-        value.rh = hex(value.red * value.level/100)
-        value.gh = hex(value.green * value.level/100)
-        value.bh = hex(value.blue * value.level/100)
-        value.hex = "#${hex(value.red)}${hex(value.green)}${hex(value.blue)}"
+    if (value.level) {
+        scaleRGB(rgb)
     }
 
     if(value.hue) {
@@ -340,32 +308,29 @@ def setLevel(level) {
 	sendRGB(r, g, b)
 }
 
-
+/**
+ * This is a legacy function that we'll keep around just so that anyone who has a smartapp written for this isn't left
+ * completely out in the cold
+ * @param value
+ * @return
+ */
 def setWhiteLevel(value) {
-	log.debug "setWhiteLevel: ${value}"
-    def level = Math.min(value as Integer, 99)
-    level = 255 * level/99 as Integer
-    def channel = 0
-
-	if (device.latestValue("switch") == "off") { on() }
-
-    sendEvent(name: "whiteLevel", value: value)
-    sendWhite(channel, value)
+	setColorTemperature(value)
 }
 
-def sendWhite(channel, value) {
-	def whiteLevel = hex(value)
-    def cmd = [String.format("3305010${channel}${whiteLevel}%02X", 50)]
-    cmd
+def setColorTemperature(percent) {
+    if(percent > 99) percent = 99
+    int warmValue = percent * 255 / 99
+    command(zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite:warmValue, coldWhite:(255 - warmValue)))
 }
 
-def sendRGB(redHex, greenHex, blueHex) {
-    def cmd = [String.format("33050302${redHex}03${greenHex}04${blueHex}%02X", 100),]
-    cmd
+def sendRGB(red, green, blue) {
+    command(zwave.switchColorV3.switchColorSet(red: red, green: green, blue: blue))
 }
 
 
 def sendRGBW(redHex, greenHex, blueHex, whiteHex) {
+    command(zwave.switchColorV3.switchColorSet(red: red, green: green, blue: blue, warmWhite: ))
     def cmd = [String.format("33050400${whiteHex}02${redHex}03${greenHex}04${blueHex}%02X", 100),]
     cmd
 }
@@ -374,13 +339,10 @@ def sendRGBW(redHex, greenHex, blueHex, whiteHex) {
 def configure() {
 	log.debug "Configuring Device For SmartThings Use"
 
-
-
     def cmds = []
 
     // send associate to group 3 to get sensor data reported only to hub
     cmds << zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId]).format()
-
 
     //cmds << sendEvent(name: "level", value: 50)
     //cmds << on()
@@ -672,6 +634,13 @@ private hex(value, width=2) {
 	s
 }
 
+private scaleRGB(rgb, level) {
+    level /= 100.0
+    rgb.r = Math.round(rgb.r * level)
+    rgb.g = Math.round(rgb.g * level)
+    rgb.b = Math.round(rgb.b * level)
+}
+
 def hexToRgb(colorHex) {
 	def rrInt = Integer.parseInt(colorHex.substring(1,3),16)
     def ggInt = Integer.parseInt(colorHex.substring(3,5),16)
@@ -691,7 +660,7 @@ def rgbToHex(rgb) {
     hexColor
 }
 
-def hslToRGB(float var_h, float var_s, float var_l) {
+def hslToRGB(float var_h, float var_s, float var_l=0.5) {
 	float h = var_h / 100
     float s = var_s / 100
     float l = var_l
