@@ -15,6 +15,7 @@
  *	Author: SmartThings
  *	Date: 2013-06-13
  */
+import groovy.json.JsonOutput
 metadata {
 	definition (name: "Ecobee Thermostat", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
@@ -135,16 +136,29 @@ metadata {
 void installed() {
     // The device refreshes every 5 minutes by default so if we miss 2 refreshes we can consider it offline
     // Using 12 minutes because in testing, device health team found that there could be "jitter"
-    sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "cloud"], displayed: false)
+	initialize()
+}
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+	updateDataValue("EnrolledUTDH", "true")
 }
 
-// Device Watch will ping the device to proactively determine if the device has gone offline
-// If the device was online the last time we refreshed, trigger another refresh as part of the ping.
+def updated() {
+	log.debug "updated()"
+	parent.setName(device.label, device.deviceNetworkId)
+	initialize()
+}
+
+// Called when the DTH is uninstalled, is this true for cirrus/gadfly integrations?
+// Informs parent to purge its associated data
+def uninstalled() {
+    log.debug "uninstalled() parent.purgeChildDevice($device.deviceNetworkId)"
+    // purge DTH from parent
+    parent?.purgeChildDevice(this)
+}
+
 def ping() {
-    def isAlive = device.currentValue("deviceAlive") == "true" ? true : false
-    if (isAlive) {
-        refresh()
-    }
+	log.debug "ping() NOP"
 }
 
 // parse events into attributes
@@ -153,13 +167,12 @@ def parse(String description) {
 }
 
 def refresh() {
-	log.debug "refresh"
-	poll()
+	log.debug "refresh, calling parent poll"
+	parent.poll()
 }
 
 void poll() {
-	log.debug "Executing 'poll' using parent SmartApp"
-	parent.pollChild()
+	log.debug "poll not implemented as it is done by parent SmartApp every 5 minutes"
 }
 
 def generateEvent(Map results) {
@@ -197,6 +210,8 @@ def generateEvent(Map results) {
 			} else if (name == "thermostatMode") {
 				thermostatMode = (value == "auxHeatOnly") ? "emergency heat" : value.toLowerCase()
 				return // as we don't want to send this event here, proceed to next name/value pair
+			} else if (name == "name") {
+				return // as we don't want to send this event, proceed to next name/value pair
 			} else {
 				event << [value: value.toString()]
 			}
@@ -502,9 +517,13 @@ def updateSetpoint(data) {
 	def sendHoldType = holdType ? ((holdType=="Temporary") ? "nextTransition" : "indefinite") : "indefinite"
 
 	if (parent.setHold(data.targetHeatingSetpoint, data.targetCoolingSetpoint, deviceId, sendHoldType)) {
-		log.debug "alterSetpoint succeed to change setpoints:${data}"
+		log.debug "updateSetpoint succeed to change setpoints:${data}"
+		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, deviceScale),
+				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, deviceScale),
+				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
 	} else {
-		log.error "Error alterSetpoint"
+		log.error "Error updateSetpoint"
 	}
 	runIn(5, "refresh", [overwrite: true])
 }
