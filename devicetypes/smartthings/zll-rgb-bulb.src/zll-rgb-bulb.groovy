@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZLL RGB Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+	definition (name: "ZLL RGB Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 
 		capability "Actuator"
 		capability "Color Control"
@@ -23,6 +23,7 @@ metadata {
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
+		capability "Health Check"
 	}
 
 	// UI tile definitions
@@ -108,6 +109,10 @@ def configure() {
 	configureAttributes() + refreshAttributes()
 }
 
+def ping() {
+	refreshAttributes()
+}
+
 def configureAttributes() {
 	zigbee.onOffConfig() +
 	zigbee.levelConfig()
@@ -118,6 +123,14 @@ def refreshAttributes() {
 	zigbee.levelRefresh() +
 	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
 	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+}
+
+def updated() {
+	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
+
+def installed() {
+	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def setLevel(value) {

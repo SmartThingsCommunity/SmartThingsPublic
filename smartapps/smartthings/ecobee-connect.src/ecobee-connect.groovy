@@ -31,7 +31,9 @@ definition(
 		category: "SmartThings Labs",
 		iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png",
 		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee@2x.png",
-		singleInstance: true
+		singleInstance: true,
+        usesThirdPartyAuthentication: true,
+        pausable: false
 ) {
 	appSetting "clientId"
 }
@@ -279,7 +281,7 @@ def getEcobeeThermostats() {
 
 Map sensorsDiscovered() {
 	def map = [:]
-	log.info "list ${atomicState.remoteSensors}"
+	log.debug "list ${atomicState.remoteSensors}"
 	atomicState.remoteSensors.each { sensors ->
 		sensors.each {
 			if (it.type != "thermostat") {
@@ -412,7 +414,6 @@ def pollChildren(child = null) {
 	try{
 		httpGet(pollParams) { resp ->
 			if(resp.status == 200) {
-                log.debug "poll results returned resp.data ${resp.data}"
                 atomicState.remoteSensors = resp.data.thermostatList.remoteSensors
                 updateSensorData()
                 storeThermostatData(resp.data.thermostatList)
@@ -440,7 +441,7 @@ def pollChild() {
 			if (!child.device.deviceNetworkId.startsWith("ecobee_sensor")) {
 				if(atomicState.thermostats[child.device.deviceNetworkId] != null) {
 					def tData = atomicState.thermostats[child.device.deviceNetworkId]
-					log.info "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
+					log.debug "pollChild(child)>> data for ${child.device.deviceNetworkId} : ${tData.data}"
 					child.generateEvent(tData.data) //parse received message from parent
 				} else if(atomicState.thermostats[child.device.deviceNetworkId] == null) {
 					log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
@@ -449,7 +450,7 @@ def pollChild() {
 			}
 		}
 	} else {
-		log.info "ERROR: pollChildren()"
+		log.error "ERROR: pollChildren()"
 		return null
 	}
 
@@ -460,12 +461,7 @@ void poll() {
 }
 
 def availableModes(child) {
-	debugEvent ("atomicState.thermostats = ${atomicState.thermostats}")
-	debugEvent ("Child DNI = ${child.device.deviceNetworkId}")
-
 	def tData = atomicState.thermostats[child.device.deviceNetworkId]
-
-	debugEvent("Data = ${tData}")
 
 	if(!tData) {
 		log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId} after polling"
@@ -491,12 +487,8 @@ def availableModes(child) {
 }
 
 def currentMode(child) {
-	debugEvent ("atomicState.Thermos = ${atomicState.thermostats}")
-	debugEvent ("Child DNI = ${child.device.deviceNetworkId}")
 
 	def tData = atomicState.thermostats[child.device.deviceNetworkId]
-
-	debugEvent("Data = ${tData}")
 
 	if(!tData) {
 		log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId} after polling"
@@ -516,7 +508,8 @@ def updateSensorData() {
 				it.capability.each {
 					if (it.type == "temperature") {
 						if (it.value == "unknown") {
-							temperature = "--"
+							// setting to 0 as "--" is not a valid number depite 0 being a valid value
+							temperature = 0
 						} else {
 							if (location.temperatureScale == "F") {
 								temperature = Math.round(it.value.toDouble() / 10)
@@ -536,7 +529,7 @@ def updateSensorData() {
 				def dni = "ecobee_sensor-"+ it?.id + "-" + it?.code
 				def d = getChildDevice(dni)
 				if(d) {
-					d.sendEvent(name:"temperature", value: temperature)
+					d.sendEvent(name:"temperature", value: temperature, unit: location.temperatureScale)
 					d.sendEvent(name:"motion", value: occupancy)
 				}
 			}
@@ -576,7 +569,6 @@ private refreshAuthToken() {
 			httpPost(refreshParams) { resp ->
 				if(resp.status == 200) {
 					log.debug "Token refreshed...calling saved RestAction now!"
-					debugEvent("Token refreshed ... calling saved RestAction now!")
 					saveTokenAndResumeAction(resp.data)
 			    }
             }
@@ -609,7 +601,6 @@ private refreshAuthToken() {
 private void saveTokenAndResumeAction(json) {
     log.debug "token response json: $json"
     if (json) {
-        debugEvent("Response = $json")
         atomicState.refreshToken = json?.refresh_token
         atomicState.authToken = json?.access_token
         if (atomicState.action) {
@@ -766,13 +757,11 @@ private boolean sendCommandToEcobee(Map bodyParams) {
                     isSuccess = true
                 } else {
                     log.debug "Error return code = ${returnStatus}"
-                    debugEvent("Error return code = ${returnStatus}")
                 }
             }
         }
 	} catch (groovyx.net.http.HttpResponseException e) {
         log.trace "Exception Sending Json: " + e.response.data.status
-        debugEvent ("sent Json & got http status ${e.statusCode} - ${e.response.data.status.code}")
         if (e.response.data.status.code == 14) {
             // TODO - figure out why we're setting the next action to be pollChildren
             // after refreshing auth token. Is it to keep UI in sync, or just copy/paste error?
@@ -780,7 +769,6 @@ private boolean sendCommandToEcobee(Map bodyParams) {
             log.debug "Refreshing your auth_token!"
             refreshAuthToken()
         } else {
-            debugEvent("Authentication error, invalid authentication method, lack of credentials, etc.")
             log.error "Authentication error, invalid authentication method, lack of credentials, etc."
         }
     }
@@ -796,16 +784,6 @@ def getCallbackUrl()         { return "https://graph.api.smartthings.com/oauth/c
 def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}" }
 def getApiEndpoint()         { return "https://api.ecobee.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
-
-def debugEvent(message, displayEvent = false) {
-	def results = [
-		name: "appdebug",
-		descriptionText: message,
-		displayed: displayEvent
-	]
-	log.debug "Generating AppDebug Event: ${results}"
-	sendEvent (results)
-}
 
 //send both push notification and mobile activity feeds
 def sendPushAndFeeds(notificationMessage) {
@@ -834,7 +812,6 @@ private void storeThermostatData(thermostats) {
     def data
     atomicState.thermostats = thermostats.inject([:]) { collector, stat ->
         def dni = [ app.id, stat.identifier ].join('.')
-        log.debug "updating dni $dni"
 
         data = [
             coolMode: (stat.settings.coolStages > 0),
@@ -854,23 +831,9 @@ private void storeThermostatData(thermostats) {
             humidity: stat.runtime.actualHumidity,
             thermostatFanMode: stat.runtime.desiredFanMode
         ]
-        if (location.temperatureScale == "F") {
-            data["temperature"] = data["temperature"] ? Math.round(data["temperature"].toDouble()) : data["temperature"]
-            data["heatingSetpoint"] = data["heatingSetpoint"] ? Math.round(data["heatingSetpoint"].toDouble()) : data["heatingSetpoint"]
-            data["coolingSetpoint"] = data["coolingSetpoint"] ? Math.round(data["coolingSetpoint"].toDouble()) : data["coolingSetpoint"]
-            data["minHeatingSetpoint"] = data["minHeatingSetpoint"] ? Math.round(data["minHeatingSetpoint"].toDouble()) : data["minHeatingSetpoint"]
-            data["maxHeatingSetpoint"] = data["maxHeatingSetpoint"] ? Math.round(data["maxHeatingSetpoint"].toDouble()) : data["maxHeatingSetpoint"]
-            data["minCoolingSetpoint"] = data["minCoolingSetpoint"] ? Math.round(data["minCoolingSetpoint"].toDouble()) : data["minCoolingSetpoint"]
-            data["maxCoolingSetpoint"] = data["maxCoolingSetpoint"] ? Math.round(data["maxCoolingSetpoint"].toDouble()) : data["maxCoolingSetpoint"]
-
-        }
-
-        if (data?.deviceTemperatureUnit == false && location.temperatureScale == "F") {
-            data["deviceTemperatureUnit"] = "F"
-
-        } else {
-            data["deviceTemperatureUnit"] = "C"
-        }
+        // Adjust autoMode in regards to coolMode and heatMode as thermostat may report autoMode:true despite only having heat or cool mode
+        data["autoMode"] = data["autoMode"] && data.coolMode && data.heatMode
+        data["deviceTemperatureUnit"] = (data?.deviceTemperatureUnit == false && location.temperatureScale == "F") ? "F" : "C"
 
         collector[dni] = [data:data]
         return collector

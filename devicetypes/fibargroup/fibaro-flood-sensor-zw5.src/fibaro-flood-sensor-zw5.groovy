@@ -34,13 +34,13 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"FGFS", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
 			tileAttribute("device.water", key:"PRIMARY_CONTROL") {
-				attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
-				attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#00a0dc")
+				attributeState("dry", label: "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
+				attributeState("wet", label: "wet", icon:"st.alarm.water.wet", backgroundColor:"#00a0dc")
 			}
 
 			tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
-				attributeState("active", label:'tamper active', backgroundColor:"#cccccc")
-				attributeState("inactive", label:'tamper inactive', backgroundColor:"#00A0DC")
+				attributeState("detected", label:'tampered', backgroundColor:"#cccccc")
+				attributeState("clear", label:'tamper clear', backgroundColor:"#00A0DC")
 			}
 		}
 
@@ -64,6 +64,20 @@ metadata {
 		main "FGFS"
 		details(["FGFS","battery", "temperature"])
 	}
+}
+
+def installed() {
+	sendEvent(name: "tamper", value: "clear", displayed: false)
+}
+
+def updated() {
+	def tamperValue = device.latestValue("tamper")
+    
+    if (tamperValue == "active") {
+    	sendEvent(name: "tamper", value: "detected", displayed: false)
+    } else if (tamperValue == "inactive") {
+    	sendEvent(name: "tamper", value: "clear", displayed: false)
+    }
 }
 
 // parse events into attributes
@@ -158,11 +172,6 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecifi
 	if (!device.currentState("temperature")) {
 		response_cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0))
 	}
-	if (!getDataValue("version") && !zwaveInfo.ver) {
-		log.debug "Requesting Version Report"
-		response_cmds << "delay 500"
-		response_cmds << encap(zwave.versionV1.versionGet())
-	}
 	response_cmds << "delay 1000"
 	response_cmds << encap(zwave.wakeUpV2.wakeUpNoMoreInformation())
 	[[:], response(response_cmds)]
@@ -214,14 +223,14 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		switch (cmd.event) {
 			case 0:
 				map.name = "tamper"
-				map.value = "inactive"
-				map.descriptionText = "${device.displayName}: tamper alarm has been deactivated"
+				map.value = "clear"
+				map.descriptionText = "Tamper aleart cleared"
 				break
 
 			case 3:
 				map.name = "tamper"
-				map.value = "active"
-				map.descriptionText = "${device.displayName}: tamper alarm activated"
+				map.value = "detected"
+				map.descriptionText = "Tamper alert: sensor removed or covering opened"
 				break
 		}
 	}
@@ -234,7 +243,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	if (cmd.sensorType == 1) {
 		// temperature
 		def cmdScale = cmd.scale == 1 ? "F" : "C"
-		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+		// overwriting the precision here to match other devices
+		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, 0)
 		map.unit = getTemperatureScale()
 		map.name = "temperature"
 		map.displayed = true
@@ -245,6 +255,10 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 
 def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNotification cmd) {
 	log.info "${device.displayName}: received command: $cmd - device has reset itself"
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	log.debug "Catchall reached for cmd: $cmd"
 }
 
 def configure() {
@@ -259,6 +273,7 @@ def configure() {
 
 	cmds << zwave.associationV2.associationSet(groupingIdentifier:1, nodeId: [zwaveHubNodeId])
 	cmds << zwave.batteryV1.batteryGet()  // other queries sent as response to BatteryReport
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
 
 	encapSequence(cmds, 200)
 }

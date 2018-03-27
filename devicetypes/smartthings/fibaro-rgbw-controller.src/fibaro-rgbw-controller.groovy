@@ -300,15 +300,21 @@ def setColor(value) {
         value.hex = "#${hex(value.red)}${hex(value.green)}${hex(value.blue)}"
     }
 
-	sendEvent(name: "hue", value: value.hue, displayed: false)
-	sendEvent(name: "saturation", value: value.saturation, displayed: false)
-	sendEvent(name: "color", value: value.hex, displayed: false)
-	if (value.level) {
-		sendEvent(name: "level", value: value.level)
-	}
-	if (value.switch) {
-		sendEvent(name: "switch", value: value.switch)
-	}
+    if(value.hue) {
+        sendEvent(name: "hue", value: value.hue, displayed: false)
+    }
+    if(value.saturation) {
+        sendEvent(name: "saturation", value: value.saturation, displayed: false)
+    }
+    if(value.hex?.trim()) {
+        sendEvent(name: "color", value: value.hex, displayed: false)
+    }
+    if (value.level) {
+        sendEvent(name: "level", value: value.level)
+    }
+    if (value.switch?.trim()) {
+        sendEvent(name: "switch", value: value.switch)
+    }
 
     sendRGB(value.rh, value.gh, value.bh)
 }
@@ -724,7 +730,7 @@ def hueToRgb(v1, v2, vh) {
 	if (vh > 1) { vh -= 1 }
 	if ((6 * vh) < 1) { return (v1 + (v2 - v1) * 6 * vh) }
     if ((2 * vh) < 1) { return (v2) }
-    if ((3 * vh) < 2) { return (v1 + (v2 - $v1) * ((2 / 3 - vh) * 6)) }
+    if ((3 * vh) < 2) { return (v1 + (v2 - v1) * ((2 / 3 - vh) * 6)) }
     return (v1)
 }
 
