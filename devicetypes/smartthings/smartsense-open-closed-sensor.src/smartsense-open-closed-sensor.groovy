@@ -88,6 +88,9 @@ def parse(String description) {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
 				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = getContactStatus(zs.isAlarm1Set() ? "open" : "closed")
 			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 				if (descMap.data[0] == "00") {
 					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
