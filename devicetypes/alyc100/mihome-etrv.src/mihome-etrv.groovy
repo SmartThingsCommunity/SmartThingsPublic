@@ -160,17 +160,23 @@ metadata {
 }
 //	===== Update when installed or setting changed =====
 def installed() {
-	log.debug "Executing 'installed'"
-    state.boostLength = 60
-    update()
+	log.info "Executing 'installed'"
+    updated()
 }
 
 def updated() {
-	unschedule()
+	log.info "updated running"
+	unschedule(refreshRate)
+    unschedule(setHeatingSetpoint)
+    unschedule(setThermostatMode)
+    unschedule(stopBoost)
+    state.counter = 0
+    state.boostLength = 60
     runIn(2, update)
 }
 
 def update() {
+	log.info "update running"
 	switch(refreshRate) {
 		case "5":
 			runEvery5Minutes(refresh)
@@ -217,29 +223,31 @@ def setHeatingSetpoint(temp) {
 	if (temp > 30) {
 		temp = 30
 	}
-    sendEvent(name: "boostSwitch", value: "off", displayed: false)
+    //sendEvent(name: "boostSwitch", value: "off", displayed: false)
     def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: temp]).toString()))
-	log.debug "setting response ${resp.status}"
+	//log.debug "setting response ${resp.status} ${resp.data}"
     if (resp.status != 200) {
 		log.error "Unexpected result in seting temp ${resp.status} ${resp.data}"
         if (state.counter == null || state.counter >= 7) {
 			state.counter = 0
 		}
-        	if (state.Counter == 6) {
-            	sendEvent(name: "switch", value: "offline", descriptionText: "error on ${state.Counter} try")
-                state.Counter = 0
-                sendEvent(name: "switch", value: "offline", descriptionText: "The device is offline")
+        	if (state.counter == 6) {
+            	sendEvent(name: "switch", value: "offline", descriptionText: "error setting temp try ${state.counter} try. The device is offline")
+                state.counter = 0
                 return []
 			}
 		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: "$temp" , descriptionText: "error on ${state.OnCounter} try")
-        log.warn "runnting set temp ${state.OnCounter} attempt"
-        runIn(11, setHeatingSetpoint(temp))
-	}
+        sendEvent(name: "switch", value: '${currentValue}', descriptionText: "error setting temp ${state.counter} try", displayed: true)
+        log.warn "runnting set temp ${state.counter} attempt"
+        //log.debug " the temp is $temp"
+       	int reruntemp = temp
+      	runIn(5, setHeatingSetpoint(reruntemp))
+        }
    	else {
     	state.counter = 0
         log.info "setting temp all good"
        	sendEvent(name: "heatingSetpoint", value: resp.data.data.target_temperature, unit: "C", state: "heat")
+        unschedule(setHeatingSetpoint)
     } 
 }
 
@@ -262,7 +270,7 @@ def setBoostLength(minutes) {
     }
     else {
     	log.debug "done setBoostLength  ${minutes} minutes"
-        //refresh()
+        refresh()
     }    
 }
 
@@ -340,8 +348,7 @@ def setThermostatMode(mode) {
     	setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
     	setHeatingSetpoint(12)
     } else if (mode == 'emergency heat') { 
-    	if (state.boostLength == null || state.boostLength == '')
-        {
+    	if (state.boostLength == null || state.boostLength == ''){
         	state.boostLength = 60
             sendEvent("name":"boostLength", "value": 60, displayed: true)
         }
@@ -350,11 +357,12 @@ def setThermostatMode(mode) {
         sendEvent(name: "boostSwitch", value: "on", displayed: false)
         def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: 22]).toString()))
         if (resp.status != 200) {
-			log.error "Unexpected result in therm mode poll ${resp.status} ${resp.data}"
-		runIn(02, setThermostatMode(mode), [overwrite: true])
+			log.error "Unexpected result in therm mode poll ${resp.status}" // ${resp.data}
+		runIn(02, setThermostatMode(mode))
         }
    	 	else {
     		log.info "All good boosting to 21- ${resp.status}"
+            unschedule(setThermostatMode)
     	}  
         //Schedule boost switch off
         schedule(now() + (state.boostLength * 60000), stopBoost)
@@ -375,8 +383,11 @@ def setThermostatMode(mode) {
 def poll() {
     //log.debug "Executing poll for ${device} ${this} ${device.deviceNetworkId}"
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
+    //log.debug "poll data ${resp.status} ${resp.data}"
+    
     if (resp.status != 200) {
-		log.error "Unexpected result in poll ${resp.status} ${resp.data}"
+    	sendEvent(name: "switch", value: '${currentValue}', descriptionText: "BAD Poll")
+		log.error "Unexpected result in poll ${resp.status}" //${resp.data}
 		return []
 	}
     log.info "POLL All good ${device} ${resp.status}"
@@ -391,7 +402,7 @@ def poll() {
     
     def boostSwitch = device.currentValue("boostSwitch")
    
-    if (boostSwitch != null && boostSwitch == "on") {
+    if (boostSwitch != null && boostSwitch == "on"){ // && = or
     	sendEvent(name: "thermostatMode", value: "emergency heat")
         boostLabel = "Boosting"
     }
@@ -399,26 +410,27 @@ def poll() {
 		sendEvent(name: "thermostatMode", value: resp.data.data.target_temperature == 12 ? "off" : "heat")
         boostLabel = "Start\n$state.boostLength Min Boost"
     }
-    sendEvent(name: 'thermostatOperatingState', value: resp.data.data.target_temperature == 12 ? "idle" : "heating")
-    sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
+    //sendEvent(name: 'thermostatOperatingState', value: resp.data.data.target_temperature == 12 ? "idle" : "heating")
+    //sendEvent(name: 'thermostatFanMode', value: "off", displayed: false)
     sendEvent(name: "switch", value: resp.data.data.target_temperature == 12 ? "off" : "on")
     sendEvent(name: "batteryVoltage", value: resp.data.data.voltage == null ? "Not Available" : resp.data.data.voltage)
     sendEvent(name: "boostLabel", value: boostLabel, displayed: false)
-    def lastRefreshed = state.lastRefreshed
+    
     state.lastRefreshed = now()
+    def lastRefreshed = state.lastRefreshed
     def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
     def now = ''
     if (checkinInfoFormat != 'Hide') {
         try {
             now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}a", location.timeZone)
         } catch (all) { }
+    sendEvent(name: "lastCheckin", value: now, displayed: false)    
     }
-    sendEvent(name: "lastCheckin", value: now, displayed: false)
 }
 
 
 
 def refresh() {
 	log.info "Executing refresh"
-	runIn(01, poll)
+	poll()
 }
