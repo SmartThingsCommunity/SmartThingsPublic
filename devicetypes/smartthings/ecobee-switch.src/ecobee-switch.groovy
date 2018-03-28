@@ -55,9 +55,18 @@ def parse(String description) {
     log.debug "Parsing '${description}'"
 }
 
+void initialize() {
+    sendEvent(name: "DeviceWatch-Enroll", value: toJson([protocol: "cloud", scheme:"untracked"]), displayed: false) 	
+}
+
 void installed() {
     log.trace "[DTH] Executing installed() for device=${this.device.displayName}"
-    sendEvent(name: "DeviceWatch-Enroll", value: toJson([protocol: "cloud", scheme:"untracked"]), displayed: false) 	
+    initialize() 	
+}
+
+void updated() {
+    log.trace "[DTH] Executing updated() for device=${this.device.displayName}"
+    initialize() 	
 }
 
 //remove from the selected devices list in SM
