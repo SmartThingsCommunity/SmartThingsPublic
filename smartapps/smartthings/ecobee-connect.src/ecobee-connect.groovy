@@ -36,6 +36,12 @@ definition(
 		pausable: false
 ) {
 	appSetting "clientId"
+	appSetting "serverUrl" // See note below
+	// NOTE regarding OAuth settings. On NA01 (i.e. graph.api) and NA01S the serverUrl app setting can be left
+	// Blank. For other shards is should be set to the callback URL registered with Honeywell, which is:
+	//
+	// Production  -- https://graph.api.smartthings.com
+	// Staging     -- https://graph-na01s-useast1.smartthingsgdev.com
 }
 
 preferences {
@@ -1098,10 +1104,9 @@ private boolean sendCommandToEcobee(Map bodyParams) {
 def getChildName()           { return "Ecobee Thermostat" }
 def getSensorChildName()     { return "Ecobee Sensor" }
 def getSwitchChildName()     { return "Ecobee Switch" }
-def getServerUrl()           { return "https://graph.api.smartthings.com" }
-def getShardUrl()            { return getApiServerUrl() }
-def getCallbackUrl()         { return "https://graph.api.smartthings.com/oauth/callback" }
-def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${shardUrl}" }
+def getServerUrl()           { return appSettings.serverUrl ?: apiServerUrl }
+def getCallbackUrl()         { return "${serverUrl}/oauth/callback" }
+def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
 def getApiEndpoint()         { return "https://api.ecobee.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
 private getVendorIcon() 	 { return "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png" }
