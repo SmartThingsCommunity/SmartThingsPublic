@@ -14,6 +14,7 @@
  *
  *	VERSION HISTORY
  *
+ *				2.5	-	Updated to remove all timings less device name (every 3 hours) in line with DH updates - code cleans to do
  *	15/03/2018: 2.1	-	Cron schdule removed to randomise timings for users (update every1min)
  *	16.01.2017: 2.0.1b - Bug fix. Wrong implementation of double wall socket fixed.
  *	16.01.2017: 2.0.1 - Added support for MiHome Double Wall Socket
@@ -199,24 +200,21 @@ def getDevicesSelectedString() {
 }
 
 // App lifecycle hooks
-
 def installed() {
 	log.debug "installed"
-	initialize()
 	// Check for new devices and remove old ones every 3 hours
 	runEvery3Hours(updateDevices)
-    //runEvery5Minutes(refreshDevices)
-    }
+    initialize()
+}
 
 // called after settings are changed
 def updated() {
+	log.debug "updated"
 	unschedule(updateDevices)
     unschedule(refreshDevices)
-    unschedule()
-    log.debug "updated"
-	initialize()
     runEvery3Hours(updateDevices)
     log.info "Refresh Scheduled for every 3 Hours"
+    initialize()
 }
 
 def uninstalled() {
@@ -258,14 +256,12 @@ def initialize() {
     if (selectedMotions) {
     	addMotion()
     }
-    
     def devices = getChildDevices()
 	devices.each {
     	log.debug "Refreshing device $it.name"
         it.refresh()
 	}
 }
-
 
 def updateDevices() {
 	if (!state.devices) {
@@ -699,7 +695,7 @@ def logResponse(response) {
 	if (response.status != 200) {
     	log.error "Status: ${response.status}"
     }
-    log.info "All good: ${response.status}"
+    //log.info "All good: ${response.status}"
 }
 
 def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
