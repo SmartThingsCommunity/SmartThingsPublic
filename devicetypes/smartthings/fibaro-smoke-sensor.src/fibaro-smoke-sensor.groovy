@@ -21,7 +21,9 @@ metadata {
         capability "Health Check"
         attribute "tamper", "enum", ["detected", "clear"]
         attribute "heatAlarm", "enum", ["overheat detected", "clear", "rapid temperature rise", "underheat detected"]
+        
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x9C, 0x98, 0x7A", outClusters: "0x20, 0x8B"
+        fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x9C, 0x98, 0x7A", outClusters: "0x20"
         fingerprint mfr:"010F", prod:"0C02", model:"1002"
     }
     simulator {
@@ -106,7 +108,7 @@ metadata {
         }
 
         main "smoke"
-        details(["smoke","temperature","battery","tamper","heatAlarm"])
+        details(["smoke","temperature","battery", "tamper", "heatAlarm"])
     }
 }
 
@@ -124,7 +126,7 @@ def parse(String description) {
                 descriptionText: "This sensor failed to complete the network security key exchange. " +
                         "If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
     } else if (description != "updated") {
-        log.debug "parse() >> zwave.parse(description)"
+        log.debug "parse() >> $description"
         def cmd = zwave.parse(description, [0x31: 5, 0x71: 3, 0x84: 1])
         if (cmd) {
             result = zwaveEvent(cmd)
@@ -198,9 +200,9 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
     log.info "Executing zwaveEvent 98 (SecurityV1): 03 (SecurityCommandsSupportedReport) with cmd: $cmd"
     setSecured()
     log.info "checking this MSR : ${getDataValue("MSR")} before sending configuration to device"
-    if (getDataValue("MSR")?.startsWith("010F-0C02")){
+    if (zwaveInfo?.mfr == "010F" && zwaveInfo.prod == "0C02"){
         response(configure()) //configure device using SmartThings default settings
-    }
+  }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify cmd) {
@@ -209,7 +211,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify cmd) {
     //after device securely joined the network, call configure() to config device
     setSecured()
     log.info "checking this MSR : ${getDataValue("MSR")} before sending configuration to device"
-    if (getDataValue("MSR")?.startsWith("010F-0C02")){
+    if (zwaveInfo?.mfr == "010F" && zwaveInfo.prod == "0C02"){
         response(configure()) //configure device using SmartThings default settings
     }
 }
@@ -221,9 +223,11 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
         switch (cmd.event) {
             case 0:
                 result << createEvent(name: "tamper", value: "clear", displayed: false)
+                log.debug "tamper clear"
                 break
             case 3:
-                result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName casing was opened")
+                 log.debug "tamper detected"
+                 result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName casing was opened")
                 break
         }
     } else if (cmd.notificationType == 1) { //Smoke Alarm (V2)
@@ -289,7 +293,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
     def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
     def cmds = []
     /* check MSR = "manufacturerId-productTypeId" to make sure configuration commands are sent to the right model */
-    if (!isConfigured() && getDataValue("MSR")?.startsWith("010F-0C02")) {
+    if (zwaveInfo?.mfr == "010F" && zwaveInfo.prod == "0C02") {
         result << response(configure()) // configure a newly joined device or joined device with preference update
     } else {
         //Only ask for battery if we haven't had a BatteryReport in a while
@@ -363,7 +367,7 @@ def configure() {
     sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     //making the default state as "clear"
     sendEvent(name: "smoke", value: "clear", displayed: false)
-// This sensor joins as a secure device if you tripple-click the button to include it
+    //This sensor joins as a secure device if you tripple-click the button to include it
     log.debug "configure() >> isSecured() : ${isSecured()}"
     if (!isSecured()) {
         log.debug "Fibaro smoke sensor not sending configure until secure"
@@ -389,10 +393,12 @@ def configure() {
         }
         //4. Visual indicator notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable, 4-lack of range notification
         if (visualIndicatorNotificationStatus && visualIndicatorNotificationStatus != "null") {
+            log.debug "Adding visual notification: "+zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: notificationOptionValueMap[visualIndicatorNotificationStatus] ?: 0).format()
             request += zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: notificationOptionValueMap[visualIndicatorNotificationStatus] ?: 0)
         }
         //5. Sound notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable, 4-lack of range notification
         if (soundNotificationStatus && soundNotificationStatus != "null") {
+            log.debug "Adding sound notification: "+zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: notificationOptionValueMap[soundNotificationStatus] ?: 0).format()
             request += zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: notificationOptionValueMap[soundNotificationStatus] ?: 0)
         }
         //6. Temperature report interval: 0-report inactive, 1-8640 (multiply by 10 secs) [10s-24hr], default 180 (30 minutes)
@@ -421,6 +427,8 @@ def configure() {
         } else {
             request += zwave.configurationV1.configurationSet(parameterNumber: 32, size: 2, scaledConfigurationValue: 2160)
         }
+        log.debug "zwave config: "+request
+        
         //11. get battery level when device is paired
         request += zwave.batteryV1.batteryGet()
 
@@ -475,6 +483,11 @@ private isConfigured() {
 private setSecured() {
     updateDataValue("secured", "true")
 }
+
 private isSecured() {
-    getDataValue("secured") == "true"
+    if (zwaveInfo && zwaveInfo.zw) {
+        return zwaveInfo.zw.endsWith("s")
+    } else {
+        return getDataValue("secured") == "true"
+    }
 }
