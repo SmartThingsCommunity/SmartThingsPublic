@@ -189,7 +189,7 @@ private Map getBatteryResult(rawValue) {
 			// OR we don't currently have a battery reading
 			// OR the value we just received is at least 2 steps off from the last reported value
 			// OR the device's firmware is older than 1.15.7
-			if(useOldBatt || state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+			if (useOldBatt || state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				def roundedPct = Math.round(pct * 100)
 				if (roundedPct <= 0)
