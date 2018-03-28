@@ -46,10 +46,10 @@ metadata {
 def installed() {
 	def componentLabel
 	if (device.displayName.endsWith('1')) {
-		componentLabel = device.displayName.substring(0, device.displayName.length() - 1) + '2'
+		componentLabel = "${device.displayName[0..-2]}2"
 	} else {
 		// no '1' at the end of deviceJoinName - use 2 to indicate second switch anyway
-		componentLabel = device.displayName + " 2"
+		componentLabel = "$device.displayName 2"
 	}
 	try {
 		String dni = "${device.deviceNetworkId}-ep2"
