@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="48"
+   height="48"
+   viewBox="0 0 12.7 12.7"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="timer.svg"
+   inkscape:export-filename="C:\Users\Heath\Pictures\timer2x.png"
+   inkscape:export-xdpi="240"
+   inkscape:export-ydpi="240">
+  <title
+     id="title3724">Timer</title>
+  <defs
+     id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient4669">
+      <stop
+         style="stop-color:#ffed01;stop-opacity:1"
+         offset="0"
+         id="stop4665" />
+      <stop
+         style="stop-color:#ffff8b;stop-opacity:0"
+         offset="1"
+         id="stop4667" />
+    </linearGradient>
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4669"
+       id="radialGradient4671"
+       cx="6.6145835"
+       cy="3.6528883"
+       fx="6.6145835"
+       fy="3.6528883"
+       r="3.3072916"
+       gradientTransform="matrix(1,0,0,1.3164561,-0.9020349,-1.633867)"
+       gradientUnits="userSpaceOnUse" />
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4669"
+       id="radialGradient4681"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.3164561,-1.7038416,282.66611)"
+       cx="6.6145835"
+       cy="3.6528883"
+       fx="6.6145835"
+       fy="3.6528883"
+       r="3.3072916" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="4"
+     inkscape:cx="25.80518"
+     inkscape:cy="17.758254"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer2"
+     showgrid="false"
+     units="px"
+     gridtolerance="10"
+     inkscape:window-width="2160"
+     inkscape:window-height="1346"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     showguides="false"
+     inkscape:guide-bbox="true">
+    <inkscape:grid
+       type="xygrid"
+       id="grid3726"
+       snapvisiblegridlinesonly="false"
+       dotted="false" />
+    <sodipodi:guide
+       position="8.3354684,3.2824039"
+       orientation="1,0"
+       id="guide4683"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="11.1125,4.2333333"
+       orientation="0,1"
+       id="guide4685"
+       inkscape:locked="false" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>Timer</dc:title>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Heath Stewart</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <cc:license
+           rdf:resource="http://www.apache.org/licenses/LICENSE-2.0" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="bulb"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-284.29998)"
+     style="display:inline">
+    <path
+       style="fill:url(#radialGradient4681);fill-opacity:1;fill-rule:evenodd;stroke:#505050;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 7.8211613,288.41638 c 0,1.04349 -1.3017674,2.50009 -1.5640709,3.88641 -0.2880123,1.52219 -0.9009159,1.37663 -1.6109291,1.37663 -0.7201135,0 -1.1834337,0.14556 -1.5625497,-1.39915 -0.3341984,-1.36169 -1.6124502,-2.8305 -1.6124502,-3.86389 -1e-7,-1.7535 1.4214959,-3.175 3.1749999,-3.175 1.7535041,0 3.1750001,1.4215 3.175,3.175 z"
+       id="path3732"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="sssssss" />
+    <ellipse
+       style="fill:#464646;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.29564631px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       id="path4585"
+       cx="4.7284818"
+       cy="296.10049"
+       rx="0.51208782"
+       ry="0.272677" />
+    <path
+       style="fill:#ffc864;fill-opacity:1;stroke:#505050;stroke-width:0.26458332;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 3.3232448,293.03123 c 0.7573023,0.21657 1.5874999,0.52917 2.7804873,0 v 2.64583 c -1.1929874,0.52917 -1.8949039,0.38496 -2.7804873,0 z"
+       id="rect4544"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#505050;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 6.113795,294.09807 c 0,0 -1.2030504,0.69801 -2.7905503,0.52916"
+       id="path4553"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#505050;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 6.1137951,294.88898 c 0,0 -1.2030504,0.69802 -2.7905504,0.52917"
+       id="path4553-9"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#505050;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 6.1137951,293.30714 c 0,0 -1.2030504,0.69802 -2.7905503,0.52917"
+       id="path4553-0"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="clock"
+     style="display:inline">
+    <circle
+       style="fill:#ffffff;fill-rule:evenodd;stroke:#282828;stroke-width:0.26458333;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path4673"
+       cx="8.3378172"
+       cy="8.4466887"
+       r="2.9104166" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#282828;stroke-width:0.45268199;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 8.3026963,6.1996051 V 8.3693603 L 9.0455668,9.5747799"
+       id="path4735"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>
