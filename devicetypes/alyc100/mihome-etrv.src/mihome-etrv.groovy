@@ -14,7 +14,9 @@
  *
  *
  *	VERSION HISTORY
- *  21.02.2018	2.1	- re run upto 5 times when set temp is not 200
+ *  
+ *				2.5 - major review to move schdualing into the DH 
+ *	21.02.2018	2.1	- re run upto 5 times when set temp is not 200
  *	23.11.2016:	2.0 - Remove BETA status.
  * 
  *	07.11.2016: 2.0 BETA Release 1.1 - Allow icon to be changed.
@@ -214,7 +216,7 @@ def parse(String description) {
 // handle commands
 def setHeatingSetpoint(temp) {
 	state.counter = state.counter
-	log.info "Executing setHeatingSetpoint with temp $temp"
+	log.debug "Executing setHeatingSetpoint with temp $temp"
 	def latestThermostatMode = device.latestState('thermostatMode')
     
     if (temp < 12) {
@@ -233,6 +235,7 @@ def setHeatingSetpoint(temp) {
 		}
         	if (state.counter == 6) {
             	sendEvent(name: "switch", value: "offline", descriptionText: "error setting temp try ${state.counter} try. The device is offline")
+                unschedule(setHeatingSetpoint)
                 state.counter = 0
                 return []
 			}
@@ -244,11 +247,11 @@ def setHeatingSetpoint(temp) {
       	runIn(5, setHeatingSetpoint(reruntemp))
         }
    	else {
-    	state.counter = 0
-        log.info "setting temp all good"
+    	unschedule(setHeatingSetpoint)
+        state.counter = 0
+        log.info "temp set to $temp all good"
        	sendEvent(name: "heatingSetpoint", value: resp.data.data.target_temperature, unit: "C", state: "heat")
-        unschedule(setHeatingSetpoint)
-    } 
+	} 
 }
 
 def setBoostLength(minutes) {
@@ -286,17 +289,17 @@ def stopBoost() {
 }
 
 def heatingSetpointUp(){
-	log.debug "Executing 'heatingSetpointUp'"
+	//log.debug "Executing 'heatingSetpointUp'"
 	int newSetpoint = device.currentValue("heatingSetpoint") + 1
 	log.debug "Setting heat set point up to: ${newSetpoint}"
-	setHeatingSetpoint(newSetpoint)
+	runIn(05, setHeatingSetpoint(newSetpoint))
 }
 
 def heatingSetpointDown(){
-	log.debug "Executing 'heatingSetpointDown'"
+	//log.debug "Executing 'heatingSetpointDown'"
 	int newSetpoint = device.currentValue("heatingSetpoint") - 1
 	log.debug "Setting heat set point down to: ${newSetpoint}"
-	setHeatingSetpoint(newSetpoint)
+	runIn(05, setHeatingSetpoint(newSetpoint))
 }
 
 def setLastHeatingSetpoint(temp) {

@@ -13,9 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY - FORMER VERSION NOW RENAMED AS ADAPTER PLUS
+ *				2.5	-	Major review to move schdualing into the DH, created error handler
  *	17.09.2017: 2.0a - Disable setting device to Offline on unexpected API response.
  *	23.11.2016:	2.0 - Remove extra logging.
- *
  *	10.11.2016:	2.0 BETA Release 3 - Merge Light Switch and Adapter functionality into one device type.
  *	10.11.2016:	2.0 BETA Release 2.1 - Bug fix. Stop NumberFormatException when creating body object.
  *	09.11.2016:	2.0 BETA Release 2 - Added support for MiHome multiple gangway devices.
@@ -24,8 +24,8 @@
  */
 metadata {
 	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
-		//capability "Actuator"
-		//capability "Polling"
+		//capability "Actuator" // not used?
+		//capability "Polling" // polling disabled as refresh is schedualed in preferences (rates)
 		capability "Refresh"
 		capability "Switch"
         
@@ -81,27 +81,24 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing ${description}"
-	// TODO: handle 'switch' attribute
+	// not required as cloud based
 }
 
-//	===== Update when installed or setting changed =====
+//	===== Update when installed or setting updated =====
 def installed() {
 	log.info "installed"
 	runIn(02, initialize)
 }
-
 def updated() {
 	log.info "updated"
 	unschedule(refreshRate)
     unschedule(off)
     unschedule(on)
-    state.counter = state.counter
-    log.info "updated State counter ${state.counter}"
     runIn(02, initialize)
 }
-
 def initialize() {
 	log.info "initialize"
+	state.counter = state.counter
     state.counter = 0
 	switch(refreshRate) {
 		case "5":
@@ -119,13 +116,15 @@ def initialize() {
 		default:
 			runEvery30Minutes(refresh)
 			log.info "Refresh Scheduled for every 30 minutes"
-    	log.info "State counter at ${state.counter}"
+    	//log.debug "State counter at ${state.counter}"
 	}
 }
-
 def uninstalled() {
     unschedule()
+    // to look at deleting child devices?
 }
+//	===== Update when installed or setting updated =====
+
 
 def poll() {
 	//log.debug "Executing poll for ${device} ${this} ${device.deviceNetworkId}"
@@ -137,10 +136,10 @@ def poll() {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
-    //log.debug "poll data ${resp.status} removed ${resp.data}" 
+    //log.debug "poll status- ${resp.status} data- ${resp.data}" 
     if (resp.status != 200) {
-		log.error "Unexpected result in poll ${resp.status}" //  as not req ${resp.data}
-        sendEvent(name: "switch", value: '${currentValue}', descriptionText: "The device failed POLL") // was "offline"
+		log.error "Unexpected result in poll ${resp.status}"
+        sendEvent(name: "switch", value: '${currentValue}', descriptionText: "The device failed POLL")
 		return []
 	}
     def power_state = resp.data.data.power_state
@@ -157,7 +156,7 @@ def poll() {
         } catch (all) { }
     	sendEvent(name: "lastCheckin", value: now, displayed: false)
     }
-    log.info "POLL All good ${resp.status} ${device}"
+    log.info "POLL all good ${resp.status} ${device}"
 }
 
 def refresh() {
@@ -166,7 +165,6 @@ def refresh() {
 }
 
 def on() {
-	//state.counter = state.counter
 	log.info "Executing on"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
@@ -182,6 +180,7 @@ def on() {
 			}
         	if (state.counter == 6) {
             	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning On ${state.counter} times. The device is offline")
+                unschedule(on)
                 state.counter = 0
                 return []
 			}
@@ -191,18 +190,17 @@ def on() {
         runIn(013, on)
 	}
    	else {
-    	state.counter = 0
-        log.info "ON All good ${resp.status}"
+    	unschedule(on)
+        state.counter = 0
+        log.info "ON all good ${resp.status}"
   		def power_state = resp.data.data.power_state
     		if (power_state != null) {
     			sendEvent(name: "switch", value: power_state == false ? "off" : "on")
-        unschedule(on)
-    		}
+        	}
     }
 }
 
 def off() {
-	//state.counter = state.counter
 	log.info "Executing off"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
@@ -212,14 +210,15 @@ def off() {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
 	def resp = parent.apiGET("/subdevices/power_off?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
-    // log.debug "off data ${resp.status} ${resp.data}"
+    // log.debug "off data status- ${resp.status} data- ${resp.data}"
     if (resp.status != 200) {
-    	log.error "Unexpected result in off poll ${resp.status}" //${resp.data}
+    	log.error "Unexpected result in off poll ${resp.status}"
         if (state.counter == null || state.counter >= 7) {
 			state.counter = 0
 		}
         	if (state.counter == 6) {
             	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning Off ${state.counter} times. The device is offline")
+                unschedule(off)
                 state.counter = 0
                 return []
 			}
@@ -229,12 +228,12 @@ def off() {
 		runIn(07, off)
 	}
     else {
-    	state.counter = 0
+    	unschedule(off)
+        state.counter = 0
         log.info "OFF All good ${resp.status}"
         def power_state = resp.data.data.power_state
     		if (power_state != null) {
     			sendEvent(name: "switch", value: power_state == false ? "off" : "on")
-        unschedule(off)
-    		}
+        	}
     }
 }
