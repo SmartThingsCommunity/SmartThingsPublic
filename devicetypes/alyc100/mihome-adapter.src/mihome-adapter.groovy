@@ -74,7 +74,7 @@ metadata {
 		}
         section(title: "Check-in Info") {
             paragraph "Display check-in info"
-            input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "MM/dd/yyyy h:mm", "MM-dd-yyyy h:mm", "dd/MM/yyyy h:mm", "dd-MM-yyyy h:mm"], description: "Show last check-in info.", defaultValue: "dd/MM/yyyy h:mm", required: true
+            input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "MM/dd/yyyy h:mm", "MM-dd-yyyy h:mm", "dd/MM/yyyy h:mm", "dd-MM-yyyy h:mm"], description: "Show last check-in info.", defaultValue: "dd/MM/yyyy h:mm", required: false
         }
 	}
 }
@@ -139,13 +139,19 @@ def poll() {
     //log.debug "poll status- ${resp.status} data- ${resp.data}" 
     if (resp.status != 200) {
 		log.error "Unexpected result in poll ${resp.status}"
-        sendEvent(name: "switch", value: '${currentValue}', descriptionText: "The device failed POLL")
-		return []
+        sendEvent(name: "switch", value: "offline", descriptionText: "The device failed POLL")
+		//return []
 	}
+    else {
     def power_state = resp.data.data.power_state
     if (power_state != null) {
     	sendEvent(name: "switch", value: power_state == 0 ? "off" : "on")
     }
+    log.info "POLL all good ${resp.status} ${device}"
+    checkin()
+    }
+}
+def checkin() {
 	def lastRefreshed = state.lastRefreshed
     state.lastRefreshed = now()
     def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
@@ -156,7 +162,6 @@ def poll() {
         } catch (all) { }
     	sendEvent(name: "lastCheckin", value: now, displayed: false)
     }
-    log.info "POLL all good ${resp.status} ${device}"
 }
 
 def refresh() {
@@ -169,34 +174,39 @@ def on() {
     def body = []
     if (device.deviceNetworkId.contains("/")) {
     	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
-    } else {
+    }
+    else {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
     def resp = parent.apiGET("/subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
     		log.error "Unexpected result in on poll ${resp.status} //${resp.data}"
-          	if (state.counter == null || state.counter >= 7) {
+          	if (state.counter == null || state.counter >= 5) {
 				state.counter = 0
 			}
-        	if (state.counter == 6) {
-            	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning On ${state.counter} times. The device is offline")
+            if (state.counter < 5) {
+            state.counter = state.counter + 1
+        	sendEvent(name: "switch", value: "offline", descriptionText: "error turning on ${state.counter} try", isStateChange: true)
+        	log.warn "runnting on again ${state.counter} attempt"
+        	runIn(13, on)
+            }            
+            else { //if (state.counter == 6) {
+            	log.debug " =6 else 191"
+            	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning On ${state.counter} times. The device is offline", isStateChange: true)
                 unschedule(on)
                 state.counter = 0
-                return []
 			}
-		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: '${currentValue}', descriptionText: "error turning on ${state.counter} try")
-        log.warn "runnting on again ${state.counter} attempt"
-        runIn(013, on)
 	}
-   	else {
+	else {
     	unschedule(on)
         state.counter = 0
-        log.info "ON all good ${resp.status}"
+        log.debug "else 197"
   		def power_state = resp.data.data.power_state
-    		if (power_state != null) {
-    			sendEvent(name: "switch", value: power_state == false ? "off" : "on")
-        	}
+    	if (power_state != null) {
+    		sendEvent(name: "switch", value: power_state == false ? "off" : "on")
+        }
+    	log.info "ON all good ${resp.status}"
+    	checkin()
     }
 }
 
@@ -215,25 +225,29 @@ def off() {
     	log.error "Unexpected result in off poll ${resp.status}"
         if (state.counter == null || state.counter >= 7) {
 			state.counter = 0
-		}
-        	if (state.counter == 6) {
-            	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning Off ${state.counter} times. The device is offline")
+					}
+            if (state.counter < 5) {
+            state.counter = state.counter + 1
+        	sendEvent(name: "switch", value: "offline", descriptionText: "error turning off ${state.counter} try", isStateChange: true)
+        	log.warn "runnting off again ${state.counter} attempt"
+        	runIn(13, off)
+            }            
+            else { //if (state.counter == 6) 
+            	log.debug " = else 6 times"
+            	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning Off ${state.counter} times. The device is offline", isStateChange: true)
                 unschedule(off)
                 state.counter = 0
-                return []
 			}
-		state.counter = state.counter + 1
-        sendEvent(name: "switch", value: '${currentValue}', descriptionText: "error turning off ${state.counter} try")
-        log.warn "running off again ${state.counter} attempt"
-		runIn(07, off)
 	}
-    else {
+	else {
     	unschedule(off)
         state.counter = 0
-        log.info "OFF All good ${resp.status}"
-        def power_state = resp.data.data.power_state
-    		if (power_state != null) {
-    			sendEvent(name: "switch", value: power_state == false ? "off" : "on")
-        	}
+        log.debug "else all good"
+  		def power_state = resp.data.data.power_state
+    	if (power_state != null) {
+    		sendEvent(name: "switch", value: power_state == false ? "off" : "on")
+        }
+    	log.info "Off all good ${resp.status}"
+    	checkin()
     }
 }
