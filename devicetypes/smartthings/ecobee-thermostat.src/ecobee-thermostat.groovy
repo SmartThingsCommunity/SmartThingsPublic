@@ -180,7 +180,7 @@ def generateEvent(Map results) {
 				// Old attributes, keeping for backward compatibility
 				sendValue =  getTempInLocalScale(value, "F")  // API return temperature values in F
 				event << [value: sendValue, unit: locationScale, displayed: false]
-				// Store min/max setpoint in device unit to avoid conversion rounding error when updating setpoints 
+				// Store min/max setpoint in device unit to avoid conversion rounding error when updating setpoints
 				device.updateDataValue(name+"Fahrenheit", "${value}")
 			} else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
 				if (value == true) {
@@ -441,7 +441,7 @@ def alterSetpoint(raise, setpoint) {
 		return
 	}
 	def locationScale = getTemperatureScale()
-	def deviceScale = "F" 
+	def deviceScale = "F"
 	def heatingSetpoint = getTempInLocalScale("heatingSetpoint")
 	def coolingSetpoint = getTempInLocalScale("coolingSetpoint")
 	def targetValue = (setpoint == "heatingSetpoint") ? heatingSetpoint : coolingSetpoint
@@ -464,7 +464,7 @@ def alterSetpoint(raise, setpoint) {
 }
 
 def enforceSetpointLimits(setpoint, data, raise = null) {
-	def locationScale = getTemperatureScale() 
+	def locationScale = getTemperatureScale()
 	def minSetpoint = (setpoint == "heatingSetpoint") ? device.getDataValue("minHeatingSetpointFahrenheit") : device.getDataValue("minCoolingSetpointFahrenheit")
 	def maxSetpoint = (setpoint == "heatingSetpoint") ? device.getDataValue("maxHeatingSetpointFahrenheit") : device.getDataValue("maxCoolingSetpointFahrenheit")
 	minSetpoint = minSetpoint ? Double.parseDouble(minSetpoint) : ((setpoint == "heatingSetpoint") ? 45 : 65)  // default 45 heat, 65 cool
