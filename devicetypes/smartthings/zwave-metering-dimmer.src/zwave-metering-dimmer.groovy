@@ -259,7 +259,7 @@ def meterReset()
 def normalizeLevel(level)
 {
     // Normalize level between 1 and 100.
-    (int)((float)level * 1.01010101)
+    level == 99 ? 100 : level
 }
 
 /*
