@@ -139,8 +139,7 @@ def poll() {
     //log.debug "poll status- ${resp.status} data- ${resp.data}" 
     if (resp.status != 200) {
 		log.error "Unexpected result in poll ${resp.status}"
-        sendEvent(name: "switch", value: "offline", descriptionText: "The device failed POLL")
-		//return []
+        sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
 	}
     else {
     def power_state = resp.data.data.power_state
@@ -160,8 +159,9 @@ def checkin() {
         try {
             now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}a", location.timeZone)
         } catch (all) { }
-    	sendEvent(name: "lastCheckin", value: now, displayed: false)
+    	sendEvent(name: "lastCheckin", value: now, displayed: false) 
     }
+    log.info "Check in completed"
 }
 
 def refresh() {
@@ -186,12 +186,12 @@ def on() {
 			}
             if (state.counter < 5) {
             state.counter = state.counter + 1
-        	sendEvent(name: "switch", value: "offline", descriptionText: "error turning on ${state.counter} try", isStateChange: true)
+        	sendEvent(name: "switch", value: "turningOn", descriptionText: "error turning on ${state.counter} try", isStateChange: true)
         	log.warn "runnting on again ${state.counter} attempt"
         	runIn(13, on)
             }            
             else { //if (state.counter == 6) {
-            	log.debug " =6 else 191"
+            	//log.debug " =6 else 191"
             	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning On ${state.counter} times. The device is offline", isStateChange: true)
                 unschedule(on)
                 state.counter = 0
@@ -200,7 +200,7 @@ def on() {
 	else {
     	unschedule(on)
         state.counter = 0
-        log.debug "else 197"
+        //log.debug "else 197"
   		def power_state = resp.data.data.power_state
     	if (power_state != null) {
     		sendEvent(name: "switch", value: power_state == false ? "off" : "on")
@@ -228,12 +228,12 @@ def off() {
 					}
             if (state.counter < 5) {
             state.counter = state.counter + 1
-        	sendEvent(name: "switch", value: "offline", descriptionText: "error turning off ${state.counter} try", isStateChange: true)
+        	sendEvent(name: "switch", value: "turningOff", descriptionText: "error turning off ${state.counter} try", isStateChange: true)
         	log.warn "runnting off again ${state.counter} attempt"
         	runIn(13, off)
             }            
             else { //if (state.counter == 6) 
-            	log.debug " = else 6 times"
+            	//log.debug " = else 6 times"
             	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning Off ${state.counter} times. The device is offline", isStateChange: true)
                 unschedule(off)
                 state.counter = 0
@@ -242,7 +242,7 @@ def off() {
 	else {
     	unschedule(off)
         state.counter = 0
-        log.debug "else all good"
+        //log.debug "else all good"
   		def power_state = resp.data.data.power_state
     	if (power_state != null) {
     		sendEvent(name: "switch", value: power_state == false ? "off" : "on")
