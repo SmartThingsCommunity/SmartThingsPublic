@@ -1064,6 +1064,11 @@ def setSensorName(name, deviceId) {
  * @return true if the command was accepted by Ecobee without error, false otherwise.
  */
 private boolean sendCommandToEcobee(Map bodyParams) {
+	// no need to try sending a command if authToken is null
+	if (!state.authToken) {
+		log.warn "sendCommandToEcobee failed due to authToken=null"
+		return false
+	}
 	def isSuccess = false
 	def cmdParams = [
 		uri: apiEndpoint,
