@@ -1072,7 +1072,7 @@ private boolean sendCommandToEcobee(Map bodyParams) {
 		body: toJson(bodyParams)
 	]
 	def keepTrying = true
-	cmdAttempt = 1
+	def cmdAttempt = 1
 
 	while (keepTrying) {
 		try{
