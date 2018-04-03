@@ -142,29 +142,27 @@ def installed(){
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-	log.debug "${device.displayName} is now ${device.latestValue("powerSource")}"
 
-
-	def powerSource = device.latestValue("powerSource")
-
-	if (!powerSource) { // Check to see if we have updated to new powerSource attr
-		def powerSupply = device.latestValue("powerSupply")
-
-		if (powerSupply) {
-			powerSource = (powerSupply == "Battery") ? "battery" : "dc"
-
-			sendEvent(name: "powerSource", value: powerSource, displayed: false)
-		}
-	}
-
-	if (powerSource == "battery") {
+	if (!getDataValue("configured")) { // this is the update call made after install, device is still awake
+		response(configure())
+	} else if (device.latestValue("powerSource") == "battery") {
 		setConfigured("false") //wait until the next time device wakeup to send configure command after user change preference
 	} else { // We haven't identified the power supply, or the power supply is USB, so configure
+		setConfigured("false")
 		response(configure())
 	}
 }
 
 def parse(String description) {
+
+	/* Since battery is handled locally but we use this batteryStatus tile, we need a good periodic way to keep the
+		value updated when on battery power. Ideally this would be done in the local handler, but this is a decent
+		stopgap.
+	 */
+	if (device.latestValue("powerSource") == "battery") {
+		sendEvent(name: "batteryStatus", value: "${device.latestValue("battery")}% battery", displayed: false)
+	}
+
 	log.debug "parse() >> description: $description"
 	def result = null
 	if (description.startsWith("Err 106")) {
@@ -340,8 +338,8 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		result << createEvent(name: "batteryStatus", value: "USB Cable", displayed: false)
 		result << createEvent(name: "powerSource", value: value, displayed: false)
 	}else if (cmd.parameterNumber == 9 && cmd.configurationValue[0] == 1) {
-		value = "battery"
-		result << createEvent(name: "powerSource", value: value, displayed: false)
+		result << createEvent(name: "powerSource", value: "battery", displayed: false)
+		result << createEvent(name: "batteryStatus", value: "${device.latestValue("battery")}% battery", displayed: false)
 	} else if (cmd.parameterNumber == 101){
 		result << response(configure())
 	}
