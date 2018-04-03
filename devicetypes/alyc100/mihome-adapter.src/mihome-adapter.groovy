@@ -138,7 +138,7 @@ def poll() {
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     //log.debug "poll status- ${resp.status} data- ${resp.data}" 
     if (resp.status != 200) {
-		log.error "Unexpected result in poll ${resp.status}"
+		log.error "Unexpected result in poll - ${device} - ${resp.status}"
         sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
 	}
     else {

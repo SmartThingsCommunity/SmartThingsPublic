@@ -43,7 +43,7 @@ metadata {
 		capability "Thermostat Heating Setpoint"
 		capability "Switch"
         capability "Battery"
-        capability "thermostatMode"
+        //capability "thermostatMode"
         
         command "heatingSetpointUp"
 		command "heatingSetpointDown"
@@ -109,7 +109,7 @@ metadata {
 				]
 		}
         
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
 			state("default", label:'refresh', action:"refresh", icon:"st.secondary.refresh-icon")
 		}
  
@@ -129,10 +129,10 @@ metadata {
 			state ("setBoostLength", label:'Set boost length to', action:"setBoostLength")
 		}
         
-        standardTile("switch", "device.switch", decoration: "flat", height: 2, width: 2, inactiveLabel: true) {
-			state "on", label:'On Line', action:"off", icon:"st.Home.home1", backgroundColor:"#f1d801" 
+        standardTile("switch", "device.switch", decoration: "flat", height: 1, width: 1, inactiveLabel: true) {
+			state "on", label:'${name}', action:"off", icon:"st.Home.home1", backgroundColor:"#f1d801" 
 			state "off", label:'${name}', action:"heat", icon:"st.Home.home1", backgroundColor:"#ffffff" //do i need this?
-            state "offline", label:'Off Line', icon:"st.switches.switch.off", backgroundColor:"#ff0000"
+            
         }
         standardTile("boostSwitch", "device.boostSwitch", decoration: "flat", height: 2, width: 2, inactiveLabel: false) {
 			state ("heat", label:'Press to boost', action: "emergencyHeat", icon:"st.alarm.temperature.overheat")
@@ -147,12 +147,12 @@ metadata {
             state ("emergencyheat", label: 'Press to stop boost', action:"stopBoost", icon:"st.thermostat.emergency-heat", backgroundColor: "#bc2323")
 		}
         
-        valueTile("boost", "device.boostLabel", inactiveLabel: true, decoration: "flat", width: 4, height: 1) {
+        valueTile("boostLabel", "device.boostLabel", inactiveLabel: true, decoration: "flat", width: 4, height: 1) {
 			state("default", label:'${currentValue}')
         }
 
         main(["thermostat_small"])
-		details(["thermostat", "heatingSetpoint", "heatSliderControl", "thermostatMode", "boost", "battery", "boostSliderControl", "boostSwitch", "refresh", "switch"])
+		details(["thermostat", "heatingSetpoint", "heatSliderControl", "thermostatMode", "boostLabel", "battery", "boostSliderControl", "boostSwitch", "refresh", "switch"])
 	}
     def rates = [:]
 	rates << ["5" : "Refresh every 5 minutes (eTRVs)"]
@@ -232,7 +232,16 @@ def heatingSetpointDown(){ //this dosent do anything
 
 def setHeatingSetpoint(temp) {
 	log.debug "Executing setHeatingSetpoint with temp $temp"
-	def latestThermostatMode = device.latestState('thermostatMode')
+	//def latestThermostatMode = device.latestState('thermostatMode')
+    log.debug "unschedual  boost and error delay b4"
+    unschedule(stopBoost)
+    unschedule(errordelay)
+    log.debug "unschedual  boost and error delay b4"
+    log.debug "set mode heat on heat b4"
+    state.thermostatMode = 'heat'
+	state.switch = 'on'        
+    state.boostSwitch = 'heat'
+    log.debug "set mode heat on heat after"
     if (temp < 12) {
 		temp = 12
 	}
@@ -261,23 +270,13 @@ def setHeatingSetpoint(temp) {
 		}
     }
     else {
-        unschedule(stopBoost)
-        
-        log.debug "boost unschedualed b4"
-        unschedule(setHeatingSetpoint)
-        log.debug "boost unschedualed after"
-        unschedule(errordelay)
-    	state.counter = 0
+    	//tempset200.signal()
+        state.counter = 0
      // state.temperature = // not sent when changing temp 
         state.heatingSetpoint = resp.data.data.target_temperature
         state.batteryVoltage = resp.data.data.voltage
-		
-       	state.thermostatMode = 'heat'
-		state.switch = 'on'        
-        
-        state.boostSwitch = 'heat'
-        log.info "setHeatingSetpoint with temp $temp ${resp.status}"
-        runIn(3, checkin)
+		log.info "setHeatingSetpoint with temp $temp ${resp.status}"
+        runIn(2, checkin)
 	}
 }
 def errordelay(temp) {
@@ -370,6 +369,11 @@ def setThermostatMode(mode) {
         def temp = settings.emergencyheattemp
         log.debug "send set temp"
         setHeatingSetpoint(temp) // send temp to setHeatingSetpoint
+        //log.debug "wait"
+       	//setHeatingSetpoint.waitFor(setHeatingSetpoint(temp), 45000)
+        //tempset200 = true
+       //	tempset200.await(7*6, SECONDS)
+        //log.debug "wait ok end"
         log.debug "temp set - carying on with emergeny boost"
         def boosttill = new Date(now() + (state.boostLength * 60000)).format("HH:mm", location.timeZone)
         state.boostLabel = "Boosting till \n$boosttill"
@@ -377,15 +381,12 @@ def setThermostatMode(mode) {
         state.boostSwitch = 'emergencyheat'
         state.switch = 'on'
       	log.debug "boost switches set"        
-        def btime = state.boostLength * 60 	//runin in seconds
+        def btime = state.boostLength * 60 	//runin in seconds // can i put this in directly?
         runIn(btime, stopBoost, [delay: 20000])	//delay to make sure temp has completed
         log.info "boosting till $boosttill with $mode of $temp"
     }
     else {
-    	state.switch = 'on'
-        state.thermostatMode = 'heat'
-        state.boostSwitch = 'heat'
-        state.boostLabel = "\n$state.boostLength Min Boost"
+    	state.boostLabel = "\n$state.boostLength Min Boost"
     	unschedule(stopBoost) // if schedualed
         //sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true) //mode & off icon
        	//sendEvent(name: "boostSwitch", value: "heat", displayed: false) //boost switch to press for boost
