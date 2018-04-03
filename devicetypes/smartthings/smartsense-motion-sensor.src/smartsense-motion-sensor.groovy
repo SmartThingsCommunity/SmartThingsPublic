@@ -37,6 +37,7 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3328-G", deviceJoinName: "Centralite Micro Motion Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "motionv4", deviceJoinName: "Motion Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "SmartThings", model: "motionv5", deviceJoinName: "Motion Sensor"
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500", outClusters: "0019", manufacturer: "Bosch", model: "RFDL-ZB-MS", deviceJoinName: "Bosch Motion Sensor"
 	}
 
 	simulator {
@@ -174,7 +175,13 @@ private Map getBatteryResult(rawValue) {
 				volts = maxVolts
 			def pct = batteryMap[volts]
 			result.value = pct
-		} else {
+		} else if (device.getDataValue("manufacturer") == "Bosch") {
+			def minValue = 21
+			def maxValue = 30
+			def pct = Math.round((rawValue - minValue) * 100 / (maxValue - minValue))
+			pct = pct > 0 ? pct : 1
+			result.value = Math.min(100, pct)
+		} else { // Centralite
 			def useOldBatt = shouldUseOldBatteryReporting()
 			def minVolts = useOldBatt ? 2.1 : 2.4
 			def maxVolts = useOldBatt ? 3.0 : 2.7
@@ -189,7 +196,7 @@ private Map getBatteryResult(rawValue) {
 			// OR we don't currently have a battery reading
 			// OR the value we just received is at least 2 steps off from the last reported value
 			// OR the device's firmware is older than 1.15.7
-			if(useOldBatt || state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+			if (useOldBatt || state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				def roundedPct = Math.round(pct * 100)
 				if (roundedPct <= 0)
