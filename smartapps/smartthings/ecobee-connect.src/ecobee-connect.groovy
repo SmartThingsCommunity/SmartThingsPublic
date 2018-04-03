@@ -1064,6 +1064,11 @@ def setSensorName(name, deviceId) {
  * @return true if the command was accepted by Ecobee without error, false otherwise.
  */
 private boolean sendCommandToEcobee(Map bodyParams) {
+	// no need to try sending a command if authToken is null
+	if (!state.authToken) {
+		log.warn "sendCommandToEcobee failed due to authToken=null"
+		return false
+	}
 	def isSuccess = false
 	def cmdParams = [
 		uri: apiEndpoint,
@@ -1071,34 +1076,44 @@ private boolean sendCommandToEcobee(Map bodyParams) {
 		headers: ["Content-Type": "application/json", "Authorization": "Bearer ${state.authToken}"],
 		body: toJson(bodyParams)
 	]
+	def keepTrying = true
+	def cmdAttempt = 1
 
-	try{
-        httpPost(cmdParams) { resp ->
-            if(resp.status == 200) {
-                log.debug "updated ${resp.data}"
-                def returnStatus = resp.data.status.code
-                if (returnStatus == 0) {
-                    log.debug "Successful call to ecobee API."
-                    isSuccess = true
-                } else {
-                    log.debug "Error return code = ${returnStatus}"
-                }
-            }
-        }
-	} catch (groovyx.net.http.HttpResponseException e) {
-        log.trace "Exception Sending Json: $e, ${e?.response?.data}"
-        if (e.response.data.status.code == 14) {
-            // TODO - figure out why we're setting the next action to be poll
-            // after refreshing auth token. Is it to keep UI in sync, or just copy/paste error?
-            state.action = "poll"
-            log.debug "Refreshing your auth_token!"
-            refreshAuthToken()
-        } else {
-            log.error "Authentication error, invalid authentication method, lack of credentials, etc."
-        }
-    }
+	while (keepTrying) {
+		try{
+			httpPost(cmdParams) { resp ->
+				keepTrying = false
+				if(resp.status == 200) {
+					log.debug "updated ${resp.data}"
+					def returnStatus = resp.data.status.code
+					if (returnStatus == 0) {
+						log.debug "Successful call to ecobee API."
+						isSuccess = true
+					} else {
+						log.debug "Error return code = ${returnStatus}"
+					}
+				}
+			}
+		} catch (groovyx.net.http.HttpResponseException e) {
+			log.trace "Exception Sending Json: $e, status:${e.getStatusCode()}, ${e?.response?.data}"
+			if (e.response.data.status.code == 14) {
+				if (cmdAttempt < 2) {
+					cmdAttempt = cmdAttempt + 1
+					log.debug "Refreshing your auth_token!"
+					refreshAuthToken()
+					cmdParams.headers.Authorization = "Bearer ${state.authToken}"
+				} else {
+					log.info "sendJson failed ${cmdAttempt} times, e:$e, status:${e.getStatusCode()}"
+					keepTrying = false
+				}
+			} else {
+				log.error "Authentication error, invalid authentication method, lack of credentials, etc."
+				keepTrying = false
+			}
+		}
+	}
 
-    return isSuccess
+	return isSuccess
 }
 
 def getChildName()           { return "Ecobee Thermostat" }
