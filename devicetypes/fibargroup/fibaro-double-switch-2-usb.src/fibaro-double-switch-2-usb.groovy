@@ -8,9 +8,10 @@ metadata {
         capability "Sensor"
         capability "Energy Meter"
         capability "Power Meter"
-
+		capability "Refresh"
+		
         command "reset"
-        command "refresh"
+       
     }
 
     tiles {
