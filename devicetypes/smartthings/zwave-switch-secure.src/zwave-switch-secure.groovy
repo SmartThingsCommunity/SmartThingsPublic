@@ -21,6 +21,7 @@ metadata {
 
 		fingerprint inClusters: "0x25,0x98"
 		fingerprint deviceId: "0x10", inClusters: "0x98"
+		fingerprint mfr: "0086", prod: "0003", model: "008B", deviceJoinName: "Aeon Labs Nano Switch"
 	}
 
 	simulator {
