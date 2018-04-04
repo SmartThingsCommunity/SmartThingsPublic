@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Switch Secure", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition(name: "Z-Wave Switch Secure", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: false) {
 		capability "Switch"
 		capability "Refresh"
 		capability "Polling"
@@ -68,15 +68,15 @@ def parse(description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
+	createEvent(name: "switch", value: cmd.value ? "on" : "off")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "physical")
+	createEvent(name: "switch", value: cmd.value ? "on" : "off")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+	createEvent(name: "switch", value: cmd.value ? "on" : "off")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
@@ -99,14 +99,14 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def on() {
 	commands([
 		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchBinaryV1.switchBinaryGet()
+		zwave.basicV1.basicGet()
 	])
 }
 
 def off() {
 	commands([
 		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchBinaryV1.switchBinaryGet()
+		zwave.basicV1.basicGet()
 	])
 }
 
@@ -115,7 +115,7 @@ def poll() {
 }
 
 def refresh() {
-	command(zwave.switchBinaryV1.switchBinaryGet())
+	command(zwave.basicV1.basicGet())
 }
 
 private command(physicalgraph.zwave.Command cmd) {
