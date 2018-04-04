@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Switch Secure", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition(name: "Z-Wave Switch Secure", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Switch"
 		capability "Refresh"
 		capability "Polling"
@@ -24,7 +24,7 @@ metadata {
 	}
 
 	simulator {
-		status "on":  "command: 9881, payload: 002503FF"
+		status "on": "command: 9881, payload: 002503FF"
 		status "off": "command: 9881, payload: 00250300"
 
 		reply "9881002001FF,delay 200,9881002502": "command: 9881, payload: 002503FF"
@@ -37,11 +37,11 @@ metadata {
 			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
 		main "switch"
-		details(["switch","refresh"])
+		details(["switch", "refresh"])
 	}
 }
 
@@ -125,6 +125,6 @@ private command(physicalgraph.zwave.Command cmd) {
 	}
 }
 
-private commands(commands, delay=200) {
-	delayBetween(commands.collect{ command(it) }, delay)
+private commands(commands, delay = 200) {
+	delayBetween(commands.collect { command(it) }, delay)
 }
