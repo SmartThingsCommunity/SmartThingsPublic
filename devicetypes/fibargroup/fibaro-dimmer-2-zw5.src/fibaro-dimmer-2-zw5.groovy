@@ -7,7 +7,6 @@ metadata {
         capability "Switch Level"
         capability "Energy Meter"
         capability "Power Meter"
-        capability "Button"
         capability "Configuration"
         capability "Health Check"
 
@@ -18,8 +17,6 @@ metadata {
         attribute "errorMode", "string"
 
         fingerprint mfr: "010F", prod: "0102", model: "2000"
-        fingerprint deviceId: "0x1101", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x31,0x32,0x71,0x56,0x98,0x7A,0x20,0x5A,0x85,0x26,0x8E,0x60,0x70,0x75,0x27"
-        fingerprint deviceId: "0x1101", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x31,0x32,0x71,0x56,0x7A,0x20,0x5A,0x85,0x26,0x8E,0x60,0x70,0x75,0x27"
     }
 
     tiles (scale: 2) {
@@ -46,10 +43,9 @@ metadata {
         valueTile("reset", "device.energy", decoration: "flat", width: 2, height: 2) {
             state "reset", label:'reset\nkWh', action:"reset"
         }
-
         valueTile("scene", "device.scene", decoration: "flat", width: 2, height: 2) {
              state "default", label:'Scene: ${currentValue}'
-        }
+		}
 
         standardTile("errorMode", "device.errorMode", decoration: "flat", width: 2, height: 2) {
             state "default", label:'No errors.', action:"clearError", icon: "st.secondary.tools", backgroundColor: "#ffffff"
@@ -61,6 +57,10 @@ metadata {
             state "loadError", label:'Load Error!', action:"clearError", icon: "st.secondary.tools", backgroundColor: "#ff0000"
             state "hardware", label:'Hardware Error!', action:"clearError", icon: "st.secondary.tools", backgroundColor: "#ff0000"
         }
+
+    	main "switch"
+    	details(["switch","power", "energy", "reset", "errorMode", "scene"])
+
     }
 
     preferences {
@@ -140,11 +140,7 @@ def installed(){
 
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-    def cmds = []
     logging("${device.displayName} - Executing updated()","info")
-
-    if (device.currentValue("numberOfButtons") != 5) { sendEvent(name: "numberOfButtons", value: 5) }
-
     runIn(3,"syncStart")
     state.lastUpdated = now()
 }
@@ -275,6 +271,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
     multiStatusEvent("${(device.currentValue("power") ?: "0.0")} W | ${(device.currentValue("energy") ?: "0.00")} kWh")
 }
 
+
 def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
     logging("zwaveEvent(): Scene Activation Set received: ${cmd}","trace")
     def result = []
@@ -283,7 +280,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
 
     return result
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
     logging("${device.displayName} - CentralSceneNotification received, sceneNumber: ${cmd.sceneNumber} keyAttributes: ${cmd.keyAttributes}","info")
@@ -401,10 +397,6 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
     zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 }
 
-private multiEncap(physicalgraph.zwave.Command cmd, Integer ep) {
-    logging("${device.displayName} - encapsulating command using MultiChannel Encapsulation, ep: $ep command: $cmd","info")
-    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:ep).encapsulate(cmd)
-}
 
 private encap(physicalgraph.zwave.Command cmd, Integer ep) {
     encap(multiEncap(cmd, ep))
