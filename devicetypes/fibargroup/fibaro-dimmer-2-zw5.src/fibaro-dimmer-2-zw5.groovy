@@ -371,16 +371,6 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
     }
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
-    def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
-    if (encapsulatedCommand) {
-        logging("${device.displayName} - Parsed MultiChannelCmdEncap ${encapsulatedCommand}")
-        zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
-    } else {
-        log.warn "Unable to extract MultiChannel command from $cmd"
-    }
-}
-
 private logging(text, type = "debug") {
     if (settings.logging == "true") {
         log."$type" text
