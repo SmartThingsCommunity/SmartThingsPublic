@@ -51,7 +51,7 @@ metadata {
 			state "turningOn", label:'${name}', icon:"st.switches.switch.on", backgroundColor:"#00A0DC"
 			state "turningOff", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#ffffff"
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 1, inactiveLabel: false) {
+		controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 1, inactiveLabel: false, range:"(0..100)") {
 			state "level", action:"switch level.setLevel"
 		}
 		valueTile("energy", "device.energy", decoration: "flat") {

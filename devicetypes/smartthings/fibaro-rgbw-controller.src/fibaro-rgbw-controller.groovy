@@ -82,7 +82,7 @@
 		controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
             state "color", action:"setAdjustedColor"
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
 			state "level", action:"switch level.setLevel"
 		}
 		controlTile("whiteSliderControl", "device.whiteLevel", "slider", height: 1, width: 3, inactiveLabel: false) {
