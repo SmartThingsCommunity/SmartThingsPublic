@@ -10,13 +10,12 @@ metadata {
         capability "Button"
         capability "Configuration"
         capability "Health Check"
+		capability "Refresh"
 
         command "reset"
-        command "refresh"
+      
         fingerprint mfr: "010F", prod: "0403", model: "2000"
-        fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x98,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
-        fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
-    }
+     }
 
     tiles (scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 3, height: 4){
@@ -38,10 +37,6 @@ metadata {
             state "reset", label:'reset\nkWh', action:"reset"
         }
 
-        //standardTile("main", "device.switch", decoration: "flat", canChangeIcon: true) {
-            //state "off", label: 'off', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
-            //state "on", label: 'on', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc"
-        //}
 
         main(["switch","power","energy"])
         details(["switch","power","energy","reset"])
@@ -133,10 +128,7 @@ def installed(){
 //Configuration and synchronization
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-    def cmds = []
     logging("Executing updated()","info")
-
-    if (device.currentValue("numberOfButtons") != 6) { sendEvent(name: "numberOfButtons", value: 6) }
 
     state.lastUpdated = now()
     syncStart()
@@ -314,15 +306,6 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
     }
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
-    def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
-    if (encapsulatedCommand) {
-        logging("Parsed MultiChannelCmdEncap ${encapsulatedCommand}")
-        zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
-    } else {
-        logging("Unable to extract MultiChannel command from $cmd","warn")
-    }
-}
 
 private logging(text, type = "debug") {
     if (settings.logging == "true" || type == "warn") {
@@ -338,11 +321,6 @@ private secEncap(physicalgraph.zwave.Command cmd) {
 private crcEncap(physicalgraph.zwave.Command cmd) {
     logging("encapsulating command using CRC16 Encapsulation, command: $cmd","info")
     zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
-}
-
-private multiEncap(physicalgraph.zwave.Command cmd, Integer ep) {
-    logging("encapsulating command using MultiChannel Encapsulation, ep: $ep command: $cmd","info")
-    zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:ep).encapsulate(cmd)
 }
 
 private encap(physicalgraph.zwave.Command cmd, Integer ep) {
