@@ -47,3 +47,5 @@
   *  Version 2.3.5a (12/14/17) Added output of extension groups to message queue, optimized code, added optimized setup features.
  *  Version 2.3.6a (1/5/18) Improved setup process, reducing number of steps to get program operating, changed copyright to 2018, updated WebCoRE macro to send more data to the piston
  *  Version 2.3.7 (1/15/18) Added section to settings to define List_of_WCP for xParams (in WebCoRE macros), update to work with MyNextManager, minor bug fixes
+*  Version 2.3.8 (2/8/18) Added occupancy sensors to main devices and macros, updated code for new ST actions and restrictions for playback, setup data now sends POST data
+ *  Version 2.3.9c (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
