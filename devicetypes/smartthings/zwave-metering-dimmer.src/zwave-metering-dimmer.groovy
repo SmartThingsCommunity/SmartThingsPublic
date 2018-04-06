@@ -35,6 +35,7 @@ metadata {
 		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Micro Smart Dimmer 2E"
 		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Smart Dimmer 6"
         fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeon Labs Nano Dimmer"
+		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeon Labs Nano Dimmer"
     }
 
     simulator {
