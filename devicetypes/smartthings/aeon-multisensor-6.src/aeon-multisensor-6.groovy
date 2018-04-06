@@ -445,7 +445,7 @@ private isConfigured() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
+	if (state.sec || (zwaveInfo.zw && !zwaveInfo.zw.contains("s"))) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
