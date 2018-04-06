@@ -31,7 +31,6 @@ metadata {
 		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch"
 		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"
         fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeon Labs Nano Switch"
-		fingerprint mfr: "0086", prod: "0003", model: "008B", deviceJoinName: "Aeon Labs Nano Switch"
 
 }
 
