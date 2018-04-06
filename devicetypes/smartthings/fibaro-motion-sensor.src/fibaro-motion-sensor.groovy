@@ -156,7 +156,7 @@ def parse(String description)
 {
 	def result = []
 	def cmd = zwave.parse(description, [0x72: 2, 0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x86: 1, 0x7A: 1, 0x56: 1])
-
+	log.debug cmd
     if (description == "updated") {
         result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 7200, nodeid:zwaveHubNodeId))
 		result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
@@ -183,6 +183,7 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 	def version = versions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
 	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	log.debug encapsulatedCommand
 	if (!encapsulatedCommand) {
 		log.debug "Could not extract command from $cmd"
 	} else {
