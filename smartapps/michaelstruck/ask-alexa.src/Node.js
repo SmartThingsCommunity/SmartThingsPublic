@@ -20,8 +20,7 @@
  *  Version 1.1.6 - Minor code/syntax changes. Organized code to allow for more custom responses  
  *  Version 1.1.7 - Code reorganization to allow for future functions  
  *  Version 1.2.0a - Addition of courtesy personality responses  
- *  Version 1.2.1 - Addition of the Snarky personality responses and change in macro password structure  
- *  Version 1.2.2b - Addition of small translation items  
+ *  Version 1.2.1 - Addition of the Snarky personality responses and change in macro password structure   *  Version 1.2.2b - Addition of small translation items  
  *  Version 1.2.3 - Added follow up to a missing PIN when required, updated copyright to 2017  
  *  Version 1.2.4 - Added routines for new message queue  
  *  Version 1.2.5 - Changed some of the responses to align with the new Ask Alexa framework  
@@ -68,7 +67,8 @@ exports.handler = function( event, context ) {
             var STver = beginJSON.SmartAppVer;  
             var IName = beginJSON.IName;  
             var pName = beginJSON.pName;  
-            var whisper = beginJSON.whisper;             var speed = beginJSON.speed;  
+            var whisper = beginJSON.whisper;
+            var speed = beginJSON.speed;  
             var pitch = beginJSON.pitch;  
             var mute = beginJSON.mute; 
             var disabled = beginJSON.disabled;  
