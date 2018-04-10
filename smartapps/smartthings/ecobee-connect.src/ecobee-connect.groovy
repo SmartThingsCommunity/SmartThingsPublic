@@ -20,7 +20,7 @@
  *      JLH - 02-15-2014 - Fuller use of ecobee API
  *      10-28-2015 DVCSMP-604 - accessory sensor, DVCSMP-1174, DVCSMP-1111 - not respond to routines
  */
-
+import groovy.json.JsonSlurper
 include 'localization'
 
 definition(
@@ -80,6 +80,7 @@ def authPage() {
 
 	if(state.authToken) {
 		if(!state.jwt) {
+			state.jwt = true
 			refreshAuthToken()
 		}
 		description = "You are connected."
@@ -199,7 +200,8 @@ def callback() {
 		}
 		if ( state.authToken ) {
 			// get jwt for switch+ devices
-			obtainJsonToken()
+			state.jwt = true
+			refreshAuthToken()
 		}
 		if (state.authToken) {
 			success()
@@ -210,30 +212,6 @@ def callback() {
 	} else {
 		log.error "callback() failed oauthState != state.oauthInitState"
 	}
-}
-
-boolean obtainJsonToken() {
-	boolean status = false
-	def tokenParams = [
-		grant_type: 	"refresh_token",
-		refresh_token:	state.refreshToken,
-		client_id : 	smartThingsClientId,
-		ecobee_type:	"jwt"
-	]
-	def tokenUrl = "https://api.ecobee.com/token?${toQueryString(tokenParams)}"
-	try {
-		httpPost(uri: tokenUrl) { resp ->
-			log.debug "jwt response: ${resp.data}"
-			state.refreshToken = resp.data.refresh_token
-			state.authToken = resp.data.access_token
-			// Old integrations needs to refresh authToken before new devices can be discovered
-			state.jwt = true
-			status = true
-		}
-	} catch (e) {
-		log.error "Unable to obtain Json Token. Response Code: ${e.response?.data?.status?.code}"
-	}
-	return status
 }
 
 def success() {
@@ -372,7 +350,6 @@ def getEcobeeDevices() {
 				headers: ["Content-Type": "application/json;charset=UTF-8", "Authorization": "Bearer ${state.authToken}"],
 		]
 		httpGet(switchListParams) { resp ->
-			log.debug "http status: ${resp.status}"
 			if (resp.status == 200) {
 				resp.data?.devices?.each {
 					if (it.type == "LIGHT_SWITCH") {
@@ -447,6 +424,8 @@ def initialize() {
 		if(!d) {
 			d = addChildDevice(app.namespace, getChildName(), dni, null, ["label":"${thermostatList[dni]}" ?: getChildName()])
 			log.debug "created ${d.displayName} with id $dni"
+			// initialize DTH with default data will be done using the first poll data
+			// TODO: Move this to DTH install method
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
 		}
@@ -457,6 +436,10 @@ def initialize() {
 		if(!d) {
 			d = addChildDevice(app.namespace, getSensorChildName(), dni, null, ["label":remoteSensors[dni].name ?: getSensorChildName()])
 			log.debug "created ${d.displayName} with id $dni"
+			// initialize DTH with default data - TODO: Move this to DTH install method
+			d.sendEvent(name:"temperature", value: 0, unit: location.temperatureScale,
+					descriptionText: "temperature is unknown", displayed: true)
+			d.sendEvent(name:"motion", value: "inactive")
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
 		}
@@ -467,6 +450,8 @@ def initialize() {
 		if(!d) {
 			d = addChildDevice(app.namespace, getSwitchChildName(), dni, null, ["label":"${switchList[dni].name}" ?: getSwitchChildName()])
 			log.debug "created ${d.displayName} with id $dni"
+			// initialize DTH with default data - TODO: Move this to DTH install method
+			d.sendEvent(name:"switch", value: "off")
 		} else {
 			log.debug "found ${d.displayName} with id $dni already exists"
 		}
@@ -542,6 +527,15 @@ def purgeChildDevice(childDevice) {
 		log.info "No more thermostats to poll, unscheduling"
 		unschedule()
 		state.authToken = null
+		runIn(1, "terminateMe")
+	}
+}
+
+def terminateMe() {
+	try {
+		app.delete()
+	} catch (Exception e) {
+		log.error "Termination failed, I’m invincible!"
 	}
 }
 
@@ -556,66 +550,87 @@ def poll() {
 		unsubscribe()
 		return
 	}
+	def isThermostatPolled = !(thermostats || ecobeesensors) // If no thermostats or sensors, mark them polled
+	def isSwitchesPolled = !(ecobeeswitches)                 // If no switches, mark them polled
+	def pollAttempt = 1
 
-	try{
-		// First check if we need to poll thermostats or sensors
-		if (thermostats || ecobeesensors) {
-			def requestBody = [
-				selection: [
-					selectionType:          "registered",
-					selectionMatch:         "",
-					includeExtendedRuntime: true,
-					includeSettings:        true,
-					includeRuntime:         true,
-					includeSensors:         true
+	while (!(isThermostatPolled && isSwitchesPolled) && (pollAttempt < 3)) {
+		try{
+			// First check if we need to poll thermostats or sensors
+			if (!isThermostatPolled) {
+				def requestBody = [
+					selection: [
+						selectionType:          "registered",
+						selectionMatch:         "",
+						includeExtendedRuntime: true,
+						includeSettings:        true,
+						includeRuntime:         true,
+						includeSensors:         true
+					]
 				]
-			]
-			def pollParams = [
-				uri: apiEndpoint,
-				path: "/1/thermostat",
-				headers: ["Content-Type": "text/json", "Authorization": "Bearer ${state.authToken}"],
-				// TODO - the query string below is not consistent with the Ecobee docs:
-				// https://www.ecobee.com/home/developer/api/documentation/v1/operations/get-thermostats.shtml
-				query: [format: 'json', body: toJson(requestBody)]
-			]
+				def pollParams = [
+					uri: apiEndpoint,
+					path: "/1/thermostat",
+					headers: ["Content-Type": "text/json", "Authorization": "Bearer ${state.authToken}"],
+					// TODO - the query string below is not consistent with the Ecobee docs:
+					// https://www.ecobee.com/home/developer/api/documentation/v1/operations/get-thermostats.shtml
+					query: [format: 'json', body: toJson(requestBody)]
+				]
 
-			httpGet(pollParams) { resp ->
-				if(resp.status == 200) {
-					if (thermostats || ecobeesensors) {
-						storeThermostatData(resp.data.thermostatList)
-					}
-					if (ecobeesensors) {
-						updateSensorData(resp.data.thermostatList.remoteSensors)
+				httpGet(pollParams) { resp ->
+					isThermostatPolled = true
+					if(resp.status == 200) {
+						if (thermostats || ecobeesensors) {
+							storeThermostatData(resp.data.thermostatList)
+						}
+						if (ecobeesensors) {
+							updateSensorData(resp.data.thermostatList.remoteSensors)
+						}
 					}
 				}
 			}
-		}
-		// Check if we have switches that needs to be polled
-		if (ecobeeswitches) {
-			def switchListParams = [
-				uri: apiEndpoint + "/ea/devices",
-				headers: ["Content-Type": "application/json;charset=UTF-8", "Authorization": "Bearer ${state.authToken}"],
-			]
+			// Check if we have switches that needs to be polled
+			if (!isSwitchesPolled)  {
+				def switchListParams = [
+					uri: apiEndpoint + "/ea/devices",
+					headers: ["Content-Type": "application/json;charset=UTF-8", "Authorization": "Bearer ${state.authToken}"],
+				]
 
-			httpGet(switchListParams) { resp ->
-				log.debug "http status: ${resp.status}"
-				if (resp.status == 200) {
-					updateSwitches(resp.data?.devices)
-				} else {
-					log.warn "Unable to get switch device list!"
+				httpGet(switchListParams) { resp ->
+					isSwitchesPolled = true
+					if (resp.status == 200) {
+						updateSwitches(resp.data?.devices)
+					} else {
+						log.warn "Unable to get switch device list!"
+					}
 				}
 			}
+
+		} catch (groovyx.net.http.HttpResponseException e) {
+			log.info "HttpResponseException ${e}, ${e?.getStatusCode()} polling ecobee pollAttempt:${pollAttempt}, " +
+					"isThermostatPolled:${isThermostatPolled}, isSwitchesPolled:${isSwitchesPolled}, ${e?.response?.data}"
+			if (e?.getStatusCode() == 401 || e?.response?.data?.status?.code == 14)  {
+				pollAttempt++
+				// Try refresh authToken and try poll one more time
+				if (pollAttempt > 2 || !refreshAuthToken()) {
+					// refresh of authToken failed, break the loop and exit
+					pollAttempt = 3
+					log.error "Ecobee poll failed despite refreshing authToken"
+				}
+			} else {
+				log.error "Ecobee poll failed for other reason than expired authToken"
+				// break the loop and exit
+				pollAttempt = 3
+			}
+		} catch (Exception e) {
+			log.error "Unhandled exception $e in ecobee polling pollAttempt:${pollAttempt}, " +
+					"isThermostatPolled:${isThermostatPolled}, isSwitchesPolled:${isSwitchesPolled}"
+			// break the loop and exit
+			pollAttempt = 3
 		}
-	} catch (groovyx.net.http.HttpResponseException e) {
-		log.error "HttpResponseException ${e?.statusCode} polling ecobee devices returned ${e?.response?.data}"
-		if (e?.response?.data?.status?.code == 14) {
-			state.action = "poll"
-			log.debug "Refreshing your auth_token!"
-			refreshAuthToken()
-		}
-	} catch (Exception e) {
-		log.error "Unhandled exception $e in ecobee polling"
 	}
+	log.trace "poll exit pollAttempt:${pollAttempt}, isThermostatPolled:${isThermostatPolled}, " +
+			"isSwitchesPolled:${isSwitchesPolled}"
 }
 
 def markChildrenOffline() {
@@ -632,6 +647,12 @@ def pollChild() {
 }
 
 void controlSwitch( dni, desiredState ) {
+	// no need to try sending a command if authToken is null
+	if (!state.authToken) {
+		log.warn "controlSwitch failed due to authToken=null"
+		return
+	}
+
 	def deviceAlive = state.switchList[dni].deviceAlive
 	// Only send command to online switches
 	if (deviceAlive == true) {
@@ -655,27 +676,24 @@ void controlSwitch( dni, desiredState ) {
 			} catch (groovyx.net.http.HttpResponseException e) {
 				//log.warn "Code=${e.getStatusCode()}"
 				if (e.getStatusCode() == 401) {
-					if ( tokenRefreshTries < 1 ) {
-						log.debug "Refreshing your auth_token!"
-						tokenRefreshTries++
-						refreshAuthToken()
-						params.headers.Authorization = "Bearer ${state.authToken}"
-					} else {
+					tokenRefreshTries++
+					if (tokenRefreshTries > 1 || !refreshAuthToken()) {
+						// refresh of authToken failed, break the loop and exit
+						log.info "Error refreshing auth_token! Unable to control switch: ${d.device.displayName}"
 						keepTrying = false
-						log.error "Error Refreshing your auth_token! Unable to control your switch: ${d.device.displayName}"
+					} else {
+						params.headers.Authorization = "Bearer ${state.authToken}"
 					}
-				}
-				keepTrying = false
-				// Due to ecobee API returning empty boddy on success we get HttpResponseException from platfrom
-				// so handle sucess response here
-				if ( e.getStatusCode() == 200 ) {
+				} else if (e.getStatusCode() == 200) {
+					// Due to ecobee API returning empty boddy on success we get HttpResponseException from platfrom
+					// so handle sucess response here
+					keepTrying = false
 					log.debug "Ecobee response to switch control = 'Success' for ${d.device.displayName}"
 					def switchState = desiredState == true ? "on" : "off"
 					d.sendEvent(name:"switch", value: switchState)
-					state.tokenRefreshTries = 0
 				} else {
-					log.error "Exception from device control response: " + e.getCause()
-					log.error "Exception from device control getMessage: " + e.getMessage()
+					keepTrying = false
+					log.error "Exception from device control status:${e.getStatusCode()}, getMessage:${e.getMessage()}"
 				}
 			}
 		}
@@ -737,7 +755,6 @@ def updateSwitches(switches) {
 						childSwitch.sendEvent(name:"switch", value: switchState)
 						childSwitch.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
 					} else {
-						childSwitch.sendEvent("name":"thermostat", "value":"Offline")
 						childSwitch.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
 					}
 				} else {
@@ -812,9 +829,10 @@ def toQueryString(Map m) {
 	return m.collect { k, v -> "${k}=${URLEncoder.encode(v.toString())}" }.sort().join("&")
 }
 
-private refreshAuthToken() {
+boolean refreshAuthToken() {
 	log.debug "refreshing auth token"
 	def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
+	def isSuccess = false
 
 	if(!state.refreshToken) {
 		log.warn "Can not refresh OAuth token since there is no refreshToken stored"
@@ -823,31 +841,46 @@ private refreshAuthToken() {
 		def refreshParams = [
 			method: 'POST',
 			uri   : apiEndpoint,
-			path  : "/token",
-			query : [grant_type: 'refresh_token', code: "${state.refreshToken}", client_id: smartThingsClientId],
+			path  : "/token"
 		]
-
-		//changed to httpPost
+		if (state.jwt) {
+			refreshParams.query = [
+				grant_type:    "refresh_token",
+				refresh_token: state.refreshToken,
+				client_id :    smartThingsClientId,
+				ecobee_type:   "jwt"
+			]
+		} else {
+			refreshParams.query = [
+				grant_type: "refresh_token",
+				code:       state.refreshToken,
+				client_id:  smartThingsClientId
+			]
+		}
 		try {
-			def jsonMap
 			httpPost(refreshParams) { resp ->
 				if(resp.status == 200) {
-					log.debug "Token refreshed...calling saved RestAction now!"
-					saveTokenAndResumeAction(resp.data)
-			    }
-            }
+					log.debug "Token refreshed, ${resp.data}"
+					state.refreshToken = resp.data?.refresh_token
+					state.authToken = resp.data?.access_token
+					state.reAttempt = 0
+					isSuccess = true
+				}
+			}
 		} catch (groovyx.net.http.HttpResponseException e) {
-			log.error "refreshAuthToken() >> Error:${e.statusCode}, response:${e.response?.data}"
-			if (e.statusCode == 400) {
-				def error = e.response?.data?.error
-				if (error != "invalid_request" || error != "not_supported") {
+			def rspDataString = "${e.response?.data}".toString()
+			log.error "Error refreshing auth_token:${e.statusCode}, refreshAttempt:${state.reAttempt}, response data:$rspDataString"
+			if ((e.statusCode == 400) || (e.statusCode == 302)) {
+				def slurper = new JsonSlurper()
+				def rspData = slurper.parseText(rspDataString)
+				if (rspData && (rspData.error != "invalid_request" || rspData.error != "not_supported")) {
 					// either "invalid_grant", "unauthorized_client", "unsupported_grant_type",
 					// or "invalid_scope", request user to re-enter credentials
 					sendPushAndFeeds(notificationMessage)
 				}
-			} else if (e.statusCode == 401) { // unauthorized
-				state.reAttempt = state.reAttempt + 1
-				log.warn "reAttempt refreshAuthToken to try = ${state.reAttempt}"
+			} else if (e.statusCode == 401) { // unauthorized*/
+				state.reAttempt = state.reAttempt ? state.reAttempt + 1 : 1
+				log.warn "reAttempt refreshAuthToken ${state.reAttempt}"
 				if (state.reAttempt > 3) {
 					sendPushAndFeeds(notificationMessage)
 					state.reAttempt = 0
@@ -855,30 +888,7 @@ private refreshAuthToken() {
 			}
 		}
 	}
-}
-
-/**
- * Saves the refresh and auth token from the passed-in JSON object,
- * and invokes any previously executing action that did not complete due to
- * an expired token.
- *
- * @param json - an object representing the parsed JSON response from Ecobee
- */
-private void saveTokenAndResumeAction(json) {
-	log.debug "token response json: $json"
-	if (json) {
-		state.refreshToken = json?.refresh_token
-		state.authToken = json?.access_token
-		obtainJsonToken()
-		if (state.action) {
-			def action = state.action
-			state.action = ""
-			log.debug "got refresh token, executing next action: ${state.action}"
-			"${action}"()
-		}
-	} else {
-		log.warn "did not get response body from refresh token response"
-	}
+	return isSuccess
 }
 
 /**
@@ -1095,24 +1105,22 @@ private boolean sendCommandToEcobee(Map bodyParams) {
 				}
 			}
 		} catch (groovyx.net.http.HttpResponseException e) {
-			log.trace "Exception Sending Json: $e, status:${e.getStatusCode()}, ${e?.response?.data}"
+			log.info "Exception sending command: $e, status:${e.getStatusCode()}, ${e?.response?.data}"
 			if (e.response.data.status.code == 14) {
-				if (cmdAttempt < 2) {
-					cmdAttempt = cmdAttempt + 1
-					log.debug "Refreshing your auth_token!"
-					refreshAuthToken()
-					cmdParams.headers.Authorization = "Bearer ${state.authToken}"
-				} else {
-					log.info "sendJson failed ${cmdAttempt} times, e:$e, status:${e.getStatusCode()}"
+				cmdAttempt++
+				if (cmdAttempt > 2 || !refreshAuthToken()) {
+					// refresh authToken failed, break loop and exit
+					log.error "Error refreshing auth_token! Unable to send command"
 					keepTrying = false
+				} else {
+					cmdParams.headers.Authorization = "Bearer ${state.authToken}"
 				}
 			} else {
-				log.error "Authentication error, invalid authentication method, lack of credentials, etc."
+				log.error "Exception sending command: Authentication error, invalid authentication method, lack of credentials, etc."
 				keepTrying = false
 			}
 		}
 	}
-
 	return isSuccess
 }
 
@@ -1128,6 +1136,7 @@ private getVendorIcon() 	 { return "https://s3.amazonaws.com/smartapp-icons/Part
 
 //send both push notification and mobile activity feeds
 def sendPushAndFeeds(notificationMessage) {
+	def timeNow = now()
 	log.warn "sendPushAndFeeds >> notificationMessage: ${notificationMessage}"
 	log.warn "sendPushAndFeeds >> state.timeSendPush: ${state.timeSendPush}"
 	// notification is sent to remind user once a day
