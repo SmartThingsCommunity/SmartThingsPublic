@@ -375,7 +375,7 @@ def devicesList(selector = '') {
         } else if (resp.status == 401) {
             log.warn "Access token is not valid"
             state.lifxAccessToken = null
-        } else if (resp.status == 404 && "$resp.data".startsWith('[error:Could not find location_id') && selector != '') {
+        } else if (resp.status == 404 && resp.data?.error.startsWith('Could not find location_id') && selector != '') {
             log.warn "Location is not valid"
             def devices = devicesList()
             devices.each { device ->
