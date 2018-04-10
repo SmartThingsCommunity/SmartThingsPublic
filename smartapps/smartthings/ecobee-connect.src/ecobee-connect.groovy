@@ -527,12 +527,16 @@ def purgeChildDevice(childDevice) {
 		log.info "No more thermostats to poll, unscheduling"
 		unschedule()
 		state.authToken = null
-		runIn(1, "killMe")
+		runIn(1, "terminateMe")
 	}
 }
 
-def killMe() {
-	app.delete()
+def terminateMe() {
+	try {
+		app.delete()
+	} catch (Exception e) {
+		log.error "Termination failed, I’m invincible!"
+	}
 }
 
 def poll() {
@@ -828,7 +832,7 @@ def toQueryString(Map m) {
 boolean refreshAuthToken() {
 	log.debug "refreshing auth token"
 	def notificationMessage = "is disconnected from SmartThings, because the access credential changed or was lost. Please go to the Ecobee (Connect) SmartApp and re-enter your account login credentials."
-	def status = false
+	def isSuccess = false
 
 	if(!state.refreshToken) {
 		log.warn "Can not refresh OAuth token since there is no refreshToken stored"
@@ -860,7 +864,7 @@ boolean refreshAuthToken() {
 					state.refreshToken = resp.data?.refresh_token
 					state.authToken = resp.data?.access_token
 					state.reAttempt = 0
-					status = true
+					isSuccess = true
 				}
 			}
 		} catch (groovyx.net.http.HttpResponseException e) {
@@ -884,7 +888,7 @@ boolean refreshAuthToken() {
 			}
 		}
 	}
-	return status
+	return isSuccess
 }
 
 /**
