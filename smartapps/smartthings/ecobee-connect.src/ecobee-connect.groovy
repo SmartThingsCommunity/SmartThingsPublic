@@ -376,7 +376,7 @@ def getEcobeeDevices() {
 
 Map sensorsDiscovered() {
 	def map = [:]
-	def remoteSensors = state.remoteSensors2
+	def remoteSensors = state.remoteSensors2 ?: [:]
 	remoteSensors.each { key, sensors ->
 		map[key] = sensors.name
 	}
@@ -385,7 +385,7 @@ Map sensorsDiscovered() {
 
 def switchesDiscovered() {
 	def map = [:]
-	def switches = state.switchList
+	def switches = state.switchList ?: [:]
 	switches.each { key, ecobeeSwitch ->
 		map[key] = ecobeeSwitch.name  
 	}
@@ -416,9 +416,9 @@ def updated() {
 }
 
 def initialize() {
-	def thermostatList = state.thermostats
-	def remoteSensors = state.remoteSensors2
-	def switchList = state.switchList
+	def thermostatList = state.thermostats ?: [:]
+	def remoteSensors = state.remoteSensors2 ?: [:]
+	def switchList = state.switchList ?: [:]
 	def childThermostats = thermostats.collect { dni ->
 		def d = getChildDevice(dni)
 		if(!d) {
@@ -496,9 +496,9 @@ def initialize() {
 
 def purgeChildDevice(childDevice) {
 	def dni = childDevice.device.deviceNetworkId
-	def thermostatList = state.thermostats
-	def remoteSensors = state.remoteSensors2
-	def switchList = state.switchList
+	def thermostatList = state.thermostats ?: [:]
+	def remoteSensors = state.remoteSensors2 ?: [:]
+	def switchList = state.switchList ?: [:]
 	if (thermostatList[dni]) {
 		thermostatList.remove(dni)
 		state.thermostats = thermostatList
