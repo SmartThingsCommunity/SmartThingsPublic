@@ -19,7 +19,8 @@ metadata {
         capability "Smoke Detector" //attributes: smoke ("detected","clear","tested")
         capability "Temperature Measurement" //attributes: temperature
         capability "Health Check"
-        attribute "tamper", "enum", ["detected", "clear"]
+        capability "Tamper Alert"
+		
         attribute "heatAlarm", "enum", ["overheat detected", "clear", "rapid temperature rise", "underheat detected"]
         
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x9C, 0x98, 0x7A", outClusters: "0x20, 0x8B"
@@ -54,7 +55,8 @@ metadata {
                 title: "Advanced Configuration", displayDuringSetup: true, type: "paragraph", element: "paragraph"
         input "smokeSensorSensitivity", "enum", title: "Smoke Sensor Sensitivity", options: ["High","Medium","Low"], defaultValue: "${smokeSensorSensitivity}", displayDuringSetup: true
         input "zwaveNotificationStatus", "enum", title: "Notifications Status", options: ["disabled","casing opened","exceeding temperature threshold", "lack of Z-Wave range", "all notifications"],
-                defaultValue: "${zwaveNotificationStatus}", displayDuringSetup: true
+                //defaultValue: "${zwaveNotificationStatus}", displayDuringSetup: true
+				 defaultValue: "casing opened", displayDuringSetup: true
         input "visualIndicatorNotificationStatus", "enum", title: "Visual Indicator Notifications Status",
                 options: ["disabled","casing opened","exceeding temperature threshold", "lack of Z-Wave range", "all notifications"],
                 defaultValue: "${visualIndicatorNotificationStatus}", displayDuringSetup: true
@@ -107,7 +109,7 @@ metadata {
         }
 
         main "smoke"
-        details(["smoke","temperature","battery"])
+        details(["smoke","temperature","battery", "tamper"])
     }
 }
 
@@ -361,6 +363,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     createEvent(descriptionText: cmd.toString(), isStateChange: false)
 }
 
+def installed(){
+	log.debug "installed()"
+    sendEvent(name: "tamper", value: "clear", displayed: false)  
+}
+
 def configure() {
     // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
     sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -387,9 +394,13 @@ def configure() {
                                             smokeSensorSensitivity == "Low" ? 3 : 2)
         }
         //3. Z-Wave notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable
-        if (zwaveNotificationStatus && zwaveNotificationStatus != "null"){
-            request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: notificationOptionValueMap[zwaveNotificationStatus] ?: 0)
-        }
+       // if (zwaveNotificationStatus && zwaveNotificationStatus != "null"){
+          log.debug "Setting zwave notification default value to 1   "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
+		  request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
+
+       // }
+		
+		
         //4. Visual indicator notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable, 4-lack of range notification
         if (visualIndicatorNotificationStatus && visualIndicatorNotificationStatus != "null") {
             log.debug "Adding visual notification: "+zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: notificationOptionValueMap[visualIndicatorNotificationStatus] ?: 0).format()
