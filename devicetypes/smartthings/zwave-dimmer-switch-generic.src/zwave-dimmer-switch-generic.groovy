@@ -41,6 +41,7 @@ metadata {
 		fingerprint mfr: "001A", prod: "4449", model: "0101", deviceJoinName: "Eaton RF Master Dimmer"
 		fingerprint mfr: "001A", prod: "4449", model: "0003", deviceJoinName: "Eaton RF Dimming Plug-In Module"
 		fingerprint mfr: "0086", prod: "0103", model: "0063", deviceJoinName: "Aeotec Smart Dimmer 6"
+		fingerprint mfr: "014F", prod: "5744", model: "3530", deviceJoinName: "GoControl In-Wall Dimmer"
 	}
 
 	simulator {
