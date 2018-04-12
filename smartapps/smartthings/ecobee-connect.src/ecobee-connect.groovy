@@ -622,7 +622,6 @@ def poll() {
 		stat.polled = false
 		stat.data = stat.data ? stat.data << [deviceAlive:false] : [deviceAlive:false]
 	}
-	state.thermostats = thermostatList
 	switchList.each { sdni, sw ->
 		sw.deviceAlive = false
 		sw.polled = false
@@ -788,7 +787,7 @@ void controlSwitch( dni, desiredState ) {
 			try {
 				httpPut(params) { resp ->
 					keepTrying = false
-					def rspDataString = "${e.resp?.data}".toString()
+					def rspDataString = "${resp?.data}".toString()
 					log.info "RESPONSE CODE: ${resp.status}, data:${rspDataString}"
 				}
 			} catch (groovyx.net.http.HttpResponseException e) {
