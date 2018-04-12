@@ -252,11 +252,6 @@ def initialPoll() {
 	def request = []
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
-	request << zwave.notificationV3.notificationGet(notificationType: 0x07) //home security
-	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) //temperature
-	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
-	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
-	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x1E) //loudness
 	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
@@ -271,7 +266,6 @@ private command(physicalgraph.zwave.Command cmd) {
 	} else if (zwaveInfo && zwaveInfo.cc?.contains("56")){
 		zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 	} else {
-		logging("${device.displayName} - no encapsulation supported for command: $cmd","debug")
 		cmd.format()
 	}
 }
