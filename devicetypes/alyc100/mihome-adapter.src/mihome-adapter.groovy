@@ -130,13 +130,14 @@ def poll() {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
-    		//log.debug "poll status- ${resp.status} data- ${resp.data}" 
+//log.debug "poll status- ${resp.status} data- ${resp.data}" 
     if (resp.status != 200) {
 		log.error "POLL for - $device - $resp.status Unexpected result"
         sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
 	}
     else {
-    state.Switch = resp.data.data.power_state == true ? "on" : "off"
+//log.debug "power '$resp.data.data.power_state'"
+    state.Switch = resp.data.data.power_state == 1 ? "on" : "off"
     log.info "POLL for -'$device'-'$state.Switch' - $resp.status - all good"
     checkin()
     }
@@ -184,6 +185,7 @@ def on() {
 	else {
     	unschedule(on)
        	state.counter = 0
+//log.debug "power '$resp.data.data.power_state'"
         state.Switch = resp.data.data.power_state == true ? "on" : "off"
         log.info "ON - '$device' '$state.Switch' all good '$resp.status'"
     	checkin()
@@ -200,7 +202,7 @@ def off() {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
 	def resp = parent.apiGET("/subdevices/power_off?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
-    // log.debug "off data status- ${resp.status} data- ${resp.data}"
+// log.debug "off data status- ${resp.status} data- ${resp.data}"
     if (resp.status != 200) {
     	log.error "Unexpected result in off poll ${resp.status}"
         if (state.counter == null || state.counter >= 7) {
@@ -221,6 +223,7 @@ def off() {
 	else {
     	unschedule(off)
         state.counter = 0
+//log.debug "power '$resp.data.data.power_state'"
         state.Switch = resp.data.data.power_state == true ? "on" : "off"
         log.info "Off - '$device' '$state.Switch' all good '$resp.status'"
     	checkin()
