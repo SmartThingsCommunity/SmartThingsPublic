@@ -1,0 +1,8 @@
+Google voice commands
+
+Turn off        - "turn off **device name/room** thermostat(s)" 				    --Save last settings and turn off (aka 12deg) 
+Turn on         - "set **device name/room** termostat(s) to heat/cool"		  -- heat=Resume cool=boost 
+Set Temprature  -	"set **device name/room** thermostat(s)/temprature to **number**"
+ Quiry Temprature - "what is the temprature in the **device name/room/house**" --response current temp and setpoint
+ Up/down 3 deg    -  "turn up/down **device name/room** thermostat(s)"
+ Boost          -	"set  **device name/room** thermostat(s) to cool
