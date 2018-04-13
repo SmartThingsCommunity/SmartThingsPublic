@@ -175,6 +175,7 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
     def version = versions[cmd.commandClass as Integer]
     def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
     def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	log.debug encapsulatedCommand
     if (!encapsulatedCommand) {
         log.debug "Could not extract command from $cmd"
     } else {
@@ -185,6 +186,7 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
     setSecured()
     def encapsulatedCommand = cmd.encapsulatedCommand([0x31: 5, 0x71: 3, 0x84: 1])
+	log.debug encapsulatedCommand
     if (encapsulatedCommand) {
         log.debug "command: 98 (Security) 81(SecurityMessageEncapsulation) encapsulatedCommand:  $encapsulatedCommand"
         zwaveEvent(encapsulatedCommand)
