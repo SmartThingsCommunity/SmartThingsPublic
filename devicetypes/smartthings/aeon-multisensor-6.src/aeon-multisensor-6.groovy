@@ -70,15 +70,15 @@ metadata {
 
 	preferences {
 		input description: "Please consult AEOTEC MULTISENSOR 6 operating manual for advanced setting options. You can skip this configuration to use default settings",
-			title: "Advanced Configuration", displayDuringSetup: true, type: "paragraph", element: "paragraph"
+			title: "Advanced Configuration", type: "paragraph", element: "paragraph"
 
 		input "motionDelayTime", "enum", title: "Motion Sensor Delay Time",
-			options: ["20 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"], defaultValue: "${motionDelayTime}", displayDuringSetup: true
+			options: ["20 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"]
 
-		input "motionSensitivity", "enum", title: "Motion Sensor Sensitivity", options: ["normal", "maximum", "minimum"], defaultValue: "${motionSensitivity}", displayDuringSetup: true
+		input "motionSensitivity", "enum", title: "Motion Sensor Sensitivity", options: ["maximum", "normal", "minimum", "disabled"]
 
 		input "reportInterval", "enum", title: "Sensors Report Interval",
-			options: ["8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"], defaultValue: "${reportInterval}", displayDuringSetup: true
+			options: ["8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"]
 	}
 
 	tiles(scale: 2) {
@@ -141,26 +141,24 @@ def installed() {
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
-	log.debug "${device.displayName} is now ${device.latestValue("powerSource")}"
 
-
-	def powerSource = device.latestValue("powerSource")
-
-	if (!powerSource) { // Check to see if we have updated to new powerSource attr
-		def powerSupply = device.latestValue("powerSupply")
-
-		if (powerSupply) {
-			powerSource = (powerSupply == "Battery") ? "battery" : "dc"
-
-			sendEvent(name: "powerSource", value: powerSource, displayed: false)
-		}
+	/* Since battery is handled locally but we use this batteryStatus tile, we need a good periodic way to keep the
+		value updated when on battery power. Ideally this would be done in the local handler, but this is a decent
+		stopgap.
+	 */
+	if (device.latestValue("powerSource") == "battery") {
+		sendEvent(name: "batteryStatus", value: "${device.latestValue("battery")}% battery", displayed: false)
 	}
 
-	if (powerSource == "battery") {
+	log.debug "Updated with settings: ${settings}"
+
+	if (!getDataValue("configured")) { // this is the update call made after install, device is still awake
+		response(configure())
+	} else if (device.latestValue("powerSource") == "battery") {
 		setConfigured("false")
 		//wait until the next time device wakeup to send configure command after user change preference
 	} else { // We haven't identified the power supply, or the power supply is USB, so configure
+		setConfigured("false")
 		response(configure())
 	}
 }
@@ -174,6 +172,7 @@ def parse(String description) {
 			descriptionText: "This sensor failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
 	} else if (description != "updated") {
 		log.debug "parse() >> zwave.parse(description)"
+
 		def cmd = zwave.parse(description, [0x31: 5, 0x30: 2, 0x84: 1])
 		if (cmd) {
 			result = zwaveEvent(cmd)
@@ -199,15 +198,23 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x31: 5, 0x30: 2, 0x84: 1])
 	state.sec = 1
-	log.debug "encapsulated: ${encapsulatedCommand}"
-	if (encapsulatedCommand) {
-		zwaveEvent(encapsulatedCommand)
+	def result = []
+	//we need to catch payload so short that it does not contain configuration parameter size (NullPointerException)
+	//and actual size smaller than indicated by configuration parameter size (IndexOutOfBoundsException)
+	if (cmd.payload[1] == 0x70 && cmd.payload[2] == 0x06 && (cmd.payload.size() < 5 || cmd.payload.size < 5 + cmd.payload[4])) {
+		log.debug "Configuration Report command for parameter ${cmd.payload[3]} returned by the device is too short."
 	} else {
-		log.warn "Unable to extract encapsulated cmd from $cmd"
-		createEvent(descriptionText: cmd.toString())
+		def encapsulatedCommand = cmd.encapsulatedCommand([0x31: 5, 0x30: 2, 0x84: 1])
+		log.debug "encapsulated: ${encapsulatedCommand}"
+		if (encapsulatedCommand) {
+			result << zwaveEvent(encapsulatedCommand)
+		} else {
+			log.warn "Unable to extract encapsulated cmd from $cmd"
+			result << createEvent(descriptionText: cmd.toString())
+		}
 	}
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
@@ -341,8 +348,8 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		result << createEvent(name: "batteryStatus", value: "USB Cable", displayed: false)
 		result << createEvent(name: "powerSource", value: value, displayed: false)
 	} else if (cmd.parameterNumber == 9 && cmd.configurationValue[0] == 1) {
-		value = "battery"
-		result << createEvent(name: "powerSource", value: value, displayed: false)
+		result << createEvent(name: "powerSource", value: "battery", displayed: false)
+		result << createEvent(name: "batteryStatus", value: "${device.latestValue("battery")}% battery", displayed: false)
 	} else if (cmd.parameterNumber == 101) {
 		result << response(configure())
 	}
@@ -386,12 +393,12 @@ def configure() {
 	//3. no-motion report x seconds after motion stops (default 20 secs)
 	request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 20)
 
-	//4. motionSensitivity 3 levels: 64-normal (default), 127-maximum, 0-minimum
-	request << zwave.configurationV1.configurationSet(parameterNumber: 6, size: 1,
-		scaledConfigurationValue:
-			motionSensitivity == "normal" ? 64 :
-				motionSensitivity == "maximum" ? 127 :
-					motionSensitivity == "minimum" ? 0 : 64)
+	//4. motionSensitivity 3 levels: 3-normal, 5-maximum (default), 1-minimum, 0 - disabled (default)
+	request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1,
+		configurationValue:
+			motionSensitivity == "normal" ? [3] :
+				motionSensitivity == "minimum" ? [1] :
+					motionSensitivity == "disabled" ? [0] : [5])
 
 	//5. report every x minutes (threshold reports don't work on battery power, default 8 mins)
 	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: (8 * 60))
@@ -411,6 +418,7 @@ def configure() {
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x1B) //ultravioletIndex
 	request << zwave.configurationV1.configurationGet(parameterNumber: 9)
+	request << zwave.configurationV1.configurationGet(parameterNumber: 4)
 
 	setConfigured("true")
 
@@ -454,7 +462,7 @@ private isConfigured() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
+	if (state.sec || zwaveInfo?.zw?.endsWith("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
