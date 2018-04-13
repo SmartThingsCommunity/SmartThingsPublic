@@ -1781,7 +1781,7 @@ ConsideredOpen = $ConsideredOpen
 so $ContactAndSwitch stays on until it opens
 """
             // therefore make sure it is on
-            if(SomeSwAreOff.size() != 0){
+            if(SomeSwAreOff.size() != 0 && contactClosed){
                 //if at least one is off, turn on
                 ContactAndSwitch?.on()
                 log.debug "$ContactAndSwitch TURNED BACK ON because $BedSensor is closed"
@@ -1819,7 +1819,7 @@ so $ContactAndSwitch stays on until it opens
             }
         }
         else if(ToggleBack) {   
-            if(SomeSwAreOff.size() != 0){
+            if(SomeSwAreOff.size() != 0 && contactClosed){
                 //if at least one is off, turn on
                 ContactAndSwitch?.on()
                 log.debug "$ContactAndSwitch TURNED ON"
@@ -2086,7 +2086,7 @@ Math.log(256) / Math.log(2)
                     /////////////////////////COOL//////////////////// 
                     //outsideTemp = 90 // for test only 
                     CSPSet = (Math.log(outsideTemp) / Math.log(Base)) * CSPSet
-                    log.debug "Logarithmic CSPSet = $CSPSet"
+                    log.debug "Logarithmic CSPSet  for $ThermSet = $CSPSet"
 
 
                     /////////////////// LOGARITHMIC HEAT ///////////////// 
@@ -2095,7 +2095,7 @@ Math.log(256) / Math.log(2)
                     /////////////////////////COOL//////////////////// 
                     //outsideTemp = 90 // for test only 
                     HSPSet = (Math.log(Base) / Math.log(outsideTemp)) * HSPSet
-                    log.debug "Logarithmic HSPSet = $HSPSet"
+                    log.debug "Logarithmic HSPSet for $ThermSet = $HSPSet"
 
 
                 }
@@ -2942,7 +2942,6 @@ def FeelsLikeHandler(evt){
     Evaluate()
 
 }
-
 
 ////////////////////////////////////// BED SENSOR ///////////////////////////////
 def BedSensorEvtSize() {
