@@ -13,8 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY - FORMER VERSION NOW RENAMED AS ADAPTER PLUS
- *				2.5	-	Major review to move schdualing into the DH, created error handler
- *	17.09.2017: 2.0a - Disable setting device to Offline on unexpected API response.
+ *				3.0 -	Code cleansed debugging removed
+ *				2.5	-	Major review to move schdualing into the DH, created error handler / seetings added for refresh rate and check in time
+ *	17.09.2017: 2.0a -	Disable setting device to Offline on unexpected API response.
  *	23.11.2016:	2.0 - Remove extra logging.
  *	10.11.2016:	2.0 BETA Release 3 - Merge Light Switch and Adapter functionality into one device type.
  *	10.11.2016:	2.0 BETA Release 2.1 - Bug fix. Stop NumberFormatException when creating body object.
@@ -23,8 +24,7 @@
  *	08.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
  */
 metadata {
-	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung") {
-		//capability "Actuator" // not used?
+	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updeated by Mark Cockcroft") {
 		//capability "Polling" // polling disabled as refresh is schedualed in preferences (rates)
 		capability "Refresh"
 		capability "Switch"
@@ -58,8 +58,8 @@ metadata {
 			state "default", label: 'Off', action:"off", icon:"st.Home.home30"
         }
         
-        main("switch")
-        details("switch", "onButton", "offButton", "refreshTile")
+        main(["switch"])
+        details(["switch", "onButton", "offButton", "refreshTile"])
 	}
     def rates = [:]
 	rates << ["5" : "Refresh every 5 minutes (eTRVs)"]
@@ -68,15 +68,9 @@ metadata {
 	rates << ["30" : "Refresh every 30 minutes - Default (Sockets)"]
 
 	preferences {
-		section(title: "Check-in Interval") {
-        paragraph "Run a Check-in procedure every so often."
         input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
-		}
-        section(title: "Check-in Info") {
-            paragraph "Display check-in info"
-            input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "MM/dd/yyyy h:mm", "MM-dd-yyyy h:mm", "dd/MM/yyyy h:mm", "dd-MM-yyyy h:mm"], description: "Show last check-in info.", defaultValue: "dd/MM/yyyy h:mm", required: false
+		input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "MM/dd/yyyy h:mm", "MM-dd-yyyy h:mm", "dd/MM/yyyy h:mm", "dd-MM-yyyy h:mm"], description: "Show last check-in info.", defaultValue: "dd/MM/yyyy h:mm", required: false
         }
-	}
 }
 // parse events into attributes
 def parse(String description) {
@@ -116,7 +110,6 @@ def initialize() {
 		default:
 			runEvery30Minutes(refresh)
 			log.info "Refresh Scheduled for every 30 minutes"
-    	//log.debug "State counter at ${state.counter}"
 	}
 }
 def uninstalled() {
@@ -124,11 +117,12 @@ def uninstalled() {
     // to look at deleting child devices?
 }
 //	===== Update when installed or setting updated =====
-
-
+def refresh() {
+	log.info "REFRESH -'$device' @ '$settings.refreshRate' min refresh rate"
+	poll()
+}
 def poll() {
-	//log.debug "Executing poll for ${device} ${this} ${device.deviceNetworkId}"
-    def body = []
+	def body = []
     if (device.deviceNetworkId.contains("/")) {
     	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
     }
@@ -136,42 +130,32 @@ def poll() {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
-    //log.debug "poll status- ${resp.status} data- ${resp.data}" 
+    		//log.debug "poll status- ${resp.status} data- ${resp.data}" 
     if (resp.status != 200) {
-		log.error "Unexpected result in poll - ${device} - ${resp.status}"
+		log.error "POLL for - $device - $resp.status Unexpected result"
         sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
 	}
     else {
-    def power_state = resp.data.data.power_state
-    if (power_state != null) {
-    	sendEvent(name: "switch", value: power_state == 0 ? "off" : "on")
-    }
-    log.info "POLL all good ${resp.status} ${device}"
+    state.Switch = resp.data.data.power_state == true ? "on" : "off"
+    log.info "POLL for -'$device'-'$state.Switch' - $resp.status - all good"
     checkin()
     }
 }
 def checkin() {
-	def lastRefreshed = state.lastRefreshed
-    state.lastRefreshed = now()
-    def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
+	sendEvent(name: "switch", value: state.Switch)
+	def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
     def now = ''
     if (checkinInfoFormat != 'Hide') {
         try {
-            now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}a", location.timeZone)
+            now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}", location.timeZone)
         } catch (all) { }
-    	sendEvent(name: "lastCheckin", value: now, displayed: false) 
+    sendEvent(name: "lastCheckin", value: now, displayed: false)
     }
-    log.info "Check in completed"
-}
-
-def refresh() {
-	log.info "Executing adapter refresh"
-	poll()
+    log.info "CHECKIN -'$device', '$state.Switch' all good"
 }
 
 def on() {
-	log.info "Executing on"
-    def body = []
+	def body = []
     if (device.deviceNetworkId.contains("/")) {
     	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
     }
@@ -180,38 +164,34 @@ def on() {
     }
     def resp = parent.apiGET("/subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
-    		log.error "Unexpected result in on poll ${resp.status} //${resp.data}"
+    		log.warn "ON - '$device' response -'$resp.status' - '$resp.data' Unexpected result"
           	if (state.counter == null || state.counter >= 5) {
 				state.counter = 0
 			}
             if (state.counter < 5) {
-            state.counter = state.counter + 1
-        	sendEvent(name: "switch", value: "turningOn", descriptionText: "error turning on ${state.counter} try", isStateChange: true)
-        	log.warn "runnting on again ${state.counter} attempt"
-        	runIn(13, on)
-            }            
-            else { //if (state.counter == 6) {
-            	//log.debug " =6 else 191"
-            	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning On ${state.counter} times. The device is offline", isStateChange: true)
+            	state.counter = state.counter + 1
+        		sendEvent(name: "switch", value: "turningOn", descriptionText: "error turning on '$state.counter' try", isStateChange: true)
+        		log.warn "RERUN ON - '$device', '$state.counter' attempt"
+        		runIn(13, on)
+            }          
+            else { 
+            	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning On '$state.counter' times. The on command was not actioned. The device is offline", isStateChange: true)
                 unschedule(on)
                 state.counter = 0
+                log.error "ON ERROR - '$device' on command was not processed"
 			}
 	}
 	else {
     	unschedule(on)
-        state.counter = 0
-        //log.debug "else 197"
-  		def power_state = resp.data.data.power_state
-    	if (power_state != null) {
-    		sendEvent(name: "switch", value: power_state == false ? "off" : "on")
-        }
-    	log.info "ON all good ${resp.status}"
+       	state.counter = 0
+        state.Switch = resp.data.data.power_state == true ? "on" : "off"
+        log.info "ON - '$device' '$state.Switch' all good '$resp.status'"
     	checkin()
     }
 }
 
 def off() {
-	log.info "Executing off"
+	//log.debug "Executing off"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
     	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
@@ -232,8 +212,7 @@ def off() {
         	log.warn "runnting off again ${state.counter} attempt"
         	runIn(13, off)
             }            
-            else { //if (state.counter == 6) 
-            	//log.debug " = else 6 times"
+            else {
             	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning Off ${state.counter} times. The device is offline", isStateChange: true)
                 unschedule(off)
                 state.counter = 0
@@ -242,12 +221,8 @@ def off() {
 	else {
     	unschedule(off)
         state.counter = 0
-        //log.debug "else all good"
-  		def power_state = resp.data.data.power_state
-    	if (power_state != null) {
-    		sendEvent(name: "switch", value: power_state == false ? "off" : "on")
-        }
-    	log.info "Off all good ${resp.status}"
+        state.Switch = resp.data.data.power_state == true ? "on" : "off"
+        log.info "Off - '$device' '$state.Switch' all good '$resp.status'"
     	checkin()
     }
 }
