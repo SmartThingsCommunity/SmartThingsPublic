@@ -482,6 +482,8 @@
       {
         "name": "MacroOperation",
         "samples": [
+          "the {MCmd} of the {Macro}",
+          "the {MCmd} the {Macro}",
           "set the {MType} to {MNum} in {Macro}",
           "{MCmd}",
           "{MCmd} with the {Macro}",
