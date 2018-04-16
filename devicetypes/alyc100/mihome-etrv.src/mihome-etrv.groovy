@@ -42,7 +42,9 @@ metadata {
 	definition (name: "MiHome eTRV", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updated by mark cockcroft" ) { //removed 13th 8am type: ,action.devices.types.THERMOSTAT"
 		
 		//capability "Polling" not needed as refresh is schdualed in the DH
-       	capability "Refresh"
+       	capability "Actuator"	// best practice
+        capability "Sensor"		// best practice
+        capability "Refresh"
 		capability "Thermostat"
         capability "Battery" 
  
@@ -163,8 +165,8 @@ metadata {
 
 	preferences {
         input name: "refreshRate", type: "enum", title: "Check-in Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
-		input name: "checkinInfo", type: "enum", title: "Show last Check-in time", options: ["Hide", "MM/dd/yyyy h:mma", "h:mma dd/mm/yyyy", "dd/MM/yyyy h:mm", "dd-MM-yyyy HH:mm" , "h:mma dd/MM/yy"], description: "Show last check-in info.", defaultValue: "dd/MM/yyyy HH:mm", required: false
-        input name: "emergencyheattemp", type: "number", title: "Fill in a temp to boost to - 13 to 30", range: "13..30", defaultValue: "21", required: true
+		input name: "checkinInfo", type: "enum", title: "Show last Check-in time", options: ["Hide", "MM/dd/yyyy h:mma", "h:mma dd/mm/yyyy", "dd/MM/yyyy h:mm", "dd-MM-yyyy HH:mm" , "h:mma dd/MM/yy"], description: "Show last check-in info.", required: false
+        input name: "emergencyheattemp", type: "number", title: "Temp to boost to - 13 to 30", range: "13..30", description: "Boost aka cool to temp" ,required: true
   	}
 }
 //	===== Update when installed or setting changed =====

@@ -26,7 +26,9 @@
 metadata {
 	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updeated by Mark Cockcroft") {
 		//capability "Polling" // polling disabled as refresh is schedualed in preferences (rates)
-		capability "Refresh"
+		capability "Actuator"	// best practice
+        capability "Sensor"		// best practice
+        capability "Refresh"
 		capability "Switch"
         
         command "on"
@@ -69,7 +71,7 @@ metadata {
 
 	preferences {
         input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
-		input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "MM/dd/yyyy h:mm", "MM-dd-yyyy h:mm", "dd/MM/yyyy h:mm", "dd-MM-yyyy h:mm"], description: "Show last check-in info.", defaultValue: "dd/MM/yyyy h:mm", required: false
+		input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "MM/dd/yyyy h:mma", "h:mma dd/mm/yyyy", "dd/MM/yyyy h:mm", "dd-MM-yyyy HH:mm" , "h:mma dd/MM/yy"], description: "Show last check-in info.", required: false
         }
 }
 // parse events into attributes
