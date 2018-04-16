@@ -109,7 +109,7 @@ metadata {
         }
 
         main "smoke"
-        details(["smoke","temperature","battery", "tamper"])
+        details(["smoke","temperature","battery", "tamper", "heatAlarm"])
     }
 }
 
@@ -365,6 +365,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def installed(){
 	log.debug "installed()"
+	state.initDefault = true
     sendEvent(name: "tamper", value: "clear", displayed: false)  
 }
 
@@ -394,11 +395,14 @@ def configure() {
                                             smokeSensorSensitivity == "Low" ? 3 : 2)
         }
         //3. Z-Wave notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable
-       // if (zwaveNotificationStatus && zwaveNotificationStatus != "null"){
-          log.debug "Setting zwave notification default value to 1   "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
-		  request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
-
-       // }
+        if (state.initDefault) {
+           	 log.debug "1- Setting zwave notification default value to 1: "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
+			 	request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
+                state.initDefault = false
+        } else if (zwaveNotificationStatus && zwaveNotificationStatus != "null"){
+      	log.debug "2- else zwave notification "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: notificationOptionValueMap[zwaveNotificationStatus] ?: 0)
+            request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: notificationOptionValueMap[zwaveNotificationStatus] ?: 0)
+		}
 		
 		
         //4. Visual indicator notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable, 4-lack of range notification
