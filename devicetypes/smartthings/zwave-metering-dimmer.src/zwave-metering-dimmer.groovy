@@ -34,9 +34,64 @@ metadata {
 		fingerprint inClusters: "0x26,0x32"
 		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Micro Smart Dimmer 2E"
 		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Smart Dimmer 6"
-        fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeon Labs Nano Dimmer"
+    fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeon Labs Nano Dimmer"
 		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeon Labs Nano Dimmer"
-    }
+		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Plug-in Dimmer"
+	}
+
+	simulator {
+		status "on":  "command: 2603, payload: FF"
+		status "off": "command: 2603, payload: 00"
+		status "09%": "command: 2603, payload: 09"
+		status "10%": "command: 2603, payload: 0A"
+		status "33%": "command: 2603, payload: 21"
+		status "66%": "command: 2603, payload: 42"
+		status "99%": "command: 2603, payload: 63"
+
+		for (int i = 0; i <= 10000; i += 1000) {
+			status "power  ${i} W": new physicalgraph.zwave.Zwave().meterV1.meterReport(
+				scaledMeterValue: i, precision: 3, meterType: 4, scale: 2, size: 4).incomingMessage()
+		}
+		for (int i = 0; i <= 100; i += 10) {
+			status "energy  ${i} kWh": new physicalgraph.zwave.Zwave().meterV1.meterReport(
+				scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
+		}
+
+		["FF", "00", "09", "0A", "21", "42", "63"].each { val ->
+			reply "2001$val,delay 100,2602": "command: 2603, payload: $val"
+		}
+	}
+
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+		}
+		valueTile("power", "device.power", width: 2, height: 2) {
+			state "default", label:'${currentValue} W'
+		}
+		valueTile("energy", "device.energy", width: 2, height: 2) {
+			state "default", label:'${currentValue} kWh'
+		}
+		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:'reset kWh', action:"reset"
+		}
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+	}
+
+	main(["switch","power","energy"])
+	details(["switch", "power", "energy", "refresh", "reset"])
+}
+
 
     simulator {
         status "on":  "command: 2603, payload: FF"
@@ -230,9 +285,9 @@ def configure() {
     if (zwaveInfo.mfr == "0086") {  // Aeon Labs meter
         result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2)))    // basic report cc
         result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4)))   // report power in watts
-        result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 60)))  // every 5 min
+        result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)))  // every 5 min
         result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8)))   // report energy in kWh
-        result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 60)))  // every 5 min
+        result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300)))  // every 5 min
         result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0)))   // no third report
         result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300))) // every 5 min
     }

@@ -30,9 +30,11 @@ metadata {
 		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Micro Smart Switch"
 		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch"
 		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"
-        fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeon Labs Nano Switch"
+    fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeon Labs Nano Switch"
 		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeon Labs Nano Switch"
-
+		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "GoControl Wall-Mounted Outlet"
+		fingerprint mfr: "014F", prod: "5053", model: "3531", deviceJoinName: "GoControl Plug-in Switch"
+		fingerprint mfr: "0063", prod: "4F44", model: "3031", deviceJoinName: "GE Direct-Wire Outdoor Switch"
 }
 
     // simulator metadata
@@ -87,14 +89,19 @@ def installed() {
 }
 
 def updated() {
-    log.debug "updated()"
-    // Device-Watch simply pings if no device events received for 32min(checkInterval)
-    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-    try {
-        if (!state.MSR) {
-            response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-        }
-    } catch (e) { log.debug e }
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if (zwaveInfo?.mfr?.equals("0063")) { // These old GE devices have to be polled
+		unschedule("poll")
+		runEvery15Minutes("poll")
+	}
+	try {
+		if (!state.MSR) {
+			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+		}
+	} catch (e) {
+		log.debug e
+	}
 }
 
 def getCommandClassVersions() {
@@ -200,6 +207,10 @@ def poll() {
 def ping() {
     log.debug "ping()"
     refresh()
+}
+
+def poll() {
+	sendHubCommand(refresh())
 }
 
 def refresh() {
