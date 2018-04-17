@@ -103,20 +103,12 @@ def installed() {
 		//Parameter 7 - z-wave ramp up/down step size, Parameter 8 - z-wave step interval equals configurationValue times 10 ms
 		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 7, size: 1).format()
 		commands << "delay 200"
-		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 8, size: 1).format()
+		commands << zwave.configurationV1.configurationSet(configurationValue: [0, 1], parameterNumber: 8, size: 2).format()
 		commands << "delay 200"
 		//Parameter 7 - manual operation ramp up/down step size, Parameter 8 - z-wave manual operation interval equals configurationValue times 10 ms
 		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 9, size: 1).format()
 		commands << "delay 200"
-		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 10, size: 1).format()
-		commands << "delay 200"
-		commands << zwave.configurationV1.configurationGet(parameterNumber: 7).format()
-		commands << "delay 200"
-		commands << zwave.configurationV1.configurationGet(parameterNumber: 8).format()
-		commands << "delay 200"
-		commands << zwave.configurationV1.configurationGet(parameterNumber: 9).format()
-		commands << "delay 200"
-		commands << zwave.configurationV1.configurationGet(parameterNumber: 10).format()
+		commands << zwave.configurationV1.configurationSet(configurationValue: [0, 1], parameterNumber: 10, size: 2).format()
 	}
 	response(commands)
 }
