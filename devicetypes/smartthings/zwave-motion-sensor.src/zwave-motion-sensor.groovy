@@ -56,6 +56,7 @@ metadata {
 def installed() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	response(initialPoll())
 }
 
 def updated() {
@@ -245,4 +246,26 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 	result
+}
+
+def initialPoll() {
+	def request = []
+	request << zwave.batteryV1.batteryGet()
+	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+}
+
+private commands(commands, delay=200) {
+	log.info "sending commands: ${commands}"
+	delayBetween(commands.collect{ command(it) }, delay)
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo && zwaveInfo.zw?.contains("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else if (zwaveInfo && zwaveInfo.cc?.contains("56")){
+		zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
 }
