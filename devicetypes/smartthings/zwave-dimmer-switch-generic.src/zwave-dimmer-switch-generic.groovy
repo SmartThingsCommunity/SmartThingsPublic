@@ -97,7 +97,7 @@ def installed() {
 		commands << "delay 100"
 		//for Eaton dimmers parameter 7 is ramp time. We set it to 1s for devices to work correctly with local execution
 		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 7, size: 1).format()
-	} else if (zwaveInfo?.mfr?.equals("0039") && zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3033")) {
+	} else if (isHoneywellDimmer()) {
 		//Set ramp time to 1s for this device to turn off dimmer correctly when current level is over 66.
 		commands << "delay 100"
 		//Parameter 7 - z-wave ramp up/down step size, Parameter 8 - z-wave step interval equals configurationValue times 10 ms
@@ -267,4 +267,13 @@ def refresh() {
 		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	}
 	delayBetween(commands, 100)
+}
+
+def isHoneywellDimmer() {
+	zwaveInfo?.mfr?.equals("0039") && (
+		(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3033")) ||
+			(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3038")) ||
+			(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3038")) ||
+			(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3130"))
+	)
 }
