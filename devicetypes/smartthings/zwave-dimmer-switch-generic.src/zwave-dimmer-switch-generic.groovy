@@ -24,6 +24,8 @@ metadata {
 
 		fingerprint inClusters: "0x26", deviceJoinName: "Z-Wave Dimmer"
 		fingerprint mfr: "001D", prod: "1902", deviceJoinName: "Z-Wave Dimmer"
+		fingerprint mfr: "001D", prod: "3301", model: "0001", deviceJoinName: "Leviton Dimmer Switch"
+		fingerprint mfr: "001D", prod: "3201", model: "0001", deviceJoinName: "Leviton Dimmer Switch"
 		fingerprint mfr: "001D", prod: "1B03", model: "0334", deviceJoinName: "Leviton Universal Dimmer"
 		fingerprint mfr: "011A", prod: "0102", model: "0201", deviceJoinName: "Enerwave In-Wall Dimmer"
 		fingerprint mfr: "001D", prod: "1001", model: "0334", deviceJoinName: "Leviton 3-Speed Fan Controller"
@@ -41,6 +43,7 @@ metadata {
 		fingerprint mfr: "001A", prod: "4449", model: "0101", deviceJoinName: "Eaton RF Master Dimmer"
 		fingerprint mfr: "001A", prod: "4449", model: "0003", deviceJoinName: "Eaton RF Dimming Plug-In Module"
 		fingerprint mfr: "0086", prod: "0103", model: "0063", deviceJoinName: "Aeotec Smart Dimmer 6"
+		fingerprint mfr: "014F", prod: "5744", model: "3530", deviceJoinName: "GoControl In-Wall Dimmer"
 	}
 
 	simulator {
