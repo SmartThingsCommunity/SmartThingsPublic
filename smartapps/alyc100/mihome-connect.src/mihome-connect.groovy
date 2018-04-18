@@ -384,7 +384,7 @@ def updateDevices() {
      			}
             })
         }
-        else if (device.device_type == 'monitor' || device.device_type == 'house') {
+        else if (device.device_type == 'monitor' || device.device_type == 'home') {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Monitor"
@@ -401,7 +401,7 @@ def updateDevices() {
 				}
      		}
         }
-        else if (device.device_type == 'motion') {
+        else if (device.device_type == 'motion' || device.device_type == 'open' ) {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Motion Sensor"
