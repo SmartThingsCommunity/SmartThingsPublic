@@ -208,10 +208,10 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 		def encapsulatedCommand = cmd.encapsulatedCommand([0x31: 5, 0x30: 2, 0x84: 1])
 		log.debug "encapsulated: ${encapsulatedCommand}"
 		if (encapsulatedCommand) {
-			result << zwaveEvent(encapsulatedCommand)
+			result = zwaveEvent(encapsulatedCommand)
 		} else {
 			log.warn "Unable to extract encapsulated cmd from $cmd"
-			result << createEvent(descriptionText: cmd.toString())
+			result = createEvent(descriptionText: cmd.toString())
 		}
 	}
 	result
