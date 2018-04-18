@@ -2,15 +2,15 @@
  *  Fibaro Dimmer 2
  */
 metadata {
-    definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group") {
+    definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
         capability "Switch"
         capability "Switch Level"
         capability "Energy Meter"
         capability "Power Meter"
         capability "Configuration"
         capability "Health Check"
-		capability "Refresh"
-		
+		    capability "Refresh"
+
         command "reset"
         command "clearError"
 
@@ -135,7 +135,11 @@ def ping(){
 }
 
 def installed(){
-  sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def configure(){
+	  sendEvent(name: "switch", value: "off", displayed: "true") //set the initial state to off.
 }
 
 def updated() {
