@@ -233,10 +233,17 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 
 	if (msr == "011A-0601-0901") {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
 		result << response(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId))
-	} else if (!device.currentState("battery")) {
-		if (msr == "0086-0102-0059") {
-			result << response(zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format())
-		} else {
+	} else if (msr == "0086-0102-0059") {
+		def cmds = []
+		if (!device.currentState("battery")) {
+			cmds << zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format()
+		}
+		if (!device.currentState("contact")) {
+			cmds << zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)).format()
+		}
+		result << response(cmds)
+	} else {
+		if (!device.currentState("battery")) {
 			result << response(command(zwave.batteryV1.batteryGet()))
 		}
 	}
