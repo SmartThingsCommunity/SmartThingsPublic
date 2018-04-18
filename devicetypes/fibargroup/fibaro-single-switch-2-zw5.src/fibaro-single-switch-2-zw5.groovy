@@ -3,17 +3,17 @@
  *
  */
 metadata {
-    definition (name: "Fibaro Single Switch 2 ZW5", namespace: "FibarGroup", author: "Fibar Group") {
+    definition (name: "Fibaro Single Switch 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-switch-power-energy") {
         capability "Switch"
         capability "Energy Meter"
         capability "Power Meter"
         capability "Button"
         capability "Configuration"
         capability "Health Check"
-		capability "Refresh"
+		    capability "Refresh"
 
         command "reset"
-      
+
         fingerprint mfr: "010F", prod: "0403", model: "2000"
      }
 
