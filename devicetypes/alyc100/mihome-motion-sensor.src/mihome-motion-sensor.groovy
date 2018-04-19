@@ -30,8 +30,8 @@ metadata {
 	tiles(scale: 2) {
     	multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-				attributeState "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+				attributeState "active", label:'motion / open', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
+				attributeState "inactive", label:'no motion / closed', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
 			}
             tileAttribute("device.lastCheckin", key: "SECONDARY_CONTROL") {
                	attributeState("default", label:'${currentValue}')
@@ -122,12 +122,13 @@ def poll() {
 	}
     else {
     state.sensor_state = resp.data.data.sensor_state
+    log.debug "data $resp.data.data"
     log.info "POLL for  -'${device}' response -'${resp.status}' all good"
     checkin()
     }
 }
 def checkin() {
-	 if (sensor_state != null) {
+	// if (sensor_state != null) {
     	sendEvent(name: "motion", value: state.sensor_state == 0 ? "inactive" : "active")
 	def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
     def now = ''
@@ -136,7 +137,7 @@ def checkin() {
             now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}", location.timeZone)
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)
-    }
+   // }
     log.info "CHECKIN -'$device', '$state.sensor_state' all good"
 	}
 }
