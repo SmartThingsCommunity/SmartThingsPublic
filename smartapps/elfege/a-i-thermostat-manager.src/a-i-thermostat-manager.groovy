@@ -2739,9 +2739,10 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
 
                 if(Same){ // venting supercedes !OkToOpen() when the corresponding devices interesect
 
-                    if(state.coldbutneedcool == 0){
+                    if(state.coldbutneedcool == 0 && state.OpenByApp == true){
                         Actuators?.off()
                         ActuatorException?.off()
+                        log.debug "closing 1"
                         state.ventingrun = 0 // allows future venting
                         state.more = 0 
                         // allow for user to reopen them if they want to. 
@@ -2752,11 +2753,12 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
                         //log.debug "not closing windows because state.coldbutneedcool = $state.coldbutneedcool"
                     }
                 }
-                else { // no intersection between those devices so these windows / fans will now stop/close
+                else if(state.OpenByApp == true){ // no intersection between those devices so these windows / fans will now stop/close
                     Actuators?.off()
                     ActuatorException?.off()
                     state.ventingrun = 0 // allows future venting
                     state.more = 0 
+                    log.debug "closing 2"
                     // allow for user to reopen them if they want to. 
                     state.windowswereopenandclosedalready = true // windows won't close again as Long as temperature is still critical to allow for user's override 
                     // this value must not be reset by updated() because updated() is run by contacthandler it is only reset here or after new installation of the app
@@ -2814,7 +2816,7 @@ def contactHandlerClosed(evt) {
         updated()
     }
 
-} 
+}
 def contactHandlerOpen(evt) {
     //log.debug "$evt.device is now $evt.value, Turning off all thermostats in $TimeBeforeClosing seconds"
 
@@ -2871,7 +2873,7 @@ def ChangedModeHandler(evt) {
 
 }
 
-// A.I. and micro location evt management
+////////////////////////////////////// A.I. and micro location evt management
 def motionSensorHandler(evt){
     log.debug "motion is $evt.value at $evt.device"  
 
@@ -2909,7 +2911,7 @@ def BedSensorHandler(evt){
 
 }
 
-// Environmental evt management
+////////////////////////////////////// Environmental evt management
 def HumidityHandler(evt){
 
     log.info "humidity value is ${evt?.value}%"
@@ -3265,7 +3267,7 @@ state.messageSent($state.messageSent)
             if( inAway && ClosedByApp != true && OpenInfullWhenAway  && WarmEnoughOutside){
                 ClosedByApp = true
             }
-            if(ClosedByApp) {
+            if(state.ClosedByApp == true) {
                 Actuators?.on()
                 state.OpenByApp = true
                 state.ClosedByApp = false // so it doesn't open again
@@ -3310,10 +3312,10 @@ state.messageSent($state.messageSent)
         //log.debug "Actuators intersect VentingActuators"
 
         if(Same){ // venting supercedes !OkToOpen() when the corresponding devices interesect       
-            if(state.coldbutneedcool == 0){
+            if(state.coldbutneedcool == 0 && state.OpenByApp == true){
                 Actuators?.off()
                 ActuatorException?.off()
-
+                log.debug "closing 3"
                 message = "I'm closing windows because $state.causeClose"
                 //send(message)
                 log.info message 
@@ -3327,9 +3329,10 @@ state.messageSent($state.messageSent)
                 //log.debug "not closing windows because state.coldbutneedcool = $state.coldbutneedcool"
             }
         }
-        else { // no intersection between those devices so these windows / fans will now stop/close
+        else if(state.OpenByApp == true){ // no intersection between those devices so these windows / fans will now stop/close // if not open manually
             Actuators?.off()
             ActuatorException?.off()
+            log.debug "closing 4"
             state.ventingrun = 0 // allows future venting
             state.more = 0 
             message = "I'm closing windows because $state.causeClose"
@@ -3342,11 +3345,12 @@ state.messageSent($state.messageSent)
     }
 }
 def CloseWindows(){
-    if(state.coldbutneedcool == 0){
+    if(state.coldbutneedcool == 0 && state.OpenByApp == true){
         Actuators?.off()
         ActuatorException?.off()
         state.ventingrun = 0 // allows future venting
         state.more = 0 
+        log.debug "closing 5"
         // //log.debug "state.coldbutneedcool = $state.coldbutneedcool"
     }
 }
@@ -3596,127 +3600,127 @@ CLOSING WINDOWS"""
         CRITICAL = true
         state.OpenByApp = true // so windows will close even if manually opened
     }
-    /*
-if(!result){
-// preparing a dynamic message which will tell why windows won't open (or fans won't turn on)
-def cause1 = !OutSideWithinMargin
-def cause2 = !WithinCriticalOffSet
-def cause3 = !ShouldCool
-def cause4 = TooHumid
-def cause5 = CurrMode in "$Away"
-def cause6 = CRITICAL
 
-def causeNotList = [ cause1, cause2, cause3, cause4]
+    if(!result){
+        // preparing a dynamic message which will tell why windows won't open (or fans won't turn on)
+        def cause1 = !OutSideWithinMargin
+        def cause2 = !WithinCriticalOffSet
+        def cause3 = !ShouldCool
+        def cause4 = TooHumid
+        def cause5 = CurrMode in "$Away"
+        def cause6 = CRITICAL
 
-def causeNotTest = causeNotList.findAll{ val ->
-val == true ? true : false
-}
-def ManyCauses = causeNotTest.size() > 1
-def and2 =""
-def and3 = ""
-def and4 = ""
-def and5 = ""
-def and6 = ""
+        def causeNotList = [ cause1, cause2, cause3, cause4]
 
-if(ManyCauses && cause2){
-and2 = ": " 
-}
-if(ManyCauses && cause3){
-and3 = " and"
-}
-if(ManyCauses && cause4){
-and4 = " and"
-}
-if(ManyCauses && cause5){
-and5 = " and"
-}
-if(ManyCauses && cause6){
-and6 = " and"
-}
+        def causeNotTest = causeNotList.findAll{ val ->
+            val == true ? true : false
+        }
+        def ManyCauses = causeNotTest.size() > 1
+        def and2 =""
+        def and3 = ""
+        def and4 = ""
+        def and5 = ""
+        def and6 = ""
+
+        if(ManyCauses && cause2){
+            and2 = ": " 
+        }
+        if(ManyCauses && cause3){
+            and3 = " and"
+        }
+        if(ManyCauses && cause4){
+            and4 = " and"
+        }
+        if(ManyCauses && cause5){
+            and5 = " and"
+        }
+        if(ManyCauses && cause6){
+            and6 = " and"
+        }
 
 
-def causeNotMap = [ "outside temperature is not within comfortable margin" : cause1,  
-"$and2 it is not too hot inside ${XtraTempSensor}'s room" : cause2 , 
-"$and3 it is too hot $outsideWord" : cause3 ,  
-"$and4 it is too humid outisde" : cause4, 
-"$and5 home is in $Away Mode": cause5, 
-"$and6 it is too cold" : cause6, 
-]
+        def causeNotMap = [ "outside temperature is not within comfortable margin" : cause1,  
+                           "$and2 it is not too hot inside ${XtraTempSensor}'s room" : cause2 , 
+                           "$and3 it is too hot $outsideWord" : cause3 ,  
+                           "$and4 it is too humid outisde" : cause4, 
+                           "$and5 home is in $Away Mode": cause5, 
+                           "$and6 it is too cold" : cause6, 
+                          ]
 
-// creates a new map with only the keys that have values = true
-def causeNotOkToOpen = causeNotMap.findAll{it.value == true}
-// now collect the keys from this map 
-causeNotOkToOpen = causeNotOkToOpen.collect{ it.key }
-// build a string without the parentheses 
-def MessageStr = new StringBuilder();
-for (String value : causeNotOkToOpen) {
-MessageStr.append(value);
-}
-causeNotOkToOpen = MessageStr.toString();
-state.causeClose = causeNotOkToOpen
-if(state.coldbutneedcool == "false"){
-message = "Windows are closed because $causeNotOkToOpen"
-}
-else {
-message = "We need some fresh air here..."
-}
-log.info message
-state.messageclosed = message
-// send a reminder every X minutes 
+        // creates a new map with only the keys that have values = true
+        def causeNotOkToOpen = causeNotMap.findAll{it.value == true}
+        // now collect the keys from this map 
+        causeNotOkToOpen = causeNotOkToOpen.collect{ it.key }
+        // build a string without the parentheses 
+        def MessageStr = new StringBuilder();
+        for (String value : causeNotOkToOpen) {
+            MessageStr.append(value);
+        }
+        causeNotOkToOpen = MessageStr.toString();
+        state.causeClose = causeNotOkToOpen
+        if(state.coldbutneedcool == "false"){
+            message = "Windows are closed because $causeNotOkToOpen"
+        }
+        else {
+            message = "We need some fresh air here..."
+        }
+        log.info message
+        state.messageclosed = message
+        // send a reminder every X minutes 
 
-long MessageMinutes = 60L*60000L
-long LastTimeMessageSent = state.LastTimeMessageSent
-long SinceLast = LastTimeMessageSent + MessageMinutes
+        long MessageMinutes = 60L*60000L
+        long LastTimeMessageSent = state.LastTimeMessageSent
+        long SinceLast = LastTimeMessageSent + MessageMinutes
 
-def MessageTimeDelay = now() > SinceLast
-//log.debug "SinceLast = $SinceLast || MessageMinutes = $MessageMinutes || LastTimeMessageSent = $LastTimeMessageSent || MessageTimeDelay = $MessageTimeDelay"
+        def MessageTimeDelay = now() > SinceLast
+        //log.debug "SinceLast = $SinceLast || MessageMinutes = $MessageMinutes || LastTimeMessageSent = $LastTimeMessageSent || MessageTimeDelay = $MessageTimeDelay"
 
-if(MessageTimeDelay && ContactsClosed) {
-//send(message)
-LastTimeMessageSent = now() as Long
-state.LastTimeMessageSent = LastTimeMessageSent as Long
-}
+        if(MessageTimeDelay && ContactsClosed) {
+            //send(message)
+            LastTimeMessageSent = now() as Long
+            state.LastTimeMessageSent = LastTimeMessageSent as Long
+        }
 
-}
-// causes for opening windows or turning on fans
-else {
-def cause1 = CurrMode in $Away && WithinCriticalOffSet && OpenInfullWhenAway 
-def cause2 = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool && !TooHumid
-//def cause3 = WithinCriticalOffSet
-//def cause4 = TooHumid
+    }
+    // causes for opening windows or turning on fans
+    else {
+        def cause1 = CurrMode in $Away && WithinCriticalOffSet && OpenInfullWhenAway 
+        def cause2 = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool && !TooHumid
+        //def cause3 = WithinCriticalOffSet
+        //def cause4 = TooHumid
 
-def causeOktList = [ cause1, cause2 ]
-//log.debug "causeNotList = $causeNotList"
-def causeOkTest = causeOktList.findAll{ val ->
-val == true ? true : false
-}
-def and = ""
+        def causeOktList = [ cause1, cause2 ]
+        //log.debug "causeNotList = $causeNotList"
+        def causeOkTest = causeOktList.findAll{ val ->
+            val == true ? true : false
+        }
+        def and = ""
 
-if(cause1 && cause2){
-and = "and"
-}
-def causeOkMap = [ "Home is in $CurrMode and outside and inside temperatures are within safety margins" : cause1,  
-"$and It is not too humid nor too hot nor cold outside" : cause2 , 
-]
+        if(cause1 && cause2){
+            and = "and"
+        }
+        def causeOkMap = [ "Home is in $CurrMode and outside and inside temperatures are within safety margins" : cause1,  
+                          "$and It is not too humid nor too hot nor cold outside" : cause2 , 
+                         ]
 
-// create a new map with only the keys that have values = true
-def causeOkToOpen = causeOkMap.findAll{it.value == true}
-// now get only the keys from this map 
-causeOkToOpen = causeOkToOpen.collect{ it.key }
-// build a string without the parentheses 
-def MessageStr = new StringBuilder();
-for (String value : causeOkToOpen) {
-MessageStr.append(value);
-}
-causeOkToOpen = MessageStr.toString();
-state.causeOpen = causeOkToOpen
+        // create a new map with only the keys that have values = true
+        def causeOkToOpen = causeOkMap.findAll{it.value == true}
+        // now get only the keys from this map 
+        causeOkToOpen = causeOkToOpen.collect{ it.key }
+        // build a string without the parentheses 
+        def MessageStr = new StringBuilder();
+        for (String value : causeOkToOpen) {
+            MessageStr.append(value);
+        }
+        causeOkToOpen = MessageStr.toString();
+        state.causeOpen = causeOkToOpen
 
-message = "Windows are open because $causeOkToOpen"
+        message = "Windows are open because $causeOkToOpen"
 
-state.messageopened = message // sent once as push message by checkwindows()
+        state.messageopened = message // sent once as push message by checkwindows()
 
-}
-*/
+    }
+    
     log.info """
 Inside?($Inside), Outside?($Outside), 
 Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) 
