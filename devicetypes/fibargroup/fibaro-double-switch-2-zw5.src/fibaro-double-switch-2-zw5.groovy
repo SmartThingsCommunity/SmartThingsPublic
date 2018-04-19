@@ -2,7 +2,7 @@
  *  Fibaro Double Switch 2
  */
 metadata {
-    definition (name: "Fibaro Double Switch 2 ZW5", namespace: "FibarGroup", author: "Fibar Group") {
+    definition (name: "Fibaro Double Switch 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-switch-power-energy") {
         capability "Switch"
         capability "Energy Meter"
         capability "Power Meter"
@@ -10,9 +10,9 @@ metadata {
         capability "Configuration"
         capability "Health Check"
 		capability "Refresh"
-		
+
         command "reset"
-        
+
         fingerprint mfr: "010F", prod: "0203", model: "2000"
       }
 
@@ -35,11 +35,6 @@ metadata {
         valueTile("reset", "device.energy", decoration: "flat", width: 2, height: 2) {
             state "reset", label:'reset\n kWh', action:"reset"
         }
-
-        //standardTile("main", "device.switch", decoration: "flat", canChangeIcon: true) {
-          //  state "off", label: 'off', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
-          //  state "on", label: 'on', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc"
-        //}
 
         main(["switch","power","energy"])
         details(["switch","power","energy","reset"])
@@ -141,8 +136,11 @@ def ping() {
     refresh()
 }
 
-//Configuration and synchronization
+def configure(){
+	sendEvent(name: "switch", value: "off", displayed: "true") // set the initial state to off.
+}
 
+//Configuration and synchronization
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
     def cmds = []

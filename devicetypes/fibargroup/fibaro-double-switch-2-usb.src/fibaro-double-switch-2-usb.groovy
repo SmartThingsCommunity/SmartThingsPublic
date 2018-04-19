@@ -2,16 +2,16 @@
  *  Fibaro Double Switch 2 Child Device
  */
 metadata {
-    definition (name: "Fibaro Double Switch 2 - USB", namespace: "FibarGroup", author: "Fibar Group") {
+    definition (name: "Fibaro Double Switch 2 - USB", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-switch-power-energy") {
         capability "Switch"
         capability "Actuator"
         capability "Sensor"
         capability "Energy Meter"
         capability "Power Meter"
 		capability "Refresh"
-		
+
         command "reset"
-       
+
     }
 
     tiles {
