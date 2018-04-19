@@ -114,15 +114,15 @@ def uninstalled() {
 }
 // handle commands
 def poll() {
-	log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
+	//log.debug "Executing 'poll' for ${device} ${this} ${device.deviceNetworkId}"
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
 	if (resp.status != 200) {
-		log.error("Unexpected result in poll(): [${resp.status}] ${resp.data}")
-		return []
+		sendEvent(name: "refresh", value: '', descriptionText: "BAD Poll", isStateChange: true)
+        log.error "POLL for  -'${device}' response -'${resp.status}' Unexpected Result" // end
 	}
-    //log.debug resp.data.data
     else {
     state.sensor_state = resp.data.data.sensor_state
+    log.info "POLL for  -'${device}' response -'${resp.status}' all good"
     checkin()
     }
 }

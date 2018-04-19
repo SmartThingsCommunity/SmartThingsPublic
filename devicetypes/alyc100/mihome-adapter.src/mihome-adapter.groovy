@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY - FORMER VERSION NOW RENAMED AS ADAPTER PLUS
+ *					-	runin an hour added
  *				3.0 -	Code cleansed debugging removed
  *				2.5	-	Major review to move schdualing into the DH, created error handler / seetings added for refresh rate and check in time
  *	17.09.2017: 2.0a -	Disable setting device to Offline on unexpected API response.
@@ -67,7 +68,8 @@ metadata {
 	rates << ["5" : "Refresh every 5 minutes (eTRVs)"]
 	rates << ["10" : "Refresh every 10 minutes (Power Monitors)"]	
 	rates << ["15" : "Refresh every 15 minutes (Sockets switched by other systems)"]
-	rates << ["30" : "Refresh every 30 minutes - Default (Sockets)"]
+	rates << ["30" : "Refresh every 30 minutes - (Sockets)"]
+    rates << ["60" : "Refresh every 60 minutes - Default (Sockets)"]
 
 	preferences {
         input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
@@ -109,9 +111,13 @@ def initialize() {
 			runEvery15Minutes(refresh)
 			log.info "Refresh Scheduled for every 15 minutes"
 			break
-		default:
+        case "30":
 			runEvery30Minutes(refresh)
 			log.info "Refresh Scheduled for every 30 minutes"
+			break
+		default:
+			runEvery1Hour(refresh)
+			log.info "Refresh Scheduled for every 60 minutes"
 	}
 }
 def uninstalled() {
