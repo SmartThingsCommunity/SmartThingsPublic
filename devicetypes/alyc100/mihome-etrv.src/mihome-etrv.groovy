@@ -46,6 +46,7 @@ metadata {
         capability "Sensor"		// best practice
         capability "Refresh"
 		capability "Thermostat"
+        capability "Thermostat Heating Setpoint" // alows extra settings in routines
         capability "Battery" 
  
 // disabled 12th 8am command "heatingSetpointUp"
