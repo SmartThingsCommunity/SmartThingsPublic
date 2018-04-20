@@ -9,12 +9,12 @@ metadata {
         capability "Button"
         capability "Configuration"
         capability "Health Check"
-		capability "Refresh"
+        capability "Refresh"
 
         command "reset"
 
         fingerprint mfr: "010F", prod: "0203", model: "2000"
-      }
+    }
 
     tiles (scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 3, height: 4){
