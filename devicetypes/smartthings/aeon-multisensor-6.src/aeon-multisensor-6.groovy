@@ -430,7 +430,7 @@ def configure() {
 	}
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
-	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+	commands(request, (state.sec || zwaveInfo?.zw?.endsWith("s")) ? 600 : 200) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
 private def getTimeOptionValueMap() {
