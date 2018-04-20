@@ -547,6 +547,57 @@ Default: 2 (Toggle)
     <Item label="Toggle (Open=On, Closed=Off)" value="1" />
     <Item label="Toggle (On Switch Change)" value="2" />
   </Value>
+      <Value type="list" byteSize="1" index="40" label="Reaction to General Alarm" min="0" max="3" value="3" setting_type="zwave" fw="">
+    <Help>
+This parameter determines how the device will react to General Alarm frame.
+Range: 0~3
+Default: 3 (Flash)
+    </Help>
+    <Item label="Alarm frame is ignored" value="0" />
+    <Item label="Turn ON after receiving the alarm frame" value="1" />
+    <Item label="Turn OFF after receiving the alarm frame" value="2" />
+	<Item label="Flash after receiving the alarm frame" value="3" />
+  </Value>
+      <Value type="list" byteSize="1" index="41" label="Reaction to Flood Alarm" min="0" max="3" value="2" setting_type="zwave" fw="">
+    <Help>
+This parameter determines how the device will react to Flood Alarm frame.
+Range: 0~3
+Default: 2 (OFF)
+    </Help>
+    <Item label="Alarm frame is ignored" value="0" />
+    <Item label="Turn ON after receiving the alarm frame" value="1" />
+    <Item label="Turn OFF after receiving the alarm frame" value="2" />
+	<Item label="Flash after receiving the alarm frame" value="3" />
+  </Value>
+      <Value type="list" byteSize="1" index="42" label="Reaction to CO/CO2/Smoke Alarm" min="0" max="3" value="3" setting_type="zwave" fw="">
+    <Help>
+This parameter determines how the device will react to CO, CO2 or Smoke frame. 
+Range: 0~3
+Default: 3 (Flash)
+    </Help>
+    <Item label="Alarm frame is ignored" value="0" />
+    <Item label="Turn ON after receiving the alarm frame" value="1" />
+    <Item label="Turn OFF after receiving the alarm frame" value="2" />
+	<Item label="Flash after receiving the alarm frame" value="3" />
+  </Value>
+      <Value type="list" byteSize="1" index="43" label="Reaction to Heat Alarm" min="0" max="3" value="1" setting_type="zwave" fw="">
+    <Help>
+This parameter determines how the device will react to Heat Alarm frame.
+Range: 0~3
+Default: 1 (ON)
+    </Help>
+    <Item label="Alarm frame is ignored" value="0" />
+    <Item label="Turn ON after receiving the alarm frame" value="1" />
+    <Item label="Turn OFF after receiving the alarm frame" value="2" />
+	<Item label="Flash after receiving the alarm frame" value="3" />
+  </Value>
+        <Value type="byte" byteSize="2" index="44" label="Flashing alarm duration" min="1" max="32000" value="600" setting_type="zwave" fw="">
+    <Help>
+This parameter allows to set duration of flashing alarm mode. 
+Range: 1~32000 (1s-32000s)
+Default: 600 (10 min)
+    </Help>
+  </Value>
     <Value type="byte" byteSize="1" index="50" label="First Channel - Active power reports" min="0" max="100" value="10" setting_type="zwave" fw="">
     <Help>
 The parameter defines the power level change that will result in a new power report being sent. The value is a percentage of the previous report.
