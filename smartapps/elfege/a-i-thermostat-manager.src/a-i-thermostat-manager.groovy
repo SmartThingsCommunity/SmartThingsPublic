@@ -739,7 +739,7 @@ def Windows_Control(){
             section("Save power by turning on some fans or by opening some windows when outside's temperature is nice"){
 
                 paragraph "this section is optimized for windows management but can also be used with fans"
-                input(name: "Actuators", type: "capability.switch", required: true, multiple: true, title: "select some fan or windows switches that you want to control with outside's temperature", submitOnChange: true)
+                input(name: "Actuators", type: "capability.switch", required: false, multiple: true, title: "select some fan or windows switches that you want to control with outside's temperature", submitOnChange: true)
                 input(name: "NotWindows", type: "bool", title: "Those devices ($Actuators) are NOT windows", default: false, submitOnChange: true)
                 if(!NotWindows){
                     def HasStop = Actuators?.hasCommand("stop") || Actuators?.hasCommand("Stop") 
@@ -823,7 +823,8 @@ place and never allow for the A.C. to do it while it's cold enough outside. """
 ////////////////////////////////////// END OF SETTINGS ///////////////////////////////
 
 ////////////////////////////////////// INSTAL AND UPDATE ///////////////////////////////
-def installed() {	 
+def installed() {
+state.LastTimeMessageSent = now() as Long 
     //log.debug "enter installed, state: $state"	
     state.windowswereopenandclosedalready = false // this value must not be reset by updated() because updated() is run by contacthandler
 
