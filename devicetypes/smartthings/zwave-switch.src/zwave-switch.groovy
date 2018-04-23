@@ -70,9 +70,9 @@ def installed() {
 }
 
 def updated(){
-		// Device-Watch simply pings if no device events received for 32min(checkInterval)
-		sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-  switch (ledIndicator) {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	switch (ledIndicator) {
         case "on":
             indicatorWhenOn()
             break
@@ -86,7 +86,7 @@ def updated(){
             indicatorWhenOn()
             break
     }
-    sendHubCommand(new physicalgraph.device.HubAction(zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()))
+	response(refresh())
 }
 
 def getCommandClassVersions() {
