@@ -9,7 +9,7 @@ metadata {
         capability "Power Meter"
         capability "Configuration"
         capability "Health Check"
-		    capability "Refresh"
+        capability "Refresh"
 
         command "reset"
         command "clearError"
@@ -45,7 +45,7 @@ metadata {
         }
         valueTile("scene", "device.scene", decoration: "flat", width: 2, height: 2) {
              state "default", label:'Scene: ${currentValue}'
-		}
+        }
 
         standardTile("errorMode", "device.errorMode", decoration: "flat", width: 2, height: 2) {
             state "default", label:'No errors.', action:"clearError", icon: "st.secondary.tools", backgroundColor: "#ffffff"
@@ -58,8 +58,8 @@ metadata {
             state "hardware", label:'Hardware Error!', action:"clearError", icon: "st.secondary.tools", backgroundColor: "#ff0000"
         }
 
-    	main "switch"
-    	details(["switch","power", "energy", "reset", "errorMode", "scene"])
+        main "switch"
+        details(["switch","power", "energy", "reset", "errorMode", "scene"])
 
     }
 
@@ -139,7 +139,7 @@ def installed(){
 }
 
 def configure(){
-	  sendEvent(name: "switch", value: "off", displayed: "true") //set the initial state to off.
+      sendEvent(name: "switch", value: "off", displayed: "true") //set the initial state to off.
 }
 
 def updated() {
