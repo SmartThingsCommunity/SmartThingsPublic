@@ -2,26 +2,25 @@
  *  Fibaro Double Switch 2
  */
 metadata {
-    definition (name: "Fibaro Double Switch 2 ZW5", namespace: "FibarGroup", author: "Fibar Group") {
+    definition (name: "Fibaro Double Switch 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-switch-power-energy") {
         capability "Switch"
         capability "Energy Meter"
         capability "Power Meter"
         capability "Button"
         capability "Configuration"
         capability "Health Check"
+        capability "Refresh"
 
         command "reset"
-        command "refresh"
-        fingerprint mfr: "010F", prod: "0203"
-        fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x98,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
-        fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x59,0x73,0x22,0x56,0x32,0x71,0x7A,0x25,0x5A,0x85,0x70,0x8E,0x60,0x75,0x5B"
-    }
+
+        fingerprint mfr: "010F", prod: "0203", model: "2000"
+      }
 
     tiles (scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 3, height: 4){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "off", label: '', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
-                attributeState "on", label: '', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc"
+                attributeState "off", label: '${name}', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
+                attributeState "on", label: '${name}', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc"
             }
             tileAttribute("device.multiStatus", key:"SECONDARY_CONTROL") {
                 attributeState("multiStatus", label:'${currentValue}')
@@ -36,11 +35,8 @@ metadata {
         valueTile("reset", "device.energy", decoration: "flat", width: 2, height: 2) {
             state "reset", label:'reset\n kWh', action:"reset"
         }
-        standardTile("main", "device.switch", decoration: "flat", canChangeIcon: true) {
-            state "off", label: 'off', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
-            state "on", label: 'on', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc"
-        }
-        main "main"
+
+        main(["switch","power","energy"])
         details(["switch","power","energy","reset"])
     }
 
@@ -132,8 +128,19 @@ Integer getState(String key) {
     state."$key".value
 }
 
-//Configuration and synchronization
+def installed(){
+  sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
 
+def ping() {
+    refresh()
+}
+
+def configure(){
+    sendEvent(name: "switch", value: "off", displayed: "true") // set the initial state to off.
+}
+
+//Configuration and synchronization
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
     def cmds = []
@@ -238,12 +245,17 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 private createChildDevices() {
     logging("${device.displayName} - executing createChildDevices()","info")
-    addChildDevice(
+    try {
+    log.debug "adding child device ....."
+        addChildDevice(
             "Fibaro Double Switch 2 - USB",
             "${device.deviceNetworkId}-2",
             null,
             [completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false, componentName: "ch2", componentLabel: "Channel 2"]
-    )
+        )
+    } catch (Exception e) {
+        logging("${device.displayName} - error attempting to create child device: "+e, "debug")
+    }
 }
 
 private physicalgraph.app.ChildDeviceWrapper getChild(Integer childNum) {
