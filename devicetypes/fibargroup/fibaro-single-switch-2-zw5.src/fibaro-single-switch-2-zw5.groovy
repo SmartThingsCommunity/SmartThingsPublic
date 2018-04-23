@@ -10,7 +10,7 @@ metadata {
         capability "Button"
         capability "Configuration"
         capability "Health Check"
-		    capability "Refresh"
+        capability "Refresh"
 
         command "reset"
 
