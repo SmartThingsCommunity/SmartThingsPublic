@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Child Switch", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Child Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid:"generic-switch") {
 		capability "Switch"
 		capability "Actuator"
 		capability "Sensor"

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Eaton 5-Scene Keypad", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Eaton 5-Scene Keypad", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid:"generic-switch") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Refresh"
