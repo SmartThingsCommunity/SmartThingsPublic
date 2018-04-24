@@ -298,12 +298,17 @@ void resumeProgram() {
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 	if (parent.resumeProgram(deviceId)) {
 		sendEvent("name":"thermostat", "value":"setpoint is updating", "description":statusText, displayed: false)
-		sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
 	} else {
-		sendEvent("name":"thermostat", "value":"failed resume click refresh", "description":statusText, displayed: false)
+		sendEvent("name":"thermostat", "value":"resume failed", "description":statusText, displayed: false)
 		log.error "Error resumeProgram() check parent.resumeProgram(deviceId)"
 	}
-	runIn(5, "refresh", [overwrite: true])
+	// Prevent double tap and spamming of resume command
+	runIn(5, "updateResume", [overwrite: true])
+}
+
+def updateResume() {
+	sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
+	refresh()
 }
 
 def modes() {
@@ -334,9 +339,10 @@ def switchToMode(mode) {
 	if (!(parent.setMode(((mode == "emergency heat") ? "auxHeatOnly" : mode), deviceId))) {
 		log.warn "Error setting mode:$mode"
 		// Ensure the DTH tile is reset
-		generateModeEvent(device.currentValue("thermostatMode"))
+		mode = device.currentValue("thermostatMode")
 	}
-	runIn(5, "refresh", [overwrite: true])
+	generateModeEvent(mode)
+	generateStatusEvent()
 }
 
 def switchFanMode() {
@@ -356,9 +362,9 @@ def switchToFanMode(fanMode) {
 	if (!(parent.setFanMode(heatingSetpoint, coolingSetpoint, deviceId, sendHoldType, fanMode))) {
 		log.warn "Error setting fanMode:fanMode"
 		// Ensure the DTH tile is reset
-		generateFanModeEvent(device.currentValue("thermostatFanMode"))
+		fanMode = device.currentValue("thermostatFanMode")
 	}
-	runIn(5, "refresh", [overwrite: true])
+	generateFanModeEvent(fanMode)
 }
 
 def getDataByName(String name) {
@@ -522,10 +528,11 @@ def updateSetpoint(data) {
 				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
 		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, deviceScale),
 				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		generateStatusEvent()
 	} else {
 		log.error "Error updateSetpoint"
+		runIn(5, "refresh", [overwrite: true])
 	}
-	runIn(5, "refresh", [overwrite: true])
 }
 
 def generateStatusEvent() {
