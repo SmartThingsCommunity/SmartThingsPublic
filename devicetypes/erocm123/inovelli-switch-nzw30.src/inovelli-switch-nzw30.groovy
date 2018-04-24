@@ -1,8 +1,8 @@
 /**
  *  Inovelli Switch NZW30
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-02-26
- *  Copyright 2017 Eric Maycock
+ *  Date: 2018-04-11
+ *  Copyright 2018 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,7 +13,15 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02.
+ *  2018-04-11: No longer deleting child devices when user toggles the option off. SmartThings was throwing errors.
+ *              User will have to manually delete them.
+ *
+ *  2018-03-08: Added support for local protection to disable local control. Requires firmware 1.03+.
+ *              Also merging handler from NZW30T as they are identical other than the LED indicator.
+ *              Child device creation option added for local control setting. Child device must be installed:
+ *              https://github.com/erocm123/SmartThingsPublic/blob/master/devicetypes/erocm123/switch-level-child-device.src
+ *       
+ *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02+.
  *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src
  */
  
@@ -25,7 +33,6 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
         capability "Health Check"
-        capability "Indicator"
         capability "Configuration"
         
         attribute "lastActivity", "String"
@@ -37,6 +44,7 @@ metadata {
         fingerprint mfr: "015D", prod: "0117", model: "1E1C", deviceJoinName: "Inovelli Switch"
         fingerprint mfr: "015D", prod: "1E01", model: "1E01", deviceJoinName: "Inovelli Switch"
         fingerprint mfr: "0312", prod: "1E01", model: "1E01", deviceJoinName: "Inovelli Switch"
+        fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x85,0x59,0x73,0x25,0x27,0x70,0x75,0x22,0x8E,0x55,0x6C,0x7A"
 	}
 
 	simulator {
@@ -44,8 +52,12 @@ metadata {
     
     preferences {
         input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:\n", description: "Tap to set", required: false, options:[1: "On", 0: "Off", 2: "Disable"], defaultValue: 1
-        input "invert", "enum", title: "Invert Switch", description: "Tap to set", required: false, options:[0: "No", 1: "Yes"], defaultValue: 0
+        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is: (Paddle Switch Only)\n", description: "Tap to set", required: false, options:[[1: "On"], [0: "Off"], [2: "Disable"], [3: "Always On"]], defaultValue: 1
+        input "invert", "enum", title: "Invert Switch\n\nInvert on & off on the physical switch", description: "Tap to set", required: false, options:[[0: "No"], [1: "Yes"]], defaultValue: 0
+        input "disableLocal", "enum", title: "Disable Local Control\n\nDisable ability to control switch from the wall\n(Firmware 1.02+)", description: "Tap to set", required: false, options:[[2: "Yes"], [0: "No"]], defaultValue: 1
+        input description: "Use the below options to enable child devices for the specified settings. This will allow you to adjust these settings using SmartApps such as Smart Lighting. If any of the options are enabled, make sure you have the appropriate child device handlers installed.\n(Firmware 1.02+)", title: "Child Devices", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input "enableDisableLocalChild", "bool", title: "Disable Local Control", description: "", required: false
+        input description: "Use the \"Z-Wave Association Tool\" SmartApp to set device associations. (Firmware 1.02+)\n\nGroup 2: Sends on/off commands to associated devices when switch is pressed (BASIC_SET).", title: "Associations", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         }
     
     tiles {
@@ -98,14 +110,47 @@ def updated() {
 
 def initialize() {
     sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+    if (enableDisableLocalChild && !childExists("ep101")) {
+    try {
+        addChildDevice("Switch Level Child Device", "${device.deviceNetworkId}-ep101", null,
+                [completedSetup: true, label: "${device.displayName} (Disable Local Control)",
+                isComponent: true, componentName: "ep101", componentLabel: "Disable Local Control"])
+    } catch (e) {
+        runIn(3, "sendAlert", [data: [message: "Child device creation failed. Make sure the device handler for \"Switch Level Child Device\" is installed"]])
+    }
+    } else if (!enableDisableLocalChild && childExists("ep101")) {
+        log.debug "Trying to delete child device ep101. If this fails it is likely that there is a SmartApp using the child device in question."
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("ep101")}
+        try {
+            log.debug "SmartThings has issues trying to delete the child device when it is in use. Need to manually delete them."
+            //if(childDevice) deleteChildDevice(childDevice.deviceNetworkId)
+        } catch (e) {
+            runIn(3, "sendAlert", [data: [message: "Failed to delete child device. Make sure the device is not in use by any SmartApp."]])
+        }
+    }
+    if (device.label != state.oldLabel) {
+        def children = childDevices
+        def childDevice = children.find{it.deviceNetworkId.endsWith("e101")}
+        if (childDevice)
+        childDevice.setLabel("${device.displayName} (Disable Local Control)")
+        state.oldLabel = device.label
+    }
+    
     def cmds = processAssociations()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [ledIndicator? ledIndicator.toInteger() : 1], parameterNumber: 3, size: 1)
+    cmds << zwave.versionV1.versionGet()
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: ledIndicator!=null? ledIndicator.toInteger() : 1, parameterNumber: 3, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [invert? invert.toInteger() : 0], parameterNumber: 4, size: 1)
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: invert!=null? invert.toInteger() : 0, parameterNumber: 4, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
-    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff? autoOff.toInteger() : 0, parameterNumber: 5, size: 2)
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff!=null? autoOff.toInteger() : 0, parameterNumber: 5, size: 2)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
-	return cmds
+	if (state.disableLocal != settings.disableLocal) {
+        cmds << zwave.protectionV2.protectionSet(localProtectionState : disableLocal!=null? disableLocal.toInteger() : 0, rfProtectionState: 0)
+        cmds << zwave.protectionV2.protectionGet()
+    }
+    state.disableLocal = settings.disableLocal
+    return cmds
 }
 
 def parse(description) {
@@ -195,11 +240,9 @@ private commands(commands, delay=500) {
 }
 
 def setDefaultAssociations() {
-    state.associationGroups = 3
     def smartThingsHubID = zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )
     state.defaultG1 = [smartThingsHubID]
     state.defaultG2 = []
-    state.defaultG3 = []
 }
 
 def setAssociationGroup(group, nodes, action, endpoint = null){
@@ -220,14 +263,14 @@ def setAssociationGroup(group, nodes, action, endpoint = null){
 def processAssociations(){
    def cmds = []
    setDefaultAssociations()
-   def supportedGroupings = 5
-   if (state.supportedGroupings) {
-       supportedGroupings = state.supportedGroupings
+   def associationGroups = 5
+   if (state.associationGroups) {
+       associationGroups = state.associationGroups
    } else {
        log.debug "Getting supported association groups from device"
        cmds <<  zwave.associationV2.associationGroupingsGet()
    }
-   for (int i = 1; i <= supportedGroupings; i++){
+   for (int i = 1; i <= associationGroups; i++){
       if(state."actualAssociation${i}" != null){
          if(state."desiredAssociation${i}" != null || state."defaultG${i}") {
             def refreshGroup = false
@@ -267,5 +310,25 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationGroupingsReport cmd) {
     sendEvent(name: "groups", value: cmd.supportedGroupings)
     log.debug "Supported association groups: ${cmd.supportedGroupings}"
-    state.supportedGroupings = cmd.supportedGroupings
+    state.associationGroups = cmd.supportedGroupings
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    log.debug cmd
+    if(cmd.applicationVersion && cmd.applicationSubVersion) {
+	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
+        state.needfwUpdate = "false"
+        sendEvent(name: "status", value: "fw: ${firmware}")
+        updateDataValue("firmware", firmware)
+    }
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.protectionv2.ProtectionReport cmd) {
+    log.debug cmd
+    def integerValue = cmd.localProtectionState
+    def children = childDevices
+    def childDevice = children.find{it.deviceNetworkId.endsWith("ep101")}
+    if (childDevice) {
+        childDevice.sendEvent(name: "switch", value: integerValue > 0 ? "on" : "off")        
+    }
 }

@@ -76,7 +76,7 @@ metadata {
     
     preferences {
         input "minimumLevel", "number", title: "Minimum Level\n\nMinimum dimming level for attached light\nRange: 1 to 99", description: "Tap to set", required: false, range: "1..99"
-        input "dimmingStep", "number", title: "Dimming Step Size\n\nPercentage of step when switch is dimming up or down\nRange: 1 to 99", description: "Tap to set", required: false, range: "1..99"
+        input "dimmingStep", "number", title: "Dimming Step Size\n\nPercentage of step when switch is dimming up or down\nRange: 0 to 99 (0 - Instant)", description: "Tap to set", required: false, range: "0..99"
         input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
         input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is: (Paddle Switch Only)", description: "Tap to set", required: false, options:[[1: "On"], [0: "Off"], [2: "Disable"], [3: "Always On"]], defaultValue: 1
         input "invert", "enum", title: "Invert Switch\n\nInvert on & off on the physical switch", description: "Tap to set", required: false, options:[[0: "No"], [1: "Yes"]], defaultValue: 0
@@ -90,7 +90,7 @@ metadata {
         input "enableDisableLocalChild", "bool", title: "Disable Local Control", description: "", required: false
         input description: "1 pushed - Up 1x click\n2 pushed - Up 2x click\n3 pushed - Up 3x click\n4 pushed - Up 4x click\n5 pushed - Up 5x click\n6 pushed - Up held\n\n1 held - Down 1x click\n2 held - Down 2x click\n3 held - Down 3x click\n4 held - Down 4x click\n5 held - Down 5x click\n6 held - Down held", title: "Button Mappings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         input description: "Use the \"Z-Wave Association Tool\" SmartApp to set device associations.\n(Firmware 1.02+)\n\nGroup 2: Sends on/off commands to associated devices when switch is pressed (BASIC_SET).\n\nGroup 3: Sends dim/brighten commands to associated devices when switch is pressed (SWITCH_MULTILEVEL_SET).", title: "Associations", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        input "group3Setting", "enum", title: "Association Group 3 Behavior\n\nChange how devices respond when associated in group 3", description: "Tap to set", required: false, options:[[1: "Keep in Sync"], [0: "Dim up/down"]], defaultValue: 1
+        input "group3Setting", "enum", title: "Association Group 3 Behavior\n\nChange how devices respond when associated in group 3", description: "Tap to set", required: false, options:[[1: "Keep in Sync"], [0: "Dim up/down"]], defaultValue: 0
         input description: "When should the switch send commands to associated devices?", title: "Association Behavior", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         input "group3local", "bool", title: "Send command on local action", description: "", required: false, value: true
         input "group3remote", "bool", title: "Send command on z-wave action", description: "", required: false
@@ -329,26 +329,26 @@ def initialize() {
     
     def cmds = processAssociations()
     cmds << zwave.versionV1.versionGet()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [dimmingStep? dimmingStep.toInteger() : 1], parameterNumber: 1, size: 1)
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: dimmingStep!=null? dimmingStep.toInteger() : 1, parameterNumber: 1, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [minimumLevel? minimumLevel.toInteger() : 1], parameterNumber: 2, size: 1)
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: minimumLevel!=null? minimumLevel.toInteger() : 1, parameterNumber: 2, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 2)
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [ledIndicator? ledIndicator.toInteger() : 1], parameterNumber: 3, size: 1)
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: ledIndicator!=null? ledIndicator.toInteger() : 1, parameterNumber: 3, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [invert? invert.toInteger() : 0], parameterNumber: 4, size: 1)
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: invert!=null? invert.toInteger() : 0, parameterNumber: 4, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
-    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff? autoOff.toInteger() : 0, parameterNumber: 5, size: 2)
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff!=null? autoOff.toInteger() : 0, parameterNumber: 5, size: 2)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
     if (state.defaultLocal != settings.defaultLocal) {
-        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: defaultLocal? defaultLocal.toInteger() : 0, parameterNumber: 8, size: 1)
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: defaultLocal!=null? defaultLocal.toInteger() : 0, parameterNumber: 8, size: 1)
         cmds << zwave.configurationV1.configurationGet(parameterNumber: 8)
     }
     if (state.defaultZWave != settings.defaultZWave) {
-        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: defaultZWave? defaultZWave.toInteger() : 0, parameterNumber: 9, size: 1)
+        cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: defaultZWave!=null? defaultZWave.toInteger() : 0, parameterNumber: 9, size: 1)
         cmds << zwave.configurationV1.configurationGet(parameterNumber: 9)
     }
     if (state.disableLocal != settings.disableLocal) {
-        cmds << zwave.protectionV2.protectionSet(localProtectionState : disableLocal? disableLocal.toInteger() : 0, rfProtectionState: 0)
+        cmds << zwave.protectionV2.protectionSet(localProtectionState : disableLocal!=null? disableLocal.toInteger() : 0, rfProtectionState: 0)
         cmds << zwave.protectionV2.protectionGet()
     }
     
@@ -361,7 +361,7 @@ def initialize() {
     
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: group3value, parameterNumber: 6, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 6)
-    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: group3Setting? group3Setting.toInteger() : 0, parameterNumber: 7, size: 1)
+    cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: group3Setting!=null? group3Setting.toInteger() : 0, parameterNumber: 7, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 7)
     
     state.defaultLocal = settings.defaultLocal
