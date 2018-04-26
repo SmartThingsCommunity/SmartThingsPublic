@@ -474,12 +474,12 @@ def alterSetpoint(raise, setpoint) {
 	// update UI without waiting for the device to respond, this to give user a smoother UI experience
 	// also, as runIn's have to overwrite and user can change heating/cooling setpoint separately separate runIn's have to be used
 	if (data.targetHeatingSetpoint) {
-		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, deviceScale),
-				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, "F"),
+				unit: locationScale, eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	if (data.targetCoolingSetpoint) {
-		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, deviceScale),
-				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, "F"),
+				unit: locationScale, eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	runIn(5, "updateSetpoint", [data: data, overwrite: true])
 }
@@ -524,9 +524,9 @@ def updateSetpoint(data) {
 
 	if (parent.setHold(data.targetHeatingSetpoint, data.targetCoolingSetpoint, deviceId, sendHoldType)) {
 		log.debug "updateSetpoint succeed to change setpoints:${data}"
-		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, deviceScale),
+		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, "F"),
 				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
-		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, deviceScale),
+		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, "F"),
 				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
 		generateStatusEvent()
 	} else {

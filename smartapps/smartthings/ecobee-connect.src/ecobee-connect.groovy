@@ -352,7 +352,7 @@ def getEcobeeDevices() {
 							thermostatList[dni].pollAttempts = 0
 							// compile all remote sensors conected to the thermostat
 							stat.remoteSensors.each { sensor ->
-								if (sensor.type != "thermostat") {
+								if (sensor.type == "ecobee3_remote_sensor") {
 									def rsDni = "ecobee_sensor-"+ sensor?.id + "-" + sensor?.code
 									remoteSensors[rsDni] = sensor
 									remoteSensors[rsDni] << [thermostatId: dni]
@@ -893,7 +893,7 @@ def updateSensorData(sensorData) {
 	def remoteSensors = state.remoteSensors2 ?: [:]
 	sensorData.each {
 		it.each {
-			if (it.type != "thermostat") {
+			if (it.type == "ecobee3_remote_sensor") {
 				def temperature = ""
 				def occupancy = ""
 				def dni = "ecobee_sensor-"+ it?.id + "-" + it?.code
@@ -907,7 +907,7 @@ def updateSensorData(sensorData) {
 						// is preserved and not changed to name from ecobee cloud as this is the first name change is allowed
 						child.setDisplayName(it.name)
 					}
-					if (!remoteSensors[dni] || remoteSensors[dni].deviceAlive) {
+					if (remoteSensors[dni] && remoteSensors[dni].deviceAlive) {
 						it.capability.each {
 							if (it.type == "temperature") {
 								if (it.value == "unknown") {
@@ -930,7 +930,11 @@ def updateSensorData(sensorData) {
 						child.sendEvent(name:"motion", value: occupancy)
 						child.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
 					} else {
-						remoteSensors[dni] << it
+						if (remoteSensors[dni]) {
+							remoteSensors[dni] << it
+						} else if (!child.getDataValue("DeviceIssue")) {
+							child.updateDataValue("DeviceIssue", "Please remove and re-add sensor")
+						}
 						child.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
 					}
 				}
@@ -1330,7 +1334,7 @@ private void storeThermostatData(thermostatData) {
 		}
 		// Make sure any remote senors connected to the thermostat are marked offline too
 		stat.remoteSensors.each { sensor ->
-			if (sensor.type != "thermostat") {
+			if (sensor.type == "ecobee3_remote_sensor") {
 				def rsDni = "ecobee_sensor-"+ sensor?.id + "-" + sensor?.code
 				if (ecobeesensors?.contains(rsDni)) {
 					remoteSensors[rsDni] = remoteSensors[rsDni] ?
