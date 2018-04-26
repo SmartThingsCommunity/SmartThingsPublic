@@ -79,7 +79,7 @@ metadata {
 		}
 
 		main(["switch","power","energy"])
-		details(["switch","power","energy","refresh","configure","reset"])
+		details(["switch","power","energy","refresh","reset"])
 	}
 }
 
