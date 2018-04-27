@@ -44,7 +44,7 @@ metadata {
     }
     
     preferences {
-        input "tempReportInterval", "enum", title: "Temperature Report Interval\n\nHow often you would like temperature reports to be sent from the sensor. More frequent reports will have a negative impact on battery life.\n", description: "Tap to set", required: false, options:[10: "10 Minutes", 30: "30 Minutes", 60: "1 Hour", 120: "2 Hours", 180: "3 Hours", 240: "4 Hours", 300: "5 Hours", 360: "6 Hours", 720: "12 Hours", 1440: "24 Hours"], defaultValue: 180
+        input "tempReportInterval", "enum", title: "Temperature Report Interval\n\nHow often you would like temperature reports to be sent from the sensor. More frequent reports will have a negative impact on battery life.\n", description: "Tap to set", required: false, options:[[10: "10 Minutes"], [30: "30 Minutes"], [60: "1 Hour"], [120: "2 Hours"], [180: "3 Hours"], [240: "4 Hours"], [300: "5 Hours"], [360: "6 Hours"], [720: "12 Hours"], [1440: "24 Hours"]], defaultValue: 180
         input "tempOffset", "number", title: "Temperature Offset\n\nCalibrate reported temperature by applying a negative or positive offset\nRange: -10 to 10", description: "Tap to set", required: false, range: "-10..10"
     }
 
@@ -134,8 +134,9 @@ def initialize() {
     def cmds = processAssociations()
     cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
     if (state.realTemperature != null) sendEvent(name:"temperature", value: getAdjustedTemp(state.realTemperature))
-    if (!state.MSR) {
-        cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+    if(!state.needfwUpdate || state.needfwUpdate == "") {
+       log.debug "Requesting device firmware version"
+       cmds << zwave.versionV1.versionGet()
     }
     cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
 	return cmds
@@ -195,7 +196,6 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
             result << sensorValueEvent(1)
         } else if (cmd.event == 0x03) {
             result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
-            if(!state.MSR) result << response(command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
         }
     } else if (cmd.notificationType) {
         def text = "Notification $cmd.notificationType: event ${([cmd.event] + cmd.eventParameter).join(", ")}"
@@ -211,9 +211,6 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
     log.debug "${device.displayName} woke up"
     def cmds = processAssociations()
-    if (!state.MSR) {
-        cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
-    }
     
     cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
     
@@ -222,10 +219,13 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
         cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: tempReportInterval? tempReportInterval.toInteger()*60:10800, nodeid:zwaveHubNodeId)
         cmds << zwave.wakeUpV1.wakeUpIntervalGet()
     }
-
-    if (!state.lastbat || now() - state.lastbat > 53*60*60*1000) {
+    if (!state.lastbat || now() - state.lastbat > 24*60*60*1000) {
         cmds << zwave.batteryV1.batteryGet()
     } 
+    if(!state.needfwUpdate || state.needfwUpdate == "") {
+       log.debug "Requesting device firmware version"
+       cmds << zwave.versionV1.versionGet()
+    }
     
     cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
 
@@ -264,22 +264,13 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     [createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-    def result = []
-
-    def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-    log.debug "msr: $msr"
-    updateDataValue("MSR", msr)
-
-    result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
-    result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-    if (!device.currentState("battery")) {
-        result << response(zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format())
-    } else {
-        result << response(command(zwave.batteryV1.batteryGet()))
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    log.debug cmd
+    if(cmd.applicationVersion && cmd.applicationSubVersion) {
+	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
+        state.needfwUpdate = "false"
+        updateDataValue("firmware", firmware)
     }
-
-    result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {

@@ -23,7 +23,7 @@ metadata {
         capability "Switch"
         capability "Polling"
         capability "Refresh"
-        //capability "Health Check"
+        capability "Health Check"
         capability "Button"
         
         attribute "lastActivity", "String"
@@ -40,7 +40,7 @@ metadata {
     preferences {
         input "autoOff1", "number", title: "Auto Off Channel 1\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
         input "autoOff2", "number", title: "Auto Off Channel 2\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when switch is:\n", description: "Tap to set", required: false, options:[0: "On", 1: "Off", 2: "Disable"], defaultValue: 0
+        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when switch is:\n", description: "Tap to set", required: false, options:[[0: "On"], [1: "Off"], [2: "Disable"]], defaultValue: 0
     }
     
     tiles {
@@ -298,7 +298,7 @@ private void createChildDevices() {
     state.oldLabel = device.label
     for (i in 1..2) {
         addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep${i}", null, [completedSetup: true, label: "${device.displayName} (CH${i})",
-            isComponent: false, componentName: "ep$i", componentLabel: "Channel $i"
+            isComponent: true, componentName: "ep$i", componentLabel: "Channel $i"
         ])
     }
 }

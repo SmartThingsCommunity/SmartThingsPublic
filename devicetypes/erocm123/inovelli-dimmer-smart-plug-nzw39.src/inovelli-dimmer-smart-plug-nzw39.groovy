@@ -15,15 +15,15 @@ metadata {
 	definition (name: "Inovelli Dimmer Smart Plug NZW39", namespace: "erocm123", author: "SmartThings", ocfDeviceType: "oic.d.light") {
 		capability "Switch Level"
 		capability "Actuator"
-		capability "Indicator"
 		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-		//capability "Health Check"
+		capability "Health Check"
 		capability "Light"
 		
 		fingerprint mfr: "0312", prod: "B212", model: "271C", deviceJoinName: "Inovelli Dimmer Smart Plug"
+        fingerprint deviceId: "0x1101", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x85,0x59,0x26,0x27,0x70"
 	}
 
 	simulator {
@@ -45,7 +45,7 @@ metadata {
 	}
 
 	preferences {
-		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator... ", required: false, options:["on": "When On", "off": "When Off", "never": "Never"], defaultValue: "off"
+		input "ledIndicator", "enum", title: "LED Indicator", description: "Turn LED indicator... ", required: false, options:[["on": "When On"], ["off": "When Off"], ["never": "Never"]], defaultValue: "off"
 	}
 
 	tiles(scale: 2) {
@@ -110,7 +110,7 @@ def updated(){
 def getCommandClassVersions() {
 	[
 		0x20: 1,  // Basic
-		0x26: 1,  // SwitchMultilevel
+		0x25: 1,  // SwitchMultilevel
 		0x56: 1,  // Crc16Encap
 		0x70: 1,  // Configuration
 	]

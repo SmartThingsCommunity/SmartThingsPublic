@@ -24,13 +24,12 @@ metadata {
         capability "Actuator"
         capability "Sensor"
         capability "Health Check"
-        capability "Indicator"
         
         attribute "lastActivity", "String"
 
         fingerprint mfr: "015D", prod: "6000", model: "6000", deviceJoinName: "Inovelli Outdoor Smart Plug"
         fingerprint mfr: "0312", prod: "6000", model: "6000", deviceJoinName: "Inovelli Outdoor Smart Plug"
-        
+        fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x85,0x59,0x73,0x25,0x27,0x70,0x71,0x8E,0x55,0x6C,0x7A"
     }
 
     simulator {
@@ -38,7 +37,7 @@ metadata {
     
     preferences {
         input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when switch is:\n", description: "Tap to set", required: false, options:[0: "On", 1: "Off", 2: "Disable"], defaultValue: 0
+        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when switch is:\n", description: "Tap to set", required: false, options:[[0: "On"], [1: "Off"], [2: "Disable"]], defaultValue: 0
     }
     
     tiles {

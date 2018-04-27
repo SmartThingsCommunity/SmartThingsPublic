@@ -23,9 +23,8 @@ metadata {
         capability "Polling"
         capability "Actuator"
         capability "Sensor"
-        //capability "Health Check"
+        capability "Health Check"
         capability "Button"
-        capability "Indicator"
         capability "Switch Level"
         
         attribute "lastActivity", "String"
@@ -35,6 +34,7 @@ metadata {
 
         fingerprint mfr: "015D", prod: "2700", model: "2700", deviceJoinName: "Inovelli Dimmer Smart Plug"
         fingerprint mfr: "0312", prod: "2700", model: "2700", deviceJoinName: "Inovelli Dimmer Smart Plug"
+        fingerprint deviceId: "0x1101", inClusters: "0x5E,0x26,0x27,0x70,0x5B,0x85,0x8E,0x59,0x55,0x86,0x72,0x5A,0x73,0x6C,0x7A"
     }
 
     simulator {
@@ -42,7 +42,7 @@ metadata {
     
     preferences {
         input "autoOff", "number", title: "Auto Off\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:\n", description: "Tap to set", required: false, options:[1: "On", 0: "Off", 2: "Disable"], defaultValue: 1     
+        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when light is:\n", description: "Tap to set", required: false, options:[[1: "On"], [0: "Off"], [2: "Disable"]], defaultValue: 1     
         input description: "1 pushed - Button 2x click", title: "Button Mappings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
     }
     
@@ -98,6 +98,8 @@ def updated() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff? autoOff.toInteger() : 0, parameterNumber: 2, size: 2)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 2)
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 4)
     response(commands(cmds))
 }
 
