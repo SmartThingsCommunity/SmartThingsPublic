@@ -164,7 +164,6 @@ def updated() {
 }
 
 def parse(String description) {
-	log.debug "parse() >> description: $description"
 	def result = null
 	if (description.startsWith("Err 106")) {
 		log.debug "parse() >> Err 106"
@@ -203,7 +202,8 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	//we need to catch payload so short that it does not contain configuration parameter size (NullPointerException)
 	//and actual size smaller than indicated by configuration parameter size (IndexOutOfBoundsException)
 	if (cmd.payload[1] == 0x70 && cmd.payload[2] == 0x06 && (cmd.payload.size() < 5 || cmd.payload.size < 5 + cmd.payload[4])) {
-		log.debug "Configuration Report command for parameter ${cmd.payload[3]} returned by the device is too short."
+		log.debug "Configuration Report command for parameter ${cmd.payload[3]} returned by the device is too short. Retry."
+		sendHubCommand(command(zwave.configurationV1.configurationGet(parameterNumber: cmd.payload[3])))
 	} else {
 		def encapsulatedCommand = cmd.encapsulatedCommand([0x31: 5, 0x30: 2, 0x84: 1])
 		log.debug "encapsulated: ${encapsulatedCommand}"
@@ -339,19 +339,25 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	log.debug "ConfigurationReport: $cmd"
 	def result = []
 	def value
-	if (cmd.parameterNumber == 9 && cmd.configurationValue[0] == 0) {
-		value = "dc"
-		if (!isConfigured()) {
-			log.debug("ConfigurationReport: configuring device")
-			result << response(configure())
+	if (cmd.parameterNumber == 9) {
+		if (cmd.configurationValue[0] == 0) {
+			value = "dc"
+			if (!isConfigured()) {
+				log.debug("ConfigurationReport: configuring device")
+				result << response(configure())
+			}
+			result << createEvent(name: "batteryStatus", value: "USB Cable", displayed: false)
+			result << createEvent(name: "powerSource", value: value, displayed: false)
+		} else if (cmd.configurationValue[0] == 1) {
+			result << createEvent(name: "powerSource", value: "battery", displayed: false)
+			result << createEvent(name: "batteryStatus", value: "${device.latestValue("battery")}% battery", displayed: false)
 		}
-		result << createEvent(name: "batteryStatus", value: "USB Cable", displayed: false)
-		result << createEvent(name: "powerSource", value: value, displayed: false)
-	} else if (cmd.parameterNumber == 9 && cmd.configurationValue[0] == 1) {
-		result << createEvent(name: "powerSource", value: "battery", displayed: false)
-		result << createEvent(name: "batteryStatus", value: "${device.latestValue("battery")}% battery", displayed: false)
-	} else if (cmd.parameterNumber == 101) {
-		result << response(configure())
+	} else {
+		if (cmd.parameterNumber == 4) {
+			//received response to last command in configure() - configuration is complete
+			setConfigured("true")
+		}
+		updateDataValuesForDebugging(cmd.parameterNumber, cmd.scaledConfigurationValue)
 	}
 	result
 }
@@ -365,10 +371,11 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	if (device.latestValue("powerSource") == "dc") {
-		command(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)) //poll the temperature to ping
-	} else {
+	if (device.latestValue("powerSource") == "battery") {
 		log.debug "Can't ping a wakeup device on battery"
+	} else {
+		//dc or unknown - get sensor report
+		command(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)) //poll the temperature to ping
 	}
 }
 
@@ -377,37 +384,42 @@ def configure() {
 	log.debug "${device.displayName} is configuring its settings"
 	def request = []
 
-	//1. set association groups for hub
+	//1. set association groups for hub - 2 groups are used to set battery refresh interval different than sensor report interval
 	request << zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
-
 	request << zwave.associationV1.associationSet(groupingIdentifier: 2, nodeId: zwaveHubNodeId)
 
 	//2. automatic report flags
-	// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 2 ultraviolet sensor, 1 battery sensor -> send command 227 to get all reports
-	request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 226)
+	// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 15 ultraviolet sensor, 1 battery sensor
+	// set value  241 (default for 101) to get all reports. Set value 0 for no reports (default for 102-103)
 	//association group 1
+	request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 240)
 
-	request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)
 	//association group 2
+	request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)
 
 	//3. no-motion report x seconds after motion stops (default 20 secs)
 	request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: timeOptionValueMap[motionDelayTime] ?: 20)
 
-	//4. motionSensitivity 3 levels: 3-normal, 5-maximum (default), 1-minimum, 0 - disabled (default)
+	//4. motionSensitivity 3 levels: 3-normal, 5-maximum (default), 1-minimum, 0 - disabled
 	request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1,
 		configurationValue:
 			motionSensitivity == "normal" ? [3] :
 				motionSensitivity == "minimum" ? [1] :
 					motionSensitivity == "disabled" ? [0] : [5])
 
-	//5. report every x minutes (threshold reports don't work on battery power, default 8 mins)
+	//5. Parameters 111-113: report interval for association group 1-3
+	//association group 1 - set in preferences, default 8 mins
 	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: timeOptionValueMap[reportInterval] ?: (8 * 60))
-	//association group 1
 
+	//association group 2 - report battery every 6 hours
 	request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 6 * 60 * 60)
-	//association group 2
 
-	//6. report automatically on threshold change
+	//6. report automatically ONLY on threshold change
+	//From manual:
+	//Enable/disable the selective reporting only when measurements reach a certain threshold or percentage set in 41-44.
+	//This is used to reduce network traffic.  (0 = disable, 1 = enable)
+	//Note: If USB power, the Sensor will check the threshold every 10 seconds. If battery power, the Sensor will check the threshold
+	//when it is waken up.
 	request << zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 1)
 
 	//7. query sensor data
@@ -417,10 +429,16 @@ def configure() {
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x1B) //ultravioletIndex
-	request << zwave.configurationV1.configurationGet(parameterNumber: 9)
-	request << zwave.configurationV1.configurationGet(parameterNumber: 4)
 
-	setConfigured("true")
+	//8. query configuration
+	request << zwave.configurationV1.configurationGet(parameterNumber: 9)
+	request << zwave.configurationV1.configurationGet(parameterNumber: 101)
+	request << zwave.configurationV1.configurationGet(parameterNumber: 102)
+	request << zwave.configurationV1.configurationGet(parameterNumber: 111)
+	request << zwave.configurationV1.configurationGet(parameterNumber: 112)
+	request << zwave.configurationV1.configurationGet(parameterNumber: 40)
+	//Last parameter number is important, as we set configuration completion flag when we receive response to this get command
+	request << zwave.configurationV1.configurationGet(parameterNumber: 4)
 
 	// set the check interval based on the report interval preference. (default 122 minutes)
 	// we do this here in case the device is in wakeup mode
@@ -430,8 +448,9 @@ def configure() {
 	}
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
-	commands(request, (state.sec || zwaveInfo?.zw?.endsWith("s")) ? 600 : 200) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+	commands(request, (state.sec || zwaveInfo?.zw?.endsWith("s")) ? 2000 : 500) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
+
 
 private def getTimeOptionValueMap() {
 	[
@@ -470,6 +489,61 @@ private command(physicalgraph.zwave.Command cmd) {
 }
 
 private commands(commands, delay = 200) {
-	log.info "sending commands: ${commands}"
+	log.debug "sending commands: ${commands}"
 	delayBetween(commands.collect { command(it) }, delay)
+}
+
+def updateDataValuesForDebugging(parameterNumber, scaledConfigurationValue) {
+	switch (parameterNumber) {
+		case 101:
+			updateDataValue("Group 1 reports enabled", getReportTypesFromValue(scaledConfigurationValue))
+			break
+		case 102:
+			updateDataValue("Group 2 reports enabled", getReportTypesFromValue(scaledConfigurationValue))
+			break
+		case 111:
+			updateDataValue("Group 1 reports interval", getIntervalString(scaledConfigurationValue))
+			break
+		case 112:
+			updateDataValue("Group 2 reports interval", getIntervalString(scaledConfigurationValue))
+			break
+		case 40:
+			updateDataValue("Automatic reports only when change is over threshold", scaledConfigurationValue ? "enabled" : "disabled")
+			break
+		case 4:
+			updateDataValue("Motion Sensitivity (0-5)", "$scaledConfigurationValue")
+			break
+		case 9:
+			//handled already as a state variable - do nothing
+			break
+		default:
+			updateDataValue("Parameter $parameterNumber", "$scaledConfigurationValue")
+			break
+	}
+}
+
+def getIntervalString(interval) {
+	interval % 3600 == 0 ? "${interval / 3600} hours" : (
+		interval % 60 == 0 ? "${interval / 60} minutes" : "$scaledConfigurationValue seconds"
+	)
+}
+
+def getReportTypesFromValue(value) {
+	// param 101 -103 [4 bytes] 128: light sensor, 64 humidity, 32 temperature sensor, 16 ultraviolet sensor, 1 battery sensor
+	def reportList = ""
+	if (value > 0) {
+		reportList = ""
+		if (value & 128) reportList += "Luminance, "
+		if (value & 64) reportList += "Humidity, "
+		if (value & 32) reportList += "Temperature, "
+		if (value & 16) reportList += "Ultraviolet, "
+		if (value & 1) {
+			reportList += "Battery"
+		} else {
+			reportList = reportList[0..-3]
+		}
+	} else {
+		reportList = "none"
+	}
+	reportList
 }
