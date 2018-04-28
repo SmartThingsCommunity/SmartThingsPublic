@@ -19,7 +19,7 @@ preferences {
              title: "Z-Wave Association Tool on Github",
              required: false,
              style: "external",
-             url: "https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src/README.md",
+             url: "https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/z-waveat",
              description: "Tap to view information about this SmartApp")
         }
     }
