@@ -38,6 +38,7 @@ metadata {
         fingerprint mfr:"015D", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Door/Window Sensor"
         fingerprint mfr:"015D", prod:"C100", model:"C100", deviceJoinName: "Inovelli Door/Window Sensor"
         fingerprint mfr:"0312", prod:"C100", model:"C100", deviceJoinName: "Inovelli Door/Window Sensor"
+        fingerprint deviceId: "0x0701", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x80,0x85,0x59,0x71,0x30,0x31,0x70,0x84"
     }
 
     simulator {
@@ -109,7 +110,7 @@ def parse(String description) {
 
 def installed() {
     log.debug "installed()"
-    def cmds = [zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)]
+    def cmds = [zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 10)]
     commands(cmds)
 }
 
@@ -140,6 +141,10 @@ def initialize() {
        log.debug "Requesting device firmware version"
        cmds << zwave.versionV1.versionGet()
     }
+    if (!state.lastbat || now() - state.lastbat > 24*60*60*1000) {
+        log.debug "Battery report not received in 24 hours. Requesting one now."
+        cmds << zwave.batteryV1.batteryGet()
+    } 
     cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
 	return cmds
 }
