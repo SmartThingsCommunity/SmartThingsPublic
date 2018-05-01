@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Dual Switch", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Z-Wave Dual Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Light"
@@ -53,12 +53,12 @@ def installed() {
 	}
 	try {
 		String dni = "${device.deviceNetworkId}-ep2"
-		addChildDevice("Binary Switch Endpoint", dni, device.hub.id,
+		addChildDevice("Z-Wave Binary Switch Endpoint", dni, device.hub.id,
 			[completedSetup: true, label: "${componentLabel}",
 			 isComponent   : false, componentName: "ch2", componentLabel: "${componentLabel}"])
-		log.debug "Endpoint 2 (Binary Switch Endpoint) added as $componentLabel"
+		log.debug "Endpoint 2 (Z-Wave Binary Switch Endpoint) added as $componentLabel"
 	} catch (e) {
-		log.warn "Failed to add endpoint 2 ($desc) as Binary Switch Endpoint - $e"
+		log.warn "Failed to add endpoint 2 ($desc) as Z-Wave Binary Switch Endpoint - $e"
 	}
 	configure()
 }

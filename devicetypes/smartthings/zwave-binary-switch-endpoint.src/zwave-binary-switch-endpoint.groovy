@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Binary Switch Endpoint", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid:"generic-switch") {
+	definition(name: "Z-Wave Binary Switch Endpoint", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Refresh"
