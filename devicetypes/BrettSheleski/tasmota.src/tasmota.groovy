@@ -288,7 +288,7 @@ def getGpioDevices(gpios){
     for (e in gpios){
         gpio = "${e.key}".substring(4).toInteger(); // "GPIOXX" --> XX
 
-        switch(gpios[key]){
+        switch(e.value){
 
             case "17 (Relay1)":
             case "25 (Relay1i)":
@@ -331,7 +331,7 @@ def getGpioDevices(gpios){
                 break;
             
             
-            case "0 (None)":
+            
             case "1 (DHT11)":
             case "2 (AM2301)":
             case "3 (SI7021)":
@@ -381,6 +381,10 @@ def getGpioDevices(gpios){
             case "63 (SPI DC)":
             case "64 (BkLight)":
             case "65 (PMS5003)":
+                log.debug "Unsupported device '${e.value}'.  Maybe you want to support it? (see https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/BrettSheleski/tasmota.src)"
+                break;
+
+            case "0 (None)":
                 break;
         }
     }
