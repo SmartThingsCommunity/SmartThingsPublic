@@ -122,6 +122,76 @@ See the table below of devices this device handler should work with.
 | Sonoff S31 | | | |
 
 
+## Supported GPIO
+
+|GPIO Device |Status  | Tester(s) | Note   |
+|---|---|---|---|
+| None | | | |
+| DHT11 | | | |
+| AM2301 | | | |
+| SI7021 | | | |
+| DS18x20 | | | |
+| I2C SCL | | | |
+| I2C SDA | | | |
+| WS2812 | | | |
+| IRsend | | | |
+| Switch1 | | | |
+| Switch2 | | | |
+| Switch3 | | | |
+| Switch4 | | | |
+| Button1 | | | |
+| Button2 | | | |
+| Button3 | | | |
+| Button4 | | | |
+| Relay1 | Should Work (Untested)  | | |
+| Relay2 | Should Work (Untested)  | | |
+| Relay3 | Should Work (Untested)  | | |
+| Relay4 | Should Work (Untested)  | | |
+| Relay5 | Should Work (Untested)  | | |
+| Relay6 | Should Work (Untested)  | | |
+| Relay7 | Should Work (Untested) | | |
+| Relay8 | Should Work (Untested)  | | |
+| Relay1i | Should Work (Untested)  | | |
+| Relay2i | Should Work (Untested)  | | |
+| Relay3i | Should Work (Untested)  | | |
+| Relay4i | Should Work (Untested)  | | |
+| Relay5i | Should Work (Untested)  | | |
+| Relay6i | Should Work (Untested)  | | |
+| Relay7i | Should Work (Untested)  | | |
+| Relay8i | Should Work (Untested)  | | |
+| PWM1 | | | |
+| PWM2 | | | |
+| PWM3 | | | |
+| PWM4 | | | |
+| PWM5 | | | |
+| Counter1 | | | |
+| Counter2 | | | |
+| Counter3 | | | |
+| Counter4 | | | |
+| PWM1i | | | |
+| PWM2i | | | |
+| PWM3i | | | |
+| PWM4i | | | |
+| PWM5i | | | |
+| IRrecv | | | |
+| Led1 | | | |
+| Led2 | | | |
+| Led3 | | | |
+| Led4 | | | |
+| Led1i | | | |
+| Led2i | | | |
+| Led3i | | | |
+| Led4i | | | |
+| MHZ Tx | | | |
+| MHZ Rx | | | |
+| PZEM Tx | | | |
+| PZEM Rx | | | |
+| SAir Tx | | | |
+| SAir Rx | | | |
+| SPI CS | | | |
+| SPI DC | | | |
+| BkLight | | | |
+| PMS5003 | | | |
 
 
 # Future
