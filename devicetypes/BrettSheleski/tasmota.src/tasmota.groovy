@@ -133,93 +133,12 @@ def spawnChildDevices(){
     if (state.module && state.gpio){
         log.debug "GPIO: ${state.gpio}"
         log.debug "Module: ${state.module}"
-
-        def devices = [:];
-
-        def parentId = device.deviceNetworkId;
-
+        
         def moduleId = state.module.split()[0].toInteger();
-        def thisLabel = device.label ?: device.name;
+        
+        def devices = getModuleDevices(moduleId) << getGpioDevices(state.gpio);
 
-        log.debug "PARENT LABEL : $thisLabel"
-
-        switch (moduleId){
-
-            case 1: // Sonoff Basic
-
-            // the next batch are mostly guesses if they work.  
-            //  I'm assuming they will provide basic functionality until more specific implementations are done
-            case 2: // Sonoff RF
-            case 3: // Sonoff SV
-            case 4: // Sonoff TH
-            case 6: // Sonoff Pow
-            case 8: // S20 Socket
-            case 9: // Slampher
-            case 10: // Sonoff Touch
-            case 11: // Sonoff LED
-            case 12: // 1 Channel
-            case 21: // Sonoff SC
-            case 22: // Sonoff BN-SZ
-            case 26: // Sonoff B1
-            case 28: // Sonoff T1 1CH
-            case 41: // Sonoff S31
-                devices[parentId + '-Power'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch", options : [powerChannel : 1]];
-                break;
-
-            case 5: // Sonoff Dual
-            case 19: // Sonoff Dev
-            case 39: // Sonoff Dual R2
-            case 29: // Sonoff T1 2CH
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 1", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 2", options : [powerChannel : 2]]
-                break;
-            
-            case 7: // Sonoff 4CH
-            case 13: // 4 Channel
-            
-            case 23: // Sonoff 4CH Pro
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 1", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 2", options : [powerChannel : 2]]
-                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 3", options : [powerChannel : 3]]
-                devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 4", options : [powerChannel : 4]]
-                break;
-
-            case 30: // Sonoff T1 3CH
-                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 1", options : [powerChannel : 1]]
-                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 2", options : [powerChannel : 2]]
-                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 3", options : [powerChannel : 3]]
-                break;
-
-            case 25: // Sonoff Bridge
-
-                for ( i in 1..16 )
-                {
-                    devices[parentId + "-RF-Key${i}"] = [namespace : "BrettSheleski", type: "Tasmota-RF-Bridge Button", label : "${thisLabel} - Button ${i}", options : [keyNumber : i]]
-                }
-                break;
-
-            case 14: // Motor C/AC
-            case 15: // ElectroDragon
-            case 16: // EXS Relay
-            case 17: // WiOn
-            case 18: // Generic (eg: Wemos D1 Mini)
-            case 20: // H801
-            case 24: // Huafan SS
-            case 27: // AiLight
-            case 31: // Supla Espablo
-            case 32: // Witty Cloud
-            case 33: // Yunshan Relay
-            case 34: // MagicHome
-            case 35: // Luani HVIO
-            case 36: // KMC 70011
-            case 37: // Arilux LC01
-            case 38: // Arilux LC11
-            case 40: // Arilux LC06
-            
-            default:
-                log.debug "Unknown Module ${state.module}"
-                break;
-        }
+        
 
         def existingDevices = getChildDevices();
         def deviceConfig = null;
@@ -245,6 +164,8 @@ def spawnChildDevices(){
             }
         }
 
+        log.debug "DEVICES TO SPAWN: ${devices}"
+
         def theHubId = location.hubs[0].id
         def label = null;
         def properties = [:];
@@ -266,6 +187,205 @@ def spawnChildDevices(){
         }
 
     }
+}
+
+def getModuleDevices(moduleId){
+    def devices = [:];
+    
+    def thisLabel = device.label ?: device.name;
+    def parentId = device.deviceNetworkId;
+
+    log.debug "PARENT LABEL : $thisLabel"
+
+    switch (moduleId){
+
+        case 1: // Sonoff Basic
+
+        // the next batch are mostly guesses if they work.  
+        //  I'm assuming they will provide basic functionality until more specific implementations are done
+        case 2: // Sonoff RF
+        case 3: // Sonoff SV
+        case 4: // Sonoff TH
+        case 6: // Sonoff Pow
+        case 8: // S20 Socket
+        case 9: // Slampher
+        case 10: // Sonoff Touch
+        case 11: // Sonoff LED
+        case 12: // 1 Channel
+        case 21: // Sonoff SC
+        case 22: // Sonoff BN-SZ
+        case 26: // Sonoff B1
+        case 28: // Sonoff T1 1CH
+        case 41: // Sonoff S31
+            devices[parentId + '-Power'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch", options : [powerChannel : 1]];
+            break;
+
+        case 5: // Sonoff Dual
+        case 19: // Sonoff Dev
+        case 39: // Sonoff Dual R2
+        case 29: // Sonoff T1 2CH
+            devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 1", options : [powerChannel : 1]]
+            devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 2", options : [powerChannel : 2]]
+            break;
+        
+        case 7: // Sonoff 4CH
+        case 13: // 4 Channel
+        case 23: // Sonoff 4CH Pro
+            devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 1", options : [powerChannel : 1]]
+            devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 2", options : [powerChannel : 2]]
+            devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 3", options : [powerChannel : 3]]
+            devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 4", options : [powerChannel : 4]]
+            break;
+
+        case 30: // Sonoff T1 3CH
+            devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 1", options : [powerChannel : 1]]
+            devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 2", options : [powerChannel : 2]]
+            devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 3", options : [powerChannel : 3]]
+            break;
+
+        case 25: // Sonoff Bridge
+            for ( i in 1..16 )
+            {
+                devices[parentId + "-RF-Key${i}"] = [namespace : "BrettSheleski", type: "Tasmota-RF-Bridge Button", label : "${thisLabel} - Button ${i}", options : [keyNumber : i]]
+            }
+            break;
+
+        case 14: // Motor C/AC
+        case 15: // ElectroDragon
+        case 16: // EXS Relay
+        case 17: // WiOn
+        case 18: // Generic (eg: Wemos D1 Mini)
+        case 20: // H801
+        case 24: // Huafan SS
+        case 27: // AiLight
+        case 31: // Supla Espablo
+        case 32: // Witty Cloud
+        case 33: // Yunshan Relay
+        case 34: // MagicHome
+        case 35: // Luani HVIO
+        case 36: // KMC 70011
+        case 37: // Arilux LC01
+        case 38: // Arilux LC11
+        case 40: // Arilux LC06
+        
+        default:
+            log.debug "Unknown Module ${state.module}"
+            break;
+    }
+
+    return devices;
+}
+
+def getGpioDevices(gpios){
+    def devices = [:];
+    // eg: gpios = {"GPIO1":"0 (None)","GPIO3":"0 (None)","GPIO4":"0 (None)","GPIO14":"9 (Switch1)"}
+    def gpio;
+
+
+    def thisLabel = device.label ?: device.name;
+    def parentId = device.deviceNetworkId;
+
+    for (e in gpios){
+        gpio = "${e.key}".substring(4).toInteger(); // "GPIOXX" --> XX
+
+        switch(gpios[key]){
+
+            case "17 (Relay1)":
+            case "25 (Relay1i)":
+                devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 1", options : [powerChannel : 1, gpio : gpio]]
+                break;      
+
+            case "18 (Relay2)":
+            case "26 (Relay2i)":
+                devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 2", options : [powerChannel : 2, gpio : gpio]]
+                break;
+
+            case "19 (Relay3)":
+            case "27 (Relay3i)":
+                devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 3", options : [powerChannel : 3, gpio : gpio]]
+                break;
+
+            case "20 (Relay4)":
+            case "28 (Relay4i)":
+                devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 4", options : [powerChannel : 4, gpio : gpio]]
+                break;
+
+            case "21 (Relay5)":
+            case "29 (Relay5i)":
+                devices[parentId + '-Power-ch5'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 5", options : [powerChannel : 5, gpio : gpio]]
+                break;
+
+            case "22 (Relay6)":
+            case "30 (Relay6i)":
+                devices[parentId + '-Power-ch6'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 6", options : [powerChannel : 6, gpio : gpio]]
+                break;
+
+            case "23 (Relay7)":
+            case "31 (Relay7i)":
+                devices[parentId + '-Power-ch7'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 7", options : [powerChannel : 7, gpio : gpio]]
+                break;
+
+            case "24 (Relay8)":
+            case "32 (Relay8i)":
+                devices[parentId + '-Power-ch8'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 8", options : [powerChannel : 8, gpio : gpio]]
+                break;
+            
+            
+            case "0 (None)":
+            case "1 (DHT11)":
+            case "2 (AM2301)":
+            case "3 (SI7021)":
+            case "4 (DS18x20)":
+            case "5 (I2C SCL)":
+            case "6 (I2C SDA)":
+            case "7 (WS2812)":
+            case "8 (IRsend)":
+            case "9 (Switch1)":
+            case "10 (Switch2)":
+            case "11 (Switch3)":
+            case "12 (Switch4)":
+            case "13 (Button1)":
+            case "14 (Button2)":
+            case "15 (Button3)":
+            case "16 (Button4)":
+            case "33 (PWM1)":
+            case "34 (PWM2)":
+            case "35 (PWM3)":
+            case "36 (PWM4)":
+            case "37 (PWM5)":
+            case "38 (Counter1)":
+            case "39 (Counter2)":
+            case "40 (Counter3)":
+            case "41 (Counter4)":
+            case "42 (PWM1i)":
+            case "43 (PWM2i)":
+            case "44 (PWM3i)":
+            case "45 (PWM4i)":
+            case "46 (PWM5i)":
+            case "47 (IRrecv)":
+            case "48 (Led1)":
+            case "49 (Led2)":
+            case "50 (Led3)":
+            case "51 (Led4)":
+            case "52 (Led1i)":
+            case "53 (Led2i)":
+            case "54 (Led3i)":
+            case "55 (Led4i)":
+            case "56 (MHZ Tx)":
+            case "57 (MHZ Rx)":
+            case "58 (PZEM Tx)":
+            case "59 (PZEM Rx)":
+            case "60 (SAir Tx)":
+            case "61 (SAir Rx)":
+            case "62 (SPI CS)":
+            case "63 (SPI DC)":
+            case "64 (BkLight)":
+            case "65 (PMS5003)":
+                break;
+        }
+    }
+
+    return devices;
 }
 
 def poll() {

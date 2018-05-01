@@ -17,13 +17,18 @@ metadata {
 			state "powerChannel", label: 'Channel ${currentValue}', backgroundColor: "#ffffff"
 		}
 
+		valueTile("gpio", "gpio", width: 6, height: 1) {
+			state "gpio", label: 'GPIO ${gpio}', backgroundColor: "#ffffff"
+		}
+
 		main "switch"
-		details(["switch", "powerChannel"])
+		details(["switch", "powerChannel", "gpio"])
 	}
 
 	preferences {
 		section("Main") {
             input(name: "powerChannel", type: "number", title: "Power Channel", description: "", displayDuringSetup: true, required: true)
+			input(name: "gpio", type: "number", title: "GPIO", description: "", displayDuringSetup: false, required: false)
 		}
 	}
 }
@@ -32,6 +37,7 @@ def initializeChild(Map options){
 	log.debug "OPTIONS: $options"
 
 	sendEvent(name : "powerChannel", value: options["powerChannel"]);
+	sendEvent(name : "gpio", value: options["gpio"]);
 }
 
 def on(){
