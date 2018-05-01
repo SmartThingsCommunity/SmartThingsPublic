@@ -26,6 +26,7 @@ metadata {
 		fingerprint mfr: "001D", prod: "3401", model: "0001", deviceJoinName: "Leviton Switch" //Leviton DZ15S
 		fingerprint mfr: "0063", prod: "4F50", model: "3031", deviceJoinName: "GE Plug-in Outdoor Switch"
 		fingerprint mfr: "0063", prod: "4F50", model: "3032", deviceJoinName: "GE Plug-in Outdoor Switch"
+		fingerprint mfr: "0063", prod: "5250", model: "3130", deviceJoinName: "GE Plug-in Outdoor Switch"
 		fingerprint mfr: "001D", prod: "1D04", model: "0334", deviceJoinName: "Leviton Outlet"
 		fingerprint mfr: "001D", prod: "1C02", model: "0334", deviceJoinName: "Leviton Switch"
 		fingerprint mfr: "001D", prod: "0301", model: "0334", deviceJoinName: "Leviton 15A Switch"
