@@ -64,5 +64,13 @@ def postStatus(){
 }
 
 def initialize(){
+    runEvery1Minute(updateAllDevices);
+}
+
+def updateAllDevices(){
+    log.debug "Updating all devices"
     
+    tasmotaDevices.each{
+        it.refresh();
+    }
 }
