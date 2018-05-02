@@ -37,11 +37,13 @@
  *	0.99: Final release code cleanup and commenting
  *	1.00: Added comments to code for readability
  *  1.10: Added Stop button to stop vertical axis motion
+ *  1.11: Added switch capability for access the device via Google Home
  */
 metadata {
 	definition (name: "Qubino Flush Shutter", namespace: "Goap", author: "Kristjan Jam&scaron;ek") {
 		capability "Actuator"
 		capability "Window Shade"
+		capability "Switch"//Needed for show in google home
 		capability "Switch Level"
 		capability "Power Meter"
 		
@@ -405,6 +407,17 @@ def configure() {
 	assocCmds << zwave.multiChannelV3.multiChannelEndPointGet().format()
 	return delayBetween(assocCmds, 500)
 }
+
+def on() {
+	log.debug "Qubino Flush Shutter: on()"
+	setLevel(99)
+}
+
+def off() {
+	log.debug "Qubino Flush Shutter: off()"
+	setLevel(0)
+}
+
 /**
  * Stop command handler. Issues StopLevelChange when operating as singlechannel device handler.
  *
@@ -779,6 +792,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd){
 	log.debug "Qubino Flush Shutter: firing switch multilevel event"
 	def result = []
+	result << createEvent(name:"switch", value: cmd.value ? "on" : "off", isStateChange: true)
 	result << createEvent(name:"windowShade", value: cmd.value ? "open" : "closed", isStateChange: true)
 	if(cmd.value > 99){
 		result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} is uncalibrated! Please press calibrate!", isStateChange: true)
@@ -798,6 +812,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 	def result = []
 	switch(command.sourceEndPoint){
 		case 1:
+			result << createEvent(name:"switch", value: cmd.value ? "on" : "off", isStateChange: true)
 			result << createEvent(name:"windowShade", value: cmd.value ? "open" : "closed", isStateChange: true)
 			if(cmd.value > 99){
 				result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} is uncalibrated! Please press calibrate!")
@@ -877,10 +892,13 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 */
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
     def currentState = device.currentState("windowShade")
+    def currentSwitch = device.currentState("switch")
     def currentLevel = device.currentState("level")
     def desiredState = cmd.value ? "open" : "closed"
+    def desiredSwitch = cmd.value ? "on" : "off"
 	log.debug "Qubino Flush Shutter: firing basic report event (currentState: ${currentState?.value}, currentLevel: ${currentLevel?.value}, desiredState: $desiredState, desiredLevel: ${cmd.value})"
 	def result = []
+	result << createEvent(name:"switch", value: desiredSwitch, isStateChange: (currentSwitch?.value!=desiredSwitch))
 	result << createEvent(name:"windowShade", value: desiredState, isStateChange: (currentState?.value!=desiredState))
 	if(cmd.value > 99){
 		result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} is uncalibrated! Please press calibrate!", isStateChange: true)
