@@ -2195,7 +2195,7 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 /////////////////////////////////////////////////////////END OF SETPOINTS EVALS/////////////////////////////////////////////////////////
 
                 /////////////////////////////////////////////////////////EVAL OF NEEDS ////////////////////////////////////////////////////////////////
-                def WarmOutside = outsideTemp >= (CSPSet - 1)
+                def WarmOutside = outsideTemp >= (MaxLinearHeat + MinLinearHeat)/2
                 def WarmInside = (CurrTemp >= CSPSet + 1 && WarmOutside) || (CurrTemp >= CSPSet + 1 && TooHumidINSIDE && Active)
                 //log.debug "CurrTemp = $CurrTemp, outsideTemp = $outsideTemp, CSPSet = $CSPSet, WarmOutside = $WarmOutside, WarmInside = $WarmInside"
 
@@ -2412,7 +2412,8 @@ AppMgt = $AppMgt
 """
 
                         if(!BedSensorManagement){ // avoid redundancies if BedSensor's already managing unit. 
-                            if(CurrTemp >= HSPSet || (ShouldCoolWithAC && CurrTemp <= CSPSet)){
+                        // if temp is within desired settings then turn off units
+                            if((CurrTemp >= HSPSet && !ShouldCoolWithAC) || (ShouldCoolWithAC && CurrTemp <= CSPSet)){
                                 if(useAltSensor){ 
 
                                     /// this allows for turn off request whenever a unit is linked to an alternate sensor
@@ -2451,22 +2452,24 @@ AppMgt = $AppMgt
                                 }
                             }
                             def TurnedOffForced = false
-                            if(turnOffWhenReached && (CurrTemp >= HSPSet || (ShouldCoolWithAC && CurrTemp <= CSPSet))){
+                            if(turnOffWhenReached && ((!ShouldCoolWithAC && CurrTemp >= HSPSet) || (ShouldCoolWithAC && CurrTemp <= CSPSet))){
                                 //if user selected this option then cannot eval based on warinside/wamoutside otherwise would
                                 // never turn off units when temp is reached
                                 log.debug "$ThermSet Off at user's request, not evaluating other criteria"
                                 TurnedOffForced = true
                             }
 
-                            // if turnOffWhenReached as soon as temp is below setpoint normal eval will resume
+                            // if turnOffWhenReached, then as soon as temp is no longer within desired temperature normal eval will resume
 
                             // now turn on heat or cool depending on situation and if no turn off request previously occurred 
                             if(ShouldCoolWithAC /*|| !CSPok*/){
-                                // it may happen that old settings get stuck if estimate of shouldcool is false 
+                                // deprecated: it may happen that old settings get stuck if estimate of shouldcool is false 
                                 // so if no override but discrepancy between current csp and what should be
                                 // go on
-                                log.debug """ShouldCoolWithAC EVAL $loopValue AppMgt = $AppMgt
-CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
+                                log.debug """ShouldCoolWithAC EVAL $loopValue for $ThermSet && AppMgt = $AppMgt
+CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}
+TurnedOffForced = $TurnedOffForced
+"""
 
                                 state.LatestThermostatMode = "cool"
                                 if(AppMgt){
@@ -2479,7 +2482,7 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}"""
                                         log.debug "Cooling SetPoint already set to $CSPSet for $ThermSet ($CSPSet == $CurrentCoolingSetPoint)"
                                     }                   
                                     if(ShouldCoolWithAC && ThermState != "cool" && !TurnedOffForced){  
-                                        // ShouldCoolWithAC has to be rechecked here otherwise !CSPok might trigger heat while no need
+                                        // ShouldCoolWithAC has to be rechecked here otherwise !CSPok might trigger cool while it is not needed
                                         log.debug "$ThermSet set to cool"
                                         ThermSet.setThermostatMode("cool") 
                                     }
