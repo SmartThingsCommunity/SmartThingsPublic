@@ -257,6 +257,15 @@ void childRefresh(String dni) {
     sendHubCommand(cmds)
 }
 
+void childReset(String dni) {
+    logging("childReset($dni)", 1)
+	def cmds = []
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterReset(), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 0), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 2), channelNumber(dni))))
+	sendHubCommand(cmds, 1000)
+}
+
 def poll() {
     logging("poll()", 1)
     commands([
