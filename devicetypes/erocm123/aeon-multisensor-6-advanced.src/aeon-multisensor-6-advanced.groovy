@@ -57,9 +57,9 @@
 	simulator {
 	}
 	tiles (scale: 2) {
-		multiAttributeTile(name:"main", type:"generic", width:6, height:4) {
+		multiAttributeTile(name:"temperature", type:"generic", width:6, height:4) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-            	attributeState "temperature",label:'${currentValue}°', backgroundColors:[
+            	attributeState "temperature", label:'${currentValue}°', icon:"st.motion.motion.inactive", backgroundColors:[
                 	[value: 31, color: "#153591"],
                     [value: 44, color: "#1e9cbb"],
                     [value: 59, color: "#90d2a7"],
@@ -79,10 +79,10 @@
 		}
 
 		valueTile("humidity","device.humidity", inactiveLabel: false, width: 2, height: 2) {
-           	state "humidity",label:'RH ${currentValue} %'
+           	state "humidity",label:'${currentValue} % RH'
 		}
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
-           state "luminosity", label:'${currentValue} lux', unit:"lux", 
+           state "luminosity", label:'${currentValue} LUX', unit:"lux", 
                 backgroundColors:[
                 	[value: 0, color: "#000000"],
                     [value: 1, color: "#060053"],
@@ -134,10 +134,10 @@
 		}
         
 		main([
-        	"main", "motion"
+        	"temperature", "motion"
             ])
 		details([
-        	"main",
+        	"temperature",
             "humidity","illuminance","ultravioletIndex",
             "motion","tamper","batteryTile", 
             "refresh", "configure", "statusText2", 
@@ -175,7 +175,30 @@ def parse(String description)
         break
 	}
     
-    updateStatus()
+    if(state.batteryRuntimeStart != null){
+        sendEvent(name:"batteryRuntime", value:getBatteryRuntime(), displayed:false)
+        if (device.currentValue('currentFirmware') != null){
+            sendEvent(name:"statusText2", value: "Firmware: v${device.currentValue('currentFirmware')} - Battery: ${getBatteryRuntime()} Double tap to reset", displayed:false)
+        } else {
+            sendEvent(name:"statusText2", value: "Battery: ${getBatteryRuntime()} Double tap to reset", displayed:false)
+        }
+    } else {
+        state.batteryRuntimeStart = now()
+    }
+    
+    def statusTextmsg = ""
+    result.each {
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "humidity") {
+            statusTextmsg = "${it.value}% RH - ${device.currentValue('illuminance')? device.currentValue('illuminance') : "0%"} LUX - ${device.currentValue('ultravioletIndex')? device.currentValue('ultravioletIndex') : "0"} UV"
+        }
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "illuminance") {
+            statusTextmsg = "${device.currentValue('humidity')? device.currentValue('humidity') : "0"}% RH - ${it.value} LUX - ${device.currentValue('ultravioletIndex')? device.currentValue('ultravioletIndex') : "0"} UV"
+        }
+        if ((it instanceof Map) == true && it.find{ it.key == "name" }?.value == "ultravioletIndex") {
+            statusTextmsg = "${device.currentValue('humidity')? device.currentValue('humidity') : "0"}% RH - ${device.currentValue('illuminance')? device.currentValue('illuminance') : "0"} LUX - ${it.value} UV"
+        }
+    }
+    if (statusTextmsg != "") sendEvent(name:"statusText", value:statusTextmsg, displayed:false)
 
 	if ( result[0] != null ) { result }
 }
@@ -344,10 +367,13 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-	def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}${location.getTemperatureScale() == 'C' ? 'EU':''}"
-    state.needfwUpdate = "false"
-    updateDataValue("firmware", firmware)
-    createEvent(name: "currentFirmware", value: firmware)
+    logging(cmd)
+    if(cmd.applicationVersion && cmd.applicationSubVersion) {
+	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}${location.getTemperatureScale() == 'C' ? 'EU':''}"
+        state.needfwUpdate = "false"
+        updateDataValue("firmware", firmware)
+        createEvent(name: "currentFirmware", value: firmware)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -438,7 +464,7 @@ def updated()
     if (device.currentValue("illuminance") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
     if (device.currentValue("ultravioletIndex") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
         
-    updateStatus()
+    //updateStatus()
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
@@ -833,7 +859,7 @@ def resetBatteryRuntime() {
     if (state.lastReset != null && now() - state.lastReset < 5000) {
         logging("Reset Double Press")
         state.batteryRuntimeStart = now()
-        updateStatus()
+        //updateStatus()
     }
     state.lastReset = now()
 }

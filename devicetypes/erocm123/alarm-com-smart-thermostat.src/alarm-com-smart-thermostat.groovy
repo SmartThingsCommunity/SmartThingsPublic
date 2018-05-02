@@ -59,10 +59,27 @@ metadata {
 	tiles(scale: 2) {
          multiAttributeTile(name:"temperature", type:"thermostat", width:6, height:4) {
   			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-    				attributeState("default", label:'${currentValue}°')
+    				attributeState("temperature", label:'${currentValue}°', icon: "st.alarm.temperature.normal", backgroundColors:[
+							// Celsius
+							[value: 0, color: "#153591"],
+							[value: 7, color: "#1e9cbb"],
+							[value: 15, color: "#90d2a7"],
+							[value: 23, color: "#44b621"],
+							[value: 28, color: "#f1d801"],
+							[value: 35, color: "#d04e00"],
+							[value: 37, color: "#bc2323"],
+							// Fahrenheit
+							[value: 40, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+					])
   			}
   			tileAttribute("device.temperature", key: "VALUE_CONTROL") {
-    				attributeState("default", action: "setTemperature")
+    				attributeState("default", action: "setTemperature", label: "")
   			}
   			tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
     				attributeState("default", label:'${currentValue}%', unit:"%")
