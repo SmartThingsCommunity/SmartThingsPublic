@@ -4,13 +4,12 @@
  *  Copyright 2018 Michael Struck
  *  Precision code additions and other UI-Barry Burke
  * 
- *  Version 3.0.2 3/24/18
+ *  Version 3.0.1 1/24/18
  *
  *  Version 2.0.0 (6/2/17) AdamV Release: Updated Region so it works in UK & US
  *  Version 3.0.0 (8/1/17) Re-engineered release by Michael Struck. Added C/F temperature units, cleaned up code and interface, adding a repoll timer, removed username
  *  used the standard 'carbonDioxide' variable instead of CO2, GPIstate instead of GPIState (for the activity log), set colors for Foobot recommended levels of attributes.
  *  Version 3.0.1 (1/24/18) Precision code additions and other UI-Barry Burke(@storageanarchy)
- *  Version 3.0.2 (3/24/18) Fixed issues with output in API changing
  * 
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -128,7 +127,7 @@ metadata {
 	}
 }
 private getAPIKey() {
-    return "Insert API key here"
+    return "ENTER YOUR API KEY HERE (KEEP THE QUOTATION MARKS)"
 }
 def parse(String description) {
 	log.debug "Parsing '${description}'"
@@ -165,20 +164,20 @@ def poll() {
                     log.debug "Particle: ${parts}"
                     sendEvent(name: "particle", value: sprintf("%.2f",parts), unit: "µg/m³ PM2.5", isStateChange: true)
                      
-                    def tmp = resp.data.datapoints[-1][4].toDouble()
+                    def tmp = resp.data.datapoints[-1][2].toDouble()
                     def temp = ((CF == "°F") ? celsiusToFahrenheit(tmp) : tmp ).toDouble().round(1)
                     log.debug "Temperature: ${temp}${CF}"
                     sendEvent(name: "temperature", value: temp as Double, unit: "°", isStateChange: true)
                     
-                    def hum = resp.data.datapoints[-1][5].toDouble().round(0)
+                    def hum = resp.data.datapoints[-1][3].toDouble().round(0)
                     log.debug "Humidity: ${hum}%"
                     sendEvent(name: "humidity", value: hum, unit: "%", isStateChange: true)
                     
-                    log.debug "Carbon dioxide: ${resp.data.datapoints[-1][3]}"
-                    sendEvent(name: "carbonDioxide", value: resp.data.datapoints[-1][3] as Integer, unit: "ppm", isStateChange: true)
+                    log.debug "Carbon dioxide: ${resp.data.datapoints[-1][4]}"
+                    sendEvent(name: "carbonDioxide", value: resp.data.datapoints[-1][4] as Integer, unit: "ppm", isStateChange: true)
                     
-                    log.debug "Volatile Organic Compounds: ${resp.data.datapoints[-1][2]}"
-                    sendEvent(name: "voc", value: resp.data.datapoints[-1][2] as Integer, unit: "ppb", isStateChange: true)
+                    log.debug "Volatile Organic Compounds: ${resp.data.datapoints[-1][5]}"
+                    sendEvent(name: "voc", value: resp.data.datapoints[-1][5] as Integer, unit: "ppb", isStateChange: true)
                     
                     def allpollu = resp.data.datapoints[-1][6].toDouble().round(0)
                     log.debug "Pollution: ${allpollu}"
