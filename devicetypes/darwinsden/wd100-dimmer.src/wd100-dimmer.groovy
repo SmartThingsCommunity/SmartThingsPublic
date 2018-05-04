@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.04 (05/04/2018) - Remove call to set switch to off when held down
  *  1.03 (11/14/2017) - Turn off firmware event log, correct physical button setting for some presses, remove 100ms delay in instant status
  *  1.02 (06/25/2017) - Pulled in @stephack's changes to include button 7/8 events when triggered remotely
  *  1.01 (01/16/2017) - Corrected advertised number of buttons (8)
@@ -363,7 +364,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
               case 2:
                   // Hold
                   result += createEvent(holdDownResponse("physical"))
-                  result += createEvent([name: "switch", value: "off", type: "physical"]) 
+                  //result += createEvent([name: "switch", value: "off", type: "physical"]) 
                   break
               case 3: 
                   // 2 Times
