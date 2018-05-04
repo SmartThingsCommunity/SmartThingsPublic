@@ -50,7 +50,7 @@ metadata {
 
 def installed(){
 	log.debug "installed() ....."
-	sendEvent(name: "checkInterval", value: 500, displayed: false, data: [protocol: "zwave", hubHardwareId: parent.hubID])
+	sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: parent.hubID])
 	response(refresh())
 }
 

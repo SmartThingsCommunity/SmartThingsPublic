@@ -118,7 +118,7 @@ def childRefresh() {
 	def cmds = []
 	cmds << response(encap(zwave.meterV3.meterGet(scale: 0), 2))
 	cmds << response(encap(zwave.meterV3.meterGet(scale: 2), 2))
-	cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet()), 2)
+	cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(), 2))
 	sendHubCommand(cmds,1000)
 }
 
