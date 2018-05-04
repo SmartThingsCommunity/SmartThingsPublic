@@ -37,7 +37,8 @@ metadata {
 			command "off$n"
 		}
 
-        fingerprint mfr: "0131", prod: "0002", model: "0002"
+        fingerprint mfr: "0131", prod: "0002", model: "0002", deviceJoinName: "Zipato Bulb"
+              
         fingerprint deviceId: "0x1101", inClusters: "0x5E,0x26,0x85,0x72,0x33,0x70,0x86,0x73,0x59,0x5A,0x7A"
 
 	}
@@ -123,6 +124,7 @@ metadata {
 def updated()
 {
 	state.enableDebugging = settings.enableDebugging
+    state.sec = zwaveInfo.zw.endsWith("s")? 1:0
     logging("updated() is being called")
     sendEvent(name: "checkInterval", value: 2 * 6 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     state.needfwUpdate = ""
@@ -270,7 +272,7 @@ def refresh() {
 	commands([
 		zwave.basicV1.basicGet(),
         zwave.configurationV1.configurationGet(parameterNumber: 4),
-	])
+	]) 
 }
 
 def ping() {
@@ -367,15 +369,22 @@ def setColor(value) {
 		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
 		result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
 	} 
- 	//result << zwave.basicV1.basicSet(value: 0xFF)
-    result << zwave.basicV1.basicGet()
+    
+    def cmds = commands(result)
+
+    if (device.currentValue("switch") != "on") {
+        log.debug "Bulb is off. Turning on"
+        cmds = [command(zwave.basicV1.basicSet(value: 0xFF))] + cmds + [command(zwave.basicV1.basicGet())]
+    }
+
 	if(value.hue) sendEvent(name: "hue", value: value.hue)
 	if(value.hex) sendEvent(name: "color", value: value.hex)
 	if(value.switch) sendEvent(name: "switch", value: value.switch)
 	if(value.saturation) sendEvent(name: "saturation", value: value.saturation)
  
     toggleTiles("all")
-	commands(result)
+
+	return cmds
 }
  
 def setColorTemperature(percent) {
