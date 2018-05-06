@@ -76,9 +76,10 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"shade", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.windowShade", key: "PRIMARY_CONTROL") {
-				attributeState "opened", label:'${name}', action:"close", icon:"st.Home.home9", backgroundColor:"#79b821", nextState:"closing"
+				attributeState "open", label:'${name}', action:"close", icon:"st.Home.home9", backgroundColor:"#79b821", nextState:"closing"
+				attributeState "partially open", label:'${name}', action:"open", icon:"st.Home.home9", backgroundColor:"#b77600", nextState:"opening"
 				attributeState "closed", label:'${name}', action:"open", icon:"st.Home.home9", backgroundColor:"#ffffff", nextState:"opening"
-				attributeState "opening", label:'${name}', action:"close", icon:"st.Home.home9", backgroundColor:"#79b821", nextState:"opened"
+				attributeState "opening", label:'${name}', action:"close", icon:"st.Home.home9", backgroundColor:"#79b821", nextState:"open"
 				attributeState "closing", label:'${name}', action:"open", icon:"st.Home.home9", backgroundColor:"#ffffff", nextState:"closed"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -410,12 +411,12 @@ def configure() {
 
 def on() {
 	log.debug "Qubino Flush Shutter: on()"
-	setLevel(99)
+	open()
 }
 
 def off() {
 	log.debug "Qubino Flush Shutter: off()"
-	setLevel(0)
+	close()
 }
 
 /**
@@ -812,13 +813,23 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 	def result = []
 	switch(command.sourceEndPoint){
 		case 1:
-			result << createEvent(name:"switch", value: cmd.value ? "on" : "off", isStateChange: true)
-			result << createEvent(name:"windowShade", value: cmd.value ? "open" : "closed", isStateChange: true)
-			if(cmd.value > 99){
-				result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} is uncalibrated! Please press calibrate!")
-			}else{
-				result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} moved to ${cmd.value==99 ? 100 : cmd.value}%", isStateChange: true)
-			}
+            def currentState = device.currentState("windowShade")
+            def currentSwitch = device.currentState("switch")
+            def currentLevel = device.currentState("level")
+            def desiredState = "closed"
+            if (cmd.value<99 && cmd.value>0) {
+                desiredState = "partially open"
+            } else if (cmd.value >= 99) {
+                desiredState = "open"
+            }
+            def desiredSwitch = cmd.value ? "on" : "off"
+            result << createEvent(name:"switch", value: desiredSwitch, isStateChange: (currentSwitch?.value!=desiredSwitch))
+            result << createEvent(name:"windowShade", value: desiredState, isStateChange: (currentState?.value!=desiredState))
+            if(cmd.value > 99){
+                result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} is uncalibrated! Please press calibrate!", isStateChange: true)
+            }else{
+                result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} moved to ${cmd.value==99 ? 100 : cmd.value}%", isStateChange: (currentLevel?.value.toInteger()!=cmd.value.toInteger()))
+            }
 		break;
 		case 2:
 			log.debug "Received command from EP2"
@@ -894,17 +905,22 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
     def currentState = device.currentState("windowShade")
     def currentSwitch = device.currentState("switch")
     def currentLevel = device.currentState("level")
-    def desiredState = cmd.value ? "open" : "closed"
+    def desiredState = "closed"
+    if (cmd.value<99 && cmd.value>0) {
+    	desiredState = "partially open"
+    } else if (cmd.value >= 99) {
+    	desiredState = "open"
+    }
     def desiredSwitch = cmd.value ? "on" : "off"
 	log.debug "Qubino Flush Shutter: firing basic report event (currentState: ${currentState?.value}, currentLevel: ${currentLevel?.value}, desiredState: $desiredState, desiredLevel: ${cmd.value})"
 	def result = []
-	result << createEvent(name:"switch", value: desiredSwitch, isStateChange: (currentSwitch?.value!=desiredSwitch))
-	result << createEvent(name:"windowShade", value: desiredState, isStateChange: (currentState?.value!=desiredState))
-	if(cmd.value > 99){
-		result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} is uncalibrated! Please press calibrate!", isStateChange: true)
-	}else{
-		result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} moved to ${cmd.value==99 ? 100 : cmd.value}%", isStateChange: (currentLevel?.value.toInteger()!=cmd.value.toInteger()))
-	}
+    result << createEvent(name:"switch", value: desiredSwitch, isStateChange: (currentSwitch?.value!=desiredSwitch))
+    result << createEvent(name:"windowShade", value: desiredState, isStateChange: (currentState?.value!=desiredState))
+    if(cmd.value > 99){
+        result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} is uncalibrated! Please press calibrate!", isStateChange: true)
+    }else{
+        result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} moved to ${cmd.value==99 ? 100 : cmd.value}%", isStateChange: (currentLevel?.value.toInteger()!=cmd.value.toInteger()))
+    }
 	return result
 }
 /**
