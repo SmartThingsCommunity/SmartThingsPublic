@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.05 (05/06/2018) - Request dim level on hold to improve dim level status. Removed call to set switch status off on hold release.
  *  1.04 (05/04/2018) - Remove call to set switch to off when held down
  *  1.03 (11/14/2017) - Turn off firmware event log, correct physical button setting for some presses, remove 100ms delay in instant status
  *  1.02 (06/25/2017) - Pulled in @stephack's changes to include button 7/8 events when triggered remotely
@@ -324,12 +325,12 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   } 
                   break
               case 1:
-                  result=createEvent([name: "switch", value: "on", type: "physical"])
+                  //Hold release? (inconsistent) 
                   break
               case 2:
                   // Hold
                   result += createEvent(holdUpResponse("physical"))  
-                  result += createEvent([name: "switch", value: "on", type: "physical"])    
+                  result += response(["delay 5000", zwave.switchMultilevelV1.switchMultilevelGet().format()])
                   break
               case 3: 
                   // 2 Times
@@ -359,12 +360,12 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
                   result += createEvent([name: "switch", value: "off", type: "physical"]) 
                   break
               case 1:
-                  result=createEvent([name: "switch", value: "off", type: "physical"])
+                  //Hold release? (inconsistent) 
                   break
               case 2:
                   // Hold
                   result += createEvent(holdDownResponse("physical"))
-                  //result += createEvent([name: "switch", value: "off", type: "physical"]) 
+                  result += response(["delay 5000", zwave.switchMultilevelV1.switchMultilevelGet().format()])
                   break
               case 3: 
                   // 2 Times
