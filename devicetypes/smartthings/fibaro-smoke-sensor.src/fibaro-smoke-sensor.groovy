@@ -364,6 +364,7 @@ def configure() {
     //making the default state as "clear"
     sendEvent(name: "smoke", value: "clear", displayed: false)
 // This sensor joins as a secure device if you tripple-click the button to include it
+    setSecured()
     log.debug "configure() >> isSecured() : ${isSecured()}"
     if (!isSecured()) {
         log.debug "Fibaro smoke sensor not sending configure until secure"
