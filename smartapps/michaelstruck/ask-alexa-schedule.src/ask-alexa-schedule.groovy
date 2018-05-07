@@ -1,8 +1,8 @@
 /**
- *  Ask Alexa Schedules Extension
+ *  Ask Alexa Schedule Extension
  *
  *  Copyright © 2018 Michael Struck
- *  Version 1.0.4 3/11/18
+ *  Version 1.0.4a 3/11/18
  * 
  *  Version 1.0.0 (6/1/17) - Initial release
  *  Version 1.0.1 (6/8/17) - Fixed custom schedule issue. Added %age% variable for birthdays/anniversaries
