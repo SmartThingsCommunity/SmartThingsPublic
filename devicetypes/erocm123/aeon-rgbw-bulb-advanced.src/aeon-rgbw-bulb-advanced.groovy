@@ -13,7 +13,9 @@
  *  Aeon RGBW Bulb (Advanced)
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2016-10-25
+ *  Date: 2018-05-02
+ *  
+ *  2018-05-02: huesatToRGB Changed method provided by daved314
  */
  
 metadata {
@@ -461,21 +463,28 @@ def rgbToHSV(red, green, blue) {
 	[hue: hue, saturation: saturation, value: max * 100]
 }
  
+// huesatToRGB Changed method provided by daved314
 def huesatToRGB(float hue, float sat) {
-	while(hue >= 100) hue -= 100
-	int h = (int)(hue / 100 * 6)
-	float f = hue / 100 * 6 - h
-	int p = Math.round(255 * (1 - (sat / 100)))
-	int q = Math.round(255 * (1 - (sat / 100) * f))
-	int t = Math.round(255 * (1 - (sat / 100) * (1 - f)))
-	switch (h) {
-		case 0: return [255, t, p]
-		case 1: return [q, 255, p]
-		case 2: return [p, 255, t]
-		case 3: return [p, q, 255]
-		case 4: return [t, p, 255]
-		case 5: return [255, p, q]
-	}
+	if (hue <= 100) {
+		hue = hue * 3.6
+    }
+    sat = sat / 100
+    float v = 1.0
+    float c = v * sat
+    float x = c * (1 - Math.abs(((hue/60)%2) - 1))
+    float m = v - c
+    int mod_h = (int)(hue / 60)
+    int cm = Math.round((c+m) * 255)
+    int xm = Math.round((x+m) * 255)
+    int zm = Math.round((0+m) * 255)
+    switch(mod_h) {
+    	case 0: return [cm, xm, zm]
+       	case 1: return [xm, cm, zm]
+        case 2: return [zm, cm, xm]
+        case 3: return [zm, xm, cm]
+        case 4: return [xm, zm, cm]
+        case 5: return [cm, zm, xm]
+	}   	
 }
 
 def on1() {

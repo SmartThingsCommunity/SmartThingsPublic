@@ -28,7 +28,7 @@
  *              for adjusting configuration options from other SmartApps. Requires firmware 1.02+.
  *
  *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02+.
- *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src
+ *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/z-waveat
  */
  
 metadata {

@@ -22,7 +22,7 @@
  *              https://github.com/erocm123/SmartThingsPublic/blob/master/devicetypes/erocm123/switch-level-child-device.src
  *       
  *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02+.
- *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src
+ *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/z-waveat
  */
  
 metadata {
@@ -225,6 +225,42 @@ def poll() {
 
 def refresh() {
 	commands(zwave.switchBinaryV1.switchBinaryGet())
+}
+
+void childSetLevel(String dni, value) {
+    def valueaux = value as Integer
+    def level = Math.max(Math.min(valueaux, 99), 0)    
+    def cmds = []
+    switch (channelNumber(dni)) {
+        case 101:
+            cmds << new physicalgraph.device.HubAction(command(zwave.protectionV2.protectionSet(localProtectionState : level > 0 ? 2 : 0, rfProtectionState: 0) ))
+            cmds << new physicalgraph.device.HubAction(command(zwave.protectionV2.protectionGet() ))
+        break
+    }
+	sendHubCommand(cmds, 1000)
+}
+
+void childOn(String dni) {
+    log.debug "childOn($dni)"
+    childSetLevel(dni, 99)
+}
+
+void childOff(String dni) {
+    log.debug "childOff($dni)"
+    childSetLevel(dni, 0)
+}
+
+void childRefresh(String dni) {
+    log.debug "childRefresh($dni)"
+}
+
+def childExists(ep) {
+    def children = childDevices
+    def childDevice = children.find{it.deviceNetworkId.endsWith(ep)}
+    if (childDevice) 
+        return true
+    else
+        return false
 }
 
 private command(physicalgraph.zwave.Command cmd) {

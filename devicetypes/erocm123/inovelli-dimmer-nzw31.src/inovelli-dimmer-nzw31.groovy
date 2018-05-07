@@ -28,7 +28,7 @@
  *              for adjusting configuration options from other SmartApps. Requires firmware 1.02+.
  *
  *  2018-02-26: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02+.
- *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/parent/zwave-association-tool.src
+ *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/z-waveat
  */
  
 metadata {
@@ -334,6 +334,51 @@ def setLevel(value, duration) {
     def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
         commands([zwave.switchMultilevelV2.switchMultilevelSet(value: value < 100 ? value : 99, dimmingDuration: dimmingDuration),
     ])
+}
+
+
+void childOn(String dni) {
+    log.debug "childOn($dni)"
+    childSetLevel(dni, 99)
+}
+
+void childOff(String dni) {
+    log.debug "childOff($dni)"
+    childSetLevel(dni, 0)
+}
+
+void childRefresh(String dni) {
+    log.debug "childRefresh($dni)"
+}
+
+void childSetLevel(String dni, value) {
+    def valueaux = value as Integer
+    def level = Math.max(Math.min(valueaux, 99), 0)    
+    def cmds = []
+    switch (channelNumber(dni)) {
+        case 8:
+            cmds << new physicalgraph.device.HubAction(command(zwave.configurationV1.configurationSet(scaledConfigurationValue: value, parameterNumber: channelNumber(dni), size: 1) ))
+            cmds << new physicalgraph.device.HubAction(command(zwave.configurationV1.configurationGet(parameterNumber: channelNumber(dni) )))
+        break
+        case 9:
+            cmds << new physicalgraph.device.HubAction(command(zwave.configurationV1.configurationSet(scaledConfigurationValue: value, parameterNumber: channelNumber(dni), size: 1) ))
+            cmds << new physicalgraph.device.HubAction(command(zwave.configurationV1.configurationGet(parameterNumber: channelNumber(dni) )))
+        break
+        case 101:
+            cmds << new physicalgraph.device.HubAction(command(zwave.protectionV2.protectionSet(localProtectionState : level > 0 ? 2 : 0, rfProtectionState: 0) ))
+            cmds << new physicalgraph.device.HubAction(command(zwave.protectionV2.protectionGet() ))
+        break
+    }
+	sendHubCommand(cmds, 1000)
+}
+
+def childExists(ep) {
+    def children = childDevices
+    def childDevice = children.find{it.deviceNetworkId.endsWith(ep)}
+    if (childDevice) 
+        return true
+    else
+        return false
 }
 
 def ping() {
