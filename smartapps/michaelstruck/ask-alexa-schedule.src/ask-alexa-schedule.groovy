@@ -8,7 +8,7 @@
  *  Version 1.0.1 (6/8/17) - Fixed custom schedule issue. Added %age% variable for birthdays/anniversaries
  *  Version 1.0.2 (6/15/17) - Added %age% variable for any text field
  *  Version 1.0.3c (7/6/17) - Added code for additional text field variables, keep 'blank' messages from going to the message queue.
- *  Version 1.0.4 (3/11/18) - Updated to 2018 version, modified "remove" button
+ *  Version 1.0.4a (3/11/18) - Updated to 2018 version, modified "remove" button
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -59,7 +59,7 @@ def mainPage() {
             }
             else href "toggleStatus", title: "This schedule: ${schStatus}", description: "Tap to toggle status", image: imageFile
         }
-        section ("Schedule Settings"){ input "schType", "enum", title: "Type Of Schedule", options:schTypes(), required: false, submitOnChange: true }
+        section ("Schedule settings"){ input "schType", "enum", title: "Type Of Schedule", options:schTypes(), required: false, submitOnChange: true }
         if (schType=="single"){
 			section ("One-time event date"){	
             	def imageFile=(checkDate("end").expired || checkDate("end").warning) ?  parent.imgURL()+"caution.png" : null
@@ -909,4 +909,4 @@ def translateMQid(mqIDList){
 //Versions
 private versionInt(){ return 104 }
 private def textAppName() { return "Ask Alexa Schedules" }	
-private def textVersion() { return "Schedules Version: 1.0.4 (03/11/2018)" }
+private def textVersion() { return "Schedules Version: 1.0.4a (03/11/2018)" }
