@@ -260,7 +260,6 @@ log.debug cmd
 	map.name = "battery"
 	map.value = cmd.batteryLevel > 0 ? cmd.batteryLevel.toString() : 1
 	map.unit = "%"
-	map.displayed = false
 	map
 }
 
