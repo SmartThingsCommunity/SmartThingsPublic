@@ -11,11 +11,10 @@ definition(
 )
 
 preferences {
-	page("mainPage", "Main Configuration"){
-		section("Tasmota Devices") {
-			input "tasmotaDevices", "device.tasmota", title: "Devices", required: true, multiple: true
-		}
-	}
+	
+    section("Tasmota Devices") {
+        input "tasmotaDevices", "device.tasmota", title: "Devices", required: true, multiple: true
+    }
 }
 
 mappings {
