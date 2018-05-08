@@ -100,6 +100,7 @@ def configure() {
 def updated() {
     if (!state.lastRan || now() >= state.lastRan + 2000) {
         log.debug "updated()"
+        state.sec = zwaveInfo.zw.endsWith("s")? 1:0
         state.lastRan = now()
         def cmds = initialize()
         response(commands(cmds))
