@@ -45,6 +45,9 @@
  *  - Only on certain days of the week.
  *  - Only when mode is . . .
  *
+ *
+ *  2018-05-09 - Added the ability to disable "Device Delayed" notifications (use only ONLINE / OFFLINE status). Thanks ninjamonkey198206!
+ *
  *  2017-06-08 - Added support for Ask Alexa Queue Support. Also added Ask Alexa options to automatically expire messages after x hours
  *               and overwrite messages that are sent as reminders (to prevent a backlog of reminder alerts).
  *  2017-03-08 - Added an option to use Offline / Online status when available. The new Health Check capability
@@ -167,6 +170,7 @@ def pageSettings() {
                 input "sendPushMessage", "enum", title: "Send a push notification?", metadata: [values: ["Yes", "No"]], required: false, value: "No"
                 input "phoneNumber", "phone", title: "Enter phone number to send text notification.", required: false
             }
+            input "deviceDelayed", "bool", title: "Disable \"Device Delayed\" notifications? (Only use OFFLINE / ONLINE status)", required: false, submitOnChange: false, value: false
             input "deviceOnline", "bool", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
             input "askAlexa", "bool", title: "Send notifications to Ask Alexa?", required: false, submitOnChange: true, value: false
             if (askAlexa) {
@@ -607,7 +611,7 @@ def doCheck() {
                 def check = ""
                 def notifications = []
 
-                if (delaylistCheckMapDiff) {
+                if (deviceDelayed != true && delaylistCheckMapDiff) {
                     def notificationDelaylist = ""
                     def newMap = []
                     delaylistCheckMapDiff.each {
@@ -934,7 +938,7 @@ def resend() {
         def check = ""
         def notifications = []
 
-        if (delaylistMapDiff) {
+        if (deviceDelayed != true && delaylistMapDiff) {
             def notificationDelaylist = ""
             delaylistMapDiff.each {
                 notificationDelaylist += "${it.time} - ${it.name}\n"
