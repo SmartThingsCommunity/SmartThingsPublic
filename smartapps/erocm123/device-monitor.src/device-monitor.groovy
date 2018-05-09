@@ -171,6 +171,7 @@ def pageSettings() {
                 input "phoneNumber", "phone", title: "Enter phone number to send text notification.", required: false
             }
             input "deviceDelayed", "bool", title: "Disable \"Device Delayed\" notifications? (Only use OFFLINE / ONLINE status)", required: false, submitOnChange: false, value: false
+            input "deviceNoEvents", "bool", title: "Disable \"Device Not Reporting\" notifications? (Only use OFFLINE / ONLINE status)", required: false, submitOnChange: false, value: false
             input "deviceOnline", "bool", title: "Send a notification if a device comes back online?", required: false, submitOnChange: false, value: false
             input "askAlexa", "bool", title: "Send notifications to Ask Alexa?", required: false, submitOnChange: true, value: false
             if (askAlexa) {
@@ -640,7 +641,7 @@ def doCheck() {
                     
                     if (notificationOnlinelist != "" ) notifications += ["Devices Are Now Online:\n${notificationOnlinelist.trim()}"]
                 }
-                if (badlistMapDiff) {
+                if (deviceNoEvents != true && badlistMapDiff) {
                     def notificationBadlist = ""
                     badlistMapDiff.each {
                         notificationBadlist += "${it.name}\n"
@@ -945,7 +946,7 @@ def resend() {
             }
             notifications += ["Reminder - Devices Delayed:\n${notificationDelaylist.trim()}"]
         }
-        if (badlistMapDiff) {
+        if (deviceNoEvents != true && badlistMapDiff) {
             def notificationBadlist = ""
             badlistMapDiff.each {
                 notificationBadlist += "${it.name}\n"
