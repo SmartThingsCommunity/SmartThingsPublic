@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.4 (05/10/2018) -  Added contact sensor as capability for use with smart home monitor
  *  1.3 (09/25/2016) -  Added display of firmware version and updated to get battery level on initial installation
  *  1.2 (09/11/2016) -  Added preference option for push-to-break button (vs. default push-to-make) doorbell circuit. Note: enabling
  *                      this setting will also result in a doorbell notification if power is lost to the doorbell transformer.
@@ -36,6 +37,8 @@ metadata {
 		capability "Switch"
         capability "Momentary"
         capability "Button"
+        capability "Contact Sensor"
+		capability "Sensor"
 		capability "Battery"
 		capability "Refresh"
         capability "Configuration"
@@ -134,6 +137,7 @@ def switchOffVerification() {
        state.bellIsRinging = false
        sendEvent(name: "status", value: "off", displayed: false, isStateChange: true)
 	   sendEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
+       sendEvent(name: "contact", value: "closed", displayed: false, isStateChange: true)      
 }
 
 //Battery Level received
@@ -164,6 +168,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	         result += createEvent(name: "switch", value: "on", displayed: false, isStateChange: true)
              result += createEvent(name: "momentary", value: "pushed", displayed: false, isStateChange: true)
              result += createEvent(name: "button", value: "pushed", data: [buttonNumber: "1"], displayed: false, isStateChange: true)
+             result += createEvent(name: "contact", value: "open", displayed: false, isStateChange: true)             
            }
        } else {
            // bell is ringing - signal a button release
@@ -171,6 +176,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
            log.debug("${device.displayName} notification event = $cmd.event triggered switch off")
            result += createEvent(name: "status", value: "off", descriptionText: "Button released", isStateChange: true)
 	       result += createEvent(name: "switch", value: "off", displayed: false, isStateChange: true)
+           result += createEvent(name: "contact", value: "closed", displayed: false, isStateChange: true)             
        } 
        return result
 }
