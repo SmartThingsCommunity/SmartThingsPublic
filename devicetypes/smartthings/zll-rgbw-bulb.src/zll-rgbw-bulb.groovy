@@ -20,7 +20,6 @@ metadata {
         capability "Color Control"
         capability "Color Temperature"
         capability "Configuration"
-        capability "Polling"
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
@@ -146,11 +145,32 @@ def poll() {
 }
 
 def ping() {
+    unschedule()
+    runEvery5Minutes("refreshAttributes")
     refreshAttributes()
+}
+
+def configureHealthCheck() {
+    Integer hcIntervalMinutes = 12
+    if (!hasConfiguredHealthCheck) {
+        log.debug "Configuring Health Check, Reporting"
+        unschedule("healthPoll")
+        runEvery5Minutes("healthPoll")
+        // Device-Watch allows 2 check-in misses from device
+        sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+        hasConfiguredHealthCheck = true
+    }
+}
+
+def healthPoll() {
+	log.debug "healthPoll()"
+	def cmds = refresh()
+	cmds.each { sendHubCommand(new physicalgraph.device.HubAction(it)) }
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
+    configureHealthCheck()
     configureAttributes() + refreshAttributes()
 }
 
@@ -168,11 +188,11 @@ def refreshAttributes() {
 }
 
 def updated() {
-    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    configureHealthCheck()
 }
 
 def installed() {
-    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    configureHealthCheck()
 }
 
 def setColorTemperature(value) {
