@@ -2,13 +2,13 @@
  *  Ask Alexa Rooms/Groups
  *
  *  Copyright © 2018 Michael Struck
- *  Version 1.0.4a 3/9/18
+ *  Version 1.0.4b 3/9/18
  * 
  *  Version 1.0.0 (9/13/17) - Initial release
  *  Version 1.0.1a (9/26/17) - Fixed text area variable issue
  *  Version 1.0.2 (10/31/17) - Added a summary option for switch status outputs
  *  Version 1.0.3 (2/8/18) - Added room occupancy (beacon) capabilties
- *  Version 1.0.4a (3/9/18) - Added Echo indentification, fixed code issues with xParam
+ *  Version 1.0.4b (3/9/18) - Added Echo indentification, fixed code issues with xParam
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -593,7 +593,7 @@ def roomStatus(room){
         if (temp && temp.size() > 1) result += "The average temperature is " + parent.getAverage(temp, "temperature") + " degrees. "
         else if (temp && temp.size() ==1 ) result +="The temperature is ${temp.currentValue("temperature")} degrees. "
         if (humid && humid.size() > 1) result += "The average relative humidity is " + parent.getAverage(humid, "humidity") + "%. "
-        else if (humid && humid.size() ==1 ) result +="The relative humidity is ${temp.currentValue("humidity")}%. "  
+        else if (humid && humid.size() ==1 ) result +="The relative humidity is ${humid.currentValue("humidity")}%. "  
 		if (motion) result += motionReport()
         if (occupy) result += occupyReport()
         if (contact) result +=contactReport()
@@ -780,4 +780,4 @@ def getDesc(type){
 //Version/Copyright/Information/Help
 private versionInt(){ return 104 }
 private def textAppName() { return "Ask Alexa Rooms/Groups" }	
-private def textVersion() { return "Rooms/Groups Version: 1.0.4a (03/09/2018)" }
+private def textVersion() { return "Rooms/Groups Version: 1.0.4b (03/09/2018)" }
