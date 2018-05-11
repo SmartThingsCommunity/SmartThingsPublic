@@ -793,12 +793,22 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd){
 	log.debug "Qubino Flush Shutter: firing switch multilevel event"
 	def result = []
-	result << createEvent(name:"switch", value: cmd.value ? "on" : "off", isStateChange: true)
-	result << createEvent(name:"windowShade", value: cmd.value ? "open" : "closed", isStateChange: true)
+    def currentState = device.currentState("windowShade")
+    def currentSwitch = device.currentState("switch")
+    def currentLevel = device.currentState("level")
+    def desiredState = "closed"
+    if (cmd.value<99 && cmd.value>0) {
+        desiredState = "partially open"
+    } else if (cmd.value >= 99) {
+        desiredState = "open"
+    }
+    def desiredSwitch = cmd.value ? "on" : "off"
+    result << createEvent(name:"switch", value: desiredSwitch, isStateChange: (currentSwitch?.value!=desiredSwitch))
+    result << createEvent(name:"windowShade", value: desiredState, isStateChange: (currentState?.value!=desiredState))
 	if(cmd.value > 99){
 		result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} is uncalibrated! Please press calibrate!", isStateChange: true)
 	}else{
-		result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} moved to ${cmd.value==99 ? 100 : cmd.value}%", isStateChange: true)
+		result << createEvent(name:"level", value: cmd.value, unit:"%", descriptionText:"${device.displayName} moved to ${cmd.value==99 ? 100 : cmd.value}%", isStateChange: (currentLevel?.value.toInteger()!=cmd.value.toInteger()))
 	}
 	return result
 }
