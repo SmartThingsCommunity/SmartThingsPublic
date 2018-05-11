@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "SmartSense Multi Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-contact-2") {
 
 		capability "Three Axis"
 		capability "Battery"
@@ -34,6 +34,7 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321-S", deviceJoinName: "Multipurpose Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "SmartThings", model: "multiv4", deviceJoinName: "Multipurpose Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "Samjin", model: "multi", deviceJoinName: "Multipurpose Sensor"
 
 		attribute "status", "string"
 	}
@@ -357,12 +358,15 @@ def configure() {
 	if (device.getDataValue("manufacturer") == "SmartThings") {
 		log.debug "Refreshing Values for manufacturer: SmartThings "
 		/* These values of Motion Threshold Multiplier(0x01) and Motion Threshold (0x0276)
-            seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer.
-            Separating these out in a separate if-else because I do not want to touch Centralite part
-            as of now.
-        */
+		 seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer.
+		 Separating these out in a separate if-else because I do not want to touch Centralite part
+		 as of now.
+		*/
 		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x01, [mfgCode: manufacturerCode])
 		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, 0x0276, [mfgCode: manufacturerCode])
+	} else if (device.getDataValue("manufacturer") == "Samjin") {
+		log.debug "Refreshing Values for manufacturer: Samjin "
+		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x14, [mfgCode: manufacturerCode])
 	} else {
 		// Write a motion threshold of 2 * .063g = .126g
 		// Currently due to a Centralite firmware issue, this will cause a read attribute response that
@@ -372,12 +376,21 @@ def configure() {
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	configCmds += zigbee.batteryConfig() +
-			zigbee.temperatureConfig(30, 300) +
-			zigbee.configureReporting(0xFC02, 0x0010, DataType.BITMAP8, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
-			zigbee.configureReporting(0xFC02, 0x0012, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
-			zigbee.configureReporting(0xFC02, 0x0013, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
-			zigbee.configureReporting(0xFC02, 0x0014, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
+	if (device.getDataValue("manufacturer") == "Samjin") {
+		configCmds += zigbee.batteryConfig() +
+				zigbee.temperatureConfig(30, 300) +
+				zigbee.configureReporting(0xFC02, 0x0010, DataType.BITMAP8, 0, 3600, 0x01, [mfgCode: manufacturerCode]) +
+				zigbee.configureReporting(0xFC02, 0x0012, DataType.INT16, 0, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+				zigbee.configureReporting(0xFC02, 0x0013, DataType.INT16, 0, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+				zigbee.configureReporting(0xFC02, 0x0014, DataType.INT16, 0, 3600, 0x0001, [mfgCode: manufacturerCode])
+	} else {
+		configCmds += zigbee.batteryConfig() +
+				zigbee.temperatureConfig(30, 300) +
+				zigbee.configureReporting(0xFC02, 0x0010, DataType.BITMAP8, 10, 3600, 0x01, [mfgCode: manufacturerCode]) +
+				zigbee.configureReporting(0xFC02, 0x0012, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+				zigbee.configureReporting(0xFC02, 0x0013, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
+				zigbee.configureReporting(0xFC02, 0x0014, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
+	}
 
 	return refresh() + configCmds
 }
@@ -414,6 +427,8 @@ private hexToSignedInt(hexVal) {
 private getManufacturerCode() {
 	if (device.getDataValue("manufacturer") == "SmartThings") {
 		return "0x110A"
+	} else if (device.getDataValue("manufacturer") == "Samjin") {
+		return "0x1241"
 	} else {
 		return "0x104E"
 	}
