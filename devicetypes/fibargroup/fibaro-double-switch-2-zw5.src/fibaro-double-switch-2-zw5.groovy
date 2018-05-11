@@ -132,6 +132,7 @@ Integer getState(String key) {
 
 def installed(){
 	sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	initialize()
 	response(refresh())
 }
 
@@ -141,16 +142,21 @@ def ping() {
 
 //Configuration and synchronization
 def updated() {
+	log.debug "updated().."
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
+	initialize()
+}
+
+def initialize() {
+	log.debug "initialize()..."
 	def cmds = []
-	logging("${device.displayName} - Executing updated()","info")
+	logging("${device.displayName} - Executing initialize()","info")
 	if (!childDevices) {
 		createChildDevices()
 	}
 	if (device.currentValue("numberOfButtons") != 6) { sendEvent(name: "numberOfButtons", value: 6) }
 
-	cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1) //verify if group 1 association is correct
-
+	cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1) //verify if group 1 association is correct  
 	runIn(3,"syncStart")
 	state.lastUpdated = now()
 	response(encapSequence(cmds,1000))
