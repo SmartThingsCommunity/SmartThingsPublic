@@ -23,7 +23,10 @@ metadata {
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
 		fingerprint mfr: "001D", prod: "1A02", model: "0334", deviceJoinName: "Leviton Appliance Module"
+		fingerprint mfr: "001D", prod: "3401", model: "0001", deviceJoinName: "Leviton Switch" //Leviton DZ15S
 		fingerprint mfr: "0063", prod: "4F50", model: "3031", deviceJoinName: "GE Plug-in Outdoor Switch"
+		fingerprint mfr: "0063", prod: "4F50", model: "3032", deviceJoinName: "GE Plug-in Outdoor Switch"
+		fingerprint mfr: "0063", prod: "5250", model: "3130", deviceJoinName: "GE Plug-in Outdoor Switch"
 		fingerprint mfr: "001D", prod: "1D04", model: "0334", deviceJoinName: "Leviton Outlet"
 		fingerprint mfr: "001D", prod: "1C02", model: "0334", deviceJoinName: "Leviton Switch"
 		fingerprint mfr: "001D", prod: "0301", model: "0334", deviceJoinName: "Leviton 15A Switch"
@@ -40,6 +43,9 @@ metadata {
 		fingerprint mfr: "001A", prod: "5244", deviceJoinName: "Eaton RF Receptacle"
 		fingerprint mfr: "001A", prod: "534C", model: "0000", deviceJoinName: "Eaton RF Master Switch"
 		fingerprint mfr: "001A", prod: "5354", model: "0003", deviceJoinName: "Eaton RF Appliance Plug-In Module"
+		fingerprint mfr: "001A", prod: "5352", model: "0000", deviceJoinName: "Eaton RF Accessory Switch"
+		fingerprint mfr: "014F", prod: "5753", model: "3535", deviceJoinName: "GoControl Smart In-Wall Switch"
+		fingerprint mfr: "014F", prod: "5257", model: "3033", deviceJoinName: "GoControl Wall Relay Switch"
 	}
 
 	// simulator metadata
@@ -105,15 +111,15 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
@@ -148,15 +154,15 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def on() {
 	delayBetween([
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
+			zwave.basicV1.basicSet(value: 0xFF).format(),
+			zwave.basicV1.basicGet().format()
 	])
 }
 
 def off() {
 	delayBetween([
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
+			zwave.basicV1.basicSet(value: 0x00).format(),
+			zwave.basicV1.basicGet().format()
 	])
 }
 
@@ -173,7 +179,7 @@ def ping() {
 
 def refresh() {
 	def commands = []
-	commands << zwave.switchBinaryV1.switchBinaryGet().format()
+	commands << zwave.basicV1.basicGet().format()
 	if (getDataValue("MSR") == null) {
 		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	}
