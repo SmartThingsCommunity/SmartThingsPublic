@@ -61,7 +61,7 @@ def installed()
 		here in the installed() function body takes care of updating the control loop when the user changes the setpoint.
 		 */
 		def currentTemperature = sensor.currentTemperature
-    		if (currentTemperature != null) {
+    	if (currentTemperature != null) {
 			evaluate(currentTemperature, setpoint)
 		}
 	}
