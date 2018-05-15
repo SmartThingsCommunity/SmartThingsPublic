@@ -100,7 +100,7 @@ def on() { encap(zwave.basicV1.basicSet(value: 255)) }
 
 def off() { encap(zwave.basicV1.basicSet(value: 0)) }
 
-def setLevel(Integer level, Integer rate = null ) {
+def setLevel(level, rate = null ) {
 	logging("${device.displayName} - Executing setLevel( $level, $rate )","info")
 	if (rate == null) {
 		encap(zwave.basicV1.basicSet(value: (level > 0) ? level-1 : 0))
