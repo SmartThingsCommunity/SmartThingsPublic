@@ -54,16 +54,23 @@ def installed()
 	subscribe(sensor, "temperature", temperatureHandler)
 	if (motion) {
 		subscribe(motion, "motion", motionHandler)
+	} else {
+		/* update the control loop immediately.  The control loop needs to be updated whenever
+		the temperature sensor reading changes or when the user changes the setpoint.  The temperatureHandler()
+		event handler takes care of updating the control loop when the sensor reading changes.  Running evaluate()
+		here in the installed() function body takes care of updating the control loop when the user changes the setpoint.
+		 */
+		def currentTemperature = sensor.currentTemperature
+    		if (currentTemperature != null) {
+			evaluate(currentTemperature, setpoint)
+		}
 	}
 }
 
 def updated()
 {
 	unsubscribe()
-	subscribe(sensor, "temperature", temperatureHandler)
-	if (motion) {
-		subscribe(motion, "motion", motionHandler)
-	}
+	installed()
 }
 
 def temperatureHandler(evt)
