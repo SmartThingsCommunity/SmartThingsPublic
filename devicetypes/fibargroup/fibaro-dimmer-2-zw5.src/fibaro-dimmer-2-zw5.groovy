@@ -96,17 +96,22 @@ metadata {
 	}
 }
 
-def on() { encap(zwave.basicV1.basicSet(value: 255)) }
+def on() { encapSequence([zwave.basicV1.basicSet(value: 0xFF), zwave.basicV1.basicGet()], 5000) }
 
-def off() { encap(zwave.basicV1.basicSet(value: 0)) }
+def off() { encapSequence([zwave.basicV1.basicSet(value: 0), zwave.basicV1.basicGet()], 5000) }
 
 def setLevel(Integer level, Integer rate = null ) {
-	logging("${device.displayName} - Executing setLevel( $level, $rate )","info")
+    logging("${device.displayName} - Executing setLevel( $level, $rate )","info")
+    def cmds = []
+
 	if (rate == null) {
-		encap(zwave.basicV1.basicSet(value: (level > 0) ? level-1 : 0))
-	} else {
-		encap(zwave.switchMultilevelV3.switchMultilevelSet(value: (level > 0) ? level-1 : 0, dimmingDuration: rate))
-	}
+        cmds << zwave.basicV1.basicSet(value: (level > 0) ? level-1 : 0)
+        cmds << zwave.basicV1.basicGet()
+    } else {
+        cmds << zwave.switchMultilevelV3.switchMultilevelSet(value: (level > 0) ? level-1 : 0, dimmingDuration: rate)
+        cmds << zwave.sensorMultilevelV5.sensorMultilevelGet()
+    }
+    encapSequence(cmds, 5000)
 }
 
 def reset() {
