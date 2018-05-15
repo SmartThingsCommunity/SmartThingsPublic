@@ -14,7 +14,7 @@
  *  under the License.
  */
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
-
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
 	definition(name: "SmartSense Moisture Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-leak") {
@@ -86,6 +86,18 @@ metadata {
 	}
 }
 
+private List<Map> collectAttributes(Map descMap) {
+	List<Map> descMaps = new ArrayList<Map>()
+
+	descMaps.add(descMap)
+
+	if (descMap.additionalAttrs) {
+		descMaps.addAll(descMap.additionalAttrs)
+	}
+
+	return  descMaps
+}
+
 def parse(String description) {
 	log.debug "description: $description"
 
@@ -96,8 +108,23 @@ def parse(String description) {
 			map = parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
-			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
-				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+				List<Map> descMaps = collectAttributes(descMap)
+
+				if (device.getDataValue("manufacturer") == "Samjin") {
+					def battMap = descMaps.find { it.attrInt == 0x0021 }
+
+					if (battMap) {
+						map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
+					}
+				} else {
+					def battMap = descMaps.find { it.attrInt == 0x0020 }
+
+					if (battMap) {
+						map = getBatteryResult(Integer.parseInt(battMap.value, 16))
+					}
+				}
 			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = translateZoneStatus(zs)
@@ -181,6 +208,20 @@ private Map getBatteryResult(rawValue) {
 	return result
 }
 
+private Map getBatteryPercentageResult(rawValue) {
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
+	def result = [:]
+
+	if (0 <= rawValue && rawValue <= 200) {
+		result.name = 'battery'
+		result.translatable = true
+		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
+		result.value = Math.round(rawValue / 2)
+	}
+
+	return result
+}
+
 private Map getMoistureResult(value) {
 	log.debug "water"
 	def descriptionText
@@ -204,12 +245,19 @@ def ping() {
 }
 
 def refresh() {
-	log.debug "Refreshing Temperature and Battery"
-	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	log.debug "Refreshing Values"
+	def refreshCmds = []
 
-	return refreshCmds + zigbee.enrollResponse()
+	if (device.getDataValue("manufacturer") == "Samjin") {
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+	} else {
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+	}
+	refreshCmds += zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
+		zigbee.enrollResponse()
+
+	return refreshCmds
 }
 
 def configure() {
@@ -217,7 +265,17 @@ def configure() {
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
+	log.debug "Configuring Reporting"
+	def configCmds = []
+
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
+	if (device.getDataValue("manufacturer") == "Samjin") {
+		configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
+	} else {
+		configCmds += zigbee.batteryConfig()
+	}
+	configCmds += zigbee.temperatureConfig(30, 300)
+
+	return refresh() + configCmds // send refresh cmds as part of config
 }
