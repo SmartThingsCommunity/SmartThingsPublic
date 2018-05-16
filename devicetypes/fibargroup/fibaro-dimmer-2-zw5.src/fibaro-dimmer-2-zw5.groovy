@@ -100,10 +100,8 @@ def on() { encapSequence([zwave.basicV1.basicSet(value: 0xFF), zwave.basicV1.bas
 
 def off() { encapSequence([zwave.basicV1.basicSet(value: 0), zwave.basicV1.basicGet()], 5000) }
 
-def setLevel(Integer level, Integer rate = null ) {
-    logging("${device.displayName} - Executing setLevel( $level, $rate )","info")
-    def cmds = []
-
+def setLevel(level, rate = null ) {
+	logging("${device.displayName} - Executing setLevel( $level, $rate )","info")
 	if (rate == null) {
         cmds << zwave.basicV1.basicSet(value: (level > 0) ? level-1 : 0)
         cmds << zwave.basicV1.basicGet()

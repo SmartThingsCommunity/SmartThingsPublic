@@ -27,7 +27,7 @@ definition(
 )
 
 preferences() {
-	section("Choose thermostat... ") {
+	section("Choose thermostat...") {
 		input "thermostat", "capability.thermostat"
 	}
 	section("Heat setting..." ) {
@@ -36,7 +36,7 @@ preferences() {
 	section("Air conditioning setting...") {
 		input "coolingSetpoint", "decimal", title: "Degrees"
 	}
-	section("Optionally choose temperature sensor to use instead of the thermostat's... ") {
+	section("Optionally choose temperature sensor to use instead of the thermostat's...") {
 		input "sensor", "capability.temperatureMeasurement", title: "Temp Sensors", required: false
 	}
 }
