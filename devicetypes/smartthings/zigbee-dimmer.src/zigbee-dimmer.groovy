@@ -116,7 +116,7 @@ def setLevel(value) {
     def additionalCmds = []
     if (device.getDataValue("model") == "iQBR30" && value.toInteger() > 0) { // Handle iQ bulb not following spec
         additionalCmds = zigbee.on()
-    } else if (device.getDataValue("manufacturer") == "MRVL") { // Handle marvel stack not reporting
+    } else if (device.getDataValue("manufacturer") == "Leviton" || device.getDataValue("manufacturer") == "MRVL") { // Handle marvel stack not reporting
         additionalCmds = refresh()
     }
     zigbee.setLevel(value) + additionalCmds
