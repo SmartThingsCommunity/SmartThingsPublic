@@ -53,7 +53,6 @@ def updated() {
 def parse(description) {
 	def result = null
 	if (description.startsWith("Err 106")) {
-		state.sec = 0
 		result = createEvent(descriptionText: description, isStateChange: true)
 	} else if (description != "updated") {
 		def cmd = zwave.parse(description, [0x20: 1, 0x25: 1, 0x70: 1, 0x98: 1])
@@ -119,7 +118,7 @@ def refresh() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec != 0) {
+	if (zwaveInfo && zwaveInfo.zw?.endsWith("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
