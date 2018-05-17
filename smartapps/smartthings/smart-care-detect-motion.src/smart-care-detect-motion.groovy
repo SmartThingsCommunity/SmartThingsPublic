@@ -4,17 +4,17 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Elder Care: Slip & Fall
+ *  Smart Care - Detect Motion
  *
  *  Author: SmartThings
  *  Date: 2013-04-07
- * 
+ *
  */
 
 definition(
@@ -24,10 +24,11 @@ definition(
 	description: "Monitors motion sensors in bedroom and bathroom during the night and detects if occupant does not return from the bathroom after a specified period of time.",
 	category: "Family",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer@2x.png"
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/calendar_contact-accelerometer@2x.png",
+	pausable: true
 )
 preferences {
-	page(name: "configuration", title:"", content: "disclaimerPage", uninstall: true)
+	page(name: "configuration", title:"", content: "disclaimerPage", install: true, uninstall: true)
 }
 
 def disclaimerPage() {
@@ -56,11 +57,11 @@ def disclaimerPage() {
 			"or use of content on the app. SMARTTHINGS INC., ITS OFFICERS, " +
 			"EMPLOYEES AND AGENTS DO NOT ACCEPT LIABILITY HOWEVER ARISING, INCLUDING LIABILITY FOR NEGLIGENCE, " +
 			"FOR ANY LOSS RESULTING FROM THE USE OF OR RELIANCE UPON THE INFORMATION AND/OR SERVICES AT ANY TIME."
-	
+
 	if (disclaimerResponse && disclaimerResponse == "I agree to these terms") {
 		configurationPage()
 	} else {
-		dynamicPage(name: "configuration", nextPage:null, uninstall:false) {
+		dynamicPage(name: "configuration") {
 			section(disclaimerText){
 				input "disclaimerResponse", "enum", title: "Accept terms", required: true,
 						options: ["I agree to these terms", "I do not agree to these terms"],
@@ -71,7 +72,7 @@ def disclaimerPage() {
 }
 
 def configurationPage(){
-	dynamicPage(name: "configuration", install: true, uninstall:true, nextPage: "configuration") {
+	dynamicPage(name: "configuration") {
 		section("Bedroom motion detector(s)") {
 			input "bedroomMotion", "capability.motionSensor", multiple: true
 		}
@@ -94,7 +95,7 @@ def configurationPage(){
 			}
 		}
 	}
-} 
+}
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"

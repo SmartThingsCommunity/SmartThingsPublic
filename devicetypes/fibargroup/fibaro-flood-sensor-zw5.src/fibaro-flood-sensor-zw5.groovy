@@ -34,8 +34,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"FGFS", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
 			tileAttribute("device.water", key:"PRIMARY_CONTROL") {
-				attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
-				attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#00a0dc")
+				attributeState("dry", label: "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
+				attributeState("wet", label: "wet", icon:"st.alarm.water.wet", backgroundColor:"#00a0dc")
 			}
 
 			tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
@@ -243,7 +243,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	if (cmd.sensorType == 1) {
 		// temperature
 		def cmdScale = cmd.scale == 1 ? "F" : "C"
-		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+		// overwriting the precision here to match other devices
+		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, 0)
 		map.unit = getTemperatureScale()
 		map.name = "temperature"
 		map.displayed = true

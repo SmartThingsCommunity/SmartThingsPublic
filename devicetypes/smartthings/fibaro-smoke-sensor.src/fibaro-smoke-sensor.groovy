@@ -124,7 +124,7 @@ def parse(String description) {
                 descriptionText: "This sensor failed to complete the network security key exchange. " +
                         "If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
     } else if (description != "updated") {
-        log.debug "parse() >> zwave.parse(description)"
+        log.debug "parse() >> $description"
         def cmd = zwave.parse(description, [0x31: 5, 0x71: 3, 0x84: 1])
         if (cmd) {
             result = zwaveEvent(cmd)
@@ -475,6 +475,11 @@ private isConfigured() {
 private setSecured() {
     updateDataValue("secured", "true")
 }
+
 private isSecured() {
-    getDataValue("secured") == "true"
+    if (zwaveInfo && zwaveInfo.zw) {
+        return zwaveInfo.zw.endsWith("s")
+    } else {
+        return getDataValue("secured") == "true"
+    }
 }

@@ -144,15 +144,19 @@ def off() {
 }
 
 def setLevel(value) {
+	def valueaux = value as Integer
+	def level = Math.max(Math.min(valueaux, 99), 0)
 	secureSequence([
-		zwave.basicV1.basicSet(value: value),
+		zwave.basicV1.basicSet(value: level),
 		zwave.switchMultilevelV1.switchMultilevelGet()
 	])
 }
 
 def setLevel(value, duration) {
+	def valueaux = value as Integer
+	def level = Math.max(Math.min(valueaux, 99), 0)
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
-	secure(zwave.switchMultilevelV2.switchMultilevelSet(value: value, dimmingDuration: dimmingDuration))
+	secure(zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration))
 }
 
 def refresh() {

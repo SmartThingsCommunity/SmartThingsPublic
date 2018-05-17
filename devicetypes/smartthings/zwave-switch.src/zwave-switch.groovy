@@ -12,11 +12,10 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition (name: "Z-Wave Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Indicator"
- 		capability "Switch"
-		capability "Polling"
+		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
@@ -71,23 +70,23 @@ def installed() {
 }
 
 def updated(){
-		// Device-Watch simply pings if no device events received for 32min(checkInterval)
-		sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-  switch (ledIndicator) {
-        case "on":
-            indicatorWhenOn()
-            break
-        case "off":
-            indicatorWhenOff()
-            break
-        case "never":
-            indicatorNever()
-            break
-        default:
-            indicatorWhenOn()
-            break
-    }
-    sendHubCommand(new physicalgraph.device.HubAction(zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()))
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	switch (ledIndicator) {
+		case "on":
+			indicatorWhenOn()
+			break
+		case "off":
+			indicatorWhenOff()
+			break
+		case "never":
+			indicatorNever()
+			break
+		default:
+			indicatorWhenOn()
+			break
+	}
+	response(refresh())
 }
 
 def getCommandClassVersions() {
@@ -177,18 +176,11 @@ def off() {
 	])
 }
 
-def poll() {
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-	])
-}
-
 /**
   * PING is used by Device-Watch in attempt to reach the Device
 **/
 def ping() {
-    zwave.switchBinaryV1.switchBinaryGet().format()
+	zwave.switchBinaryV1.switchBinaryGet().format()
 }
 
 def refresh() {
