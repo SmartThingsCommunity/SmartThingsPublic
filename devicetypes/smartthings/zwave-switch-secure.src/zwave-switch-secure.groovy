@@ -85,7 +85,6 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x25: 1])
 	if (encapsulatedCommand) {
-		state.sec = 1
 		zwaveEvent(encapsulatedCommand)
 	}
 }
