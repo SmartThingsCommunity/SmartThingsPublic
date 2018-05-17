@@ -126,7 +126,7 @@ def uninstalled() {
 }
 //	===== Update when installed or setting updated =====
 def refresh() {
-	log.info "REFRESH -'$device' @ '$settings.refreshRate' min refresh rate"
+//log.debug "REFRESH -'$device' @ '$settings.refreshRate' min refresh rate"
 	poll()
 }
 def poll() {
@@ -146,7 +146,7 @@ def poll() {
     else {
 //log.debug "power '$resp.data.data.power_state'"
     state.Switch = resp.data.data.power_state == 1 ? "on" : "off"
-    log.info "POLL for -'$device'-'$state.Switch' - $resp.status - all good"
+//log.debug "POLL for -'$device'-'$state.Switch' - $resp.status - all good"
     checkin()
     }
 }
@@ -160,7 +160,7 @@ def checkin() {
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)
     }
-    log.info "CHECKIN -'$device', '$state.Switch' all good"
+    log.info "CHECKIN complete-'$device', '$state.Switch' @ '$settings.refreshRate' min refresh rate - all good"
 }
 
 def on() {

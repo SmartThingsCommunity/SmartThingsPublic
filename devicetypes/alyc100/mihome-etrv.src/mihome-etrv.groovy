@@ -14,6 +14,7 @@
  *
  *
  *	VERSION HISTORY
+ *	24.04.2018	3.0	- summer mode added to over valse fully and prevent automation change the temp, debugin depeciated/removed, guides added to settings page
  *  			2.6 - added google voice command compatibility - release for testing
  *						Turn off -			"turn off **device name/room** thermostat(s)" 				--Save last settings and turn off (aka 12deg) 
  *						Turn on - 			"set **device name/room** termostat(s) to heat/cool"		-- heat=Resume cool=boost 
@@ -41,25 +42,28 @@
 metadata {
 	definition (name: "MiHome eTRV", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updated by mark cockcroft" ) { //removed 13th 8am type: ,action.devices.types.THERMOSTAT"
 		
-		//capability "Polling" not needed as refresh is schdualed in the DH
+//capability "Polling" not needed as refresh is schdualed in the DH
        	capability "Actuator"	// best practice
         capability "Sensor"		// best practice
         capability "Refresh"
 		capability "Thermostat"
         capability "Thermostat Heating Setpoint" // alows extra settings in routines
         capability "Battery" 
+        capability "Thermostat Mode"	//might be need gor google
  
-// disabled 12th 8am command "heatingSetpointUp"
-// disabled 12th 8am command "heatingSetpointDown"
-        command "setCoolingSetpoint"	//for google when in cool aka boost mode
+        command "setThermostatMode"		//might be need gor google
+        command "ThermostatSetMode"		//might be need gor google
         command "setHeatingSetpoint"	//keep main command
         command "setBoostLength"		//keep to set boost length
         command "emergencyHeat"			// used on the boost/stop boost button
         command "stopBoost"				// used on the boost/stop boost button
+        command "summer"				// uesed to put in summer mode - (Stats open permainatly)
 
         attribute "lastCheckin", "String"
         attribute "boostLabel", "String"
-        attribute "thermostatTemperatureSetpoint", "String" //for google
+        attribute "thermostatTemperatureSetpoint", "String" 									//might be need gor google
+        attribute "availableThermostatModes", "enum", ["off", "heat", "cool == boost", "on"]	//might be need gor google
+        attribute "ThermostatSetpoint", "String"												//might be need gor google
 	}
 
 	simulator {
@@ -113,15 +117,15 @@ metadata {
 					[value: 29, color: "#bc2323"]
 				]
 		}
-        //google data for boost/cool mode
-//        valueTile("thermostatTemperatureSetpoint", "device.thermostatTemperatureSetpoint", inactiveLabel: true, decoration: "flat", width: 4, height: 1) {
-//			state("default", label:'${currentValue}')
-//        }
         
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
 			state("default", label:'refresh', action:"refresh", icon:"st.secondary.refresh-icon")
 		}
  
+		 standardTile("summer", "device.summer", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+			state ("auto", label:'Summer', action: "summer", icon:"st.thermostat.auto")
+            state ("summer", label:'Deactivite', action: "heat", icon:"st.custom.wuk.clear")
+ 		}
         controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false, range:"(12..30)") {
 			state "setHeatingSetpoint", action:"setHeatingSetpoint" //need to send to a lag
 		}
@@ -144,11 +148,11 @@ metadata {
 			
         }
          standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			// google does not recognise state ("auto", label: 'auto Press for off', action:"off" , icon:"st.thermostat.auto-cool")
-            state ("heat", label: '_    Press for    _ Off', action:"off" , icon:"st.thermostat.heat-auto", backgroundColor:"#00a0dc")
+// google does not recognise //state ("auto", label: 'auto Press for off', action:"off" , icon:"st.thermostat.auto-cool")
+            state ("heat", label: 'Press for \nOff', action:"off" , icon:"st.thermostat.heat-auto", backgroundColor:"#00a0dc")
             state ("cool", label: 'In BOOST Press for Resume', action:"stopBoost", icon:"st.thermostat.emergency-heat", backgroundColor:"#e86d13")
-			state ("off", label: 'Press for Heat (or press boost below)', action:"heat", icon:"st.thermostat.heating-cooling-off")
-			//cool used insted state ("emergencyHeat", label: 'Press to stop boost', action:"stopBoost", icon:"st.thermostat.emergency-heat", backgroundColor: "#bc2323")
+			state ("off", label: 'Press for Heat \n(or press boost below)', action:"heat", icon:"st.thermostat.heating-cooling-off")
+			state ("summer", label: 'Valve full open \nTurn off below',  icon:"st.custom.wuk.clear")
 		}
         
         valueTile("boostLabel", "device.boostLabel", inactiveLabel: true, decoration: "flat", width: 4, height: 1) {
@@ -156,8 +160,12 @@ metadata {
         }
 
         main(["thermostat_small"])
-		details(["thermostat", "heatingSetpoint", "heatSliderControl", "thermostatMode", "boostLabel", "battery", "boostSliderControl", "boostSwitch", "refresh"])
+		details(["thermostat", "heatingSetpoint", "heatSliderControl", "thermostatMode", "boostLabel", "battery", "boostSliderControl", "boostSwitch", "refresh", "summer"])
 	}
+            //might be need gor google took out 30/04/18
+//        valueTile("thermostatTemperatureSetpoint", "device.thermostatTemperatureSetpoint", inactiveLabel: true, decoration: "flat", width: 4, height: 1) {
+//			state("default", label:'${currentValue}')
+//        }
     def rates = [:]
 	rates << ["5" : "Refresh every 5 minutes (eTRVs)"]
 	rates << ["10" : "Refresh every 10 minutes (power monitors)"]	
@@ -168,10 +176,12 @@ metadata {
         input name: "refreshRate", type: "enum", title: "Check-in Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
 		input name: "checkinInfo", type: "enum", title: "Show last Check-in time", options: ["Hide", "MM/dd/yyyy h:mma", "h:mma dd/mm/yyyy", "dd/MM/yyyy h:mm", "dd-MM-yyyy HH:mm" , "h:mma dd/MM/yy"], description: "Show last check-in info.", required: false
         input name: "emergencyheattemp", type: "number", title: "Temp to boost to - 13 to 30", range: "13..30", description: "Boost aka cool to temp" ,required: true
+        input description: "Summer mode ---  \nOpens the valve fully & prevents any other change to state without press the auto putton", title: "Summer Button", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input description: "---Turn On---  \n'OK google set **device name/room** termostat(s) to heat/cool' \nheat=Resume \ncool=boost \n---Turn Off--- \n'Ok google turn off **device name/room** thermostat(s)' \nSaves the last settings and turns off (aka 12deg) \n---Set Temprature--- \n'Ok google set **device name/room** thermostat(s)/temprature to **number** \n---Quiry Temprature--- \n'Ok google what is the temprature in the **device name/room/house**' \nResponse current temp and setpoint \n---Boost--- \n'Ok google set **device name/room** thermostat(s) to COOL \naka boost to temp & time set above", title: "Google Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
   	}
 }
-//	===== Update when installed or setting changed =====
-def installed() {
+
+def installed() { //	===== Update when installed or setting changed =====
 	log.info "Executing 'installed'"
     updated()
 }
@@ -227,12 +237,6 @@ def heatingSetpointDown(){
 	runIn (3, tempdelay,[data: [value: newSetpoint]])
 } /// ===================================================
 
-
-def setCoolingSetpoint(temp){ //for google when in cooling aka boost mode
-	log.debug "google set cooloing temp values-'$temp'"
-	setHeatingSetpoint(temp)
-}
-
 /// ============ Set temp ==================
 def setHeatingSetpoint(temp) { //google uses this for temp change
 	unschedule(errordelay)
@@ -242,8 +246,13 @@ def setHeatingSetpoint(temp) { //google uses this for temp change
 	if (temp > 30) {
 		temp = 30
 	}
+    if (state.thermostatMode == 'summer' && temp != 30 ){
+    log.info "in summer mode - need to turn it off"
+    sendEvent(name: "thermostatMode", value: state.thermostatMode, isStateChange: true, displayed: true, descriptionText: "in summer mode turn summer mode off 1st")
+    }
+    else {
     def resp = parent.apiGET("/subdevices/set_target_temperature?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger(), temperature: temp]).toString()))
-			//log.debug "setting response ${resp.status} ${resp.data}"
+//log.debug "setting response ${resp.status} ${resp.data}"
     if (resp.status != 200) {
     	unschedule(errordelay)
     	log.error "Unexpected result in seting temp ${resp.status}"
@@ -268,37 +277,37 @@ def setHeatingSetpoint(temp) { //google uses this for temp change
     	unschedule(errordelay) 				//clean up to prevent memory leak
         unschedule(setHeatingSetpoint) 		//clean up to prevent memory leak
         unschedule(stopBoost)				// leave hear so that if setting temp fails completely at least stopBoost will still be active
-         
     	if (state.boostSwitch == 'emergencyHeat'){
-        log.debug "temp @ '$temp' in boost- carying on with emergency heat set temp"
+// log.debug "temp @ '$temp' in boost- carying on with emergency heat set temp"
         def boosttill = new Date(now() + (state.boostLength * 60000)).format("HH:mma", location.timeZone)
         state.boostLabel = "Boosting till $boosttill"
+        state.thermostatOperatingState  = 'cooling'
         runIn(state.boostLength * 60, stopBoost)
-        log.debug "setHeatingSetpoint for '$device' status-'$resp.status' - boosting till '$boosttill' with emergencyHeat (aka cool) temp of '$temp'"
+// log.debug "setHeatingSetpoint for '$device' status-'$resp.status' - boosting till '$boosttill' with emergencyHeat (aka cool) temp of '$temp'"
         }
-        
         else { //off / auto / heat
         state.boostLabel = "$state.boostLength Min Boost"
-        state.thermostatMode = 'heat'			//reset to off as req. during check in
-        log.debug "setHeatingSetpoint for '$device' status-'$resp.status' - with temp of '$temp' and '$state.thermostatMode' (should be heat/off)"
+        state.thermostatMode = state.summer == 'summer'  ? 'summer' : 'heat'
+        state.thermostatOperatingState  = 'heating'
+// log.debug "setHeatingSetpoint for '$device' status-'$resp.status' - with temp of '$temp' and '$state.thermostatMode' (should be heat/off)"
         }
-        
         state.counter = 0
         state.heatingSetpoint = resp.data.data.target_temperature
         state.batteryVoltage = resp.data.data.voltage
         state.boostSwitch = 'stby'
         log.info "setHeatingSetpoint complete for '$device' status-'$resp.status' - with temp of '$temp' and mode '$state.thermostatMode', going to .... checkin ...."
         checkin()
+    	}
 	}
 } // =============== end set temp =================
 
 def errordelay(temp) { // delay resending of set temprature
 	unschedule(errordelay)
 	unschedule(setHeatingSetpoint)
-    log.debug "error delay trigerd values - '$temp'"
+// log.debug "error delay trigerd values - '$temp'"
     def key = "value"
 	def value = temp[key] ?: "12"
-    log.debug "error delay sending back to setHeatingpoint values - '$temp' Key-'$key' Value-'$value'"
+    log.warn "error delay sending back to setHeatingpoint values - '$temp' Key-'$key' Value-'$value'"
 	setHeatingSetpoint(value)
 }
 
@@ -332,29 +341,42 @@ def setLastmode(mode) { 					//this is to resume after off or boost
     }
 	else {
     	state.lastmode = mode
-        log.debug "this mode is '$mode' and should be off or heat"
+// log.debug "this mode is '$mode' and should be off or heat"
     }
     log.info "Saved resume mode is '$state.lastmode'"
 }
 
 // ============ button commands ===========
+def summer(){ 					//used for summer button
+	log.debug "def summer"
+    state.summer = 'summer'
+    sendEvent(name: "summer", value: state.summer, descriptionText: "summer mode button pressed", displayed: false)
+    setThermostatMode('summer') 
+}
 def heat() { 
 	log.debug "def heat"
+    state.summer = 'auto'
+    sendEvent(name: "summer", value: state.summer, displayed: false)
     setThermostatMode('heat') 
 }
-def off() { //used for off button
+def off() { 					//used for off button
 	log.debug "def off"
+    state.summer = 'auto'
+    sendEvent(name: "summer", value: state.summer, displayed: false)
 	setThermostatMode('off') 
 }
-
-def emergencyHeat() { //used
+def emergencyHeat() { 			//used for boost button
 	log.debug "def emergency heat"
+   state.summer = 'auto'
+    sendEvent(name: "summer", value: state.summer, displayed: false)
 	setThermostatMode('cool')
 }
-def stopBoost() { //used
+def stopBoost() { 				//used for stop boots on mode
 	log.debug "Executing 'stopBoost'"
+    state.summer = 'auto'
+    sendEvent(name: "summer", value: state.summer, displayed: false)
     setThermostatMode(state.lastmode)
-    log.debug "Boost stoped"
+// log.debug "Boost stoped"
 }
 
 def setBoostLength(minutes) { //set boost length
@@ -371,58 +393,58 @@ def setBoostLength(minutes) { //set boost length
     	sendEvent(name: "boostLabel", value: state.boostLabel, displayed: false)
     }
 }
-//def boost() {
-//	log.debug "def boost"
-//	setThermostatMode('cool')
-//}
-//def auto() { 
-//	log.debug "def auto"
-//    setThermostatMode('heat') 
-//}    
-//def cool() { //used for boost button
-//	log.debug "def cool"
-//    setThermostatMode('cool') 
-//}
-//def on() {
-//	log.debug "def on"
-//	setThermostatMode('heat')
-//}
+def ThermostatSetMode() {		// might be used for google
+	log.debug "def ThermostatSetMode google"
+	setThermostatMode()
+}
 
-def setThermostatMode(mode) { 								////requested mode NOT actualy in it yet - -google only uses this for mode change
+def setThermostatMode(mode) { 	//requested mode NOT actualy in it yet - -google only uses this for mode change
 	mode = mode == 'auto' || mode == 'on' ? 'heat' : mode
-	//log.debug "Executing setThermostatMode with mode '$mode'"
-    
-    if (mode == 'off') {
+    def temp = ''
+// log.debug "Executing setThermostatMode with mode '$mode'"
+    if (mode == 'summer'){
+    	state.thermostatMode = 'summer' //open valve up
+        temp = 30
+//log.info "MODE Change complete -'$mode' with default temp of '$temp', going to .. setHeatingSetpoint .. "
+        setHeatingSetpoint(temp)
+    }
+    else if  (mode == 'off') {
     	setLastHeatingSetpoint(device.currentValue('heatingSetpoint')) 	//save current set temp
         setLastmode(device.currentValue('thermostatMode')) 				//save current mode
-        log.info "MODE Change complete -'$mode' with default temp of 12, going to ...... setHeatingSetpoint ..... "
-        setHeatingSetpoint(12)								//labels for boostswitch-stby and mode-off set in 'checkin' for == 12
+        temp = 12
+//log.info "MODE Change complete -'$mode' with default temp of 12, going to ...... setHeatingSetpoint ..... "
+        setHeatingSetpoint(temp)										//labels for boostswitch-stby and mode-off set in 'checkin' for == 12
     }
     else if (mode == 'emergencyHeat' || mode == 'cool') {
     	setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
         setLastmode(device.currentValue('thermostatMode'))
         state.boostSwitch = 'emergencyHeat'
         state.thermostatMode = 'cool' //aka boost
-        log.info "MODE Change complete - '$mode'(aka boost/emergency heat) with temp of '$settings.emergencyheattemp' going to going to .... setHeatingSetpoint ...... "
-        setHeatingSetpoint(settings.emergencyheattemp)
+        temp = settings.emergencyheattemp
+//log.info "MODE Change complete - '$mode'(aka boost/emergency heat) with temp of '$settings.emergencyheattemp' going to going to .... setHeatingSetpoint ...... "
+        setHeatingSetpoint(temp)
     }
     
     else { //auto heat resume etc
-    	def lastHeatingSetPoint = state.lastHeatingSetPoint 			// recall last saved temp
-        if (lastHeatingSetPoint == null || lastHeatingSetPoint < 12 || lastHeatingSetPoint > 30 ) {
-        	lastHeatingSetPoint = 17									// capurte any errors
+    	//def lastHeatingSetPoint = state.lastHeatingSetPoint 			// recall last saved temp
+        if (state.lastHeatingSetPoint == null || state.lastHeatingSetPoint < 12 || state.lastHeatingSetPoint > 30 ) { //(lastHeatingSetPoint == null || lastHeatingSetPoint < 12 || lastHeatingSetPoint > 30 )
+        	temp = 17									// capurte any errors
             log.warn " '$mode' last temp out of range going with default temp of '$temp'"
+        }
+        else {
+        	temp = state.lastHeatingSetPoint
         }
 		state.boostSwitch = 'stby'
         state.thermostatMode = mode
-        log.info "MODE Change complete - '$mode' mode resuming to last temp of'$lastHeatingSetPoint' going to .... setHeatingSetpoint ...."
-    	setHeatingSetpoint(lastHeatingSetPoint)
+// log.info "MODE Change complete - '$mode' mode resuming to last temp of'$lastHeatingSetPoint' going to .... setHeatingSetpoint ...."
+    	setHeatingSetpoint(temp)
 	}
+	log.info "MODE Change complete - '$mode' mode with temp of '$temp' going to .. setHeatingSetpoint .."    
 }	//end mode setting
 
 def poll() {
     def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
-    //log.debug "poll data ${resp.status}" // ${resp.data}"
+//log.debug "poll data ${resp.status}" // ${resp.data}"
     if (resp.status != 200) {
     	sendEvent(name: "refresh", value: '', descriptionText: "BAD Poll", isStateChange: true)
 		log.error "POLL for  -'${device}' response -'${resp.status}' Unexpected Result" // end
@@ -431,7 +453,7 @@ def poll() {
     state.temperature = resp.data.data.last_temperature
     state.heatingSetpoint = resp.data.data.target_temperature
     state.batteryVoltage = resp.data.data.voltage
-    log.info "POLL for  -'${device}' response -'${resp.status}' all good"
+//log.debug "POLL for  -'${device}' response -'${resp.status}' all good"
     checkin()
     }
 }
@@ -442,18 +464,24 @@ def checkin() {
             state.boostSwitch = 'stby'
             state.thermostatMode = 'off'
             state.boostLabel = "$state.boostLength Min Boost"
+            state.thermostatOperatingState  = 'idle' //might be for google
     }
-//bolt ons for google
-    state.thermostatTemperatureAmbient = state.temperature
-    state.coolingSetpoint = state.heatingSetpoint 													//needed for google when in cooling aka boost
-    sendEvent(name: "coolingSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false) 	//needed for google when in cooling aka boost   
+//bolt ons for google not sure which are needed
+ sendEvent(name: "thermostatOperatingState", value: state.thermostatOperatingState, displayed: false) 
+ sendEvent(name: "thermostatSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)
+ sendEvent(name: "ThermostatSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)
+ sendEvent(name: "thermostatTemperatureSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)
+ sendEvent(name: "thermostatTemperatureAmbient", value: state.temperature, unit: "C", displayed: false)
+//30-04-18 sendEvent(name: "coolingSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false) 	//needed for google when in cooling aka boost 
+
         
-    sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true) //mode & off icon - , state: state.thermostatMode
-    sendEvent(name: "boostSwitch", value: state.boostSwitch, displayed: false)
-    sendEvent(name: "boostLabel", value: state.boostLabel, displayed: false) //change label back to boost time from start time        
-   	sendEvent(name: "temperature", value: state.temperature, unit: "C") //state: 'heat')
-    sendEvent(name: "heatingSetpoint", value: state.heatingSetpoint, unit: "C") //was heat , state: 'heat'
+    sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true) 				//mode & off icon
+    sendEvent(name: "boostSwitch", value: state.boostSwitch, displayed: false)						// boost button
+    sendEvent(name: "boostLabel", value: state.boostLabel, displayed: false) 						//change label back to boost time from start time        
+   	sendEvent(name: "temperature", value: state.temperature, unit: "C")								// actual temp
+    sendEvent(name: "heatingSetpoint", value: state.heatingSetpoint, unit: "C")						// set temp
     sendEvent(name: "batteryVoltage", value: state.batteryVoltage == null ? "Not Available" : state.batteryVoltage)
+
     
     def setmode = state.thermostatMode // for log info below
     if (state.thermostatMode == 'cool'){
@@ -468,10 +496,10 @@ def checkin() {
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)    
     }
-	log.info "CHECKIN -'$device',   MODE-'$setmode',   TARGET Temp-'$state.heatingSetpoint',   ACTUAL Temp-'$state.temperature',   BOOST Settings-'$state.boostLabel' all good"
+	log.info "CHECKIN -'$device', MODE='$setmode', TARGET Temp='$state.heatingSetpoint', ACTUAL Temp='$state.temperature', BOOST Settings='$state.boostLabel' @ '$settings.refreshRate' min refresh rate - All good"
 }
 
 def refresh() {
-	log.info "REFRESH -'$device' @ '$settings.refreshRate' min refresh rate"
+//log.debug "REFRESH -'$device' @ '$settings.refreshRate' min refresh rate"
 	poll()
 }

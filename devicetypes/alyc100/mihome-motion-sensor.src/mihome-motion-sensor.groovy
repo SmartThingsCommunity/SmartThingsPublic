@@ -122,14 +122,13 @@ def poll() {
 	}
     else {
     state.sensor_state = resp.data.data.sensor_state
-    log.debug "data $resp.data.data"
-    log.info "POLL for  -'${device}' response -'${resp.status}' all good"
+//log.debug "data $resp.data.data"
+//log.debug "POLL for - '${device}' response -'${resp.status}' all good"
     checkin()
     }
 }
 def checkin() {
-	// if (sensor_state != null) {
-    	sendEvent(name: "motion", value: state.sensor_state == 0 ? "inactive" : "active")
+	sendEvent(name: "motion", value: state.sensor_state == 0 ? "inactive" : "active")
 	def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
     def now = ''
     if (checkinInfoFormat != 'Hide') {
@@ -137,9 +136,8 @@ def checkin() {
             now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}", location.timeZone)
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)
-   // }
-    log.info "CHECKIN -'$device', '$state.sensor_state' all good"
 	}
+    log.info "CHECKIN -'$device', '$state.motion' - '$state.sensor_state' all good"
 }
 
 def refresh() {
