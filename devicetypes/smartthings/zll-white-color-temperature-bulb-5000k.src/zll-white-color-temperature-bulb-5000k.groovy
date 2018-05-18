@@ -11,9 +11,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-import groovy.transform.Field
-
-@Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
     definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
@@ -125,19 +122,19 @@ def ping() {
 
 def healthPoll() {
     log.debug "healthPoll()"
-    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
+    def cmds = poll()
     cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
 }
 
 def configureHealthCheck() {
     Integer hcIntervalMinutes = 12
-    if (!hasConfiguredHealthCheck) {
+    if (!state.hasConfiguredHealthCheck) {
         log.debug "Configuring Health Check, Reporting"
-        unschedule("healthPoll")
-        runEvery5Minutes("healthPoll")
+        unschedule("healthPoll", [forceForLocallyExecuting: true])
+        runEvery5Minutes("healthPoll", [forceForLocallyExecuting: true])
         // Device-Watch allows 2 check-in misses from device
         sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-        hasConfiguredHealthCheck = true
+        state.hasConfiguredHealthCheck = true
     }
 }
 
