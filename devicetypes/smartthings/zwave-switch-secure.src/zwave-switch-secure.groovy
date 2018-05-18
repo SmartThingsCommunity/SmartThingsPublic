@@ -117,7 +117,7 @@ def refresh() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo && zwaveInfo.zw?.endsWith("s")) {
+	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
