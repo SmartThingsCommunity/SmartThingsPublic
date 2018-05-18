@@ -74,20 +74,29 @@ metadata {
 	}
 }
 
-def on() {
-	encap(zwave.basicV1.basicSet(value: 255),1)
+
+def on(){
+	def cmds = []
+	cmds << [zwave.basicV1.basicSet(value: 255), 1]
+	cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
+	encapSequence(cmds, 5000)
 }
 
-def off() {
-	encap(zwave.basicV1.basicSet(value: 0),1)
+def off(){
+	def cmds = []
+	cmds << [zwave.basicV1.basicSet(value: 0), 1]
+	cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
+	encapSequence(cmds, 5000)
 }
 
 def childOn() {
 	sendHubCommand(response(encap(zwave.basicV1.basicSet(value: 255),2)))
+	sendHubCommand(response(encap(zwave.switchBinaryV1.switchBinaryGet(),2)))
 }
 
 def childOff() {
 	sendHubCommand(response(encap(zwave.basicV1.basicSet(value: 0),2)))
+	sendHubCommand(response(encap(zwave.switchBinaryV1.switchBinaryGet(),2)))
 }
 
 def reset() {
@@ -142,13 +151,11 @@ def ping() {
 
 //Configuration and synchronization
 def updated() {
-	log.debug "updated().."
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
 	initialize()
 }
 
 def initialize() {
-	log.debug "initialize()..."
 	def cmds = []
 	logging("${device.displayName} - Executing initialize()","info")
 	if (!childDevices) {
@@ -157,6 +164,7 @@ def initialize() {
 	if (device.currentValue("numberOfButtons") != 6) { sendEvent(name: "numberOfButtons", value: 6) }
 
 	cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1) //verify if group 1 association is correct  
+	cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
 	runIn(3,"syncStart")
 	state.lastUpdated = now()
 	response(encapSequence(cmds,1000))
@@ -293,6 +301,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChann
 
 //event handlers
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+	log.debug "BasicReport - "+cmd
 	//ignore
 }
 
@@ -305,11 +314,19 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 		case 2:
 			getChild(2)?.sendEvent([name: "switch", value: (cmd.value == 0 ) ? "off": "on"])
 			break
+		default:
+			def cmds = []
+			log.debug "-------> Requesting switch report..."
+			//cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(), 2))
+			cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(), 1))
+			cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(), 2))
+			sendHubCommand(cmds,500)
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
 	logging("${device.displayName} - MeterReport received, value: ${cmd.scaledMeterValue} scale: ${cmd.scale} ep: $ep","info")
+	log.debug "cmd: "+cmd
 	if (ep==1) {
 		switch (cmd.scale) {
 			case 0:
@@ -331,6 +348,14 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
 				break
 		}
 		getChild(2)?.sendEvent([name: "combinedMeter", value: "${(getChild(2)?.currentValue("power") ?: "0.0")} W / ${(getChild(2)?.currentValue("energy") ?: "0.00")} kWh", displayed: false])
+	} else if (!ep) {
+		log.debug "-------> Requesting specific reports..."
+		def cmds = []
+		cmds << response(encap(zwave.meterV3.meterGet(scale: 0), 2))
+		cmds << response(encap(zwave.meterV3.meterGet(scale: 2), 2))
+		cmds << response(encap(zwave.meterV3.meterGet(scale: 0), 1))
+		cmds << response(encap(zwave.meterV3.meterGet(scale: 2), 1))
+		sendHubCommand(cmds,500)
 	}
 }
 

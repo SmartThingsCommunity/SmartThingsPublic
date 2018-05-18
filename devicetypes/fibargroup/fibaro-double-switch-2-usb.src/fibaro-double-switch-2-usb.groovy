@@ -9,8 +9,8 @@ metadata {
 		capability "Energy Meter"
 		capability "Power Meter"
 		capability "Refresh"
-        capability "Configuration"
-        capability "Health Check"
+		capability "Configuration"
+		capability "Health Check"
 		
 		command "reset"
 	  
@@ -19,7 +19,7 @@ metadata {
 	tiles {
 		multiAttributeTile(name:"switch", type: "lighting", width: 3, height: 4){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-    			attributeState "off", label: '${name}', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_2.png", backgroundColor: "#ffffff"
 				attributeState "on", label: '${name}', action: "switch.off", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/switch/switch_1.png", backgroundColor: "#00a0dc"			
 			}
 			tileAttribute("device.combinedMeter", key:"SECONDARY_CONTROL") {
@@ -51,7 +51,6 @@ metadata {
 }
 
 def installed(){
-	log.debug "installed() ....."
 	sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: parent.hubID])
 	response(refresh())
 }
@@ -74,10 +73,4 @@ def reset() {
 
 def refresh() {
 	parent.childRefresh()
-}
-
-private logging(text, type = "debug") {
- //	  if (settings.logging == "true") {
-		log."$type" text
- //	  }
 }
