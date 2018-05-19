@@ -557,7 +557,7 @@ def setHeatingSetpoint(Double degrees, Integer delay = 2000) {
     }
     state.heat = convertedDegrees
     sendEvent(name:"heatingSetpoint", value: convertedDegrees)
-    if (device.currentValue("thermostatMode") == null || device.currentValue("thermostatMode") == "heat") { 
+    if (device.currentValue("thermostatMode") == null || device.currentValue("thermostatMode") == "heat" || device.currentValue("thermostatMode") == "auto") { 
 		commands([
 			zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees),
 			zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
@@ -609,7 +609,7 @@ def setCoolingSetpoint(Double degrees, Integer delay = 2000) {
     }
     state.cool = convertedDegrees
     sendEvent(name:"coolingSetpoint", value: convertedDegrees)
-    if (device.currentValue("thermostatMode") == null || device.currentValue("thermostatMode") == "cool") { 
+    if (device.currentValue("thermostatMode") == null || device.currentValue("thermostatMode") == "cool" || device.currentValue("thermostatMode") == "auto") { 
 		commands([
 			zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: deviceScale, precision: p,  scaledValue: convertedDegrees),
 			zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
