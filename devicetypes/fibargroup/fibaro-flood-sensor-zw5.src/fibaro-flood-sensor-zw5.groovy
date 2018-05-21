@@ -10,6 +10,7 @@ metadata {
         capability "Temperature Measurement"
         capability "Water Sensor"
         capability "Power Source"
+        capability "Health Check"
 
         attribute "syncStatus", "string"
         attribute "lastAlarmDate", "string"
@@ -101,6 +102,11 @@ def getPrefsFor(parameter) {
             required: false
     )
 }
+
+def installed(){
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 
 def updated() {
 
