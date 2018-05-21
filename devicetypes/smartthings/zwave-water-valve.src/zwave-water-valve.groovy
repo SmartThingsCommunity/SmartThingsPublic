@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve") {
+	definition(name: "Z-Wave Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve", runLocally: true, executeCommandsLocally: true, minHubCoreVersion: "000.022.0004") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Valve"
