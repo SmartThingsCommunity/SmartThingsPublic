@@ -15,7 +15,7 @@
  */
 
 metadata {
-    definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+    definition (name: "Cree Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, executeCommandsLocally: true, minHubCoreVersion: "000.022.0004") {
 
         capability "Actuator"
         capability "Configuration"
