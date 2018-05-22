@@ -146,7 +146,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
 
-	if (state.MSR == "011A-0601-0901" && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
+	if (isEnerwave() && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
 		result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
 	}
 	if (!state.lastbat || (new Date().time) - state.lastbat > 53*60*60*1000) {
@@ -250,6 +250,9 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 
 def initialPoll() {
 	def request = []
+	if (isEnerwave()) { // Enerwave motion doesn't always get the associationSet that the hub sends on join
+		request << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
+	}
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
 	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
@@ -268,4 +271,8 @@ private command(physicalgraph.zwave.Command cmd) {
 	} else {
 		cmd.format()
 	}
+}
+
+private isEnerwave() {
+	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
 }
