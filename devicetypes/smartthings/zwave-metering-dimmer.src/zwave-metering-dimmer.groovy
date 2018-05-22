@@ -159,7 +159,7 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def switchEvent = createEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")
 	result << switchEvent
 	if (cmd.value) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%")
 	}
 	if (switchEvent.isStateChange) {
 		result << response(["delay 3000", zwave.meterV2.meterGet(scale: 2).format()])
