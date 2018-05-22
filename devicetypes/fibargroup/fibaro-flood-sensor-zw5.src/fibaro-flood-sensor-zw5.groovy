@@ -104,7 +104,7 @@ def getPrefsFor(parameter) {
 }
 
 def installed(){
-    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 28800, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 
