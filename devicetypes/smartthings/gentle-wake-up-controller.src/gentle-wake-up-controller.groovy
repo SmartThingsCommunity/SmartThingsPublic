@@ -121,6 +121,14 @@ def stopDimming() {
 }
 
 def controllerEvent(eventData) {
-    log.trace "controllerEvent"
     sendEvent(eventData)
+    if (eventData.name == "sessionStatus") {
+    	if (eventData.value == "running") {
+            //Set Switch to ON to support Samsung Connect
+            sendEvent(name: "switch", value: "on")
+    	} else {
+            // Set Switch to OFF to support Samsung Connect
+            sendEvent(name: "switch", value: "off")
+        }
+    }
 }

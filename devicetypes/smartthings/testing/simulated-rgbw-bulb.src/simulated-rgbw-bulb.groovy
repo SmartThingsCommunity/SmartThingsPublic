@@ -1,5 +1,5 @@
 /**
- *  Copyright 2017 SmartThings
+ *  Copyright 2017-2018 SmartThings
  *
  *  Device Handler for a simulated mixed-mode RGBW and Tunable White light bulb
  *
@@ -32,8 +32,8 @@ import groovy.transform.Field
 
 @Field final IntRange COLOR_TEMP_RANGE = (2200..7000)
 @Field final Integer  COLOR_TEMP_DEFAULT = COLOR_TEMP_RANGE.getFrom() + ((COLOR_TEMP_RANGE.getTo() - COLOR_TEMP_RANGE.getFrom())/2)
-@Field final Integer  COLOR_TEMP_STEP = 500
-@Field final List     COLOR_TEMP_EXTRAS = [2700]
+@Field final Integer  COLOR_TEMP_STEP = 50 // Kelvin
+@Field final List     COLOR_TEMP_EXTRAS = []
 @Field final List     COLOR_TEMP_LIST = buildColorTempList(COLOR_TEMP_RANGE, COLOR_TEMP_STEP, COLOR_TEMP_EXTRAS)
 
 @Field final Map MODE = [
@@ -247,7 +247,7 @@ metadata {
         }
 
         valueTile("colorTempControlLabel", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-            state "default", label: 'White Color Temp.\n${currentValue}K' 
+            state "default", label: 'White Color Temp.\n${currentValue}K'
         }
 
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 1, inactiveLabel: false, range: "(2200..7000)") {
@@ -387,14 +387,8 @@ def setHue(huePercent) {
  * @param Integer saturationPercent     percentage of saturtion 0-100
  */
 def setColor(Integer huePercent, Integer saturationPercent) {
-    Integer boundedHue = boundInt(huePercent, PERCENT_RANGE)
-    Integer boundedSaturation = boundInt(saturationPercent, PERCENT_RANGE)
-    String logMsg ="Executing 'setColor' from separate values hue: $boundedHue, saturation: $boundedSaturation"
-    if (huePercent != boundedHue || saturationPercent != boundedSaturation) {
-        logMsg += " (pre-bounded values hue: $huePercent, saturation: $saturationPercent)"
-    }
-    log.trace logMsg
-    Map colorHSMap = buildColorHSMap(hue, saturation)
+    log.trace "Executing 'setColor' from separate values hue: $huePercent, saturation: $saturationPercent"
+    Map colorHSMap = buildColorHSMap(huePercent, saturationPercent)
     setColor(colorHSMap) // call the capability version method overload
 }
 
@@ -402,13 +396,13 @@ def setColor(Integer huePercent, Integer saturationPercent) {
  * setColor overload which accepts a hex RGB string
  * @param String hex    RGB color donoted as a hex string in format #1F1F1F
  */
-def setColor(String hex) {
-    log.trace "Executing 'setColor' from hex $hex"
+def setColor(String rgbHex) {
+    log.trace "Executing 'setColor' from hex $rgbHex"
     if (hex == "#000000") {
         // setting to black? turn it off.
         off()
     } else {
-        List hsvList = colorUtil.hexToHsv(hex)
+        List hsvList = colorUtil.hexToHsv(rgbHex)
         Map colorHSMap = buildColorHSMap(hsvList[0], hsvList[1])
         setColor(colorHSMap) // call the capability version method overload
     }
@@ -416,14 +410,19 @@ def setColor(String hex) {
 
 /**
  * setColor as defined by the Color Control capability
+ * even if we had a hex RGB value before, we convert back to it from hue and sat percentages
  * @param colorHSMap
  */
 def setColor(Map colorHSMap) {
     log.trace "Executing 'setColor' $colorHSMap"
+    Integer boundedHue = boundInt(colorHSMap?.hue?:0, PERCENT_RANGE)
+    Integer boundedSaturation = boundInt(colorHSMap?.saturation?:0, PERCENT_RANGE)
+    String rgbHex = colorUtil.hsvToHex(boundedHue, boundedSaturation)
+    log.debug "bounded hue and saturation: $boundedHue, $boundedSaturation; hex conversion: $rgbHex"
     implicitOn()
-    sendEvent(name: "hue", value: colorHSMap?.hue?:0)
-    sendEvent(name: "saturation", value: colorHSMap?.saturation?:0)
-    sendEvent(name: "color", value: colorHSMap)
+    sendEvent(name: "hue", value: boundedHue)
+    sendEvent(name: "saturation", value: boundedSaturation)
+    sendEvent(name: "color", value: rgbHex)
     simulateBulbState(MODE.COLOR)
     done()
 }
@@ -437,10 +436,10 @@ private initialize() {
     sendEvent(name: "colorTemperatureRange", value: COLOR_TEMP_RANGE)
     sendEvent(name: "colorTemperature", value: COLOR_TEMP_DEFAULT)
 
-    sendEvent(name: "hue", value: 0)
-    sendEvent(name: "saturation", value: 0)
+    sendEvent(name: "hue", value: BLACK.h)
+    sendEvent(name: "saturation", value: BLACK.s)
     // make sure to set color attribute!
-    sendEvent(name: "color", value: buildColorHSMap(0,0))
+    sendEvent(name: "color", value: BLACK.rgb)
 
     sendEvent(name: "level", value: 100)
 
@@ -491,21 +490,21 @@ private Map buildColorHSMap(hue, saturation) {
 private void simulateBulbState(String mode) {
     log.trace "Executing 'simulateBulbState' $mode"
     String valueText = "---"
-    String hexColor = BLACK.rgb
+    String rgbHex = BLACK.rgb
     Integer colorIndicator = 0
     switch (mode) {
         case MODE.COLOR:
             Integer huePct = device?.currentValue("hue")?:0
             Integer saturationPct = device?.currentValue("saturation")?:0
             colorIndicator = flattenHueSat(huePct, saturationPct) // flattened, scaled & offset hue & sat
-            hexColor = colorUtil.hsvToHex(huePct, saturationPct)
-            valueText = "$mode\n$hexColor"
+            rgbHex = colorUtil.hsvToHex(huePct, saturationPct)
+            valueText = "$mode\n$rgbHex"
             state.lastMode = mode
             break;
         case MODE.WHITE:
             Integer kelvin = device?.currentValue("colorTemperature")?:0
             colorIndicator = kelvin  // for tunable white, just use the color temperature
-            hexColor = kelvinToHex(kelvin)
+            rgbHex = kelvinToHex(kelvin)
             valueText = "$mode\n${kelvin}K"
             state.lastMode = mode
             break;

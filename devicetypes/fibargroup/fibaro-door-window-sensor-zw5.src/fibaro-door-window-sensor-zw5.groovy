@@ -32,8 +32,8 @@ metadata {
     tiles(scale: 2) {
     	multiAttributeTile(name:"FGK", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
         	tileAttribute("device.contact", key:"PRIMARY_CONTROL") {
-            	attributeState("open", icon:"st.contact.contact.open", backgroundColor:"#e86d13")
-                attributeState("closed", icon:"st.contact.contact.closed", backgroundColor:"#00a0dc")
+                attributeState("open", label: "open", icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+                attributeState("closed", label: "closed", icon:"st.contact.contact.closed", backgroundColor:"#00a0dc")
             }
 
             tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {

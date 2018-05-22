@@ -74,7 +74,7 @@ def configure() {
 	log.debug "configure()"
 	def cmds = []
 
-	if (state.sec != 1) {
+	if (!isSecured()) {
 		// secure inclusion may not be complete yet
 		cmds << "delay 1000"
 	}
@@ -317,7 +317,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	if (state.sec == 0) {  // default to secure
+	if (!isSecured()) {  // default to secure
 		cmd.format()
 	} else {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
@@ -326,4 +326,12 @@ private secure(physicalgraph.zwave.Command cmd) {
 
 private secureSequence(commands, delay=200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
+}
+
+private isSecured() {
+	if (zwaveInfo && zwaveInfo.zw) {
+		return zwaveInfo.zw.endsWith("s")
+	} else {
+		return state.sec == 1
+	}
 }
