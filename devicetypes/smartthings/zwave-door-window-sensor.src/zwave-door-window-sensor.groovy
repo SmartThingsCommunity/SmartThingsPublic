@@ -76,7 +76,7 @@ private getCommandClassVersions() {
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err 106")) {
-		if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.endWith("s")) {
+		if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.endsWith("s")) {
 			log.debug description
 		} else {
 			result = createEvent(
@@ -172,26 +172,28 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
-	def request = []
+	def cmds = []
 	if (!state.MSR) {
-		request << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	}
 
 	if (device.currentValue("contact") == null) {
 		// In case our initial request didn't make it, initial state check no. 3
-		request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)
+		cmds << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)
 	}
 
 	if (!state.lastbat || now() - state.lastbat > 53 * 60 * 60 * 1000) {
-		request << zwave.batteryV1.batteryGet()
+		cmds << zwave.batteryV1.batteryGet()
 	}
 
-	def response = response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))
-	if (request.size() > 0) {
-		response = new physicalgraph.device.HubMultiAction(commands(request, 1000) + ["delay 2000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())])
+	def request = []
+	if (cmds.size() > 0) {
+		request = commands(cmds, 1000)
+		request << "delay 20000"
 	}
+	request << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 
-	[event, response]
+	[event, response(request)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -285,10 +287,6 @@ def initialPoll() {
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)
 	request << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	commands(request, 500) + ["delay 6000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
-}
-
-def addNoMoreInformationCommand(commands) {
-	(commands << ["delay 2000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]).flatten()
 }
 
 private command(physicalgraph.zwave.Command cmd) {
