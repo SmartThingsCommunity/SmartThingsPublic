@@ -69,7 +69,8 @@ metadata {
 	rates << ["10" : "Refresh every 10 minutes (Power Monitors)"]	
 	rates << ["15" : "Refresh every 15 minutes (Sockets switched by other systems)"]
 	rates << ["30" : "Refresh every 30 minutes - (Sockets)"]
-    rates << ["60" : "Refresh every 60 minutes - Default (Sockets)"]
+    rates << ["60" : "Refresh every 60 minutes - (Sockets)"]
+    rates << ["No" : "Manual Refresh - Default (Sockets)"]
 
 	preferences {
         input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
@@ -89,10 +90,8 @@ def installed() {
 }
 def updated() {
 	log.info "updated"
-	unschedule(refreshRate)
-    unschedule(off)
-    unschedule(on)
-    runIn(02, initialize)
+	unschedule()
+	runIn(02, initialize)
 }
 def initialize() {
 	log.info "initialize"
@@ -115,9 +114,12 @@ def initialize() {
 			runEvery30Minutes(refresh)
 			log.info "Refresh Scheduled for every 30 minutes"
 			break
-		default:
+        case "60":
 			runEvery1Hour(refresh)
 			log.info "Refresh Scheduled for every 60 minutes"
+			break
+		default:
+			log.info "Manual Refresh - No Schedule"
 	}
 }
 def uninstalled() {
@@ -160,7 +162,7 @@ def checkin() {
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)
     }
-    log.info "CHECKIN complete-'$device', '$state.Switch' @ '$settings.refreshRate' min refresh rate - all good"
+    log.info "CHECKIN complete-'$device', '$state.Switch' @ '$settings.refreshRate' min refresh rate"
 }
 
 def on() {

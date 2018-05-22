@@ -496,7 +496,7 @@ def checkin() {
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)    
     }
-	log.info "CHECKIN -'$device', MODE='$setmode', TARGET Temp='$state.heatingSetpoint', ACTUAL Temp='$state.temperature', BOOST Settings='$state.boostLabel' @ '$settings.refreshRate' min refresh rate - All good"
+	log.info "CHECKIN -'$device', MODE='$setmode', TTemp='$state.heatingSetpoint', ATemp='$state.temperature', BOOST='$state.boostLabel' @ '$settings.refreshRate' min refresh rate"
 }
 
 def refresh() {
