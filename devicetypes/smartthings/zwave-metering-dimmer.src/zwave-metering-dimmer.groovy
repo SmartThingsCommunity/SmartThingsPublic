@@ -296,14 +296,6 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 }
 
-private encap(List encapList) {
-	encap(encapList[0], encapList[1])
-}
-
-private encap(Map encapMap) {
-	encap(encapMap.cmd, encapMap.ep)
-}
-
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
