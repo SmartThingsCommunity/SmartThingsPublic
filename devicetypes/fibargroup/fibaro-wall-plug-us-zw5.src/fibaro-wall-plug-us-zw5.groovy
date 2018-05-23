@@ -83,15 +83,19 @@ def test(options, defValue){
 
 //UI and tile functions
 def on() {
-    log.warn "on"
-    sendEvent(name: "switch", value: "on", isStateChange: true, displayed: false)
-    encap(zwave.basicV1.basicSet(value: 0xFF))
+	log.debug "on"
+	def cmds = []
+    cmds << [zwave.basicV1.basicSet(value: 0xFF),1]
+    cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
+    encapSequence(cmds,500)
 }
 
 def off() {
-    log.warn "off"
-    sendEvent(name: "switch", value: "off", isStateChange: true, displayed: false)
-    encap(zwave.basicV1.basicSet(value: 0))
+    log.debug "off"
+	def cmds = []
+    cmds << [zwave.basicV1.basicSet(value: 0),1]
+    cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
+    encapSequence(cmds,500)
 
 }
 
@@ -123,6 +127,11 @@ def childRefresh(){
     cmds << response(encap(zwave.meterV3.meterGet(scale: 0), 2))
     cmds << response(encap(zwave.meterV3.meterGet(scale: 2), 2))
     sendHubCommand(cmds,1000)
+}
+
+
+def installed(){
+	response(refresh())
 }
 
 //Configuration and synchronization
