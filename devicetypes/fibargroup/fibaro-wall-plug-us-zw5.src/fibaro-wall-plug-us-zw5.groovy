@@ -111,6 +111,7 @@ def refresh() {
     def cmds = []
     cmds << [zwave.meterV3.meterGet(scale: 0), 1]
     cmds << [zwave.meterV3.meterGet(scale: 2), 1]
+	cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
     encapSequence(cmds,1000)
 }
 
@@ -131,13 +132,13 @@ def childRefresh(){
 
 
 def installed(){
+    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	response(refresh())
 }
 
 //Configuration and synchronization
 def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-    sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
     def cmds = []
     log.warn "Executing updated"
