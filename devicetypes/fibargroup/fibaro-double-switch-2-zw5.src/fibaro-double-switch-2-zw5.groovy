@@ -164,7 +164,6 @@ def initialize() {
 	if (device.currentValue("numberOfButtons") != 6) { sendEvent(name: "numberOfButtons", value: 6) }
 
 	cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1) //verify if group 1 association is correct  
-	cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
 	runIn(3,"syncStart")
 	state.lastUpdated = now()
 	response(encapSequence(cmds,1000))
