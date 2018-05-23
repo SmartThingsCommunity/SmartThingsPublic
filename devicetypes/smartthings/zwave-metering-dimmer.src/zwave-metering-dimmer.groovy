@@ -34,8 +34,8 @@ metadata {
 		fingerprint inClusters: "0x26,0x32"
 		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Micro Smart Dimmer 2E"
 		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Smart Dimmer 6"
-		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeon Labs Nano Dimmer"
-		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeon Labs Nano Dimmer"
+		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeotec Nano Dimmer"
+		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeotec Nano Dimmer"
 		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Plug-in Dimmer"
 	}
 
@@ -159,14 +159,16 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	return result
 }
 
-def handleMeterReport(cmd)
+def physicalgraph.zwave.commands.meterv3.MeterReport(cmd)
 {
+	if (cmd.meterType == 1) {
 	if (cmd.scale == 0) {
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 	} else if (cmd.scale == 1) {
 		createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 	} else if (cmd.scale == 2) {
 		createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+	}
 	}
 }
 
@@ -234,8 +236,6 @@ def configure() {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)))	 // every 5 min
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8)))	// report energy in kWh
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300)))	 // every 5 min
-		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0)))	// no third report
-		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300))) // every 5 min
 	}
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))

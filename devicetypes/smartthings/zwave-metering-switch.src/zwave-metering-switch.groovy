@@ -30,8 +30,8 @@ metadata {
 		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Micro Smart Switch"
 		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch"
 		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"
-		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeon Labs Nano Switch"
-		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeon Labs Nano Switch"
+		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeotec Nano Switch"
+		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeotec Nano Switch"
 		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "GoControl Wall-Mounted Outlet"
 		fingerprint mfr: "014F", prod: "5053", model: "3531", deviceJoinName: "GoControl Plug-in Switch"
 		fingerprint mfr: "0063", prod: "4F44", model: "3031", deviceJoinName: "GE Direct-Wire Outdoor Switch"
@@ -244,9 +244,9 @@ def reset() {
 	])
 }
 
-def meterGet(scale)
+def meterGet(map)
 {
-	return zwave.meterV2.meterGet(scale)
+	return zwave.meterV2.meterGet(map)
 }
 
 def meterReset()
