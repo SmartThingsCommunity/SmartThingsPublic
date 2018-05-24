@@ -298,12 +298,17 @@ void resumeProgram() {
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 	if (parent.resumeProgram(deviceId)) {
 		sendEvent("name":"thermostat", "value":"setpoint is updating", "description":statusText, displayed: false)
-		sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
 	} else {
-		sendEvent("name":"thermostat", "value":"failed resume click refresh", "description":statusText, displayed: false)
+		sendEvent("name":"thermostat", "value":"resume failed", "description":statusText, displayed: false)
 		log.error "Error resumeProgram() check parent.resumeProgram(deviceId)"
 	}
-	runIn(5, "refresh", [overwrite: true])
+	// Prevent double tap and spamming of resume command
+	runIn(5, "updateResume", [overwrite: true])
+}
+
+def updateResume() {
+	sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
+	refresh()
 }
 
 def modes() {
@@ -334,9 +339,10 @@ def switchToMode(mode) {
 	if (!(parent.setMode(((mode == "emergency heat") ? "auxHeatOnly" : mode), deviceId))) {
 		log.warn "Error setting mode:$mode"
 		// Ensure the DTH tile is reset
-		generateModeEvent(device.currentValue("thermostatMode"))
+		mode = device.currentValue("thermostatMode")
 	}
-	runIn(5, "refresh", [overwrite: true])
+	generateModeEvent(mode)
+	generateStatusEvent()
 }
 
 def switchFanMode() {
@@ -356,9 +362,9 @@ def switchToFanMode(fanMode) {
 	if (!(parent.setFanMode(heatingSetpoint, coolingSetpoint, deviceId, sendHoldType, fanMode))) {
 		log.warn "Error setting fanMode:fanMode"
 		// Ensure the DTH tile is reset
-		generateFanModeEvent(device.currentValue("thermostatFanMode"))
+		fanMode = device.currentValue("thermostatFanMode")
 	}
-	runIn(5, "refresh", [overwrite: true])
+	generateFanModeEvent(fanMode)
 }
 
 def getDataByName(String name) {
@@ -468,12 +474,12 @@ def alterSetpoint(raise, setpoint) {
 	// update UI without waiting for the device to respond, this to give user a smoother UI experience
 	// also, as runIn's have to overwrite and user can change heating/cooling setpoint separately separate runIn's have to be used
 	if (data.targetHeatingSetpoint) {
-		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, deviceScale),
-				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, "F"),
+				unit: locationScale, eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	if (data.targetCoolingSetpoint) {
-		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, deviceScale),
-				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, "F"),
+				unit: locationScale, eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	runIn(5, "updateSetpoint", [data: data, overwrite: true])
 }
@@ -518,14 +524,15 @@ def updateSetpoint(data) {
 
 	if (parent.setHold(data.targetHeatingSetpoint, data.targetCoolingSetpoint, deviceId, sendHoldType)) {
 		log.debug "updateSetpoint succeed to change setpoints:${data}"
-		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, deviceScale),
+		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, "F"),
 				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
-		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, deviceScale),
+		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, "F"),
 				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		generateStatusEvent()
 	} else {
 		log.error "Error updateSetpoint"
+		runIn(5, "refresh", [overwrite: true])
 	}
-	runIn(5, "refresh", [overwrite: true])
 }
 
 def generateStatusEvent() {

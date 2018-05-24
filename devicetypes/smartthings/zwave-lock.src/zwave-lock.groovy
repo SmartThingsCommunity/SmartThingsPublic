@@ -102,6 +102,34 @@ import physicalgraph.zwave.commands.usercodev1.*
 def installed() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	scheduleInstalledCheck()
+}
+
+/**
+ * Verify that we have actually received the lock's initial states.
+ * If not, verify that we have at least requested them or request them,
+ * and check again.
+ */
+def scheduleInstalledCheck() {
+	runIn(120, installedCheck, [forceForLocallyExecuting: true])
+}
+
+def installedCheck() {
+	if (device.currentState("lock") && device.currentState("battery")) {
+		unschedule("installedCheck")
+	} else {
+		// We might have called updated() or configure() at some point but not have received a reply, so don't flood the network
+		if (!state.lastLockDetailsQuery || secondsPast(state.lastLockDetailsQuery, 2 * 60)) {
+			def actions = updated()
+
+			if (actions) {
+				sendHubCommand(actions.toHubAction())
+			}
+		}
+
+		scheduleInstalledCheck()
+	}
 }
 
 /**
@@ -121,11 +149,11 @@ def uninstalled() {
 def updated() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
 	def hubAction = null
 	try {
 		def cmds = []
-		if (!state.init || !state.configured) {
-			state.init = true
+		if (!device.currentState("lock") || !device.currentState("battery") || !state.configured) {
 			log.debug "Returning commands for lock operation get and battery get"
 			if (!state.configured) {
 				cmds << doConfigure()
@@ -171,6 +199,9 @@ def doConfigure() {
 		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: getSchlageLockParam().codeLength.number))
 	}
 	cmds = delayBetween(cmds, 30*1000)
+
+	state.lastLockDetailsQuery = now()
+
 	log.debug "Do configure returning with commands := $cmds"
 	cmds
 }
@@ -1128,6 +1159,8 @@ def refresh() {
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
 		state.associationQuery = now()
 	}
+	state.lastLockDetailsQuery = now()
+
 	cmds
 }
 

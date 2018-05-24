@@ -47,7 +47,7 @@ metadata {
 			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00A0DC", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false) {
+		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false, range:"(0..100)") {
 			state "level", action:"switch level.setLevel"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
@@ -98,7 +98,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")]
 	if (cmd.value) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%")
 	}
 	return result
 }
