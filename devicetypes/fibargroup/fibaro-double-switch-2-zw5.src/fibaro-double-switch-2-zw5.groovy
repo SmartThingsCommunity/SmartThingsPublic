@@ -262,7 +262,7 @@ private createChildDevices() {
 	}
 }
 
-private physicalgraph.app.ChildDeviceWrapper getChild(Integer childNum) {
+private getChild(Integer childNum) {
 	return childDevices.find({ it.deviceNetworkId == "${device.deviceNetworkId}-${childNum}" })
 }
 
