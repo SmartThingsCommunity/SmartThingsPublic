@@ -131,14 +131,6 @@ def childRefresh() {
 	sendHubCommand(cmds,1000)
 }
 
-def setState(String key, Integer value) {
-	state."$key".value = value
-}
-
-Integer getState(String key) {
-	state."$key".value
-}
-
 def installed(){
 	sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	initialize()
