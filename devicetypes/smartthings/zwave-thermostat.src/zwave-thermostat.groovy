@@ -33,7 +33,6 @@ metadata {
 		fingerprint deviceId: "0x08"
 		fingerprint inClusters: "0x43,0x40,0x44,0x31"
 		fingerprint mfr:"0039", prod:"0011", model:"0001", deviceJoinName: "Honeywell Z-Wave Thermostat"
-		fingerprint mfr:"0002", prod:"0005", model:"0004", deviceJoinName: "Danfoss Radiator Thermostat"
 	}
 
 	tiles {
