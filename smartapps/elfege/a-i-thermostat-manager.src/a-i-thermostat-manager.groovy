@@ -749,7 +749,7 @@ def Windows_Control(){
                     }     
                 }
                 if(Actuators){
-                    input(name: "OutsideTempLowThres", type: "number", title: "Outside temperature above which I open windows/turn on Fans", required: true, description: "Outside Temp's Low Threshold")
+                    input(name: "OutsideTempLowThres", type: "number", title: "Outside temperature below which I open windows/turn on Fans", required: true, description: "Outside Temp's Low Threshold")
                     input(name: "OutsideTempHighThres", type: "number", title: "Outside temperature above which I keep windows/fans closed/off", required: true, description: "Outside Temp's High Threshold")
                     input(name: "ExceptACMode1", type: "mode", title: "if location is in this mode, lower outside temperature High Threshold", required: false, multiple: false, submitOnChange: true)
                     if(ExceptACMode1){
@@ -2195,11 +2195,11 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 /////////////////////////////////////////////////////////END OF SETPOINTS EVALS/////////////////////////////////////////////////////////
 
                 /////////////////////////////////////////////////////////EVAL OF NEEDS ////////////////////////////////////////////////////////////////
-                def WarmOutside = outsideTemp >= (MaxLinearHeat + MinLinearHeat)/2
+                def WarmOutside = outsideTemp >= CSPSet
                 def WarmInside = (CurrTemp >= CSPSet + 1 && WarmOutside) || (CurrTemp >= CSPSet + 1 && TooHumidINSIDE && Active)
                 //log.debug "CurrTemp = $CurrTemp, outsideTemp = $outsideTemp, CSPSet = $CSPSet, WarmOutside = $WarmOutside, WarmInside = $WarmInside"
 
-                def ShouldCoolWithAC = WarmOutside
+                def ShouldCoolWithAC = WarmOutside && WarmInside
                 state.ShouldCoolWithAC = ShouldCoolWithAC // will be used by venting option
 
                 //log.debug "$ThermSet ShouldCoolWithAC = $ShouldCoolWithAC (before other criteria loop $loopValue)"
@@ -2215,13 +2215,18 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 state.ShouldHeat = ShouldHeat
 
                 log.debug """
+   WarmOutside = $WarmOutside
+   WarmInside = $WarmInside
 ShouldCoolWithAC = $ShouldCoolWithAC 
 ShouldHeat = $ShouldHeat 
 state.ShouldHeat = $state.ShouldHeat
 WarmOutside = $WarmOutside 
 WarmInside = $WarmInside
 OutsideTempLowThres = $OutsideTempLowThres
+OutsideTempHighThres = $OutsideTempHighThres
 TooHumidINSIDE = $TooHumidINSIDE
+outsideTemp = $outsideTemp
+
 
 """       
 
@@ -2499,7 +2504,7 @@ TurnedOffForced = $TurnedOffForced
                                     log.debug "$ThermSet in OVERRIDE MODE, doing nothing"
                                 }
                             }
-                            if(ShouldHeat /*|| !HSPok*/){
+                            else if(ShouldHeat /*|| !HSPok*/){
                                 // hsp must be set despite no need for heat otherwise hsp become inacurate during comparisons in other functions
                                 // very weird bug !HSPok test seems to trigger a different setpoint... 69 when HSPSet = 75... totally weird bug... 
                                 // commenting out "/*|| !HSPok*/" seems to have resolved the issue... even weirder! 
@@ -2861,7 +2866,7 @@ def ChangedModeHandler(evt) {
         // windows are closed 
         state.ClosedByApp = true // app will open windows if needed 
         state.OpenByApp = false 
-        // has to be the default value so it doesn't close again if user opens windows manually or another app. 
+        // has to be the default value so it doesn't close again if user opens windows manually or another app does so 
         // Beware that this can be a serious safety concern (for example, if a user has these windows linked to a smoke detector
         // so do not modify these parameters under any circumstances 
         // and check that this works after any modification you'd bring to this app
@@ -3282,7 +3287,9 @@ state.messageSent($state.messageSent)
 
                 //log.debug "opening windows"
                 if(!NotWindows){
+                /// if these are indeed actual windows (set by user)
                     if(OperatingTime){
+                    // if user chose a max operating time
                         message = "I'm opening windows because $state.causeOpen. Operation time is $OperatingTime seconds"
                         if(inAway && OpenInfullWhenAway){
                             //log.debug "not applying operation time because location is in $Away mode"
@@ -3290,6 +3297,7 @@ state.messageSent($state.messageSent)
                         runIn(OperatingTime, StopActuators) 
                     }
                     else {
+                    // if no operating time just return the cause
                         message = "I'm opening windows because $state.causeOpen"
                     }
                 }
