@@ -24,6 +24,8 @@ metadata {
 		command "low"
 		command "medium"
 		command "high"
+		command "raiseFanSpeed"
+		command "lowerFanSpeed"
 	}
 
 	simulator {
@@ -34,24 +36,29 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name: "fanSpeed", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
+		multiAttributeTile(name: "fanSpeed", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.fanSpeed", key: "PRIMARY_CONTROL") {
-				attributeState "0", label: "off", action: "low", icon: "st.thermostat.fan-off", backgroundColor: "#ffffff", nextState: "1"
-				attributeState "1", label: "low", action: "medium", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc", nextState: "2"
-				attributeState "2", label: "medium", action: "high", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc", nextState: "3"
-				attributeState "3", label: "high", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc", nextState: "0"
+				attributeState "0", label: "off", icon: "st.thermostat.fan-off", backgroundColor: "#ffffff"
+				attributeState "1", label: "low", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
+				attributeState "2", label: "medium", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
+				attributeState "3", label: "high", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
 			}
-			tileAttribute("device.fanSpeed", key: "SLIDER_CONTROL", range: "(0..3") {
-				attributeState "speed", action: "setFanSpeed"
+			tileAttribute("device.fanSpeed", key: "VALUE_CONTROL") {
+				attributeState "VALUE_UP", action: "raiseFanSpeed"
+				attributeState "VALUE_DOWN", action: "lowerFanSpeed"
 			}
 		}
 
 		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
+		standardTile("switch", "device.switch", width: 2, height: 2, decoration: "flat", canChangeIcon: false) {
+			state "on", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00A0DC"// blue
+			state "off", action: "switch.on", icon: "st.thermostat.fan-off", backgroundColor: "#ffffff"// white
+		}
 
 		main "fanSpeed"
-		details(["fanSpeed", "refresh"])
+		details(["fanSpeed", "refresh", "switch"])
 	}
 
 }
@@ -114,13 +121,21 @@ def off() {
 def setLevel(value) {
 	log.debug "setLevel >> value: $value"
 	def level = value as Integer
-	level = level == 255 ?: Math.max(Math.min(level, 99), 0)
+	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
 	sendEvent(name: "switch", value: level > 0 ? "on" : "off")
 	delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
 def setFanSpeed(speed) {
 	setLevel(speed * 33)
+}
+
+def raiseFanSpeed() {
+	setFanSpeed(Math.min((device.currentValue("fanSpeed") as Integer) + 1, 3))
+}
+
+def lowerFanSpeed() {
+	setFanSpeed(Math.max((device.currentValue("fanSpeed") as Integer) - 1, 0))
 }
 
 def low() {
