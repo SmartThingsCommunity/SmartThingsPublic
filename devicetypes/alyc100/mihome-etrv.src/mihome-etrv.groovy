@@ -40,7 +40,7 @@
  */
  
 metadata {
-	definition (name: "MiHome eTRV", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updated by mark cockcroft" ) { //removed 13th 8am type: ,action.devices.types.THERMOSTAT"
+	definition (name: "MiHome eTRV", namespace: "alyc100", author: "Alex Lee Yuk Cheung and updated by mark cockcroft") {
 		
 //capability "Polling" not needed as refresh is schdualed in the DH
        	capability "Actuator"	// best practice
@@ -62,8 +62,9 @@ metadata {
         attribute "lastCheckin", "String"
         attribute "boostLabel", "String"
         attribute "thermostatTemperatureSetpoint", "String" 									//might be need gor google
-        attribute "availableThermostatModes", "enum", ["off", "heat", "cool == boost", "on"]	//might be need gor google
+        //attribute "availableThermostatModes", "enum", ["off", "heat", "boost", "on"]	//might be need gor google
         attribute "ThermostatSetpoint", "String"												//might be need gor google
+        attribute "boostLength", "String"
 	}
 
 	simulator {
@@ -71,43 +72,27 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-
-		multiAttributeTile(name: "thermostat", type:"lighting", width:6, height:4) {
-			tileAttribute("device.temperature", key:"PRIMARY_CONTROL", canChangeBackground: true){
-				attributeState "default", label: '${currentValue}°', unit:"C", 
-                backgroundColors:[
+		multiAttributeTile(name: "thermostat", type: "generic", width: 6, height: 4, canChangeIcon: true) {  
+			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
+				attributeState("thermostat", label: '${currentValue}°', unit:"C", icon: "st.Weather.weather2" ,defaultState: true, backgroundColors:[
 					[value: 0, color: "#153591"],
 					[value: 10, color: "#1e9cbb"],
 					[value: 13, color: "#90d2a7"],
 					[value: 17, color: "#44b621"],
 					[value: 20, color: "#f1d801"],
 					[value: 25, color: "#d04e00"],
-					[value: 29, color: "#bc2323"],
-                    [value: offline, color: "#ff0000"]
-				]
-			}
-            
-          tileAttribute("device.lastCheckin", key: "SECONDARY_CONTROL") {
-               	attributeState("default", label:'${currentValue}')
-           	}
-		}
-        
-        valueTile("thermostat_small", "device.temperature", width: 2, height: 2, icon:"st.alarm.temperature.normal" ,canChangeIcon: true) {
-			state "default", label:'${currentValue}°', unit:"C",
-            backgroundColors:[
-                [value: 0, color: "#153591"],
-					[value: 10, color: "#1e9cbb"],
-					[value: 13, color: "#90d2a7"],
-					[value: 17, color: "#44b621"],
-					[value: 20, color: "#f1d801"],
-					[value: 25, color: "#d04e00"],
 					[value: 29, color: "#bc2323"]
-            ]
+				]
+                )
+			}
+  
+          tileAttribute("device.lastCheckin", key: "SECONDARY_CONTROL") {
+               	attributeState("lastCheckin", label:'${currentValue}', defaultState: true)
+           	}
 		}
  
         valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state "default", label:'${currentValue}°', unit:"C",
-            backgroundColors:[
+			state ("heatingSetpoint", label:'${currentValue}°',  backgroundColors:[ //unit:"C", defaultState: true,
 					[value: 0, color: "#153591"],
 					[value: 10, color: "#1e9cbb"],
 					[value: 13, color: "#90d2a7"],
@@ -116,71 +101,73 @@ metadata {
 					[value: 25, color: "#d04e00"],
 					[value: 29, color: "#bc2323"]
 				]
+                )
 		}
-        
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
-			state("default", label:'refresh', action:"refresh", icon:"st.secondary.refresh-icon")
+			state ("refresh", label:'refresh', action:"refresh", icon:"st.secondary.refresh-icon", defaultState: true)
 		}
- 
-		 standardTile("summer", "device.summer", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+		standardTile("summer", "device.summer", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
 			state ("auto", label:'Summer', action: "summer", icon:"st.thermostat.auto")
             state ("summer", label:'Deactivite', action: "heat", icon:"st.custom.wuk.clear")
  		}
         controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false, range:"(12..30)") {
-			state "setHeatingSetpoint", action:"setHeatingSetpoint" //need to send to a lag
+			state ("heatingSetpoint", action:"setHeatingSetpoint") //need to send to a lag
 		}
-        
         valueTile("battery", "device.batteryVoltage", width: 2, height: 2) {
-			state "default", label:'Battery Voltage Is ${currentValue}', unit:"V",
-            backgroundColors:[
+			state ("battery", label:'Battery Voltage Is ${currentValue}', unit:"V", defaultState: true, backgroundColors:[
                					[value: 3, color: "#44b621"],
 								[value: 2.8, color: "#f1d801"],
 								[value: 2.78, color: "#bc2323"],
          		           ]
+                           )
         }
         controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 2, inactiveLabel: false, range:"(30..120)") {
-			state ("setBoostLength", label:'Set boost length to', action:"setBoostLength")
+			state ("boostLength", action:"setBoostLength")
 		}
-                
         standardTile("boostSwitch", "device.boostSwitch", decoration: "flat", height: 2, width: 2, inactiveLabel: false) {
 			state ("stby", label:'Press to boost', action: "emergencyHeat", icon:"st.alarm.temperature.overheat")
-            state ("emergencyHeat", label: 'Press Reboost', action:"emergencyHeat", icon:"st.Health & Wellness.health7", backgroundColor: "#bc2323" )
+            state ("emergencyHeat", label: 'Press Reboost', action:"emergencyHeat", icon:"st.Health & Wellness.health7", backgroundColor: "#bc2323")
 			
         }
-         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-// google does not recognise //state ("auto", label: 'auto Press for off', action:"off" , icon:"st.thermostat.auto-cool")
-            state ("heat", label: 'Press for \nOff', action:"off" , icon:"st.thermostat.heat-auto", backgroundColor:"#00a0dc")
+        standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state ("heat", label: 'Press for Off', action:"off" , icon:"st.thermostat.heat-auto", backgroundColor:"#00a0dc")
             state ("cool", label: 'In BOOST Press for Resume', action:"stopBoost", icon:"st.thermostat.emergency-heat", backgroundColor:"#e86d13")
-			state ("off", label: 'Press for Heat \n(or press boost below)', action:"heat", icon:"st.thermostat.heating-cooling-off")
-			state ("summer", label: 'Valve full open \nTurn off below',  icon:"st.custom.wuk.clear")
+			state ("off", label: 'Press for Heat (or press boost below)', action:"heat", icon:"st.thermostat.heating-cooling-off")
+			state ("summer", label: 'Valve full open Turn off below',  icon:"st.custom.wuk.clear")
+            state ("offline", label: 'Error',  icon:"st.custom.wuk.clear")
+            // google does not recognise //state ("auto", label: 'auto Press for off', action:"off" , icon:"st.thermostat.auto-cool")
 		}
-        
         valueTile("boostLabel", "device.boostLabel", inactiveLabel: true, decoration: "flat", width: 4, height: 1) {
-			state("default", label:'${currentValue}')
+			state ("boostLabel", label:'${currentValue}', defaultState: true)
         }
-
-        main(["thermostat_small"])
-		details(["thermostat", "heatingSetpoint", "heatSliderControl", "thermostatMode", "boostLabel", "battery", "boostSliderControl", "boostSwitch", "refresh", "summer"])
+		
+        main (["thermostat"])
+		details (["thermostat", "heatingSetpoint", "heatSliderControl", "thermostatMode", "boostLabel", "battery", "boostSliderControl", "boostSwitch", "refresh", "summer"])
 	}
-            //might be need gor google took out 30/04/18
-//        valueTile("thermostatTemperatureSetpoint", "device.thermostatTemperatureSetpoint", inactiveLabel: true, decoration: "flat", width: 4, height: 1) {
-//			state("default", label:'${currentValue}')
-//        }
-    def rates = [:]
-	rates << ["5" : "Refresh every 5 minutes (eTRVs)"]
-	rates << ["10" : "Refresh every 10 minutes (power monitors)"]	
-	rates << ["15" : "Refresh every 15 minutes (sockets)"]
-	rates << ["30" : "Refresh every 30 minutes (default)"]
 
 	preferences {
-        input name: "refreshRate", type: "enum", title: "Check-in Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
-		input name: "checkinInfo", type: "enum", title: "Show last Check-in time", options: ["Hide", "MM/dd/yyyy h:mma", "h:mma dd/mm/yyyy", "dd/MM/yyyy h:mm", "dd-MM-yyyy HH:mm" , "h:mma dd/MM/yy"], description: "Show last check-in info.", required: false
-        input name: "emergencyheattemp", type: "number", title: "Temp to boost to - 13 to 30", range: "13..30", description: "Boost aka cool to temp" ,required: true
-        input description: "Summer mode ---  \nOpens the valve fully & prevents any other change to state without press the auto putton", title: "Summer Button", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        input description: "---Turn On---  \n'OK google set **device name/room** termostat(s) to heat/cool' \nheat=Resume \ncool=boost \n---Turn Off--- \n'Ok google turn off **device name/room** thermostat(s)' \nSaves the last settings and turns off (aka 12deg) \n---Set Temprature--- \n'Ok google set **device name/room** thermostat(s)/temprature to **number** \n---Quiry Temprature--- \n'Ok google what is the temprature in the **device name/room/house**' \nResponse current temp and setpoint \n---Boost--- \n'Ok google set **device name/room** thermostat(s) to COOL \naka boost to temp & time set above", title: "Google Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+  		input (name: "refreshRate", title: "Refresh Rate", type: "enum", 
+            options: [
+            	"5":"Refresh every 5 minutes (eTRVs)",
+                "10":"Refresh every 10 minutes (power monitors)",
+                "15":"Refresh every 15 minutes (sockets)",
+                "30":"Refresh every 30 minutes",
+                "No":"Manual Refresh - Default (Sockets)"
+			], defaultValue: "No", required: false) //description: "Select Refresh Rate", required: false)
+		input (name: "checkinInfo", title: "Show last Check-in info", type: "enum",
+            options: [
+            	"Hide", 
+                "MM/dd/yyyy h:mma", 
+                "h:mma dd/mm/yyyy", 
+                "dd/MM/yyyy h:mm", 
+                "dd-MM-yyyy HH:mm", 
+                "h:mma dd/MM/yy"
+                ], defaultValue: "h:mma dd/MM/yy", required: false)// description: "Show last check-in info.", required: false)
+        input (name: "emergencyheattemp", title: "Temp to boost to - 13 to 30", type: "number", range: "13..30", required: false) // description: "Boost aka cool to temp", required: false)
+        //input description: "Summer mode ---  \nOpens the valve fully & prevents any other change to state without press the auto putton", title: "Summer Button", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+       	//input description: "---Turn On---  \n'OK google set **device name/room** termostat(s) to heat/cool' \nheat=Resume \ncool=boost \n---Turn Off--- \n'Ok google turn off **device name/room** thermostat(s)' \nSaves the last settings and turns off (aka 12deg) \n---Set Temprature--- \n'Ok google set **device name/room** thermostat(s)/temprature to **number** \n---Quiry Temprature--- \n'Ok google what is the temprature in the **device name/room/house**' \nResponse current temp and setpoint \n---Boost--- \n'Ok google set **device name/room** thermostat(s) to COOL \naka boost to temp & time set above", title: "Google Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
   	}
 }
-
 def installed() { //	===== Update when installed or setting changed =====
 	log.info "Executing 'installed'"
     updated()
@@ -211,9 +198,12 @@ def update() {
 			runEvery15Minutes(refresh)
 			log.info "Refresh Scheduled for every 15 minutes"
 			break
-		default:
+        case "30":
 			runEvery30Minutes(refresh)
 			log.info "Refresh Scheduled for every 30 minutes"
+			break
+		default:
+			log.info "Manual Refresh - No Schedule"
 	}
 }
 def uninstalled() {

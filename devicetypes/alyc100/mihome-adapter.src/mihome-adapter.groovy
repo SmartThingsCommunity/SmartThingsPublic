@@ -41,27 +41,27 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "switch", type:"lighting", width:6, height:4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                 attributeState "on", label:'${name}', action:"off", icon:"st.Home.home30", backgroundColor:"#00a0dc", nextState:"turningOff"
-                 attributeState "off", label:'${name}', action:"on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
-                 attributeState "turningOn", label:'${name}', icon:"st.Home.home30", backgroundColor:"#f1d801", nextState:"on"
-                 attributeState "turningOff", label:'${name}', icon:"st.Home.home30", backgroundColor:"#f1d801", nextState:"off"
-                 attributeState "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#e86d13"
+                 attributeState ("on", label:'${name}', action:"off", icon:"st.Home.home30", backgroundColor:"#00a0dc", nextState:"turningOff")
+                 attributeState ("off", label:'${name}', action:"on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn")
+                 attributeState ("turningOn", label:'${name}', icon:"st.Home.home30", backgroundColor:"#f1d801", nextState:"on")
+                 attributeState ("turningOff", label:'${name}', icon:"st.Home.home30", backgroundColor:"#f1d801", nextState:"off")
+                 attributeState ("offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#e86d13")
  			}
             tileAttribute ("device.lastCheckin", key: "SECONDARY_CONTROL") {
-               	attributeState "default", label:'${currentValue}'
+               	attributeState ("default", label:'${currentValue}')
            	}
         }
         standardTile("refreshTile", "capability.refresh", width: 2, height: 2) {
         	state ("default", label:'Refresh', action:"refresh", icon:"st.secondary.refresh")
     	}
         standardTile("onButton", "command.switch", width: 2, height: 2) { //was capability.Switch
-			state "default", label: 'On', action:"on", icon:"st.Home.home30"
+			state ("default", label: 'On', action:"on", icon:"st.Home.home30")
         }
         standardTile("offButton", "command.switch", width: 2, height: 2) { //was capability.Switch
-			state "default", label: 'Off', action:"off", icon:"st.Home.home30"
+			state ("default", label: 'Off', action:"off", icon:"st.Home.home30")
         }
         
-        main(["switch"])
+        main "switch"
         details(["switch", "onButton", "offButton", "refreshTile"])
 	}
     def rates = [:]
@@ -70,7 +70,7 @@ metadata {
 	rates << ["15" : "Refresh every 15 minutes (Sockets switched by other systems)"]
 	rates << ["30" : "Refresh every 30 minutes - (Sockets)"]
     rates << ["60" : "Refresh every 60 minutes - (Sockets)"]
-    rates << ["No" : "Manual Refresh - Default (Sockets)"]
+	rates << ["No" : "Manual Refresh - Default (Sockets)"]
 
 	preferences {
         input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
