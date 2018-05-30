@@ -76,7 +76,7 @@ private getCommandClassVersions() {
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err 106")) {
-		if (state.sec) {
+		if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.endsWith("s")) {
 			log.debug description
 		} else {
 			result = createEvent(
@@ -100,31 +100,16 @@ def parse(String description) {
 def installed() {
 	// Device-Watch simply pings if no device events received for 482min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	response(initialPoll())
 }
 
 def updated() {
 	// Device-Watch simply pings if no device events received for 482min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	def cmds = []
-	if (!state.MSR) {
-		cmds = [
-			command(zwave.manufacturerSpecificV2.manufacturerSpecificGet()),
-			"delay 1200",
-			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-		]
-	} else if (!state.lastbat) {
-		cmds = []
-	} else {
-		cmds = [zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
-	}
-	response(cmds)
 }
 
 def configure() {
-	commands([
-		zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW),
-		zwave.manufacturerSpecificV2.manufacturerSpecificGet()
-	], 1000)
+	// currently supported devices do not require initial configuration
 }
 
 def sensorValueEvent(value) {
@@ -189,22 +174,26 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
 	def cmds = []
 	if (!state.MSR) {
-		cmds << command(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
-		cmds << "delay 1200"
+		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
 	}
 
-	if (device.currentValue("contact") == null) { // Incase our initial request didn't make it
-		cmds << command(zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW))
+	if (device.currentValue("contact") == null) {
+		// In case our initial request didn't make it, initial state check no. 3
+		cmds << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)
 	}
 
 	if (!state.lastbat || now() - state.lastbat > 53 * 60 * 60 * 1000) {
-		cmds << command(zwave.batteryV1.batteryGet())
-	} else {
-		// If we check the battery state we will send NoMoreInfo in the handler for BatteryReport so that we definitely get the report
-		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		cmds << zwave.batteryV1.batteryGet()
 	}
 
-	[event, response(cmds)]
+	def request = []
+	if (cmds.size() > 0) {
+		request = commands(cmds, 1000)
+		request << "delay 20000"
+	}
+	request << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+
+	[event, response(request)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -217,7 +206,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.value = cmd.batteryLevel
 	}
 	state.lastbat = now()
-	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
+	[createEvent(map)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -227,18 +216,24 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	log.debug "msr: $msr"
 	updateDataValue("MSR", msr)
 
-	retypeBasedOnMSR()
-
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 
-	if (msr == "011A-0601-0901") {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
-		result << response(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId))
-	} else if (!device.currentState("battery")) {
-		if (msr == "0086-0102-0059") {
-			result << response(zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format())
-		} else {
-			result << response(command(zwave.batteryV1.batteryGet()))
+	// change DTH if required based on MSR
+	if (!retypeBasedOnMSR()) {
+		if (msr == "011A-0601-0901") {
+			// Enerwave motion doesn't always get the associationSet that the hub sends on join
+			result << response(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId))
 		}
+	} else {
+		// if this is door/window sensor check initial contact state no.2
+		if (!device.currentState("contact")) {
+			result << response(command(zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)))
+		}
+	}
+
+	// every battery device can miss initial battery check. check initial battery state no.2
+	if (!device.currentState("battery")) {
+		result << response(command(zwave.batteryV1.batteryGet()))
 	}
 
 	result
@@ -246,15 +241,12 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
-	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
-		state.sec = 1
 		zwaveEvent(encapsulatedCommand)
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-	// def encapsulatedCommand = cmd.encapsulatedCommand(versions)
 	def version = commandClassVersions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
 	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
@@ -284,8 +276,21 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
 }
 
+def initialPoll() {
+	def request = []
+	if (isEnerwave()) { // Enerwave motion doesn't always get the associationSet that the hub sends on join
+		request << zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
+	}
+
+	// check initial battery and contact state no.1
+	request << zwave.batteryV1.batteryGet()
+	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_DOOR_WINDOW)
+	request << zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+	commands(request, 500) + ["delay 6000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
+}
+
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec == 1) {
+	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.endsWith("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
@@ -297,6 +302,7 @@ private commands(commands, delay = 200) {
 }
 
 def retypeBasedOnMSR() {
+	def dthChanged = true
 	switch (state.MSR) {
 		case "0086-0002-002D":
 			log.debug "Changing device type to Z-Wave Water Sensor"
@@ -323,5 +329,14 @@ def retypeBasedOnMSR() {
 			log.debug "Changing device type to Z-Wave Plus Motion/Temp Sensor"
 			setDeviceType("Z-Wave Plus Motion/Temp Sensor")
 			break
+		default:
+			dthChanged = false
+			break
 	}
+	dthChanged
+}
+
+// this is present in zwave-motion-sensor.groovy DTH too
+private isEnerwave() {
+	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
 }
