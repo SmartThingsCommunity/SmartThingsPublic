@@ -420,17 +420,18 @@ def updateDevices() {
         }
     }
    	log.debug selectors
-   	//Remove devices if does not exist on the MiHome platform
-   	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
+   	//Remove devices if does not exist on the MiHome platform - stop an mihome error removing a devece
+/*   	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")
         try {
 			deleteChildDevice(it.deviceNetworkId)
         } catch (physicalgraph.exception.NotFoundException e) {
         	log.info("Could not find ${it.deviceNetworkId}. Assuming manually deleted.")
         } catch (physicalgraph.exception.ConflictException ce) {
-        	log.info("Device ${it.deviceNetworkId} in use. Please manually delete.")
+       	log.info("Device ${it.deviceNetworkId} in use. Please manually delete.")
         }
-	}  
+	}
+*/    
 }
 
 def addETRV() {
