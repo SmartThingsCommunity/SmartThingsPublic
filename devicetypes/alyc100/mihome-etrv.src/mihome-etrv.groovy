@@ -125,16 +125,16 @@ metadata {
 			state ("boostLength", action:"setBoostLength")
 		}
         standardTile("boostSwitch", "device.boostSwitch", decoration: "flat", height: 2, width: 2, inactiveLabel: false) {
-			state ("stby", label:'Press to boost', action: "emergencyHeat", icon:"st.alarm.temperature.overheat")
+			state ("stby", label:'Press to \nboost', action: "emergencyHeat", icon:"st.alarm.temperature.overheat")
             state ("emergencyHeat", label: 'Press Reboost', action:"emergencyHeat", icon:"st.Health & Wellness.health7", backgroundColor: "#bc2323")
 			
         }
         standardTile("thermostatMode", "device.thermostatMode", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state ("heat", label: 'Press for Off', action:"off" , icon:"st.thermostat.heat-auto", backgroundColor:"#00a0dc")
-            state ("cool", label: 'In BOOST Press for Resume', action:"stopBoost", icon:"st.thermostat.emergency-heat", backgroundColor:"#e86d13")
-			state ("off", label: 'Press for Heat (or press boost below)', action:"heat", icon:"st.thermostat.heating-cooling-off")
-			state ("summer", label: 'Valve full open Turn off below',  icon:"st.custom.wuk.clear")
-            state ("offline", label: 'Error',  icon:"st.custom.wuk.clear")
+            state ("heat", label: 'Press for \nOff', action:"off" , icon:"st.thermostat.heat-auto", backgroundColor:"#00a0dc")
+            state ("cool", label: 'In BOOST Press \nfor Resume', action:"stopBoost", icon:"st.thermostat.emergency-heat", backgroundColor:"#e86d13")
+			state ("off", label: 'Press for Heat \n(or press boost below)', action:"heat", icon:"st.thermostat.heating-cooling-off")
+			state ("summer", label: 'Valve full open \nTurn off below',  icon:"st.custom.wuk.clear")
+            state ("offline", label: 'Error', action:"refresh",  icon:"st.secondary.refresh-icon")
             // google does not recognise //state ("auto", label: 'auto Press for off', action:"off" , icon:"st.thermostat.auto-cool")
 		}
         valueTile("boostLabel", "device.boostLabel", inactiveLabel: true, decoration: "flat", width: 4, height: 1) {
@@ -164,8 +164,8 @@ metadata {
                 "h:mma dd/MM/yy"
                 ], defaultValue: "h:mma dd/MM/yy", required: false)// description: "Show last check-in info.", required: false)
         input (name: "emergencyheattemp", title: "Temp to boost to - 13 to 30", type: "number", range: "13..30", required: false) // description: "Boost aka cool to temp", required: false)
-        //input description: "Summer mode ---  \nOpens the valve fully & prevents any other change to state without press the auto putton", title: "Summer Button", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-       	//input description: "---Turn On---  \n'OK google set **device name/room** termostat(s) to heat/cool' \nheat=Resume \ncool=boost \n---Turn Off--- \n'Ok google turn off **device name/room** thermostat(s)' \nSaves the last settings and turns off (aka 12deg) \n---Set Temprature--- \n'Ok google set **device name/room** thermostat(s)/temprature to **number** \n---Quiry Temprature--- \n'Ok google what is the temprature in the **device name/room/house**' \nResponse current temp and setpoint \n---Boost--- \n'Ok google set **device name/room** thermostat(s) to COOL \naka boost to temp & time set above", title: "Google Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        input description: "Summer mode ---  \nOpens the valve fully & prevents any other change to state without press the auto putton", title: "Summer Button", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+       	input description: "---Turn On---  \n'OK google set **device name/room** termostat(s) to heat/cool' \nheat=Resume \ncool=boost \n---Turn Off--- \n'Ok google turn off **device name/room** thermostat(s)' \nSaves the last settings and turns off (aka 12deg) \n---Set Temprature--- \n'Ok google set **device name/room** thermostat(s)/temprature to **number** \n---Quiry Temprature--- \n'Ok google what is the temprature in the **device name/room/house**' \nResponse current temp and setpoint \n---Boost--- \n'Ok google set **device name/room** thermostat(s) to COOL \naka boost to temp & time set above", title: "Google Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
   	}
 }
 def installed() { //	===== Update when installed or setting changed =====
