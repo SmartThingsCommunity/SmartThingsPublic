@@ -176,7 +176,8 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
-    logging("MeterReport: $cmd : Endpoint: $ep")
+//    log.debug "$device MeterReport: $cmd : Endpoint: $ep"
+//    log.debug " ${cmd.inspect()}"
     def result
     def cmds = []
     if (cmd.scale == 0) {
@@ -188,17 +189,20 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
     }
     if (ep) {
        def childDevice = childDevices.find{it.deviceNetworkId == "$device.deviceNetworkId-ep$ep"}
+        log.info "REFRESH '$childDevice' - '$result' ---- Child parent='$device'"
        if (childDevice)
           childDevice.sendEvent(result)
        def combinedValue = 0.00
        childDevices.each {
            if(it.currentValue(result.name)) combinedValue += it.currentValue(result.name)
+           //log.info "REFRESH '$childDevice' - '$result' ---- Child parent='$device'"
        }
        return createEvent([name: result.name, value: combinedValue])
     } else {
        (1..2).each { endpoint ->
 			cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
             cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
+            log.debug " LN 202 else"
 	   }
        return response(secureSequence(cmds))
     }
