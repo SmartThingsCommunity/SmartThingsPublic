@@ -38,6 +38,7 @@
  *	1.00: Added comments to code for readability
  *  1.10: Added Stop button to stop vertical axis motion
  *  1.11: Added switch capability for access the device via Google Home
+ *  1.20: Layout change and Dedicated open/close and preset1,2,3 buttons
  */
 metadata {
 	definition (name: "Qubino Flush Shutter", namespace: "Goap", author: "Kristjan Jam&scaron;ek") {
@@ -53,7 +54,9 @@ metadata {
 		attribute "kwhConsumption", "number" //attribute used to store and display power consumption in KWH
 		attribute "venetianLevel", "number" //attribute used to control and store venetian blinds level		
 		attribute "venetianState", "string" //attribute for the binary control element of the venetian blinds control
-		
+		attribute "preset1", "string"
+		attribute "preset2", "string"
+		attribute "preset3", "string"
 
 		command "setConfiguration" //command to issue Configuration Set commands to the module according to user preferences
 		command "setAssociation" //command to issue Association Set commands to the modules according to user preferences
@@ -61,6 +64,10 @@ metadata {
 		command "resetPower" //command to issue Meter Reset commands to reset accumulated pwoer measurements
 		command "calibrate" //command to calibrate the shutter module
 		command "stop" //command to stop the vertical blind movement
+        command "preset1"
+        command "preset2"
+        command "preset3"
+        
 		//command "setSlatLevel" //command to issue slat tilting controls
 		//command "openSlats" //command to set maximum level for slats
 		//command "closeSlats" //command to set minimum level for slats
@@ -89,9 +96,6 @@ metadata {
 				attributeState "power", label:'Power level: ${currentValue} W', icon: "st.Appliances.appliances17"
 			}
 	    }
-		standardTile("stop", "device.stop", decoration: "flat", width: 6, height: 2) {
-			state("stop", label:'', action:'stop', icon: "st.sonos.stop-btn")
-		}
         /*
 		standardTile("venetianLabel", "device.venetianLabel", decoration: "flat", width: 6, height: 2) {
 			state("venetianLabel", label:'SLAT TILT CONTROLS:')
@@ -108,16 +112,37 @@ metadata {
 			}
 	    }
         */
-		standardTile("power", "device.power", decoration: "flat", width: 3, height: 3) {
+		standardTile("open", "device.open", decoration: "flat", width: 2, height: 2) {
+			state("open", label:'OPEN', action:'open', icon: "st.doors.garage.garage-opening")
+		}
+		standardTile("stop", "device.stop", decoration: "flat", width: 2, height: 2) {
+			state("stop", label:'STOP', action:'stop', icon: "st.Transportation.transportation13")
+		}
+ 		standardTile("close", "device.close", decoration: "flat", width: 2, height: 2) {
+			state("close", label:'CLOSE', action:'close', icon: "st.doors.garage.garage-closing")
+		}
+       
+		standardTile("preset1", "device.preset1", decoration: "flat", width: 2, height: 2) {
+			state("preset1", label:'${currentValue}', action:'preset1')
+		}
+		standardTile("preset2", "device.preset2", decoration: "flat", width: 2, height: 2) {
+			state("preset2", label:'${currentValue}', action:'preset2')
+		}
+		standardTile("preset3", "device.preset3", decoration: "flat", width: 2, height: 2) {
+			state("preset3", label:'${currentValue}', action:'preset3')
+		}
+
+		standardTile("power", "device.power", decoration: "flat", width: 3, height: 2) {
 			state("power", label:'${currentValue} W', icon: 'st.Appliances.appliances17')
 		}
-		standardTile("kwhConsumption", "device.kwhConsumption", decoration: "flat", width: 3, height: 3) {
+		standardTile("kwhConsumption", "device.kwhConsumption", decoration: "flat", width: 3, height: 2) {
 			state("kwhConsumption", label:'${currentValue} kWh', icon: 'st.Appliances.appliances17')
 		}
-		standardTile("resetPower", "device.resetPower", decoration: "flat", width: 3, height: 3) {
+
+		standardTile("resetPower", "device.resetPower", decoration: "flat", width: 3, height: 1) {
 			state("resetPower", label:'Reset Power', action:'resetPower')
 		}
-		standardTile("refreshPowerConsumption", "device.refreshPowerConsumption", decoration: "flat", width: 3, height: 3) {
+		standardTile("refreshPowerConsumption", "device.refreshPowerConsumption", decoration: "flat", width: 3, height: 1) {
 			state("refreshPowerConsumption", label:'Refresh power', action:'refreshPowerConsumption')
 		}
 		/* //THIS VERSION DOESN?T SUPPORT TEMPERATURE SENSORS YET
@@ -142,20 +167,32 @@ metadata {
 			])
 		}
 		*/
-		standardTile("setConfiguration", "device.setConfiguration", decoration: "flat", width: 3, height: 3) {
+		standardTile("setConfiguration", "device.setConfiguration", decoration: "flat", width: 3, height: 1) {
 			state("setConfiguration", label:'Set Configuration', action:'setConfiguration')
 		}
-		standardTile("setAssociation", "device.setAssociation", decoration: "flat", width: 3, height: 3) {
+		standardTile("setAssociation", "device.setAssociation", decoration: "flat", width: 3, height: 1) {
 			state("setAssociation", label:'Set Associations', action:'setAssociation')
 		}
-		standardTile("calibrate", "device.calibrate", decoration: "flat", width: 6, height: 2) {
+		standardTile("calibrate", "device.calibrate", decoration: "flat", width: 6, height: 1) {
 			state("calibrate", label:'Calibrate', action:'calibrate')
 		}
 
 		main("shade")
-		details(["shade", "stop"/*, "venetianLabel", "venetianTile"*/, "power", "kwhConsumption", "resetPower", "refreshPowerConsumption", "setConfiguration", "setAssociation", "calibrate"])
+		details(["shade", "open", "stop", "close"/*, "venetianLabel", "venetianTile"*/, "preset1", "preset2", "preset3", "power", "kwhConsumption", "resetPower", "refreshPowerConsumption", "setConfiguration", "setAssociation", "calibrate"])
 	}
 	preferences {
+				input (
+					type: "paragraph",
+					element: "paragraph",
+					title: "GENERAL SETTINGS:",
+					description: "General settings."
+				)
+                input name: "preset1level", type: "number", required: false,
+                	title: "Preset#1 level:", range: "0..99", defaultValue: 25
+                input name: "preset2level", type: "number", required: false,
+                	title: "Preset#2 level:", range: "0..99", defaultValue: 50
+                input name: "preset3level", type: "number", required: false,
+                	title: "Preset#3 level:", range: "0..99", defaultValue: 75
 /**
 *			--------	CONFIGURATION PARAMETER SECTION	--------
 */
@@ -408,6 +445,46 @@ def configure() {
 	assocCmds << zwave.multiChannelV3.multiChannelEndPointGet().format()
 	return delayBetween(assocCmds, 500)
 }
+
+def installed() {
+	log.debug "Qubino Flush Shutter: installed()"
+    updated()
+}
+
+def updated() {
+	log.debug "Qubino Flush Shutter: updated()"
+    def level1=preset1level
+    if(!level1) { level1=25 }
+    sendEvent(name: "preset1", value: "${level1}%", displayed: false)
+    def level2=preset2level
+    if(!level2) { level2=50 }
+    sendEvent(name: "preset2", value: "${level2}%", displayed: false)
+    def level3=preset3level
+    if(!level3) { level3=75 }
+    sendEvent(name: "preset3", value: "${level3}%", displayed: false)
+}
+
+def preset1() {
+	def level=preset1level
+    if (!level) { level=25 }
+	log.debug "Qubino Flush Shutter: preset1(${level})"
+   	setLevel(level)
+}
+
+def preset2() {
+	def level=preset2level
+    if (!level) { level=50 }
+	log.debug "Qubino Flush Shutter: preset2(${level})"
+   	setLevel(level)
+}
+
+def preset3() {
+	def level=preset3level
+    if (!level) { level=75 }
+	log.debug "Qubino Flush Shutter: preset3(${level})"
+   	setLevel(level)
+}
+
 
 def on() {
 	log.debug "Qubino Flush Shutter: on()"
@@ -885,11 +962,11 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	switch(cmd.scale){
 		case 0:
     		def currentPower = device.currentState("kwhConsumption")
-			result << createEvent(name:"kwhConsumption", value: cmd.scaledMeterValue, unit:"kWh", descriptionText:"${device.displayName} consumed ${cmd.scaledMeterValue} kWh", isStateChange: (cmd.scaledMeterValue.toDouble() != currentPower?.value.toDouble()))
+			result << createEvent(name:"kwhConsumption", value: cmd.scaledMeterValue, unit:"kWh", descriptionText:"${device.displayName} consumed ${cmd.scaledMeterValue} kWh", isStateChange: (cmd.scaledMeterValue?.toDouble() != currentPower?.value?.toDouble()))
 			break;
 		case 2:
     		def currentPower = device.currentState("power")
-			result << createEvent(name:"power", value: cmd.scaledMeterValue, unit:"W", descriptionText:"${device.displayName} consumes ${cmd.scaledMeterValue} W", isStateChange: (cmd.scaledMeterValue.toDouble() != currentPower?.value.toDouble()))
+			result << createEvent(name:"power", value: cmd.scaledMeterValue, unit:"W", descriptionText:"${device.displayName} consumes ${cmd.scaledMeterValue} W", isStateChange: (cmd.scaledMeterValue?.toDouble() != currentPower?.value?.toDouble()))
 			break;
 	}
 	return result
