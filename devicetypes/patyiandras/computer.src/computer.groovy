@@ -49,6 +49,7 @@ preferences {
     input "computerPort","number", required: true, title: "Webserver port"
     input "macaddress", "text", required: true, title: "Computer MAC Address without"
     input "secureonpassword", "text", required: false, title: "SecureOn Password (Optional)"
+    input "timeout","number", required: false, title: "Timeout"
   }
 }
 
@@ -87,7 +88,11 @@ def parse(physicalgraph.device.HubResponse hubResponse) {
 def on() {
 	log.debug "on: Running"
     sendHubCommand(myWOL())
-    runIn(10, actualizeSwitch)
+    def t=10
+    if (timeout) {
+    	t=timeout
+    }
+    runIn(t, actualizeSwitch)
 }
 
 def off() {
