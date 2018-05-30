@@ -1153,6 +1153,7 @@ boolean sendStatus(int number) {
   client.print(String("POST ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + ":" + Settings.haPort + "\r\n" + authHeader +
                "Content-Type: application/json;charset=utf-8\r\n" +
+               "Content-Length: " + message.length() + "\r\n" +
                "Server: " + projectName + "\r\n" +
                "Connection: close\r\n\r\n" +
                message + "\r\n");
@@ -1278,21 +1279,25 @@ boolean sendReport(int number) {
   String url = F("/");
   //url += event->idx;
 #ifdef SONOFF_TH
+  String PostData = "{\"" + String(report) + "\":\"" + value + (report == "temperature"? "\", \"scale\":\"" + String(getTempScale()) : "") + "\"}" + "\r\n";
   client.print(String("POST ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + ":" + Settings.haPort + "\r\n" + authHeader +
                "Content-Type: application/json;charset=utf-8\r\n" +
+               "Content-Length: " + PostData.length() + "\r\n" +
                "Server: " + projectName + "\r\n" +
                "Connection: close\r\n\r\n" +
-               "{\"" + report + "\":\"" + value + (report == "temperature"? "\", \"scale\":\"" + String(getTempScale()) : "") + "\"}" + "\r\n");
+               PostData);
 #endif
 
 #if not defined SONOFF_TH
+  String PostData = "{\"" + String(report) + "\":\"" + String(value) + "\"}" + "\r\n";
   client.print(String("POST ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + ":" + Settings.haPort + "\r\n" + authHeader +
                "Content-Type: application/json;charset=utf-8\r\n" +
+               "Content-Length: " + PostData.length() + "\r\n" +
                "Server: " + projectName + "\r\n" +
                "Connection: close\r\n\r\n" +
-               "{\"" + report + "\":\"" + value + "\"}" + "\r\n");
+               PostData);
 #endif
 
   unsigned long timer = millis() + 200;
@@ -1825,7 +1830,7 @@ void setup()
   });
 
   server->on("/info", []() {
-    server->send(200, "application/json", "{\"version\":\"" + softwareVersion + "\", \"date\":\"" + compile_date + "\", \"mac\":\"" + padHex(String(mac[0], HEX)) + padHex(String(mac[1], HEX)) + padHex(String(mac[2], HEX)) + padHex(String(mac[3], HEX)) + padHex(String(mac[4], HEX)) + padHex(String(mac[5], HEX)) + "\"}");
+    server->send(200, "application/json", "{\"deviceType\":\"" + String(projectName) +"\", \"version\":\"" + softwareVersion + "\", \"date\":\"" + compile_date + "\", \"mac\":\"" + padHex(String(mac[0], HEX)) + padHex(String(mac[1], HEX)) + padHex(String(mac[2], HEX)) + padHex(String(mac[3], HEX)) + padHex(String(mac[4], HEX)) + padHex(String(mac[5], HEX)) + "\"}");
   });
 
   server->on("/advanced", []() {
