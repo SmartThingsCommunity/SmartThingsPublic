@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "Fibaro Smoke Sensor", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Fibaro Smoke Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
         capability "Battery" //attributes: battery
         capability "Configuration"  //commands: configure()
         capability "Sensor"
