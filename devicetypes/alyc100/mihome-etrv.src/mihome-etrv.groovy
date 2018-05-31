@@ -74,7 +74,7 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "thermostat", type: "generic", width: 6, height: 4, canChangeIcon: true) {  
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("thermostat", label: '${currentValue}°', unit:"C", icon: "st.Weather.weather2" ,defaultState: true, backgroundColors:[
+				attributeState("thermostat", label: '${currentValue}°', unit:"C", icon: "https://raw.githubusercontent.com/Mark-C-uk/SmartThingsPublic/master/devicetypes/alyc100/mihome-etrv.src/radiator120x120.png" ,defaultState: true, backgroundColors:[
 					[value: 0, color: "#153591"],
 					[value: 10, color: "#1e9cbb"],
 					[value: 13, color: "#90d2a7"],

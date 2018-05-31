@@ -28,10 +28,10 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-    	multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+    	multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4 ,canChangeIcon: true){
 			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
-				attributeState "active", label:'motion / open', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-				attributeState "inactive", label:'no motion / closed', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+				attributeState "active", label:'Motion/Open', backgroundColor: "#e86d13", icon: "st.motion.motion.inactive" 
+				attributeState "inactive", label:'Still/Closed', backgroundColor:"#ffffff", icon: "st.motion.motion.inactive"
 			}
             tileAttribute("device.lastCheckin", key: "SECONDARY_CONTROL") {
                	attributeState("default", label:'${currentValue}')
