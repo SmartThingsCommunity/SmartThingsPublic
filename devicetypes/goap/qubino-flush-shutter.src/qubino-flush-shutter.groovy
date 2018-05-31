@@ -54,9 +54,9 @@ metadata {
 		attribute "kwhConsumption", "number" //attribute used to store and display power consumption in KWH
 		attribute "venetianLevel", "number" //attribute used to control and store venetian blinds level		
 		attribute "venetianState", "string" //attribute for the binary control element of the venetian blinds control
-		attribute "preset1", "string"
-		attribute "preset2", "string"
-		attribute "preset3", "string"
+		attribute "preset1", "number"
+		attribute "preset2", "number"
+		attribute "preset3", "number"
 
 		command "setConfiguration" //command to issue Configuration Set commands to the module according to user preferences
 		command "setAssociation" //command to issue Association Set commands to the modules according to user preferences
@@ -123,13 +123,22 @@ metadata {
 		}
        
 		standardTile("preset1", "device.preset1", decoration: "flat", width: 2, height: 2) {
-			state("preset1", label:'${currentValue}', action:'preset1')
+			state("preset1", label:'${currentValue}%', action:'preset1', backgroundColors: [
+				[value: 20, color: "#333333"],
+				[value: 99, color: "#cccccc"]
+			])
 		}
 		standardTile("preset2", "device.preset2", decoration: "flat", width: 2, height: 2) {
-			state("preset2", label:'${currentValue}', action:'preset2')
+			state("preset2", label:'${currentValue}%', action:'preset2', backgroundColors: [
+				[value: 20, color: "#333333"],
+				[value: 99, color: "#cccccc"]
+			])
 		}
 		standardTile("preset3", "device.preset3", decoration: "flat", width: 2, height: 2) {
-			state("preset3", label:'${currentValue}', action:'preset3')
+			state("preset3", label:'${currentValue}%', action:'preset3', , backgroundColors: [
+				[value: 20, color: "#333333"],
+				[value: 99, color: "#cccccc"]
+			])
 		}
 
 		standardTile("power", "device.power", decoration: "flat", width: 3, height: 2) {
@@ -455,13 +464,13 @@ def updated() {
 	log.debug "Qubino Flush Shutter: updated()"
     def level1=preset1level
     if(!level1) { level1=25 }
-    sendEvent(name: "preset1", value: "${level1}%", displayed: false)
+    sendEvent(name: "preset1", value: level1, displayed: false)
     def level2=preset2level
     if(!level2) { level2=50 }
-    sendEvent(name: "preset2", value: "${level2}%", displayed: false)
+    sendEvent(name: "preset2", value: level2, displayed: false)
     def level3=preset3level
     if(!level3) { level3=75 }
-    sendEvent(name: "preset3", value: "${level3}%", displayed: false)
+    sendEvent(name: "preset3", value: level3, displayed: false)
 }
 
 def preset1() {
