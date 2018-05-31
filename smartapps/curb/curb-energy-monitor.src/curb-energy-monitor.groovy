@@ -25,19 +25,15 @@ definition(
     iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
-    singleInstance: true
+    singleInstance: true,
+    usesThirdPartyAuthentication: true
 ) {
     appSetting "clientId"
     appSetting "clientSecret"
 }
 
 preferences {
-    page(
-        name: "auth",
-        title: "Curb",
-        nextPage: "",
-        content: "authPage",
-        uninstall: true)
+    page(name: "auth", title: "Authorize with Curb", content: "authPage", uninstall: true)
 }
 
 mappings {
@@ -55,17 +51,15 @@ def installed() {
 
 def updated() {
     log.debug "Updated with settings: ${settings}"
-    removeChildDevices(getChildDevices())
     unsubscribe()
     initialize()
 }
 
 def initialize() {
-    log.debug "Initializing"
+    log.debug "Initializing with token: ${state.authToken}"
     unschedule()
-    refreshAuthToken()
-    updateSelectedLocationId()
-    getDevices()
+    def curbCircuits = getCurbCircuits()
+    log.debug "Found devices: ${curbCircuits}"
     runEvery1Minute(getAllData)
 }
 
@@ -75,24 +69,22 @@ def uninstalled() {
 }
 
 def authPage() {
-    if (!atomicState.accessToken) {
-        atomicState.accessToken = createAccessToken()
+    if (!state.accessToken) {
+        state.accessToken = createAccessToken()
+        log.debug "Created access token"
     }
 
-    if (atomicState.authToken) {
-        return dynamicPage(name: "auth", title: "Login Successful", nextPage: "", install: true, uninstall: true) {
+    if (state.authToken) {
+        log.debug "Logged in, locations:${state.location}"
+        // def curbLocations = getCurbLocations()
+        return dynamicPage(name: "auth", title: "Login Successful", install: true, uninstall: true) {
             section() {
-                paragraph("Select your CURB Location")
-                input(
-                    name: "curbLocation",
-                    type: "enum",
-                    title: "CURB Location",
-                    options: atomicState.locationNames
-                )
+                paragraph("Select your CURB location")
+                input(name: "curbLocation", type: "enum", title: "CURB Location", options: curbLocations)
             }
         }
     } else {
-        return dynamicPage(name: "auth", title: "Login", nextPage: "", uninstall: false) {
+        return dynamicPage(name: "auth", title: "Login", uninstall: false) {
             section() {
                 paragraph("Tap below to log in to the CURB service and authorize SmartThings access")
                 href url: buildRedirectUrl, style: "embedded", required: true, title: "CURB", description: "Click to enter CURB Credentials"
@@ -102,23 +94,25 @@ def authPage() {
 }
 
 def oauthInitUrl() {
-    atomicState.oauthInitState = UUID.randomUUID().toString()
+    log.debug "Initializing oauth"
+    state.oauthInitState = UUID.randomUUID().toString()
     def oauthParams = [
         response_type: "code",
         scope: "offline_access",
         audience: "app.energycurb.com/api",
         client_id: appSettings.clientId,
         connection: "Users",
-        state: atomicState.oauthInitState,
+        state: state.oauthInitState,
         redirect_uri: callbackUrl
     ]
     redirect(location: "${curbLoginUrl}?${toQueryString(oauthParams)}")
 }
 
 def callback() {
+    log.debug "Oauth callback: ${params}"
     def code = params.code
     def oauthState = params.state
-    if (oauthState == atomicState.oauthInitState) {
+    if (oauthState == state.oauthInitState) {
         def tokenParams = [
             grant_type: "authorization_code",
             code: code,
@@ -128,18 +122,16 @@ def callback() {
         ]
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
             resp ->
-                atomicState.refreshToken = resp.data.refresh_token
-              atomicState.authToken = resp.data.access_token
-
-            getCurbLocations()
+                state.refreshToken = resp.data.refresh_token
+              state.authToken = resp.data.access_token
         }
-        if (atomicState.authToken) {
+        if (state.authToken) {
             success()
         } else {
             fail()
         }
     } else {
-        log.error "callback() failed oauthState != atomicState.oauthInitState"
+        log.error "callback() failed oauthState != state.oauthInitState"
     }
 }
 
@@ -150,96 +142,105 @@ private removeChildDevices(delete) {
 }
 
 def getCurbLocations() {
+    log.debug "Getting curb locations"
     def params = [
         uri: "http://app.energycurb.com",
         path: "/api/locations",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"]
+        headers: ["Authorization": "Bearer ${state.authToken}"]
     ]
-
+    def allLocations = [:]
     try {
         httpGet(params) {
             resp ->
                 def locationNameList = []
             def locationLookup = []
             resp.data.each {
+                log.debug "Found location: ${it}"
+                allLocations[it.id] = it.label
                 locationNameList.push(it.name)
                 locationLookup.push(it)
             }
-            atomicState.locationNames = locationNameList
-            atomicState.locationLookup = locationLookup
+            state.locationNames = locationNameList
+            state.locationLookup = locationLookup
+        }
+    } catch (e) {
+        log.error "something went wrong: $e"
+    }
+    log.debug "Found locations: ${allLocations}"
+    allLocations
+}
+
+def getCurbCircuits() {
+	updateSelectedLocationId()
+	log.debug "Getting curb circuits at ${state.location} with token: ${state.authToken}"
+    def params = [
+        uri: "https://app.energycurb.com",
+        path: "/api/latest/${state.location}",
+        headers: ["Authorization": "Bearer ${state.authToken}"],
+        requestContentType: 'application/json'
+    ]
+    try {
+    	httpGet(params) { resp ->
+            processDevices(resp, null) //processDevices is usually called by asynchttp, hence the extra null
+            return resp.data.circuits
         }
     } catch (e) {
         log.error "something went wrong: $e"
     }
 }
-
 def updateSelectedLocationId() {
-  def location = ""
-    atomicState.locationLookup.each {
-        if (it.name == settings.curbLocation) {
-            location = it.id
-        }
-    }
-    atomicState.location = location
+    state.location = curbLocations.keySet().collect()[0]
 }
 
 def updateChildDevice(dni, label, value) {
     try {
         def existingDevice = getChildDevice(dni)
-        existingDevice.handlePower(value)
+        log.info "Found device: ${existingDevice}"
+        existingDevice?.handlePower(value)
     } catch (e) {
         log.error "Error creating or updating device: ${e}"
     }
 }
 
 def createChildDevice(dni, label) {
-    return addChildDevice("curb", "Curb Power Meter", dni, null, [name: "${dni}", label: "${label}"])
+    log.debug "Creating child device with DNI ${dni} and name ${label}"
+    return addChildDevice("curb", "CURB Power Meter", dni, null, [name: "${dni}", label: "${label}"])
 }
 
 def getDevices() {
     def params = [
         uri: "https://app.energycurb.com",
-        path: "/api/latest/${atomicState.location}",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        path: "/api/latest/${state.location}",
+        headers: ["Authorization": "Bearer ${state.authToken}"],
         requestContentType: 'application/json'
     ]
     asynchttp_v1.get(processDevices, params)
 }
 
 def getAllData() {
-
     def billingParams = [
         uri: "https://app.energycurb.com",
-        path: "/api/aggregate/${atomicState.location}/billing/h",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
+        path: "/api/aggregate/${state.location}/billing/h",
+        headers: ["Authorization": "Bearer ${state.authToken}"],
         requestContentType: 'application/json'
     ]
-
     asynchttp_v1.get(processKwh, billingParams)
-
-    def latestparams = [
-        uri: "https://app.energycurb.com",
-        path: "/api/aggregate/${atomicState.location}/1m/s",
-        headers: ["Authorization": "Bearer ${atomicState.authToken}"],
-        requestContentType: 'application/json'
-    ]
-
-    asynchttp_v1.get(processUsage, latestparams)
-
 }
 
 def processUsage(resp, data) {
-    if (resp.hasError()) {
+    log.debug "Processing usage data: ${resp.data}"
+    if (!isOK(resp)) {
         refreshAuthToken()
         log.error "Usage Response Error: ${resp.getErrorMessage()}"
         return
     }
-    def json = resp.json
+    def json = new groovy.json.JsonSlurper().parseText(resp.data)
     def main = 0.0
     def production = 0.0
     if (json) {
         def hasProduction = false
         json.each {
+            log.debug "Processing usage for: ${it}"
             if (!it.main && !it.production) {
                 updateChildDevice("${it.id}", it.label, it.avg)
             }
@@ -262,11 +263,11 @@ def processUsage(resp, data) {
 }
 
 def processDevices(resp, data) {
-    if (resp.hasError()) {
+    if (!isOK(resp)) {
         log.error "Error setting up devices: ${resp.getErrorMessage()}"
         return
     }
-    def json = resp.json
+    def json = resp.data
     if (json) {
         def hasProduction = false
         json.circuits.each {
@@ -286,7 +287,8 @@ def processDevices(resp, data) {
 }
 
 def processKwh(resp, data) {
-    if (resp.hasError()) {
+	log.debug "Processing billing data: ${resp.data}"
+    if (!isOK(resp)) {
         refreshAuthToken()
         log.error "Usage Response Error: ${resp.getErrorMessage()}"
         return
@@ -298,7 +300,9 @@ def processKwh(resp, data) {
     if (json) {
         def hasProduction = false
         json.each {
+            log.debug "Updating billing for: ${it}"
             if (!it.main && !it.production) {
+            	getChildDevice("${it.id}").handlePower(it.avg)
                 getChildDevice("${it.id}").handleKwhBilling(it.kwhr)
             }
             if (it.production) {
@@ -326,19 +330,21 @@ def toQueryString(Map m) {
 }
 
 def refreshAuthToken() {
-    if (!atomicState.refreshToken) {
+    log.debug "Refreshing auth token"
+    if (!state.refreshToken) {
         log.warn "Can not refresh OAuth token since there is no refreshToken stored"
     } else {
         def tokenParams = [
             grant_type: "refresh_token",
             client_id: appSettings.clientId,
             client_secret: appSettings.clientSecret,
-            refresh_token: atomicState.refreshToken
+            refresh_token: state.refreshToken
         ]
 
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
             resp ->
-                atomicState.authToken = resp.data.access_token
+                state.authToken = resp.data.access_token
+                log.debug "Got authToken: ${state.authToken}"
         }
     }
 }
@@ -438,6 +444,10 @@ def connectionStatus(message, redirectUrl = null) {
   render contentType: 'text/html', data: html
 }
 
+def isOK(response) {
+	response.status in [200, 201]
+}
+
 def getCurbAuthUrl() {
     return "https://energycurb.auth0.com"
 }
@@ -457,7 +467,7 @@ def getCallbackUrl() {
     return "https://graph.api.smartthings.com/oauth/callback"
 }
 def getBuildRedirectUrl() {
-    return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${atomicState.accessToken}&apiServerUrl=${shardUrl}"
+    return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${shardUrl}"
 }
 def getApiEndpoint() {
     return "https://api.energycurb.com"
