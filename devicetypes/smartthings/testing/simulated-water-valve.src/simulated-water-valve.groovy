@@ -16,6 +16,7 @@ metadata {
 		capability "Actuator"
 		capability "Valve"
 		capability "Sensor"
+		capability "Health Check"
 	}
 
 	// tile definitions
@@ -35,6 +36,8 @@ metadata {
 
 def installed() {
 	sendEvent(name: "contact", value: "closed")
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
 }
 
 def open() {

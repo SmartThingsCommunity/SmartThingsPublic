@@ -3,6 +3,7 @@ metadata {
     	capability "Color Control"
 		capability "Sensor"
 		capability "Actuator"
+		capability "Health Check"
 	}
 
 	simulator {
@@ -22,6 +23,11 @@ metadata {
         main "rgbSelector"
         details(["rgbSelector", "saturation", "hue"])
 	}
+}
+
+def installed() {
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
 }
 
 // parse events into attributes
