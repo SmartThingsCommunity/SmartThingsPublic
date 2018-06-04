@@ -38,10 +38,10 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "fanSpeed", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.fanSpeed", key: "PRIMARY_CONTROL") {
-				attributeState "0", label: "off", icon: "st.thermostat.fan-off", backgroundColor: "#ffffff"
-				attributeState "1", label: "low", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
-				attributeState "2", label: "medium", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
-				attributeState "3", label: "high", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
+				attributeState "0", label: "off", action: "switch.on", icon: "st.thermostat.fan-off", backgroundColor: "#ffffff"
+				attributeState "1", label: "low", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
+				attributeState "2", label: "medium", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
+				attributeState "3", label: "high", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
 			}
 			tileAttribute("device.fanSpeed", key: "VALUE_CONTROL") {
 				attributeState "VALUE_UP", action: "raiseFanSpeed"
@@ -52,13 +52,8 @@ metadata {
 		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-		standardTile("switch", "device.switch", width: 2, height: 2, decoration: "flat", canChangeIcon: false) {
-			state "on", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00A0DC"// blue
-			state "off", action: "switch.on", icon: "st.thermostat.fan-off", backgroundColor: "#ffffff"// white
-		}
-
 		main "fanSpeed"
-		details(["fanSpeed", "refresh", "switch"])
+		details(["fanSpeed", "refresh"])
 	}
 
 }
