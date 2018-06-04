@@ -38,7 +38,7 @@ metadata {
 		}
 
 		main "switch"
-		details(["power", "energy", "reset"])
+		details(["switch", "power", "energy", "reset"])
 	}
 
 	preferences {
