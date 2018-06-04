@@ -2,7 +2,7 @@
  *	Fibaro CO Sensor
  */
 metadata {
-	definition (name: "Fibaro CO Sensor ZW5", namespace: "FibarGroup", author: "Fibar Group") {
+	definition (name: "Fibaro CO Sensor ZW5", namespace: "FibarGroup", author: "Fibar Group", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 		capability "Carbon Monoxide Detector"
 		capability "Tamper Alert"
 		capability "Temperature Measurement"
