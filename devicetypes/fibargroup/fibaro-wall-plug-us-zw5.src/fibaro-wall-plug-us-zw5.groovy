@@ -36,9 +36,13 @@ metadata {
 		valueTile("reset", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "reset", label:'reset\nkWh', action:"reset"
 		}
+		
+		standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			   state "default", label: "Refresh", action: "refresh", icon: "st.secondary.refresh"
+		}
 
 		main "switch"
-		details(["switch", "power", "energy", "reset"])
+		details(["switch", "power", "energy", "reset", "refresh"])
 	}
 
 	preferences {
