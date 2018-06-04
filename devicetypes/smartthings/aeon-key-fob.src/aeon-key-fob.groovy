@@ -13,7 +13,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
@@ -23,8 +23,8 @@ metadata {
 		capability "Health Check"
 
 		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x80,0x84,0x85"
-		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeon Key Fob"
-		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeon Panic Button"
+		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec Key Fob"
+		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Panic Button"
 	}
 
 	simulator {

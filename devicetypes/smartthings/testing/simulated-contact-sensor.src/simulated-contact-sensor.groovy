@@ -16,6 +16,7 @@ metadata {
 	definition (name: "Simulated Contact Sensor", namespace: "smartthings/testing", author: "bob") {
 		capability "Contact Sensor"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "open"
 		command "close"
@@ -34,6 +35,11 @@ metadata {
 		main "contact"
 		details "contact"
 	}
+}
+
+def installed() {
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
 }
 
 def parse(String description) {

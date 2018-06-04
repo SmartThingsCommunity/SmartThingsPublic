@@ -31,7 +31,9 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x32"
-		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeon Labs Micro Smart Dimmer 2E"
+		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Micro Smart Dimmer 2E"
+		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Smart Dimmer 6"
+		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Plug-in Dimmer"
 	}
 
 	simulator {
@@ -157,7 +159,7 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def switchEvent = createEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")
 	result << switchEvent
 	if (cmd.value) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%")
 	}
 	if (switchEvent.isStateChange) {
 		result << response(["delay 3000", zwave.meterV2.meterGet(scale: 2).format()])
