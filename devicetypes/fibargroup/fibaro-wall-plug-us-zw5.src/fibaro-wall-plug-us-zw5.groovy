@@ -139,7 +139,7 @@ def childRefresh(){
 def installed(){
 	sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	response(refresh())
-}
+})
 
 //Configuration and synchronization
 def updated() {
@@ -162,7 +162,7 @@ def configure() {
 }
 
 def ping() {
-	response(refresh())
+	refresh()
 }
 
 private syncStart() {
