@@ -2,7 +2,7 @@
  *	Fibaro Flood Sensor ZW5
  */
 metadata {
-	definition(name: "Fibaro Flood Sensor ZW5", namespace: "FibarGroup", author: "Fibar Group") {
+	definition(name: "Fibaro Flood Sensor ZW5", namespace: "FibarGroup", author: "Fibar Group", ocfDeviceType: "x.com.st.d.sensor.moisture") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Sensor"
@@ -104,7 +104,7 @@ def getPrefsFor(parameter) {
 }
 
 def installed(){
-	sendEvent(name: "checkInterval", value: 28800, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 21600, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 
