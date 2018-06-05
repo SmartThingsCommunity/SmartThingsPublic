@@ -10,12 +10,11 @@ metadata {
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Temperature Alarm"
 
-		attribute "temperatureAlarm", "string"
 		attribute "coLevel", "number"
 
 		fingerprint mfr: "010F", prod: "1201", model: "1000"
-		fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x73,0x80,0x22,0x56,0x31,0x98,0x7A,0x5A,0x85,0x84,0x71,0x70,0x8E,0x9C,0x86,0x72"
 		fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x73,0x80,0x22,0x56,0x31,0x7A,0x5A,0x85,0x84,0x71,0x70,0x8E,0x9C,0x86,0x72"
 	}
 
@@ -53,9 +52,8 @@ metadata {
 		}
 
 		standardTile("temperatureAlarm", "device.temperatureAlarm", inactiveLabel: false, width: 3, height: 2, decoration: "flat") {
-			state "default", label: "No temp. alarm", backgroundColor:"#ffffff"
-			state "clear", label:'', backgroundColor:"#ffffff" , icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/heat_detector0.png"
-			state "overheat", label:'Overheat', backgroundColor:"#d04e00", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/heat_detector1.png"
+			state "cleared", label:'Clear', backgroundColor:"#ffffff" , icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/heat_detector0.png"
+			state "heat", label:'Overheat', backgroundColor:"#d04e00", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/heat_detector1.png"
 		}
 
 		standardTile("tamper", "device.tamper", inactiveLabel: false, width: 3, height: 2, decoration: "flat") {
@@ -111,14 +109,20 @@ def updated() {
 	logging("${device.displayName} - Executing updated()","info")
 
 	if ( (settings.zwaveNotifications as Integer) >= 2 ) {
-		sendEvent(name: "temperatureAlarm", value: "clear", displayed: false)
-
+		sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	} else {
 		sendEvent(name: "temperatureAlarm", value: null, displayed: false)
 	}
 
 	syncStart()
 	state.lastUpdated = now()
+}
+
+def ping() {
+	def cmds = []
+	cmds << zwave.batteryV1.batteryGet()
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
+	encapSequence(cmds,1000)
 }
 
 def configure() {
@@ -157,7 +161,7 @@ private syncNext() {
 		if ( state."$param.key"?.value != null && state."$param.key"?.state in ["notSynced","inProgress"] ) {
 			multiStatusEvent("Sync in progress. (param: ${param.num})", true)
 			state."$param.key"?.state = "inProgress"
-			cmds << response(encap(zwave.configurationV2.configurationSet(configurationValue: intToParam(state."$param.key".value, param.size), parameterNumber: param.num, size: param.size)))
+			cmds << response(encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: state."$param.key".value, parameterNumber: param.num, size: param.size)))
 			cmds << response(encap(zwave.configurationV2.configurationGet(parameterNumber: param.num)))
 			break
 		}
@@ -263,8 +267,8 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		case 4:
 			if (device.currentValue("temperatureAlarm")?.value != null) {
 				switch (cmd.zwaveAlarmEvent) {
-					case 0: sendEvent(name: "temperatureAlarm", value: "clear"); break;
-					case 2: sendEvent(name: "temperatureAlarm", value: "overheat"); break;
+					case 0: sendEvent(name: "temperatureAlarm", value: "cleared"); break;
+					case 2: sendEvent(name: "temperatureAlarm", value: "heat"); break;
 				};
 			};
 			break;
