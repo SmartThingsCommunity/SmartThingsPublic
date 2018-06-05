@@ -38,6 +38,7 @@ metadata {
         fingerprint manufacturer: "0312", prod: "6100", model: "6100", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
         fingerprint manufacturer: "015D", prod: "0221", model: "611C", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
         fingerprint manufacturer: "0312", prod: "0221", model: "611C", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
+        fingerprint deviceId: "0x1101", inClusters: "0x5E,0x25,0x27,0x85,0x8E,0x59,0x55,0x86,0x72,0x5A,0x73,0x70,0x71,0x60,0x6C,0x7A"
     }
     
     simulator {}
@@ -45,7 +46,7 @@ metadata {
     preferences {
         input "autoOff1", "number", title: "Auto Off Channel 1\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
         input "autoOff2", "number", title: "Auto Off Channel 2\n\nAutomatically turn switch off after this number of seconds\nRange: 0 to 32767", description: "Tap to set", required: false, range: "0..32767"
-        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when switch is:\n", description: "Tap to set", required: false, options:[[0: "On"], [1: "Off"], [2: "Disable"]], defaultValue: 0
+        input "ledIndicator", "enum", title: "LED Indicator\n\nTurn LED indicator on when switch is:\n", description: "Tap to set", required: false, options:[["0": "On"], ["1": "Off"], ["2": "Disable"]], defaultValue: "0"
         input description: "Use the \"Z-Wave Association Tool\" SmartApp to set device associations. (Firmware 1.02+)\n\nGroup 2: Sends on/off commands to associated devices when switch is pressed (BASIC_SET).", title: "Associations", displayDuringSetup: false, type: "paragraph", element: "paragraph"
     }
     
@@ -75,6 +76,7 @@ metadata {
     }
 }
 def parse(String description) {
+    //log.debug description
     def result = []
     def cmd = zwave.parse(description)
     if (cmd) {
@@ -83,6 +85,14 @@ def parse(String description) {
     } else {
         log.debug "Non-parsed event: ${description}"
     }
+    
+    def now
+    if(location.timeZone)
+    now = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
+    else
+    now = new Date().format("yyyy MMM dd EEE h:mm:ss a")
+    sendEvent(name: "lastActivity", value: now, displayed:false)
+    
     return result
 }
 
@@ -137,7 +147,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
             def allOff = true
             childDevices.each {
                 n->
-                    if (n.currentState("switch").value != "off") allOff = false
+                    if (n.deviceNetworkId != "$device.deviceNetworkId-ep$ep" && n.currentState("switch").value != "off") allOff = false
             }
             if (allOff) {
                 event = [createEvent([name: "switch", value: "off"])]
@@ -325,7 +335,8 @@ private void createChildDevices() {
 def setDefaultAssociations() {
     def smartThingsHubID = zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )
     state.defaultG1 = [smartThingsHubID]
-    state.defaultG2 = []
+    state.defaultG2 = [smartThingsHubID]
+    state.defaultG3 = []
 }
 
 def setAssociationGroup(group, nodes, action, endpoint = null){
