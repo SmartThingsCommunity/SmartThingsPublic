@@ -130,7 +130,8 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
     def cmds = []
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-    return [result, response(commands(cmds))] // returns the result of reponse()
+    //return [result, response(commands(cmds))] // returns the result of reponse()
+    return response(commands(cmds)) // returns the result of reponse()
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
