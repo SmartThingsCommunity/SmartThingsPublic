@@ -402,12 +402,12 @@ def setThermostatFanMode(String mode) {
 }
 
 def generateModeEvent(mode) {
-	sendEvent(name: "thermostatMode", value: mode, data:[supportedThermostatModes: device.currentValue("supportedThermostatModes")],
+	sendEvent(name: "thermostatMode", value: mode, data:[supportedThermostatModes: modes()],
 			isStateChange: true, descriptionText: "$device.displayName is in ${mode} mode")
 }
 
 def generateFanModeEvent(fanMode) {
-	sendEvent(name: "thermostatFanMode", value: fanMode, data:[supportedThermostatFanModes: device.currentValue("supportedThermostatFanModes")],
+	sendEvent(name: "thermostatFanMode", value: fanMode, data:[supportedThermostatFanModes: fanModes()],
 			isStateChange: true, descriptionText: "$device.displayName fan is in ${fanMode} mode")
 }
 
