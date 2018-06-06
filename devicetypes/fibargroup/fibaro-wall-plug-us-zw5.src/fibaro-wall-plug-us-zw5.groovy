@@ -37,8 +37,8 @@ metadata {
 			state "reset", label:'reset\nkWh', action:"reset"
 		}
 		
-		standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			   state "default", label: "Refresh", action: "refresh", icon: "st.secondary.refresh"
+				standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+			state "default", label: "Refresh", action: "refresh", icon: "st.secondary.refresh"
 		}
 
 		main "switch"
@@ -137,9 +137,10 @@ def childRefresh(){
 
 
 def installed(){
-	sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	log.debug "installed()..."
+	sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	response(refresh())
-})
+}
 
 //Configuration and synchronization
 def updated() {
@@ -162,7 +163,9 @@ def configure() {
 }
 
 def ping() {
+	log.debug "ping..()"
 	refresh()
+	//response(refresh())
 }
 
 private syncStart() {
@@ -242,7 +245,7 @@ private createChildDevices() {
 	)
 }
 
-private physicalgraph.app.ChildDeviceWrapper getChild(Integer childNum) {
+private getChild(Integer childNum) {
 	return childDevices.find({ it.deviceNetworkId == "${device.deviceNetworkId}-${childNum}" })
 }
 
@@ -399,9 +402,9 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 private logging(text, type = "debug") {
-	if (settings.logging == "true") {
+//	if (settings.logging == "true") {
 		log."$type" text
-	}
+//	}
 }
 
 private secEncap(physicalgraph.zwave.Command cmd) {
