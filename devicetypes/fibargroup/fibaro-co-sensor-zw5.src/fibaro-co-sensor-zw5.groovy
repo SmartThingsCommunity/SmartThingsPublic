@@ -118,13 +118,6 @@ def updated() {
 	state.lastUpdated = now()
 }
 
-def ping() {
-	def cmds = []
-	cmds << zwave.batteryV1.batteryGet()
-	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
-	encapSequence(cmds,1000)
-}
-
 def configure() {
 	def cmds = []
 	sendEvent(name: "coLevel", unit: "ppm", value: 0, displayed: true)
@@ -370,15 +363,6 @@ private encap(physicalgraph.zwave.Command cmd) {
 
 private encapSequence(cmds, Integer delay=250) {
 	delayBetween(cmds.collect{ encap(it) }, delay)
-}
-
-private List intToParam(Long value, Integer size = 1) {
-	def result = []
-	size.times {
-		result = result.plus(0, (value & 0xFF) as Short)
-		value = (value >> 8)
-	}
-	return result
 }
 
 private Map cmdVersions() {
