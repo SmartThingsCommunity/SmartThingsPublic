@@ -16,6 +16,7 @@ metadata {
 	definition (name: "Simulated Water Sensor", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Water Sensor"
 		capability "Sensor"
+		capability "Health Check"
         
         command "wet"
         command "dry"
@@ -40,6 +41,11 @@ metadata {
 		main "water"
 		details(["water","wet","dry"])
 	}
+}
+
+def installed() {
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
 }
 
 def parse(String description) {
