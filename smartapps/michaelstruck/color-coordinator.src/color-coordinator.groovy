@@ -1,11 +1,12 @@
 /**
  * 	Color Coordinator 
- *  Version 1.1.1 - 11/9/16
+ *  Version 1.1.2 - 4/27/18
  *  By Michael Struck
  *
  *  1.0.0 - Initial release
  *  1.1.0 - Fixed issue where master can be part of slaves. This causes a loop that impacts SmartThings. 
  *  1.1.1 - Fix NPE being thrown for slave/master inputs being empty.
+ *  1.1.2 - Fixed issue with slaves lights flashing but not syncing with master
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -25,7 +26,8 @@ definition(
 	description: "Ties multiple colored lights to one specific light's settings",
 	category: "Convenience",
 	iconUrl: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/ColorCoordinator/CC.png",
-	iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/ColorCoordinator/CC@2x.png"
+	iconX2Url: "https://raw.githubusercontent.com/MichaelStruck/SmartThings/master/Other-SmartApps/ColorCoordinator/CC@2x.png",
+	pausable: true
 )
 
 preferences {
@@ -99,19 +101,11 @@ def colorHandler(evt) {
 	if (slaves && master) {
 		if (!slaves?.id?.find{it==master?.id} && master?.currentValue("switch") == "on"){
 			log.debug "Changing Slave units H,S,L"
-		def dimLevel = master?.currentValue("level")
-		def hueLevel = master?.currentValue("hue")
-		def saturationLevel = master.currentValue("saturation")
+			def dimLevel = master?.currentValue("level")
+			def hueLevel = master?.currentValue("hue")
+			def saturationLevel = master.currentValue("saturation")
 			def newValue = [hue: hueLevel, saturation: saturationLevel, level: dimLevel as Integer]
-		slaves?.setColor(newValue)
-		try {
-			log.debug "Changing Slave color temp"
-			def tempLevel = master?.currentValue("colorTemperature")
-			slaves?.setColorTemperature(tempLevel)
-		}
-			catch (e){
-			log.debug "Color temp for master --"
-		}
+			slaves?.setColor(newValue)
 		}
 	}
 }
@@ -146,11 +140,11 @@ private def textAppName() {
 }	
 
 private def textVersion() {
-    def text = "Version 1.1.1 (12/13/2016)"
+    def text = "Version 1.1.2 (4/27/2018)"
 }
 
 private def textCopyright() {
-    def text = "Copyright © 2016 Michael Struck"
+    def text = "Copyright © 2018 Michael Struck"
 }
 
 private def textLicense() {

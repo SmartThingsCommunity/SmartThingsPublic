@@ -15,7 +15,7 @@
  */
 metadata {
 	// Automatically generated. Make future change here.
-	definition(name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug") {
+	definition(name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-switch-power") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Power Meter"
@@ -30,6 +30,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "4257050-RZHAC", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 000F, 0B04", outClusters: "0019", manufacturer: "SmartThings", model: "outletv4", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0006,0008,0009,0B04", outClusters: "0019", manufacturer: "Samjin", model: "outlet", deviceJoinName: "Outlet"
 	}
 
 	// simulator metadata
@@ -134,4 +135,3 @@ def configure() {
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
 	refresh() + zigbee.onOffConfig(0, 300) + zigbee.electricMeasurementPowerConfig()
 }
-
