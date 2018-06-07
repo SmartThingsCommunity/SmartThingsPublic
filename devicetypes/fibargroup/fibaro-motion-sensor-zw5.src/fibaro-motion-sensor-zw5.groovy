@@ -423,7 +423,7 @@ private syncStart() {
 			} else if ( (it.num as Integer) in [55,56] ) {
 				settingValue = (((settings."$it.key" as Integer) == 0) ? state."$it.key".value : settings."$it.key") as Integer
 			} else {
-				settingValue = settings."$it.key" as Integer
+				settingValue = (settings."$it.key" instanceof Integer ? settings."$it.key" as Integer : settings."$it.key" as Float)
 			}
 			if (state."$it.key".value != settingValue || state."$it.key".state != "synced" ) {
 				state."$it.key".value = settingValue
@@ -479,7 +479,7 @@ private syncCheck() {
 	} else if (incorrect) {
 		multiStatusEvent("Sync mismatch! Verify parameter: ${incorrect[0].num}", true, true)
 	} else if (notSynced) {
-		multiStatusEvent("Sync incomplete! Wake up the device again by pressing the tamper button.", true, true)
+		multiStatusEvent("Sync incomplete! Wake up the device again by pressing the B button.", true, true)
 	} else {
 		sendHubCommand(response(encap(zwave.wakeUpV1.wakeUpNoMoreInformation())))
 		if (device.currentValue("multiStatus")?.contains("Sync")) { multiStatusEvent("Sync OK.", true, true) }
