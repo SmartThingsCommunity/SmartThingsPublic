@@ -262,7 +262,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	if (value == 0xFF) {  // Special value for low battery alert
 		sendEvent(name: "battery", value: 1, descriptionText: "${device.displayName} has a low battery", isStateChange: true)
 	} else {
-		sendEvent(name: "battery", value: cmd.batterLevel, descriptionText: "Curent battery level")
+		sendEvent(name: "battery", value: cmd.batteryLevel, descriptionText: "Current battery level")
 	}
 	sendEvent(name: "batteryStatus", value: "Battery: $cmd.batteryLevel%\n($timeDate)")
 }
