@@ -13,9 +13,9 @@ metadata {
 	}
 
 	tiles (scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 3, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: 'USB', action: "", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/wallPlugUS/plugusb_on.png", backgroundColor: "#00a0dc"
+		multiAttributeTile(name:"usb", type: "generic", width: 3, height: 4, canChangeIcon: true){
+			tileAttribute ("usb", key: "PRIMARY_CONTROL") {
+				attributeState "usb", label: 'USB', action: "", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/wallPlugUS/plugusb_on.png", backgroundColor: "#00a0dc"
 			}
 			tileAttribute("device.multiStatus", key:"SECONDARY_CONTROL") {
 				attributeState("multiStatus", label:'${currentValue}')
@@ -39,8 +39,9 @@ metadata {
 }
 
 def installed() {
+	sendEvent([name: "energy", value: 0, unit: "kWh"])
+	sendEvent([name: "power", value: 0, unit: "W"])
 	sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: parent.hubID])
-	
 }
 
 
