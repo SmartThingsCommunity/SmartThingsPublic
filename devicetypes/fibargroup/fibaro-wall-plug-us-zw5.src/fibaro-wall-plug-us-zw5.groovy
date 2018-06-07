@@ -138,7 +138,7 @@ def childRefresh(){
 
 def installed(){
 	log.debug "installed()..."
-	sendEvent(name: "checkInterval", value: 900, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	response(refresh())
 }
 
