@@ -1,7 +1,7 @@
 /**
  *  Inovelli Dimmer NZW31
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-04-11
+ *  Date: 2018-06-08
  *
  *  Copyright 2018 Eric Maycock
  *
@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-06-08: Remove communication method check from updated().
+ *  
  *  2018-04-23: Added configuration parameters for association group 3.
  *
  *  2018-04-11: No longer deleting child devices when user toggles the option off. SmartThings was throwing errors.
@@ -123,7 +125,6 @@ def configure() {
 def updated() {
     if (!state.lastRan || now() >= state.lastRan + 2000) {
         log.debug "updated()"
-        state.sec = zwaveInfo.zw.endsWith("s")? 1:0
         state.lastRan = now()
         def cmds = initialize()
         response(commands(cmds))
