@@ -18,6 +18,7 @@ metadata {
         capability "Relay Switch"
         capability "Sensor"
         capability "Actuator"
+        capability "Health Check"
 
         command "onPhysical"
         command "offPhysical"
@@ -37,6 +38,11 @@ metadata {
         main "switch"
         details(["switch","on","off"])
     }
+}
+
+def installed() {
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
 }
 
 def parse(description) {
