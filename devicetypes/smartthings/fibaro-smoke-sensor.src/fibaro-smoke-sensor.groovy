@@ -200,7 +200,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def isFibaro() {
-	(zwaveInfo?.mfr == "010F" && zwaveInfo.prod == "0C02")}
+	(zwaveInfo?.mfr == "010F" && zwaveInfo.prod == "0C02")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
