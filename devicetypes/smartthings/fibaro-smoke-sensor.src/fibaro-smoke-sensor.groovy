@@ -121,22 +121,22 @@ def updated() {
 
 
 def parse(String description) {
-	log.debug "parse() >> description: $description"
-	def result = null
-	if (description.startsWith("Err 106")) {
-		log.debug "parse() >> Err 106"
-		result = createEvent( name: "secureInclusion", value: "failed", isStateChange: true,
-				descriptionText: "This sensor failed to complete the network security key exchange. " +
-						"If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
-	} else if (description != "updated") {
-		log.debug "parse() >> $description"
-		def cmd = zwave.parse(description, [0x31: 5, 0x71: 3, 0x84: 1])
-		if (cmd) {
-			result = zwaveEvent(cmd)
-		}
-	}
-	log.debug "After zwaveEvent(cmd) >> Parsed '${description}' to ${result.inspect()}"
-	return result
+    log.debug "parse() >> description: $description"
+    def result = null
+    if (description.startsWith("Err 106")) {
+        log.debug "parse() >> Err 106"
+        result = createEvent( name: "secureInclusion", value: "failed", isStateChange: true,
+                descriptionText: "This sensor failed to complete the network security key exchange. " +
+                        "If you are unable to control it via SmartThings, you must remove it from your network and add it again.")
+    } else if (description != "updated") {
+        log.debug "parse() >> $description"
+        def cmd = zwave.parse(description, [0x31: 5, 0x71: 3, 0x84: 1])
+        if (cmd) {
+            result = zwaveEvent(cmd)
+        }
+    }
+    log.debug "After zwaveEvent(cmd) >> Parsed '${description}' to ${result.inspect()}"
+    return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
@@ -514,9 +514,9 @@ private setSecured() {
 }
 
 private isSecured() {
-	if (zwaveInfo && zwaveInfo.zw) {
-		return zwaveInfo.zw.endsWith("s")
-	} else {
-		return getDataValue("secured") == "true"
-	}
+    if (zwaveInfo && zwaveInfo.zw) {
+        return zwaveInfo.zw.endsWith("s")
+    } else {
+        return getDataValue("secured") == "true"
+    }
 }

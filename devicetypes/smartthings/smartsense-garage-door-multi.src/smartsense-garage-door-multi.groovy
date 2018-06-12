@@ -16,7 +16,7 @@
  *  Date: 2013-03-09
  */
 metadata {
-	definition (name: "SmartSense Garage Door Multi", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Garage Door Multi", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Three Axis"
 		capability "Contact Sensor"
 		capability "Acceleration Sensor"
@@ -212,18 +212,17 @@ private List parseOrientationMessage(String description) {
 
 	// Looks for Z-axis orientation as virtual contact state
 	def a = xyz.value.split(',').collect{it.toInteger()}
-	def absValueXY = Math.max(Math.abs(a[0]), Math.abs(a[1]))
 	def absValueZ = Math.abs(a[2])
-	log.debug "absValueXY: $absValueXY, absValueZ: $absValueZ"
+	log.debug "absValueZ: $absValueZ"
 
 
-	if (absValueZ > 825 && absValueXY < 175) {
+	if (absValueZ > 825) {
 		results << createEvent(name: "contact", value: "open", unit: "")
 		results << createEvent(name: "status", value: "open", unit: "")
 		results << createEvent(name: "door", value: "open", unit: "")
 		log.debug "STATUS: open"
 	}
-	else if (absValueZ < 75 && absValueXY > 825) {
+	else if (absValueZ < 100) {
 		results << createEvent(name: "contact", value: "closed", unit: "")
 		results << createEvent(name: "status", value: "closed", unit: "")
 		results << createEvent(name: "door", value: "closed", unit: "")

@@ -27,15 +27,18 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
+		fingerprint profileId: "0104", inClusters: "0000,0001,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL220 TS LL", deviceJoinName: "Yale Touch Screen Lever Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD210 PB DB", deviceJoinName: "Yale Push Button Deadbolt Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD220/240 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRL210 PB LL", deviceJoinName: "Yale Push Button Lever Lock"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD226/246 TSDB", deviceJoinName: "Yale Touch Screen Deadbolt Lock"
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD226/246 TSDB", deviceJoinName: "Yale Assure Lock"
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0009,000A,0101,0020", outClusters: "000A,0019", manufacturer: "Yale", model: "YRD216 PBDB", deviceJoinName: "Yale Push Button Deadbolt Lock"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_5", deviceJoinName: "Kwikset 5-Button Deadbolt"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_LEVER_5", deviceJoinName: "Kwikset 5-Button Lever"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10", deviceJoinName: "Kwikset 10-Button Deadbolt"
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0009,0020,0101,0402,0B05,FDBD", outClusters: "000A,0019", manufacturer: "Kwikset", model: "SMARTCODE_DEADBOLT_10T", deviceJoinName: "Kwikset 10-Button Touch Deadbolt"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0101", manufacturer:"Kwikset", model:"Smartcode", deviceJoinName: "Kwikset Smartcode Lock"
 	}
 
 	tiles(scale: 2) {
@@ -153,7 +156,7 @@ def poll() {
 		cmds << zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
 		state.lastbatt = now()
 	}
-	
+
 	if (cmds) {
 		log.info "ZigBee DTH - poll() returning with cmds:- $cmds"
 		return cmds
@@ -195,7 +198,7 @@ def doConfigure() {
 	log.trace "ZigBee DTH - Executing doConfigure() for device ${device.displayName}"
 	state.configured = true
 	// Device-Watch allows 2 check-in misses from device + ping (plus 2 min lag time)
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	def cmds =
 		zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,
@@ -204,7 +207,7 @@ def doConfigure() {
 								  DataType.UINT8, 600, 21600, 0x01) +
 		zigbee.configureReporting(CLUSTER_ALARM, ALARM_ATTR_ALARM_COUNT,
 								  DataType.UINT16, 0, 21600, null)
-	
+
 	def allCmds = refresh() + cmds + reloadAllCodes()
 	log.info "ZigBee DTH - doConfigure() returning with cmds:- $allCmds"
 	allCmds // send refresh and reloadAllCodes cmds as part of configureDevice
@@ -242,12 +245,12 @@ def reloadAllCodes() {
 	sendEvent(lockCodesEvent(lockCodes))
 	def cmds = validateAttributes()
 	if (isYaleLock()) {
-		state.checkCode = 1
+		state.checkCode = state.checkCode ?: 1
 	} else {
-		state.checkCode = 0
+		state.checkCode = state.checkCode ?: 0
 	}
 	cmds += requestCode(state.checkCode)
-	
+
 	log.info "ZigBee DTH - reloadAllCodes() returning with cmds:- $cmds"
 	return cmds
 }
@@ -269,7 +272,7 @@ def setCode(codeID, code, codeName = null) {
 		nameSlot(codeID, codeName)
 		return
 	}
-	
+
 	log.trace "ZigBee DTH - Executing setCode() for device ${device.displayName}"
 	if (isValidCodeID(codeID) && isValidCode(code)) {
 		log.debug "Zigbee DTH - setting code in slot number $codeID"
@@ -286,7 +289,7 @@ def setCode(codeID, code, codeName = null) {
 		} else {
 			cmds << zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_USER_CODE_SET, setPayload).first()
 		}
-		
+
 		def strname = (codeName ?: "Code $codeID")
 		state["setname$codeID"] = strname
 		if(attrCmds) {
@@ -310,9 +313,8 @@ def validateAttributes() {
 		cmds += zigbee.configureReporting(CLUSTER_ALARM, ALARM_ATTR_ALARM_COUNT,
 				DataType.UINT16, 0, 21600, null)
 	}
-	if (state.attrSendPinOta == null || state.attrSendPinOta == 0) {
-		cmds += zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
-	}
+	// DOORLOCK_ATTR_SEND_PIN_OTA is sometimes getting reset to 0. Hence, writing it explicitly to 1.
+	cmds += zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
 	if(!device.currentValue("maxCodes")) {
 		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_NUM_PIN_USERS)
 	}
@@ -321,9 +323,6 @@ def validateAttributes() {
 	}
 	if(!device.currentValue("maxCodeLength")) {
 		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_MAX_PIN_LENGTH)
-	}
-	if (state.attrSendPinOta == null || state.attrSendPinOta == 0) {
-		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA)
 	}
 	cmds = cmds.flatten()
 	log.trace "validateAttributes returning commands list: " + cmds
@@ -345,7 +344,8 @@ def deleteCode(codeID) {
 		// Calling user code get when deleting a code because some Kwikset locks do not generate
 		// programming event when a code is deleted manually on the lock.
 		// This will also help in resolving the failure cases during deletion of a lock code.
-		cmds = zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_CLEAR_USER_CODE, getLittleEndianHexString(codeID))
+		cmds = zigbee.writeAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_SEND_PIN_OTA, DataType.BOOLEAN, 1)
+		cmds += zigbee.command(CLUSTER_DOORLOCK, DOORLOCK_CMD_CLEAR_USER_CODE, getLittleEndianHexString(codeID))
 		cmds += requestCode(codeID)
 	} else {
 		log.warn "Zigbee DTH - Invalid input: Unable to delete slot number $codeID"
@@ -383,7 +383,7 @@ def updateCodes(codeSettings) {
 			}
 		} else log.warn("unexpected entry $name: $updated")
 	}
-	
+
 	if (set_cmds && get_cmds) {
 		def allCmds = []
 		allCmds = delayBetween(set_cmds, 2200) + ["delay 2200"] + delayBetween(get_cmds, 4200)
@@ -467,7 +467,7 @@ private def parseAttributeResponse(String description) {
 		responseMap.name = "battery"
 		responseMap.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
 		// Handling Yale locks incorrect battery reporting issue
-		if (isYaleLock()) {
+		if (reportsBatteryIncorrectly()) {
 			responseMap.value = Integer.parseInt(descMap.value, 16)
 		}
 		responseMap.descriptionText = "Battery is at ${responseMap.value}%"
@@ -496,14 +496,11 @@ private def parseAttributeResponse(String description) {
 	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_NUM_PIN_USERS && descMap.value) {
 		def maxCodes = Integer.parseInt(descMap.value, 16)
 		responseMap = [name: "maxCodes", value: maxCodes, descriptionText: "Maximum Number of user codes supported is ${maxCodes}", displayed: false]
-	} else if (clusterInt == CLUSTER_DOORLOCK && attrInt == DOORLOCK_ATTR_SEND_PIN_OTA && descMap.value) {
-		state.attrSendPinOta = Integer.parseInt(descMap.value, 16)
-		return null
 	} else {
 		log.trace "ZigBee DTH - parseAttributeResponse() - ignoring attribute response"
 		return null
 	}
-	
+
 	if (responseMap.data) {
 		responseMap.data.lockName = deviceName
 	} else {
@@ -525,30 +522,37 @@ private def parseCommandResponse(String description) {
 	Map descMap = zigbee.parseDescriptionAsMap(description)
 	def deviceName = device.displayName
 	log.trace "ZigBee DTH - Executing parseCommandResponse() for device ${deviceName}"
-	
+
 	def result = []
 	Map responseMap = [:]
 	def data = descMap.data
 	def lockCodes = loadLockCodes()
-	
+
 	def cmd = descMap.commandInt
 	def clusterInt = descMap.clusterInt
-	
-	if (clusterInt == CLUSTER_DOORLOCK && cmd == DOORLOCK_RESPONSE_OPERATION_EVENT) {
+
+	if (clusterInt == CLUSTER_DOORLOCK && (cmd == DOORLOCK_CMD_LOCK_DOOR || cmd == DOORLOCK_CMD_UNLOCK_DOOR)) {
+		log.trace "ZigBee DTH - Executing DOOR LOCK/UNLOCK SUCCESS for device ${deviceName} with description map:- $descMap"
+		// Reading lock state with a delay of 4200 as some locks do not report their state change
+		def cmdList = []
+		cmdList << "delay 4200"
+		cmdList << zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE).first()
+		result << response(cmdList)
+	} else if (clusterInt == CLUSTER_DOORLOCK && cmd == DOORLOCK_RESPONSE_OPERATION_EVENT) {
 		log.trace "ZigBee DTH - Executing DOORLOCK_RESPONSE_OPERATION_EVENT for device ${deviceName} with description map:- $descMap"
 		def eventSource = Integer.parseInt(data[0], 16)
 		def eventCode = Integer.parseInt(data[1], 16)
-		
+
 		responseMap.name = "lock"
 		responseMap.displayed = true
 		responseMap.isStateChange = true
-		
+
 		def desc = ""
 		def codeName = ""
-		
+
 		if (eventSource == 0) {
 			def codeID = Integer.parseInt(data[3] + data[2], 16)
-			if (!isValidCodeID(codeID)) {
+			if (!isValidCodeID(codeID, true)) {
 				// invalid code slot number reported by lock
 				log.debug "Invalid slot number := $codeID"
 				return null
@@ -556,13 +560,12 @@ private def parseCommandResponse(String description) {
 			codeName = getCodeName(lockCodes, codeID)
 			responseMap.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
 		} else if (eventSource == 1) {
-			desc = "via app"
 			responseMap.data = [ method: "command" ]
 		} else if (eventSource == 2) {
 			desc = "manually"
 			responseMap.data = [ method: "manual" ]
 		}
-		
+
 		switch (eventCode) {
 			case 1:
 				responseMap.value = "locked"
@@ -633,14 +636,14 @@ private def parseCommandResponse(String description) {
 		// Programming event is generated when the user creates/updates/deletes a code manually on the lock.
 		// Ideally it should be generated even when the user tries to create/update a code through the
 		// SmartApp as well, but that is not the case with Yale locks.
-		
+
 		responseMap.name = "codeChanged"
 		responseMap.isStateChange = true
 		responseMap.displayed = true
-		
+
 		def codeID = Integer.parseInt(data[3] + data[2], 16)
 		def codeName
-		
+
 		def eventCode = Integer.parseInt(data[1], 16)
 		switch (eventCode) {
 			case 1: // MasterCodeChanged
@@ -685,25 +688,25 @@ private def parseCommandResponse(String description) {
 		}
 	} else if (clusterInt == CLUSTER_DOORLOCK && cmd == DOORLOCK_CMD_USER_CODE_GET) {
 		log.trace "ZigBee DTH - Executing DOORLOCK_CMD_USER_CODE_GET for device ${deviceName}"
-		// This is called only when the user creates/updates a code using the SmartApp (in case of Yale locks) 
+		// This is called only when the user creates/updates a code using the SmartApp (in case of Yale locks)
 		// or when the user tries to scan the lock by calling reloadAllCodes()
-		
+
 		def userStatus = Integer.parseInt(data[2], 16)
 		def codeID = Integer.parseInt(data[1] + data[0], 16)
 		def codeName = getCodeNameFromState(lockCodes, codeID)
-		
+
 		// PIN code saved in the state - it will be non null only in case of Yale locks
 		def localCode = decrypt(state["setcode$codeID"])
-		
+
 		responseMap.name = "codeChanged"
 		responseMap.isStateChange = true
 		responseMap.displayed = true
-		
+
 		// userStatus = 1 indicates that the code slot is occupied
 		if (userStatus == 1) {
 			if (localCode && isYaleLock()) {
 				// This will be applicable for Yale locks - both create and update through the SmartApp
-				
+
 				// PIN code fetched from the lock
 				def serverCode = getCodeFromOctet(data)
 				if (localCode == serverCode) {
@@ -728,10 +731,15 @@ private def parseCommandResponse(String description) {
 				// This will be applicable when a slot is found occupied during scanning of lock
 				// Populating the 'lockCodes' attribute after scanning a code slot
 				log.debug "Scanning lock - code $codeID is occupied"
-				responseMap.value = "$codeID set"
-				responseMap.descriptionText = "${getStatusForDescription('set')} \"$codeName\""
+				def changeType = getChangeType(lockCodes, codeID)
+				responseMap.value = "$codeID $changeType"
+				responseMap.descriptionText = "${getStatusForDescription(changeType)} \"$codeName\""
 				responseMap.data = [ codeName: codeName ]
-				result << codeSetEvent(lockCodes, codeID, codeName)
+				if ("set" == changeType) {
+					result << codeSetEvent(lockCodes, codeID, codeName)
+				} else {
+					responseMap.displayed = false
+				}
 			}
 		} else {
 			// Code slot is empty - can happen when code creation fails or a slot is empty while scanning the lock
@@ -744,7 +752,7 @@ private def parseCommandResponse(String description) {
 				// or lock is out of range, or there is wireless interference, the Lock will not be able to respond
 				// back with user code get response.
 				responseMap.data = [isCodeDuplicate: true]
-				
+
 				def codeReportMap = [ name: "codeReport", value: codeID, data: [ code: "" ], isStateChange: true, displayed: false ]
 				codeReportMap.descriptionText = "Code $codeID is not set"
 				result << createEvent(codeReportMap)
@@ -758,12 +766,11 @@ private def parseCommandResponse(String description) {
 				// Code slot is empty - can happen when a slot is found empty while scanning the lock
 				responseMap.value = "$codeID unset"
 				responseMap.descriptionText = "Code slot $codeID found empty during scanning"
-				responseMap.isStateChange = false
 				responseMap.displayed = false
 			}
 		}
 		clearStateForSlot(codeID)
-		
+
 		if (codeID == state.checkCode) {
 			log.debug "Code scanning in progress..."
 			def defaultMaxCodes = isYaleLock() ? 8 : 7
@@ -822,7 +829,7 @@ private def parseCommandResponse(String description) {
 	} else {
 		log.trace "ZigBee DTH - parseCommandResponse() - ignoring command response"
 	}
-	
+
 	if(responseMap["value"]) {
 		if (responseMap.data) {
 			responseMap.data.lockName = deviceName
@@ -894,7 +901,7 @@ private def allCodesDeletedEvent() {
 	lockCodes.each { id, code ->
 		result << createEvent(name: "codeReport", value: id, data: [ code: "" ], descriptionText: "code $id was deleted",
 					displayed: false, isStateChange: true)
-		
+
 		def codeName = code
 		result << createEvent(name: "codeChanged", value: "$id deleted",
 		data: [ codeName: codeName, lockName: deviceName, notify: true,
@@ -947,11 +954,16 @@ private def getCodeFromOctet(data) {
  *
  * @param codeID The code slot number
  *
+ * @param allowMasterCode Flag to indicate if master code slot should be allowed as a valid slot
+ *
  * @return true if valid, false if not
  */
-private boolean isValidCodeID(codeID) {
+private boolean isValidCodeID(codeID, allowMasterCode = false) {
 	def defaultMaxCodes = isYaleLock() ? 250 : 30
 	def minCodeId = isYaleLock() ? 1 : 0
+	if (allowMasterCode) {
+		minCodeId = 0
+	}
 	def maxCodes = device.currentValue("maxCodes") ?: defaultMaxCodes
 	if (codeID.toInteger() >= minCodeId && codeID.toInteger() <= maxCodes) {
 		return true
@@ -1101,15 +1113,28 @@ def getLittleEndianHexString(numStr) {
  * @return true if the lock manufacturer is Yale, else false
  */
 def isYaleLock() {
-	if ("Yale" == device.getDataValue("manufacturer")) {
-		return true
-	}
-	return false
+	return "Yale" == device.getDataValue("manufacturer")
+}
+
+/**
+ * Utility function to check for specific models of Yale Lock that don't report battery correctly
+ *
+ * @return true if the lock has the bug
+ */
+def reportsBatteryIncorrectly() {
+	def badModels = [
+			"YRD220/240 TSDB",
+			"YRL220 TS LL",
+			"YRD210 PB DB",
+			"YRD220/240 TSDB",
+			"YRL210 PB LL",
+	]
+	return (isYaleLock() && device.getDataValue("model") in badModels)
 }
 
 /**
  * Reads the code name from the device state
- * 
+ *
  * @param lockCodes: map with lock code names
  *
  * @param codeID: The code slot number
