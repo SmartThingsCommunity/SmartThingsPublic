@@ -149,6 +149,11 @@ private initialize() {
     log.trace "Executing 'initialize'"
     sendEvent(name: "switch", value: "off")
     sendEvent(name: "level", value: 100)
+
+
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 private Map buildSetLevelEvent(value) {
