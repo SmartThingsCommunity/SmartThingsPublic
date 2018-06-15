@@ -431,8 +431,6 @@ private initialize() {
     log.trace "Executing 'initialize'"
 
     // for HealthCheck
-    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
-
     sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
     sendEvent(name: "healthStatus", value: "online")
     sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
