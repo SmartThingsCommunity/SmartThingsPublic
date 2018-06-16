@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.9d - 3/16/18 Copyright © 2018 Michael Struck
+ *  Version 2.3.9e - 3/16/18 Copyright © 2018 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.8 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.3.8 (2/8/18) Added occupancy sensors to main devices and macros, updated code for new ST actions and restrictions for playback, setup data now sends POST data
- *  Version 2.3.9d (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
+ *  Version 2.3.9e (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -3642,13 +3642,13 @@ def showLink(type){
 }
 def setupData(){
 	def iName = invocationName ? invocationName.toLowerCase() : "smart things"
-    def httpPOSTAWS ="<form name='Lambda' action='https://ask-alexa.com/cgi-bin/lambda.php' method='POST' target='_blank'><input type='hidden' name='appID' value='${app.id}'>" +
+    def httpPOSTAWS ="<form name='Lambda' action='https://ask-alexa.com/code/lambda.php' method='POST' target='_blank'><input type='hidden' name='appID' value='${app.id}'>" +
     "<input type='hidden' name='token' value='${state.accessToken}'><input type='hidden' name='url' value='${getApiServerUrl()}'><input type='submit' value='Display Lambda Code'></form>"   
-	def httpPOSTAWSDL ="<form name='LambdaDL' action='https://ask-alexa.com/cgi-bin/lambdaDL.php' method='POST'><input type='hidden' name='appID' value='${app.id}'>"+
+	def httpPOSTAWSDL ="<form name='LambdaDL' action='https://ask-alexa.com/code/lambdaDL.php' method='POST'><input type='hidden' name='appID' value='${app.id}'>"+
         "<input type='hidden' name='token' value='${state.accessToken}'><input type='hidden' name='url' value='${getApiServerUrl()}'><input type='submit' value='Download Lambda Code'></form>"
-	def httpPOSTDev ="<form name='Dev' action='https://ask-alexa.com/cgi-bin/devSite.php' method='POST' target='_blank'><input type='hidden' name='appID' value='${app.id}'><input type='hidden' name='invocation' value='${iName}'>"+
+	def httpPOSTDev ="<form name='Dev' action='https://ask-alexa.com/code/devSite.php' method='POST' target='_blank'><input type='hidden' name='appID' value='${app.id}'><input type='hidden' name='invocation' value='${iName}'>"+
         "<input type='hidden' name='token' value='${state.accessToken}'><input type='hidden' name='url' value='${getApiServerUrl()}'><input type='submit' value='Display Developer JSON Code'></form>"   
-	def httpPOSTDevDL ="<form name='DevDL' action='https://ask-alexa.com/cgi-bin/devSiteDL.php' method='POST'><input type='hidden' name='appID' value='${app.id}'><input type='hidden' name='invocation' value='${iName}'>"+
+	def httpPOSTDevDL ="<form name='DevDL' action='https://ask-alexa.com/code/devSiteDL.php' method='POST'><input type='hidden' name='appID' value='${app.id}'><input type='hidden' name='invocation' value='${iName}'>"+
         "<input type='hidden' name='token' value='${state.accessToken}'><input type='hidden' name='url' value='${getApiServerUrl()}'><input type='submit' value='Download Developer Code'></form>"
 	def dupCounter=0, devCodeTxt = "Click the button below, copy the JSON code on the page, then paste to the Interaction Model Builder on the <a href='https://developer.amazon.com' target='_blank'>Amazon Developer</a> page<br>${httpPOSTDev}"
 	def devDLTxt = "Or, click the botton below to download a text copy of the JSON code, then load into to the Interaction Model Builder on the <a href='https://developer.amazon.com' target='_blank'>Amazon Developer</a> page<br>${httpPOSTDevDL}"
@@ -3741,9 +3741,9 @@ def setupData(){
     def echoCount = 0
 	if (getRM().size()) getRM().each {echoCount += it.getEchoAliasList().size() }
 	/*if (echoCount){
-    	httpPOSTDev ="<form name='Dev' action='https://ask-alexa.com/cgi-bin/devSiteRoom.php' method='POST' target='_blank'><input type='hidden' name='appID' value='${app.id}'><input type='hidden' name='invocation' value='here'>"+
+    	httpPOSTDev ="<form name='Dev' action='https://ask-alexa.com/code/devSiteRoom.php' method='POST' target='_blank'><input type='hidden' name='appID' value='${app.id}'><input type='hidden' name='invocation' value='here'>"+
         "<input type='hidden' name='token' value='${state.accessToken}'><input type='hidden' name='url' value='${getApiServerUrl()}'><input type='submit' value='Display Developer JSON Code-Room Code'></form>"   
-		httpPOSTDevDL ="<form name='DevDL' action='https://ask-alexa.com/cgi-bin/devSiteRoomDL.php' method='POST'><input type='hidden' name='appID' value='${app.id}'><input type='hidden' name='invocation' value='here'>"+
+		httpPOSTDevDL ="<form name='DevDL' action='https://ask-alexa.com/code/devSiteRoomDL.php' method='POST'><input type='hidden' name='appID' value='${app.id}'><input type='hidden' name='invocation' value='here'>"+
         "<input type='hidden' name='token' value='${state.accessToken}'><input type='hidden' name='url' value='${getApiServerUrl()}'><input type='submit' value='Download Developer Code-Room Code'></form>"
         devCodeTxt = "Click the button below, copy the JSON code on the page, then paste to the Interaction Model Builder on the <a href='https://developer.amazon.com' target='_blank'>Amazon Developer</a> page<br>${httpPOSTDev}"
 		devDLTxt = "Or, click the botton below to download a text copy of the JSON code, then load into to the Interaction Model Builder on the <a href='https://developer.amazon.com' target='_blank'>Amazon Developer</a> page<br>${httpPOSTDevDL}"
@@ -4073,7 +4073,7 @@ private wrReq() { return 108 }
 private vrReq() { return 109 }
 private schReq() { return 104 }
 private rmReq() { return 104 }
-private versionLong(){ return "2.3.9d" }
+private versionLong(){ return "2.3.9e" }
 private versionDate(){ return "03/16/2018" }
 private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
