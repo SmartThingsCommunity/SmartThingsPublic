@@ -19,7 +19,7 @@
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/img/AskAlexa512.png",
             "published": true,
             "oAuth": true,
-            "version": "2.3.9d",
+            "version": "2.3.9e",
             "appSettings": {},
             "appUrl": "smartapps/michaelstruck/ask-alexa.src/ask-alexa.groovy"
         },
