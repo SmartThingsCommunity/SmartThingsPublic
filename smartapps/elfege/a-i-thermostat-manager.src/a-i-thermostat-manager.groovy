@@ -824,7 +824,7 @@ place and never allow for the A.C. to do it while it's cold enough outside. """
 
 ////////////////////////////////////// INSTAL AND UPDATE ///////////////////////////////
 def installed() {
-state.LastTimeMessageSent = now() as Long 
+    state.LastTimeMessageSent = now() as Long 
     //log.debug "enter installed, state: $state"	
     state.windowswereopenandclosedalready = false // this value must not be reset by updated() because updated() is run by contacthandler
 
@@ -889,8 +889,8 @@ def updated() {
 }
 def init() {
 
-    state.CSPSet = [CSP:"72"]
-    state.HSPSet = [HSP:"72"]// temporary values to prevent null error
+    state.CSPSet = 72
+    state.HSPSet = 72 // temporary values to prevent null error
     log.debug """
 state.HSPSet = $state.HSPSet
 state.CSPSet = $state.CSPSet"""
@@ -2215,8 +2215,8 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 state.ShouldHeat = ShouldHeat
 
                 log.debug """
-   WarmOutside = $WarmOutside
-   WarmInside = $WarmInside
+WarmOutside = $WarmOutside
+WarmInside = $WarmInside
 ShouldCoolWithAC = $ShouldCoolWithAC 
 ShouldHeat = $ShouldHeat 
 state.ShouldHeat = $state.ShouldHeat
@@ -2373,8 +2373,8 @@ state.CSPMap : $state.CSPMap"""
                 HSPSet = HSPSet.toInteger()
                 // record those values for further references like in windowscheck or overrides management
 
-                state.CSPSet.CSP = CSPSet
-                state.HSPSet.HSP = HSPSet              
+                state.CSPSet = CSPSet
+                state.HSPSet = HSPSet              
 
 
                 /////////////////////////SENDING COMMANDS//////////////////////////
@@ -2396,7 +2396,7 @@ ContactAndSwitch are on = $ContactAndSwitchAreOn
 ThermSet.displayName == $ThermContact = ${ThermSet.displayName == "$ThermContact" }
 FoundUnitToIgnore = $FoundUnitToIgnore
 """
-                if(ContactAndSwitchInSameRoom && FoundUnitToIgnore && ContactAndSwitchAreOn  && !inAway){
+                if(ContactAndSwitchInSameRoom && FoundUnitToIgnore && ContactAndSwitchAreOn  && !inAway && AppMgt){
                     log.debug "Turning off $ThermSet because it is in the same room as $ContactAndSwitch, which is currently ON"
                     ThermSet.setThermostatMode("off")
                 }
@@ -2417,7 +2417,7 @@ AppMgt = $AppMgt
 """
 
                         if(!BedSensorManagement){ // avoid redundancies if BedSensor's already managing unit. 
-                        // if temp is within desired settings then turn off units
+                            // if temp is within desired settings then turn off units
                             if((CurrTemp >= HSPSet && !ShouldCoolWithAC) || (ShouldCoolWithAC && CurrTemp <= CSPSet)){
                                 if(useAltSensor){ 
 
@@ -2558,7 +2558,7 @@ TurnedOffForced = $TurnedOffForced
                         for(count = 0; count < Thermostats.size(); count++){ 
 
                             def device = AnyON[count]
-                            if(ThermState != "off"){
+                            if(ThermState != "off" && AppMgt){
                                 if(device != null && !ThisIsExceptionTherm){
                                     device.setThermostatMode("off") 
                                     log.debug "$device TURNED OFF BECAUSE SOME CONTACTS ARE OPEN"
@@ -2591,14 +2591,9 @@ TurnedOffForced = $TurnedOffForced
         //log.debug "not evaluating because some windows are open" 
         TurnOffThermostats()
         Thermostats.setThermostatMode("off") // temporary because of those idiots at smartthings who pushed a fucking stupid useless update that prevents status refresh
-
     }
-
-
     VirtualThermostat()
-
     log.debug "END EVAL"
-
 }
 
 ////////////////////////////////////// MODE MANAGEMENT ///////////////////////////////
@@ -3287,9 +3282,9 @@ state.messageSent($state.messageSent)
 
                 //log.debug "opening windows"
                 if(!NotWindows){
-                /// if these are indeed actual windows (set by user)
+                    /// if these are indeed actual windows (set by user)
                     if(OperatingTime){
-                    // if user chose a max operating time
+                        // if user chose a max operating time
                         message = "I'm opening windows because $state.causeOpen. Operation time is $OperatingTime seconds"
                         if(inAway && OpenInfullWhenAway){
                             //log.debug "not applying operation time because location is in $Away mode"
@@ -3297,7 +3292,7 @@ state.messageSent($state.messageSent)
                         runIn(OperatingTime, StopActuators) 
                     }
                     else {
-                    // if no operating time just return the cause
+                        // if no operating time just return the cause
                         message = "I'm opening windows because $state.causeOpen"
                     }
                 }
@@ -3372,17 +3367,15 @@ def OkToOpen(){
     //log.debug "OkToOpen()"
     def ContactsClosed = AllContactsAreClosed()
 
-    log.debug """ 
-state.CSPSet.CSP = ${state.CSPSet} state.algebraicCSPSet = ${state.algebraicCSPSet.CSP}
-state.HSPSet.CSP = ${state.HSPSet} state.algebraicHSPSet = ${state.algebraicHSPSet.CSP}
-"""
-    def CSPSet = state.algebraicCSPSet.CSP
-    def HSPSet = state.algebraicHSPSet.HSP
+    def CSPSet = state.CSPSet
+    def HSPSet = state.HSPSet
 
-    //log.debug "NOW: CSPSet = $CSPSet &&  HSPSet = $HSPSet)"
+    log.debug "NOW: CSPSet = $CSPSet &&  HSPSet = $HSPSet"
 
-    CSPSet = CSPSet?.toInteger()
-    HSPSet = HSPSet?.toInteger()
+    
+        CSPSet = CSPSet?.toInteger()
+        HSPSet = HSPSet?.toInteger()
+  
 
     def CurrMode = location.currentMode
     def Inside = XtraTempSensor.currentValue("temperature")
@@ -3732,7 +3725,7 @@ CLOSING WINDOWS"""
         state.messageopened = message // sent once as push message by checkwindows()
 
     }
-    
+
     log.info """
 Inside?($Inside), Outside?($Outside), 
 Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) 
