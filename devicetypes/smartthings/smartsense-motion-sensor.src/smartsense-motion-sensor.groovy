@@ -307,7 +307,7 @@ def configure() {
 	}
 	configCmds += zigbee.temperatureConfig(30, 300)
 
-	return refresh() + configCmds // send refresh cmds as part of config
+	return refresh() + configCmds + refresh() // send refresh cmds as part of config
 }
 
 private shouldUseOldBatteryReporting() {
