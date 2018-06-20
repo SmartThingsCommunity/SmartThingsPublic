@@ -639,7 +639,7 @@ private anyoneIsHome() {
 
 page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
 		section {
-			input "starting", "time", title: "Starting (both are required)", required: false
-			input "ending", "time", title: "Ending (both are required)", required: false
+			input "starting", "time", title: "Starting (both are required)", required: ending,  submitOnChange:true
+			input "ending", "time", title: "Ending (both are required)", required: starting,  submitOnChange:true
 		}
         }
