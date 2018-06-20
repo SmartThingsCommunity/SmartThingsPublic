@@ -195,7 +195,7 @@ void calculatePID()
 }
 
 // @formatter:off
-int setFan( double rawLevel , boolean log = false)
+int setFan( double rawLevel , boolean logging = false)
 {
 	int boundedLevel
 	
@@ -212,14 +212,14 @@ int setFan( double rawLevel , boolean log = false)
 			fan.setLevel( boundedLevel )
 	
 	
-	if (log) log.debug "OUTPUT: ( rawLevel: $rawLevel , boundedLevel: $boundedLevel )"
+	if ( logging ) log.debug "OUTPUT: ( rawLevel: $rawLevel , boundedLevel: $boundedLevel )"
 	state.lastFanLevel = boundedLevel
 	return boundedLevel
 }
 // @formatter:on
 
 // @formatter:off
-double getTemp( boolean log = false )
+double getTemp( boolean logging = false )
 {
 	double temp
 	
@@ -236,15 +236,15 @@ double getTemp( boolean log = false )
 		temp = sum / state.numTempSensors
 	}
 	
-	if ( log) log.debug "TEMP: ( temp: $temp )"
+	if ( logging ) log.debug "TEMP: ( temp: $temp )"
 	return temp
 }
 // @formatter:on
 
-long getTime( boolean log = false )
+long getTime( boolean logging = false )
 {
 	long currentTime = now()
-	if ( log ) log.debug( "getTime: $currentTime" )
+	if ( logging ) log.debug( "getTime: $currentTime" )
 	return currentTime
 }
 
