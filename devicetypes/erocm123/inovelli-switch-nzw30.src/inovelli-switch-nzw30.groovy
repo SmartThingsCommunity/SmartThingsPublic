@@ -206,14 +206,14 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def on() {
 	commands([
 		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchBinaryV1.switchBinaryGet()
+		zwave.basicV1.basicGet()
 	])
 }
 
 def off() {
 	commands([
 		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchBinaryV1.switchBinaryGet()
+		zwave.basicV1.basicGet()
 	])
 }
 
@@ -226,7 +226,7 @@ def poll() {
 }
 
 def refresh() {
-	commands(zwave.switchBinaryV1.switchBinaryGet())
+	commands(zwave.basicV1.basicGet())
 }
 
 void childSetLevel(String dni, value) {
