@@ -437,7 +437,7 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 			} else {
 				// locked by pressing the Schlage button
 				map.descriptionText = "Locked manually"
@@ -449,7 +449,7 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 7:
@@ -643,7 +643,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 18: // Locked with keypad
@@ -656,7 +656,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			} else {
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 21: // Manually locked
