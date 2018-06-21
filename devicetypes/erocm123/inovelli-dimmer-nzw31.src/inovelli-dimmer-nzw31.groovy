@@ -1,7 +1,7 @@
 /**
  *  Inovelli Dimmer NZW31
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-06-08
+ *  Date: 2018-06-13
  *
  *  Copyright 2018 Eric Maycock
  *
@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-06-13: Modified tile layout. Update firmware version reporting.
+ * 
  *  2018-06-08: Remove communication method check from updated().
  *  
  *  2018-04-23: Added configuration parameters for association group 3.
@@ -46,6 +48,7 @@ metadata {
         
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
+        attribute "firmware", "String"
         
         command "setAssociationGroup", ["number", "enum", "number", "number"] // group number, nodes, action (0 - remove, 1 - add), multi-channel endpoint (optional)
 
@@ -97,16 +100,18 @@ metadata {
             }
         }
         
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
-        }
-        
         valueTile("lastActivity", "device.lastActivity", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
             state "default", label: 'Last Activity: ${currentValue}',icon: "st.Health & Wellness.health9"
         }
+        valueTile("firmware", "device.firmware", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+            state "default", label: 'fw: ${currentValue}', icon: ""
+        }
         
-        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 5, height: 1) {
             state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+        }
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+            state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
         }
     }
 }
@@ -273,7 +278,9 @@ def parse(description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    dimmerEvents(cmd)
+    // Since SmartThings isn't filtering duplicate events, we are skipping these
+    // Switch is sending SwitchMultilevelReport as well (which we will use)
+    //dimmerEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
@@ -285,9 +292,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-    // Since SmartThings isn't filtering duplicate events, we are skipping these
-    // Switch is sending BasicReport as well (which we will use)
-    //dimmerEvents(cmd)
+    dimmerEvents(cmd)
 }
 
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
@@ -315,26 +320,29 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def on() {
     commands([
         zwave.basicV1.basicSet(value: 0xFF),
-        zwave.switchBinaryV1.switchBinaryGet()
+        zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 
 def off() {
     commands([
         zwave.basicV1.basicSet(value: 0x00),
-        zwave.switchBinaryV1.switchBinaryGet()
+        zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 
 def setLevel(value) {
     commands([
         zwave.basicV1.basicSet(value: value < 100 ? value : 99),
+        zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 
 def setLevel(value, duration) {
     def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
-        commands([zwave.switchMultilevelV2.switchMultilevelSet(value: value < 100 ? value : 99, dimmingDuration: dimmingDuration),
+        commands([
+            zwave.switchMultilevelV2.switchMultilevelSet(value: value < 100 ? value : 99, dimmingDuration: dimmingDuration),
+            zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 
@@ -492,8 +500,7 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     if(cmd.applicationVersion && cmd.applicationSubVersion) {
 	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
         state.needfwUpdate = "false"
-        sendEvent(name: "status", value: "fw: ${firmware}")
-        updateDataValue("firmware", firmware)
+        createEvent(name: "firmware", value: "${firmware}")
     }
 }
 
