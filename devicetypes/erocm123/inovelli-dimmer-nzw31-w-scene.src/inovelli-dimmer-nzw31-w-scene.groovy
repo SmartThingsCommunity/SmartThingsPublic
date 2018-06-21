@@ -1,7 +1,7 @@
  /**
  *  Inovelli Dimmer NZW31/NZW31T w/Scene
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-06-08
+ *  Date: 2018-06-13
  *
  *  Copyright 2018 Eric Maycock
  *
@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-06-13: Modified tile layout. Update firmware version reporting.
+ * 
  *  2018-06-08: Remove communication method check from updated().
  * 
  *  2018-04-23: Added configuration parameters for association group 3.
@@ -48,6 +50,7 @@ metadata {
         
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
+        attribute "firmware", "String"
         
         command "pressUpX1"
         command "pressDownX1"
@@ -115,8 +118,28 @@ metadata {
             }
         }
         
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        valueTile("lastActivity", "device.lastActivity", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+            state "default", label: 'Last Activity: ${currentValue}',icon: "st.Health & Wellness.health9"
+        }
+        
+        valueTile("firmware", "device.firmware", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+            state "default", label: 'fw: ${currentValue}', icon: ""
+        }
+        
+        valueTile("info", "device.info", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+            state "default", label: 'Tap on the buttons below to test scenes (ie: Tap ▲ 1x, ▲▲ 2x, etc depending on the button)'
+        }
+        
+        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+            state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+        }
+        
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
+        }
+        
+        standardTile("pressUpX1", "device.button", width: 2, height: 1, decoration: "flat") {
+            state "default", label: "Tap ▲", backgroundColor: "#ffffff", action: "pressUpX1"
         }
         
         standardTile("pressUpX2", "device.button", width: 2, height: 1, decoration: "flat") {
@@ -127,16 +150,16 @@ metadata {
             state "default", label: "Tap ▲▲▲", backgroundColor: "#ffffff", action: "pressUpX3"
         }
         
+        standardTile("pressDownX1", "device.button", width: 2, height: 1, decoration: "flat") {
+            state "default", label: "Tap ▼", backgroundColor: "#ffffff", action: "pressDownX1"
+        }
+        
         standardTile("pressDownX2", "device.button", width: 2, height: 1, decoration: "flat") {
             state "default", label: "Tap ▼▼", backgroundColor: "#ffffff", action: "pressDownX2"
         }
         
         standardTile("pressDownX3", "device.button", width: 2, height: 1, decoration: "flat") {
             state "default", label: "Tap ▼▼▼", backgroundColor: "#ffffff", action: "pressDownX3"
-        }
-        
-        valueTile("level", "device.level", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: '${currentValue}%', icon: ""
         }
         
         standardTile("pressUpX4", "device.button", width: 2, height: 1, decoration: "flat") {
@@ -147,6 +170,10 @@ metadata {
             state "default", label: "Tap ▲▲▲▲▲", backgroundColor: "#ffffff", action: "pressUpX5"
         }
         
+        standardTile("holdUp", "device.button", width: 2, height: 1, decoration: "flat") {
+			state "default", label: "Hold ▲", backgroundColor: "#ffffff", action: "holdUp"
+		}
+        
         standardTile("pressDownX4", "device.button", width: 2, height: 1, decoration: "flat") {
             state "default", label: "Tap ▼▼▼▼", backgroundColor: "#ffffff", action: "pressDownX4"
         }
@@ -155,21 +182,10 @@ metadata {
             state "default", label: "Tap ▼▼▼▼▼", backgroundColor: "#ffffff", action: "pressDownX5"
         }
         
-        valueTile("lastActivity", "device.lastActivity", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
-            state "default", label: 'Last Activity: ${currentValue}',icon: "st.Health & Wellness.health9"
-        }
+        standardTile("holdDown", "device.button", width: 2, height: 1, decoration: "flat") {
+			state "default", label: "Hold ▼", backgroundColor: "#ffffff", action: "holdDown"
+		}
         
-        valueTile("status", "device.status", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-            state "default", label: '${currentValue}', icon: ""
-        }
-        
-        valueTile("info", "device.info", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-            state "default", label: 'Tap on the buttons above to test scenes (ie: Tap ▲ 1x, ▲▲ 2x, etc depending on the button)'
-        }
-        
-        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-            state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
-        }
     }
 }
 
@@ -435,7 +451,9 @@ def parse(description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-    dimmerEvents(cmd)
+    // Since SmartThings isn't filtering duplicate events, we are skipping these
+    // Switch is sending SwitchMultilevelReport as well (which we will use)
+    //dimmerEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
@@ -447,9 +465,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-    // Since SmartThings isn't filtering duplicate events, we are skipping these
-    // Switch is sending BasicReport as well (which we will use)
-    //dimmerEvents(cmd)
+    dimmerEvents(cmd)
 }
 
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
@@ -685,8 +701,7 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     if(cmd.applicationVersion && cmd.applicationSubVersion) {
 	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
         state.needfwUpdate = "false"
-        sendEvent(name: "status", value: "fw: ${firmware}")
-        updateDataValue("firmware", firmware)
+        createEvent(name: "firmware", value: "${firmware}")
     }
 }
 
