@@ -97,6 +97,8 @@ mappings {
 	path("/oauth/initialize") { action: [ GET: "init"] }
 }
 
+private getTlsVersion() { "TLSv1.2" }
+
 def getServerUrl() { return "https://graph.api.smartthings.com" }
 def getServercallbackUrl() { "https://graph.api.smartthings.com/oauth/callback" }
 def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
@@ -202,7 +204,8 @@ def receiveToken(redirectUrl = null) {
 	log.debug "Harmony - receiveToken"
     def oauthParams = [ client_id: "${appSettings.clientId}", client_secret: "${appSettings.clientSecret}", grant_type: "authorization_code", code: params.code ]
     def params = [
-      uri: "https://home.myharmony.com/oauth2/token?${toQueryString(oauthParams)}",
+        uri: "https://home.myharmony.com/oauth2/token?${toQueryString(oauthParams)}",
+        tlsVersion: getTlsVersion()
     ]
 	try {
         httpPost(params) { response ->
@@ -635,7 +638,7 @@ def getActivityName(activity,hubId) {
         def Params = [auth: state.HarmonyAccessToken]
         def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/all?${toQueryString(Params)}"
         try {
-            httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
+            httpGet(uri: url, headers: ["Accept": "application/json"], tlsVersion: getTlsVersion()) {response ->
                 actname = response.data.data.activities[activity].name
             }
 		} catch(Exception e) {
@@ -652,7 +655,7 @@ def getActivityId(activity,hubId) {
         def Params = [auth: state.HarmonyAccessToken]
         def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/all?${toQueryString(Params)}"
         try {
-            httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
+            httpGet(uri: url, headers: ["Accept": "application/json"], tlsVersion: getTlsVersion()) {response ->
             	response.data.data.activities.each {
                 	if (it.value.name == activity)
                 		actid = it.key
@@ -672,7 +675,7 @@ def getHubName(hubId) {
         def Params = [auth: state.HarmonyAccessToken]
         def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/discover?${toQueryString(Params)}"
         try {
-            httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
+            httpGet(uri: url, headers: ["Accept": "application/json"], tlsVersion: getTlsVersion()) {response ->
                 hubname = response.data.data.name
             }
 		} catch(Exception e) {
@@ -899,7 +902,8 @@ def sendToHarmony(evt, String callbackUrl) {
   } else {
     def params = [
       uri: callbackUrl,
-      body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]
+      body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]],
+      tlsVersion: getTlsVersion()
     ]
     try {
         log.debug "Harmony - Sending data to Harmony Cloud: $params"
