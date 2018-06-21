@@ -6,9 +6,6 @@
 #include <ESP8266HTTPUpdateServer.h>
 ESP8266HTTPUpdateServer httpUpdater;
 
-//#define RF_REMOTE
-//#define IR_REMOTE
-
 /*
  * r~ r fade
  * s~ r flash
