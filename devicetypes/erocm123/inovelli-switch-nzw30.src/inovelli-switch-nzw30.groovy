@@ -1,7 +1,7 @@
 /**
  *  Inovelli Switch NZW30
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-06-08
+ *  Date: 2018-06-13
  *  Copyright 2018 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -13,6 +13,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-06-13: Modified tile layout. Update firmware version reporting.
+ * 
  *  2018-06-08: Remove communication method check from updated().
  * 
  *  2018-04-11: No longer deleting child devices when user toggles the option off. SmartThings was throwing errors.
@@ -39,6 +41,7 @@ metadata {
         
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
+        attribute "firmware", "String"
         
         command "setAssociationGroup", ["number", "enum", "number", "number"] // group number, nodes, action (0 - remove, 1 - add), multi-channel endpoint (optional)
  
@@ -74,16 +77,18 @@ metadata {
     			attributeState("default", label:'${currentValue}')
             }
         }
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
-        }
-        
         valueTile("lastActivity", "device.lastActivity", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
             state "default", label: 'Last Activity: ${currentValue}',icon: "st.Health & Wellness.health9"
         }
-
-        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+        valueTile("firmware", "device.firmware", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+            state "default", label: 'fw: ${currentValue}', icon: ""
+        }
+        
+        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 5, height: 1) {
             state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+        }
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+            state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
         }
     }
 }
@@ -356,8 +361,7 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     if(cmd.applicationVersion && cmd.applicationSubVersion) {
 	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
         state.needfwUpdate = "false"
-        sendEvent(name: "status", value: "fw: ${firmware}")
-        updateDataValue("firmware", firmware)
+        createEvent(name: "firmware", value: "${firmware}")
     }
 }
 
