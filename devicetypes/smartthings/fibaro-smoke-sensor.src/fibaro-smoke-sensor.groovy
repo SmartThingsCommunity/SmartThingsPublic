@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Smoke Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid:"generic-smoke") {
+	definition (name: "Fibaro Smoke Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Battery" //attributes: battery
 		capability "Configuration"	//commands: configure()
 		capability "Sensor"
