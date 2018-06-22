@@ -4,60 +4,31 @@
 #include <WiFiManager.h>
 #include <ESP8266SSDP.h>
 #include <ESP8266HTTPUpdateServer.h>
+#include <ESP8266HTTPClient.h>
+
+//Cjcharles added for ease of testing
+#include <ArduinoOTA.h>
+
 ESP8266HTTPUpdateServer httpUpdater;
 
 /*
- * r~ r fade
- * s~ r flash
- * g~ g fade
- * h~ g flash
- * b~ b fade
- * c~ n fade
- * d~ rgb fade
- * f~ rgb flash
- * w~ w1 fade
- * x~ w1 flash
- * y~ w2 fade
- * z~ w2 flash
- */
+r~ r fade
+s~ r flash
+g~ g fade
+h~ g flash
+b~ b fade
+c~ n fade
+d~ rgb fade
+f~ rgb flash
+w~ w1 fade
+x~ w1 flash
+y~ w2 fade
+z~ w2 flash
+*/
 
 
-#define H801
-//#define LYT8266
-//#define ARILUX_ALLC01
-//#define ARILUX_ALLC02
-//#define ARILUX_ALLC05
-//#define ARILUX_ALLC08
-//#define ARILUX_ALLC10
-
-#ifdef H801
 const char * projectName = "SmartLife RGBW Controller";
-String softwareVersion = "2.0.9";
-#endif
-#ifdef LYT8266
-const char * projectName = "SmartLife RGBW Bulb";
-String softwareVersion = "2.0.9";
-#endif
-#ifdef ARILUX_ALLC01
-const char * projectName = "AriLux AL-LC01";
-String softwareVersion = "2.0.9";
-#endif
-#ifdef ARILUX_ALLC02
-const char * projectName = "AriLux AL-LC02";
-String softwareVersion = "2.0.9";
-#endif
-#ifdef ARILUX_ALLC05
-const char * projectName = "AriLux AL-LC05";
-String softwareVersion = "2.0.9";
-#endif
-#ifdef ARILUX_ALLC08
-const char * projectName = "AriLux AL-LC08";
-String softwareVersion = "2.0.9";
-#endif
-#ifdef ARILUX_ALLC10
-const char * projectName = "AriLux AL-LC10";
-String softwareVersion = "2.0.9";
-#endif
+String softwareVersion = "2.1.1";
 
 const char compile_date[] = __DATE__ " " __TIME__;
 
@@ -69,8 +40,18 @@ int currentW2    = 0;
 int lastRED   = 0;
 int lastGREEN = 0;
 int lastBLUE  = 0;
-int lastW1    = 1023;
+int lastW1    = 0;
 int lastW2    = 0;
+
+int redPIN            = 15;
+int greenPIN          = 13;
+int bluePIN           = 12;
+int w1PIN             = 14;
+int w2PIN             = 4;
+int POWER_ENABLE_LED  = 15;
+int LEDPIN            = 5;
+int LED2PIN           = 1;
+int KEY_PIN           = 0;
 
 boolean needFirmware = true;
 
@@ -88,60 +69,17 @@ extern "C" uint32_t _SPIFFS_end;
 extern "C" uint32_t _SPIFFS_page;
 extern "C" uint32_t _SPIFFS_block;
 
-#if defined H801
-  #define redPIN    15
-  #define greenPIN  13
-  #define bluePIN   12
-  #define w1PIN     14
-  #define w2PIN     4
-#endif
-#if defined LYT8266
-  #define redPIN    13
-  #define greenPIN  12
-  #define bluePIN   14
-  #define w1PIN     2
-  #define w2PIN     4
-  #define POWER_ENABLE_LED     15
-#endif
-#if defined ARILUX_ALLC02 || defined ARILUX_ALLC01
-  #define redPIN    14
-  #define greenPIN  5
-  #define bluePIN   12
-  #define w1PIN     13
-  #define w2PIN     15
-#endif
-#if defined ARILUX_ALLC05
-  #define redPIN    13
-  #define greenPIN  12
-  #define bluePIN   14
-  #define w1PIN     5
-  #define w2PIN     15
-#endif
-#if defined ARILUX_ALLC08
-  #define redPIN    5
-  #define greenPIN  4
-  #define bluePIN   14
-  #define w1PIN     12
-  #define w2PIN     13
-#endif
-#if defined ARILUX_ALLC10
-  #define redPIN    5
-  #define greenPIN  14
-  #define bluePIN   12
-  #define w1PIN     13
-  #define w2PIN     15
-#endif
 
-// onbaord green LED D1
-#define LEDPIN    5
-// onbaord red LED D2
-#define LED2PIN   1
+//These are defines which may or may not be used
+#define LEDoff digitalWrite(LEDPIN,HIGH)
+#define LEDon digitalWrite(LEDPIN,LOW)
 
-#define KEY_PIN   0
+#define LED2off digitalWrite(LED2PIN,HIGH)
+#define LED2on digitalWrite(LED2PIN,LOW)
 
-// note 
+// note
 // TX GPIO2 @Serial1 (Serial ONE)
-// RX GPIO3 @Serial    
+// RX GPIO3 @Serial
 
 String program = "";
 String program_off = "";
@@ -155,7 +93,7 @@ unsigned long previousMillis = millis();
 unsigned long failureTimeout = millis();
 unsigned long timerwd;
 unsigned long autoOffTimer;
-unsigned long currentmillis=0;
+unsigned long currentmillis = 0;
 unsigned long timerUptime;
 long debounceDelay = 20;
 boolean fade = true;
@@ -190,18 +128,16 @@ String       s_Current_WIFIPW                     = "";
 #define DEFAULT_RED                    0
 #define DEFAULT_GREEN                  0
 #define DEFAULT_BLUE                   0
-#define DEFAULT_W1                     1023
+#define DEFAULT_W1                     0
 #define DEFAULT_W2                     0
 #define DEFAULT_DISABLE_J3_RESET       false
 #define DEFAULT_TRANSITION_SPEED       1
 #define DEFAULT_AUTO_OFF               0
 #define DEFAULT_SWITCH_TYPE            0
 #define DEFAULT_CONTINUE_BOOT          false
-#define DEFAULT_AUTO_OFF               0
 #define DEFAULT_RESET_TYPE             1
 #define DEFAULT_UREPORT                60
 #define DEFAULT_DEBOUNCE               20
-#define DEFAULT_SWAP_RG                false
 
 #define DEFAULT_PASSWORD               ""
 
@@ -222,7 +158,7 @@ struct SettingsStruct
   boolean       reallyLongPress;
   boolean       usePassword;
   boolean       usePasswordControl;
-  char          defaultColor[10];
+  char          defaultColor[11];
   int           defaultTransition;
   int           badBootCount;
   boolean       disableJ3Reset;
@@ -233,7 +169,16 @@ struct SettingsStruct
   int           resetType;
   int           uReport;
   int           debounce;
-  int           swapRG;
+  int           redPIN_stored;
+  int           greenPIN_stored;
+  int           bluePIN_stored;
+  int           w1PIN_stored;
+  int           w2PIN_stored;
+  int           POWER_ENABLE_LED_stored;
+  int           LEDPIN_stored;
+  int           LED2PIN_stored;
+  int           KEY_PIN_stored;
+  byte          forward_address[4];
 } Settings;
 
 struct SecurityStruct
@@ -244,34 +189,21 @@ struct SecurityStruct
   char          pass[33];
 } SecuritySettings;
 
-#if defined H801
-#define LEDoff digitalWrite(LEDPIN,HIGH)
-#define LEDon digitalWrite(LEDPIN,LOW)
-
-#define LED2off digitalWrite(LED2PIN,HIGH)
-#define LED2on digitalWrite(LED2PIN,LOW)
-#else
-#define LEDoff 
-#define LEDon 
-
-#define LED2off 
-#define LED2on 
-#endif
 
 int led_delay_red = 0;
 int led_delay_green = 0;
 int led_delay_blue = 0;
 int led_delay_w1 = 0;
 int led_delay_w2 = 0;
-#define time_at_colour 1300 
+#define time_at_colour 1300
 unsigned long TIME_LED_RED = 0;
 unsigned long TIME_LED_GREEN = 0;
 unsigned long TIME_LED_BLUE = 0;
 unsigned long TIME_LED_W1 = 0;
 unsigned long TIME_LED_W2 = 0;
-int RED, GREEN, BLUE, W1, W2; 
+int RED, GREEN, BLUE, W1, W2;
 int RED_A = 0;
-int GREEN_A = 0; 
+int GREEN_A = 0;
 int BLUE_A = 0;
 int W1_A = 0;
 int W2_A = 0;
@@ -280,9 +212,10 @@ byte mac[6];
 
 // Start WiFi Server
 std::unique_ptr<ESP8266WebServer> server;
+//ESP8266WebServer server;
 
 void handleRoot() {
-    server->send(200, "application/json", "{\"message\":\"SmartLife RGBW Controller\"}");
+  server->send(200, "application/json", "{\"message\":\"SmartLife RGBW Controller\"}");
 }
 
 void handleNotFound() {
@@ -300,19 +233,42 @@ void handleNotFound() {
   server->send(404, "text/plain", message);
 }
 
+void check_if_forward_request() {
+  if ((Settings.forward_address[0] > 0) && (Settings.forward_address[0] < 255) && (server->uri().c_str() != "")) {
+    HTTPClient httpc;
+    String forward_string = "http://";
+    forward_string += String(Settings.forward_address[0]) + "." + String(Settings.forward_address[1]) + "." + String(Settings.forward_address[2]) + "." + String(Settings.forward_address[3]);
+    forward_string += server->uri();
+    for (int i = 0; i < server->args(); i++) {
+      if (i == 0) {forward_string += "?";}
+      if (i > 0) {forward_string += "&";}
+      forward_string += server->argName(i) + "=" + server->arg(i);
+    }
+    httpc.begin(forward_string);
+    int httpCode = httpc.GET();
+    httpc.end();
+  }
+}
+
 boolean changeColor(String color, int channel, boolean fade, boolean all = false)
 {
   boolean success = false;
 
-  if (channel != 0 && !inAutoOff){
+  if (channel != 0 && !inAutoOff) {
     inAutoOff = true;
     autoOffTimer = millis();
   }
 
   switch (channel)
   {
-    case 0: // Off
+  case 0: // Off
     {
+
+      lastRED = RED;
+      lastGREEN = GREEN;
+      lastBLUE = BLUE;
+      lastW1 = W1;
+      lastW2 = W2;
 
       RED = 0;
       GREEN = 0;
@@ -321,16 +277,16 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       W2 = 0;
 
       ::fade = fade;
-      
+
       change_LED();
       success = true;
       break;
     }
-    case 1: //R channel
+  case 1: //R channel
     {
       RED = getScaledValue(color.substring(0, 2));
 
-      if(all == false){
+      if (all == false) {
         W1 = 0;
         W2 = 0;
       }
@@ -342,16 +298,16 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       lastW2 = W2;
 
       ::fade = fade;
-      
+
       change_LED();
       success = true;
       break;
     }
-    case 2: //G channel
+  case 2: //G channel
     {
       GREEN = getScaledValue(color.substring(0, 2));
 
-      if(all == false){
+      if (all == false) {
         W1 = 0;
         W2 = 0;
       }
@@ -361,18 +317,18 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       lastBLUE = BLUE;
       lastW1 = W1;
       lastW2 = W2;
-      
+
       ::fade = fade;
-      
+
       change_LED();
       success = true;
       break;
     }
-    case 3: //B channel
+  case 3: //B channel
     {
       BLUE = getScaledValue(color.substring(0, 2));
-      
-      if(all == false){
+
+      if (all == false) {
         W1 = 0;
         W2 = 0;
       }
@@ -382,16 +338,16 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       lastBLUE = BLUE;
       lastW1 = W1;
       lastW2 = W2;
-      
+
       ::fade = fade;
-      
+
       change_LED();
       success = true;
       break;
     }
-    case 4: //White1 channel
+  case 4: //White1 channel
     {
-      if(all == false){
+      if (all == false) {
         RED = 0;
         GREEN = 0;
         BLUE = 0;
@@ -407,14 +363,14 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       lastW2 = W2;
 
       ::fade = fade;
-      
+
       change_LED();
       success = true;
       break;
     }
-    case 5: //White2 channel
+  case 5: //White2 channel
     {
-      if(all == false){
+      if (all == false) {
         RED = 0;
         GREEN = 0;
         BLUE = 0;
@@ -428,25 +384,25 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       lastBLUE = BLUE;
       lastW1 = W1;
       lastW2 = W2;
-      
+
       ::fade = fade;
-      
+
       change_LED();
       success = true;
       break;
     }
-    case 6: //RGB channel
+  case 6: //RGB channel
     {
       if (color == "xxxxxx") {
-        RED = rand_interval(0,1023);
-        GREEN = rand_interval(0,1023);
-        BLUE = rand_interval(0,1023);
+        RED = rand_interval(0, 1023);
+        GREEN = rand_interval(0, 1023);
+        BLUE = rand_interval(0, 1023);
       } else {
         RED = getScaledValue(color.substring(0, 2));
         GREEN = getScaledValue(color.substring(2, 4));
         BLUE = getScaledValue(color.substring(4, 6));
       }
-      if(all == false){
+      if (all == false) {
         W1 = 0;
         W2 = 0;
       }
@@ -456,29 +412,43 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       lastBLUE = BLUE;
       lastW1 = W1;
       lastW2 = W2;
-      
+
       ::fade = fade;
-      
+
       change_LED();
       success = true;
       break;
     }
-    case 99: // On
+  case 99: // On
     {
-
-      RED = lastRED;
-      GREEN = lastGREEN;
-      BLUE = lastBLUE;
-      W1 = lastW1;
-      W2 = lastW2;
+      if (color == "0000000000") {
+        RED = lastRED;
+        GREEN = lastGREEN;
+        BLUE = lastBLUE;
+        W1 = lastW1;
+        W2 = lastW2;
+      }
+      else {
+        RED = getScaledValue(color.substring(0, 2));
+        GREEN = getScaledValue(color.substring(2, 4));
+        BLUE = getScaledValue(color.substring(4, 6));
+        W1 = getScaledValue(color.substring(6, 8));
+        W2 = getScaledValue(color.substring(8, 10));
+      }
 
       ::fade = fade;
-      
+
       change_LED();
       success = true;
       break;
     }
-    
+
+    //Attempt to change colour here, though if fading is enabled it will only have a small effect
+    LED_RED();
+    LED_GREEN();
+    LED_BLUE();
+    LED_W1();
+    LED_W2();
   }
   return success;
 
@@ -486,285 +456,260 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
 
 unsigned int rand_interval(unsigned int min, unsigned int max)
 {
-    int r;
-    const unsigned int range = 1 + max - min;
-    const unsigned int buckets = RAND_MAX / range;
-    const unsigned int limit = buckets * range;
+  int r;
+  const unsigned int range = 1 + max - min;
+  const unsigned int buckets = RAND_MAX / range;
+  const unsigned int limit = buckets * range;
 
-    /* Create equal size buckets all in a row, then fire randomly towards
-     * the buckets until you land in one of them. All buckets are equally
-     * likely. If you land off the end of the line of buckets, try again. */
-    do
-    {
-        r = rand();
-    } while (r >= limit);
+  /* Create equal size buckets all in a row, then fire randomly towards
+  the buckets until you land in one of them. All buckets are equally
+  likely. If you land off the end of the line of buckets, try again. */
+  do
+  {
+    r = rand();
+  } while (r >= limit);
 
-    return min + (r / buckets);
+  return min + (r / buckets);
 }
 
-void relayToggle(){
-  if(digitalRead(KEY_PIN) == LOW){
-      current_low = millis();
-      state = LOW;
+void relayToggle() {
+  if (digitalRead(KEY_PIN) == LOW) {
+    current_low = millis();
+    state = LOW;
   }
-  if(digitalRead(KEY_PIN == HIGH) && state == LOW)
+  if (digitalRead(KEY_PIN == HIGH) && state == LOW)
+  {
+    current_high = millis();
+    if ((current_high - current_low) > (Settings.debounce ? Settings.debounce : debounceDelay) && (current_high - current_low) < 10000)
     {
-      current_high = millis();
-      if((current_high - current_low) > (Settings.debounce? Settings.debounce : debounceDelay) && (current_high - current_low) < 10000)
-      {
-        state = HIGH;
-        run_program = false;
-        if(getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2) == "0000000000") {
-          String hexString(Settings.defaultColor);
-          if(hexString == "") {
-            changeColor("0000000000", 99, true);
-          } else if(hexString == "Previous") {
-            changeColor("0000000000", 99, true);
-          } else {
-            if(hexString.startsWith("w~")) {
-              String hex = hexString.substring(2, 4);
-              changeColor(hex, 4, true); 
-            } else if(hexString.startsWith("x~")){
-              String hex = hexString.substring(2, 4);
-              changeColor(hex, 4, false);
-            } else if(hexString.startsWith("y~")) {
-              String hex = hexString.substring(2, 4);
-              changeColor(hex, 5, true); 
-            } else if(hexString.startsWith("z~")){
-              String hex = hexString.substring(2, 4);
-              changeColor(hex, 5, false);
-            } else if(hexString.startsWith("f~")){
-              String hex = hexString.substring(2, 8);
-              changeColor(hex, 6, true);
-            }else{
-              String hex = hexString.substring(2, 8);
-              changeColor("0000000000", 99, true);
-            }
-          }
-        } else {
-          changeColor("0000000000", 0, true);
-        }
-        needUpdate = true;
+      state = HIGH;
+      run_program = false;
+      if (getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2) == "0000000000") {
+        handleOn();
+      } else {
+        handleOff();
       }
-      else if((current_high - current_low) >= 10000 && (current_high - current_low) < 20000)
-      {
-        if (Settings.resetType == 1 || Settings.resetType == 3){
-          Settings.longPress = true;
-          SaveSettings();
-          ESP.restart();
-        }
-      }
-      else if((current_high - current_low) >= 20000 && (current_high - current_low) < 60000)
-      {
-        if (Settings.resetType == 1 || Settings.resetType == 3){
-          Settings.reallyLongPress = true;
-          SaveSettings();
-          ESP.restart();
-        }
+      needUpdate = true;
+    }
+    else if ((current_high - current_low) >= 10000 && (current_high - current_low) < 20000)
+    {
+      if (Settings.resetType == 1 || Settings.resetType == 3) {
+        Settings.longPress = true;
+        SaveSettings();
+        ESP.restart();
       }
     }
+    else if ((current_high - current_low) >= 20000 && (current_high - current_low) < 60000)
+    {
+      if (Settings.resetType == 1 || Settings.resetType == 3) {
+        Settings.reallyLongPress = true;
+        SaveSettings();
+        ESP.restart();
+      }
+    }
+  }
 }
 
 const char * endString(int s, const char *input) {
-   int length = strlen(input);
-   if ( s > length ) s = length;
-   return const_cast<const char *>(&input[length-s]);
+  int length = strlen(input);
+  if ( s > length ) s = length;
+  return const_cast<const char *>(&input[length - s]);
 }
 
 void change_LED()
 {
-  int diff_red = abs(RED-RED_A);
-  if(diff_red > 0){
-    led_delay_red = time_at_colour / abs(RED-RED_A); 
-  }else{
-    led_delay_red = time_at_colour / 1023; 
+  int diff_red = abs(RED - RED_A);
+  if (diff_red > 0) {
+    led_delay_red = time_at_colour / abs(RED - RED_A);
+  } else {
+    led_delay_red = time_at_colour / 1023;
   }
-  
-  int diff_green = abs(GREEN-GREEN_A);
-  if(diff_green > 0){
-    led_delay_green = time_at_colour / abs(GREEN-GREEN_A);
-  }else{
-    led_delay_green = time_at_colour / 1023; 
+
+  int diff_green = abs(GREEN - GREEN_A);
+  if (diff_green > 0) {
+    led_delay_green = time_at_colour / abs(GREEN - GREEN_A);
+  } else {
+    led_delay_green = time_at_colour / 1023;
   }
-  
-  int diff_blue = abs(BLUE-BLUE_A);
-  if(diff_blue > 0){
-    led_delay_blue = time_at_colour / abs(BLUE-BLUE_A); 
-  }else{
-    led_delay_blue = time_at_colour / 1023; 
+
+  int diff_blue = abs(BLUE - BLUE_A);
+  if (diff_blue > 0) {
+    led_delay_blue = time_at_colour / abs(BLUE - BLUE_A);
+  } else {
+    led_delay_blue = time_at_colour / 1023;
   }
-  
-  int diff_w1 = abs(W1-W1_A);
-  if(diff_w1 > 0){
-    led_delay_w1 = time_at_colour / abs(W1-W1_A); 
-  }else{
-    led_delay_w1 = time_at_colour / 1023; 
+
+  int diff_w1 = abs(W1 - W1_A);
+  if (diff_w1 > 0) {
+    led_delay_w1 = time_at_colour / abs(W1 - W1_A);
+  } else {
+    led_delay_w1 = time_at_colour / 1023;
   }
-  
-  int diff_w2 = abs(W2-W2_A);
-  if(diff_w2 > 0){
-    led_delay_w2 = time_at_colour / abs(W2-W2_A); 
-  }else{
-    led_delay_w2 = time_at_colour / 1023; 
+
+  int diff_w2 = abs(W2 - W2_A);
+  if (diff_w2 > 0) {
+    led_delay_w2 = time_at_colour / abs(W2 - W2_A);
+  } else {
+    led_delay_w2 = time_at_colour / 1023;
   }
 }
 
 void LED_RED()
 {
-  if (fade){
-    if((RED_A > RED && (RED_A - Settings.transitionSpeed > RED)) || (RED_A < RED && (RED_A + Settings.transitionSpeed < RED))){
-      if(RED_A > RED) RED_A = RED_A - Settings.transitionSpeed;
-      if(RED_A < RED) RED_A = RED_A + Settings.transitionSpeed;
-      analogWrite(!Settings.swapRG? redPIN:greenPIN, RED_A);
-      currentRED=RED_A;
+  if (fade) {
+    if ((RED_A > RED && (RED_A - Settings.transitionSpeed > RED)) || (RED_A < RED && (RED_A + Settings.transitionSpeed < RED))) {
+      if (RED_A > RED) RED_A = RED_A - Settings.transitionSpeed;
+      if (RED_A < RED) RED_A = RED_A + Settings.transitionSpeed;
+      analogWrite(redPIN, RED_A);
+      currentRED = RED_A;
     } else {
-      analogWrite(!Settings.swapRG? redPIN:greenPIN, RED);
+      analogWrite(redPIN, RED);
     }
   } else {
     RED_A = RED;
-    analogWrite(!Settings.swapRG? redPIN:greenPIN, RED);
-    currentRED=RED;
+    analogWrite(redPIN, RED);
+    currentRED = RED;
   }
 }
 
 void LED_GREEN()
 {
-  if (fade){
-    if((GREEN_A > GREEN && (GREEN_A - Settings.transitionSpeed > GREEN)) || (GREEN_A < GREEN && (GREEN_A + Settings.transitionSpeed < GREEN))){
-      if(GREEN_A > GREEN) GREEN_A = GREEN_A - Settings.transitionSpeed;
-      if(GREEN_A < GREEN) GREEN_A = GREEN_A + Settings.transitionSpeed;
-      analogWrite(!Settings.swapRG? greenPIN:redPIN, GREEN_A);
-      currentGREEN=GREEN_A;
+  if (fade) {
+    if ((GREEN_A > GREEN && (GREEN_A - Settings.transitionSpeed > GREEN)) || (GREEN_A < GREEN && (GREEN_A + Settings.transitionSpeed < GREEN))) {
+      if (GREEN_A > GREEN) GREEN_A = GREEN_A - Settings.transitionSpeed;
+      if (GREEN_A < GREEN) GREEN_A = GREEN_A + Settings.transitionSpeed;
+      analogWrite(greenPIN, GREEN_A);
+      currentGREEN = GREEN_A;
     } else {
-      analogWrite(!Settings.swapRG? greenPIN:redPIN, GREEN);
+      analogWrite(greenPIN, GREEN);
     }
   } else {
-      GREEN_A = GREEN;
-      analogWrite(!Settings.swapRG? greenPIN:redPIN, GREEN);
-      currentGREEN=GREEN;
+    GREEN_A = GREEN;
+    analogWrite(greenPIN, GREEN);
+    currentGREEN = GREEN;
   }
 }
-  
+
 void LED_BLUE()
 {
-  if (fade){
-    if((BLUE_A > BLUE && (BLUE_A - Settings.transitionSpeed > BLUE)) || (BLUE_A < BLUE && (BLUE_A + Settings.transitionSpeed < BLUE))){
-      if(BLUE_A > BLUE) BLUE_A = BLUE_A - Settings.transitionSpeed;
-      if(BLUE_A < BLUE) BLUE_A = BLUE_A + Settings.transitionSpeed;
+  if (fade) {
+    if ((BLUE_A > BLUE && (BLUE_A - Settings.transitionSpeed > BLUE)) || (BLUE_A < BLUE && (BLUE_A + Settings.transitionSpeed < BLUE))) {
+      if (BLUE_A > BLUE) BLUE_A = BLUE_A - Settings.transitionSpeed;
+      if (BLUE_A < BLUE) BLUE_A = BLUE_A + Settings.transitionSpeed;
       analogWrite(bluePIN, BLUE_A);
-      currentBLUE=BLUE_A;
+      currentBLUE = BLUE_A;
     } else {
       analogWrite(bluePIN, BLUE);
     }
   } else {
-      BLUE_A = BLUE;
-      analogWrite(bluePIN, BLUE);
-      currentBLUE=BLUE;
+    BLUE_A = BLUE;
+    analogWrite(bluePIN, BLUE);
+    currentBLUE = BLUE;
   }
 }
 
 void LED_W1()
 {
-  if (fade){
-    if((W1_A > W1 && (W1_A - Settings.transitionSpeed > W1)) || (W1_A < W1 && (W1_A + Settings.transitionSpeed < W1))){
-      if(W1_A > W1) W1_A = W1_A - Settings.transitionSpeed;
-      if(W1_A < W1) W1_A = W1_A + Settings.transitionSpeed;
+  if (fade) {
+    if ((W1_A > W1 && (W1_A - Settings.transitionSpeed > W1)) || (W1_A < W1 && (W1_A + Settings.transitionSpeed < W1))) {
+      if (W1_A > W1) W1_A = W1_A - Settings.transitionSpeed;
+      if (W1_A < W1) W1_A = W1_A + Settings.transitionSpeed;
       analogWrite(w1PIN, W1_A);
-      currentW1=W1_A;
+      currentW1 = W1_A;
     } else {
       analogWrite(w1PIN, W1);
     }
   } else {
-      W1_A = W1;
-      analogWrite(w1PIN, W1);
-      currentW1=W1;
+    W1_A = W1;
+    analogWrite(w1PIN, W1);
+    currentW1 = W1;
   }
 }
 
 void LED_W2()
 {
-  if (fade){
-    if((W2_A > W2 && (W2_A - Settings.transitionSpeed > W2)) || (W2_A < W2 && (W2_A + Settings.transitionSpeed < W2))){
-      if(W2_A > W2) W2_A = W2_A - Settings.transitionSpeed;
-      if(W2_A < W2) W2_A = W2_A + Settings.transitionSpeed;
+  if (fade) {
+    if ((W2_A > W2 && (W2_A - Settings.transitionSpeed > W2)) || (W2_A < W2 && (W2_A + Settings.transitionSpeed < W2))) {
+      if (W2_A > W2) W2_A = W2_A - Settings.transitionSpeed;
+      if (W2_A < W2) W2_A = W2_A + Settings.transitionSpeed;
       analogWrite(w2PIN, W2_A);
-      currentW2=W2_A;
+      currentW2 = W2_A;
     } else {
       analogWrite(w2PIN, W2);
     }
   } else {
-      W2_A = W2;
-      analogWrite(w2PIN, W2);
-      currentW2=W2;
+    W2_A = W2;
+    analogWrite(w2PIN, W2);
+    currentW2 = W2;
   }
 }
 
-int convertToInt(char upper,char lower)
+int convertToInt(char upper, char lower)
 {
   int uVal = (int)upper;
   int lVal = (int)lower;
-  uVal = uVal >64 ? uVal - 55 : uVal - 48;
+  uVal = uVal > 64 ? uVal - 55 : uVal - 48;
   uVal = uVal << 4;
-  lVal = lVal >64 ? lVal - 55 : lVal - 48;
+  lVal = lVal > 64 ? lVal - 55 : lVal - 48;
   return uVal + lVal;
 }
 
-String getStatus(){
-    if(getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2) == "0000000000") {
-      return "{\"rgb\":\"" + getHex(RED) + getHex(GREEN) + getHex(BLUE) + "\", \"r\":\"" + getHex(RED) + "\", \"g\":\"" + getHex(GREEN) + "\", \"b\":\"" + getHex(BLUE) + "\", \"w1\":\"" + getHex(W1) + "\", \"w2\":\"" + getHex(W2) + "\", \"power\":\"off\", \"running\":\"false\", \"program\":\"" + program_number + "\"}";
-    } else if(run_program){
-      return "{\"running\":\"true\", \"program\":\"" + program_number + "\", \"power\":\"on\", \"uptime\":\"" + uptime() + "\"}";
-    }else{
-      return "{\"rgb\":\"" + getHex(RED) + getHex(GREEN) + getHex(BLUE) + "\", \"r\":\"" + getHex(RED) + "\", \"g\":\"" + getHex(GREEN) + "\", \"b\":\"" + getHex(BLUE) + "\", \"w1\":\"" + getHex(W1) + "\", \"w2\":\"" + getHex(W2) + "\", \"power\":\"on\", \"running\":\"false\", \"program\":\"" + program_number + "\"}";
-    }
+String getStatus() {
+  if (getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2) == "0000000000") {
+    return "{\"rgb\":\"" + getHex(RED) + getHex(GREEN) + getHex(BLUE) + "\", \"r\":\"" + getHex(RED) + "\", \"g\":\"" + getHex(GREEN) + "\", \"b\":\"" + getHex(BLUE) + "\", \"w1\":\"" + getHex(W1) + "\", \"w2\":\"" + getHex(W2) + "\", \"power\":\"off\", \"running\":\"false\", \"program\":\"" + program_number + "\"}";
+  } else if (run_program) {
+    return "{\"running\":\"true\", \"program\":\"" + program_number + "\", \"power\":\"on\", \"uptime\":\"" + uptime() + "\"}";
+  } else {
+    return "{\"rgb\":\"" + getHex(RED) + getHex(GREEN) + getHex(BLUE) + "\", \"r\":\"" + getHex(RED) + "\", \"g\":\"" + getHex(GREEN) + "\", \"b\":\"" + getHex(BLUE) + "\", \"w1\":\"" + getHex(W1) + "\", \"w2\":\"" + getHex(W2) + "\", \"power\":\"on\", \"running\":\"false\", \"program\":\"" + program_number + "\"}";
+  }
 }
 
-int getScaledValue(String hex){
+int getScaledValue(String hex) {
   hex.toUpperCase();
   char c[2];
-  hex.toCharArray(c,3);
-  long value = convertToInt(c[0],c[1]);
-  int intValue = map(value,0,255,0,1023); 
+  hex.toCharArray(c, 3);
+  long value = convertToInt(c[0], c[1]);
+  int intValue = map(value, 0, 255, 0, 1023);
 
   return intValue;
 
 }
 
-int getInt(String hex){
+int getInt(String hex) {
   hex.toUpperCase();
   char c[2];
-  hex.toCharArray(c,3);
-  return convertToInt(c[0],c[1]);
+  hex.toCharArray(c, 3);
+  return convertToInt(c[0], c[1]);
 }
 
-String getHex(int value){
-  if(value > 1018){
-    return "ff"; 
-  } else if(value < 4){
-    return "00"; 
-  }else{
-    int intValue = map(value,0,1023,0,255) + 1;
+String getHex(int value) {
+  if (value > 1018) {
+    return "ff";
+  } else if (value < 4) {
+    return "00";
+  } else {
+    int intValue = map(value, 0, 1023, 0, 255) + 1;
     return padHex(String(intValue, HEX));
   }
 }
 
-String getStandard(int value){
-  if(value >= 1020){
-    return "255"; 
-  }else{
-    return String(round(value*4/16));
+String getStandard(int value) {
+  if (value >= 1020) {
+    return "255";
+  } else {
+    return String(round(value * 4 / 16));
   }
 }
 
-String padHex(String hex){
-  if(hex.length() == 1){
+String padHex(String hex) {
+  if (hex.length() == 1) {
     hex = "0" + hex;
   }
   return hex;
 }
 
 /*********************************************************************************************\
- * Tasks each 5 minutes
+Tasks each 5 minutes
 \*********************************************************************************************/
 void runEach5Minutes()
 {
@@ -772,7 +717,7 @@ void runEach5Minutes()
   timerwd = millis() + 300000;
 
   sendStatus();
-  
+
 }
 
 boolean sendStatus(int number) {
@@ -801,18 +746,18 @@ boolean sendStatus(int number) {
     return false;
   }
   if (connectionFailures)
-    connectionFailures = 0;
+  connectionFailures = 0;
 
-  switch(number){
-    case 0: {
+  switch (number) {
+  case 0: {
       message = getStatus();
       break;
     }
-    case 98: {
+  case 98: {
       message = "{\"version\":\"" + softwareVersion + "\", \"date\":\"" + compile_date + "\"}";
       break;
     }
-    case 99: {
+  case 99: {
       message = "{\"uptime\":\"" + uptime() + "\"}";
       break;
     }
@@ -823,15 +768,15 @@ boolean sendStatus(int number) {
   //url += event->idx;
 
   client.print(String("POST ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + ":" + Settings.haPort + "\r\n" + authHeader +
-               "Content-Type: application/json;charset=utf-8\r\n" +
-               "Server: " + projectName + "\r\n" +
-               "Connection: close\r\n\r\n" +
-               message + "\r\n");
+  "Host: " + host + ":" + Settings.haPort + "\r\n" + authHeader +
+  "Content-Type: application/json;charset=utf-8\r\n" +
+  "Server: " + projectName + "\r\n" +
+  "Connection: close\r\n\r\n" +
+  message + "\r\n");
 
   unsigned long timer = millis() + 200;
   while (!client.available() && millis() < timer)
-    delay(1);
+  delay(1);
 
   // Read all the lines of the reply from server and print them to Serial
   while (client.available()) {
@@ -849,68 +794,13 @@ boolean sendStatus(int number) {
   return success;
 }
 
-boolean sendStatus(){
-  String authHeader = "";
-  boolean success = false;
-  char host[20];
-  sprintf_P(host, PSTR("%u.%u.%u.%u"), Settings.haIP[0], Settings.haIP[1], Settings.haIP[2], Settings.haIP[3]);
-  
-  //client.setTimeout(1000);
-  if (Settings.haIP[0] + Settings.haIP[1] + Settings.haIP[2] + Settings.haIP[3] == 0) { // HA host is not configured
-    return false;
-  }
-  if (connectionFailures >= 3) { // Too many errors; Trying not to get stuck
-    if (millis() - failureTimeout < 1800000) {
-      return false;
-    } else {
-      failureTimeout = millis();
-    }
-  }
-  // Use WiFiClient class to create TCP connections
-  WiFiClient client;
-  if (!client.connect(host, Settings.haPort))
-  {
-    connectionFailures++;
-    return false;
-  }
-  if (connectionFailures)
-    connectionFailures = 0;
-
-  // We now create a URI for the request
-  String url = F("/");
-  //url += event->idx;
-
-  client.print(String("POST ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + ":" + Settings.haPort + "\r\n" + authHeader + 
-               "Content-Type: application/json;charset=utf-8\r\n" +
-               "Server: " + projectName + "\r\n" +
-               "Connection: close\r\n\r\n" +
-               getStatus() + "\r\n");
-
-  unsigned long timer = millis() + 200;
-  while (!client.available() && millis() < timer)
-    delay(1);
-
-  // Read all the lines of the reply from server and print them to Serial
-  while (client.available()) {
-    String line = client.readStringUntil('\n');
-    if (line.substring(0, 15) == "HTTP/1.1 200 OK")
-    {
-      success = true;
-    }
-    delay(1);
-  }
-  
-  client.flush();
-  client.stop();
-
-  return success;
-  
+boolean sendStatus() {
+  sendStatus(0);
 }
 
 /********************************************************************************************\
-  Convert a char string to IP byte array
-  \*********************************************************************************************/
+Convert a char string to IP byte array
+\*********************************************************************************************/
 boolean str2ip(char *string, byte* IP)
 {
   byte c;
@@ -929,18 +819,18 @@ boolean str2ip(char *string, byte* IP)
     else if (c == '.' || c == 0) // next octet from IP address
     {
       if (value <= 255)
-        IP[part++] = value;
+      IP[part++] = value;
       else
-        return false;
+      return false;
       value = 0;
     }
     else if (c == ' ') // ignore these
-      ;
+    ;
     else // invalid token
-      return false;
+    return false;
   }
   if (part == 4) // correct number of octets
-    return true;
+  return true;
   return false;
 }
 
@@ -953,6 +843,17 @@ String deblank(const char* input)
 
 void SaveSettings(void)
 {
+  //Save any updates to the used pins
+  Settings.redPIN_stored = redPIN;
+  Settings.greenPIN_stored = greenPIN;
+  Settings.bluePIN_stored = bluePIN;
+  Settings.w1PIN_stored = w1PIN;
+  Settings.w2PIN_stored = w2PIN;
+  Settings.LEDPIN_stored = LEDPIN;
+  Settings.LED2PIN_stored = LED2PIN;
+  Settings.POWER_ENABLE_LED_stored = POWER_ENABLE_LED;
+  Settings.KEY_PIN_stored = KEY_PIN;
+
   SaveToFlash(0, (byte*)&Settings, sizeof(struct SettingsStruct));
   SaveToFlash(32768, (byte*)&SecuritySettings, sizeof(struct SecurityStruct));
 }
@@ -961,11 +862,22 @@ boolean LoadSettings()
 {
   LoadFromFlash(0, (byte*)&Settings, sizeof(struct SettingsStruct));
   LoadFromFlash(32768, (byte*)&SecuritySettings, sizeof(struct SecurityStruct));
+
+  //Now load them into used variables but only if valid pins - otherwise keep defaults (for H801)
+  if (Settings.redPIN_stored >= 0 && Settings.redPIN_stored <= 16) redPIN = Settings.redPIN_stored;
+  if (Settings.greenPIN_stored >= 0 && Settings.greenPIN_stored <= 16) greenPIN = Settings.greenPIN_stored;
+  if (Settings.bluePIN_stored >= 0 && Settings.bluePIN_stored <= 16) bluePIN = Settings.bluePIN_stored;
+  if (Settings.w1PIN_stored >= 0 && Settings.w1PIN_stored <= 16) w1PIN = Settings.w1PIN_stored;
+  if (Settings.w2PIN_stored >= 0 && Settings.w2PIN_stored <= 16) w2PIN = Settings.w2PIN_stored;
+  if (Settings.LEDPIN_stored >= 0 && Settings.LEDPIN_stored <= 16) LEDPIN = Settings.LEDPIN_stored;
+  if (Settings.LED2PIN_stored >= 0 && Settings.LED2PIN_stored <= 16) LED2PIN = Settings.LED2PIN_stored;
+  if (Settings.POWER_ENABLE_LED_stored >= 0 && Settings.POWER_ENABLE_LED_stored <= 16) POWER_ENABLE_LED = Settings.POWER_ENABLE_LED_stored;
+  if (Settings.KEY_PIN_stored >= 0 && Settings.KEY_PIN_stored <= 16) KEY_PIN = Settings.KEY_PIN_stored;
 }
 
 /********************************************************************************************\
-  Save data to flash
-  \*********************************************************************************************/
+Save data to flash
+\*********************************************************************************************/
 void SaveToFlash(int index, byte* memAddress, int datasize)
 {
   if (index > 33791) // Limit usable flash area to 32+1k size
@@ -990,10 +902,10 @@ void SaveToFlash(int index, byte* memAddress, int datasize)
   noInterrupts();
   // write sector back to flash
   if (spi_flash_erase_sector(_sector) == SPI_FLASH_RESULT_OK)
-    if (spi_flash_write(_sector * SPI_FLASH_SEC_SIZE, reinterpret_cast<uint32_t*>(data), FLASH_EEPROM_SIZE) == SPI_FLASH_RESULT_OK)
-    {
-      //Serial.println("flash save ok");
-    }
+  if (spi_flash_write(_sector * SPI_FLASH_SEC_SIZE, reinterpret_cast<uint32_t*>(data), FLASH_EEPROM_SIZE) == SPI_FLASH_RESULT_OK)
+  {
+    //Serial.println("flash save ok");
+  }
   interrupts();
   delete [] data;
   //String log = F("FLASH: Settings saved");
@@ -1002,8 +914,8 @@ void SaveToFlash(int index, byte* memAddress, int datasize)
 
 
 /********************************************************************************************\
-  Load data from flash
-  \*********************************************************************************************/
+Load data from flash
+\*********************************************************************************************/
 void LoadFromFlash(int index, byte* memAddress, int datasize)
 {
   uint32_t _sector = ((uint32_t)&_SPIFFS_start - 0x40200000) / SPI_FLASH_SEC_SIZE;
@@ -1027,26 +939,26 @@ void LoadFromFlash(int index, byte* memAddress, int datasize)
 
 String uptime()
 {
- currentmillis = millis();
- long days=0;
- long hours=0;
- long mins=0;
- long secs=0;
- secs = currentmillis/1000; //convect milliseconds to seconds
- mins=secs/60; //convert seconds to minutes
- hours=mins/60; //convert minutes to hours
- days=hours/24; //convert hours to days
- secs=secs-(mins*60); //subtract the coverted seconds to minutes in order to display 59 secs max 
- mins=mins-(hours*60); //subtract the coverted minutes to hours in order to display 59 minutes max
- hours=hours-(days*24); //subtract the coverted hours to days in order to display 23 hours max
- 
+  currentmillis = millis();
+  long days = 0;
+  long hours = 0;
+  long mins = 0;
+  long secs = 0;
+  secs = currentmillis / 1000; //convect milliseconds to seconds
+  mins = secs / 60; //convert seconds to minutes
+  hours = mins / 60; //convert minutes to hours
+  days = hours / 24; //convert hours to days
+  secs = secs - (mins * 60); //subtract the coverted seconds to minutes in order to display 59 secs max
+  mins = mins - (hours * 60); //subtract the coverted minutes to hours in order to display 59 minutes max
+  hours = hours - (days * 24); //subtract the coverted hours to days in order to display 23 hours max
 
-  if (days>0) // days will displayed only if value is greater than zero
- {
-   return String(days) + " days and " + String(hours) + ":" + String(mins) + ":" + String(secs);
- }else{
-   return String(hours) + ":" + String(mins) + ":" + String(secs);
- }
+
+  if (days > 0) // days will displayed only if value is greater than zero
+  {
+    return String(days) + " days and " + String(hours) + ":" + String(mins) + ":" + String(secs);
+  } else {
+    return String(hours) + ":" + String(mins) + ":" + String(secs);
+  }
 }
 
 
@@ -1090,13 +1002,13 @@ void ZeroFillFlash()
     // write sector to flash
     noInterrupts();
     if (spi_flash_erase_sector(_sector) == SPI_FLASH_RESULT_OK)
-      if (spi_flash_write(_sector * SPI_FLASH_SEC_SIZE, reinterpret_cast<uint32_t*>(data), FLASH_EEPROM_SIZE) == SPI_FLASH_RESULT_OK)
-      {
-        interrupts();
-        Serial.print(F("FLASH: Zero Fill Sector: "));
-        Serial.println(_sector);
-        delay(10);
-      }
+    if (spi_flash_write(_sector * SPI_FLASH_SEC_SIZE, reinterpret_cast<uint32_t*>(data), FLASH_EEPROM_SIZE) == SPI_FLASH_RESULT_OK)
+    {
+      interrupts();
+      Serial.print(F("FLASH: Zero Fill Sector: "));
+      Serial.println(_sector);
+      delay(10);
+    }
   }
   interrupts();
   delete [] data;
@@ -1132,7 +1044,7 @@ void addHeader(boolean showMenu, String& str)
 
   str += F("</head>");
   str += F("<center>");
-  
+
 }
 
 void addFooter(String& str)
@@ -1145,111 +1057,194 @@ void addMenu(String& str)
   str += F("<a class=\"button-menu\" href=\".\">Main</a>");
   str += F("<a class=\"button-menu\" href=\"advanced\">Advanced</a>");
   str += F("<a class=\"button-menu\" href=\"control\">Control</a>");
-  str += F("<a class=\"button-menu\" href=\"update\">Firmware</a>"); 
+  str += F("<a class=\"button-menu\" href=\"update\">Firmware</a>");
+}
+
+void turnOn(String& transition)
+{
+  if (transition == "") {
+    transition = "false";
+  }
+
+  String hexString = Settings.defaultColor;
+  if (hexString == "") {
+    changeColor("0000000000", 99, (transition != "false"));
+  } else if (hexString == "Previous") {
+    changeColor("0000000000", 99, (transition != "false"));
+  } else {
+    if (hexString.startsWith("w~")) {
+      String hex = hexString.substring(2, 4);
+      changeColor(hex, 4, (transition != "false"));
+    } else if (hexString.startsWith("x~")) {
+      String hex = hexString.substring(2, 4);
+      changeColor(hex, 4, (transition != "false"));
+    } else if (hexString.startsWith("y~")) {
+      String hex = hexString.substring(2, 4);
+      changeColor(hex, 5, true);
+    } else if (hexString.startsWith("z~")) {
+      String hex = hexString.substring(2, 4);
+      changeColor(hex, 5, false);
+    } else if (hexString.startsWith("f~")) {
+      String hex = hexString.substring(2, 8);
+      changeColor(hex, 6, (transition != "false"));
+    } else {
+      //Here we take the actual default across all channels
+      String hex = hexString.substring(2, 8);
+      changeColor(hexString, 99, (transition != "false"));
+    }
+  }
+}
+
+void turnOff(String& transition)
+{
+  if (transition == "") {
+    transition = "false";
+  }
+  changeColor("0", 0, (transition != "false"));
+}
+
+void handleOff()
+{
+  if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+  {
+    if (!server->authenticate("admin", SecuritySettings.Password))
+    return server->requestAuthentication();
+  }
+  String transition = server->arg("transition");
+  run_program = false;
+
+  turnOff(transition);
+
+  //Check if we should forward the request to another device
+  check_if_forward_request();
+
+  //If we received this request from outside of ST, then lets update ST
+  byte current_add[4] = {server->client().remoteIP()};
+  if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+    needUpdate = true;
+  }
+  
+  server->send(200, "application/json", getStatus());
+}
+
+void handleOn()
+{
+  if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+  {
+    if (!server->authenticate("admin", SecuritySettings.Password))
+    return server->requestAuthentication();
+  }
+  String transition = server->arg("transition");
+  run_program = false;
+
+  turnOn(transition);
+
+  //Check if we should forward the request to another device
+  check_if_forward_request();
+
+  //If we received this request from outside of ST, then lets update ST
+  byte current_add[4] = {server->client().remoteIP()};
+  if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+    needUpdate = true;
+  }
+
+
+  server->send(200, "application/json", getStatus());
 }
 
 void setup()
 {
+  digitalWrite(12, 0);
+  digitalWrite(13, 0);
 
   // Setup console
   Serial1.begin(115200);
-  delay(10);
+  delay(20);
   Serial1.println();
   Serial1.println();
 
   LoadSettings();
-  
-  pinMode(LEDPIN, OUTPUT);  
-  pinMode(LED2PIN, OUTPUT);  
-  
+
+  digitalWrite(LEDPIN, 0);
+  digitalWrite(LED2PIN, 0);
+
+  digitalWrite(redPIN, 0);
+  digitalWrite(greenPIN, 0);
+  digitalWrite(bluePIN, 0);
+  digitalWrite(w1PIN, 0);
+  digitalWrite(w2PIN, 0);
+  digitalWrite(POWER_ENABLE_LED, 1);
+
+
+
+  pinMode(LEDPIN, OUTPUT);
+  pinMode(LED2PIN, OUTPUT);
+
   pinMode(redPIN, OUTPUT);
   pinMode(greenPIN, OUTPUT);
   pinMode(bluePIN, OUTPUT);
   pinMode(w1PIN, OUTPUT);
-  pinMode(w2PIN, OUTPUT);    
+  pinMode(w2PIN, OUTPUT);
+  pinMode(POWER_ENABLE_LED, OUTPUT);
+
+  analogWrite(redPIN, 0);
+  analogWrite(greenPIN, 0);
+  analogWrite(bluePIN, 0);
+  analogWrite(w1PIN, 0);
+  analogWrite(w2PIN, 0);
+
   pinMode(KEY_PIN, INPUT_PULLUP);
   attachInterrupt(KEY_PIN, relayToggle, CHANGE);
 
-  #ifdef LYT8266
-  pinMode(POWER_ENABLE_LED, OUTPUT);  // Power Led Enable
-  digitalWrite(POWER_ENABLE_LED, 1);
-  #endif
-  
   if (Settings.badBootCount == 0) {
-  switch (Settings.powerOnState)
-  {
+    switch (Settings.powerOnState)
+    {
     case 0: //Switch Off on Boot
-    {
-      break;
-    }
+      {
+        break;
+      }
     case 1: //Switch On on Boot
-    {
-      String hexString(Settings.defaultColor);
-      if(hexString == "") {
-        changeColor("0000000000", 99, false);
-      } else if(hexString == "Previous") {
-        changeColor("0000000000", 99, false);
-      } else {
-        if(hexString.startsWith("w~")) {
-          String hex = hexString.substring(2, 4);
-          changeColor(hex, 4, false); 
-        } else if(hexString.startsWith("x~")){
-          String hex = hexString.substring(2, 4);
-          changeColor(hex, 4, false);
-        } else if(hexString.startsWith("y~")) {
-          String hex = hexString.substring(2, 4);
-          changeColor(hex, 5, true); 
-        } else if(hexString.startsWith("z~")){
-          String hex = hexString.substring(2, 4);
-          changeColor(hex, 5, false);
-        } else if(hexString.startsWith("f~")){
-          String hex = hexString.substring(2, 8);
-          changeColor(hex, 6, false);
-        }else{
-          String hex = hexString.substring(2, 8);
-          changeColor("0000000000", 99, false);
-        }
+      {
+        String transition = "";
+        turnOn(transition);
+        break;
       }
-      LED_RED();
-      LED_GREEN();
-      LED_BLUE();
-      LED_W1();
-      LED_W2();
-      break;
-    }
     case 2: //Saved State on Boot
-    {
-      if(Settings.currentState == true){
-         
+      {
+        //Dont use this any more as requires lots of flash writes
       }
-      else {
-        
+      default : //Optional
+      {
+
       }
-      break;
     }
-    default : //Optional
-    {
-       
-    }
-  }
   }
 
-  if (Settings.badBootCount == 1){ changeColor("ff", 2, false); LED_GREEN(); }
-  if (Settings.badBootCount == 2){ changeColor("ff", 3, false); LED_BLUE(); }
-  if (Settings.badBootCount >= 3){ changeColor("ff", 1, false); LED_RED(); }
+  if (Settings.badBootCount == 1) {
+    changeColor("ff", 2, false);
+    LED_GREEN();
+  }
+  if (Settings.badBootCount == 2) {
+    changeColor("ff", 3, false);
+    LED_BLUE();
+  }
+  if (Settings.badBootCount >= 3) {
+    changeColor("ff", 1, false);
+    LED_RED();
+  }
 
   if (Settings.resetType < 3) {
     Settings.badBootCount += 1;
     SaveSettings();
   }
-  
+
   delay(5000);
 
   if (Settings.badBootCount > 3) {
     Settings.reallyLongPress = true;
   }
 
-  if(Settings.longPress == true){
+  if (Settings.longPress == true) {
     for (uint8_t i = 0; i < 3; i++) {
       LEDoff;
       delay(250);
@@ -1263,7 +1258,7 @@ void setup()
     LEDoff;
   }
 
-  if(Settings.reallyLongPress == true){
+  if (Settings.reallyLongPress == true) {
     for (uint8_t i = 0; i < 5; i++) {
       LEDoff;
       delay(1000);
@@ -1275,26 +1270,23 @@ void setup()
     ESP.restart();
   }
 
-  //analogWrite(greenPIN, 0);
-  //analogWrite(bluePIN, 0);
-  //analogWrite(redPIN, 0);
-
   boolean saveSettings = false;
 
-  if (Settings.badBootCount != 0){
+  if (Settings.badBootCount != 0) {
     Settings.badBootCount = 0;
     saveSettings = true;
   }
 
-  if (SecuritySettings.settingsVersion < 201){
-    str2ip((char*)DEFAULT_HAIP, Settings.haIP);
-    Settings.haPort = DEFAULT_HAPORT;
-    Settings.resetWifi = DEFAULT_RESETWIFI;
-    SecuritySettings.settingsVersion = 201;
+  if (SecuritySettings.settingsVersion > 500) {
+    //Here we reset all settings as clearly the version has been corrupted
+    SecuritySettings.settingsVersion = 200;
     saveSettings = true;
   }
 
-  if (SecuritySettings.settingsVersion < 202){
+  if (SecuritySettings.settingsVersion < 209) {
+    str2ip((char*)DEFAULT_HAIP, Settings.haIP);
+    Settings.haPort = DEFAULT_HAPORT;
+    Settings.resetWifi = DEFAULT_RESETWIFI;
     Settings.powerOnState = DEFAULT_POS;
     str2ip((char*)DEFAULT_IP, Settings.IP);
     str2ip((char*)DEFAULT_SUBNET, Settings.Subnet);
@@ -1305,85 +1297,54 @@ void setup()
     Settings.longPress = DEFAULT_LONG_PRESS;
     Settings.reallyLongPress = DEFAULT_REALLY_LONG_PRESS;
     strncpy(SecuritySettings.Password, DEFAULT_PASSWORD, sizeof(SecuritySettings.Password));
-    SecuritySettings.settingsVersion = 202;
-    saveSettings = true;
-  }
-
-  if (SecuritySettings.settingsVersion < 203){
-    strncpy(Settings.defaultColor, DEFAULT_COLOR, sizeof(Settings.defaultColor));
-    SecuritySettings.settingsVersion = 203;
-    saveSettings = true;
-  }
-
-  if (SecuritySettings.settingsVersion < 204){
-    Settings.badBootCount = DEFAULT_BAD_BOOT_COUNT;
-    SecuritySettings.settingsVersion = 204;
-    saveSettings = true;
-  }
-
-  if (SecuritySettings.settingsVersion < 205){
     Settings.disableJ3Reset = DEFAULT_DISABLE_J3_RESET;
-    SecuritySettings.settingsVersion = 205;
-    saveSettings = true;
-  }
-
-  if (SecuritySettings.settingsVersion < 206){
     Settings.switchType = DEFAULT_SWITCH_TYPE;
-    Settings.autoOff = DEFAULT_AUTO_OFF;
     Settings.transitionSpeed = DEFAULT_TRANSITION_SPEED;
-    SecuritySettings.settingsVersion = 206;
-    saveSettings = true;
-  }
-
-  if (SecuritySettings.settingsVersion < 207){
     Settings.autoOff = DEFAULT_AUTO_OFF;
     Settings.continueBoot = DEFAULT_CONTINUE_BOOT;
-    SecuritySettings.settingsVersion = 207;
-    saveSettings = true;
-  }
-
-  if (SecuritySettings.settingsVersion < 208){
     Settings.resetType = DEFAULT_RESET_TYPE;
     Settings.uReport =  DEFAULT_UREPORT;
     Settings.debounce = DEFAULT_DEBOUNCE;
-    SecuritySettings.settingsVersion = 208;
-    saveSettings = true;
-  }
-
-  if (SecuritySettings.settingsVersion < 209){
-    Settings.swapRG = DEFAULT_SWAP_RG;
     SecuritySettings.settingsVersion = 209;
     saveSettings = true;
   }
-  
-  if (saveSettings == true){
+
+  if (SecuritySettings.settingsVersion < 210) {
+    strncpy(Settings.defaultColor, DEFAULT_COLOR, sizeof(Settings.defaultColor));
+    Settings.badBootCount = DEFAULT_BAD_BOOT_COUNT;
+    str2ip((char*)DEFAULT_IP, Settings.forward_address);
+    SecuritySettings.settingsVersion = 210;
+    saveSettings = true;
+  }
+
+  if (saveSettings == true) {
     SaveSettings();
   }
-  
+
   WiFiManager wifiManager;
 
   wifiManager.setConnectTimeout(30);
   wifiManager.setConfigPortalTimeout(300);
 
-  if(Settings.useStatic == true){
+  if (Settings.useStatic == true) {
     wifiManager.setSTAStaticIPConfig(Settings.IP, Settings.Gateway, Settings.Subnet);
   }
 
-  if (Settings.resetWifi == true){
+  if (Settings.resetWifi == true) {
     wifiManager.resetSettings();
     Settings.resetWifi = false;
     SaveSettings();
   }
 
-  if (Settings.continueBoot == true){
-    wifiManager.setContinueAfterTimeout(true);
+  if (Settings.continueBoot == true) {
+    //    wifiManager.setContinueAfterTimeout(true);
   }
 
   LEDon;
   LED2off;
-  
+
   WiFi.macAddress(mac);
-  String apSSID = "espRGBW." + String(mac[0],HEX) + String(mac[1],HEX) + String(mac[2],HEX) + String(mac[3],HEX) + String(mac[4],HEX) + String(mac[5],HEX);
+  String apSSID = "espRGBW." + String(mac[0], HEX) + String(mac[1], HEX) + String(mac[2], HEX) + String(mac[3], HEX) + String(mac[4], HEX) + String(mac[5], HEX);
 
   if (!wifiManager.autoConnect(apSSID.c_str(), "configme")) {
     Serial.println("failed to connect, we should reset as see if it connects");
@@ -1398,7 +1359,7 @@ void setup()
   }
 
   LED2on;
-  
+
   Serial1.println("");
   server.reset(new ESP8266WebServer(WiFi.localIP(), 80));
 
@@ -1412,15 +1373,15 @@ void setup()
   });
 
 
-  server->on("/description.xml", HTTP_GET, [](){
-      SSDP.schema(server->client());
-    });
+  server->on("/description.xml", HTTP_GET, []() {
+    SSDP.schema(server->client());
+  });
 
   server->on("/reboot", []() {
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
     server->send(200, "application/json", "{\"message\":\"device is rebooting\"}");
     ESP.restart();
@@ -1434,14 +1395,14 @@ void setup()
     char str[20];
     addHeader(true, reply);
     reply += F("<table>");
-    reply += F("<TH colspan='2'>"); 
-    reply += projectName; 
+    reply += F("<TH colspan='2'>");
+    reply += projectName;
     reply += F(" Main");
     reply += F("<TR><TD><TD><TR><TD colspan='2' align='center'>");
     addMenu(reply);
 
     reply += F("<TR><TD><TD><TR><TD>Main:");
-    
+
     reply += F("<TD><a href='/advanced'>Advanced Config</a><BR>");
     reply += F("<a href='/control'>Control</a><BR>");
     reply += F("<a href='/update'>Firmware Update</a><BR>");
@@ -1459,6 +1420,7 @@ void setup()
     reply += F("<a href='/b'>b</a><BR>");
     reply += F("<a href='/w1'>w1</a><BR>");
     reply += F("<a href='/w2'>w2</a><BR>");
+    reply += F("<a href='/on'>on</a><BR>");
     reply += F("<a href='/off'>off</a><BR>");
     reply += F("<a href='/program'>program</a><BR>");
     reply += F("<a href='/stop'>stop</a><BR>");
@@ -1471,7 +1433,7 @@ void setup()
   });
 
   server->on("/info", []() {
-    server->send(200, "application/json", "{\"version\":\"" + softwareVersion + "\", \"date\":\"" + compile_date + "\", \"mac\":\"" + padHex(String(mac[0],HEX)) + padHex(String(mac[1],HEX)) + padHex(String(mac[2],HEX)) + padHex(String(mac[3],HEX)) + padHex(String(mac[4],HEX)) + padHex(String(mac[5],HEX)) + "\"}");  
+    server->send(200, "application/json", "{\"version\":\"" + softwareVersion + "\", \"date\":\"" + compile_date + "\", \"mac\":\"" + padHex(String(mac[0], HEX)) + padHex(String(mac[1], HEX)) + padHex(String(mac[2], HEX)) + padHex(String(mac[3], HEX)) + padHex(String(mac[4], HEX)) + padHex(String(mac[5], HEX)) + "\"}");
   });
 
   server->on("/program", []() {
@@ -1482,77 +1444,49 @@ void setup()
     repeat_count = 1;
     program_wait = 0;
     run_program = true;
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
+    
     server->send(200, "application/json", "{\"running\":\"true\", \"program\":\"" + program_number + "\", \"power\":\"on\"}");
   });
 
   server->on("/stop", []() {
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
     run_program = false;
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
+    
     server->send(200, "application/json", "{\"program\":\"" + program_number + "\", \"running\":\"false\"}");
   });
 
-  server->on("/off", []() {
-    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
-    {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
-    }
-    String transition = server->arg("transition");
-    run_program = false;
-    changeColor("00000000", 0, (transition != "false"));
+  server->on("/off", handleOff);
 
-    server->send(200, "application/json", getStatus());
-  });
+  server->on("/on", handleOn);
 
-  server->on("/on", []() {
-    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
-    {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
-    }
-    String transition = server->arg("transition");
-    run_program = false;
-
-    String hexString(Settings.defaultColor);
-    if(hexString == "") {
-      changeColor("0000000000", 99, (transition != "false"));
-    } else if(hexString == "Previous") {
-      changeColor("0000000000", 99, (transition != "false"));
-    } else {
-      if(hexString.startsWith("w~")) {
-        String hex = hexString.substring(2, 4);
-        changeColor(hex, 4, (transition != "false")); 
-      } else if(hexString.startsWith("x~")){
-        String hex = hexString.substring(2, 4);
-        changeColor(hex, 4, (transition != "false"));
-      } else if(hexString.startsWith("y~")) {
-        String hex = hexString.substring(2, 4);
-        changeColor(hex, 5, true); 
-      } else if(hexString.startsWith("z~")){
-        String hex = hexString.substring(2, 4);
-        changeColor(hex, 5, false);
-      } else if(hexString.startsWith("f~")){
-        String hex = hexString.substring(2, 8);
-        changeColor(hex, 6, (transition != "false"));
-      }else{
-        String hex = hexString.substring(2, 8);
-        changeColor("0000000000", 99, (transition != "false"));
-      }
-    }
-    
-    server->send(200, "application/json", getStatus());
-  });
-
-    server->on("/configGet", []() {
+  server->on("/configGet", []() {
 
     if (SecuritySettings.Password[0] != 0 && Settings.usePassword == true)
     {
       if (!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      return server->requestAuthentication();
     }
 
     char tmpString[64];
@@ -1583,11 +1517,40 @@ void setup()
     if (configName == "ureport") {
       reply += "{\"name\":\"ureport\", \"value\":\"" + String(Settings.uReport) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
-    if (configName == "swaprg") {
-      reply += "{\"name\":\"swaprg\", \"value\":\"" + String(Settings.swapRG) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+
+    if (configName == "redpin") {
+      reply += "{\"name\":\"redpin\", \"value\":\"" + String(Settings.redPIN_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "greenpin") {
+      reply += "{\"name\":\"greenpin\", \"value\":\"" + String(Settings.greenPIN_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "bluepin") {
+      reply += "{\"name\":\"bluepin\", \"value\":\"" + String(Settings.bluePIN_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "w1pin") {
+      reply += "{\"name\":\"w1pin\", \"value\":\"" + String(Settings.w1PIN_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "w2pin") {
+      reply += "{\"name\":\"w2pin\", \"value\":\"" + String(Settings.w2PIN_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "ledpin") {
+      reply += "{\"name\":\"ledpin\", \"value\":\"" + String(Settings.POWER_ENABLE_LED_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "led2pin") {
+      reply += "{\"name\":\"led2pin\", \"value\":\"" + String(Settings.LEDPIN_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "pwrenablepin") {
+      reply += "{\"name\":\"pwrenablepin\", \"value\":\"" + String(Settings.LED2PIN_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "keypin") {
+      reply += "{\"name\":\"keypin\", \"value\":\"" + String(Settings.KEY_PIN_stored) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "ipforward") {
+      sprintf_P(str, PSTR("%u.%u.%u.%u"), Settings.forward_address[0], Settings.forward_address[1], Settings.forward_address[2], Settings.forward_address[3]);
+      reply += "{\"name\":\"ipforward\", \"value\":\"" + String(str) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
 
-#ifdef H801
+    //H801 specific stuff originally - now open to others
     if (configName == "switchtype") {
       reply += "{\"name\":\"switchtype\", \"value\":\"" + String(Settings.switchType) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
@@ -1597,7 +1560,6 @@ void setup()
     if (configName == "debounce") {
       reply += "{\"name\":\"debounce\", \"value\":\"" + String(Settings.debounce) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
-#endif
 
     if ( reply != "" ) {
       server->send(200, "application/json", reply);
@@ -1611,7 +1573,7 @@ void setup()
     if (SecuritySettings.Password[0] != 0 && Settings.usePassword == true)
     {
       if (!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      return server->requestAuthentication();
     }
 
     char tmpString[64];
@@ -1677,15 +1639,8 @@ void setup()
       }
       reply += "{\"name\":\"ureport\", \"value\":\"" + String(Settings.uReport) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
-    if (configName == "swaprg") {
-      if (configValue.length() != 0)
-      {
-        Settings.swapRG = (configValue == "yes");
-      }
-      reply += "{\"name\":\"swaprg\", \"value\":\"" + String(Settings.swapRG) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
-    }
 
-#ifdef H801
+    //Originally H801 specific now open to all
     if (configName == "switchtype") {
       if (configValue.length() != 0)
       {
@@ -1707,8 +1662,89 @@ void setup()
       }
       reply += "{\"name\":\"debounce\", \"value\":\"" + String(Settings.debounce) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
-    
-#endif
+    if (configName == "autooff") {
+      if (configValue.length() != 0)
+      {
+        Settings.autoOff = configValue.toInt();
+      }
+      reply += "{\"name\":\"autooff\", \"value\":\"" + String(Settings.autoOff) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+
+    //Now the pin number parts
+    if (configName == "redpin") {
+      if (configValue.length() != 0)
+      {
+        redPIN = configValue.toInt();
+      }
+      reply += "{\"name\":\"redpin\", \"value\":\"" + String(redPIN) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "greenpin") {
+      if (configValue.length() != 0)
+      {
+        greenPIN = configValue.toInt();
+      }
+      reply += "{\"name\":\"greenpin\", \"value\":\"" + String(greenPIN) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "bluepin") {
+      if (configValue.length() != 0)
+      {
+        bluePIN = configValue.toInt();
+      }
+      reply += "{\"name\":\"bluepin\", \"value\":\"" + String(bluePIN) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "w1pin") {
+      if (configValue.length() != 0)
+      {
+        w1PIN = configValue.toInt();
+      }
+      reply += "{\"name\":\"w1pin\", \"value\":\"" + String(w1PIN) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "w2pin") {
+      if (configValue.length() != 0)
+      {
+        w2PIN = configValue.toInt();
+      }
+      reply += "{\"name\":\"w2pin\", \"value\":\"" + String(w2PIN) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "ledpin") {
+      if (configValue.length() != 0)
+      {
+        LEDPIN = configValue.toInt();
+      }
+      reply += "{\"name\":\"ledpin\", \"value\":\"" + String(LEDPIN) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "led2pin") {
+      if (configValue.length() != 0)
+      {
+        LED2PIN = configValue.toInt();
+      }
+      reply += "{\"name\":\"led2pin\", \"value\":\"" + String(LED2PIN) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "pwrenablepin") {
+      if (configValue.length() != 0)
+      {
+        POWER_ENABLE_LED = configValue.toInt();
+      }
+      reply += "{\"name\":\"pwrenablepin\", \"value\":\"" + String(POWER_ENABLE_LED) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "keypin") {
+      if (configValue.length() != 0)
+      {
+        KEY_PIN = configValue.toInt();
+      }
+      reply += "{\"name\":\"keypin\", \"value\":\"" + String(KEY_PIN) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "ipforward") {
+      if (configValue.length() != 0)
+      {
+        if (configValue != String(Settings.forward_address[0]) + "." + String(Settings.forward_address[1]) + "." + String(Settings.forward_address[2]) + "." + String(Settings.forward_address[3])) {
+          needFirmware = true;
+        }
+        configValue.toCharArray(tmpString, 26);
+        str2ip(tmpString, Settings.forward_address);
+      }
+      reply += "{\"name\":\"haip\", \"value\":\"" + String(tmpString) + "\", \"success\":\"true\"}";
+    }
 
     if ( reply != "" ) {
       SaveSettings();
@@ -1717,24 +1753,24 @@ void setup()
       server->send(200, "application/json", "{\"success\":\"false\", \"type\":\"configuration\"}");
     }
   });
-  
+
 
   server->on("/status", []() {
-    server->send(200, "application/json", getStatus());  
+    server->send(200, "application/json", getStatus());
   });
 
   server->on("/advanced", []() {
 
     if (SecuritySettings.Password[0] != 0 && Settings.usePassword == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
 
     char tmpString[64];
     String haIP = server->arg("haip");
     String haPort = server->arg("haport");
-    String powerOnState = server->arg("pos");
+    String pos = server->arg("pos");
     String ip = server->arg("ip");
     String gateway = server->arg("gateway");
     String subnet = server->arg("subnet");
@@ -1751,32 +1787,41 @@ void setup()
     String resettype = server->arg("resettype");
     String uReport = server->arg("ureport");
     String debounce = server->arg("debounce");
-    String swapRG = server->arg("swaprg");
+    String dcolor = server->arg("dcolor");
+    String redpin = server->arg("redpin");
+    String greenpin = server->arg("greenpin");
+    String bluepin = server->arg("bluepin");
+    String w1pin = server->arg("w1pin");
+    String w2pin = server->arg("w2pin");
+    String ledpin = server->arg("ledpin");
+    String led2pin = server->arg("led2pin");
+    String pwrenablepin = server->arg("pwrenablepin");
+    String keypin = server->arg("keypin");
+    String ipforward = server->arg("ipforward");
 
     if (haPort.length() != 0)
     {
       Settings.haPort = haPort.toInt();
     }
 
-    if (powerOnState.length() != 0)
+    if (pos.length() != 0)
     {
-      Settings.powerOnState = powerOnState.toInt();
+      Settings.powerOnState = pos.toInt();
     }
 
     if (transitionSpeed.length() != 0)
     {
       Settings.transitionSpeed = transitionSpeed.toInt();
     }
-    
+
     if (haIP.length() != 0)
     {
       if (haIP != String(Settings.haIP[0]) + "." + String(Settings.haIP[1]) + "." + String(Settings.haIP[2]) + "." + String(Settings.haIP[3])) {
-          needFirmware = true;
+        needFirmware = true;
       }
       haIP.toCharArray(tmpString, 26);
       str2ip(tmpString, Settings.haIP);
     }
-
 
     if (ip.length() != 0 && subnet.length() != 0)
     {
@@ -1838,32 +1883,84 @@ void setup()
       Settings.autoOff = autoOff.toInt();
     }
 
+    if (dcolor.length() != 0)
+    {
+      strncpy(Settings.defaultColor, dcolor.c_str(), sizeof(Settings.defaultColor));
+    }
+
+    if (redpin.length() != 0)
+    {
+      redPIN = redpin.toInt();
+    }
+
+    if (greenpin.length() != 0)
+    {
+      greenPIN = greenpin.toInt();
+    }
+
+    if (bluepin.length() != 0)
+    {
+      bluePIN = bluepin.toInt();
+    }
+
+    if (w1pin.length() != 0)
+    {
+      w1PIN = w1pin.toInt();
+    }
+
+    if (w2pin.length() != 0)
+    {
+      w2PIN = w2pin.toInt();
+    }
+
+    if (ledpin.length() != 0)
+    {
+      LEDPIN = ledpin.toInt();
+    }
+
+    if (led2pin.length() != 0)
+    {
+      LED2PIN = led2pin.toInt();
+    }
+
+    if (pwrenablepin.length() != 0)
+    {
+      POWER_ENABLE_LED = pwrenablepin.toInt();
+    }
+
+    if (keypin.length() != 0)
+    {
+      KEY_PIN = keypin.toInt();
+    }
+    
+    if (ipforward.length() != 0)
+    {
+      ipforward.toCharArray(tmpString, 26);
+      str2ip(tmpString, Settings.forward_address);
+    }
+
+
     if (uReport.length() != 0)
     {
       if (uReport.toInt() != Settings.uReport) {
-          Settings.uReport = uReport.toInt();
-          timerUptime = millis() + Settings.uReport * 1000;
+        Settings.uReport = uReport.toInt();
+        timerUptime = millis() + Settings.uReport * 1000;
       }
     }
-    
+
     if (debounce.length() != 0)
     {
       Settings.debounce = debounce.toInt();
     }
 
-    if (swapRG.length() != 0)
-    {
-      Settings.swapRG = (swapRG == "yes");
-    }
-    
     SaveSettings();
-    
+
     String reply = "";
     char str[20];
     addHeader(true, reply);
 
     reply += F("<script src='http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js'></script>");
-    
+
     reply += F("<form name='frmselect' class='form' method='post'><table>");
     reply += F("<TH colspan='2'>");
     reply += projectName;
@@ -1875,13 +1972,13 @@ void setup()
 
     reply += F("<input type='radio' name='usepassword' value='yes'");
     if (Settings.usePassword)
-      reply += F(" checked ");
+    reply += F(" checked ");
     reply += F(">Yes");
     reply += F("</input>");
 
     reply += F("<input type='radio' name='usepassword' value='no'");
     if (!Settings.usePassword)
-      reply += F(" checked ");
+    reply += F(" checked ");
     reply += F(">No");
     reply += F("</input>");
 
@@ -1889,13 +1986,13 @@ void setup()
 
     reply += F("<input type='radio' name='usepasswordcontrol' value='yes'");
     if (Settings.usePasswordControl)
-      reply += F(" checked ");
+    reply += F(" checked ");
     reply += F(">Yes");
     reply += F("</input>");
 
     reply += F("<input type='radio' name='usepasswordcontrol' value='no'");
     if (!Settings.usePasswordControl)
-      reply += F(" checked ");
+    reply += F(" checked ");
     reply += F(">No");
     reply += F("</input>");
 
@@ -1926,22 +2023,22 @@ void setup()
     reply += F("});");
 
     reply += F("</script>");
-    
+
     reply += F("<TR><TD>Static IP:<TD>");
 
     reply += F("<input type='radio' name='usestatic' value='yes'");
     if (Settings.useStatic)
-      reply += F(" checked ");
+    reply += F(" checked ");
     reply += F(">Yes");
     reply += F("</input>");
 
     reply += F("<input type='radio' name='usestatic' value='no'");
     if (!Settings.useStatic)
-      reply += F(" checked ");
+    reply += F(" checked ");
     reply += F(">No");
     reply += F("</input>");
-        
-    
+
+
     reply += F("<TR><TD>IP:<TD><input type='text' name='ip' value='");
     sprintf_P(str, PSTR("%u.%u.%u.%u"), Settings.IP[0], Settings.IP[1], Settings.IP[2], Settings.IP[3]);
     reply += str;
@@ -1957,25 +2054,25 @@ void setup()
     //reply += F("'><TR><TD>DNS:<TD><input type='text' name='dns' value='");
     //sprintf_P(str, PSTR("%u.%u.%u.%u"), Settings.DNS[0], Settings.DNS[1], Settings.DNS[2], Settings.DNS[3]);
     //reply += str;
-    
+
     reply += F("'><TR><TD>HA Controller IP:<TD><input type='text' name='haip' value='");
     sprintf_P(str, PSTR("%u.%u.%u.%u"), Settings.haIP[0], Settings.haIP[1], Settings.haIP[2], Settings.haIP[3]);
     reply += str;
-  
+
     reply += F("'><TR><TD>HA Controller Port:<TD><input type='text' name='haport' value='");
     reply += Settings.haPort;
     reply += F("'>");
-  
+
     byte choice = Settings.powerOnState;
     reply += F("<TR><TD>Boot Up State:<TD><select name='");
     reply += "pos";
     reply += "'>";
-    if (choice == 0){
+    if (choice == 0) {
       reply += F("<option value='0' selected>Off</option>");
     } else {
       reply += F("<option value='0'>Off</option>");
     }
-    if (choice == 1){
+    if (choice == 1) {
       reply += F("<option value='1' selected>On</option>");
     } else {
       reply += F("<option value='1'>On</option>");
@@ -1991,55 +2088,103 @@ void setup()
     reply += F("<TR><TD>Transition Speed:<TD><select name='");
     reply += "transitionspeed";
     reply += "'>";
-    if (choice == 1){
+    if (choice == 1) {
       reply += F("<option value='1' selected>Slow</option>");
     } else {
       reply += F("<option value='1'>Slow</option>");
     }
-    if (choice == 2){
+    if (choice == 2) {
       reply += F("<option value='2' selected>Medium</option>");
     } else {
       reply += F("<option value='2'>Medium</option>");
     }
-    if (choice == 3){
+    if (choice == 3) {
       reply += F("<option value='3' selected>Fast</option>");
     } else {
       reply += F("<option value='3'>Fast</option>");
     }
     reply += F("</select>");
 
-    #if defined H801
+    reply += F("<TR><TD>Default Color (Previous or RRGGBBW1W2 as hex - e.g. FFFFFFFFFF):<TD><input type='text' name='dcolor' value='");
+    reply += Settings.defaultColor;
+    reply += F("'>");
+
+    //Debounce stuff, may not be used but included anyway
     choice = Settings.resetType;
     reply += F("<TR><TD>Reset Type:<TD><select name='");
     reply += "resettype";
     reply += "'>";
-    if (choice == 1){
+    if (choice == 1) {
       reply += F("<option value='1' selected>Both</option>");
     } else {
       reply += F("<option value='1'>Both</option>");
     }
-    if (choice == 2){
+    if (choice == 2) {
       reply += F("<option value='2' selected>Unplug Sequence</option>");
     } else {
       reply += F("<option value='2'>Unplug Sequence</option>");
     }
-    if (choice == 3){
+    if (choice == 3) {
       reply += F("<option value='3' selected>J3 Jumper</option>");
     } else {
       reply += F("<option value='3'>J3 Jumper</option>");
     }
     reply += F("</select>");
-    
+
     reply += F("<TR><TD>Switch Debounce:<TD><input type='text' name='debounce' value='");
     reply += Settings.debounce;
     reply += F("'>");
-    #endif
+
     reply += F("<TR><TD>Uptime Report Interval:<TD><input type='text' name='ureport' value='");
     reply += Settings.uReport;
     reply += F("'>");
     reply += F("<TR><TD>Auto Off:<TD><input type='text' name='autooff' value='");
     reply += Settings.autoOff;
     reply += F("'>");
+    
+    reply += F("<TR><TD>Forward commands to IP Addr:<TD><input type='text' name='ipforward' value='");
+    sprintf_P(str, PSTR("%u.%u.%u.%u"), Settings.forward_address[0], Settings.forward_address[1], Settings.forward_address[2], Settings.forward_address[3]);
+    reply += str;
+    reply += F("'>");
+
+    reply += F("<TR><TD>Output pin numbers - may need a reboot after changing (example numbering below):");
+    reply += F("<TR><TD>H801<TD>R:15, G:13, B:12, W1:14, W2:4, LED:5, LED2:1");
+    reply += F("<TR><TD>Light<TD>R:13, G:12, B:14, W1:2, W2:4, PWR_EN:15");
+    reply += F("<TR><TD>AL-LC01/02<TD>R:14, G:5, B:12, W1:13, W2:15");
+    reply += F("<TR><TD>AL-LC05<TD>R:13, G:12, B:14, W1:5, W2:15");
+    reply += F("<TR><TD>AL-LC08<TD>R:5, G:4, B:14, W1:12, W2:13");
+    reply += F("<TR><TD>AL-ALC10<TD>R:5, G:14, B:12, W1:13, W2:15");
+    reply += F("<TR><TD>For the undefined pins just pick an unused one from 2/4/5/12/13/14/15");
+
+    reply += F("<TR><TD>Red Pin Number:<TD><input type='text' name='redpin' value='");
+    reply += Settings.redPIN_stored;
+    reply += F("'>");
+    reply += F("<TR><TD>Green Pin Number:<TD><input type='text' name='greenpin' value='");
+    reply += Settings.greenPIN_stored;
+    reply += F("'>");
+    reply += F("<TR><TD>Blue Pin Number:<TD><input type='text' name='bluepin' value='");
+    reply += Settings.bluePIN_stored;
+    reply += F("'>");
+    reply += F("<TR><TD>W1 Pin Number:<TD><input type='text' name='w1pin' value='");
+    reply += Settings.w1PIN_stored;
+    reply += F("'>");
+    reply += F("<TR><TD>W2 Pin Number:<TD><input type='text' name='w2pin' value='");
+    reply += Settings.w2PIN_stored;
+    reply += F("'>");
+    reply += F("<TR><TD>Indicator LED Pin:<TD><input type='text' name='ledpin' value='");
+    reply += Settings.LEDPIN_stored;
+    reply += F("'>");
+    reply += F("<TR><TD>Indicator LED2 Pin:<TD><input type='text' name='led2pin' value='");
+    reply += Settings.LED2PIN_stored;
+    reply += F("'>");
+    reply += F("<TR><TD>Power Enable Pin Number:<TD><input type='text' name='pwrenablepin' value='");
+    reply += Settings.POWER_ENABLE_LED_stored;
+    reply += F("'>");
+    reply += F("<TR><TD>Key Pin Number:<TD><input type='text' name='keypin' value='");
+    reply += Settings.KEY_PIN_stored;
+    reply += F("'>");
+
+
     //reply += F("<TR><TD>Disable J3 Reset:<TD>");
 
     //reply += F("<input type='radio' name='disableJ3reset' value='true'");
@@ -2054,34 +2199,20 @@ void setup()
     //reply += F(">No");
     //reply += F("</input>");
 
-    reply += F("<TR><TD>Swap R & G Channels:<TD>");
-
-    reply += F("<input type='radio' name='swaprg' value='yes'");
-    if (Settings.swapRG)
-      reply += F(" checked ");
-    reply += F(">Yes");
-    reply += F("</input>");
-
-    reply += F("<input type='radio' name='swaprg' value='no'");
-    if (!Settings.swapRG)
-      reply += F(" checked ");
-    reply += F(">No");
-    reply += F("</input>");
-
     reply += F("<TR><TD>Continue Boot On Wifi Fail:<TD>");
 
     reply += F("<input type='radio' name='continueboot' value='yes'");
     if (Settings.continueBoot)
-      reply += F(" checked ");
+    reply += F(" checked ");
     reply += F(">Yes");
     reply += F("</input>");
 
     reply += F("<input type='radio' name='continueboot' value='no'");
     if (!Settings.continueBoot)
-      reply += F(" checked ");
+    reply += F(" checked ");
     reply += F(">No");
     reply += F("</input>");
-    
+
     reply += F("<TR><TD><TD><input class=\"button-link\" type='submit' value='Submit'>");
     reply += F("</table></form>");
     addFooter(reply);
@@ -2092,8 +2223,8 @@ void setup()
 
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
 
     String hexR = server->arg("r");
@@ -2104,10 +2235,10 @@ void setup()
     String color = server->arg("color");
     String power = server->arg("power");
 
-    if (color.length() != 0){
+    if (color.length() != 0) {
       changeColor(color.substring(1, 7), 6, false, true);
     }
-    else if (power == "off"){
+    else if (power == "off") {
       changeColor("00", 1, false);
       changeColor("00", 2, false);
       changeColor("00", 3, false);
@@ -2125,7 +2256,7 @@ void setup()
       }
       if (hexW1.length() != 0) {
         changeColor(padHex(String(hexW1.toInt(), HEX)), 4, false, true);
-      } 
+      }
       if (hexW2.length() != 0) {
         changeColor(padHex(String(hexW2.toInt(), HEX)), 5, false, true);
       }
@@ -2146,21 +2277,21 @@ void setup()
     reply += F("<TR><TD><TD>");
     reply += F("<TR><TD>");
     reply += F("<input type='color' name='color' value='#");
-    reply += getHex(RED) + getHex(GREEN) + getHex(BLUE); 
+    reply += getHex(RED) + getHex(GREEN) + getHex(BLUE);
     reply += F("'><TD>");
     reply += F("<input class=\"button-link\" type='submit' value='Set Color'></TR>");
     reply += F("</form>");
     reply += F("<TR><TD><TD></TR>");
     reply += F("<form name='frmselect' class='form' method='post'>");
-  
+
     reply += F("<TR><TD><font color='red'>R</font><TD><input type='range' name='r' min='0' max='255' value='");
-    reply += getStandard(RED); 
+    reply += getStandard(RED);
     reply += F("'>");
     reply += F("<TR><TD><font color='green'>G</font><TD><input type='range' name='g' min='0' max='255' value='");
     reply += getStandard(GREEN);
     reply += F("'>");
     reply += F("<TR><TD><font color='blue'>B</font><TD><input type='range' name='b' min='0' max='255' value='");
-    reply += getStandard(BLUE);   
+    reply += getStandard(BLUE);
     reply += F("'>");
     reply += F("<TR><TD>W1<TD><input type='range' name='w1' min='0' max='255' value='");
     reply += getStandard(W1);
@@ -2177,47 +2308,70 @@ void setup()
     addFooter(reply);
 
     needUpdate = true;
-    
+
     server->send(200, "text/html", reply);
   });
 
   server->on("/rgb", []() {
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
     run_program = false;
     String hexRGB = server->arg("value");
     String channels = server->arg("channels");
     String transition = server->arg("transition");
-    
+
     String r, g, b;
 
     r = hexRGB.substring(0, 2);
     g = hexRGB.substring(2, 4);
     b = hexRGB.substring(4, 6);
-  
-    changeColor(hexRGB, 6, (transition != "false"), (channels != "true"));
-    
+
+    if (hexRGB.length() == 10) {
+      changeColor(hexRGB, 99, (transition != "false"), (channels != "true"));
+    }
+    else {
+      changeColor(hexRGB, 6, (transition != "false"), (channels != "true"));
+    }
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
+
     server->send(200, "application/json", getStatus());
-    
+
   });
 
 
   server->on("/w1", []() {
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
     run_program = false;
     String hexW1 = server->arg("value");
     String channels = server->arg("channels");
     String transition = server->arg("transition");
-  
+
     changeColor(hexW1, 4, (transition != "false"), (channels != "true"));
 
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
+    
     server->send(200, "application/json", getStatus());
 
   });
@@ -2225,15 +2379,24 @@ void setup()
   server->on("/w2", []() {
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
     run_program = false;
     String hexW2 = server->arg("value");
     String channels = server->arg("channels");
     String transition = server->arg("transition");
-  
+
     changeColor(hexW2, 5, (transition != "false"), (channels != "true"));
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
     
     server->send(200, "application/json", getStatus());
 
@@ -2242,15 +2405,24 @@ void setup()
   server->on("/r", []() {
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
     run_program = false;
     String r = server->arg("value");
     String channels = server->arg("channels");
     String transition = server->arg("transition");
-  
+
     changeColor(r, 1, (transition != "false"), (channels != "true"));
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
     
     server->send(200, "application/json", getStatus());
 
@@ -2259,15 +2431,24 @@ void setup()
   server->on("/g", []() {
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
     run_program = false;
     String g = server->arg("value");
     String channels = server->arg("channels");
     String transition = server->arg("transition");
-  
+
     changeColor(g, 2, (transition != "false"), (channels != "true"));
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
     
     server->send(200, "application/json", getStatus());
 
@@ -2276,27 +2457,36 @@ void setup()
   server->on("/b", []() {
     if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
     {
-      if(!server->authenticate("admin", SecuritySettings.Password))
-        return server->requestAuthentication();
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
     }
     run_program = false;
     String b = server->arg("value");
     String channels = server->arg("channels");
     String transition = server->arg("transition");
-  
+
     changeColor(b, 3, (transition != "false"), (channels != "true"));
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
     
     server->send(200, "application/json", getStatus());
 
   });
 
-  if (ESP.getFlashChipRealSize() > 524288){
-    if (Settings.usePassword == true && SecuritySettings.Password[0] != 0){
+  if (ESP.getFlashChipRealSize() > 524288) {
+    if (Settings.usePassword == true && SecuritySettings.Password[0] != 0) {
       httpUpdater.setup(&*server, "/update", "admin", SecuritySettings.Password);
-      httpUpdater.setProjectName(projectName);
+      //      httpUpdater.setProjectName(projectName);
     } else {
       httpUpdater.setup(&*server);
-      httpUpdater.setProjectName(projectName);
+      //      httpUpdater.setProjectName(projectName);
     }
   }
 
@@ -2321,154 +2511,153 @@ void setup()
   Serial.println(WiFi.localIP());
 
   timerUptime = millis() + Settings.uReport * 1000;
-  
+
+  //Cjcharles added ArduinoOTA for ease of testing
+  ArduinoOTA.begin();
 }
 
 void loop()
 {
+  //Cjcharles added ArduinoOTA for ease of testing
+  ArduinoOTA.handle();
+
   server->handleClient();
 
-  #ifdef ARILUX_ALLC10
-    // handle received RF codes from the remote
-    handleRFRemote();
-  #endif
-
-  if(needFirmware == true){
-      sendStatus(98);
-      needFirmware = false;
+  if (needFirmware == true) {
+    sendStatus(98);
+    needFirmware = false;
   }
 
-  if(needUpdate == true && run_program == false){
+  if (needUpdate == true && run_program == false) {
     sendStatus();
     needUpdate = false;
   }
 
-  if(run_program){
+  if (run_program) {
     if (millis() - previousMillis >= program_wait) {
       char *dup = strdup(program.c_str());
       const char *value = strtok( dup, "_" );
       const char *program_details = "";
       program_counter = 1;
-      
-      while(value != NULL)
+
+      while (value != NULL)
       {
-        if(program_counter == program_step){
+        if (program_counter == program_step) {
           program_details = value;
         }
         program_counter = program_counter + 1;
         value = strtok(NULL, "_");
       }
       String hexString(program_details);
-      
-      if(hexString.startsWith("w~")) {
+
+      if (hexString.startsWith("w~")) {
         String hexProgram = hexString.substring(2, 4);
-        if (hexString.indexOf("-",5) >= 0) {
+        if (hexString.indexOf("-", 5) >= 0) {
           program_wait = rand_interval(hexString.substring(5, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
         } else {
           program_wait = hexString.substring(5, hexString.length()).toInt();
         }
-        changeColor(hexProgram, 4, true); 
-      }else if(hexString.startsWith("x~")){
+        changeColor(hexProgram, 4, true);
+      } else if (hexString.startsWith("x~")) {
         String hexProgram = hexString.substring(2, 4);
-        if (hexString.indexOf("-",5) >= 0) {
+        if (hexString.indexOf("-", 5) >= 0) {
           program_wait = rand_interval(hexString.substring(5, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
         } else {
           program_wait = hexString.substring(5, hexString.length()).toInt();
         }
         changeColor(hexProgram, 4, false);
-      }else if(hexString.startsWith("y~")) {
+      } else if (hexString.startsWith("y~")) {
         String hexProgram = hexString.substring(2, 4);
-        if (hexString.indexOf("-",5) >= 0) {
+        if (hexString.indexOf("-", 5) >= 0) {
           program_wait = rand_interval(hexString.substring(5, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
         } else {
           program_wait = hexString.substring(5, hexString.length()).toInt();
         }
-        changeColor(hexProgram, 5, true); 
-      }else if(hexString.startsWith("z~")){
+        changeColor(hexProgram, 5, true);
+      } else if (hexString.startsWith("z~")) {
         String hexProgram = hexString.substring(2, 4);
-        if (hexString.indexOf("-",5) >= 0) {
+        if (hexString.indexOf("-", 5) >= 0) {
           program_wait = rand_interval(hexString.substring(5, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
         } else {
           program_wait = hexString.substring(5, hexString.length()).toInt();
         }
         changeColor(hexProgram, 5, false);
-      }else if(hexString.startsWith("f~")){
+      } else if (hexString.startsWith("f~")) {
         String hexProgram = hexString.substring(2, 8);
-        if (hexString.indexOf("-",9) >= 0) {
+        if (hexString.indexOf("-", 9) >= 0) {
           program_wait = rand_interval(hexString.substring(9, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
         } else {
           program_wait = hexString.substring(9, hexString.length()).toInt();
         }
         changeColor(hexProgram, 6, true);
-      }else{
+      } else {
         String hexProgram = hexString.substring(2, 8);
-        if (hexString.indexOf("-",9) >= 0) {
+        if (hexString.indexOf("-", 9) >= 0) {
           program_wait = rand_interval(hexString.substring(9, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
         } else {
           program_wait = hexString.substring(9, hexString.length()).toInt();
         }
         changeColor(hexProgram, 6, false);
       }
-      
+
       previousMillis = millis();
       program_step = program_step + 1;
 
-      if (program_step >= program_counter && repeat == -1){
+      if (program_step >= program_counter && repeat == -1) {
         program_step = 1;
-      }else if(program_step >= program_counter && repeat_count < repeat){
+      } else if (program_step >= program_counter && repeat_count < repeat) {
         program_step = 1;
         repeat_count = repeat_count + 1;
-      }else if(program_step > program_counter){
+      } else if (program_step > program_counter) {
         program_step = 1;
         run_program = false;
-        if(program_off == "true"){
-          changeColor("000000", 6, false);
-          changeColor("00", 4, false);
+        if (program_off == "true") {
+          changeColor("0000000000", 99, false);
         }
         sendStatus();
       }
-  
+
       free(dup);
     }
   }
 
-  if(millis() - TIME_LED_RED >= led_delay_red){
+  if (millis() - TIME_LED_RED >= led_delay_red) {
     TIME_LED_RED = millis();
     LED_RED();
   }
-  
-  if(millis() - TIME_LED_GREEN >= led_delay_green){
+
+  if (millis() - TIME_LED_GREEN >= led_delay_green) {
     TIME_LED_GREEN = millis();
     LED_GREEN();
   }
-  
-  if(millis() - TIME_LED_BLUE >= led_delay_blue){
+
+  if (millis() - TIME_LED_BLUE >= led_delay_blue) {
     TIME_LED_BLUE = millis();
     LED_BLUE();
   }
-  
-  if(millis() - TIME_LED_W1 >= led_delay_w1){
+
+  if (millis() - TIME_LED_W1 >= led_delay_w1) {
     TIME_LED_W1 = millis();
     LED_W1();
   }
-  
-  if(millis() - TIME_LED_W2 >= led_delay_w2){
+
+  if (millis() - TIME_LED_W2 >= led_delay_w2) {
     TIME_LED_W2 = millis();
     LED_W2();
   }
 
   if (millis() > timerwd)
-      runEach5Minutes();
+  runEach5Minutes();
 
-  if (Settings.uReport > 0 && millis() > timerUptime){
+  if (Settings.uReport > 0 && millis() > timerUptime) {
     sendStatus(99);
     timerUptime = millis() + Settings.uReport * 1000;
   }
 
   if ((Settings.autoOff != 0) && inAutoOff && ((millis() - autoOffTimer) > (1000 * Settings.autoOff))) {
-    changeColor("00000000", 0, true);
+    changeColor("0", 0, true);
     inAutoOff = false;
     autoOffTimer = 0;
   }
-     
+
 }
