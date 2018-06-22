@@ -12,8 +12,8 @@
  *
  *  SmartLife RGBW Controller
  *
- *  Author: Eric Maycock (erocm123)
- *  Date: 2016-12-10
+ *  Author: Eric Maycock (erocm123) and updated by cjcharles
+ *  Date: 2018-05-03
  */
 
 import groovy.json.JsonSlurper
@@ -211,7 +211,10 @@ def getDefault(){
         return "Previous"
     } else if(settings.dcolor == "Random") {
         return "${transition == "false"? "d~" : "f~"}${getHexColor(settings.dcolor)}"
-    } else if(settings.dcolor == "Custom") {
+    } else if(settings.dcolor == "Custom" && settings.custom.length() == 10) {
+    	//Here we have a 10 char value, i.e. exact colour choice
+        return "${settings.custom}"
+    } else if(settings.dcolor == "Custom" && settings.dcolor.length() != 10) {
         return "${transition == "false"? "d~" : "f~"}${settings.custom}"
     } else if(settings.dcolor == "Soft White" || settings.dcolor == "Warm White") {
         if (settings.level == null || settings.level == "0") {
@@ -233,11 +236,14 @@ def getDefault(){
         }
     } else {
         if (settings.level == null || settings.dcolor == null){
+			//Colour and level are null so default to previous
            return "Previous"
         } else if (settings.level == null || settings.level == "0") {
+			//Level is null or 0, so default to previous
             return "${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.dcolor), "100")}"
         } else {
-            return "${transition == "false"? "d~" : "f~"}${getDimmedColor(getHexColor(settings.dcolor), settings.level)}"
+			//Use custom Colour setting
+            return "${getDimmedColor(getHexColor(settings.dcolor), settings.level)}"
         }
     }
 }
@@ -804,6 +810,7 @@ def onOffCmd(value, program) {
     } else {
        uri = "/off"
     }
+	log.debug uri
     if (uri != null) return getAction(uri)
 }
 
@@ -1127,9 +1134,9 @@ Default: Previous
     <Item label="W2" value="W2" />
     <Item label="Custom" value="Custom" />
 </Value>
-<Value type="text" byteSize="1" index="custom" label="Custom Color in Hex" min="" max="" value="" setting_type="preference" fw="">
+<Value type="text" byteSize="1" index="custom" label="Custom Color in Hex - RRGGBBW1W2" min="" max="" value="" setting_type="preference" fw="">
 <Help>
-(ie ffffff)
+ e.g. FF00008080 would be Red at 100% and W1+W2 at 50%
 If \"Custom\" is chosen above as the default color. Default level does not apply if custom hex value is chosen.
 </Help>
 </Value>
