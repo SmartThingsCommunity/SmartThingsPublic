@@ -813,6 +813,34 @@ place and never allow for the A.C. to do it while it's cold enough outside. """
                         }
                     }
                 }
+
+            }
+            if(Actuators && !NotWindows){
+                section("Save power by opening windows instead of running ac in certain rooms under certain conditions"){
+
+                    def DefaultVal = Home
+                    def AwayColl = Away.collect{ it.toString() }
+                    def SwtTrigWindModesColl = SwtTrigWindModes.collect{ it.toString() }
+                    def AwayIntersect = SwtTrigWindModesColl.intersect(AwayColl)
+                    log.debug "AwayIntersect = $AwayIntersect"
+
+                    if(AwayIntersect.size() != 0){
+                        def MessageStr = new StringBuilder();
+                        for (String value : Away) {
+                            MessageStr.append(value);
+                        }
+                        def newVal = MessageStr.toString();
+
+                        paragraph "WARNING! ${newVal} is already by default a mode under which windows will open."
+                        DefaultVal = null
+                    }
+                    input(name: "SwtTrigWindModes", type: "mode", required: false, multiple: true, title: "if home is in one of these modes", 
+                          description: "select mode", 
+                          defaultValue: DefaultVal,
+                          submitOnChange: true)
+                    input(name: "SwitchOffOpensWindows", type:"capability.switch", title: "And Only When all these switches are off", required: false, multiple: true, submitOnChange: true)
+
+                }
             }
         }
         else {
@@ -861,6 +889,10 @@ def updated() {
 
     state.attempt = 0 // bed sensor attempts before declaring open as true
 
+    // switch ac override management
+    state.ACBedOffByApp = true
+    state.ACBedOnByApp = true
+
     log.info "updated with settings = $settings"
 
 
@@ -882,9 +914,9 @@ def updated() {
     subscribe(XtraTempSensor, "temperature", temperatureHandler)
     subscribe(location, "mode", ChangedModeHandler)	
 
-
-
-
+    if(ContactAndSwitch){
+        subscribe(ContactAndSwitch, "switch", ContactAndSwitchHandler)
+    }
     init()
 }
 def init() {
@@ -906,9 +938,7 @@ state.CSPSet = $state.CSPSet"""
     state.CSPMap = [:]
     // reset venting options
     state.coldbutneedcool = 0          
-    state.ventingrun = 0
-
-    MiscSubscriptions()
+        MiscSubscriptions()
 }
 
 ////////////////////////////////////// SUBSCRIPTIONS ///////////////////////////////
@@ -1624,7 +1654,7 @@ SensorThermMap = $SensorThermMap
         TheSensor = TheSensorB4?.value
         log.debug "TheSensor = $TheSensor"
 
-        //motionEvents = TheSensor.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten() // this one works but need to work but we need iteration of TheSensor
+        //motionEvents = TheSensor.collect{ it.eventsSince(new Date(now() - deltaMinutes)) }.flatten() // this one works but we need iteration of TheSensor
 
         // collect events for each sensor within the list that TheSensor object may be made of when user selected multiple sensors to relate to one thermostat
         def SensorSize = TheSensor.size()
@@ -1751,7 +1781,6 @@ SomeSwAreOff.size() = ${SomeSwAreOff.size()}
 CurrMode in SwitchMode = ${CurrMode in SwitchMode}
 ToggleBack = $ToggleBack
 doorsOk = $doorsOk
-state.turnedOffByApp = $state.turnedOffByApp
 FollowException = $FollowException 
 InExceptionContactMode = $InExceptionContactMode 
 DoNotTurnOffModes = $DoNotTurnOffModes
@@ -1762,13 +1791,13 @@ ConsideredOpen = $ConsideredOpen
 
     if(ContactException && FollowException && InExceptionContactMode){
         contactClosed = ContactExceptionIsClosed
-        //log.debug "contactClosed = $contactClosed (Contact Exception only)"
+        log.debug "contactClosed = $contactClosed (Contact Exception only)"
     }
     else{
         contactClosed = AllContactsAreClosed()
-        //log.debug "contactClosed = $contactClosed (ALL CONTACTS)"
+        log.debug "contactClosed = $contactClosed (ALL CONTACTS)"
     }
-    //log.debug "contactClosed = $contactClosed"
+    log.debug "contactClosed = $contactClosed"
     def inOffMode = CurrMode in SwitchMode
 
 
@@ -1782,49 +1811,50 @@ ConsideredOpen = $ConsideredOpen
 so $ContactAndSwitch stays on until it opens
 """
             // therefore make sure it is on
-            if(SomeSwAreOff.size() != 0 && contactClosed){
+            if(SomeSwAreOff.size() != 0 && contactClosed && state.ACBedOffByApp == true){
                 //if at least one is off, turn on
-                ContactAndSwitch?.on()
-                log.debug "$ContactAndSwitch TURNED BACK ON because $BedSensor is closed"
-                state.turnedOffByApp = false
+                ContactAndSwitchon()
             }
         }
-        else if(SomeSwAreOn.size() != 0){
+        else if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
             // if at least one is on, turn off
-            ContactAndSwitch?.off()
-            log.debug "$ContactAndSwitch TURNED OFF Because Home is in $SwitchMode mode"
-            state.turnedOffByApp = true
+            ContactAndSwitchoff()
         }
         else {
-            log.debug "$ContactAndSwitch already off --"
+            if(SomeSwAreOn.size() == 0){
+                log.debug "$ContactAndSwitch already off"
+            }
+            if(state.ACBedOnByApp != true){
+                log.debug "$ContactAndSwitch in OVERRIDE mode"
+            }
         } 
     }
     else if(!contactClosed){
         // previous lines take care of knowing if contactClosed must include contact exception
-        if(SomeSwAreOn.size() != 0){
+        if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
             // if at least one is on, turn off
-            ContactAndSwitch.off()
-            log.debug "$ContactAndSwitch turned off because window is open"
+            ContactAndSwitchoff()
         }
         else {
-            log.debug "$ContactAndSwitch already off --"
+            if(SomeSwAreOn.size() == 0){
+                log.debug "$ContactAndSwitch already off"
+            }
+            if(state.ACBedManagedByApp != true){
+                log.debug "$ContactAndSwitch in OVERRIDE mode"
+            }
         }             
     }
     else if(contactClosed) {
 
         if(IsHeatPump && outsideTemp <= 29){
-            if(SomeSwAreOn.size() != 0){
-                ContactAndSwitch?.off()
-                log.debug "$ContactAndSwitch TURNED OFF because it's a heat pump and outside temp is too low (${outsideTemp} <= 29)"
-                state.turnedOffByApp = true
+            if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
+                ContactAndSwitchoff()
             }
         }
         else if(ToggleBack) {   
-            if(SomeSwAreOff.size() != 0 && contactClosed){
+            if(SomeSwAreOff.size() != 0 && contactClosed && state.ACBedOffByApp == true){
                 //if at least one is off, turn on
-                ContactAndSwitch?.on()
-                log.debug "$ContactAndSwitch TURNED ON"
-                state.turnedOffByApp = false
+                ContactAndSwitchon()
             }
             else {
                 log.debug "$ContactAndSwitch already on"
@@ -2145,7 +2175,7 @@ Math.log(256) / Math.log(2)
                     def HeatNoMotionVal = HeatNoMotion
                     def CoolNoMotionVal = CoolNoMotion
 
-                    log.debug "inMotionModes= $inMotionModes AppMgt = $AppMgt CoolNoMotionVal = $CoolNoMotionVal HeatNoMotionVal = $HeatNoMotionVal"
+                    log.debug "inMotionModes= $inMotionModes AppMgt = $AppMgt CoolNoMotionVal = $CoolNoMotionVal HeatNoMotionVal = $HeatNoMotionVal || $ThermSet"
 
                     if(inMotionModes && AppMgt){
 
@@ -2302,10 +2332,10 @@ outsideTemp = $outsideTemp
                             }
                             if(ThermState != "heat" ){
                                 ThermSet.setThermostatMode("heat") 
-                                //log.debug "$ThermSet set to heat -- Bed Sensor"
+                                log.debug "$ThermSet set to heat -- Bed Sensor"
                             }
                             else {
-                                //log.debug "$ThermSet already set to heat -- Bed Sensor"
+                                log.debug "$ThermSet already set to heat -- Bed Sensor"
                             }
                         }
                         log.trace """
@@ -2488,8 +2518,13 @@ TurnedOffForced = $TurnedOffForced
                                     }                   
                                     if(ShouldCoolWithAC && ThermState != "cool" && !TurnedOffForced){  
                                         // ShouldCoolWithAC has to be rechecked here otherwise !CSPok might trigger cool while it is not needed
-                                        log.debug "$ThermSet set to cool"
-                                        ThermSet.setThermostatMode("cool") 
+                                        if(ThisIsExceptionTherm && !InExceptionContactMode){
+                                            log.debug "$ThermSet is the Exception Thermostat but home is not in Exception Contact Mode, doing nothing"
+                                        }
+                                        else {
+                                            log.debug "$ThermSet set to cool"
+                                            ThermSet.setThermostatMode("cool") 
+                                        }
                                     }
                                     else {
                                         if(!ShouldCoolWithAC){
@@ -2524,9 +2559,13 @@ TurnedOffForced = $TurnedOffForced
 
                                     if(ShouldHeat && ThermState != "heat" && !TurnedOffForced){
                                         // ShouldHeat has to be rechecked here otherwise !HSPok might trigger heat while there's no need 
-
-                                        log.debug "$ThermSet set to Heat"
-                                        ThermSet.setThermostatMode("heat")  
+                                        if(ThisIsExceptionTherm && !InExceptionContactMode){
+                                            log.debug "$ThermSet is the Exception Thermostat but home not is in Exception Contact Mode, doing nothing"
+                                        }
+                                        else {
+                                            log.debug "$ThermSet set to Heat"
+                                            ThermSet.setThermostatMode("heat")  
+                                        }
                                     }
                                     else {
                                         if(!ShouldHeat){
@@ -2555,11 +2594,15 @@ TurnedOffForced = $TurnedOffForced
 
                         def count = 0
 
-                        for(count = 0; count < Thermostats.size(); count++){ 
+                        for(AnyON.size() != 0; count < AnyON.size(); count++){ 
 
                             def device = AnyON[count]
-                            if(ThermState != "off" && AppMgt){
-                                if(device != null && !ThisIsExceptionTherm){
+                            log.debug "device to turn off is $device"
+                            def ThermIsOn = device.currentValue("thermostatMode") in ["cool", "heat"]
+                            log.debug "ThermIsOn = $ThermIsOn (for device: $device)"
+
+                            if(ThermIsOn && AppMgt){
+                                if(!ThisIsExceptionTherm){
                                     device.setThermostatMode("off") 
                                     log.debug "$device TURNED OFF BECAUSE SOME CONTACTS ARE OPEN"
                                 }
@@ -2573,7 +2616,12 @@ TurnedOffForced = $TurnedOffForced
                                 }
                             }
                             else {
-                                //log.debug "device already off"
+                                if(ThermState == "off"){
+                                    log.debug "$device already off"
+                                }
+                                if(!AppMgt){
+                                    log.debug "$device in OVERRIDE MODE"
+                                }
                             }
                         }
                     }
@@ -2600,7 +2648,9 @@ TurnedOffForced = $TurnedOffForced
 def IndexValueMode(){
     def ModeInArray = WhichMode()
 
-    def ModeList = ["$Home", "$Night", "$Away", "$CustomMode1", "$CustomMode2"]  
+    def CurrMode = location.currentMode
+    //def ModeList = ["$Home", "$Night", "$Away", "$CustomMode1", "$CustomMode2"]  
+    def ModeList = [Home, Night, Away, CustomMode1, CustomMode2]  
     def LetterModeList = ["H", "N", "A", "Cust1_T", "Cust2_T"]
     def NumberModeList = ["0", "1", "2", "3", "4"]
 
@@ -2618,37 +2668,36 @@ def IndexValueMode(){
         /// this allows for writing a new variable below
         ModeFound = ModeList[lv] // each mode in the array created above, is an array in itself
 
-        ModeMatches = ModeFound.contains("$ModeInArray") // so find to which array mode the current mode belongs to
+        ModeMatches =  CurrMode in ModeFound // in ModeInArray // so find to which array mode the current mode belongs to
 
-        //log.debug "ModeFound is : $ModeFound || ModeMatches = $ModeMatches || ModeInArray = $ModeInArray"
+        log.debug "ModeFound is : $ModeFound || ModeMatches = $ModeMatches || ModeInArray = $ModeInArray"
         if(ModeMatches){
             log.debug "MATCH!"
             ModeValue = "${LetterModeList[lv]}" // attribute mode letter to start writing the new variable
             ModeIndexValue = "${NumberModeList[lv]}" 
-            // break this loop so it doesn't apply a match to other modes (since now ModeMatches = true)
+
+            log.debug "mode found = $ModeValue && $ModeIndexValue"
+            // we found what we were looking for, now break this loop 
             break
         }
         else
         {
-            // if home is an unknow mode mode O ("$Home") is set as default
-            if(location.currentMode in Away){
-                ModeValue = "${LetterModeList[2]}"
-                ModeIndexValue = "${NumberModeList[2]}" 
-                log.debug "ModeValue is AWAY --> $ModeValue" 
-            }
-            else {
+            log.debug "NO MATCH... trying next"
+            /* // if home is an unknown mode mode O ("$Home") is set as default
+if(location.currentMode in Away){
+ModeValue = "${LetterModeList[2]}"
+ModeIndexValue = "${NumberModeList[2]}" 
+log.debug "ModeValue is AWAY --> $ModeValue" 
+}
+else {
 
-                ModeValue = "${LetterModeList[0]}"
-                ModeIndexValue = "${NumberModeList[0]}" 
-                log.debug "ModeValue DOESN'T MATCH ANY USER'S SELECTION. Now Defaulted to --> $ModeValue" 
-            }
-        }
-
-        log.debug "mode found = $ModeValue && $ModeIndexValue"
+ModeValue = "${LetterModeList[0]}"
+ModeIndexValue = "${NumberModeList[0]}" 
+log.debug "ModeValue DOESN'T MATCH ANY USER'S SELECTION. Now Defaulted to --> $ModeValue" 
+}
+*/
+        }   
     }
-
-
-
     log.debug """ModeValue = $ModeValue && ModeIndexValue = $ModeIndexValue"""
 
     return [ModeValue, ModeIndexValue]
@@ -2754,7 +2803,7 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
                         // this value must not be reset by updated() because updated() is run by contacthandler it is only reset here or after new installation of the app
                     }
                     else {
-                        //log.debug "not closing windows because state.coldbutneedcool = $state.coldbutneedcool"
+                        log.debug "not closing windows because state.coldbutneedcool = $state.coldbutneedcool"
                     }
                 }
                 else if(state.OpenByApp == true){ // no intersection between those devices so these windows / fans will now stop/close
@@ -2862,7 +2911,7 @@ def ChangedModeHandler(evt) {
         state.ClosedByApp = true // app will open windows if needed 
         state.OpenByApp = false 
         // has to be the default value so it doesn't close again if user opens windows manually or another app does so 
-        // Beware that this can be a serious safety concern (for example, if a user has these windows linked to a smoke detector
+        // Beware! this can be a serious safety concern (for example, if a user has these windows linked to a smoke detector)
         // so do not modify these parameters under any circumstances 
         // and check that this works after any modification you'd bring to this app
 
@@ -2871,11 +2920,12 @@ def ChangedModeHandler(evt) {
     } 
 
     state.recentModeChange = true
-    state.ventingrun = 0
-
+    state.ventingrun = 0 // only in modechange, otherwise override is canceled
+    
     updated()
 
 }
+
 
 ////////////////////////////////////// A.I. and micro location evt management
 def motionSensorHandler(evt){
@@ -2885,26 +2935,23 @@ def motionSensorHandler(evt){
 
 
 }
-def switchHandler(evt){
 
-    //log.debug "switchHandler : ${evt.device} is ${evt.value}"
-
-    if(ExceptionSW && evt.value == "on"){
-        state.exception = true
-    } else {
-        state.exception = false
-    }
-    Evaluate()
-
-}
 def ContactAndSwitchHandler(evt){
-    //log.debug "ContactAndSwitchHandler : ${evt.device} is ${evt.value}"
 
-    if(evt.value == "off"){
-        state.contactAndSwtchOff = true
-    } else {
-        state.contactAndSwtchOff = false
-    }
+    log.debug "ContactAndSwitchHandler : ${evt.device} is ${evt.value}"
+
+    /*
+if(evt.value == "off" && state.ACBedOffByApp == false){
+// was in override, reseting values for next ON app command
+log.debug "state.ACBedOffByApp RESET TO TRUE"
+state.ACBedOffByApp = true    
+}
+else if(evt.value == "on" && state.ACBedOnByApp == false) {
+// was in override, reseting values for next OFF app command
+log.debug "state.ACBedOnByApp RESET TO TRUE"
+state.ACBedOnByApp = true
+}
+*/
 
 }
 def BedSensorHandler(evt){
@@ -3162,13 +3209,16 @@ def TurnOffThermostats(){
         }
         log.trace "SomeSwAreOn = $SomeSwAreOn"
         if(!contactClosed){
-            if(SomeSwAreOn.size() != 0){
-                ContactAndSwitch?.off()
-                log.debug "$ContactAndSwitch TURNED OFF"
-                state.turnedOffByApp = true
+            if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
+                ContactAndSwitchoff()
             }
             else {
-                log.debug "$ContactAndSwitch already off"
+                if(SomeSwAreOn.size() == 0){
+                    log.debug "$ContactAndSwitch already off"
+                }
+                if(state.ACBedManagedByApp != true){
+                    log.debug "$ContactAndSwitch in OVERRIDE mode"
+                }
             }
         }
     }
@@ -3181,7 +3231,7 @@ def TurnOffThermostats(){
 
     def ContactExceptionIsClosed = ExcepContactsClosed()
 
-    if(state.CRITICAL == false){
+    if(state.CRITICAL == false && !doorsOk){
         for(t > 0; loopValue < t; loopValue++){
 
             def ThermSet =  Thermostats[loopValue]
@@ -3203,7 +3253,7 @@ def TurnOffThermostats(){
             }
             else {
 
-                log.debug "Not turning off $ThermSet because current mode is within exception modes selected by the user"
+                log.debug "Not turning off $ThermSet due to user selected exception (NoTurnOffOnContact, InExceptionContactMode, ContactExceptionIsClosed)"
 
                 state.LatestThermostatMode = ThermState
             }
@@ -3225,12 +3275,26 @@ def TurnOffThermostats(){
     }
 
     else { 
-        //log.debug "CRITICAL MODE, NOT TURNING OFF ANYTHING" 
+        log.debug "CRITICAL MODE, NOT TURNING OFF ANYTHING" 
 
 
     }
 
 
+}
+
+def ContactAndSwitchoff(){
+    ContactAndSwitch?.off()
+    log.debug "$ContactAndSwitch TURNED OFF"
+    // set management values so if manually turned on, override will be triggered
+    state.ACBedOffByApp = true // allow app turn on
+    state.ACBedOnByApp = false // if turned on by user, then don't turn it back off
+}
+def ContactAndSwitchon(){
+    ContactAndSwitch?.on()
+    log.debug "$ContactAndSwitch TURNED ON"
+    state.ACBedOffByApp = false // if turned off by user, then don't turn it back on
+    state.ACBedOnByApp = true // allow app turn off
 }
 
 // windows mgt and bools
@@ -3262,8 +3326,8 @@ state.messageSent($state.messageSent)
         def ClosedByApp = state.ClosedByApp
         def inAway = CurrMode in Away
         def outsideTemp = OutsideSensor?.currentValue("temperature")
-        def HSPSet = state.HSPSet.HSP
-        def CSPSet = state.CSPSet.CSP
+        def HSPSet = state.HSPSet
+        def CSPSet = state.CSPSet
         def WarmEnoughOutside = outsideTemp >= 60
 
         if(AllContactsClosed || state.ventingrun == 1){
@@ -3271,7 +3335,7 @@ state.messageSent($state.messageSent)
             if( inAway && ClosedByApp != true && OpenInfullWhenAway  && WarmEnoughOutside){
                 ClosedByApp = true
             }
-            if(state.ClosedByApp == true) {
+            if(state.ClosedByApp == true || (inAway && OpenInfullWhenAway && outsideTemp > CriticalTemp)) {
                 Actuators?.on()
                 state.OpenByApp = true
                 state.ClosedByApp = false // so it doesn't open again
@@ -3279,6 +3343,7 @@ state.messageSent($state.messageSent)
                 if(inAway && OpenInfullWhenAway){
                     ActuatorException?.on()
                 }
+
 
                 //log.debug "opening windows"
                 if(!NotWindows){
@@ -3309,7 +3374,7 @@ state.messageSent($state.messageSent)
         }
     }
     // if not ok to open and it is open then close
-    else if (state.OpenByApp == true && !AllContactsClosed) {
+    else if (!OkToOpen && state.OpenByApp == true && !AllContactsClosed) {
         // see if these are the same devices as ventings'
         // see if these switches are the same devices as ventings'
         def ActuatorsVentingCOLL = ActuatorsVenting.collect{ it.toString() }
@@ -3372,10 +3437,10 @@ def OkToOpen(){
 
     log.debug "NOW: CSPSet = $CSPSet &&  HSPSet = $HSPSet"
 
-    
-        CSPSet = CSPSet?.toInteger()
-        HSPSet = HSPSet?.toInteger()
-  
+
+    CSPSet = CSPSet?.toInteger()
+    HSPSet = HSPSet?.toInteger()
+
 
     def CurrMode = location.currentMode
     def Inside = XtraTempSensor.currentValue("temperature")
@@ -3410,7 +3475,7 @@ def OkToOpen(){
         //log.debug "currentOperation for $ThisTherm is '$currentOperation'"
         if(currentOperation == "cool"){
             itscooling = true
-            //log.debug" itscooling set to TRUE" // this will allow to avoid using AC when it's cool outside and have venting operation
+            //log.debug" itscooling set to TRUE" // this will avoid using AC when it's cool outside and have venting operation
         }
     }    
 
@@ -3493,7 +3558,7 @@ itscooling = $itscooling"""
 
 
     if(CurrMode in Away){
-        //log.debug "in $CurrMode mode, not venting"
+        log.debug "in $CurrMode mode, not venting"
     }
     else if (inVentingModes){
         if(NeedVenting)
@@ -3511,6 +3576,7 @@ itscooling = $itscooling"""
                 if(!inVentingModesException){
                     ActuatorsVentingException?.on()
                 }
+                state.OpenByApp = true
 
                 runIn(10, StopActuators)
                 message = "Venting the place to cool it down a little"
@@ -3536,6 +3602,8 @@ AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
 state.more = $state.more
 """
                     ActuatorsVenting?.on()
+                    state.OpenByApp = true
+
                     if(!inVentingModesException){
                         ActuatorsVentingException?.on()
                     }
@@ -3570,6 +3638,7 @@ state.more = $state.more
 no venting needed, making sure windows are closed"""
             if(state.ventingrun >= 1){
                 ActuatorsVenting?.off()
+                state.OpenByApp = false
                 ActuatorsVentingException?.off()
 
                 state.ventingrun = 0
@@ -3724,6 +3793,18 @@ CLOSING WINDOWS"""
 
         state.messageopened = message // sent once as push message by checkwindows()
 
+    }
+
+    // and finaly if user has chosen this option, open windows when other mode than Away and based on switch status
+
+    if(SwtTrigWindModes && CurrMode in SwtTrigWindModes){
+        log.debug "SwtTrigWindModes = $SwtTrigWindModes"
+        if("on" in SwitchOffOpensWindows?.currentSwitch){
+            log.debug "home is in $SwtTrigWindModes mode but some switches are still on and, so it's not ok to open windows"   
+        }
+        else {
+            result = true
+        }
     }
 
     log.info """
