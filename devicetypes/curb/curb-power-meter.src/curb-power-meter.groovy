@@ -15,7 +15,7 @@
  */
 
 metadata {
-    definition(name: "CURB Power Meter", namespace: "curb", author: "Curb", ocfDeviceType: "x.com.st.energymeter") {
+    definition(name: "CURB Power Meter", namespace: "curb", author: "Curb", ocfDeviceType: "x.com.st.d.energymeter") {
         capability "Power Meter"
         capability "Energy Meter"
     }
