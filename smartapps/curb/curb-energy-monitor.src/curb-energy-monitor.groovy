@@ -267,8 +267,8 @@ def processData(resp, data, create=false, energy=false)
         if (hasProduction) {
           if (create) { createChildDevice("__PRODUCTION__", "Production") }
           if (create) { createChildDevice("__CONSUMPTION__", "Consumption") }
-          energy ? getChildDevice("__PRODUCTION__")?.handleKwhBilling(main) : updateChildDevice("__PRODUCTION__", production)
-          energy ? getChildDevice("__CONSUMPTION__")?.handleKwhBilling(main) : updateChildDevice("__CONSUMPTION__", main-production)
+          energy ? getChildDevice("__PRODUCTION__")?.handleKwhBilling(production) : updateChildDevice("__PRODUCTION__", production)
+          energy ? getChildDevice("__CONSUMPTION__")?.handleKwhBilling(main-production) : updateChildDevice("__CONSUMPTION__", main-production)
         }
     }
     if ( create && !energy){
