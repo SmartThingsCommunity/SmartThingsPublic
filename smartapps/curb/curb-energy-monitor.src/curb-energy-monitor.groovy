@@ -31,12 +31,7 @@ definition(
 }
 
 preferences {
-    page(
-        name: "auth",
-        title: "Curb",
-        nextPage: "",
-        content: "authPage",
-        uninstall: true)
+    page(name: "auth", title: "Authorize with Curb", content: "authPage", uninstall: true)
 }
 
 mappings {
@@ -54,18 +49,19 @@ def installed() {
 
 def updated() {
     log.debug "Updated with settings: ${settings}"
-    removeChildDevices(getChildDevices())
     unsubscribe()
+    removeChildDevices(getChildDevices())
     initialize()
 }
 
 def initialize() {
     log.debug "Initializing"
     unschedule()
-    refreshAuthToken()
-    updateSelectedLocationId()
-    getDevices()
-    runEvery1Minute(getAllData)
+    def curbCircuits = getCurbCircuits()
+    log.debug "Found devices: ${curbCircuits}"
+
+    runEvery1Minute(getPowerData)
+    runEvery1Hour(getKwhData)
 }
 
 def uninstalled() {
@@ -79,6 +75,7 @@ def authPage() {
     }
 
     if (state.authToken) {
+    	getCurbLocations()
         return dynamicPage(name: "auth", title: "Login Successful", nextPage: "", install: true, uninstall: true) {
             section() {
                 paragraph("Select your CURB Location")
@@ -86,7 +83,7 @@ def authPage() {
                     name: "curbLocation",
                     type: "enum",
                     title: "CURB Location",
-                    options: state.locationNames
+                    options: state.locations
                 )
             }
         }
@@ -101,6 +98,7 @@ def authPage() {
 }
 
 def oauthInitUrl() {
+    log.debug "Initializing oauth"
     state.oauthInitState = UUID.randomUUID().toString()
     def oauthParams = [
         response_type: "code",
@@ -115,6 +113,7 @@ def oauthInitUrl() {
 }
 
 def callback() {
+    log.debug "Oauth callback: ${params}"
     def code = params.code
     def oauthState = params.state
     if (oauthState == state.oauthInitState) {
@@ -127,10 +126,8 @@ def callback() {
         ]
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
             resp ->
-                state.refreshToken = resp.data.refresh_token
+              state.refreshToken = resp.data.refresh_token
               state.authToken = resp.data.access_token
-
-            getCurbLocations()
         }
         if (state.authToken) {
             success()
@@ -148,171 +145,142 @@ private removeChildDevices(delete) {
     }
 }
 
+def updateChildDevice(dni, value) {
+    try {
+        def existingDevice = getChildDevice(dni)
+        existingDevice?.handlePower(value)
+    } catch (e) {
+        log.error "Error updating device: ${e}"
+    }
+}
+
+def createChildDevice(dni, label) {
+    log.debug "Creating child device with DNI ${dni} and name ${label}"
+    return addChildDevice("curb", "CURB Power Meter", dni, null, [name: "${dni}", label: "${label}"])
+}
+
+def getCurbCircuits() {
+    getPowerData(true)
+}
+
 def getCurbLocations() {
+    log.debug "Getting curb locations"
     def params = [
         uri: "http://app.energycurb.com",
         path: "/api/locations",
         headers: ["Authorization": "Bearer ${state.authToken}"]
     ]
-
+    def allLocations = [:]
     try {
         httpGet(params) {
             resp ->
-                def locationNameList = []
-            def locationLookup = []
             resp.data.each {
-                locationNameList.push(it.name)
-                locationLookup.push(it)
+                log.debug "Found location: ${it}"
+                allLocations[it.id] = it.name
             }
-            state.locationNames = locationNameList
-            state.locationLookup = locationLookup
+            state.locations = allLocations
         }
     } catch (e) {
-        log.error "something went wrong: $e"
+        log.error "something went wrong: ${e}"
     }
 }
 
-def updateSelectedLocationId() {
-  def location = ""
-    state.locationLookup.each {
-        if (it.name == settings.curbLocation) {
-            location = it.id
-        }
-    }
-    state.location = location
-}
-
-def updateChildDevice(dni, label, value) {
-    def device = getChildDevice(dni)
-    if (device == null) {
-      device = createChildDevice(dni, label)
-    }
-    device.handlePower(value)
-}
-
-def createChildDevice(dni, label) {
-    return addChildDevice("curb", "Curb Power Meter", dni, null, [name: "${dni}", label: "${label}"])
-}
-
-def getDevices() {
+def getPowerData(create=false) {
+  log.debug "Getting data at ${settings.curbLocation} with token: ${state.authToken}"
     def params = [
         uri: "https://app.energycurb.com",
-        path: "/api/latest/${state.location}",
+        path: "/api/aggregate/${settings.curbLocation}/2m/s",
         headers: ["Authorization": "Bearer ${state.authToken}"],
         requestContentType: 'application/json'
     ]
-    asynchttp_v1.get(processDevices, params)
+    try {
+    	httpGet(params) { resp ->
+            processPowerData(resp, null, create)
+            return resp.data.circuits
+        }
+    } catch (e) {
+        log.error "something went wrong: ${e}"
+    }
 }
 
-def getAllData() {
-
-    def billingParams = [
+def getKwhData() {
+  log.debug "Getting kwh data at ${settings.curbLocation} with token: ${state.authToken}"
+    def params = [
         uri: "https://app.energycurb.com",
-        path: "/api/aggregate/${state.location}/billing/h",
+        path: "/api/aggregate/${settings.curbLocation}/billing/h",
         headers: ["Authorization": "Bearer ${state.authToken}"],
         requestContentType: 'application/json'
     ]
-
-    asynchttp_v1.get(processKwh, billingParams)
-
-    def latestparams = [
-        uri: "https://app.energycurb.com",
-        path: "/api/aggregate/${state.location}/1m/s",
-        headers: ["Authorization": "Bearer ${state.authToken}"],
-        requestContentType: 'application/json'
-    ]
-
-    asynchttp_v1.get(processUsage, latestparams)
-
+    try {
+    	httpGet(params) { resp ->
+        	log.debug(resp)
+            processKwh(resp, null)
+            return
+        }
+    } catch (e) {
+        log.error "something went wrong: ${e}"
+    }
 }
 
-def processUsage(resp, data) {
-    if (resp.hasError()) {
+def processPowerData(resp, data, create=false) {
+    log.debug "Processing usage data: ${resp.data}"
+    if (!isOK(resp)) {
         refreshAuthToken()
         log.error "Usage Response Error: ${resp.getErrorMessage()}"
         return
     }
-    def json = resp.json
     def main = 0.0
     def production = 0.0
-    def consumption = 0.0
-    if (json) {
-        json.each {
-            if (!it.main && !it.production) {
-              updateChildDevice("${it.id}", it.label, it.avg)
-              consumption += it.avg
+    if (resp.data) {
+        def hasProduction = false
+        resp.data.each {
+            if (!it.main && !it.production && it.label != null && it.label != "") {
+            	if (create) { createChildDevice("${it.id}", "${it.label}") }
+                updateChildDevice("${it.id}", it.avg)
+            }
+            if (it.production) {
+                hasProduction = true
             }
             if (it.main) {
               main += it.avg
-              state.hasMains = true
             }
             if (it.production) {
-              if (it.production == "Line-side") {
-                main += it.avg
-              }
               production += it.avg
-              state.hasProduction = true
             }
         }
-        if (state.hasMains && main != 0.0) {
-            updateChildDevice("__NET__", "Total Power Grid Impact", main)
-        }
-        else {
-            updateChildDevice("__NET__", "Total Power Grid Impact", consumption + production)
-        }
-        if (state.hasProduction) {
-            updateChildDevice("__PRODUCTION__", "Total Power Production", production)
-            updateChildDevice("__CONSUMPTION__", "Total Power Usage", consumption)
+        if (create) { createChildDevice("__NET__", "Main") }
+        updateChildDevice("__NET__", main)
+        if (hasProduction) {
+          if (create) { createChildDevice("__PRODUCTION__", "Solar") }
+          if (create) { createChildDevice("__CONSUMPTION__", "Usage") }
+          updateChildDevice("__PRODUCTION__", production)
+          updateChildDevice("__CONSUMPTION__", main-production)
         }
     }
-}
-
-def processDevices(resp, data) {
-    if (resp.hasError()) {
-        log.error "Error setting up devices: ${resp.getErrorMessage()}"
-        return
-    }
-    def json = resp.json
-    state.hasMains = false
-    state.hasProduction = false
-    if (json) {
-        json.circuits.each {
-            if (!it.main && !it.production) {
-                device = createChildDevice("${it.id}", "${it.label}")
-            }
-            if (it.production) {
-                state.hasProduction = true
-            }
-            if (it.main) {
-              state.hasMains = true
-            }
-        }
-
-        if (state.hasProduction) {
-            createChildDevice("__NET__", "Total Power Grid Impact")
-            createChildDevice("__PRODUCTION__", "Total Power Production")
-            createChildDevice("__CONSUMPTION__", "Total Power Usage")
-        } else {
-            //If they don't have production, just call NET Total Power Usage
-            createChildDevice("__NET__", "Total Power Usage")
-        }
+    if ( create ){
+    	getKwhData()
     }
 }
 
 def processKwh(resp, data) {
-    if (resp.hasError()) {
+  log.debug "Processing KWH data: ${resp.data}"
+    if (!isOK(resp)) {
         refreshAuthToken()
-        log.error "Usage Response Error: ${resp.getErrorMessage()}"
+        log.error "KWH Response Error: ${resp.getErrorMessage()}"
         return
     }
-    def json = resp.json
     def main = 0.0
     def production = 0.0
     def existingDevice = null
-    if (json) {
-        json.each {
-            if (!it.main && !it.production) {
-                getChildDevice("${it.id}").handleKwhBilling(it.kwhr)
+    if (resp.data) {
+        def hasProduction = false
+        resp.data.each {
+            log.debug "Updating billing for: ${it}"
+            if (!it.main && !it.production && it.label != null && it.label != "") {
+                getChildDevice("${it.id}")?.handleKwhBilling(it.kwhr.floatValue())
+            }
+            if (it.production) {
+                hasProduction = true
             }
             if (it.main) {
               main += it.kwhr
@@ -320,14 +288,11 @@ def processKwh(resp, data) {
             if (it.production) {
               production += it.kwhr
             }
-            if (!state.hasMains && !it.production) {
-              main += it.kwhr
-            }
         }
-        getChildDevice("__NET__").handleKwhBilling(main)
-        if (state.hasProduction) {
-            getChildDevice("__SOLAR__").handleKwhBilling(production)
-            getChildDevice("__USAGE__").handleKwhBilling(main-production)
+        getChildDevice("__NET__")?.handleKwhBilling(main)
+        if (hasProduction) {
+            getChildDevice("__SOLAR__")?.handleKwhBilling(production)
+            getChildDevice("__USAGE__")?.handleKwhBilling(main-production)
         }
     }
 }
@@ -339,6 +304,7 @@ def toQueryString(Map m) {
 }
 
 def refreshAuthToken() {
+    log.debug "Refreshing auth token"
     if (!state.refreshToken) {
         log.warn "Can not refresh OAuth token since there is no refreshToken stored"
     } else {
@@ -352,6 +318,7 @@ def refreshAuthToken() {
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
             resp ->
                 state.authToken = resp.data.access_token
+                log.debug "Got authToken: ${state.authToken}"
         }
     }
 }
@@ -385,7 +352,6 @@ def connectionStatus(message, redirectUrl = null) {
   def html = """
   <!DOCTYPE html>
   <html>
-
   <head>
       <meta name="viewport" content="width=640">
       <title>Curb & SmartThings connection</title>
@@ -400,7 +366,6 @@ def connectionStatus(message, redirectUrl = null) {
               font-weight: normal;
               font-style: normal;
           }
-
           @font-face {
               font-family: 'Swiss 721 W01 Light';
               src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot');
@@ -411,17 +376,14 @@ def connectionStatus(message, redirectUrl = null) {
               font-weight: normal;
               font-style: normal;
           }
-
           .container {
               width: 90%;
               padding: 4%;
               text-align: center;
           }
-
           img {
               vertical-align: middle;
           }
-
           p {
               font-size: 2.2em;
               font-family: 'Swiss 721 W01 Thin';
@@ -430,13 +392,11 @@ def connectionStatus(message, redirectUrl = null) {
               padding: 0 40px;
               margin-bottom: 0;
           }
-
           span {
               font-family: 'Swiss 721 W01 Light';
           }
       </style>
   </head>
-
   <body>
       <div class="container">
           <img src="http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png" alt="curb icon" />
@@ -444,11 +404,14 @@ def connectionStatus(message, redirectUrl = null) {
           <img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings logo" /> ${message}
       </div>
   </body>
-
   </html>
     """
 
   render contentType: 'text/html', data: html
+}
+
+def isOK(response) {
+  response.status in [200, 201]
 }
 
 def getCurbAuthUrl() {
