@@ -195,7 +195,7 @@ def getPowerData(create=false) {
     ]
     try {
     	httpGet(params) { resp ->
-            processPowerData(resp, null, create)
+            processData(resp, null, create, false)
             return resp.data.circuits
         }
     } catch (e) {
@@ -213,8 +213,7 @@ def getKwhData() {
     ]
     try {
     	httpGet(params) { resp ->
-        	log.debug(resp)
-            processKwh(resp, null)
+            processData(resp, null, false, true)
             return
         }
     } catch (e) {
@@ -222,7 +221,8 @@ def getKwhData() {
     }
 }
 
-def processPowerData(resp, data, create=false) {
+def processData(resp, data, create=false, energy=false)
+{
     log.debug "Processing usage data: ${resp.data}"
     if (!isOK(resp)) {
         refreshAuthToken()
@@ -231,70 +231,50 @@ def processPowerData(resp, data, create=false) {
     }
     def main = 0.0
     def production = 0.0
+    def all = 0.0
+    def hasProduction = false
+    def hasMains = false
     if (resp.data) {
-        def hasProduction = false
         resp.data.each {
+        	def numValue = 0.0
+        	if(energy){
+            	numValue=it.kwhr.floatValue()
+            } else {
+            	numValue=it.avg
+            }
+        	all += numValue
             if (!it.main && !it.production && it.label != null && it.label != "") {
             	if (create) { createChildDevice("${it.id}", "${it.label}") }
-                updateChildDevice("${it.id}", it.avg)
+                energy ?  getChildDevice("${it.id}")?.handleKwhBilling(numValue) : updateChildDevice("${it.id}", numValue)
+            }
+            if (it.grid) {
+              hasMains = true
+              main += numValue
             }
             if (it.production) {
-                hasProduction = true
-            }
-            if (it.main) {
-              main += it.avg
-            }
-            if (it.production) {
-              production += it.avg
+              hasProduction = true
+              production += numValue
             }
         }
-        if (create) { createChildDevice("__NET__", "Main") }
-        updateChildDevice("__NET__", main)
+
+        if (create) { createChildDevice("__NET__", "Net Grid Impact") }
+
+        if (!hasMains) {
+        	main = all
+        }
+
+        energy ? getChildDevice("__NET__")?.handleKwhBilling(main) : updateChildDevice("__NET__", main)
         if (hasProduction) {
-          if (create) { createChildDevice("__PRODUCTION__", "Solar") }
-          if (create) { createChildDevice("__CONSUMPTION__", "Usage") }
-          updateChildDevice("__PRODUCTION__", production)
-          updateChildDevice("__CONSUMPTION__", main-production)
+          if (create) { createChildDevice("__PRODUCTION__", "Production") }
+          if (create) { createChildDevice("__CONSUMPTION__", "Consumption") }
+          energy ? getChildDevice("__PRODUCTION__")?.handleKwhBilling(main) : updateChildDevice("__PRODUCTION__", production)
+          energy ? getChildDevice("__CONSUMPTION__")?.handleKwhBilling(main) : updateChildDevice("__CONSUMPTION__", main-production)
         }
     }
-    if ( create ){
+    if ( create && !energy){
     	getKwhData()
     }
-}
 
-def processKwh(resp, data) {
-  log.debug "Processing KWH data: ${resp.data}"
-    if (!isOK(resp)) {
-        refreshAuthToken()
-        log.error "KWH Response Error: ${resp.getErrorMessage()}"
-        return
-    }
-    def main = 0.0
-    def production = 0.0
-    def existingDevice = null
-    if (resp.data) {
-        def hasProduction = false
-        resp.data.each {
-            log.debug "Updating billing for: ${it}"
-            if (!it.main && !it.production && it.label != null && it.label != "") {
-                getChildDevice("${it.id}")?.handleKwhBilling(it.kwhr.floatValue())
-            }
-            if (it.production) {
-                hasProduction = true
-            }
-            if (it.main) {
-              main += it.kwhr
-            }
-            if (it.production) {
-              production += it.kwhr
-            }
-        }
-        getChildDevice("__NET__")?.handleKwhBilling(main)
-        if (hasProduction) {
-            getChildDevice("__SOLAR__")?.handleKwhBilling(production)
-            getChildDevice("__USAGE__")?.handleKwhBilling(main-production)
-        }
-    }
 }
 
 def toQueryString(Map m) {
