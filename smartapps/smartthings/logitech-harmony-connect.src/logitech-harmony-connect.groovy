@@ -528,6 +528,7 @@ def pollResponse(response, data) {
 	    }
 	} else {
 		def ResponseValues
+		def currentActivities = []
 		try {
 			// json response already parsed into JSONElement object
 			ResponseValues = response.json
@@ -535,14 +536,18 @@ def pollResponse(response, data) {
 			log.error "Harmony - error parsing json from response: $e"
 		}
 		if (ResponseValues) {
-	        def map = [:]
+	        log.debug "Harmony - response body: $response.data"
+	        def activities = getChildDevices()
 	        ResponseValues.hubs.each {
 		        // Device-Watch relies on the Logitech Harmony Cloud to get the Device state.
 		        def isAlive = it.value.status
-		        def d = getChildDevice("harmony-${it.key}")
-		        d?.sendEvent(name: "DeviceWatch-DeviceStatus", value: isAlive!=504? "online":"offline", displayed: false, isStateChange: true)
-		        if (it.value.message == "OK") {
-					map["${it.key}"] = "${it.value.response.data.currentAvActivity},${it.value.response.data.activityStatus}"
+		        activities.each { activity ->
+					if ("${activity.deviceNetworkId}".contains("harmony-${it.key}")) {
+						def childDevice = getChildDevice(activity.deviceNetworkId)
+						childDevice.sendEvent(name: "DeviceWatch-DeviceStatus", value: isAlive!=504? "online":"offline", displayed: false, isStateChange: true)
+					}
+				}
+				if (it.value.message == "OK") {
 					def hub = getChildDevice("harmony-${it.key}")
 					if (hub) {
 						if (it.value.response.data.currentAvActivity == "-1") {
@@ -556,31 +561,23 @@ def pollResponse(response, data) {
 								currentActivity = getActivityName(it.value.response.data.currentAvActivity,it.key)
 							hub.sendEvent(name: "currentActivity", value: currentActivity, descriptionText: "Current activity is ${currentActivity}", displayed: false)
 						}
+						it.value.response.data.currentActivities.each {currentActivity ->
+							currentActivities.add("harmony-${it.key}-${currentActivity}")
+						}
 					}
 	          	} else {
 	            	log.trace "Harmony - error response: $it.value.message"
 	          	}
         	}
-	        def activities = getChildDevices()
 	        def activitynotrunning = true
+	        log.debug "Harmony - Current Activities: $currentActivities"
 	        activities.each { activity ->
-	            def act = activity.deviceNetworkId.split('-')
-	            if (act.size() > 2) {
-	                def aux = map.find { it.key == act[1] }
-	                if (aux) {
-	                    def aux2 = aux.value.split(',')
-	                    def childDevice = getChildDevice(activity.deviceNetworkId)
-	                    if ((act[2] == aux2[0]) && (aux2[1] == "1" || aux2[1] == "2")) {
-	                        childDevice?.sendEvent(name: "switch", value: "on")
-	                        if (aux2[1] == "1")
-	                            runIn(5, "poll", [overwrite: true])
-	                    } else {
-	                        childDevice?.sendEvent(name: "switch", value: "off")
-	                        if (aux2[1] == "3")
-	                            runIn(5, "poll", [overwrite: true])
-	                    }
-	                }
-	            }
+                def childDevice = getChildDevice(activity.deviceNetworkId)
+                if (currentActivities.contains("$activity.deviceNetworkId")) {
+                    childDevice?.sendEvent(name: "switch", value: "on")
+                } else {
+                    childDevice?.sendEvent(name: "switch", value: "off")
+                }
 	        }
 		} else {
 			log.debug "Harmony - did not get json results from response body: $response.data"
