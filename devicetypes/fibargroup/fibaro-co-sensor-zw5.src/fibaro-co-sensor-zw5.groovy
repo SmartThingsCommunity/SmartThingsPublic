@@ -122,6 +122,9 @@ def configure() {
 	def cmds = []
 	sendEvent(name: "coLevel", unit: "ppm", value: 0, displayed: true)
 	sendEvent(name: "carbonMonoxide", value: "clear", displayed: "true")
+	sendEvent(name: "tamper", value: "clear", displayed: "true")
+    // turn on tamper reporting
+	cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: 1, parameterNumber: 2, size: 1)
 	cmds << zwave.batteryV1.batteryGet()
 	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
 	cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
@@ -132,7 +135,7 @@ private syncStart() {
 	boolean syncNeeded = false
 	parameterMap().each {
 		if(settings."$it.key" != null || it.num == 54) {
-			if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] }
+			if (state."$it.key" == null) { state."$it.key" = [value: "$it.def", state: "synced"] }
 			if (state."$it.key".value != (settings."$it.key" as Integer) || state."$it.key".state != "synced" ) {
 				state."$it.key".value = (settings."$it.key" as Integer)
 				state."$it.key".state = "notSynced"
@@ -230,7 +233,7 @@ def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationRejec
 
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 	logging("${device.displayName} - AlarmReport received, zwaveAlarmType: ${cmd.zwaveAlarmType}, zwaveAlarmEvent: ${cmd.zwaveAlarmEvent}", "info")
-	def lastTime = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
+	def lastTime = location.timeZone ? new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone) : new Date().format("yyyy MMM dd EEE h:mm:ss")
 	switch (cmd.zwaveAlarmType) {
 		case 2:
 			switch (cmd.zwaveAlarmEvent) {
