@@ -32,7 +32,7 @@ metadata {
                  attributeState "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
                  attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#00a0dc", nextState:"turningOff"
                  attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#ffffff", nextState:"turningOn"
- 			}
+            }
         }
 
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
@@ -44,7 +44,7 @@ metadata {
         }
         standardTile("refresh", "device.switch", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-        }       
+        }
         main(["switch"])
         details(["rich-control", "refresh"])
     }
@@ -52,41 +52,44 @@ metadata {
 
 // parse events into attributes
 def parse(String description) {
-	log.debug "Parsing '${description}'"
+    log.debug "Parsing '${description}'"
+}
+
+void initialize() {
+    sendEvent(name: "DeviceWatch-Enroll", value: toJson([protocol: "cloud", scheme:"untracked"]), displayed: false) 	
 }
 
 void installed() {
     log.trace "[DTH] Executing installed() for device=${this.device.displayName}"
-    sendEvent(name: "DeviceWatch-Enroll", value: toJson([protocol: "cloud", scheme:"untracked"]), displayed: false) 	
+    initialize() 	
+}
+
+void updated() {
+    log.trace "[DTH] Executing updated() for device=${this.device.displayName}"
+    initialize() 	
 }
 
 //remove from the selected devices list in SM
 void uninstalled() {
     log.trace "[DTH] Executing uninstalled() for device=${this.device.displayName}"
-    parent?.removeChildDevice(this)
-}
-
-// handle commands
-def poll() {
-	log.trace "[DTH] Executing 'poll' for ${this.device.displayName}"
-	parent.pollSwitches()
+    parent?.purgeChildDevice(this)
 }
 
 def refresh() {
-	log.trace "[DTH] Executing 'refresh' for ${this.device.displayName}"
-    poll()
+    log.trace "[DTH] Executing 'refresh' for ${this.device.displayName}"
+    parent?.poll()
 }
 
 def on() {
-	log.trace "[DTH] Executing 'on' for ${this.device.displayName}"
+    log.trace "[DTH] Executing 'on' for ${this.device.displayName}"
     boolean desiredState = true
-	parent.controlSwitch( this.device.deviceNetworkId, desiredState )
+    parent.controlSwitch( this.device.deviceNetworkId, desiredState )
 }
 
 def off() {
-	log.trace "[DTH] Executing 'on' for ${this.device.displayName}"
+    log.trace "[DTH] Executing 'off' for ${this.device.displayName}"
     boolean desiredState = false
-	parent.controlSwitch( this.device.deviceNetworkId, desiredState )
+    parent.controlSwitch( this.device.deviceNetworkId, desiredState )
 }
 
 def toJson(Map m) {

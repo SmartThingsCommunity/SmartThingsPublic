@@ -29,6 +29,7 @@ metadata {
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
 		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "Neo Coolcam Siren Alarm"
 		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren"
+		fingerprint mfr: "0060", prod: "000C", model: "0001", deviceJoinName: "Utilitech Siren"
 	}
 
 	simulator {
@@ -63,11 +64,49 @@ metadata {
 def installed() {
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	initialize()
 }
 
 def updated() {
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
+}
+
+def initialize() {
+	def cmds = []
+
+	// Set a limit to the number of times that we run so that we don't run forever and ever
+	if (!state.initializeCount) {
+		state.initializeCount = 1
+	} else if (state.initializeCount <= 10) { // Keep checking for ~2 mins (10 * 12 sec intervals)
+		state.initializeCount = state.initializeCount + 1
+	} else {
+		state.initializeCount = 0
+		return // TODO: This might be a good opprotunity to mark the device unhealthy
+	}
+
+	if (!device.currentState("alarm")) {
+		cmds << zwave.basicV1.basicGet().format()
+		cmds << "delay 5"
+	}
+	if (!device.currentState("battery")) {
+		if (zwaveInfo?.cc?.contains("80")) {
+			cmds << zwave.batteryV1.batteryGet().format()
+		} else {
+			// Right now this DTH assumes all devices are battery powered, in the event a device is wall powered we should populate something
+			sendEvent(name: "battery", value: 100, unit: "%")
+		}
+	}
+
+	if (cmds.size()) {
+		sendHubCommand(cmds)
+
+		runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
+	} else {
+		state.initializeCount = 0
+	}
 }
 
 def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {

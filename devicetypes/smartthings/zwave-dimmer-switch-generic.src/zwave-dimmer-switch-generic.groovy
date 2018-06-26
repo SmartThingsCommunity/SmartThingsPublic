@@ -24,6 +24,8 @@ metadata {
 
 		fingerprint inClusters: "0x26", deviceJoinName: "Z-Wave Dimmer"
 		fingerprint mfr: "001D", prod: "1902", deviceJoinName: "Z-Wave Dimmer"
+		fingerprint mfr: "001D", prod: "3301", model: "0001", deviceJoinName: "Leviton Dimmer Switch"
+		fingerprint mfr: "001D", prod: "3201", model: "0001", deviceJoinName: "Leviton Dimmer Switch"
 		fingerprint mfr: "001D", prod: "1B03", model: "0334", deviceJoinName: "Leviton Universal Dimmer"
 		fingerprint mfr: "011A", prod: "0102", model: "0201", deviceJoinName: "Enerwave In-Wall Dimmer"
 		fingerprint mfr: "001D", prod: "1001", model: "0334", deviceJoinName: "Leviton 3-Speed Fan Controller"
@@ -41,6 +43,7 @@ metadata {
 		fingerprint mfr: "001A", prod: "4449", model: "0101", deviceJoinName: "Eaton RF Master Dimmer"
 		fingerprint mfr: "001A", prod: "4449", model: "0003", deviceJoinName: "Eaton RF Dimming Plug-In Module"
 		fingerprint mfr: "0086", prod: "0103", model: "0063", deviceJoinName: "Aeotec Smart Dimmer 6"
+		fingerprint mfr: "014F", prod: "5744", model: "3530", deviceJoinName: "GoControl In-Wall Dimmer"
 	}
 
 	simulator {
@@ -92,10 +95,22 @@ def installed() {
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	def commands = refresh()
-	if (zwaveInfo.mfr.equals("001A")) {
+	if (zwaveInfo?.mfr?.equals("001A")) {
 		commands << "delay 100"
 		//for Eaton dimmers parameter 7 is ramp time. We set it to 1s for devices to work correctly with local execution
 		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 7, size: 1).format()
+	} else if (isHoneywellDimmer()) {
+		//Set ramp time to 1s for this device to turn off dimmer correctly when current level is over 66.
+		commands << "delay 100"
+		//Parameter 7 - z-wave ramp up/down step size, Parameter 8 - z-wave step interval equals configurationValue times 10 ms
+		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 7, size: 1).format()
+		commands << "delay 200"
+		commands << zwave.configurationV1.configurationSet(configurationValue: [0, 1], parameterNumber: 8, size: 2).format()
+		commands << "delay 200"
+		//Parameter 7 - manual operation ramp up/down step size, Parameter 8 - z-wave manual operation interval equals configurationValue times 10 ms
+		commands << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 9, size: 1).format()
+		commands << "delay 200"
+		commands << zwave.configurationV1.configurationSet(configurationValue: [0, 1], parameterNumber: 10, size: 2).format()
 	}
 	response(commands)
 }
@@ -151,7 +166,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmd.value && cmd.value <= 100) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
 	}
 	return result
 }
@@ -213,7 +228,6 @@ def setLevel(value) {
 	} else {
 		sendEvent(name: "switch", value: "off")
 	}
-	sendEvent(name: "level", value: level, unit: "%")
 	delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
@@ -246,4 +260,13 @@ def refresh() {
 		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	}
 	delayBetween(commands, 100)
+}
+
+def isHoneywellDimmer() {
+	zwaveInfo?.mfr?.equals("0039") && (
+		(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3033")) ||
+			(zwaveInfo?.prod?.equals("5044") && zwaveInfo?.model?.equals("3038")) ||
+			(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3038")) ||
+			(zwaveInfo?.prod?.equals("4944") && zwaveInfo?.model?.equals("3130"))
+	)
 }
