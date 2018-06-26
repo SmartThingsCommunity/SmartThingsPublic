@@ -67,10 +67,10 @@ private void updateAll(devices) {
   if (command) {
     switch(command) {
       case "on":
-      devices.on()
+      devices*.on()
       break
       case "off":
-      devices.off()
+      devices*.off()
       break
       default:
       httpError(403, "Access denied. This command is not supported by current capability.")
