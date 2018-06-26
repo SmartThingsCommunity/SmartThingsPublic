@@ -42,7 +42,7 @@
  */
 
 metadata {
-    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 
         capability "Actuator"
         capability "Configuration"
@@ -98,11 +98,7 @@ def parse(String description) {
 }
 
 def poll() {
-    def refreshCmds = [
-        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 2000"
-    ]
-
-    return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh()
+	return zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def updated() {
@@ -182,9 +178,7 @@ def updated() {
     	state.dOnOff = "0000"
     }
 
-    "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state.dOnOff}}"
-
-
+	sendHubCommand(new physicalgraph.device.HubAction("st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state.dOnOff}}"))
 }
 
 def on() {

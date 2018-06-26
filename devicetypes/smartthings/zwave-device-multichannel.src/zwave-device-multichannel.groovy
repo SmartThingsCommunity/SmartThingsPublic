@@ -19,7 +19,7 @@ metadata {
 		capability "Refresh"
 		capability "Configuration"
 		capability "Sensor"
-		capability "Zw Multichannel"
+		capability "Zw Multichannel" // deprecated
 
 		fingerprint inClusters: "0x60"
 		fingerprint inClusters: "0x60, 0x25"
@@ -38,26 +38,128 @@ metadata {
 		reply "600902": "command: 600A, payload: 210031"
 	}
 
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.unknown.zwave.device", backgroundColor: "#00A0DC"
-			state "off", label: '${name}', action: "switch.on", icon: "st.unknown.zwave.device", backgroundColor: "#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
 		}
-		standardTile("switchOn", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "on", label:'on', action:"switch.on", icon:"st.switches.switch.on"
-		}
-		standardTile("switchOff", "device.switch", inactiveLabel: false, decoration: "flat") {
-			state "off", label:'off', action:"switch.off", icon:"st.switches.switch.off"
-		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+		childDeviceTiles("endpoints")
+		/*standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false) {
-			state "level", action:"switch level.setLevel"
-		}
+		}*/
+	}
+}
 
-		main "switch"
-		details (["switch", "switchOn", "switchOff", "levelSliderControl", "refresh"])
+def installed() {
+	def queryCmds = []
+	def delay = 200
+	def zwInfo = getZwaveInfo()
+	def endpointCount = zwInfo.epc as Integer
+	def endpointDescList = zwInfo.ep ?: []
+
+	// This is needed until getZwaveInfo() parses the 'ep' field
+	if (endpointCount && !zwInfo.ep && device.hasProperty("rawDescription")) {
+		try {
+			def matcher = (device.rawDescription =~ /ep:(\[.*?\])/)  // extract 'ep' field
+			endpointDescList = util.parseJson(matcher[0][1].replaceAll("'", '"'))
+		} catch (Exception e) {
+			log.warn "couldn't extract ep from rawDescription"
+		}
+	}
+
+	if (zwInfo.zw.contains("s")) {
+		// device was included securely
+		state.sec = true
+	}
+
+	if (endpointCount > 1 && endpointDescList.size() == 1) {
+		// This means all endpoints are identical
+		endpointDescList *= endpointCount
+	}
+
+	endpointDescList.eachWithIndex { desc, i ->
+		def num = i + 1
+		if (desc instanceof String && desc.size() >= 4) {
+			// desc is in format "1001 AA,BB,CC" where 1001 is the device class and AA etc are the command classes
+			// supported by this endpoint
+			def parts = desc.split(' ')
+			def deviceClass = parts[0]
+			def cmdClasses = parts.size() > 1 ? parts[1].split(',') : []
+			def typeName = typeNameForDeviceClass(deviceClass)
+			def componentLabel = "${typeName} ${num}"
+			log.debug "EP #$num d:$deviceClass, cc:$cmdClasses, t:$typeName"
+			if (typeName) {
+				try {
+					String dni = "${device.deviceNetworkId}-ep${num}"
+					addChildDevice(typeName, dni, device.hub.id,
+							[completedSetup: true, label: "${device.displayName} ${componentLabel}",
+							 isComponent: true, componentName: "ch${num}", componentLabel: "${componentLabel}"])
+					// enabledEndpoints << num.toString()
+					log.debug "Endpoint $num ($desc) added as $componentLabel"
+				} catch (e) {
+					log.warn "Failed to add endpoint $num ($desc) as $typeName - $e"
+				}
+			} else {
+				log.debug "Endpoint $num ($desc) ignored"
+			}
+			def cmds = cmdClasses.collect { cc -> queryCommandForCC(cc) }.findAll()
+			if (cmds) {
+				queryCmds += encapWithDelay(cmds, num) + ["delay 200"]
+			}
+		}
+	}
+
+	response(queryCmds)
+}
+
+private typeNameForDeviceClass(String deviceClass) {
+	def typeName = null
+
+	switch (deviceClass[0..1]) {
+		case "10":
+		case "31":
+			typeName = "Switch Endpoint"
+			break
+		case "11":
+			typeName = "Dimmer Endpoint"
+			break
+		case "08":
+			//typeName = "Thermostat Endpoint"
+			//break
+		case "21":
+			typeName = "Multi Sensor Endpoint"
+			break
+		case "20":
+		case "A1":
+			typeName = "Sensor Endpoint"
+			break
+	}
+	return typeName
+}
+
+private queryCommandForCC(cc) {
+	switch (cc) {
+		case "30":
+			return zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0xFF).format()
+		case "71":
+			return zwave.notificationV3.notificationSupportedGet().format()
+		case "31":
+			return zwave.sensorMultilevelV4.sensorMultilevelGet().format()
+		case "32":
+			return zwave.meterV1.meterGet().format()
+		case "8E":
+			return zwave.multiChannelAssociationV2.multiChannelAssociationGroupingsGet().format()
+		case "85":
+			return zwave.associationV2.associationGroupingsGet().format()
+		default:
+			return null
 	}
 }
 
@@ -98,7 +200,7 @@ private List loadEndpointInfo() {
 	if (state.endpointInfo) {
 		state.endpointInfo
 	} else if (device.currentValue("epInfo")) {
-		fromJson(device.currentValue("epInfo"))
+		util.parseJson((device.currentValue("epInfo")))
 	} else {
 		[]
 	}
@@ -159,11 +261,14 @@ def zwaveEvent(physicalgraph.zwave.commands.associationgrpinfov1.AssociationGrou
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (encapsulatedCommand) {
+		def formatCmd = ([cmd.commandClass, cmd.command] + cmd.parameter).collect{ String.format("%02X", it) }.join()
 		if (state.enabledEndpoints.find { it == cmd.sourceEndPoint }) {
-			def formatCmd = ([cmd.commandClass, cmd.command] + cmd.parameter).collect{ String.format("%02X", it) }.join()
 			createEvent(name: "epEvent", value: "$cmd.sourceEndPoint:$formatCmd", isStateChange: true, displayed: false, descriptionText: "(fwd to ep $cmd.sourceEndPoint)")
-		} else {
-			zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
+		}
+		def childDevice = getChildDeviceForEndpoint(cmd.sourceEndPoint)
+		if (childDevice) {
+			log.debug "Got $formatCmd for ${childDevice.name}"
+			childDevice.handleEvent(formatCmd)
 		}
 	}
 }
@@ -221,6 +326,7 @@ def configure() {
 	], 800)
 }
 
+// epCmd is part of the deprecated Zw Multichannel capability
 def epCmd(Integer ep, String cmds) {
 	def result
 	if (cmds) {
@@ -230,9 +336,50 @@ def epCmd(Integer ep, String cmds) {
 	result
 }
 
+// enableEpEvents is part of the deprecated Zw Multichannel capability
 def enableEpEvents(enabledEndpoints) {
 	state.enabledEndpoints = enabledEndpoints.split(",").findAll()*.toInteger()
 	null
+}
+
+// sendCommand is called by endpoint child device handlers
+def sendCommand(endpointDevice, commands) {
+	def result
+	if (commands instanceof String) {
+		commands = commands.split(',') as List
+	}
+	def endpoint = deviceEndpointNumber(endpointDevice)
+	if (endpoint) {
+		log.debug "${endpointDevice.deviceNetworkId} cmd: ${commands}"
+		result = commands.collect { cmd ->
+			if (cmd.startsWith("delay")) {
+				new physicalgraph.device.HubAction(cmd)
+			} else {
+				new physicalgraph.device.HubAction(encap(cmd, endpoint))
+			}
+		}
+		sendHubCommand(result, 0)
+	}
+}
+
+private deviceEndpointNumber(device) {
+	String dni = device.deviceNetworkId
+	if (dni.size() >= 5 && dni[2..3] == "ep") {
+		// Old format: 01ep2
+		return device.deviceNetworkId[4..-1].toInteger()
+	} else if (dni.size() >= 6 && dni[2..4] == "-ep") {
+		// New format: 01-ep2
+		return device.deviceNetworkId[5..-1].toInteger()
+	} else {
+		log.warn "deviceEndpointNumber() expected 'XX-epN' format for dni of $device"
+	}
+}
+
+private getChildDeviceForEndpoint(Integer endpoint) {
+	def children = childDevices
+	if (children && endpoint) {
+		return children.find{ it.deviceNetworkId.endsWith("ep$endpoint") }
+	}
 }
 
 private command(physicalgraph.zwave.Command cmd) {
@@ -249,7 +396,13 @@ private commands(commands, delay=200) {
 
 private encap(cmd, endpoint) {
 	if (endpoint) {
-		command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd))
+		if (cmd instanceof physicalgraph.zwave.Command) {
+			command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd))
+		} else {
+			// If command is already formatted, we can't use the multiChannelCmdEncap class
+			def header = state.sec ? "988100600D00" : "600D00"
+			String.format("%s%02X%s", header, endpoint, cmd)
+		}
 	} else {
 		command(cmd)
 	}

@@ -20,7 +20,9 @@ definition(
     namespace: "curb",
     author: "Curb",
     description: "Gain insight into energy usage throughout your home.",
+
     category: "Green Living",
+
     iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
@@ -31,7 +33,9 @@ definition(
 }
 
 preferences {
+
     page(name: "auth", title: "Authorize with Curb", content: "authPage", uninstall: true)
+
 }
 
 mappings {
@@ -49,19 +53,23 @@ def installed() {
 
 def updated() {
     log.debug "Updated with settings: ${settings}"
+
     unsubscribe()
     removeChildDevices(getChildDevices())
+
     initialize()
 }
 
 def initialize() {
     log.debug "Initializing"
     unschedule()
+
     def curbCircuits = getCurbCircuits()
     log.debug "Found devices: ${curbCircuits}"
 
     runEvery1Minute(getPowerData)
     runEvery1Hour(getKwhData)
+
 }
 
 def uninstalled() {
@@ -70,6 +78,7 @@ def uninstalled() {
 }
 
 def authPage() {
+
     if (!state.accessToken) {
         state.accessToken = createAccessToken()
     }
@@ -84,6 +93,7 @@ def authPage() {
                     type: "enum",
                     title: "CURB Location",
                     options: state.locations
+
                 )
             }
         }
@@ -98,6 +108,7 @@ def authPage() {
 }
 
 def oauthInitUrl() {
+
     log.debug "Initializing oauth"
     state.oauthInitState = UUID.randomUUID().toString()
     def oauthParams = [
@@ -106,6 +117,7 @@ def oauthInitUrl() {
         audience: "app.energycurb.com/api",
         client_id: appSettings.clientId,
         connection: "Users",
+
         state: state.oauthInitState,
         redirect_uri: callbackUrl
     ]
@@ -113,6 +125,7 @@ def oauthInitUrl() {
 }
 
 def callback() {
+
     log.debug "Oauth callback: ${params}"
     def code = params.code
     def oauthState = params.state
@@ -126,6 +139,7 @@ def callback() {
         ]
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
             resp ->
+
               state.refreshToken = resp.data.refresh_token
               state.authToken = resp.data.access_token
         }
@@ -135,7 +149,9 @@ def callback() {
             fail()
         }
     } else {
+
         log.error "callback() failed oauthState != state.oauthInitState"
+
     }
 }
 
@@ -225,6 +241,7 @@ def processData(resp, data, create=false, energy=false)
 {
     log.debug "Processing usage data: ${resp.data}"
     if (!isOK(resp)) {
+
         refreshAuthToken()
         log.error "Usage Response Error: ${resp.getErrorMessage()}"
         return
@@ -284,8 +301,10 @@ def toQueryString(Map m) {
 }
 
 def refreshAuthToken() {
+
     log.debug "Refreshing auth token"
     if (!state.refreshToken) {
+
         log.warn "Can not refresh OAuth token since there is no refreshToken stored"
     } else {
         def tokenParams = [
@@ -293,6 +312,7 @@ def refreshAuthToken() {
             client_id: appSettings.clientId,
             client_secret: appSettings.clientSecret,
             refresh_token: state.refreshToken
+
         ]
 
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
@@ -332,6 +352,7 @@ def connectionStatus(message, redirectUrl = null) {
   def html = """
   <!DOCTYPE html>
   <html>
+
   <head>
       <meta name="viewport" content="width=640">
       <title>Curb & SmartThings connection</title>
@@ -361,6 +382,7 @@ def connectionStatus(message, redirectUrl = null) {
               padding: 4%;
               text-align: center;
           }
+
           img {
               vertical-align: middle;
           }
@@ -390,6 +412,7 @@ def connectionStatus(message, redirectUrl = null) {
   render contentType: 'text/html', data: html
 }
 
+
 def isOK(response) {
   response.status in [200, 201]
 }
@@ -413,6 +436,7 @@ def getCallbackUrl() {
     return "https://graph.api.smartthings.com/oauth/callback"
 }
 def getBuildRedirectUrl() {
+
     return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${shardUrl}"
 }
 def getApiEndpoint() {

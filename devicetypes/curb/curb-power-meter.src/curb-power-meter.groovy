@@ -21,7 +21,9 @@ metadata {
     }
 
     tiles {
+
         multiAttributeTile(name: "power", type: "generic", width: 6, height: 4, canChangeIcon: false) {
+
             tileAttribute("device.power", key: "PRIMARY_CONTROL") {
                 attributeState "power",
                     label: '${currentValue} W',
@@ -41,6 +43,7 @@ metadata {
             }
         }
         main(["power"])
+
         details(["power"])
     }
 }
