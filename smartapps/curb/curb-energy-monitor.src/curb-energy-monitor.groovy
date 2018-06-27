@@ -215,6 +215,7 @@ def getPowerData(create=false) {
             return resp.data.circuits
         }
     } catch (e) {
+    	refreshAuthToken()
         log.error "something went wrong: ${e}"
     }
 }
@@ -233,6 +234,7 @@ def getKwhData() {
             return
         }
     } catch (e) {
+    	refreshAuthToken()
         log.error "something went wrong: ${e}"
     }
 }
