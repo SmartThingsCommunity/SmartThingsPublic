@@ -36,8 +36,8 @@ metadata {
 		valueTile("reset", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "reset", label:'reset\nkWh', action:"reset"
 		}
-		
-				standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+
+		standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label: "Refresh", action: "refresh", icon: "st.secondary.refresh"
 		}
 
@@ -471,8 +471,12 @@ private parameterMap() {[
 		 descr: "Allows to turn off the controlled device in case of exceeding the defined power;\n0 - function inactive\n10-18000 (1.0-1800.0W, step 0.1W)\n To calculate the value of parameter, multiply the power in Watts by 10 for example: 50 W x 10 = 500 Where: 50 W – the power of device connected to Wall Plug; 500 - value of parameter."],
 		[key: "standardPowerReports", num: 11, size: 1, type: "number", def: 15, min: 1, max: 100, title: "Standard power reports",
 		 descr: "This parameter determines the minimum percentage change in active power that will result in sending a power report.\n1-99 - power change in percent\n100 - reports are disabled"],
-		[key: "periodicReports", num: 14, size: 2, type: "number", def: 3600, min: 0, max: 32400, title: "Periodic power and energy reports",
-		 descr: "Time period between independent reports.\n0 - periodic reports inactive\n5-32400 (in seconds)"],
+		[key: "energyReportingThreshold", num: 12, size: 2, type: "number", def: 10, min: 0, max: 500, title: "Energy reporting threshold",
+		 descr: "This parameter determines the minimum change in energy consumption (in relation to the previously reported) that will result in sending a new report.\n1-500 (0.01-5kWh) - threshold\n0 - reports are disabled"],
+		[key: "periodicPowerReporting", num: 13, size: 2, type: "number", def: 3600, min: 0, max: 32400, title: " Periodic power reporting",
+		 descr: "This parameter defines time period between independent reports sent when changes in power load have not been recorded or if changes are insignificant. By default reports are sent every hour.\n30-32400 - interval in seconds\n0 - periodic reports are disabled"],
+		[key: "periodicReports", num: 14, size: 2, type: "number", def: 3600, min: 0, max: 32400, title: "Periodic energy reporting",
+		 descr: "Time period between independent reports.\n0 - periodic reports inactive\n30-32400 (in seconds)"],
 		[key: "ringColorOn", num: 41, size: 1, type: "enum", options: [
 				0: "Off",
 				1: "Load based - continuous",
