@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Aeon Multisensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Multisensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -155,7 +155,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	map.name = "battery"
 	map.value = cmd.batteryLevel > 0 ? cmd.batteryLevel.toString() : 1
 	map.unit = "%"
-	map.displayed = false
 	map
 }
 

@@ -127,7 +127,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.name = "battery"
 		map.value = cmd.batteryLevel > 0 ? cmd.batteryLevel.toString() : 1
 		map.unit = "%"
-		map.displayed = false
 	}
 	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
