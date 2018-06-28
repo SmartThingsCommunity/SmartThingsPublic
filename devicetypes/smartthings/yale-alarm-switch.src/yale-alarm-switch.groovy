@@ -123,7 +123,7 @@ def armAway() {
         if (reply != 'OK'){
         	log.warn "$device - AA - Status '$reply'"
             state.mode = reply
-            runIn(30,refresh)
+            runIn(60,refresh)
         }
         else {
         	state.mode = 'Armed-Away'
@@ -149,7 +149,7 @@ def armStay() {
         	log.warn "AS - response '$reply'"
             state.mode = reply
             
-            runIn(30,refresh)
+            runIn(60,refresh)
         }
         else {
         	state.mode = 'Armed-Stay'
@@ -174,7 +174,7 @@ def disarm() {
 	if (reply != 'OK'){
         	log.warn "$device - DA - response '$reply'"
             state.mode = reply
-            runIn(30,refresh)
+            runIn(10,refresh)
         }
     else {
     	state.mode = 'Disarmed'

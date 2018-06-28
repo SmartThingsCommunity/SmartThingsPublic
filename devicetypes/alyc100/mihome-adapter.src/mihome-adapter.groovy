@@ -70,6 +70,7 @@ metadata {
 	rates << ["15" : "Refresh every 15 minutes (Sockets switched by other systems)"]
 	rates << ["30" : "Refresh every 30 minutes - (Sockets)"]
     rates << ["60" : "Refresh every 60 minutes - (Sockets)"]
+    rates << ["3" : "Refresh every 3h - (Sockets)"]
 	rates << ["No" : "Manual Refresh - Default (Sockets)"]
 
 	preferences {
@@ -117,6 +118,10 @@ def initialize() {
         case "60":
 			runEvery1Hour(refresh)
 			log.info "Refresh Scheduled for every 60 minutes"
+			break
+		case "3":
+			runEvery3Hours(refresh)
+			log.info "Refresh Scheduled for every 3 hours"
 			break
 		default:
 			log.info "Manual Refresh - No Schedule"
