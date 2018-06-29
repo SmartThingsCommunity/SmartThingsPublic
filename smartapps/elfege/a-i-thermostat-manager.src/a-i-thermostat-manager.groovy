@@ -888,6 +888,7 @@ def updated() {
     state.CriticalMessageSent = [false, false, false]
 
     state.attempt = 0 // bed sensor attempts before declaring open as true
+    state.ThermsOff = false; // tells the program that ThermostatsOff() has not already run
 
     // switch ac override management
     state.ACBedOffByApp = true
@@ -938,7 +939,7 @@ state.CSPSet = $state.CSPSet"""
     state.CSPMap = [:]
     // reset venting options
     state.coldbutneedcool = 0          
-        MiscSubscriptions()
+    MiscSubscriptions()
 }
 
 ////////////////////////////////////// SUBSCRIPTIONS ///////////////////////////////
@@ -1863,7 +1864,7 @@ so $ContactAndSwitch stays on until it opens
     }
 
     //// MAIN //// 
-    if(doorsOk || ContactExceptionIsClosed ){
+    if(doorsOk || ContactExceptionIsClosed){
 
         def inCtrlSwtchMode = CurrMode in CtrlSwtModes
         def CtrlSwtState = CtrlSwt?.currentSwitch
@@ -2225,8 +2226,8 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 /////////////////////////////////////////////////////////END OF SETPOINTS EVALS/////////////////////////////////////////////////////////
 
                 /////////////////////////////////////////////////////////EVAL OF NEEDS ////////////////////////////////////////////////////////////////
-                def WarmOutside = outsideTemp >= CSPSet
-                def WarmInside = (CurrTemp >= CSPSet + 1 && WarmOutside) || (CurrTemp >= CSPSet + 1 && TooHumidINSIDE && Active)
+                def WarmOutside = outsideTemp >= defaultCSPSet || outsideTemp <= defaultHSPSet
+                def WarmInside = (CurrTemp > defaultCSPSet && WarmOutside) || (CurrTemp > defaultCSPSet && TooHumidINSIDE && Active) 
                 //log.debug "CurrTemp = $CurrTemp, outsideTemp = $outsideTemp, CSPSet = $CSPSet, WarmOutside = $WarmOutside, WarmInside = $WarmInside"
 
                 def ShouldCoolWithAC = WarmOutside && WarmInside
@@ -2238,7 +2239,7 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
 
                 if((WarmInside && TooHumidINSIDE) && !ShouldHeat && Active){
                     ShouldCoolWithAC = true
-                    //log.debug "ShouldCoolWithAC set to true loop $loopValue due to humidity levels inside the place"
+                    log.debug "ShouldCoolWithAC set to true loop $loopValue due to humidity levels inside"
                 }
                 state.ShouldCoolWithAC = ShouldCoolWithAC
 
@@ -2250,13 +2251,12 @@ WarmInside = $WarmInside
 ShouldCoolWithAC = $ShouldCoolWithAC 
 ShouldHeat = $ShouldHeat 
 state.ShouldHeat = $state.ShouldHeat
-WarmOutside = $WarmOutside 
-WarmInside = $WarmInside
 OutsideTempLowThres = $OutsideTempLowThres
 OutsideTempHighThres = $OutsideTempHighThres
 TooHumidINSIDE = $TooHumidINSIDE
 outsideTemp = $outsideTemp
-
+CSPSet = $CSPSet
+defaultCSPSet = $defaultCSPSet
 
 """       
 
@@ -2279,10 +2279,14 @@ outsideTemp = $outsideTemp
                 def CurrentCoolingSetPoint = ThermSet.currentValue("coolingSetpoint") 
                 def CurrentHeatingSetPoint = ThermSet.currentValue("heatingSetpoint") 
 
-                //// bedsensor/// 
-                def CSPok = CurrentCoolingSetPoint == CSPSet
-                def HSPok = CurrentHeatingSetPoint == HSPSet
+                CSPSet = CSPSet.toInteger()
+                HSPSet = HSPSet.toInteger()
 
+                boolean CSPok = "${CurrentCoolingSetPoint}" == "${CSPSet}"
+                boolean HSPok = "${CurrentHeatingSetPoint}" == "${HSPSet}"
+                log.debug "--++ $CurrentCoolingSetPoint == $CSPSet ?: ${CurrentCoolingSetPoint == CSPSet} CSPok ?: $CSPok"
+
+                //// bedsensor/// 
                 def BedSensorManagement = false
                 //log.debug "BedSensorManagement defaulted to false (BedSensorManagement = $BedSensorManagement)"
 
@@ -2431,7 +2435,6 @@ FoundUnitToIgnore = $FoundUnitToIgnore
                     ThermSet.setThermostatMode("off")
                 }
                 else {
-
                     if(doorsOk || (ContactExceptionIsClosed && ThisIsExceptionTherm)){
 
                         def inAutoOrOff = ThermState in ["auto","off"]
@@ -2448,7 +2451,8 @@ AppMgt = $AppMgt
 
                         if(!BedSensorManagement){ // avoid redundancies if BedSensor's already managing unit. 
                             // if temp is within desired settings then turn off units
-                            if((CurrTemp >= HSPSet && !ShouldCoolWithAC) || (ShouldCoolWithAC && CurrTemp <= CSPSet)){
+                            if(!ShouldCoolWithAC && !ShouldHeat){
+                                // + 1 is too frequent turn on/off 
                                 if(useAltSensor){ 
 
                                     /// this allows for turn off request whenever a unit is linked to an alternate sensor
@@ -2460,7 +2464,7 @@ AppMgt = $AppMgt
                                         // that's why it must be recoreded even during override mode
                                         //state.AppMgtMap[loopValue] = true //override test value
                                         if(AppMgt){
-                                            log.debug "$ThermSet TURNED OFF"  
+                                            log.debug "$ThermSet TURNED OFF - cause: desired temperature (CSPSet:$CSPSet) reached (CurrTemp = $CurrTemp)"  
                                             ThermSet.setThermostatMode("off") 
                                         }
                                     }
@@ -2474,7 +2478,7 @@ AppMgt = $AppMgt
                                     if(!inAutoOrOff){
                                         state.LatestThermostatMode = "off"                
                                         if(AppMgt){
-                                            log.debug "$ThermSet TURNED OFF" 
+                                            log.debug "$ThermSet TURNED OFF --  desired temperature (CSPSet:$CSPSet) reached (CurrTemp = $CurrTemp)" 
                                             ThermSet.setThermostatMode("off")   
                                         }
                                         else {
@@ -2486,29 +2490,20 @@ AppMgt = $AppMgt
                                     }
                                 }
                             }
-                            def TurnedOffForced = false
-                            if(turnOffWhenReached && ((!ShouldCoolWithAC && CurrTemp >= HSPSet) || (ShouldCoolWithAC && CurrTemp <= CSPSet))){
-                                //if user selected this option then cannot eval based on warinside/wamoutside otherwise would
-                                // never turn off units when temp is reached
-                                log.debug "$ThermSet Off at user's request, not evaluating other criteria"
-                                TurnedOffForced = true
-                            }
-
                             // if turnOffWhenReached, then as soon as temp is no longer within desired temperature normal eval will resume
-
                             // now turn on heat or cool depending on situation and if no turn off request previously occurred 
-                            if(ShouldCoolWithAC /*|| !CSPok*/){
+                            else if(ShouldCoolWithAC /*|| !CSPok*/){
                                 // deprecated: it may happen that old settings get stuck if estimate of shouldcool is false 
                                 // so if no override but discrepancy between current csp and what should be
                                 // go on
                                 log.debug """ShouldCoolWithAC EVAL $loopValue for $ThermSet && AppMgt = $AppMgt
 CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}
-TurnedOffForced = $TurnedOffForced
 """
 
                                 state.LatestThermostatMode = "cool"
                                 if(AppMgt){
-                                    //log.debug " $CurrentCoolingSetPoint == $CSPSet {CurrentCoolingSetPoint == CSPSet}?"
+                                    log.debug " CurrentCoolingSetPoint == CSPSet ?: ${CurrentCoolingSetPoint == CSPSet} CSPok ?: $CSPok"
+
                                     if(!CSPok){
                                         ThermSet.setCoolingSetpoint(CSPSet)
                                         log.debug "$ThermSet CSP set to $CSPSet" 
@@ -2516,10 +2511,11 @@ TurnedOffForced = $TurnedOffForced
                                     else{
                                         log.debug "Cooling SetPoint already set to $CSPSet for $ThermSet ($CSPSet == $CurrentCoolingSetPoint)"
                                     }                   
-                                    if(ShouldCoolWithAC && ThermState != "cool" && !TurnedOffForced){  
+                                    if(ShouldCoolWithAC && ThermState != "cool"){  
                                         // ShouldCoolWithAC has to be rechecked here otherwise !CSPok might trigger cool while it is not needed
-                                        if(ThisIsExceptionTherm && !InExceptionContactMode){
-                                            log.debug "$ThermSet is the Exception Thermostat but home is not in Exception Contact Mode, doing nothing"
+                                        if(ThisIsExceptionTherm && !InExceptionContactMode && !doorsOk){
+                                            log.debug """Some contatcs are open but $ThermSet is the Exception Thermostat while home is not in Exception Contact Mode, 
+so this unit remains off like all other units"""
                                         }
                                         else {
                                             log.debug "$ThermSet set to cool"
@@ -2530,7 +2526,7 @@ TurnedOffForced = $TurnedOffForced
                                         if(!ShouldCoolWithAC){
                                             log.debug "no need to cool at $ThermSet"
                                         }
-                                        else{
+                                        else if (ThermState == "cool"){
                                             log.debug "$ThermSet already set to cool"
                                         }
                                     }
@@ -2557,7 +2553,7 @@ TurnedOffForced = $TurnedOffForced
                                         log.debug "Heating SetPoint already set to $HSPSet for $ThermSet"
                                     }
 
-                                    if(ShouldHeat && ThermState != "heat" && !TurnedOffForced){
+                                    if(ShouldHeat && ThermState != "heat"){
                                         // ShouldHeat has to be rechecked here otherwise !HSPok might trigger heat while there's no need 
                                         if(ThisIsExceptionTherm && !InExceptionContactMode){
                                             log.debug "$ThermSet is the Exception Thermostat but home not is in Exception Contact Mode, doing nothing"
@@ -2585,45 +2581,9 @@ TurnedOffForced = $TurnedOffForced
                             log.debug "$ThermSet mangaged by $BedSensor status, skipping"
                         }
                     }
+                    /// CONTACTS MANAGEMENT
                     else {
-                        log.debug "Not evaluating for $ThermSet because some windows are open"
-                        // check that therms are off  
-
-                        def AnyON = Thermostats.findAll{ it?.currentValue("thermostatMode") != "off"}
-                        log.debug "there are ${AnyON.size()} untis that are still running: $AnyON"
-
-                        def count = 0
-
-                        for(AnyON.size() != 0; count < AnyON.size(); count++){ 
-
-                            def device = AnyON[count]
-                            log.debug "device to turn off is $device"
-                            def ThermIsOn = device.currentValue("thermostatMode") in ["cool", "heat"]
-                            log.debug "ThermIsOn = $ThermIsOn (for device: $device)"
-
-                            if(ThermIsOn && AppMgt){
-                                if(!ThisIsExceptionTherm){
-                                    device.setThermostatMode("off") 
-                                    log.debug "$device TURNED OFF BECAUSE SOME CONTACTS ARE OPEN"
-                                }
-                                if(ThisIsExceptionTherm && !ContactExceptionIsClosed){
-                                    device.setThermostatMode("off") 
-                                    log.debug "$device TURNED OFF BECAUSE EXCEPTION CONTACT IS OPEN"
-                                }
-                                if(ThisIsExceptionTherm && !InExceptionContactMode){
-                                    device.setThermostatMode("off") 
-                                    log.debug "$device TURNED OFF BECAUSE this is not one of the exception modes"
-                                }
-                            }
-                            else {
-                                if(ThermState == "off"){
-                                    log.debug "$device already off"
-                                }
-                                if(!AppMgt){
-                                    log.debug "$device in OVERRIDE MODE"
-                                }
-                            }
-                        }
+                        log.debug "Not evaluating for $ThermSet because some windows are open" 
                     }
                 }
 
@@ -2632,13 +2592,12 @@ TurnedOffForced = $TurnedOffForced
             else {
                 log.debug "$ThermSet in Override mode, doing nothing"
             }
-        }   
+        }
         // true end of  loop
     }
     else { 
-        //log.debug "not evaluating because some windows are open" 
-        TurnOffThermostats()
-        Thermostats.setThermostatMode("off") // temporary because of those idiots at smartthings who pushed a fucking stupid useless update that prevents status refresh
+        log.debug "not evaluating because some windows are open" 
+        runIn(TimeBeforeClosing, DoubleChekcThermostats)
     }
     VirtualThermostat()
     log.debug "END EVAL"
@@ -2874,7 +2833,7 @@ def contactHandlerOpen(evt) {
     //log.debug "$evt.device is now $evt.value, Turning off all thermostats in $TimeBeforeClosing seconds"
 
     runIn(TimeBeforeClosing, TurnOffThermostats)  
-    def message = ""
+    def message = "TurnOffThermostats scheduled to run in $TimeBeforeClosing seconds"
 
     //log.debug "state.OpenByApp = $state.OpenByApp"
     if(state.OpenByApp == false && state.ClosedByApp == true && evt.value == "open"){ 
@@ -2921,7 +2880,7 @@ def ChangedModeHandler(evt) {
 
     state.recentModeChange = true
     state.ventingrun = 0 // only in modechange, otherwise override is canceled
-    
+
     updated()
 
 }
@@ -3183,8 +3142,61 @@ def AllContactsAreOpen() {
 
 }
 
+//// THERMOSTATS SHUT OFF
+
+def DoubleChekcThermostats(){
+    // check that therms are off  
+    // if therm is currently running and is not in override and TurnOffThermostats() has already run
+    // and for some reason some units are still on, turn them off again. 
+
+    log.debug "DOUBLE CHECK"
+
+
+
+    if(state.CRITICAL == false && state.ThermsOff == true){
+
+        def AnyON = Thermostats.findAll{ it?.currentValue("thermostatMode") != "off"}
+        log.debug "there are ${AnyON.size()} untis that are still running: $AnyON"
+        def count = 0
+
+        for(AnyON.size() != 0; count < AnyON.size(); count++){ 
+
+            def device = AnyON[count]
+            def AppMgt = device.currentValue("thermostatMode") != "auto"
+            def ThisIsExceptionTherm = device.displayName in NoTurnOffOnContact  
+            log.debug "device to turn off is $device"
+            def ThermIsOn = device.currentValue("thermostatMode") in ["cool", "heat"]
+            log.debug "ThermIsOn = $ThermIsOn (for device: $device)"
+
+            if(ThermIsOn && AppMgt){
+
+                if(!ThisIsExceptionTherm){
+                    device.setThermostatMode("off") 
+                    log.debug "$device TURNED OFF BECAUSE SOME CONTACTS ARE OPEN"
+                }
+                if(ThisIsExceptionTherm && !ExcepContactsClosed()){
+                    device.setThermostatMode("off") 
+                    log.debug "$device TURNED OFF BECAUSE EXCEPTION CONTACT IS OPEN"
+                }
+                if(ThisIsExceptionTherm && !InExceptionContactMode){
+                    device.setThermostatMode("off") 
+                    log.debug "$device TURNED OFF BECAUSE this is not one of the exception modes"
+                }
+            }
+            else {
+                if(ThermState == "off"){
+                    log.debug "$device already off"
+                }
+                if(!AppMgt){
+                    log.debug "$device in OVERRIDE MODE"
+                }
+            }
+        }
+    }
+}
 //contact turn off
 def TurnOffThermostats(){
+    state.ThermsOff = true; // tells the program that TurnOffThermostats() has already run
 
     def InExceptionContactMode = location.currentMode in DoNotTurnOffModes
     //log.debug "InExceptionContactMode = $InExceptionContactMode  DoNotTurnOffModes = $DoNotTurnOffModes (TurnOffThermostats)"
