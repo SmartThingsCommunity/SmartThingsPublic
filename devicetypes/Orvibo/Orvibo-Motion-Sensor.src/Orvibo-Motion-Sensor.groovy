@@ -14,7 +14,7 @@
  *
  */
 metadata {
-    definition (name: "Orvibo Motion Sensor", namespace: "smartthings", author: "SmartThings", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion") {
+    definition (name: "Orvibo Motion Sensor", namespace: "Orvibo", author: "jk0218.zhang@samsung.com", vid: "generic-motion-2", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
 		capability "Battery"
 
