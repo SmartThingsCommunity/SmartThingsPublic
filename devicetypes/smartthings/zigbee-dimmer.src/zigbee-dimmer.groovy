@@ -118,6 +118,9 @@ def setLevel(value) {
 		additionalCmds = zigbee.on()
 	} else if (device.getDataValue("manufacturer") == "MRVL") { // Handle marvel stack not reporting
 		additionalCmds = refresh()
+	} else if(device.getDataValue("manufacturer") ==  "Leviton" && value.toInteger() > 0){ // Handle Leviton not following spec
+		log.debug "Leviton" + value        
+		additionalCmds = zigbee.on()
 	}
 	zigbee.setLevel(value) + additionalCmds
 }
