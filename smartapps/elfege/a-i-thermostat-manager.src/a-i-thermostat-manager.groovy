@@ -128,6 +128,9 @@ log.debug """ intersectMap = $intersectMap"""
                         }
                     }
                 }
+                else {
+                
+                }
                 input(name: "turnOffWhenReached", type: "bool", title: "Turn off thermostats when desired temperature is reached?", required: false, default: false, submitOnChange: true)
             }  
         }
@@ -1071,8 +1074,14 @@ def MotionSub(){
 ////////////////////////////////////// MAIN MAPS ///////////////////////////////
 def AltSensorsMaps(){
     def loopV = 0
-    def s = ThermSensor.size()
-    // //log.debug "ThermSensor.size() = ${s}"
+    def s = 0
+   if(AltSensor){
+   // allows for user to forget to de-select previously selected thermostats / sensors while canceled this boolean in settings
+   s = ThermSensor.size()
+   }
+   
+   log.debug "ThermSensor.size() = ${s}"
+   
 
     def AltSensorList = []
     def AltSensorMap = [:]
@@ -1097,7 +1106,7 @@ def AltSensorsMaps(){
         AltSensorBoolMap."$refTherm" = "true" // map for boolean values
     }
     def result = [AltSensorList, AltSensorMap, AltSensorBoolMap] 
-    //// //log.debug "AltSensorsMaps returns: $result"
+   log.debug "AltSensorsMaps returns: $result"
 
     return result
 }
@@ -1949,6 +1958,7 @@ AltSensorMap = $AltSensorMap"""
                 }
                 else {
                     CurrTemp = ThermSet.currentValue("temperature") 
+                    log.debug "Current Temperature at $ThermSet is: ${CurrTemp}F "   
                 }
 
                 def ModeValueList = IndexValueMode()
