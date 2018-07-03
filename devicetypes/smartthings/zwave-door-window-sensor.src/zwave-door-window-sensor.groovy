@@ -100,6 +100,9 @@ def parse(String description) {
 def installed() {
 	// Device-Watch simply pings if no device events received for 482min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 4 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// this is the nuclear option because the device often goes to sleep before we can poll it
+	sendEvent(name: "contact", value: "open", descriptionText: "$device.displayName is open")
+	sendEvent(name: "battery", unit: "%", value: 100)
 	response(initialPoll())
 }
 
