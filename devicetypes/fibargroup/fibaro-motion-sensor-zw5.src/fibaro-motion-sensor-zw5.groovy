@@ -97,11 +97,12 @@ metadata {
 				type: "paragraph",
 				element: "paragraph"
 			)
-
+			def defVal = it.def
+			def descrDefVal = it.options ? it.options.get(defVal) : defVal
 			input(
 				name: it.key,
 				title: null,
-				description: "Default: $it.def",
+				description: "Default: $descrDefVal",
 				type: it.type,
 				options: it.options,
 				range: (it.min != null && it.max != null) ? "${it.min}..${it.max}" : null,
