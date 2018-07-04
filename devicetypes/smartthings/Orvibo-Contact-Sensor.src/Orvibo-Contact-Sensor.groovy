@@ -20,18 +20,27 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition (name: "Orvibo Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", vid:"generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
-		capability 	"Contact Sensor"
-		capability 	"Sensor"
-		capability 	"Battery"
-		capability 	"Configuration"
-		capability  "Health Check"
-		
-		fingerprint profileId: "0104",deviceId: "0402",inClusters: "0000,0003,0500,FFFF,0001",outClusters: "0000,0004,0003,0005,0001", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99"
+	definition(name: "Orvibo Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+		capability "Battery"
+		capability "Configuration"
+		capability "Contact Sensor"
+		capability "Refresh"
+		capability "Health Check"
+		capability "Sensor"
+
+		command "enrollResponse"
+
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", outClusters: "", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99"
 	}
 
 	simulator {
 
+		status "open": "zone status 0x0029 -- extended status 0x00"
+		status "close": "zone status 0x0008 -- extended status 0x00"
+
+		for (int i = 0; i <= 100; i += 11) {
+			status "battery ${i}%": "read attr - raw: 2E6D01000108210020C8, dni: 2E6D, endpoint: 01, cluster: 0001, size: 08, attrId: 0021, encoding: 20, value: ${i}"
+		}
 	}
 
 	tiles(scale: 2) {
@@ -43,7 +52,7 @@ metadata {
 		}
 
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-			state "battery", label:'${currentValue}% battery', unit:""
+			state "battery", label: '${currentValue}% battery', unit: ""
 		}
 
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -51,42 +60,57 @@ metadata {
 		}
 
 		main(["contact"])
-		details(["contact","battery", "refresh"])
+		details(["contact", "battery", "refresh"])
 	}
 }
 
 def parse(String description) {
-	log.debug "parse description: $description"
+	log.debug "description: $description"
 
-	def resMap  
-	if (description.startsWith("zone")) {
-		resMap = createEvent(name: "contact", value: zigbee.parseZoneStatus(description).isAlarm1Set() ? "open" : "closed")
-	} else if (description?.startsWith("read")) {
-		// Map descMap = (description - "read attr - ").split(",").inject([:]) {
-		// 	map, param -> def nameAndValue = param.split(":")
-		// 	map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-		// }
-		Map descMap = zigbee.parseDescriptionAsMap((description - "read attr - ").split(","));
-		switch(descMap?.cluster) {
-			case "0001":
-				if(descMap.attrId == "0021") {
-					resMap = createEvent(name: "battery", value: (zigbee.convertToInt(descMap.value, 16)))
-					log.debug "Battery Percentage convert to ${resMap.value}%"
-				}
-				break
-			case "0500":
+	Map map = zigbee.getEvent(description)
+	if (!map) {
+		if (description?.startsWith('zone status')) {
+			map = parseIasMessage(description)
+		} else {
+			Map descMap = zigbee.parseDescriptionAsMap(description)
+			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
+				if(descMap?.attrInt==0x0021)
+					map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
-				break
-			default:
-				break
+			}
 		}
-	}else{
-		log.debug "the command ${description} is wrong"
+	}
+	log.debug "Parse returned $map"
+	def result = map ? createEvent(map) : [:]
+
+	if (description?.startsWith('enroll request')) {
+		List cmds = zigbee.enrollResponse()
+		log.debug "enroll response: ${cmds}"
+		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
+	}
+	return result
+}
+
+
+private Map parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	return zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
+}
+
+private Map getBatteryPercentageResult(rawValue) {
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
+	def result = [:]
+
+	if (0 <= rawValue && rawValue <= 200) {
+		result.name = 'battery'
+		result.translatable = true
+		result.descriptionText = "${device.displayName} battery was ${value}%"
+		result.value = Math.round(rawValue / 2)
 	}
 
-	log.debug "Parse returned $resMap"
-	return resMap
+	return result
 }
 
 private Map getContactResult(value) {
@@ -94,15 +118,33 @@ private Map getContactResult(value) {
 	def linkText = getLinkText(device)
 	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
 	return [
-			name           : 'contact',
-			value          : value,
-			descriptionText: descriptionText
+		name           : 'contact',
+		value          : value,
+		descriptionText: descriptionText
 	]
 }
 
-def configure() {
-	log.debug "Configuring Reporting and Bindings."
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+}
 
-    return zigbee.configureReporting(0x0001, 0x0021, 0x20, 0, 10, 0x01) +
-    	zigbee.readAttribute(0x0001, 0x0021)
+def refresh() {
+	log.debug "Refreshing  Battery"
+	def refreshCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+
+	return refreshCmds + zigbee.enrollResponse()
+}
+
+def configure() {
+	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	log.debug "Configuring Reporting, IAS CIE, and Bindings."
+
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
+	return refresh() + zigbee.batteryConfig() // send refresh cmds as part of config
 }
