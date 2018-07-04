@@ -38,12 +38,12 @@ definition(
 )
 
 preferences {
-    page name:"pageSetup"
-    page name:"directorSettings"
-    page name:"ThermostatandDoors"
-    page name:"ThermostatBoost"
-    page name:"Settings"
-
+    page(name:"pageSetup")
+    page(name:"directorSettings")
+    page(name:"ThermostatandDoors")
+    page(name:"ThermostatBoost")
+    page(name:"Settings")
+    page(name: "timeIntervalInput")
 }
 
 // Show setup page
@@ -637,9 +637,11 @@ private anyoneIsHome() {
   return result
 }
 
-page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
-		section {
-			input "starting", "time", title: "Starting (both are required)", required: false
-			input "ending", "time", title: "Ending (both are required)", required: false
+def timeIntervalInput() {
+    dynamicPage(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
+        section("") {
+			input "starting", "time", title: "Starting", multiple: false, required: ending != null, submitOnChange: true
+			input "ending", "time", title: "Ending", multiple: false, required: starting != null, submitOnChange: true
 		}
-        }
+    }
+}

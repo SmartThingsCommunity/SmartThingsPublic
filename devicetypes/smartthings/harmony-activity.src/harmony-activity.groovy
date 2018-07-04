@@ -18,6 +18,7 @@ metadata {
         capability "Switch"
         capability "Actuator"
 		capability "Refresh"
+		capability "Health Check"
 
         command "huboff"
         command "alloff"
@@ -49,6 +50,20 @@ metadata {
 		main "button"
 		details(["button", "refresh", "forceoff", "huboff", "alloff"])
 	}
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+}
+
+def installed() {
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 def parse(String description) {
