@@ -109,37 +109,12 @@ def initialize() {
 	}
 }
 
-def createEvents(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-	def map = [name: "battery", unit: "%"]
-	if (cmd.batteryLevel == 0xFF) {
-		map.value = 1
-		map.descriptionText = "$device.displayName has a low battery"
-	} else {
-		map.value = cmd.batteryLevel
-	}
-	state.lastbatt = new Date().time
-	createEvent(map)
-}
-
 def poll() {
 	if (secondsPast(state.lastbatt, 36 * 60 * 60)) {
 		return zwave.batteryV1.batteryGet().format()
 	} else {
 		return null
 	}
-}
-
-private Boolean secondsPast(timestamp, seconds) {
-	if (!(timestamp instanceof Number)) {
-		if (timestamp instanceof Date) {
-			timestamp = timestamp.time
-		} else if ((timestamp instanceof String) && timestamp.isNumber()) {
-			timestamp = timestamp.toLong()
-		} else {
-			return true
-		}
-	}
-	return (new Date().time - timestamp) > (seconds * 1000)
 }
 
 def on() {
@@ -191,13 +166,13 @@ def parse(String description) {
 	def result = null
 	def cmd = zwave.parse(description, [0x20: 1])
 	if (cmd) {
-		result = createEvents(cmd)
+		result = zwaveEvent(cmd)
 	}
 	log.debug "Parse returned ${result?.descriptionText}"
 	return result
 }
 
-def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	def switchValue = cmd.value ? "on" : "off"
 	def alarmValue
 	if (cmd.value == 0) {
@@ -215,6 +190,31 @@ def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	]
 }
 
-def createEvents(physicalgraph.zwave.Command cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
+	def map = [name: "battery", unit: "%"]
+	if (cmd.batteryLevel == 0xFF) {
+		map.value = 1
+		map.descriptionText = "$device.displayName has a low battery"
+	} else {
+		map.value = cmd.batteryLevel
+	}
+	state.lastbatt = new Date().time
+	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.warn "UNEXPECTED COMMAND: $cmd"
+}
+
+private Boolean secondsPast(timestamp, seconds) {
+	if (!(timestamp instanceof Number)) {
+		if (timestamp instanceof Date) {
+			timestamp = timestamp.time
+		} else if ((timestamp instanceof String) && timestamp.isNumber()) {
+			timestamp = timestamp.toLong()
+		} else {
+			return true
+		}
+	}
+	return (new Date().time - timestamp) > (seconds * 1000)
 }
