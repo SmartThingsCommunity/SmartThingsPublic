@@ -138,10 +138,19 @@ def poll() {
 
 def on() {
 	log.debug "sending on"
-	[
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.basicV1.basicGet().format()
-	]
+	if (zwaveInfo.mfr == "0258" && zwaveInfo.model == "1088") {
+		[
+			zwave.basicV1.basicSet(value: 0xFF).format(),
+			zwave.basicV1.basicGet().format(),
+			"delay 63000",
+			zwave.basicV1.basicGet().format()
+		]
+	} else {
+		[
+			zwave.basicV1.basicSet(value: 0xFF).format(),
+			zwave.basicV1.basicGet().format()
+		]
+	}
 }
 
 def off() {
