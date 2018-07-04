@@ -20,6 +20,7 @@ metadata {
 		capability "Actuator"
 		capability "Alarm"
 		capability "Battery"
+		capability "Configuration"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
@@ -30,6 +31,8 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "Neo Coolcam Siren Alarm"
 		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren"
 		fingerprint mfr: "0060", prod: "000C", model: "0001", deviceJoinName: "Utilitech Siren"
+		//zw:F type:1005 mfr:0258 prod:0003 model:1088 ver:2.94 zwv:4.38 lib:06 cc:5E,86,72,5A,73,70,85,59,25,71,87,80 role:07 ff:8F00 ui:8F00
+		fingerprint mfr: "0258", prod: "0003", model: "1088", deviceJoinName: "Zipato Siren Alarm"
 	}
 
 	simulator {
@@ -84,7 +87,7 @@ def initialize() {
 		state.initializeCount = state.initializeCount + 1
 	} else {
 		state.initializeCount = 0
-		return // TODO: This might be a good opprotunity to mark the device unhealthy
+		return // TODO: This might be a good opportunity to mark the device unhealthy
 	}
 
 	if (!device.currentState("alarm")) {
@@ -107,6 +110,22 @@ def initialize() {
 	} else {
 		state.initializeCount = 0
 	}
+}
+
+def configure() {
+	log.debug "config"
+	def cmds = []
+	if (zwaveInfo.mfr == "0258" && zwaveInfo.model == "1088") {
+		// Set alarm volume to 2 (medium)
+		cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [2]).format()
+		cmds << "delay 500"
+		// Set alarm duration to 60s (default)
+		cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
+		cmds << "delay 500"
+		// Set alarm sound to no.1
+		cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [1]).format()
+	}
+	response(cmds)
 }
 
 def poll() {
@@ -200,6 +219,24 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	}
 	state.lastbatt = new Date().time
 	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	def isActive = false
+	if (cmd.notificationType == 0x0E) { //Siren notification
+		switch (cmd.event) {
+			case 0x00: // idle
+				isActive = false
+				break
+			case 0x01: // active
+				isActive = true
+				break
+		}
+	}
+	[
+		createEvent([name: "switch", value: isActive ? "on" : "off", displayed: false]),
+		createEvent([name: "alarm", value: isActive ? "both" : "off"])
+	]
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
