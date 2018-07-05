@@ -35,11 +35,11 @@ metadata {
 
 	simulator {
 
-		status "open": "zone status 0x0029 -- extended status 0x00"
-		status "close": "zone status 0x0008 -- extended status 0x00"
+		status "open": "zone status 0x0021 -- extended status 0x00"
+		status "close": "zone status 0x0000 -- extended status 0x00"
 
-		for (int i = 0; i <= 100; i += 11) {
-			status "battery ${i}%": "read attr - raw: 2E6D01000108210020C8, dni: 2E6D, endpoint: 01, cluster: 0001, size: 08, attrId: 0021, encoding: 20, value: ${i}"
+		for (int i = 0; i <= 90; i += 10) {
+			status "battery 0x${i}": "read attr - raw: 2E6D01000108210020C8, dni: 2E6D, endpoint: 01, cluster: 0001, size: 08, attrId: 0021, encoding: 20, value: ${i}"
 		}
 	}
 
