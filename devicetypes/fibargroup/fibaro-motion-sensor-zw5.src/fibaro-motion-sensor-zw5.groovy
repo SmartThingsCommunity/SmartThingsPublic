@@ -97,7 +97,7 @@ metadata {
 				type: "paragraph",
 				element: "paragraph"
 			)
-			def defVal = it.def
+			def defVal = it.def as Integer
 			def descrDefVal = it.options ? it.options.get(defVal) : defVal
 			input(
 				name: it.key,
