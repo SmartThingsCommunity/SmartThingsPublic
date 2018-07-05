@@ -144,49 +144,6 @@ private Map translateZoneStatus(ZoneStatus zs) {
 	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
 }
 
-private Map getBatteryResult(rawValue) {
-	log.debug "Battery rawValue = ${rawValue}"
-	def linkText = getLinkText(device)
-
-	def result = [:]
-
-	def volts = rawValue / 10
-
-	if (!(rawValue == 0 || rawValue == 255)) {
-		result.name = 'battery'
-		result.translatable = true
-		result.descriptionText = "${device.displayName} battery was ${value}%"
-        def useOldBatt = shouldUseOldBatteryReporting()
-        def minVolts = useOldBatt ? 2.1 : 2.4
-        def maxVolts = useOldBatt ? 3.0 : 2.7
-        // Get the current battery percentage as a multiplier 0 - 1
-        def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
-        // Find the corresponding voltage from our range
-        curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
-        // Round to the nearest 10th of a volt
-        curValVolts = Math.round(10 * curValVolts) / 10.0
-        // Only update the battery reading if we don't have a last reading,
-        // OR we have received the same reading twice in a row
-        // OR we don't currently have a battery reading
-        // OR the value we just received is at least 2 steps off from the last reported value
-        // OR the device's firmware is older than 1.15.7
-        if (useOldBatt || state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
-            def pct = (volts - minVolts) / (maxVolts - minVolts)
-            def roundedPct = Math.round(pct * 100)
-            if (roundedPct <= 0)
-                roundedPct = 1
-            result.value = Math.min(100, roundedPct)
-        } else {
-            // Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
-            result.value = device.currentState("battery").value
-        }
-        state.lastVolts = volts
-
-	}
-
-	return result
-}
-
 private Map getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
 	def result = [:]
@@ -194,8 +151,8 @@ private Map getBatteryPercentageResult(rawValue) {
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
-		result.descriptionText = "${device.displayName} battery was ${value}%"
 		result.value = Math.round(rawValue / 2)
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
 
 	return result
@@ -240,23 +197,4 @@ def configure() {
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
 	return refresh() + configCmds + refresh() // send refresh cmds as part of config
-}
-
-private shouldUseOldBatteryReporting() {
-	def isFwVersionLess = true // By default use the old battery reporting
-	def deviceFwVer = "${device.getFirmwareVersion()}"
-	def deviceVersion = deviceFwVer.tokenize('.')  // We expect the format ###.###.### where ### is some integer
-
-	if (deviceVersion.size() == 3) {
-		def targetVersion = [1, 15, 7] // Centralite Firmware 1.15.7 contains battery smoothing fixes, so versions before that should NOT be smoothed
-		def devMajor = deviceVersion[0] as int
-		def devMinor = deviceVersion[1] as int
-		def devBuild = deviceVersion[2] as int
-
-		isFwVersionLess = ((devMajor < targetVersion[0]) ||
-			(devMajor == targetVersion[0] && devMinor < targetVersion[1]) ||
-			(devMajor == targetVersion[0] && devMinor == targetVersion[1] && devBuild < targetVersion[2]))
-	}
-
-	return isFwVersionLess // If f/w version is less than 1.15.7 then do NOT smooth battery reports and use the old reporting
 }
