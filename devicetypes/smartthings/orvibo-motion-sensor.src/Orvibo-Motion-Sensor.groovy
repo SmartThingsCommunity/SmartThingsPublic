@@ -19,7 +19,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Orvibo Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-motion") {
+	definition(name: "Orvibo Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-motion-2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
@@ -27,9 +27,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-		fingerprint inClusters: "0000,0001,0003,0500", outClusters: ""
+		fingerprint inClusters: "0000,0001,0003,0500"
 	}
 
 	simulator {
@@ -73,7 +71,7 @@ metadata {
 }
 
 private List<Map> collectAttributes(Map descMap) {
-	List<Map> descMaps = new ArrayList<Map>()
+	def descMaps = new ArrayList<Map>()
 
 	descMaps.add(descMap)
 
@@ -84,37 +82,25 @@ private List<Map> collectAttributes(Map descMap) {
 	return  descMaps
 }
 
+def stopMotion() {
+	log.debug "motion inactive"
+	sendEvent(getMotionResult('inactive'))
+}
+
+def installed(){
+	log.debug "installed"
+	configure()
+}
+
 def parse(String description) {
-	def value = description
 	log.debug "description(): $description"
-	Map map = zigbee.getEvent(description)
-	if (!map) {
+	def map = zigbee.getEvent(description)
+	if(!map){
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
-			//inactive
-			def isActive = zigbee.translateStatusZoneType19(description)
-			value = isActive ? "active" : "inactive"
-			if (value == "active") {
-				def timeout = 3
-				if (motionStopTime)
-					timeout = motionStopTime
-				log.debug "Stopping motion in ${timeout} seconds"
-				runIn(timeout, stopMotion)
-
-			}
+			motionHandler(description);
 		} else {
-			Map descMap = zigbee.parseDescriptionAsMap(description)
-			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
-				log.info "BATT METRICS - attr: ${descMap?.attrInt}, value: ${descMap?.value}, decValue: ${Integer.parseInt(descMap.value, 16)}, currPercent: ${device.currentState("battery")?.value}, device: ${device.getDataValue("manufacturer")} ${device.getDataValue("model")}"
-				List<Map> descMaps = collectAttributes(descMap)
-                def battMap = descMaps.find { it.attrInt == 0x0021 }
-                if (battMap) {
-                    map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
-                }
-			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
-				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
-				map = translateZoneStatus(zs)
-			}
+			map = batteyHandler(description);
 		}
 	}
 
@@ -122,17 +108,41 @@ def parse(String description) {
 	def result = map ? createEvent(map) : [:]
 
 	if (description?.startsWith('enroll request')) {
-		List cmds = zigbee.enrollResponse()
-		log.debug "enroll response: ${cmds}"
-		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
-	}
+        List cmds = zigbee.enrollResponse()
+        log.debug "enroll response: ${cmds}"
+        result = cmds?.collect { new physicalgraph.device.HubAction(it) }
+    }
+
 	return result
 }
 
-def stopMotion() {
-	log.debug "motion inactive"
-	sendEvent(getMotionResult('inactive'))
+private Map batteyHandler(String description){
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+		log.info "BATT METRICS - attr: ${descMap?.attrInt}, value: ${descMap?.value}, decValue: ${Integer.parseInt(descMap.value, 16)}, currPercent: ${device.currentState("battery")?.value}, device: ${device.getDataValue("manufacturer")} ${device.getDataValue("model")}"
+		List<Map> descMaps = collectAttributes(descMap)
+	    def battMap = descMaps.find { it.attrInt == 0x0021 }
+	    if (battMap) {
+	        def map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
+	    }
+	}
+	return map;
 }
+
+private motionHandler(String description){
+	//inactive
+	def isActive = zigbee.translateStatusZoneType19(description)
+	def value = isActive ? "active" : "inactive"
+	if (value == "active") {
+		def timeout = 3
+		if (motionStopTime)
+			timeout = motionStopTime
+		log.debug "Stopping motion in ${timeout} seconds"
+		runIn(timeout, stopMotion)
+	}
+}
+
+
 
 private Map parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
@@ -147,14 +157,12 @@ private Map translateZoneStatus(ZoneStatus zs) {
 private Map getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
 	def result = [:]
-
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
 		result.value = Math.round(rawValue / 2)
 		result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
-
 	return result
 }
 
@@ -172,29 +180,30 @@ private Map getMotionResult(value) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	log.debug "ping "
+	return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 }
 
 def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
-		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
-		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
-		zigbee.enrollResponse()
+	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
+	zigbee.enrollResponse()
 
 	return refreshCmds
 }
 
 def configure() {
+	log.debug "configure"
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value:20 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
 	def configCmds = []
 
-	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
 	return refresh() + configCmds + refresh() // send refresh cmds as part of config
 }
+
