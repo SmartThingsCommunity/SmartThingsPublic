@@ -14,7 +14,7 @@
  *
  */
 metadata {
-    definition (name: "Simulated Dimmable Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+    definition (name: "Simulated Dimmable Bulb", namespace: "smartthings/testing", author: "SmartThings", mnmn: "SmartThings", vid: "generic-dimmer") {
         capability "Health Check"
         capability "Actuator"
         capability "Sensor"
@@ -144,6 +144,10 @@ private initialize() {
     log.trace "Executing 'initialize'"
     sendEvent(name: "switch", value: "off")
     sendEvent(name: "level", value: 100)
+
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 private Map buildSetLevelEvent(value) {
