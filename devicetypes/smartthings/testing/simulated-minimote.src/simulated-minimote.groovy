@@ -18,15 +18,16 @@ metadata {
 		capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
+		capability "Health Check"
 
-        command "push1"
-        command "push2"
-        command "push3"
-        command "push4"
-        command "hold1"
-        command "hold2"
-        command "hold3"
-        command "hold4"
+		command "push1"
+		command "push2"
+		command "push3"
+		command "push4"
+		command "hold1"
+		command "hold2"
+		command "hold3"
+		command "hold4"
 	}
 
 	simulator {
@@ -44,34 +45,34 @@ metadata {
 		standardTile("button", "device.button") {
 			state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
 		}
- 		standardTile("push1", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("push1", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Push 1", backgroundColor: "#ffffff", action: "push1"
 		}
- 		standardTile("push2", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("push2", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Push 2", backgroundColor: "#ffffff", action: "push2"
 		}
- 		standardTile("push3", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("push3", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Push 3", backgroundColor: "#ffffff", action: "push3"
 		}
- 		standardTile("push4", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("push4", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Push 4", backgroundColor: "#ffffff", action: "push4"
 		}
- 		standardTile("dummy1", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("dummy1", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: " ", backgroundColor: "#ffffff", action: "push4"
 		}
- 		standardTile("hold1", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("hold1", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Hold 1", backgroundColor: "#ffffff", action: "hold1"
 		}
- 		standardTile("hold2", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("hold2", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Hold 2", backgroundColor: "#ffffff", action: "hold2"
 		}
- 		standardTile("dummy2", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("dummy2", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: " ", backgroundColor: "#ffffff", action: "push4"
 		}
- 		standardTile("hold3", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("hold3", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Hold 3", backgroundColor: "#ffffff", action: "hold3"
 		}
- 		standardTile("hold4", "device.button", width: 1, height: 1, decoration: "flat") {
+		standardTile("hold4", "device.button", width: 1, height: 1, decoration: "flat") {
 			state "default", label: "Hold 4", backgroundColor: "#ffffff", action: "hold4"
 		}
 
@@ -137,4 +138,8 @@ def updated() {
 
 def initialize() {
 	sendEvent(name: "numberOfButtons", value: 4)
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }

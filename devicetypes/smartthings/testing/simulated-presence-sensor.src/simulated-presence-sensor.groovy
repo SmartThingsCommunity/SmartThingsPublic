@@ -16,6 +16,7 @@ metadata {
 	definition (name: "Simulated Presence Sensor", namespace: "smartthings/testing", author: "bob") {
 		capability "Presence Sensor"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "arrived"
 		command "departed"
@@ -39,6 +40,20 @@ metadata {
 def parse(String description) {
 	def pair = description.split(":")
 	createEvent(name: pair[0].trim(), value: pair[1].trim())
+}
+
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 // handle commands

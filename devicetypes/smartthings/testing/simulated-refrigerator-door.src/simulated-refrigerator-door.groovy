@@ -15,6 +15,7 @@ metadata {
 	definition (name: "Simulated Refrigerator Door", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Contact Sensor"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "open"
 		command "close"
@@ -43,8 +44,21 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "contact", value: "closed")
+	initialize()
 }
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	sendEvent(name: "contact", value: "closed")
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+}
+
 
 def open() {
 	sendEvent(name: "contact", value: "open")
