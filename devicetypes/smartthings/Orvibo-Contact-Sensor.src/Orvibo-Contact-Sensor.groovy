@@ -18,9 +18,10 @@
  *  Date:2018-07-03
  */
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Orvibo Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Orvibo Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn:"SmartThings", vid:"generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
@@ -28,9 +29,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", outClusters: "", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99"
 	}
 
 	simulator {
@@ -67,84 +66,82 @@ metadata {
 def parse(String description) {
 	log.debug "description: $description"
 
+	def result = [:]
 	Map map = zigbee.getEvent(description)
 	if (!map) {
 		if (description?.startsWith('zone status')) {
-			map = parseIasMessage(description)
-		} else {
+			ZoneStatus zs = zigbee.parseZoneStatus(description)
+			map = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
+			result = createEvent(map)
+		}else if(description?.startsWith('enroll request')){
+			List cmds = zigbee.enrollResponse()
+			log.debug "enroll response: ${cmds}"
+			result = cmds?.collect { new physicalgraph.device.HubAction(it) }
+		}else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
-			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
-				if(descMap?.attrInt==0x0021)
+			if (descMap?.clusterInt == 0x0001 && descMap?.commandInt != 0x07 && descMap?.value) {
+				if(descMap?.attrInt==0x0021){
 					map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+					result = createEvent(map)
+				}
+			} else if (descMap?.clusterInt == 0x0500 && descMap?.attrInt == 0x0002) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
+				result = createEvent(map)
 			}
 		}
+	}else{
+		result = createEvent(map)
 	}
-	log.debug "Parse returned $map"
-	def result = map ? createEvent(map) : [:]
+	log.debug "Parse returned $result"
 
-	if (description?.startsWith('enroll request')) {
-		List cmds = zigbee.enrollResponse()
-		log.debug "enroll response: ${cmds}"
-		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
-	}
-	return result
-}
-
-
-private Map parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	return zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
-}
-
-private Map getBatteryPercentageResult(rawValue) {
-	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
-	def result = [:]
-
-	if (0 <= rawValue && rawValue <= 200) {
-		result.name = 'battery'
-		result.translatable = true
-		result.descriptionText = "${device.displayName} battery was ${value}%"
-		result.value = Math.round(rawValue / 2)
-	}
-
-	return result
-}
-
-private Map getContactResult(value) {
-	log.debug 'Contact Status'
-	def linkText = getLinkText(device)
-	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
-	return [
-		name           : 'contact',
-		value          : value,
-		descriptionText: descriptionText
-	]
+	result
 }
 
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	log.debug "ping is called"
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 }
 
 def refresh() {
-	log.debug "Refreshing  Battery"
-	def refreshCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
-
-	return refreshCmds + zigbee.enrollResponse()
+	log.debug "Refreshing  Battery and ZONE Status"
+	def refreshCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
+		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	refreshCmds + zigbee.enrollResponse()
 }
 
 def configure() {
-	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
-	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value:20 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
-	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return refresh() + zigbee.batteryConfig() // send refresh cmds as part of config
+	refresh() + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) + refresh()
+}
+
+def getBatteryPercentageResult(rawValue) {
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
+	def result = [:]
+
+	if (0 <= rawValue && rawValue <= 200) {
+		result.name = 'battery'
+		result.translatable = true
+		result.value = Math.round(rawValue / 2)
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
+	}
+
+	result
+}
+
+def getContactResult(value) {
+	log.debug 'Contact Status'
+	def linkText = getLinkText(device)
+	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
+	[
+		name           : 'contact',
+		value          : value,
+		descriptionText: descriptionText
+	]
 }
