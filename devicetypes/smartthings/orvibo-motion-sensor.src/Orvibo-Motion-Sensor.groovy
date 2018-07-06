@@ -27,7 +27,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		fingerprint inClusters: "0000,0001,0003,0500"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO",model:"895a2d80097f4ae2b2d40500d5e03dcc"
 	}
 
 	simulator {
@@ -189,7 +189,6 @@ def refresh() {
 	def refreshCmds = []
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
 	zigbee.enrollResponse()
-
 	return refreshCmds
 }
 
@@ -206,4 +205,3 @@ def configure() {
 	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
 	return refresh() + configCmds + refresh() // send refresh cmds as part of config
 }
-
