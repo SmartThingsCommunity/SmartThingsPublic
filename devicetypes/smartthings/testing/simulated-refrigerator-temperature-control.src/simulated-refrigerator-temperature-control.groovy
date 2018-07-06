@@ -17,6 +17,7 @@ metadata {
 	definition (name: "Simulated Refrigerator Temperature Control", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Temperature Measurement"
 		capability "Thermostat Cooling Setpoint"
+		capability "Health Check"
 
 		command "tempUp"
 		command "tempDown"
@@ -64,14 +65,24 @@ metadata {
 	}
 }
 
+
 def installed() {
-	sendEvent(name: "temperature", value: device.componentName == "freezer" ? 2 : 40)
-	sendEvent(name: "coolingSetpoint", value: device.componentName == "freezer" ? 2 : 40)
+	initialize()
 }
 
 def updated() {
-	installed()
+	initialize()
 }
+
+def initialize() {
+	sendEvent(name: "temperature", value: device.componentName == "freezer" ? 2 : 40)
+	sendEvent(name: "coolingSetpoint", value: device.componentName == "freezer" ? 2 : 40)
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+}
+
 
 void tempUp() {
 	def value = device.currentValue("temperature") as Integer

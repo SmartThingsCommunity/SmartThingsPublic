@@ -17,12 +17,12 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Switch Level"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "up"
 		command "down"
-        command "setTemperature", ["number"]
+		command "setTemperature", ["number"]
 	}
-
 
 	// UI tile definitions
 	tiles {
@@ -41,11 +41,11 @@ metadata {
 		}
 		standardTile("up", "device.temperature", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'up', action:"up"
-		}        
+		}
 		standardTile("down", "device.temperature", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'down', action:"down"
 		}
-        main "temperature"
+		main "temperature"
 		details("temperature","up","down")
 	}
 }
@@ -56,22 +56,41 @@ def parse(String description) {
 	createEvent(name: pair[0].trim(), value: pair[1].trim(), unit:"F")
 }
 
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+	if (!device.currentState("temperature")) {
+		setTemperature(getTemperature())
+	}
+}
+
 def setLevel(value) {
-	sendEvent(name:"temperature", value: value)
+	setTemperature(value)
 }
 
 def up() {
-	def ts = device.currentState("temperature")
-	def value = ts ? ts.integerValue + 1 : 72 
-	sendEvent(name:"temperature", value: value)
+	setTemperature(getTemperature() + 1)
 }
 
 def down() {
-	def ts = device.currentState("temperature")
-	def value = ts ? ts.integerValue - 1 : 72 
-	sendEvent(name:"temperature", value: value)
+	setTemperature(getTemperature() - 1)
 }
 
 def setTemperature(value) {
 	sendEvent(name:"temperature", value: value)
+}
+
+private getTemperature() {
+	def ts = device.currentState("temperature")
+	Integer value = ts ? ts.integerValue : 72
+	return value
 }

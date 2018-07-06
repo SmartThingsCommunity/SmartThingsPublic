@@ -21,6 +21,7 @@
 metadata {
 	definition (name: "Simulated Refrigerator", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Contact Sensor"
+		capability "Health Check"
 	}
 
 	tiles(scale: 2) {
@@ -76,6 +77,17 @@ def installed() {
 				null,
 				[completedSetup: true, label: "${device.label} (Fridge)", componentName: "refrigerator", componentLabel: "Fridge"])
 	}
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 def doorOpen(dni) {
