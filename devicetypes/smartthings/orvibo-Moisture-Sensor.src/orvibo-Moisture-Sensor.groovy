@@ -66,8 +66,12 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
+		}
+
 		main "water"
-		details(["water", "alarm", "battery"])
+		details(["water", "alarm", "battery", "refresh"])
 	}
 }
 
@@ -185,3 +189,4 @@ private Map getBatteryResult(rawValue) {
 	log.debug "${device.displayName} battery was ${result.value}%"
 	result
 }
+
