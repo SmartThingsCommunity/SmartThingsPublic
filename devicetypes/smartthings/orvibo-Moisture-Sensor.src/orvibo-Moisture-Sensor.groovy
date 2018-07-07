@@ -40,10 +40,10 @@ metadata {
 
 
 		for (int i = 0; i <= 90; i += 10) {
-			status "battery 0021 0x${i}": "read attr - raw: 2E6D01000108210020C8, dni: 2E6D, endpoint: 01, cluster: 0001, size: 08, attrId: 0021, encoding: 20, value: ${i}"
+			status "battery 0021 0x${i}": "read attr - raw: 8C900100010A21000020C8, dni: 8C90, endpoint: 01, cluster: 0001, size: 0A, attrId: 0021, result: success, encoding: 20, value: ${i}"
 		}
-		for(int i =0; i<=90;i+=10){
-			status "battery 0020 0x$i":"read attr - raw: C6590100010A200000201E, dni: C659, endpoint: 01, cluster: 0001, size: 0A, attrId: 0020, result: success, encoding: 20, value: 1e"
+		for(int i =10; i<=20;i++){
+			status "battery 0020 0x$i":"read attr - raw: 8C900100010A200000201E, dni: 8C90, endpoint: 01, cluster: 0001, size: 0A, attrId: 0020, result: success, encoding: 20, value: ${i}"
 		}
 	}
 
