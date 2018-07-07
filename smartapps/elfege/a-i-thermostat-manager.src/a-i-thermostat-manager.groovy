@@ -129,7 +129,7 @@ log.debug """ intersectMap = $intersectMap"""
                     }
                 }
                 else {
-                
+
                 }
                 input(name: "turnOffWhenReached", type: "bool", title: "Turn off thermostats when desired temperature is reached?", required: false, default: false, submitOnChange: true)
             }  
@@ -397,11 +397,14 @@ def Contacts_Management(){
         uninstall: true
     ]
     dynamicPage(pageProperties) {
-        section("Turn off thermostats when these contacts are open"){
+        section("Turn off thermostats when some contacts are open"){
 
             input(name: "Maincontacts", type:"capability.contactSensor", title: "Turn off all units when these contacts are open", multiple: true, required: false, submitOnChange: true)
+            input(name: "beSafe", type: "bool", title: "Be safe, resume HVAC if a contact is failed or I forgot to close to close one window", defaultValue: true)
             input(name: "ContactAndSwitch", type: "capability.switch", title: "And also control these switches", multiple: true, required: false, submitOnChange: true)
-            input(name: "IsHeatPump", type: "bool", title: "$ContactAndSwitch is a heat pump", default: false, submitOnChange: true)
+            if(ContactAndSwitch){
+                input(name: "IsHeatPump", type: "bool", title: "$ContactAndSwitch is a heat pump", default: false, submitOnChange: true)
+            }
             if(IsHeatPump){
                 paragraph "$ContactAndSwitch will never run when outside' temperature is too low."
                 if(!OutsideSensor){
@@ -885,17 +888,6 @@ state."{newValueT${loopV}HSP}" = 72
     init()
 }
 def updated() {
-    state.modeStartTime = now() 
-    state.sendalert = 0
-    state.LastTimeMessageSent = now() as Long // for causes of !OkToOpen message
-    state.CriticalMessageSent = [false, false, false]
-
-    state.attempt = 0 // bed sensor attempts before declaring open as true
-    state.ThermsOff = false; // tells the program that ThermostatsOff() has not already run
-
-    // switch ac override management
-    state.ACBedOffByApp = true
-    state.ACBedOnByApp = true
 
     log.info "updated with settings = $settings"
 
@@ -924,6 +916,18 @@ def updated() {
     init()
 }
 def init() {
+    state.xval = 0
+    state.modeStartTime = now() 
+    state.sendalert = 0
+    state.LastTimeMessageSent = now() as Long // for causes of !OkToOpen message
+    state.CriticalMessageSent = [false, false, false]
+
+    state.attempt = 0 // bed sensor attempts before declaring open as true
+    state.ThermsOff = false; // tells the program that ThermostatsOff() has not already run
+
+    // switch ac override management
+    state.ACBedOffByApp = true
+    state.ACBedOnByApp = true
 
     state.CSPSet = 72
     state.HSPSet = 72 // temporary values to prevent null error
@@ -1075,13 +1079,13 @@ def MotionSub(){
 def AltSensorsMaps(){
     def loopV = 0
     def s = 0
-   if(AltSensor){
-   // allows for user to forget to de-select previously selected thermostats / sensors while canceled this boolean in settings
-   s = ThermSensor.size()
-   }
-   
-   log.debug "ThermSensor.size() = ${s}"
-   
+    if(AltSensor){
+        // allows for user to forget to de-select previously selected thermostats / sensors while canceled this boolean in settings
+        s = ThermSensor.size()
+    }
+
+    log.debug "ThermSensor.size() = ${s}"
+
 
     def AltSensorList = []
     def AltSensorMap = [:]
@@ -1106,7 +1110,7 @@ def AltSensorsMaps(){
         AltSensorBoolMap."$refTherm" = "true" // map for boolean values
     }
     def result = [AltSensorList, AltSensorMap, AltSensorBoolMap] 
-   log.debug "AltSensorsMaps returns: $result"
+    log.debug "AltSensorsMaps returns: $result"
 
     return result
 }
@@ -1924,7 +1928,7 @@ AltSensorMap = $AltSensorMap"""
             ///// OVERRIDE TEST///// 
             def ThermState = ThermSet.currentValue("thermostatMode")  
             // override is activated when thermostat is in auto mode
-            def AppMgt = ThermState != "auto"
+            def AppMgt = ThermState in ["off", "cool", "heat"]
             log.debug "NO OVERRIDE FOR $ThermSet = $AppMgt (ThermState == $ThermState)"
             ///////////////// END OF OVERRIDE TEST //////////////////
 
@@ -2329,8 +2333,10 @@ defaultCSPSet = $defaultCSPSet
                                 log.debug "$ThermSet CSP already set to $CSPSetBedSensor -- Bed Sensor" 
                             }
                             if(ThermState != "cool"){
-                                ThermSet.setThermostatMode("cool") 
-                                log.debug "$ThermSet set to cool -- Bed Sensor"
+                                if(AppMgt){
+                                    ThermSet.setThermostatMode("cool") 
+                                    log.debug "$ThermSet set to cool -- Bed Sensor"
+                                }
                             }
                             else {
                                 log.debug "$ThermSet already set to cool -- Bed Sensor"
@@ -2345,8 +2351,10 @@ defaultCSPSet = $defaultCSPSet
                                 log.debug "$ThermSet HSP already set to $HSPSetBedSensor -- Bed Sensor" 
                             }
                             if(ThermState != "heat" ){
-                                ThermSet.setThermostatMode("heat") 
-                                log.debug "$ThermSet set to heat -- Bed Sensor"
+                                if(AppMgt){
+                                    ThermSet.setThermostatMode("heat") 
+                                    log.debug "$ThermSet set to heat -- Bed Sensor"
+                                }
                             }
                             else {
                                 log.debug "$ThermSet already set to heat -- Bed Sensor"
@@ -2528,8 +2536,10 @@ CurrentCoolingSetPoint == CSPSet ? ${CurrentCoolingSetPoint == CSPSet}
 so this unit remains off like all other units"""
                                         }
                                         else {
-                                            log.debug "$ThermSet set to cool"
-                                            ThermSet.setThermostatMode("cool") 
+                                            if(AppMgt){
+                                                log.debug "$ThermSet set to cool"
+                                                ThermSet.setThermostatMode("cool") 
+                                            }
                                         }
                                     }
                                     else {
@@ -2569,8 +2579,10 @@ so this unit remains off like all other units"""
                                             log.debug "$ThermSet is the Exception Thermostat but home not is in Exception Contact Mode, doing nothing"
                                         }
                                         else {
-                                            log.debug "$ThermSet set to Heat"
-                                            ThermSet.setThermostatMode("heat")  
+                                            if(AppMgt){
+                                                log.debug "$ThermSet set to Heat"
+                                                ThermSet.setThermostatMode("heat")  
+                                            }
                                         }
                                     }
                                     else {
@@ -2607,6 +2619,10 @@ so this unit remains off like all other units"""
     }
     else { 
         log.debug "not evaluating because some windows are open" 
+        runIn(TimeBeforeClosing, DoubleChekcThermostats) // this will not run if exception windows are closed. 
+    }
+    // hence this redundancy
+    if(!doorsOk){
         runIn(TimeBeforeClosing, DoubleChekcThermostats)
     }
     VirtualThermostat()
@@ -2726,6 +2742,7 @@ def temperatureHandler(evt) {
 
     def doorsOk = AllContactsAreClosed()
 
+
     if(evt.device == XtraTempSensor) {
         state.Inside = evt.value
     }
@@ -2739,7 +2756,18 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
     if(currentTemp <= CriticalTemp) {
         log.info "EMERGENCY HEATING - TEMPERATURE IS TOO LOW!" 
 
-        Thermostats.setThermostatMode("heat") 
+        for(Thermostats.size() != 0; i < Thermostats.size(); i++){
+            def device = Thermostats[i]
+            def AppMgt = device.currentValue("thermostatMode") in ["off", "cool", "heat"]
+
+            if(AppMgt){
+                Thermostats.setThermostatMode("heat") 
+            }
+            else {
+                def message = "$device is in override mode so emergency heat won't apply to it"
+                send(message)
+            }
+        }
 
         state.CRITICAL = true
 
@@ -3075,6 +3103,44 @@ CurrentContacts States = $CurrentContacts"""
 
     MainContactsAreClosed = ClosedContacts.size() == Maincontacts.size() 
 
+    if(beSafe){
+        // check how many are open
+        def OpenContacts = Maincontacts.findAll {it.currentValue("contact") == "open"}
+        log.debug "OpenContacts are = $OpenContacts || OpenContacts.size() = ${OpenContacts.size()}"
+        // for how long ?
+        if(OpenContacts.size() != 0){
+
+            def devicecontact = OpenContacts[0]
+            def contactState = devicecontact.currentState("contact")
+
+
+            def elapsed = ((now() - contactState.rawDateCreated.time) / 60000).toInteger()
+            log.debug "$devicecontact has been left open for $elapsed minutes "
+
+            def threshold = 5
+            if (elapsed >= threshold && OpenContacts.size() == 1) {
+
+                // if only one contact remained open for more than x minutes, 
+                // it's probably a failed sensor or a user error (like leaving a windows open by accident)
+                // return true so ac or heat can resume 
+                MainContactsAreClosed = true
+                // also push a message
+                def message = "emergency message: $devicecontact seems to be defective - make sure all your windows are closed"
+                log.info message
+                log.debug "elapsed > state.xval ==> $elapsed > ${state.xval}"
+                if(elapsed >= state.xval){            
+                    send(message)   
+                    state.xval = elapsed + 10 // resend every 10 minutes
+                }
+            }
+        }
+        else {
+            state.xval = 0
+        }
+    }
+
+
+
     log.debug """${ClosedContacts.size()} windows/doors out of ${Maincontacts.size()} are closed 
 MainContactsClosed returns $MainContactsAreClosed"""
     return MainContactsAreClosed
@@ -3098,7 +3164,7 @@ def ExcepContactsClosed(){
 
         def CurrTherMode = NoTurnOffOnContact.currentValue("thermostatMode")
         //log.debug "Current Mode for $ThermContact is $CurrTherMode"
-        if(CurrTherMode != "off" && !ContactsExepClosed){
+        if(CurrTherMode != "off" && !ContactsExepClosed && AppMgt){
             //log.debug "$NoTurnOffOnContact is on, should be off. Turning it off" 
             NoTurnOffOnContact.setThermostatMode("off") 
             state.LatestThermostatMode_T1 = "off"
@@ -3156,14 +3222,13 @@ def AllContactsAreOpen() {
 
 def DoubleChekcThermostats(){
     // check that therms are off  
-    // if therm is currently running and is not in override and TurnOffThermostats() has already run
-    // and for some reason some units are still on, turn them off again. 
+    // 
+    // and if for some reason some units are still on, turn them off again. 
 
     log.debug "DOUBLE CHECK"
+    def InExceptionContactMode = location.currentMode in DoNotTurnOffModes
 
-
-
-    if(state.CRITICAL == false && state.ThermsOff == true){
+    if(state.CRITICAL == false){
 
         def AnyON = Thermostats.findAll{ it?.currentValue("thermostatMode") != "off"}
         log.debug "there are ${AnyON.size()} untis that are still running: $AnyON"
@@ -3172,7 +3237,7 @@ def DoubleChekcThermostats(){
         for(AnyON.size() != 0; count < AnyON.size(); count++){ 
 
             def device = AnyON[count]
-            def AppMgt = device.currentValue("thermostatMode") != "auto"
+            def AppMgt = device.currentValue("thermostatMode") in ["off", "cool", "heat"]
             def ThisIsExceptionTherm = device.displayName in NoTurnOffOnContact  
             log.debug "device to turn off is $device"
             def ThermIsOn = device.currentValue("thermostatMode") in ["cool", "heat"]
@@ -3190,18 +3255,32 @@ def DoubleChekcThermostats(){
                 }
                 if(ThisIsExceptionTherm && !InExceptionContactMode){
                     device.setThermostatMode("off") 
-                    log.debug "$device TURNED OFF BECAUSE this is not one of the exception modes"
+                    log.debug "$device TURNED OFF BECAUSE $location.currentMode is not one of the exception modes"
                 }
             }
             else {
                 if(ThermState == "off"){
                     log.debug "$device already off"
                 }
-                if(!AppMgt){
-                    log.debug "$device in OVERRIDE MODE"
+                if(!AppMgt && !ThisIsExceptionTherm){
+                    log.debug "$device in OVERRIDE MODE. Will be set to fan only if state doesn't change within time threshold"
+                    runIn(5, FanOnly("$device"))
                 }
             }
         }
+    }
+}
+def FanOnly(String device){
+    if(state.CRITICAL == false){
+        def thisdevice = Thermostats.find{it.displayName == device}
+
+        thisdevice.setThermostatMode("off")
+        log.debug "$thisdevice NOW TURNED OFF (override canceled)"
+        thisdevice.setThermostatFanMode("on")
+        log.debug "$thisdevice NOW SET TO FAN ONLY"
+    }
+    else {
+        log.debug "CRITICAL MODE, doing nothing"
     }
 }
 //contact turn off
@@ -3264,7 +3343,7 @@ def TurnOffThermostats(){
             log.trace "Turning off thermostats: ContactExceptionIsClosed: $ContactExceptionIsClosed, InExceptionContactMode: $InExceptionContactMode, NoTurnOffOnContact: $NoTurnOffOnContact"
 
             if((!NoTurnOffOnContact || !InExceptionContactMode || !ContactExceptionIsClosed) && "${ThermSet}" == "${NoTurnOffOnContact}"){
-                if(ThermState != "off"){
+                if(ThermState != "off" && AppMgt){
                     // to avoid false end of override while windows are open and exception thermostat still needs to remain in override mode. 
 
                     ThermSet.setThermostatMode("off") 
@@ -3282,11 +3361,11 @@ def TurnOffThermostats(){
 
             if("${ThermSet}" != "${NoTurnOffOnContact}"){
                 if(ThermState != "off"){  
-
-                    ThermSet.setThermostatMode("off") 
-                    state.LatestThermostatMode = "off"
-                    log.debug "$ThermSet turned off"
-
+                    if(AppMgt){
+                        ThermSet.setThermostatMode("off") 
+                        state.LatestThermostatMode = "off"
+                        log.debug "$ThermSet turned off"
+                    }
                 }
                 else {
                     log.debug "$ThermSet ALREADY off"
@@ -3822,7 +3901,7 @@ CLOSING WINDOWS"""
     if(SwtTrigWindModes && CurrMode in SwtTrigWindModes){
         log.debug "SwtTrigWindModes = $SwtTrigWindModes"
         if("on" in SwitchOffOpensWindows?.currentSwitch){
-            log.debug "home is in $SwtTrigWindModes mode but some switches are still on and, so it's not ok to open windows"   
+            log.debug "home is in $SwtTrigWindModes mode but some switches are still on, so it's not ok to open windows"   
         }
         else {
             result = true
@@ -3971,7 +4050,7 @@ def send(msg){
         sendNotificationToContacts(msg, recipients)
     }
     else {
-        if (sendPushMessage) {
+        if (sendPushMessage || msg.contains("emergency")) {
             //log.debug("sending push message")
             sendPush(msg)
         }
