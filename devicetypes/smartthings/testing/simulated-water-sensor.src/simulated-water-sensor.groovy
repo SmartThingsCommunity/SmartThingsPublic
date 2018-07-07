@@ -16,6 +16,7 @@ metadata {
 	definition (name: "Simulated Water Sensor", namespace: "smartthings/testing", author: "SmartThings") {
 		capability "Water Sensor"
 		capability "Sensor"
+		capability "Health Check"
         
         command "wet"
         command "dry"
@@ -29,7 +30,7 @@ metadata {
 	tiles {
 		standardTile("water", "device.water", width: 2, height: 2) {
 			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff", action: "wet"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0", action: "dry"
+			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC", action: "dry"
 		}
 		standardTile("wet", "device.water", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'Wet', action:"wet", icon: "st.alarm.water.wet"
@@ -40,6 +41,24 @@ metadata {
 		main "water"
 		details(["water","wet","dry"])
 	}
+}
+
+def installed() {
+	log.trace "Executing 'installed'"
+	initialize()
+}
+
+def updated() {
+	log.trace "Executing 'updated'"
+	initialize()
+}
+
+private initialize() {
+	log.trace "Executing 'initialize'"
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 def parse(String description) {

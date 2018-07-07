@@ -17,10 +17,11 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		fingerprint mfr: "011F", prod: "0001", model: "0001", deviceJoinName: "Schlage Motion Sensor"  // Schlage motion
 		fingerprint mfr: "014A", prod: "0001", model: "0001", deviceJoinName: "Ecolink Motion Sensor"  // Ecolink motion
@@ -28,19 +29,22 @@ metadata {
 		fingerprint mfr: "0060", prod: "0001", model: "0002", deviceJoinName: "Everspring Motion Sensor"  // Everspring SP814
 		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor"  // Everspring HSP02
 		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor"  // Enerwave ZWN-BPC
+		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Portable Smart Motion Sensor"
 	}
 
 	simulator {
 		status "inactive": "command: 3003, payload: 00"
 		status "active": "command: 3003, payload: FF"
 	}
-	
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
+
+	tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
+				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("battery", label:'${currentValue}% battery', unit:"")
 		}
 
@@ -49,12 +53,27 @@ metadata {
 	}
 }
 
+def installed() {
+// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	response(initialPoll())
+}
+
+def updated() {
+// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+private getCommandClassVersions() {
+	[0x20: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1]
+}
+
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
 	    result = createEvent(descriptionText:description)
 	} else {
-		def cmd = zwave.parse(description, [0x20: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		} else {
@@ -123,18 +142,40 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	result
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+	def result = []
+
+	if (cmd.groupingIdentifier == 1) {
+		if (cmd.nodeId.any { it == zwaveHubNodeId }) {
+			state.group1Assoc = true
+			result << createEvent(descriptionText: "$device.displayName is associated in group ${cmd.groupingIdentifier}", isStateChange: false)
+		} else {
+			result << createEvent(descriptionText: "Associating $device.displayName in group ${cmd.groupingIdentifier}", isStateChange: false)
+			result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
+		}
+	}
+	result << decrWakeUpRequestRefCount()
+
+	result
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
 
-	if (state.MSR == "011A-0601-0901" && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
-		result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
+	incrWakeUpRequestRefCount(true)
+
+	if (isEnerwave() && !state.group1Assoc) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join, so check and re-send if needed
+		result << response(zwave.associationV1.associationGet())
+		incrWakeUpRequestRefCount()
 	}
 	if (!state.lastbat || (new Date().time) - state.lastbat > 53*60*60*1000) {
 		result << response(zwave.batteryV1.batteryGet())
-	} else {
-		result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		incrWakeUpRequestRefCount()
 	}
+
+	result << decrWakeUpRequestRefCount()
+
 	result
 }
 
@@ -148,7 +189,8 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.value = cmd.batteryLevel
 	}
 	state.lastbat = new Date().time
-	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
+
+	[createEvent(map), decrWakeUpRequestRefCount()]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
@@ -177,6 +219,43 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	createEvent(map)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	// log.debug "encapsulated: $encapsulatedCommand"
+	if (encapsulatedCommand) {
+		state.sec = 1
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
+{
+	// def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	def version = commandClassVersions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		return zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	def result = null
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		result = zwaveEvent(encapsulatedCommand)
+	}
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
+	log.debug "MultiCmd with $numberOfCommands inner commands"
+	cmd.encapsulatedCommands(commandClassVersions).collect { encapsulatedCommand ->
+		zwaveEvent(encapsulatedCommand)
+	}.flatten()
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
 }
@@ -189,5 +268,75 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	updateDataValue("MSR", msr)
 
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
+	result
+}
+
+def initialPoll() {
+	def request = []
+	if (isEnerwave()) { // Enerwave motion doesn't always get the associationSet that the hub sends on join
+		request << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
+	}
+	request << zwave.batteryV1.batteryGet()
+	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+}
+
+private commands(commands, delay=200) {
+	delayBetween(commands.collect{ command(it) }, delay)
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo && zwaveInfo.zw?.contains("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else if (zwaveInfo && zwaveInfo.cc?.contains("56")){
+		zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private isEnerwave() {
+	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
+}
+
+/**
+ * Increment the ref count of requests made from WakeUpNotification.
+ *
+ * @param initial If set to true reset the ref count. Should only be set to true in the first call in
+ *                WakeUpNotification to avoid the chance that a WakeUpNotification arrived right before
+ *                we sent the first WakeUpNoMoreInformation (to which the device would promptly go back
+ *                to sleep and never receive nor respond to our second set of requests, leaving ref count > 0..
+ *
+ */
+private incrWakeUpRequestRefCount(Boolean initial = false) {
+	if (state.wakeUpRequestRefCount == null || initial) {
+		state.wakeUpRequestRefCount = 0
+	}
+
+	state.wakeUpRequestRefCount = state.wakeUpRequestRefCount + 1
+}
+
+/**
+ * Decrement the ref count of requests made from WakeUpNotification.
+ *
+ * @return This function will return a valid HubAction object containing either an empty action when
+ *         ref count > 0, or a valid HubAction containing a WakeUpNoMoreInformation when ref count < 1.
+ *
+ */
+private decrWakeUpRequestRefCount() {
+	def result = response("")
+
+	if (state.wakeUpRequestRefCount == null) {
+		state.wakeUpRequestRefCount = 0 // Uh oh, someone was naughty, but we guarentee a wakeUpNoMoreInfo if refCount < 1, so give them what they want
+	}
+
+	state.wakeUpRequestRefCount = state.wakeUpRequestRefCount - 1
+
+	if (state.wakeUpRequestRefCount < 1) {
+		state.wakeUpRequestRefCount = 0
+
+		result = response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	}
+
 	result
 }

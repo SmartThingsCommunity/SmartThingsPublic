@@ -17,26 +17,33 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Water Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Z-Wave Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Water Sensor"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		fingerprint deviceId: '0xA102', inClusters: '0x30,0x9C,0x60,0x85,0x8E,0x72,0x70,0x86,0x80,0x84,0x7A'
+		fingerprint mfr: "021F", prod: "0003", model: "0085", deviceJoinName: "Dome Leak Sensor"
 	}
 
 	simulator {
 		status "dry": "command: 3003, payload: 00"
 		status "wet": "command: 3003, payload: FF"
+		status "dry notification": "command: 7105, payload: 00 00 00 FF 05 FE 00 00"
+		status "wet notification": "command: 7105, payload: 00 FF 00 FF 05 02 00 00"
+		status "wake up": "command: 8407, payload: "
 	}
-	
-	tiles {
-		standardTile("water", "device.water", width: 2, height: 2) {
-			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#53a7c0"
+
+	tiles(scale: 2) {
+		multiAttributeTile(name: "water", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.water", key: "PRIMARY_CONTROL") {
+				attributeState("dry", icon: "st.alarm.water.dry", backgroundColor: "#ffffff")
+				attributeState("wet", icon: "st.alarm.water.wet", backgroundColor: "#00A0DC")
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
-			state "battery", label:'${currentValue}% battery', unit:""
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "battery", label: '${currentValue}% battery', unit: ""
 		}
 
 		main "water"
@@ -44,56 +51,95 @@ metadata {
 	}
 }
 
+def installed() {
+	// Dome Leak Sensor sends WakeUpNotification every 12 hours. Please add zwaveinfo.mfr check when adding other sensors with different interval.
+	sendEvent(name: "checkInterval", value: (2 * 12 + 2) * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def updated() {
+	// Dome Leak Sensor sends WakeUpNotification every 12 hours. Please add zwaveinfo.mfr check when adding other sensors with different interval.
+	sendEvent(name: "checkInterval", value: (2 * 12 + 2) * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+private getCommandClassVersions() {
+	[0x20: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1]
+}
+
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
-	    result = createEvent(descriptionText:description)
+		result = createEvent(descriptionText: description)
 	} else {
-		def cmd = zwave.parse(description, [0x20: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		} else {
 			result = createEvent(value: description, descriptionText: description, isStateChange: false)
 		}
 	}
+	log.debug "Parsed '$description' to $result"
 	return result
 }
 
-def sensorValueEvent(Short value) {
+def sensorValueEvent(value) {
 	def eventValue = value ? "wet" : "dry"
 	createEvent(name: "water", value: eventValue, descriptionText: "$device.displayName is $eventValue")
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	sensorValueEvent(cmd.value)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	sensorValueEvent(cmd.value)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	sensorValueEvent(cmd.value)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv1.SensorBinaryReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv1.SensorBinaryReport cmd) {
 	sensorValueEvent(cmd.sensorValue)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd) {
 	sensorValueEvent(cmd.sensorState)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def result = []
 	if (cmd.notificationType == 0x05) {
-		result << sensorValueEvent(cmd.event <= 2 ? 255 : 0)
+		switch (cmd.event) {
+			case 0x00:
+				if (cmd.eventParametersLength && cmd.eventParameter.size() && eventParameter[0] > 0x02) {
+					result << createEvent(descriptionText: "Water alarm cleared", isStateChange: true)
+				} else {
+					result << createEvent(name: "water", value: "dry")
+				}
+				break
+			case 0xFE:
+				result << createEvent(name: "water", value: "dry")
+				break
+			case 0x01:
+			case 0x02:
+				result << createEvent(name: "water", value: "wet")
+				break
+			case 0x03:
+			case 0x04:
+				result << createEvent(descriptionText: "Water level dropped", isStateChange: true)
+				break
+			case 0x05:
+				result << createEvent(descriptionText: "Replace water filter", isStateChange: true)
+				break
+			case 0x06:
+				def level = ["alarm", "alarm", "below low threshold", "above high threshold", "max"][cmd.eventParameter[0]]
+				result << createEvent(descriptionText: "Water flow $level", isStateChange: true)
+				break
+			case 0x07:
+				def level = ["alarm", "alarm", "below low threshold", "above high threshold", "max"][cmd.eventParameter[0]]
+				result << createEvent(descriptionText: "Water pressure $level", isStateChange: true)
+				break
+		}
 	} else if (cmd.notificationType == 0x04) {
 		if (cmd.event <= 0x02) {
 			result << createEvent(descriptionText: "$device.displayName detected overheat", isStateChange: true)
@@ -105,7 +151,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	} else if (cmd.notificationType == 0x07) {
 		if (cmd.event == 0x03) {
 			result << createEvent(descriptionText: "$device.displayName covering was removed", isStateChange: true)
-			result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId))
+			result << response([
+				zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format(),
+				zwave.batteryV1.batteryGet().format()])
 		}
 	} else if (cmd.notificationType) {
 		def text = "Notification $cmd.notificationType: event ${([cmd.event] + cmd.eventParameter).join(", ")}"
@@ -117,10 +165,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
-	if (!state.lastbat || (new Date().time) - state.lastbat > 53*60*60*1000) {
+	if (!state.lastbat || (new Date().time) - state.lastbat > 53 * 60 * 60 * 1000) {
 		result << response(zwave.batteryV1.batteryGet())
 	} else {
 		result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
@@ -129,7 +176,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-	def map = [ name: "battery", unit: "%" ]
+	def map = [name: "battery", unit: "%"]
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
 		map.descriptionText = "${device.displayName} has a low battery"
@@ -141,9 +188,8 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
-{
-	def map = [ displayed: true, value: cmd.scaledSensorValue.toString() ]
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
+	def map = [displayed: true, value: cmd.scaledSensorValue.toString()]
 	switch (cmd.sensorType) {
 		case 1:
 			map.name = "temperature"
@@ -158,6 +204,42 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	createEvent(map)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	// log.debug "encapsulated: $encapsulatedCommand"
+	if (encapsulatedCommand) {
+		state.sec = 1
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	// def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	def version = commandClassVersions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		return zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	def result = null
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		result = zwaveEvent(encapsulatedCommand)
+	}
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
+	log.debug "MultiCmd with $numberOfCommands inner commands"
+	cmd.encapsulatedCommands(commandClassVersions).collect { encapsulatedCommand ->
+		zwaveEvent(encapsulatedCommand)
+	}.flatten()
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
 }
@@ -170,7 +252,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	updateDataValue("MSR", msr)
 
 	if (msr == "0086-0002-002D") {  // Aeon Water Sensor needs to have wakeup interval set
-		result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds:4*3600, nodeid:zwaveHubNodeId))
+		result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId))
 	}
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 	result
