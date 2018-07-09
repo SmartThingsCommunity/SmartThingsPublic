@@ -311,15 +311,6 @@ def parse(String description) {
     return parsedEvents
 }
 
-
-def ping() {
-    log.trace "Executing ping"
-    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
-    sendEvent(name: "healthStatus", value: "online")
-    refresh()
-    // done() called by refresh()
-}
-
 def refresh() {
     log.trace "Executing refresh"
     sendEvent(name: "thermostatMode", value: getThermostatMode())

@@ -152,10 +152,6 @@ def refresh() {
     sendEvent(name: "battery", value: device.currentValue("battery"))
 }
 
-def ping() {
-    refresh()
-}
-
 def lock() {
     log.trace "lock()"
     if (device.currentValue("doesNextOperationJam") == "true") {
