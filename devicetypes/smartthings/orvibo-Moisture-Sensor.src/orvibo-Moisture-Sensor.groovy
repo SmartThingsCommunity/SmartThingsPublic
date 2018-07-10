@@ -33,17 +33,14 @@ metadata {
 
 		fingerprint profileId: "0104",deviceId: "0402",inClusters: "0000,0003,0500,0001,0009", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe"
 	}
+
 	simulator {
 
 		status "dry": "zone status 0x0020 -- extended status 0x00"
 		status "wet": "zone status 0x0021 -- extended status 0x00"
 
-
 		for (int i = 0; i <= 90; i += 10) {
 			status "battery 0021 0x${i}": "read attr - raw: 8C900100010A21000020C8, dni: 8C90, endpoint: 01, cluster: 0001, size: 0A, attrId: 0021, result: success, encoding: 20, value: ${i}"
-		}
-		for(int i =10; i<=20;i++){
-			status "battery 0020 0x$i":"read attr - raw: 8C900100010A200000201E, dni: 8C90, endpoint: 01, cluster: 0001, size: 0A, attrId: 0020, result: success, encoding: 20, value: ${i}"
 		}
 	}
 
@@ -80,11 +77,10 @@ def parse(String description) {
 
 	def result = [:]
 	Map map = zigbee.getEvent(description)
+
 	if (!map) {
 		if (description?.startsWith('zone status')) {
-			ZoneStatus zs = zigbee.parseZoneStatus(description)
-			map = zs.isAlarm1Set() ? getMoistureResult('wet') : getMoistureResult('dry')
-			zs.isAlarm1Set()?sendEvent(name: "alarm", value: "siren"):sendEvent(name: "alarm", value: "off")
+			map = getMoistureResult(description)
 			result = createEvent(map)
 		} else if(description?.startsWith('enroll request')){
 			List cmds = zigbee.enrollResponse()
@@ -93,19 +89,17 @@ def parse(String description) {
 		}else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
-				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
-				map = zs.isAlarm1Set() ? getMoistureResult('wet') : getMoistureResult('dry')
+				map = getMoistureResult(description)
 				result = createEvent(map)
 			} else if (descMap?.clusterInt == 0x0001 && descMap?.commandInt != 0x07 && descMap?.value) {
 				if(descMap?.attrInt == 0x0021){
 					map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 					result = createEvent(map)
-				}else if(descMap?.attrInt == 0x0020){
-					map = getBatteryResult(Integer.parseInt(descMap.value, 16))
-					result = createEvent(map)
 				}
 			}
 		}
+	}else{
+		result = createEvent(map)
 	}
 
 	log.debug "Parse returned $result"
@@ -120,40 +114,49 @@ def ping() {
 def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
-	//the device support two way to get the battery value
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
-	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
 	refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
 		zigbee.enrollResponse()
 
 	refreshCmds
 }
 
+def installed(){
+	log.debug "call installed()"
+	sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	refresh()
+}
+
 def configure() {
-	sendEvent(name: "checkInterval", value: 20 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
 	def configCmds = []
 	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
-	//	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020, DataType.UINT8, 30, 21600, 0x10)
-	refresh() + configCmds // send refresh cmds as part of config
+	refresh() + configCmds
 }
 
-def getMoistureResult(value) {
-	log.debug "water"
+def getMoistureResult(description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	def value
 	def descriptionText
-	if (value == "wet")
-		descriptionText = "${device.displayName} is wet"
-	else
-		descriptionText = "${device.displayName} is dry"
+	if (zs?.isAlarm1Set()){
+		value = "wet"
+		sendEvent(name: "alarm", value: "siren")
+	}
+	else{
+		value = "dry"
+		sendEvent(name: "alarm", value: "off")
+	}
 	[
 		name           : 'water',
 		value          : value,
-		descriptionText: descriptionText,
+		descriptionText: "${device.displayName} is $value",
 		translatable   : true
 	]
 }
-private Map getBatteryPercentageResult(rawValue) {
+
+def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage"
 	def result = [:]
 
@@ -168,25 +171,4 @@ private Map getBatteryPercentageResult(rawValue) {
 	result
 }
 
-private Map getBatteryResult(rawValue) {
-	log.debug 'Battery'
-	def linkText = getLinkText(device)
-
-	def result = [:]
-
-	def volts = rawValue / 10
-	if (!(rawValue == 0 || rawValue == 255)) {
-		def minVolts = 2.1
-		def maxVolts = 3.0
-		def pct = (volts - minVolts) / (maxVolts - minVolts)
-		def roundedPct = Math.round(pct * 100)
-		if (roundedPct <= 0)
-			roundedPct = 1
-		result.value = Math.min(100, roundedPct)
-		result.descriptionText = "${linkText} battery was ${result.value}%"
-		result.name = 'battery'
-	}
-	log.debug "${device.displayName} battery was ${result.value}%"
-	result
-}
 
