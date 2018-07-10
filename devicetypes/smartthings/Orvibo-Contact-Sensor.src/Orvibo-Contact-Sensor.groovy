@@ -120,10 +120,9 @@ def refresh() {
 
 def configure() {
 	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
-
-	refresh() + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) + refresh()
+	//The electricity attribute is reported without bind and reporting CFG. The TI plan reports the power once in about 10 minutes; the NXP plan reports the electricity once in 20 minutes
+	refresh()
 }
 
 def getBatteryPercentageResult(rawValue) {
