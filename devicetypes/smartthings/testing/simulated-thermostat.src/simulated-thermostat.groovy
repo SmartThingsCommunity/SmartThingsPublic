@@ -155,7 +155,7 @@ metadata {
             state "off",       action: "cycleFanMode", nextState: "updating", icon: "st.thermostat.fan-off", backgroundColor: "#CCCCCC", defaultState: true
             state "auto",      action: "cycleFanMode", nextState: "updating", icon: "st.thermostat.fan-auto"
             state "on",        action: "cycleFanMode", nextState: "updating", icon: "st.thermostat.fan-on"
-            state "circulate", action: "cycleFanMode", nextState: "updating", icon: "st.thermostat.fan-circulate" 
+            state "circulate", action: "cycleFanMode", nextState: "updating", icon: "st.thermostat.fan-circulate"
             state "updating", label: "Working"
         }
 
@@ -233,7 +233,7 @@ metadata {
         main("roomTemp")
         details(["thermostatMulti",
             "heatDown", "heatUp",
-            "mode", 
+            "mode",
             "coolDown", "coolUp",
             "heatingSetpoint",
             "coolingSetpoint",
@@ -253,6 +253,12 @@ def installed() {
     done()
 }
 
+def updated() {
+    log.trace "Executing 'updated'"
+    initialize()
+    done()
+}
+
 def configure() {
     log.trace "Executing 'configure'"
     initialize()
@@ -263,7 +269,9 @@ private initialize() {
     log.trace "Executing 'initialize'"
 
     // for HealthCheck
-    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 
     sendEvent(name: "temperature", value: DEFAULT_TEMPERATURE, unit: "°F")
     sendEvent(name: "humidity", value: DEFAULT_HUMIDITY, unit: "%")
@@ -301,13 +309,6 @@ def parse(String description) {
     }
     done()
     return parsedEvents
-}
-
-
-def ping() {
-    log.trace "Executing ping"
-    refresh()
-    // done() called by refresh()
 }
 
 def refresh() {
@@ -521,7 +522,7 @@ private Integer getTemperature() {
 private setTemperature(newTemp) {
     sendEvent(name:"temperature", value: newTemp)
     evaluateOperatingState(temperature: newTemp)
-} 
+}
 
 private tempUp() {
     def newTemp = getTemperature() ? getTemperature() + 1 : DEFAULT_TEMPERATURE
@@ -536,7 +537,7 @@ private tempDown() {
 private setHumidityPercent(Integer humidityValue) {
     log.trace "Executing 'setHumidityPercent' to $humidityValue"
     Integer curHum = device.currentValue("humidity") as Integer
-    if (humidityValue != null) { 
+    if (humidityValue != null) {
         Integer hum = boundInt(humidityValue, (0..100))
         if (hum != humidityValue) {
             log.warn "Corrrected humidity value to $hum"
@@ -579,14 +580,14 @@ private proposeSetpoints(Integer heatSetpoint, Integer coolSetpoint, String prio
     String mode = getThermostatMode()
     Integer proposedHeatSetpoint = heatSetpoint?:getHeatingSetpoint()
     Integer proposedCoolSetpoint = coolSetpoint?:getCoolingSetpoint()
-    if (coolSetpoint == null) { 
+    if (coolSetpoint == null) {
         prioritySetpointType = SETPOINT_TYPE.HEATING
     } else if (heatSetpoint == null) {
         prioritySetpointType = SETPOINT_TYPE.COOLING
     } else if (prioritySetpointType == null) {
         prioritySetpointType = DEFAULT_SETPOINT_TYPE
     } else {
-        // we use what was passed as the arg. 
+        // we use what was passed as the arg.
     }
 
     if (mode in HEAT_ONLY_MODES) {
@@ -621,14 +622,14 @@ private proposeSetpoints(Integer heatSetpoint, Integer coolSetpoint, String prio
     }
     if (newCoolSetpoint != null) {
         log.info "set cooling setpoint of $newCoolSetpoint"
-        sendEvent(name: "coolingSetpoint", value: newCoolSetpoint, unit: "F")		
+        sendEvent(name: "coolingSetpoint", value: newCoolSetpoint, unit: "F")
     }
 }
 
 // sets the thermostat setpoint and operating state and starts the "HVAC" or lets it end.
 private evaluateOperatingState(Map overrides) {
     // check for override values, otherwise use current state values
-    Integer currentTemp = overrides.find { key, value -> 
+    Integer currentTemp = overrides.find { key, value ->
             "$key".toLowerCase().startsWith("curr")|"$key".toLowerCase().startsWith("temp")
         }?.value?:getTemperature() as Integer
     Integer heatingSetpoint = overrides.find { key, value -> "$key".toLowerCase().startsWith("heat") }?.value?:getHeatingSetpoint() as Integer
@@ -647,7 +648,7 @@ private evaluateOperatingState(Map overrides) {
         if (heatingSetpoint - currentTemp >= THRESHOLD_DEGREES) {
             isHeating = true
             setOperatingState(OP_STATE.HEATING)
-        } 
+        }
         sendEvent(name: "thermostatSetpoint", value: heatingSetpoint)
     }
     if (tsMode in COOL_ONLY_MODES + DUAL_SETPOINT_MODES && !isHeating) {
@@ -683,7 +684,7 @@ private startSimHvac() {
     } else if (isRunning) {
         log.trace "simulated hvac is already running"
     } else if (!shouldBeRunning) {
-        log.trace "simulated hvac does not need to run now"		
+        log.trace "simulated hvac does not need to run now"
     }
 }
 
