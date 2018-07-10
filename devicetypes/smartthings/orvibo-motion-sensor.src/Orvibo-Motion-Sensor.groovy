@@ -33,15 +33,6 @@ metadata {
 			status "battery ${i}%": "read attr - raw: 2E6D01000108210020C8, dni: 2E6D, endpoint: 01, cluster: 0001, size: 08, attrId: 0021, encoding: 20, value: ${i}"
 		}
 	}
-	preferences {
-		section {
-			image(name: 'educationalcontent', multiple: true, images: [
-					"http://cdn.device-gse.smartthings.com/Motion/Motion1.jpg",
-					"http://cdn.device-gse.smartthings.com/Motion/Motion2.jpg",
-					"http://cdn.device-gse.smartthings.com/Motion/Motion3.jpg"
-			])
-		}
-	}
 	tiles(scale: 2) {
 		multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
@@ -59,17 +50,9 @@ metadata {
 		details(["motion","battery", "refresh"])
 	}
 }
-def collectAttributes(Map descMap) {
-	def descMaps = new ArrayList<Map>()
-	descMaps.add(descMap)
-	if (descMap.additionalAttrs) {
-		descMaps.addAll(descMap.additionalAttrs)
-	}
-	return  descMaps
-}
 def stopMotion() {
 	log.debug "motion inactive"
-	sendEvent(getMotionResult('inactive'))
+	sendEvent(getMotionResult(false))
 }
 def installed(){
 	log.debug "installed"
@@ -99,22 +82,16 @@ def parse(String description) {
 }
 def batteyHandler(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
-    def map
+    def map = [:]
 	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
-		log.info "BATT METRICS - attr: ${descMap?.attrInt}, value: ${descMap?.value}, decValue: ${Integer.parseInt(descMap.value, 16)}, currPercent: ${device.currentState("battery")?.value}, device: ${device.getDataValue("manufacturer")} ${device.getDataValue("model")}"
-		List<Map> descMaps = collectAttributes(descMap)
-		def battMap = descMaps.find { it.attrInt == 0x0021 }
-		if (battMap) {
-			map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
-		}
+		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 	}
 	return map;
 }
 def motionHandler(String description){
 	//inactive
 	def isActive = zigbee.translateStatusZoneType19(description)
-	def value = isActive ? "active" : "inactive"
-	if (value == "active") {
+	if (isActive) {
 		def timeout = 3
 		log.debug "Stopping motion in ${timeout} seconds"
 		runIn(timeout, stopMotion)
@@ -122,11 +99,7 @@ def motionHandler(String description){
 }
 def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	translateZoneStatus(zs)
-}
-def translateZoneStatus(ZoneStatus zs) {
-	// Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
-	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
+	return  getMotionResult(zs.isAlarm1Set() || zs.isAlarm2Set())
 }
 def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
@@ -140,10 +113,10 @@ def getBatteryPercentageResult(rawValue) {
 	return result
 }
 def getMotionResult(value) {
-	String descriptionText = value == 'active' ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
+	def descriptionText = value ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
 	return [
 			name			: 'motion',
-			value			: value,
+			value			: value ? 'active' : 'inactive',
 			descriptionText : descriptionText,
 			translatable	: true
 	]
@@ -163,5 +136,5 @@ def refresh() {
 }
 def configure() {
 	log.debug "configure"
-	sendEvent(name: "checkInterval", value:20 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
