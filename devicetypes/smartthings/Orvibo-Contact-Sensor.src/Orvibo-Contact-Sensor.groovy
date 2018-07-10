@@ -98,6 +98,11 @@ def parse(String description) {
 	result
 }
 
+def installed(){
+	log.debug "call installed()"
+	sendEvent(name:"contact", value:"closed")
+	sendEvent(name:"battery", value: "100")
+}
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -114,7 +119,7 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value:20 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
