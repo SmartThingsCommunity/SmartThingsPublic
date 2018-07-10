@@ -100,8 +100,8 @@ def parse(String description) {
 
 def installed(){
 	log.debug "call installed()"
-	sendEvent(name:"contact", value:"closed")
-	sendEvent(name:"battery", value: "100")
+	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	refresh()
 }
 /**
  * PING is used by Device-Watch in attempt to reach the Device
