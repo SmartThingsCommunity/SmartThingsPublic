@@ -279,7 +279,7 @@ def processData(resp, data, create=false, energy=false)
         	all += numValue
             if (!it.main && !it.production && it.label != null && it.label != "") {
             	if (create) { createChildDevice("${it.id}", "${it.label}") }
-                energy ?  getChildDevice("${it.id}")?.handleKwhBilling(numValue) : updateChildDevice("${it.id}", numValue)
+                energy ?  getChildDevice("${it.id}")?.handleKwhBilling(numValue.floatValue()) : updateChildDevice("${it.id}", numValue)
             }
             if (it.grid) {
               hasMains = true
