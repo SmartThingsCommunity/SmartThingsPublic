@@ -30,6 +30,7 @@ definition(
 ) {
     appSetting "clientId"
     appSetting "clientSecret"
+    appSetting "serverUrl"
 }
 
 preferences {
@@ -45,6 +46,20 @@ mappings {
     path("/oauth/callback") {
         action: [GET: "callback"]
     }
+}
+
+def getCurbAuthUrl() { return "https://energycurb.auth0.com" }
+
+def getCurbLoginUrl() { return "${curbAuthUrl}/authorize" }
+
+def getCurbTokenUrl() { return "${curbAuthUrl}/oauth/token" }
+
+def getServerUrl() { return  appSettings.serverUrl ?: apiServerUrl }
+
+def getCallbackUrl() { return "${serverUrl}/oauth/callback" }
+
+def getBuildRedirectUrl() {
+  return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${serverUrl}"
 }
 
 def installed() {
@@ -98,6 +113,7 @@ def authPage() {
             }
         }
     } else {
+    	log.debug(buildRedirectUrl)
         return dynamicPage(name: "auth", title: "Login", nextPage: "", uninstall: false) {
             section() {
                 paragraph("Tap below to log in to the CURB service and authorize SmartThings access")
@@ -139,7 +155,6 @@ def callback() {
         ]
         httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
             resp ->
-
               state.refreshToken = resp.data.refresh_token
               state.authToken = resp.data.access_token
         }
@@ -417,30 +432,4 @@ def connectionStatus(message, redirectUrl = null) {
 
 def isOK(response) {
   response.status in [200, 201]
-}
-
-def getCurbAuthUrl() {
-    return "https://energycurb.auth0.com"
-}
-def getCurbLoginUrl() {
-    return "${curbAuthUrl}/authorize"
-}
-def getCurbTokenUrl() {
-    return "${curbAuthUrl}/oauth/token"
-}
-def getServerUrl() {
-    return "https://graph.api.smartthings.com"
-}
-def getShardUrl() {
-    return getApiServerUrl()
-}
-def getCallbackUrl() {
-    return "https://graph.api.smartthings.com/oauth/callback"
-}
-def getBuildRedirectUrl() {
-
-    return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${shardUrl}"
-}
-def getApiEndpoint() {
-    return "https://api.energycurb.com"
 }
