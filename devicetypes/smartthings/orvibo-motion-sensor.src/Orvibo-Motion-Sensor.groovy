@@ -41,10 +41,6 @@ metadata {
 					"http://cdn.device-gse.smartthings.com/Motion/Motion3.jpg"
 			])
 		}
-		section {
-			input title: "Motion Timeout", description: "These devices don't report when motion stops, so it's necessary to have a timer to report that motion has stopped. You can adjust how long this is below.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input "motionStopTime", "number", title: "Seconds", range: "*..*", displayDuringSetup: false, defaultValue: 5
-		}
 	}
 	tiles(scale: 2) {
 		multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {
@@ -63,7 +59,7 @@ metadata {
 		details(["motion","battery", "refresh"])
 	}
 }
-private List<Map> collectAttributes(Map descMap) {
+def collectAttributes(Map descMap) {
 	def descMaps = new ArrayList<Map>()
 	descMaps.add(descMap)
 	if (descMap.additionalAttrs) {
@@ -77,9 +73,6 @@ def stopMotion() {
 }
 def installed(){
 	log.debug "installed"
-	//Ovribo sensor will sleep when no motion detected
-	//we have to send a defalut battery value firstly.
-	sendEvent(name:'battery',value:100)
 	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
@@ -104,7 +97,7 @@ def parse(String description) {
 	}
 	return result
 }
-private Map batteyHandler(String description){
+def batteyHandler(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
     def map
 	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
@@ -117,27 +110,25 @@ private Map batteyHandler(String description){
 	}
 	return map;
 }
-private motionHandler(String description){
+def motionHandler(String description){
 	//inactive
 	def isActive = zigbee.translateStatusZoneType19(description)
 	def value = isActive ? "active" : "inactive"
 	if (value == "active") {
 		def timeout = 3
-		if (motionStopTime)
-			timeout = motionStopTime
 		log.debug "Stopping motion in ${timeout} seconds"
 		runIn(timeout, stopMotion)
 	}
 }
-private Map parseIasMessage(String description) {
+def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	translateZoneStatus(zs)
 }
-private Map translateZoneStatus(ZoneStatus zs) {
+def translateZoneStatus(ZoneStatus zs) {
 	// Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
 	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getMotionResult('active') : getMotionResult('inactive')
 }
-private Map getBatteryPercentageResult(rawValue) {
+def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
 	def result = [:]
 	if (0 <= rawValue && rawValue <= 200) {
@@ -148,7 +139,7 @@ private Map getBatteryPercentageResult(rawValue) {
 	}
 	return result
 }
-private Map getMotionResult(value) {
+def getMotionResult(value) {
 	String descriptionText = value == 'active' ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
 	return [
 			name			: 'motion',
