@@ -29,7 +29,7 @@ metadata {
 	}
 	simulator {
 		status "active": "zone status 0x0001 -- extended status 0x00"
-    	for (int i = 0; i <= 100; i += 11) {
+		for (int i = 0; i <= 100; i += 11) {
 			status "battery ${i}%": "read attr - raw: 2E6D01000108210020C8, dni: 2E6D, endpoint: 01, cluster: 0001, size: 08, attrId: 0021, encoding: 20, value: ${i}"
 		}
 	}
@@ -98,9 +98,9 @@ def parse(String description) {
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : [:]
 	if (description?.startsWith('enroll request')) {
-    	List cmds = zigbee.enrollResponse()
-    	log.debug "enroll response: ${cmds}"
-    	result = cmds?.collect { new physicalgraph.device.HubAction(it) }
+		List cmds = zigbee.enrollResponse()
+		log.debug "enroll response: ${cmds}"
+		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
 	return result
 }
