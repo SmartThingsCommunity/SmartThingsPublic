@@ -1,7 +1,7 @@
 /**
  *  Inovelli 1-Channel Outdoor Smart Plug NZW96
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-05-02
+ *  Date: 2018-06-13
  *
  *  Copyright 2018 Eric Maycock
  *
@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-06-13: Modified tile layout. Update firmware version reporting.
+ * 
  *  2018-05-02: Added support for Z-Wave Association Tool SmartApp. Associations require firmware 1.02+.
  *              https://github.com/erocm123/SmartThingsPublic/tree/master/smartapps/erocm123/z-waveat
  */
@@ -29,6 +31,7 @@ metadata {
         capability "Configuration"
         
         attribute "lastActivity", "String"
+        attribute "firmware", "String"
         
         command "setAssociationGroup", ["number", "enum", "number", "number"] // group number, nodes, action (0 - remove, 1 - add), multi-channel endpoint (optional)
 
@@ -56,15 +59,20 @@ metadata {
             }
         }
         
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
-        }
-        
         valueTile("lastActivity", "device.lastActivity", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
             state "default", label: 'Last Activity: ${currentValue}',icon: "st.Health & Wellness.health9"
         }
-        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+        
+        valueTile("firmware", "device.firmware", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+            state "default", label: 'fw: ${currentValue}', icon: ""
+        }
+             
+        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 5, height: 1) {
             state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+        }
+        
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+            state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
         }
     }
 }
@@ -94,6 +102,7 @@ def initialize() {
     sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
     sendEvent(name: "numberOfButtons", value: 1, displayed: true)
     def cmds = processAssociations()
+    cmds << zwave.versionV1.versionGet()
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: ledIndicator!=null? ledIndicator.toInteger() : 0, parameterNumber: 1, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
     cmds << zwave.configurationV1.configurationSet(scaledConfigurationValue: autoOff!=null? autoOff.toInteger() : 0, parameterNumber: 2, size: 2)
@@ -261,12 +270,11 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationGroupingsRe
     createEvent(name: "groups", value: cmd.supportedGroupings)
 }
 
-void zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     log.debug cmd
     if(cmd.applicationVersion && cmd.applicationSubVersion) {
 	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
         state.needfwUpdate = "false"
-        sendEvent(name: "status", value: "fw: ${firmware}")
-        updateDataValue("firmware", firmware)
+        createEvent(name: "firmware", value: "${firmware}")
     }
 }
