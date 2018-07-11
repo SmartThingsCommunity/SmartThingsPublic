@@ -80,7 +80,6 @@ def parse(String description) {
 			result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 		}else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
-			log.debug "descMap $descMap"
 			if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
 				map = getMoistureResult(description)
 			} else if (descMap?.clusterInt == 0x0001 && descMap?.attrInt == 0x0021 && descMap?.commandInt != 0x07 && descMap?.value) {
