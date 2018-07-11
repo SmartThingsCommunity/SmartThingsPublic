@@ -82,7 +82,7 @@ def parse(String description) {
 }
 def batteyHandler(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
-    def map = [:]
+	def map = [:]
 	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
 		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 	}
