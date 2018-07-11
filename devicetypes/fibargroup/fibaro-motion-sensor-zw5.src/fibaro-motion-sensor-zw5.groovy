@@ -129,6 +129,9 @@ def updated() {
 	} else if (tamperValue == "inactive") {
 		sendEvent(name: "tamper", value: "clear", displayed: false)
 	}
+	if (settings.tamperOperatingMode == "0") {
+		sendEvent(name: "motionText", value: "Disabled", displayed: false)
+	}
 	syncStart()
 }
 
@@ -591,4 +594,3 @@ private parameterMap() {
 		 descr: "Light intensity level above which brightness of visual indicator is set to 100%. (value of parameter 82 to 32767 in lux)"]
 	]
 }
-
