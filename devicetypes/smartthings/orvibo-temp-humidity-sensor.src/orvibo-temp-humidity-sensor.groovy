@@ -21,17 +21,14 @@ metadata {
 	definition(name: "Orvibo Temperature&Humidity Sensor",namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-humidity") {
 		capability "Configuration"
 		capability "Sensor"
- 	        capability "Temperature Measurement"
+		capability "Relative Humidity Measurement"
+        capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Battery"
-		fingerprint profileId: "0104",deviceId: "0302", inClusters: "0000,0001,0003,0402", outClusters: ""
+		fingerprint profileId: "0104",deviceId: "0302", inClusters: "0000,0001,0003,0402", model: "b467083cfc864f5e826459e5d8ea6079"
 	}
 	
-	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-	}
 	tiles(scale: 2) {
 		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
@@ -47,47 +44,23 @@ metadata {
 						]
 			}
 		}
-
+		valueTile("humidity", "device.humidity", inactiveLabel: false, width: 2, height: 2) {
+			state "humidity", label: '${currentValue}% humidity', unit: ""
+		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery'
 		}
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-		childDeviceTile("humidity", "ch2", height: 2, width: 2, childTileName: "humidity")
-        //AddChildTile("humidity")
+
 		main "temperature"
-		details(["temperature", "battery", "refresh"])
+		details(["temperature", "humidity","battery", "refresh"])
 	}
-}
-
-private List<Map> collectAttributes(Map descMap) {
-	List<Map> descMaps = new ArrayList<Map>()
-
-	descMaps.add(descMap)
-
-	if (descMap.additionalAttrs) {
-		descMaps.addAll(descMap.additionalAttrs)
-	}
-
-	return  descMaps
 }
 
 def installed() { 
- 	def componentLabel 
-
-    componentLabel = "$device.displayName 1" 
- 	 
- 	try { 
- 		String dni = "${device.deviceNetworkId}-ep2"
- 		addChildDevice("Orvibo Temperature&Humidity Sensor Endpoint", dni, device.hub.id, 
- 			[completedSetup: true, label: "${componentLabel}", 
- 			 isComponent   : false, componentName: "ch2", componentLabel: "${componentLabel}"]) 
- 		log.debug "Endpoint 2 (Orvibo Temperature&Humidity Endpoint) added as $componentLabel" 
- 	} catch (e) { 
- 		log.debug "Failed to add endpoint 2 ($desc) as Orvibo Temperature&Humidity Sensor Endpoint - $e" 
- 	} 
- 	configure() 
+ 	refresh()
 }
 
 def parse(String description) {
@@ -96,14 +69,21 @@ def parse(String description) {
 	Map map = zigbee.getEvent(description)
 	if (!map) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
-		if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
-			log.info "BATT METRICS - attr: ${descMap?.attrInt}, value: ${descMap?.value}, decValue: ${Integer.parseInt(descMap.value, 16)}, currPercent: ${device.currentState("battery")?.value}, device: ${device.getDataValue("manufacturer")} ${device.getDataValue("model")}"
-			List<Map> descMaps = collectAttributes(descMap)
-			def battMap = descMaps.find { it.attrInt == 0x0021 }
-			if (battMap) {
-				map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
+		if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
+			map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+		} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
+			if (descMap.data[0] == "00") {
+				log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
+				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+			} else {
+				log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 			}
-		} 
+		}else if(descMap?.clusterInt == 0x0405 && descMap.commandInt != 0x07 && descMap?.value) {
+        	map = getHumidityResult(Integer.parseInt(descMap.value, 16))
+        }
+	}else if (map.name == "temperature") {
+		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
+		map.translatable = true
 	}
 
 	def result = map ? createEvent(map) : [:]
@@ -113,7 +93,21 @@ def parse(String description) {
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
-	
+	log.debug "${map}"
+	return result
+}
+
+private Map getHumidityResult(rawValue) {
+	log.debug "humidity rawValue = ${rawValue}%"
+	def result = [:]
+
+	if (0 <= rawValue && rawValue <= 100) {
+		result.name = 'humidity'
+		result.translatable = true
+		result.value = Math.round(rawValue)
+		result.descriptionText = "${device.displayName} humidity was ${result.value}%"
+	}
+
 	return result
 }
 
@@ -135,28 +129,36 @@ private Map getBatteryPercentageResult(rawValue) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	refresh()
 }
 
 def refresh() {
-	log.debug "Refreshing Values"
 	def refreshCmds = []
-		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)+ zigbee.readAttribute(0x0402, 0x0000)+
-		zigbee.enrollResponse()
-
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021,[destEndpoint: 0x01])+
+        zigbee.readAttribute(0x0402, 0x0000,[destEndpoint: 0x01])+
+        zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
 	return refreshCmds
 }
 
 def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value:1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value:20 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
-	def configCmds = []
+    
+    //def humidityConfigCmds = [
+    //    "zdo bind 0x${device.deviceNetworkId} 2 2 0x0405 {${device.zigbeeId}} {}", "delay 500",
+    //    "zcl global send-me-a-report 0x0405 0 0x29 30 3600 {6400}",
+    //    "send 0x${device.deviceNetworkId} 2 2", "delay 500"
+    //]
 
+	def configCmds = []
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 600, 0x10)
-	return refresh() + configCmds + refresh() // send refresh cmds as part of config
+	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) + 
+    zigbee.temperatureConfig(30, 300)
+    zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 300, 2)
+
+	return configCmds+refresh()// send refresh cmds as part of config
 }
