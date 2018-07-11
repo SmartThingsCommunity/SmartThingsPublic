@@ -28,28 +28,32 @@ metadata {
 		capability "Refresh"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0009", outClusters: "0019",manufacturer: "Heiman",model:"d0e857bfd54f4a12816295db3945a421"
 	}
+
+	simulator {
+		status "active": "zone status 0x0001 -- extended status 0x00"
+		status "alarm" : "read attr - raw: E91D0100090C000000210000, dni: E91D, endpoint: 01, cluster: 0009, size: 0C, attrId: 0000, result: success, encoding: 21, value: 0001"
+		status "off" : "read attr - raw: E91D0100090C000000210000, dni: E91D, endpoint: 01, cluster: 0009, size: 0C, attrId: 0000, result: success, encoding: 21, value: 0000"
+	}
+
 	tiles {
-		standardTile("main", "device.smoke", width: 2, height: 2) {
+		standardTile("smoke", "device.smoke", width: 2, height: 2) {
 			state("clear", label:"Clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
 			state("detected", label:"Smoke!", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
 		}
 		standardTile("alarm", "device.alarm", width: 2, height: 2) {
-			state "off", label:'off', action:'alarm.strobe', icon:"st.alarm.alarm.alarm", backgroundColor:"#ffffff"
-			state "strobe", label:'strobe!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
-			state "siren", label:'siren!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
-			state "both", label:'alarm!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
+			state "off", label:'off', action:'alarm.siren', icon:"st.alarm.alarm.alarm", backgroundColor:"#ffffff"	
+			state "siren", label:'siren!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"		
 		}
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-		main "main"
-		details(["main","alarm","refresh"])
+		main "smoke"
+		details(["smoke","alarm","refresh"])
 	}
 }
 def installed(){
 	log.debug "installed"
-	return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
-					zigbee.readAttribute(0x0009,0x0000)
+	refresh()
 }
 def parse(String description) {
 	log.debug "description(): $description"
@@ -57,6 +61,10 @@ def parse(String description) {
 	if(!map){
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
+		}else if(description?.startsWith('read attr')){
+			map = parseAlarmMessage(description)
+		}else{
+			map = [:]
 		}
 	}
 	log.debug "Parse returned $map"
@@ -68,36 +76,36 @@ def parse(String description) {
 	}
 	return result
 }
-private Map parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	translateZoneStatus(zs)
-}
-private Map translateZoneStatus(ZoneStatus zs) {
-	// Some sensor models that use this DTH use alarm1 and some use alarm2 to signify motion
-	return (zs.isAlarm1Set() || zs.isAlarm2Set()) ? getDetectedResult('detected') : getDetectedResult('clear')
-}
-private Map getDetectedResult(value) {
-	String descriptionText = value == 'detected' ? "${device.displayName} detected smoke" : "${device.displayName} smoke clear"
-	if(value == detected){
-		strobe()
-	}else{
-		off()
+def parseAlarmMessage(String description){
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	def map = [:]
+	if (descMap?.clusterInt == 0x0009 && descMap.value) {
+		map = getAlarmResult(descMap.value == "0000" ? false :true)
 	}
-	return [
-			name			: 'smoke',
-			value			: value,
-			descriptionText : descriptionText,
-			translatable	: true
-	]
+	return map;
 }
-def strobe() {
-	sendEvent(name: "alarm", value: "strobe")
+def parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	return getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())
+}
+def getDetectedResult(value) {
+	def detected = value ? 'detected': 'clear'
+	String descriptionText = "${device.displayName} smoke ${detected}" 
+	return [name:'smoke',
+			value: detected,
+			descriptionText:descriptionText,
+			translatable:true]
+}
+def getAlarmResult(value) {
+	def alarm = value ? 'siren': 'off'
+	String descriptionText = "${device.displayName} alarm  ${alarm}" 
+	return [name:'alarm',
+			value: alarm,
+			descriptionText:descriptionText,
+			translatable:true]
 }
 def siren() {
 	sendEvent(name: "alarm", value: "siren")
-}
-def both() {
-	sendEvent(name: "alarm", value: "both")
 }
 def off() {
 	sendEvent(name: "alarm", value: "off")
@@ -105,9 +113,8 @@ def off() {
 def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
-	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
-					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
-					zigbee.enrollResponse()
+	refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
+					zigbee.readAttribute(0x0009,0x0000) 
 	return refreshCmds
 }
 /**
@@ -115,9 +122,9 @@ def refresh() {
  * */
 def ping() {
 	log.debug "ping "
-	return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	refresh()
 }
 def configure() {
 	log.debug "configure"
-	sendEvent(name: "checkInterval", value:40 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
