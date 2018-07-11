@@ -12,43 +12,58 @@
  *
  */
 metadata {
-	// Automatically generated. Make future change here.
-	definition (name: "Simulated Presence Sensor", namespace: "smartthings/testing", author: "bob") {
-		capability "Presence Sensor"
-		capability "Sensor"
+    // Automatically generated. Make future change here.
+    definition (name: "Simulated Presence Sensor", namespace: "smartthings/testing", author: "bob") {
+        capability "Presence Sensor"
+        capability "Sensor"
+        capability "Health Check"
 
-		command "arrived"
-		command "departed"
-	}
+        command "arrived"
+        command "departed"
+    }
 
-	simulator {
-		status "present": "presence: present"
-		status "not present": "presence: not present"
-	}
+    simulator {
+        status "present": "presence: present"
+        status "not present": "presence: not present"
+    }
 
-	tiles {
-		standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
-			state("not present", label:'not present', icon:"st.presence.tile.not-present", backgroundColor:"#ffffff", action:"arrived")
-			state("present", label:'present', icon:"st.presence.tile.present", backgroundColor:"#00A0DC", action:"departed")
-		}
-		main "presence"
-		details "presence"
-	}
+    tiles {
+        standardTile("presence", "device.presence", width: 2, height: 2, canChangeBackground: true) {
+            state("not present", label:'not present', icon:"st.presence.tile.not-present", backgroundColor:"#ffffff", action:"arrived")
+            state("present", label:'present', icon:"st.presence.tile.present", backgroundColor:"#00A0DC", action:"departed")
+        }
+        main "presence"
+        details "presence"
+    }
 }
 
 def parse(String description) {
-	def pair = description.split(":")
-	createEvent(name: pair[0].trim(), value: pair[1].trim())
+    def pair = description.split(":")
+    createEvent(name: pair[0].trim(), value: pair[1].trim())
+}
+
+def installed() {
+    initialize()
+}
+
+def updated() {
+    initialize()
+}
+
+def initialize() {
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 // handle commands
 def arrived() {
-	log.trace "Executing 'arrived'"
-	sendEvent(name: "presence", value: "present")
+    log.trace "Executing 'arrived'"
+    sendEvent(name: "presence", value: "present")
 }
 
 
 def departed() {
-	log.trace "Executing 'departed'"
-	sendEvent(name: "presence", value: "not present")
+    log.trace "Executing 'departed'"
+    sendEvent(name: "presence", value: "not present")
 }
