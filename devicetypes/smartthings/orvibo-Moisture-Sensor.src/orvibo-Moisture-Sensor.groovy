@@ -13,7 +13,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  Orvibo Contact Sensor
+ *  Orvibo Moisture Sensor
  *
  *  Author: Deng Biaoyi/biaoyi.deng@samsung.com
  *
@@ -29,9 +29,9 @@ metadata {
 		capability "Water Sensor"
 		capability "Sensor"
 		capability "Health Check"
-		capability "Alarm"
+		capability "battery"
 
-		fingerprint profileId: "0104",deviceId: "0402",inClusters: "0000,0003,0500,0001,0009", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe"
 	}
 
 	simulator {
@@ -52,13 +52,6 @@ metadata {
 			}
 		}
 
-		standardTile("alarm", "device.alarm", width: 2, height: 2) {
-			state "off", label:'off', action:'alarm.both', icon:"st.alarm.alarm.alarm", backgroundColor:"#ffffff"
-			state "strobe", label:'strobe!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
-			state "siren", label:'siren!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
-			state "both", label:'alarm!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
-		}
-
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
@@ -68,40 +61,36 @@ metadata {
 		}
 
 		main "water"
-		details(["water", "alarm", "battery", "refresh"])
+		details(["water", "battery", "refresh"])
 	}
 }
 
 def parse(String description) {
 	log.debug "description: $description"
 
-	def result = [:]
+	def result
 	Map map = zigbee.getEvent(description)
 
 	if (!map) {
 		if (description?.startsWith('zone status')) {
 			map = getMoistureResult(description)
-			result = createEvent(map)
 		} else if(description?.startsWith('enroll request')){
 			List cmds = zigbee.enrollResponse()
 			log.debug "enroll response: ${cmds}"
 			result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 		}else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
+			log.debug "descMap $descMap"
 			if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
 				map = getMoistureResult(description)
-				result = createEvent(map)
-			} else if (descMap?.clusterInt == 0x0001 && descMap?.commandInt != 0x07 && descMap?.value) {
-				if(descMap?.attrInt == 0x0021){
-					map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-					result = createEvent(map)
-				}
+			} else if (descMap?.clusterInt == 0x0001 && descMap?.attrInt == 0x0021 && descMap?.commandInt != 0x07 && descMap?.value) {
+				map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 			}
 		}
-	}else{
+	}
+	if(map&&!result){
 		result = createEvent(map)
 	}
-
 	log.debug "Parse returned $result"
 
 	result
@@ -124,7 +113,6 @@ def refresh() {
 def installed(){
 	log.debug "call installed()"
 	sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	refresh()
 }
 
 def configure() {
@@ -138,16 +126,7 @@ def configure() {
 
 def getMoistureResult(description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	def value
-	def descriptionText
-	if (zs?.isAlarm1Set()){
-		value = "wet"
-		sendEvent(name: "alarm", value: "siren")
-	}
-	else{
-		value = "dry"
-		sendEvent(name: "alarm", value: "off")
-	}
+	def value = zs?.isAlarm1Set()?"wet":"dry"
 	[
 		name           : 'water',
 		value          : value,
@@ -170,5 +149,3 @@ def getBatteryPercentageResult(rawValue) {
 	log.debug "${device.displayName} battery was ${result.value}%"
 	result
 }
-
-
