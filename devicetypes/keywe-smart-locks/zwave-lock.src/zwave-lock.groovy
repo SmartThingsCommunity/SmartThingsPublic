@@ -1,4 +1,4 @@
- /***********************************************************************************************************************
+ /**
  *  KeyWe Z-Wave Smart Lock
  *
  *  Copyright 2018 Youngmin Andy Kim (KeyWe)
@@ -11,11 +11,9 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *  
- *
- ***********************************************************************************************************************/
+ */
 metadata {
-	definition (name: "Z-Wave Lock", namespace: "KeyWe Smart Locks", author: "Youngmin Andy Kim", minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Z-Wave Lock", namespace: "KeyWe Smart Locks", author: "Youngmin Andy Kim", minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
 		capability "Actuator"
 		capability "Lock"
 		capability "Polling"
@@ -28,9 +26,6 @@ metadata {
         
         // Guardtec KeyWe
         fingerprint mfr:"037B", prod:"0002", model:"0001", deviceJoinName: "KeyWe Smart Lock GKW-2000D" //
-        
-        // Philia Technology
-        fingerprint mfr:"0366", prod:"0001", model:"0001", deviceJoinName: "Phlia Smart Lock PDS-100" //
 	}
 	
     simulator {
