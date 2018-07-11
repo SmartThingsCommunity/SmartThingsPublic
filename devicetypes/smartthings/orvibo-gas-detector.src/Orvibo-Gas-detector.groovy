@@ -64,7 +64,7 @@ def parse(String description) {
 		}else if(description?.startsWith('read attr')){
 			map = parseAlarmMessage(description)
 		}else{
-			map = [:]
+			map = zigbee.parseDescriptionAsMap(description)
 		}
 	}
 	log.debug "Parse returned $map"
