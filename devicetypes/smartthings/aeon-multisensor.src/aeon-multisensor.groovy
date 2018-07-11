@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Aeon Multisensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Multisensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -155,7 +155,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	map.name = "battery"
 	map.value = cmd.batteryLevel > 0 ? cmd.batteryLevel.toString() : 1
 	map.unit = "%"
-	map.displayed = false
 	map
 }
 
@@ -211,4 +210,30 @@ def configure() {
 		// set data reporting period to 5 minutes
 		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format()
 	])
+}
+
+private def getTimeOptionValueMap() { [
+		"20 seconds" : 20,
+		"40 seconds" : 40,
+		"1 minute"   : 60,
+		"2 minutes"  : 2*60,
+		"3 minutes"  : 3*60,
+		"4 minutes"  : 4*60,
+		"5 minutes"  : 5*60,
+		"8 minutes"  : 8*60,
+		"15 minutes" : 15*60,
+		"30 minutes" : 30*60,
+		"1 hours"    : 1*60*60,
+		"6 hours"    : 6*60*60,
+		"12 hours"   : 12*60*60,
+		"18 hours"   : 18*60*60,
+		"24 hours"   : 24*60*60,
+]}
+
+private setConfigured(configure) {
+	updateDataValue("configured", configure)
+}
+
+private isConfigured() {
+	getDataValue("configured") == "true"
 }
