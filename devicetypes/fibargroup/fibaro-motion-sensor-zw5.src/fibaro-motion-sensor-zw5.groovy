@@ -128,6 +128,9 @@ def updated() {
 	} else if (tamperValue == "inactive") {
 		sendEvent(name: "tamper", value: "clear", displayed: false)
 	}
+	if (settings.tamperOperatingMode == "0") {
+		sendEvent(name: "motionText", value: "Disabled", displayed: false)
+	}
 	syncStart()
 }
 
