@@ -304,7 +304,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
 	log.warn "${device.displayName} - MeterReport received, value: ${cmd.scaledMeterValue} scale: ${cmd.scale} ep: $ep"
-	if (ep==1) {
+	if (!ep || ep==1) {
 		log.warn "chanell1"
 		switch (cmd.scale) {
 			case 0: sendEvent([name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]); break;
