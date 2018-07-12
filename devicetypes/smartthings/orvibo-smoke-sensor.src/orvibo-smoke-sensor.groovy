@@ -29,7 +29,7 @@ metadata {
 		capability "Alarm"
 		capability "Health Check"
 
-        fingerprint profileId: "0104",deviceId: "0402",inClusters: "0000,0001,0003,0500", outClusters: "", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931"
+		fingerprint profileId: "0104",deviceId: "0402",inClusters: "0000,0001,0003,0500", outClusters: "", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931"
 	}
 
 	tiles {
@@ -42,7 +42,7 @@ metadata {
 			state "siren", label:'siren!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
 		}
 
-        valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
 
@@ -50,7 +50,7 @@ metadata {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-        main "smoke"
+		main "smoke"
 		details(["smoke","alarm","battery","refresh"])
 	}
 }
@@ -86,12 +86,11 @@ def parseAttrMessage(String description){
 	if (descMap?.clusterInt == 0x0009 && descMap.value) {
 		map = getAlarmResult(descMap.value == "0000" ? false :true)
 	}else if(descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
-    	map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-    }else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
-        def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
-        map = translateZoneStatus(zs)
-    }
-
+		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+	}else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+		map = translateZoneStatus(zs)
+	}
 	return map;
 }
 
@@ -142,9 +141,9 @@ def off() {
 def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
-	refreshCmds +=  zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
-    				zigbee.readAttribute(0x0009,0x0000) +
-                    zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
+					zigbee.readAttribute(0x0009,0x0000) +
+					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
 }
 /**
@@ -158,7 +157,5 @@ def configure() {
 	log.debug "configure"
 	sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-    def configCmds = []
-    configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
-    return configCmds
+	return zigbee.batteryConfig()+ refresh()
 }
