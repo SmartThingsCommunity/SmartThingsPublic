@@ -113,7 +113,6 @@ def authPage() {
             }
         }
     } else {
-    	log.debug(buildRedirectUrl)
         return dynamicPage(name: "auth", title: "Login", nextPage: "", uninstall: false) {
             section() {
                 paragraph("Tap below to log in to the CURB service and authorize SmartThings access")
@@ -153,21 +152,16 @@ def callback() {
             client_secret: appSettings.clientSecret,
             redirect_uri: callbackUrl
         ]
-        httpPostJson([uri: curbTokenUrl, body: tokenParams]) {
-            resp ->
-              state.refreshToken = resp.data.refresh_token
-              state.authToken = resp.data.access_token
-        }
-        if (state.authToken) {
-            success()
-        } else {
-            fail()
-        }
+        asynchttp_v1.post(handleTokenResponse, [uri: curbTokenUrl, body: tokenParams])
+        success()
     } else {
-
         log.error "callback() failed oauthState != state.oauthInitState"
-
     }
+}
+
+def handleTokenResponse(resp, data){
+	state.refreshToken = resp.json.refresh_token
+    state.authToken = resp.json.access_token
 }
 
 private removeChildDevices(delete) {
@@ -207,7 +201,7 @@ def getCurbLocations() {
             resp ->
             resp.data.each {
                 log.debug "Found location: ${it}"
-                allLocations[it.id] = it.name
+                allLocations[it.id] = it.label
             }
             state.locations = allLocations
         }
