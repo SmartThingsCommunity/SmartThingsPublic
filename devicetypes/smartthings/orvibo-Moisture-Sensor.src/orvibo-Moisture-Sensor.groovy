@@ -29,7 +29,7 @@ metadata {
 		capability "Water Sensor"
 		capability "Sensor"
 		capability "Health Check"
-		capability "battery"
+		capability "Battery"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe"
 	}
