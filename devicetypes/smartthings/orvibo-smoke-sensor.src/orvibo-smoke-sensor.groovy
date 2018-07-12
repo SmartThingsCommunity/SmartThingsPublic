@@ -155,7 +155,7 @@ def ping() {
 }
 def configure() {
 	log.debug "configure"
-	sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value:6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	return zigbee.batteryConfig()+ refresh()
 }
