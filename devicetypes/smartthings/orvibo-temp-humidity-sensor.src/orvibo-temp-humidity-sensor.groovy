@@ -1,20 +1,20 @@
- /* 
-  *  Copyright 2018 SmartThings 
-  * 
-  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not 
-  *  use this file except in compliance with the License. You may obtain a copy 
-  *  of the License at: 
-  * 
-  *      http://www.apache.org/licenses/LICENSE-2.0 
-  * 
-  *  Unless required by applicable law or agreed to in writing, software 
-  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
-  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
-  *  License for the specific language governing permissions and limitations 
-  *  under the License. 
-  *  Author : Fen Mei / f.mei@samsung.com 
+ /*
+  *  Copyright 2018 SmartThings
+  *
+  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  *  use this file except in compliance with the License. You may obtain a copy
+  *  of the License at:
+  *
+  *      http://www.apache.org/licenses/LICENSE-2.0
+  *
+  *  Unless required by applicable law or agreed to in writing, software
+  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  *  License for the specific language governing permissions and limitations
+  *  under the License.
+  *  Author : Fen Mei / f.mei@samsung.com
   *  Date : 2018-07-06
-  */ 
+  */
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -22,13 +22,13 @@ metadata {
 		capability "Configuration"
 		capability "Sensor"
 		capability "Relative Humidity Measurement"
-        capability "Temperature Measurement"
+                  capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Battery"
 		fingerprint profileId: "0104",deviceId: "0302", inClusters: "0000,0001,0003,0402", model: "b467083cfc864f5e826459e5d8ea6079"
 	}
-	
+
 	tiles(scale: 2) {
 		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
@@ -59,7 +59,7 @@ metadata {
 	}
 }
 
-def installed() { 
+def installed() {
  	refresh()
 }
 
@@ -78,9 +78,7 @@ def parse(String description) {
 			} else {
 				log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 			}
-		}else if(descMap?.clusterInt == 0x0405 && descMap.commandInt != 0x07 && descMap?.value) {
-        	map = getHumidityResult(Integer.parseInt(descMap.value, 16))
-        }
+		}
 	}else if (map.name == "temperature") {
 		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
@@ -94,20 +92,6 @@ def parse(String description) {
 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
 	log.debug "${map}"
-	return result
-}
-
-private Map getHumidityResult(rawValue) {
-	log.debug "humidity rawValue = ${rawValue}%"
-	def result = [:]
-
-	if (0 <= rawValue && rawValue <= 100) {
-		result.name = 'humidity'
-		result.translatable = true
-		result.value = Math.round(rawValue)
-		result.descriptionText = "${device.displayName} humidity was ${result.value}%"
-	}
-
 	return result
 }
 
@@ -134,9 +118,9 @@ def ping() {
 
 def refresh() {
 	def refreshCmds = []
-		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021,[destEndpoint: 0x01])+
-        zigbee.readAttribute(0x0402, 0x0000,[destEndpoint: 0x01])+
-        zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
+	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021,[destEndpoint: 0x01])+
+	zigbee.readAttribute(0x0402, 0x0000,[destEndpoint: 0x01])+
+	zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
 	return refreshCmds
 }
 
@@ -146,19 +130,14 @@ def configure() {
 	sendEvent(name: "checkInterval", value:20 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
-    
-    //def humidityConfigCmds = [
-    //    "zdo bind 0x${device.deviceNetworkId} 2 2 0x0405 {${device.zigbeeId}} {}", "delay 500",
-    //    "zcl global send-me-a-report 0x0405 0 0x29 30 3600 {6400}",
-    //    "send 0x${device.deviceNetworkId} 2 2", "delay 500"
-    //]
 
 	def configCmds = []
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) + 
-    zigbee.temperatureConfig(30, 300)
-    zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 300, 2)
+	configCmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
+	zigbee.temperatureConfig(30, 300) +
+	zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100,[destEndpoint: 0x02])
 
-	return configCmds+refresh()// send refresh cmds as part of config
+	return configCmds
 }
+
