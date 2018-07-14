@@ -25,11 +25,12 @@ metadata {
         capability "Sensor"
         capability "Battery"
         capability "Configuration"
-        capability "Health Check"
+        //capability "Health Check"
         capability "Temperature Measurement"
         
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
+        attribute "firmware", "String"
         
         command "setAssociationGroup", ["number", "enum", "number", "number"] // group number, nodes, action (0 - remove, 1 - add), multi-channel endpoint (optional)
 

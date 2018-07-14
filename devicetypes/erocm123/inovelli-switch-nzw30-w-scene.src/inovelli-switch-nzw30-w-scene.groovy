@@ -1,7 +1,7 @@
  /**
  *  Inovelli Switch NZW30/NZW30T w/Scene
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-06-13
+ *  Date: 2018-06-20
  *
  *  Copyright 2018 Eric Maycock
  *
@@ -14,7 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  2018-06-13: Modified tile layout. Update firmware version reporting.
+ *  2018-06-20: Modified tile layout. Update firmware version reporting. Bug Fix.
  * 
  *  2018-06-08: Remove communication method check from updated().
  * 
@@ -37,7 +37,7 @@ metadata {
 		capability "Polling"
 		capability "Actuator"
 		capability "Sensor"
-        capability "Health Check"
+        //capability "Health Check"
         capability "Button"
         capability "Holdable Button"
         capability "Configuration"

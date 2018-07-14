@@ -1,7 +1,7 @@
 /**
  *  Inovelli Switch NZW30
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-06-13
+ *  Date: 2018-06-20
  *  Copyright 2018 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -13,7 +13,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  2018-06-13: Modified tile layout. Update firmware version reporting.
+ *  2018-06-20: Modified tile layout. Update firmware version reporting. Bug Fix.
  * 
  *  2018-06-08: Remove communication method check from updated().
  * 
@@ -36,7 +36,7 @@ metadata {
 		capability "Polling"
 		capability "Actuator"
 		capability "Sensor"
-        capability "Health Check"
+        //capability "Health Check"
         capability "Configuration"
         
         attribute "lastActivity", "String"

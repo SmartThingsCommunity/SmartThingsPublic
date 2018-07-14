@@ -1,9 +1,9 @@
  /**
  *  Inovelli 2-Channel Smart Plug NZW37 w/Scene
  *  Author: Eric Maycock (erocm123)
- *  Date: 2017-10-17
+ *  Date: 2018-06-13
  *
- *  Copyright 2017 Eric Maycock
+ *  Copyright 2018 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-06-13: Modified tile layout. Update firmware version reporting.
+ * 
  */
  
 metadata {
@@ -23,11 +25,12 @@ metadata {
         capability "Switch"
         capability "Polling"
         capability "Refresh"
-        capability "Health Check"
+        //capability "Health Check"
         capability "Button"
         
         attribute "lastActivity", "String"
         attribute "lastEvent", "String"
+        attribute "firmware", "String"
         
         command "pressUpX2"
 
@@ -56,24 +59,28 @@ metadata {
         
         childDeviceTiles("all")
         
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
-        }
-        
-        standardTile("pressUpX2", "device.button", width: 4, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▲▲", backgroundColor: "#ffffff", action: "pressUpX2"
-        }
-        
         valueTile("lastActivity", "device.lastActivity", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
             state "default", label: 'Last Activity: ${currentValue}',icon: "st.Health & Wellness.health9"
         }
         
-        valueTile("info", "device.info", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-            state "default", label: 'Tap on the ▲▲ button above to test your scene'
+        valueTile("firmware", "device.firmware", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+            state "default", label: 'fw: ${currentValue}', icon: ""
         }
         
-        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+        valueTile("info", "device.info", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+            state "default", label: 'Tap on the ▲▲ button below to test your scene'
+        }
+        
+        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+        }
+        
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+            state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
+        }
+        
+        standardTile("pressUpX2", "device.button", width: 6, height: 1, decoration: "flat") {
+            state "default", label: "Tap ▲▲", backgroundColor: "#ffffff", action: "pressUpX2"
         }
     }
 }
@@ -86,6 +93,12 @@ def parse(String description) {
     } else {
         log.debug "Non-parsed event: ${description}"
     }
+    def now
+    if(location.timeZone)
+    now = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
+    else
+    now = new Date().format("yyyy MMM dd EEE h:mm:ss a")
+    sendEvent(name: "lastActivity", value: now, displayed:false)
     return result
 }
 
@@ -171,6 +184,15 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
     def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
     log.debug "msr: $msr"
     updateDataValue("MSR", msr)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    log.debug cmd
+    if(cmd.applicationVersion && cmd.applicationSubVersion) {
+	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
+        state.needfwUpdate = "false"
+        createEvent(name: "firmware", value: "${firmware}")
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -263,6 +285,7 @@ def updated() {
     sendEvent(name: "checkInterval", value: 3 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
     sendEvent(name: "numberOfButtons", value: 1, displayed: true)
     def cmds = []
+    cmds << zwave.versionV1.versionGet()
     cmds << zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
     cmds << zwave.associationV2.associationGet(groupingIdentifier:1)
     cmds << zwave.configurationV1.configurationSet(configurationValue: [ledIndicator? ledIndicator.toInteger() : 0], parameterNumber: 1, size: 1)

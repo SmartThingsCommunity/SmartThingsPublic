@@ -3,8 +3,8 @@
  *  Inovelli 2-Channel Smart Plug
  *   
  *  github: Eric Maycock (erocm123)
- *  Date: 2017-04-27
- *  Copyright Eric Maycock
+ *  Date: 2018-06-13
+ *  Copyright 2018 Eric Maycock
  *
  *  Includes all configuration parameters and ease of advanced configuration. 
  *
@@ -17,6 +17,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+  *  2018-06-13: Modified tile layout. Update firmware version reporting.
+ * 
  */
 metadata {
     definition(name: "Inovelli 2-Channel Smart Plug (Alternate)", namespace: "erocm123", author: "Eric Maycock") {
@@ -25,7 +27,11 @@ metadata {
         capability "Switch"
         capability "Polling"
         capability "Refresh"
-        capability "Health Check"
+        //capability "Health Check"
+        
+        attribute "lastActivity", "String"
+        attribute "lastEvent", "String"
+        attribute "firmware", "String"
         
         fingerprint mfr: "015D", prod: "0221", model: "251C"
         fingerprint mfr: "0312", prod: "B221", model: "251C"
@@ -42,13 +48,24 @@ metadata {
                 attributeState "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc", nextState: "turningOff"
             }
         }
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        childDeviceTiles("all")
+        valueTile("lastActivity", "device.lastActivity", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+            state "default", label: 'Last Activity: ${currentValue}',icon: "st.Health & Wellness.health9"
+        }
+        
+        valueTile("firmware", "device.firmware", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+            state "default", label: 'fw: ${currentValue}', icon: ""
+        }
+        
+        
+        valueTile("icon", "device.icon", inactiveLabel: false, decoration: "flat", width: 5, height: 1) {
+            state "default", label: '', icon: "https://inovelli.com/wp-content/uploads/Device-Handler/Inovelli-Device-Handler-Logo.png"
+        }
+        
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
         }
-        main(["switch"])
-        details(["switch",
-            childDeviceTiles("all"), "refresh"
-        ])
+
     }
 }
 def parse(String description) {
@@ -60,6 +77,12 @@ def parse(String description) {
     } else {
         logging("Non-parsed event: ${description}", 2)
     }
+    def now
+    if(location.timeZone)
+    now = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
+    else
+    now = new Date().format("yyyy MMM dd EEE h:mm:ss a")
+    sendEvent(name: "lastActivity", value: now, displayed:false)
     return result
 }
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
@@ -220,6 +243,7 @@ def updated() {
     }
     sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     sendEvent(name: "needUpdate", value: device.currentValue("needUpdate"), displayed: false, isStateChange: true)
+    return command(zwave.versionV1.versionGet())
 }
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
     logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'", 2)
