@@ -776,50 +776,6 @@ allows for it, instead of only when cooling is required (see below)"""
                         paragraph "Be aware that you have selected $Away as your AWAY mode. Make sure this is the mode for when there's nobody home"
                     }
                 }
-                if(Actuators && !NotWindows){
-                    input(name: "Venting", type: "bool", title: "Allow A.I. to temporarily vent the place when wheather permits it", default: false, submitOnChange: true)
-                    if(Venting){
-                        def MyWindows = []
-                        Actuators?.each {MyWindows << "$it"}
-
-
-                        paragraph """this option will allow your windows to temporarilly but safely override 
-the temperature thresholds you set above and will use outside cool air to cool your 
-place and never allow for the A.C. to do it while it's cold enough outside. """
-
-                        input(name: "ActuatorsVenting", type: "capability.switch",
-                              title: "using these windows...", 
-
-                              multiple: true,
-                              submitOnChange: true,
-                              required: true
-                             )
-                        input(name: "VentingModes", type: "mode", title: "Under which modes should this be happening?", required: true, multiple: true, submitOnChange: true)
-
-
-                        input(name: "VentingException", type: "bool", title: "Set some exceptions", default: false, submitOnChange: true)
-                        if(VentingException){
-                            input(name: "ActuatorsVentingException", type: "capability.switch", required: true, 
-                                  multiple: true, 
-                                  title: "Make an exception for these windows", 
-                                  submitOnChange: true, 
-                                  defaultValue: "$ActuatorException"
-                                 )
-                            def ActuatorsVentingCOLL = ActuatorsVenting.collect{ it.toString() }
-                            def ActuatorsVentingExceptionCOLL = ActuatorsVentingException.collect{ it.toString() }
-                            def Intersection = ActuatorsVentingExceptionCOLL.intersect(ActuatorsVenting)
-                            def WarningSame = Intersection.size() != 0
-                            if(WarningSame){
-                                paragraph "WARNING! IDENTICAL DEVICES!"
-                                //log.debug "WARNING! IDENTICAL DEVICES!"
-                            }
-                            else {
-                                input(name: "VentingModesException", type: "mode", required: true, multiple: true, title: "DO NOT OPEN $ActuatorsVentingException Under these modes", submitOnChange: true)
-                            }       
-                        }
-                    }
-                }
-
             }
             if(Actuators && !NotWindows){
                 section("Save power by opening windows instead of running ac in certain rooms under certain conditions"){
@@ -867,7 +823,7 @@ def installed() {
     state.humidity = HumidityTolerance - 1
 
     //log.debug "state.humidity is $state.humidity (updated() loop)"
-    state.wind = 4
+    state.wind = 0
     state.FeelsLike = OutsideSensor?.latestValue("feelsLike")
 
     state.OpenByApp = true
@@ -946,8 +902,7 @@ state.CSPSet = $state.CSPSet"""
     // reset A.I. override maps
     state.HSPMap = [:]
     state.CSPMap = [:]
-    // reset venting options
-    state.coldbutneedcool = 0          
+
     MiscSubscriptions()
 }
 
@@ -2015,11 +1970,11 @@ CSPSet for $ThermSet is $CSPSet
                 //Inside = Inside.toInteger()
 
                 state.Inside = Inside
-                def humidity = OutsideSensor.currentValue("temperature")
-                def TooHumid = humidity > HumidityTolerance && Outside > CSPSet 
+                def humidity = OutsideSensor.currentValue("humidity")
+                def TooHumid = humidity > HumidityTolerance 
 
                 def INSIDEhumidity = ThermSet.latestValue("humidity")   
-                def TooHumidINSIDE =  INSIDEhumidity > 60 // 60% is the known healthy limit for a house
+                def TooHumidINSIDE = INSIDEhumidity > 60 // 60% is the known healthy limit for a house
 
                 log.trace """        
 ThermsInvolved = ${Thermostats.size()} 
@@ -2043,7 +1998,6 @@ inside humidity tolerance is 60 (built-in value, not modifiable by user)
 
                 //log.debug "CurrTemp = $CurrTemp ($ThermSet)"
                 state.CurrTemp = CurrTemp
-
 
                 def defaultCSPSet = CSPSet // recording this default value so if A.I. brings setpoint too low, it'll be recovered
                 def defaultHSPSet = HSPSet // same but with heat
@@ -2249,8 +2203,8 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 def WarmInside = (CurrTemp > defaultCSPSet && WarmOutside) || (CurrTemp > defaultCSPSet && TooHumidINSIDE && Active) 
                 //log.debug "CurrTemp = $CurrTemp, outsideTemp = $outsideTemp, CSPSet = $CSPSet, WarmOutside = $WarmOutside, WarmInside = $WarmInside"
 
-                def ShouldCoolWithAC = WarmOutside && WarmInside && state.NeedVenting == false
-                state.ShouldCoolWithAC = ShouldCoolWithAC // will be used by venting option
+                def ShouldCoolWithAC = WarmOutside && WarmInside
+                state.ShouldCoolWithAC = ShouldCoolWithAC // 
 
                 log.debug "$ThermSet ShouldCoolWithAC = $ShouldCoolWithAC (before other criteria loop $loopValue)"
 
@@ -2403,6 +2357,7 @@ ContactExceptionIsClosed = $ContactExceptionIsClosed
 Too Humid INSIDE?($TooHumidINSIDE : ${INSIDEhumidity}%)
 
 Too Humid OUTSIDE?($TooHumid : $humidity)
+WindValue = $WindValue
 ShouldCoolWithAC = $ShouldCoolWithAC (loop $loopValue), 
 ShouldHeat = $ShouldHeat
 Current setpoint for $ThermSet is $CurrentCoolingSetPoint, 
@@ -2783,35 +2738,13 @@ Xtra Sensor (for critical temp) is $XtraTempSensor and its current value is $cur
 
                 message = "Closing windows because $state.causeClosed"
                 send(message)
+                // no intersection between those devices so these windows / fans will now stop/close
+                valw = 2
+                CloseWindows(valw, "null")
+                // allow for user to reopen them if they want to. 
+                state.windowswereopenandclosedalready = true // windows won't close again as Long as temperature is still critical to allow for user's override 
+                // this value must not be reset by updated() because updated() is run by contacthandler it is only reset here or after new installation of the app
 
-                // see if these are the same devices as ventings'
-                // see if these switches are the same devices as ventings'
-                def ActuatorsVentingCOLL = ActuatorsVenting.collect{ it.toString() }
-                def ActuatorsCOLL = Actuators.collect{ it.toString() }
-                def Intersection = ActuatorsVentingCOLL.intersect(ActuatorsCOLL)
-                def Same = Intersection.size() != 0
-                //log.debug "Actuators intersect VentingActuators"
-
-                if(Same){ // venting supercedes !OkToOpen() when the corresponding devices interesect
-
-                    if((state.coldbutneedcool == 0 || state.ShouldCoolWithAC == true) && state.OpenByApp == true){
-                        valw = 1
-                        CloseWindows(valw)
-                        // allow for user to reopen them if they want to. 
-                        state.windowswereopenandclosedalready = true // windows won't close again as Long as temperature is still critical to allow for user's override 
-                        // this value must not be reset by updated() because updated() is run by contacthandler it is only reset here or after new installation of the app
-                    }
-                    else {
-                        log.debug "not closing windows because state.coldbutneedcool = $state.coldbutneedcool"
-                    }
-                }
-                else { // no intersection between those devices so these windows / fans will now stop/close
-                    valw = 2
-                    CloseWindows(valw)
-                    // allow for user to reopen them if they want to. 
-                    state.windowswereopenandclosedalready = true // windows won't close again as Long as temperature is still critical to allow for user's override 
-                    // this value must not be reset by updated() because updated() is run by contacthandler it is only reset here or after new installation of the app
-                }
             }
             else { 
                 message = "doors and windows already reopened by user so not running emergency closing. BEWARE! these windows will not close again"
@@ -2838,20 +2771,17 @@ def contactHandlerClosed(evt) {
 
     def message = ""
 
-    //log.debug "$evt.device is $evt.value" 
-
-    log.info "List of devices' status is $CurrentContactsState"
-
+    log.debug "$evt.device is $evt.value" 
 
     if(!AllContactsAreClosed()){
-        //log.debug "Not all contacts are closed, doing nothing"
+        log.debug "Not all contacts are closed, doing nothing"
 
     }
     else {      
-        //log.debug "all contacts are closed, unscheduling previous TurnOffThermostats command"
+        log.debug "all contacts are closed, unscheduling previous TurnOffThermostats command"
         unschedule(TurnOffThermostats) // in case were closed within time frame
 
-        //log.debug "state.ClosedByApp = $state.ClosedByApp"
+        log.debug "state.ClosedByApp = $state.ClosedByApp"
 
         if(state.ClosedByApp == false && state.OpenByApp == true && evt.value == "closed"){ 
 
@@ -2867,7 +2797,7 @@ def contactHandlerClosed(evt) {
 
 }
 def contactHandlerOpen(evt) {
-    //log.debug "$evt.device is now $evt.value, Turning off all thermostats in $TimeBeforeClosing seconds"
+    log.debug "$evt.device is now $evt.value, Turning off all thermostats in $TimeBeforeClosing seconds"
 
     runIn(TimeBeforeClosing, TurnOffThermostats)  
     def message = "TurnOffThermostats scheduled to run in $TimeBeforeClosing seconds"
@@ -2904,8 +2834,6 @@ def ChangedModeHandler(evt) {
 
     if(ContactsClosed) {
         // windows are closed 
-        state.ClosedByApp = true // app will open windows if needed 
-        state.OpenByApp = false 
         // has to be the default value so it doesn't close again if user opens windows manually or another app does so 
         // Beware! this can be a serious safety concern (for example, if a user has these windows linked to a smoke detector)
         // so do not modify these parameters under any circumstances 
@@ -3102,7 +3030,7 @@ CurrentContacts States = $CurrentContacts"""
         def OpenContacts = Maincontacts.findAll {it.currentValue("contact") == "open"}
         log.debug "OpenContacts are = $OpenContacts || OpenContacts.size() = ${OpenContacts.size()}"
         // for how long ?
-        if(OpenContacts.size() != 0){
+        if(OpenContacts.size() == 1){
 
             def devicecontact = OpenContacts[0]
             def contactState = devicecontact.currentState("contact")
@@ -3118,31 +3046,40 @@ CurrentContacts States = $CurrentContacts"""
                 // it's probably a failed sensor or a user error (like leaving a windows open by accident)
                 // return true so ac or heat can resume 
                 MainContactsAreClosed = true
+                log.debug "state.triedtocloseagain = $state.triedtocloseagain"
+
+                //state.triedtocloseagain = 0 // TEST ONLY COMMENT OUT 
 
                 // attempt a fix
                 if(state.triedtocloseagain < 1){
                     // try to open and close windows again
 
                     log.debug "windows fix attempt"
-                    state.OpenByApp = true
-                    runIn(50, OpenWindows(1, "fixattempt"))
+                    state.OpenByApp = true // necessary override of these values here (only exception with critical temp in temphandler)
+                    state.ClosedByApp = true // necessary override of these values here 
+					
+                    state.FixAwait = true // allows following 'else' condition to not be met until fix attempt is done
+                    runIn(70, RunOpenWindowsFix)
 
                     state.triedtocloseagain = state.triedtocloseagain + 1
                 }
-                else {
+                else if (state.FixAwait != true){
                     // auto fix failed, so push a message
-                    def message = "emergency message: $devicecontact seems to be defective - make sure all your windows are closed"
+                    def message = "emergency message: AutoFix Failed | $devicecontact seems to be defective - make sure all your windows are closed"
+                    log.info message
+                    
+                    if(elapsed >= state.xval){            
+                        send(message)   
+                        state.xval = elapsed + 10 // resend every 10 minutes
+                    }
                 }
-
-                log.info message
-                log.debug "elapsed > state.xval ==> $elapsed > ${state.xval}"
-                if(elapsed >= state.xval){            
-                    send(message)   
-                    state.xval = elapsed + 10 // resend every 10 minutes
+                else {
+                log.debug "awaiting for fix attempt before asserting failure"
                 }
             }
         }
         else {
+         log.debug "elapsed > state.xval ==> $elapsed > ${state.xval}"
             state.xval = 0
         }
     }
@@ -3153,27 +3090,36 @@ CurrentContacts States = $CurrentContacts"""
 MainContactsClosed returns $MainContactsAreClosed"""
     return MainContactsAreClosed
 }
+def RunOpenWindowsFix(){
+    OpenWindows(0, "fixattempt")
+    runIn(20, RunCloseWindowsFix)
+}
+def RunCloseWindowsFix(){
+    CloseWindows(0, "fixattempt")
+    state.FixAwait = false
+}
+
 def ExcepContactsClosed(){
 
     def ContactsExepClosed = true
     if(ContactException){
         def CurrentContactsExept = ContactException.currentValue("contact")    
-        //log.debug "CurrentContactsExept = $CurrentContactsExept && ContactException are $ContactException"
+        log.debug "CurrentContactsExept = $CurrentContactsExept && ContactException are $ContactException"
 
         def ClosedContactsExpt = CurrentContactsExept.findAll { AllcontactsExeptAreClosed ->
             AllcontactsExeptAreClosed == "closed" ? true : false
         }
         ContactsExepClosed = ClosedContactsExpt.size() == ContactException.size() 
-        //log.debug "${ClosedContactsExpt.size()} windows/doors out of ${ContactException.size()} are closed SO ContactsExepClosed = $ContactsExepClosed"
+        log.debug "${ClosedContactsExpt.size()} windows/doors out of ${ContactException.size()} are closed SO ContactsExepClosed = $ContactsExepClosed"
 
         def NoTurnOffOnContact = Thermostats.find {NoTurnOffOnContact << it.device}        
 
-        //log.debug "NoTurnOffOnContact = $NoTurnOffOnContact --------------"
+        log.debug "NoTurnOffOnContact = $NoTurnOffOnContact --------------"
 
         def CurrTherMode = NoTurnOffOnContact.currentValue("thermostatMode")
-        //log.debug "Current Mode for $ThermContact is $CurrTherMode"
+        log.debug "Current Mode for $ThermContact is $CurrTherMode"
         if(CurrTherMode != "off" && !ContactsExepClosed && AppMgt){
-            //log.debug "$NoTurnOffOnContact is on, should be off. Turning it off" 
+            log.debug "$NoTurnOffOnContact is on, should be off. Turning it off" 
             NoTurnOffOnContact.setThermostatMode("off") 
             state.LatestThermostatMode_T1 = "off"
         }
@@ -3286,22 +3232,25 @@ def DoubleChekcThermostats(){
                 }
                 if(!AppMgt && ThermState != "off") {
                     if(!ThisIsExceptionTherm){
-                        log.debug "$device in OVERRIDE MODE. Will be set to fan only if its state doesn't change within time threshold"
-                        runIn(5, FanOnly("$device"))
+                        log.debug "$device in OVERRIDE MODE. Will be set to fan only if its state doesn't change within time threshold" 
+                        runIn(5, RunFanOnly)
                     }
                     if(ThisIsExceptionTherm && !ExcepContactsClosed()){
                         log.debug "$device in OVERRIDE MODE. Will be set to fan only if its state doesn't change within time threshold"
-                        runIn(5, FanOnly("$device"))
+                        runIn(5, RunFanOnly)
                     }
                     if(ThisIsExceptionTherm && !InExceptionContactMode){
                         device.setThermostatMode("off") 
                         log.debug "$device in OVERRIDE MODE. Will be set to fan only if its state doesn't change within time threshold"
-                        runIn(5, FanOnly("$device"))
+                        runIn(5, RunFanOnly)
                     }
                 }
             }
         }
     }
+}
+def RunFanOnly(){
+    FanOnly("$device")
 }
 def FanOnly(String device){
     if(state.CRITICAL == false){
@@ -3467,16 +3416,15 @@ state.messageSent($state.messageSent)
         def WarmEnoughOutside = outsideTemp >= 60
 
 
-        if(AllContactsClosed || state.ventingrun == 1){
+        if(AllContactsClosed){ // allows for a de facto override if any windows was opened manually
+
             log.debug "OpenInfullWhenAway = $OpenInfullWhenAway, inAway = $inAway"
             if( inAway && ClosedByApp != true && OpenInfullWhenAway && WarmEnoughOutside){
                 ClosedByApp = true
             }        
-            log.debug "opening windows because Home is in Away Mode"
+            log.debug "opening windows--"
 
             OpenWindows(2, "null")
-            state.OpenByApp = true
-            state.ClosedByApp = false // so it doesn't open again
 
             if(inAway && OpenInfullWhenAway){
                 OpenWindows(3, "exception")
@@ -3502,117 +3450,59 @@ state.messageSent($state.messageSent)
                 message = "I'm turning on $Actuators because $state.causeOpen"
             }
             log.info message 
-            //send(message)
-
-
-
+            send(message)
         }
     }
     // if not ok to open and it is open then close
-    else if (!AllContactsClosed) {
-        // see if these are the same devices as ventings'
-        // see if these switches are the same devices as ventings'
-        def ActuatorsVentingCOLL = ActuatorsVenting.collect{ it.toString() }
-        def ActuatorsCOLL = Actuators.collect{ it.toString() }
-        def Intersection = ActuatorsVentingCOLL.intersect(ActuatorsCOLL)
-        def Same = Intersection.size() != 0
-        //log.debug "Actuators intersect VentingActuators"
-        int valw
-        if(Same){ // venting supercedes !OkToOpen() when the corresponding devices interesect       
-            if(state.coldbutneedcool == 0 || state.ShouldCoolWithAC == true){
-                valw = 3
-                CloseWindows(valw)
-                message = "I'm closing windows because $state.causeClose"
-                //send(message)
-                log.info message 
-                state.ClosedByApp = true
-                state.OpenByApp = false // so it doesn't close again if user opens it manually
+    else {
 
-            }
-            else {
-                //log.debug "not closing windows because state.coldbutneedcool = $state.coldbutneedcool"
-            }
-        }
-        else { // no intersection between those devices so these windows / fans will now stop/close // if not open manually
-            valw = 4
-            CloseWindows(valw)
-            message = "I'm closing windows because $state.causeClose"
-            //send(message)
-            log.info message 
-
-            state.ClosedByApp = true
-            state.OpenByApp = false // so it doesn't close again if user opens it manually
-        }
+        int valw = 4
+        CloseWindows(valw, "null")
+        message = "I'm closing windows because $state.causeClose"
+        //send(message)
+        log.info message 
     }
 }
-def CloseWindows(val){
 
-    def i = 0
-    def ts = Thermostats.size()
-    def ThisTherm = null 
+def CloseWindows(val, str){
 
 
-    if(state.NeedVenting == false || state.ShouldCoolWithAC == true){
-        if(state.OpenByApp == true && state.CRITICAL == false){
-            Actuators?.off()
-            ActuatorException?.off()
-            ActuatorsVenting?.off()
-            ActuatorsVentingException?.off()
-
-            state.OpenByApp = false
-            state.ClosedByApp = true
-            log.debug """closing windows (command coming from $val): 
+    log.debug """closing windows (command coming from $val): 
 state.coldbutneedcool = $state.coldbutneedcool
-state.NeedVenting = $state.NeedVenting
+
 state.OpenByApp = $state.OpenByApp
 """
-            // reseting fans to auto 
-            i = 0
-            for(ts != 0; i < ts; i++){
-                ThisTherm = Thermostats[i]
-                // don't do it for a thermostat currently cooling or heating (for execption contact thermostat)
-                if(ThisTherm.currentValue("thermostatFanMode") != "auto") { // avoid repeated commands
-                    ThisTherm.setThermostatFanMode("auto")
-                    log.debug "$ThisTherm fan set back to auto"
-                }
-                else {
-                    log.debug "$ThisTherm fan already set to auto"
-                } 
+
+    if(state.OpenByApp == true){
+        Actuators?.off()
+        ActuatorException?.off()
+        state.OpenByApp = false
+        state.ClosedByApp = true
+
+        // reseting fans to auto 
+        i = 0
+        for(ts != 0; i < ts; i++){
+            ThisTherm = Thermostats[i]
+            // don't do it for a thermostat currently cooling or heating (for execption contact thermostat)
+            if(ThisTherm.currentValue("thermostatFanMode") != "auto") { // avoid repeated commands
+                ThisTherm.setThermostatFanMode("auto")
+                log.debug "$ThisTherm fan set back to auto"
             }
-        }
-        else {
-            log.debug "not closing windows because they were manually opened"
+            else {
+                log.debug "$ThisTherm fan already set to auto"
+            } 
         }
     }
     else {
-        log.debug "NOT closing windows (command coming from $val) because in venting mode. Turning fans on instead"
-        i = 0
-
-        for(ts != 0; i < ts; i++){
-            ThisTherm = Thermostats[i]
-            if(ThisTherm.currentValue("thermostatMode") == "off"){
-                // don't do it for a thermostat currently cooling or heating (for execption contact thermostat)
-                if(ThisTherm.currentValue("thermostatFanMode") != "on") { // avoid repeated commands
-                    ThisTherm.setThermostatFanMode("on")
-                    log.debug "$ThisTherm fan turned on"
-                }
-                else {
-                    log.debug "$ThisTherm fan already turned on"
-                }
-            }
-        }
+        log.debug "not closing windows because they were manually opened"
     }
-
 }
+
 def OpenWindows(val, str){ 
     def outsideTemp = OutsideSensor?.currentValue("temperature")
 
-    if(str == "fixattempt"){
-        state.ClosedByApp = true
-        log.debug "End and closing fix attempt in 5 seconds"
-        runIn(5, CloseWindows(6))       
-    }
-    else if(state.ClosedByApp == true || (location.currentMode in Away && OpenInfullWhenAway)){
+
+    if(state.ClosedByApp == true || (location.currentMode in Away && OpenInfullWhenAway)){
         Actuators?.on()
         log.debug "Opening windows (cmd sent from $val)"
         if(str == "exception"){ 
@@ -3626,15 +3516,30 @@ def OpenWindows(val, str){
         log.debug "NOT Opening windows (cmd sent from $val)"
     }
 
+    def i = 0
+    def ts = Thermostats.size()
+    def ThisTherm = null 
+
+    for(ts != 0; i < ts; i++){
+        ThisTherm = Thermostats[i]
+        if(ThisTherm.currentValue("thermostatMode") == "off"){
+            // don't do it for a thermostat currently cooling or heating (for execption contact thermostat)
+            if(ThisTherm.currentValue("thermostatFanMode") != "on") { // avoid repeated commands
+                ThisTherm.setThermostatFanMode("on")
+                log.debug "$ThisTherm fan turned on"
+            }
+            else {
+                log.debug "$ThisTherm fan already turned on"
+            }
+        }
+    }
+
 }
 def OkToOpen(){
     int valw
     def message = ""
     //log.debug "OkToOpen()"
     def ContactsClosed = AllContactsAreClosed()
-     if(ContactsClosed){
-        state.ventingrun = 0 // allows future venting
-    }
 
     def CSPSet = state.CSPSet
     def HSPSet = state.HSPSet
@@ -3647,43 +3552,6 @@ def OkToOpen(){
     def Inside = XtraTempSensor.currentValue("temperature")
     def CurrTemp = Inside 
 
-    // build an average temperature reference for quick venting/cooling option
-    def ts = Thermostats.size()
-    def i = 0
-    def thermTemp = 0
-    def ThisTherm = null
-    def ThermList = []
-    def thermCSP = 0
-    def totalCSP = 0
-    def totalTemp = 0
-    def ThermTempList = []
-    def ThermCSPList = []
-    def itscooling = false
-    def currentOperation = ""
-
-    for(ts != 0; i < ts; i++){
-        ThisTherm = Thermostats[i]
-        thermTemp = ThisTherm.currentValue("temperature").toInteger()
-        //log.debug "thermTemp = $ThisTherm: $thermTemp"
-        thermCSP = CSPSet?.toInteger()
-        //ThermTempList << [thermTemp]
-        //ThermCSPList << [thermCSP]
-        totalTemp += thermTemp
-        totalCSP += thermCSP
-        // //log.debug "totalTemp = $totalTemp, totaCSP = $totalCSP"
-
-        currentOperation = ThisTherm.latestValue("thermostatMode")
-        //log.debug "currentOperation for $ThisTherm is '$currentOperation'"
-        if(currentOperation == "cool"){
-            itscooling = true
-            //log.debug" itscooling set to TRUE" // this will avoid using AC when it's cool outside and have venting operation
-        }
-    }    
-
-    def AverageCurrTemp = totalTemp/ts
-    def AverageCSPSet = totalCSP/ts
-    log.debug "AverageCurrTemp = $AverageCurrTemp && AverageCSPSet = $AverageCSPSet && itscooling = $itscooling"
-
     def Outside = OutsideSensor.currentValue("temperature")
     //Outside = Double.parseDouble(Outside)
     //Outside = Outside.toInteger()
@@ -3693,14 +3561,12 @@ def OkToOpen(){
 
     def OutsideTempHighThres = ExceptACModes()
     def ExceptHighThreshold1 = ExceptHighThreshold1
-    //log.debug "test"
 
-    //def humidity = OutsideSensor?.latestValue("humidity")
-    def humidity = OutsideSensor.currentValue("temperature")
+    def humidity = OutsideSensor?.currentValue("humidity")
     //humidity = Double.parseDouble(humidity)
     //humidity = humidity.toInteger()
     //log.debug "Inside = $Inside | Outside = $Outside"
-    def WindValue = state.wind
+    def WindValue = OutsideSensor?.currentValue("wind")
     WindValue = WindValue.toInteger()
 
     def ItfeelsLike = state.FeelsLike
@@ -3712,10 +3578,12 @@ def OkToOpen(){
     def TooHumid = false
     if(humidity > HumidityTolerance){
         TooHumid = true
+        log.debug "IT IS TOO HUMID OUTSIDE"
     }
-    if((WindValue > 3 || Outside < Inside + 2) && humidity <= HumidityTolerance + 3){
-        TooHumid = false
-    }
+    //if(WindValue > 3){
+    //log.debug "wind value is higher than 3 so TooHumid val corrected to 'false'"
+    //   TooHumid = false
+    // }
 
     def OutSideWithinMargin = Outside >= OutsideTempLowThres && Outside <= OutsideTempHighThres && (!OutsideFeelsHotter || OutsideFeelsHotter == null)     
     if(TooHumid){
@@ -3735,150 +3603,14 @@ def OkToOpen(){
     def inHomeMode = CurrMode in Home
 
     def result = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool && !TooHumid && !OutsideFeelsHotter
-    
+
     def ShouldCoolWithAC = state.ShouldCoolWithAC // AverageCurrTemp - 3 > AverageCSPSet
 
-    def NeedVenting = !TooHumid && Outside < AverageCurrTemp - 1 && !ShouldHeat && state.more == 0
-    state.NeedVenting = NeedVenting
-    def NeedToCloseAfterVenting = (AverageCurrTemp < AverageCSPSet - 1 && state.ventingrun > 0) || (ShouldCoolWithAC && state.ventingrun > 0) && state.more > 4
-
-   
-
-    def inVentingModes = CurrMode in VentingModes
-    def inVentingModesException = CurrMode in VentingModesException
     log.debug """
 ShouldCoolWithAC = $ShouldCoolWithAC
-inVentingModes = $inVentingModes
-inVentingModesException = $inVentingModesException
-NeedVenting = $NeedVenting
-state.more = $state.more 
-NeedToCloseAfterVenting = $NeedToCloseAfterVenting 
-state.coldbutneedcool = $state.coldbutneedcool 
-state.ventingrun = $state.ventingrun 
-itscooling = $itscooling
 OpenWhenEverPermitted = $OpenWhenEverPermitted
 """
 
-
-    if(CurrMode in Away){
-        log.debug "in $CurrMode mode, not venting"
-    }
-    else if (inVentingModes){
-        if(NeedVenting){
-
-            if(ShouldHeat){
-                state.coldbutneedcool = 1 
-                log.info"state.coldbutneedcool set to $state.coldbutneedcool"
-            }
-
-            // open windows just to cool down a little while it's cold outside but too hot inside instead of using AC 
-            if(state.ventingrun == 0){
-                log.debug "VENTING THE HOUSE because NeedVenting = $NeedVenting"
-                TurnOffThermostats()
-
-                i = 0
-                for(ts != 0; i < ts; i++){
-                    ThisTherm = Thermostats[i]
-                    if(ThisTherm.currentValue("thermostatMode") == "off"){
-                        // don't do it for a thermostat currently cooling or heating (for execption contact thermostat)
-                        if(ThisTherm.currentValue("thermostatFanMode") != "on") { // avoid repeated commands
-                            def thermMode = ThisTherm.setThermostatFanMode("on")
-                            log.debug "$ThisTherm fan turned on"
-                        }
-                        else {
-                            log.debug "$ThisTherm fan already turned on"
-                        }
-                    }
-                }
-                ActuatorsVenting?.on()
-
-                if(!inVentingModesException){
-                    ActuatorsVentingException?.on()
-                }
-                state.OpenByApp = true
-
-                runIn(20, StopActuators)
-                message = "Venting the place to cool it down a little"
-                log.info message
-                send(message)
-
-                state.ventingrun = state.ventingrun + 1 
-
-            }
-            else {
-                log.debug "Venting already executed $state.ventingrun time"
-
-                // however... 
-                if(!ContactsClosed && AverageCurrTemp - 2 > AverageCSPSet && AverageCurrTemp < AverageCSPSet + 4){
-                    // if CSP is 72, Average 75 then Average is still lower than 76
-                    // it got hotter inside despite opening windows
-                    // open them more 
-                    log.debug """
-opening a bit more
-AverageCurrTemp - 2 = ${AverageCurrTemp - 2}
-AverageCSPSet = $AverageCSPSet
-AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
-state.more = $state.more
-
-"""
-                    ActuatorsVenting?.on()
-                    state.OpenByApp = true
-
-                    if(!inVentingModesException){
-                        ActuatorsVentingException?.on()
-                    }
-                    runIn(20, StopActuators)
-                    state.more = state.more + 1
-                }
-                else if(!ContactsClosed && AverageCurrTemp - 3 > AverageCSPSet && state.more > 4){
-                    // still getting too hot
-                    // if CSP is 72, Average 76 then Average -3 = 73 is still higher than 72
-                    // and we already tried to open fully
-                    // trigger full closing so AC can run instead 
-                    log.debug """still too hot, closing entirely
-
-AverageCurrTemp - 2 = ${AverageCurrTemp - 2}
-AverageCSPSet = $AverageCSPSet
-AverageCurrTemp < AverageCSPSet + 4 = ${AverageCurrTemp < AverageCSPSet}
-state.more = $state.more
-"""
-                    state.coldbutneedcool = 0 
-                }
-            }
-        }
-        else {
-            // set fans back to auto
-            i = 0
-            for(ts != 0; i < ts; i++){
-                if(ThisTherm.currentValue("thermostatFanMode") != "auto") { // avoid repeated commands
-                    thermTemp = ThisTherm.setThermostatFanMode("auto")
-                    log.debug "$ThisTherm fan set back to auto"
-                }
-                else {
-                    log.debug "$ThisTherm fan already set to auto"
-                }
-            }
-
-            state.coldbutneedcool = 0
-            state.more = 0
-
-            if(NeedToCloseAfterVenting) {
-                log.debug """state.coldbutneedcool set to $state.coldbutneedcool
-no venting needed, making sure windows are closed"""
-                if(state.ventingrun >= 1){
-                    valw = 5
-                    CloseWindows(valw)
-
-
-                    log.debug "CLOSING WINDOWS"
-                }
-            }
-        }
-    }
-    else 
-    {
-        log.debug "Location is not in venting Modes"
-    }
 
     state.OpenInFull = false
     def ItIsNiceOutThere = Outside >= CSPSet - 2 && Outside < HSPSet
@@ -4188,7 +3920,7 @@ def send(msg){
     else {
         if (sendPushMessage) {
             log.debug("sending push message")
-            sendPush(msg)
+            sendPushMessage(msg)
         }
         if (phone) {
             log.debug("sending text message")
