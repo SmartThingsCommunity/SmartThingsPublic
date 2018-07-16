@@ -113,7 +113,7 @@ def configure() {
 def initialize() {
 	log.debug "Executing initialize()"
 	state.configured = true
-	sendEvent(name:"checkInterval", value:3 * 60 + 2 * 60, displayed:false, data: [protocol:"zigbee", hubHardwareId:device.hub.hardwareID, offlinePingable:"1"])
+	sendEvent(name:"checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed:false, data: [protocol:"zigbee", hubHardwareId:device.hub.hardwareID, offlinePingable:"1"])
 
 	def cmds = zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,
 					DataType.ENUM8, 0, 3600, null) +
@@ -218,11 +218,10 @@ private def parseCommandResponse(String description) {
 		responseMap.isStateChange = true
 
 		if (eventSource == 1) {
-			def desc = "command"
-			responseMap.data = "command"
+			responseMap.data = [method: "command"]
 		} else if (eventSource == 2) {
 			def desc = "manually"
-			responseMap.data = "manual"
+			responseMap.data = [method: "manual"]
 		}
 
 		switch (eventCode) {
