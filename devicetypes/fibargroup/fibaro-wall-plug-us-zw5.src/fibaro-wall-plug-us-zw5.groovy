@@ -307,8 +307,10 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
 	if (!ep || ep==1) {
 		log.warn "chanell1"
 		switch (cmd.scale) {
-			case 0: sendEvent([name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]); break;
-			case 2: sendEvent([name: "power", value: cmd.scaledMeterValue, unit: "W"]); break;
+			case 0: sendEvent([name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]);
+					break;
+			case 2: sendEvent([name: "power", value: cmd.scaledMeterValue, unit: "W"]);
+					break;
 		}
 		if (device.currentValue("energy") != null) {
 			multiStatusEvent("${device.currentValue("power")} W / ${device.currentValue("energy")} kWh")
@@ -320,8 +322,10 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
 	if (ep==2) {
 		log.warn "chanell2"
 		switch (cmd.scale) {
-			case 0: getChild(2)?.sendEvent([name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]); break;
-			case 2: getChild(2)?.sendEvent([name: "power", value: cmd.scaledMeterValue, unit: "W"]); break;
+			case 0: getChild(2)?.sendEvent([name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]);
+					break;
+			case 2: getChild(2)?.sendEvent([name: "power", value: cmd.scaledMeterValue, unit: "W"]);
+					break;
 		}
 		if (device.currentValue("energy") != null) {
 			ch2MultiStatusEvent("${getChild(2)?.currentValue("power")} W / ${getChild(2)?.currentValue("energy")} kWh")
