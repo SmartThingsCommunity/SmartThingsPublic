@@ -15,7 +15,6 @@ metadata {
 	definition(name: "Z-Wave Dual Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch") {
 		capability "Actuator"
 		capability "Health Check"
-		capability "Light"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
