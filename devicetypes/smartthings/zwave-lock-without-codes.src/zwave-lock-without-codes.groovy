@@ -122,12 +122,6 @@ def updated() {
 				cmds << doConfigure()
 			}
 			cmds << refresh()
-			if (!state.MSR) {
-				cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-			}
-			if (!state.fw) {
-				cmds << zwave.versionV1.versionGet().format()
-			}
 			hubAction = response(delayBetween(cmds, 30 * 1000))
 		}
 	} catch (e) {
@@ -434,22 +428,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 }
 
-/**
- * Responsible for parsing ManufacturerSpecificReport command
- *
- * @param cmd : The ManufacturerSpecificReport command to be parsed
- *
- * @return The event(s) to be sent out
- *
- */
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport)' with cmd = $cmd"
-	def result = []
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	result << createEvent(descriptionText: "MSR: $msr", isStateChange: false)
-	result
-}
 
 /**
  * Responsible for parsing zwave command
