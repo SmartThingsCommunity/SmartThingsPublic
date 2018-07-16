@@ -20,16 +20,15 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Orvibo Smoke Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-smoke") {
+	definition (name: "Zigbee Smoke Sensor Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-smoke") {
 		capability "Smoke Detector"
 		capability "Sensor"
 		capability "Battery"
 		capability "Configuration"
 		capability "Refresh"
-		capability "Alarm"
 		capability "Health Check"
 
-		fingerprint profileId: "0104",deviceId: "0402",inClusters: "0000,0001,0003,0500", outClusters: "", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931"
+		fingerprint profileId: "0104",deviceId: "0402",inClusters: "0000,0001,0003,0500", outClusters: "", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "Orvibo Smoke Sensor"
 	}
 
 	tiles {
@@ -37,11 +36,7 @@ metadata {
 			state("clear", label:"Clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
 			state("detected", label:"Smoke!", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
 		}
-		standardTile("alarm", "device.alarm", width: 2, height: 2) {
-			state "off", label:'off', action:'alarm.siren', icon:"st.alarm.alarm.alarm", backgroundColor:"#ffffff"
-			state "siren", label:'siren!', action:'alarm.off', icon:"st.alarm.alarm.alarm", backgroundColor:"#e86d13"
-		}
-
+        
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
@@ -51,7 +46,7 @@ metadata {
 		}
 
 		main "smoke"
-		details(["smoke","alarm","battery","refresh"])
+		details(["smoke","battery","refresh"])
 	}
 }
 
@@ -83,9 +78,7 @@ def parse(String description) {
 def parseAttrMessage(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
-	if (descMap?.clusterInt == 0x0009 && descMap.value) {
-		map = getAlarmResult(descMap.value == "0000" ? false :true)
-	}else if(descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+	if(descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
 		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 	}else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
 		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
@@ -124,25 +117,11 @@ def getDetectedResult(value) {
 			descriptionText:descriptionText,
 			translatable:true]
 }
-def getAlarmResult(value) {
-	def alarm = value ? 'siren': 'off'
-	String descriptionText = "${device.displayName} alarm  ${alarm}"
-	return [name:'alarm',
-			value: alarm,
-			descriptionText:descriptionText,
-			translatable:true]
-}
-def siren() {
-	sendEvent(name: "alarm", value: "siren")
-}
-def off() {
-	sendEvent(name: "alarm", value: "off")
-}
+
 def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
-					zigbee.readAttribute(0x0009,0x0000) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
 }
@@ -151,7 +130,7 @@ def refresh() {
  * */
 def ping() {
 	log.debug "ping "
-	refresh()
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 def configure() {
 	log.debug "configure"
@@ -159,3 +138,4 @@ def configure() {
 
 	return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) + refresh()
 }
+
