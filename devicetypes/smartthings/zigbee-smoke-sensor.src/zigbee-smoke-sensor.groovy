@@ -20,7 +20,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Smoke Sensor Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-smoke") {
+	definition (name: "Zigbee Smoke Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-smoke") {
 		capability "Smoke Detector"
 		capability "Sensor"
 		capability "Battery"
@@ -28,7 +28,7 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		fingerprint profileId: "0104",deviceId: "0402",inClusters: "0000,0001,0003,0500", outClusters: "", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "Orvibo Smoke Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "Orvibo Smoke Sensor"
 	}
 
 	tiles {
@@ -46,7 +46,7 @@ metadata {
 		}
 
 		main "smoke"
-		details(["smoke","battery","refresh"])
+		details(["smoke", "battery", "refresh"])
 	}
 }
 
@@ -122,7 +122,7 @@ def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
-					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
 }
 /**
@@ -130,7 +130,7 @@ def refresh() {
  * */
 def ping() {
 	log.debug "ping "
-	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 def configure() {
 	log.debug "configure"
