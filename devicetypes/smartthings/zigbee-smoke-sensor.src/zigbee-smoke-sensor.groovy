@@ -58,10 +58,10 @@ def installed(){
 def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
-	if(!map){
+	if (!map) {
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
-		}else{
+		} else {
 			map = parseAttrMessage(description)
 		}
 	}
@@ -78,9 +78,9 @@ def parse(String description) {
 def parseAttrMessage(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
-	if(descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
 		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-	}else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+	} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
 		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 		map = translateZoneStatus(zs)
 	}
