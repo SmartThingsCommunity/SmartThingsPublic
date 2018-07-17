@@ -152,6 +152,7 @@ def callback() {
             client_secret: appSettings.clientSecret,
             redirect_uri: callbackUrl
         ]
+
         asynchttp_v1.post(handleTokenResponse, [uri: curbTokenUrl, body: tokenParams])
         success()
     } else {

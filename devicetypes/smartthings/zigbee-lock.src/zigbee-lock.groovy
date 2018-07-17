@@ -558,7 +558,7 @@ private def parseCommandResponse(String description) {
 				return null
 			}
 			codeName = getCodeName(lockCodes, codeID)
-			responseMap.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+			responseMap.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 		} else if (eventSource == 1) {
 			responseMap.data = [ method: "command" ]
 		} else if (eventSource == 2) {
