@@ -3057,7 +3057,7 @@ CurrentContacts States = $CurrentContacts"""
                     log.debug "windows fix attempt"
                     state.OpenByApp = true // necessary override of these values here (only exception with critical temp in temphandler)
                     state.ClosedByApp = true // necessary override of these values here 
-					
+
                     state.FixAwait = true // allows following 'else' condition to not be met until fix attempt is done
                     runIn(70, RunOpenWindowsFix)
 
@@ -3067,19 +3067,19 @@ CurrentContacts States = $CurrentContacts"""
                     // auto fix failed, so push a message
                     def message = "emergency message: AutoFix Failed | $devicecontact seems to be defective - make sure all your windows are closed"
                     log.info message
-                    
+
                     if(elapsed >= state.xval){            
                         send(message)   
                         state.xval = elapsed + 10 // resend every 10 minutes
                     }
                 }
                 else {
-                log.debug "awaiting for fix attempt before asserting failure"
+                    log.debug "awaiting for fix attempt before asserting failure"
                 }
             }
         }
         else {
-         log.debug "elapsed > state.xval ==> $elapsed > ${state.xval}"
+            log.debug "elapsed > state.xval ==> $elapsed > ${state.xval}"
             state.xval = 0
         }
     }
@@ -3203,8 +3203,8 @@ def DoubleChekcThermostats(){
         def count = 0
 
         for(AnyON.size() != 0; count < AnyON.size(); count++){ 
+            def device = AnyON[count] // for test only line to be RESTORED
 
-            def device = AnyON[count]
             def AppMgt = device.currentValue("thermostatMode") in ["off", "cool", "heat"]
             def ThisIsExceptionTherm = device.displayName in NoTurnOffOnContact  
             log.debug "device to turn off is $device"
@@ -3214,15 +3214,21 @@ def DoubleChekcThermostats(){
             if(ThermIsOn && AppMgt){
 
                 if(!ThisIsExceptionTherm){
-                    device.setThermostatMode("off") 
+                    if(device.currentValue("thermostatMode") != "off"){
+                        device.setThermostatMode("off") 
+                    }
                     log.debug "$device TURNED OFF BECAUSE SOME CONTACTS ARE OPEN"
                 }
                 if(ThisIsExceptionTherm && !ExcepContactsClosed()){
-                    device.setThermostatMode("off") 
+                    if(device.currentValue("thermostatMode") != "off"){
+                        device.setThermostatMode("off") 
+                    }
                     log.debug "$device TURNED OFF BECAUSE EXCEPTION CONTACT IS OPEN"
                 }
                 if(ThisIsExceptionTherm && !InExceptionContactMode){
-                    device.setThermostatMode("off") 
+                    if(device.currentValue("thermostatMode") != "off"){
+                        device.setThermostatMode("off") 
+                    }
                     log.debug "$device TURNED OFF BECAUSE $location.currentMode is not one of the exception modes"
                 }
             }
@@ -3232,44 +3238,51 @@ def DoubleChekcThermostats(){
                 }
                 if(!AppMgt && ThermState != "off") {
                     if(!ThisIsExceptionTherm){
-                        log.debug "$device in OVERRIDE MODE. Will be set to fan only if its state doesn't change within time threshold" 
-                        runIn(5, RunFanOnly)
+                        log.debug "$device in OVERRIDE MODE. Will be set to fan only" 
+                        if(device.currentValue("thermostatMode") != "off"){
+                            device.setThermostatMode("off") 
+                        }
+                        if(device.currentValue("thermostatFanMode") != "on"){
+                            device.setThermostatFanMode("on")
+                            log.debug "$device NOW SET TO FAN ONLY"
+                        }
+                        else {
+                            log.debug "${thisdevice}' fan already set to on"
+                        }
                     }
                     if(ThisIsExceptionTherm && !ExcepContactsClosed()){
-                        log.debug "$device in OVERRIDE MODE. Will be set to fan only if its state doesn't change within time threshold"
-                        runIn(5, RunFanOnly)
+                        log.debug "$device in OVERRIDE MODE. Will be set to fan only"
+                        if(device.currentValue("thermostatMode") != "off"){
+                            device.setThermostatMode("off") 
+                        }
+                        if(device.currentValue("thermostatFanMode") != "on"){
+                            device.setThermostatFanMode("on")
+                            log.debug "$device NOW SET TO FAN ONLY"
+                        }
+                        else {
+                            log.debug "${device}' fan already set to on"
+                        }
                     }
                     if(ThisIsExceptionTherm && !InExceptionContactMode){
                         device.setThermostatMode("off") 
-                        log.debug "$device in OVERRIDE MODE. Will be set to fan only if its state doesn't change within time threshold"
-                        runIn(5, RunFanOnly)
+                        log.debug "$device in OVERRIDE MODE. Will be set to fan only"
+                        if(device.currentValue("thermostatMode") != "off"){
+                            device.setThermostatMode("off") 
+                        }
+                        if(device.currentValue("thermostatFanMode") != "on"){
+                            device.setThermostatFanMode("on")
+                            log.debug "$device NOW SET TO FAN ONLY"
+                        }
+                        else {
+                            log.debug "${device}' fan already set to on"
+                        }
                     }
                 }
             }
         }
     }
 }
-def RunFanOnly(){
-    FanOnly("$device")
-}
-def FanOnly(String device){
-    if(state.CRITICAL == false){
-        def thisdevice = Thermostats.find{it.displayName == device}
 
-        thisdevice.setThermostatMode("off")
-        log.debug "$thisdevice NOW TURNED OFF (override canceled)"
-        if(thisdevice.currentValue("thermostatFanMode") != "on"){
-            thisdevice.setThermostatFanMode("on")
-            log.debug "$thisdevice NOW SET TO FAN ONLY"
-        }
-        else {
-            log.debug "${thisdevice}' fan already set to on"
-        }
-    }
-    else {
-        log.debug "CRITICAL MODE, doing nothing"
-    }
-}
 def TurnOffThermostats(){
     state.ThermsOff = true; // tells the program that TurnOffThermostats() has already run
 
@@ -3480,7 +3493,7 @@ state.OpenByApp = $state.OpenByApp
         state.ClosedByApp = true
 
         // reseting fans to auto 
-        i = 0
+        def i = 0
         for(ts != 0; i < ts; i++){
             ThisTherm = Thermostats[i]
             // don't do it for a thermostat currently cooling or heating (for execption contact thermostat)
@@ -3553,30 +3566,28 @@ def OkToOpen(){
     def CurrTemp = Inside 
 
     def Outside = OutsideSensor.currentValue("temperature")
-    //Outside = Double.parseDouble(Outside)
-    //Outside = Outside.toInteger()
     def outsideTemp = Outside 
     state.outsideTemp = Outside
     def WithinCriticalOffSet = (Inside >= (CriticalTemp - OffSet)) && (Outside >= (CriticalTemp + OffSet))
+    log.debug "WithinCriticalOffSet = $WithinCriticalOffSet"
 
     def OutsideTempHighThres = ExceptACModes()
     def ExceptHighThreshold1 = ExceptHighThreshold1
 
     def humidity = OutsideSensor?.currentValue("humidity")
-    //humidity = Double.parseDouble(humidity)
-    //humidity = humidity.toInteger()
     //log.debug "Inside = $Inside | Outside = $Outside"
     def WindValue = OutsideSensor?.currentValue("wind")
     WindValue = WindValue.toInteger()
 
-    def ItfeelsLike = state.FeelsLike
-    ItfeelsLike = ItfeelsLike.toInteger()
-    def OutsideFeelsHotter = ItfeelsLike > Outside + 2
-
+    def ItfeelsLike = OutsideSensor?.currentValue("feelsLike") 
+   
+    log.debug "new ItfeelsLike value = $ItfeelsLike" 
+    def OutsideFeelsHotter = ItfeelsLike.toInteger() > Outside + 2
+log.debug "test ---"
 
     //log.debug "Humidity EVAL"
     def TooHumid = false
-    if(humidity > HumidityTolerance){
+    if(humidity > HumidityTolerance.toInteger()){
         TooHumid = true
         log.debug "IT IS TOO HUMID OUTSIDE"
     }
@@ -3639,7 +3650,7 @@ OpenWhenEverPermitted = $OpenWhenEverPermitted
         // preparing a dynamic message which will tell why windows won't open (or fans won't turn on)
         def cause1 = !OutSideWithinMargin
         def cause2 = !WithinCriticalOffSet
-        def cause3 = !ShouldCool
+        def cause3 = !ShouldCoolWithAC
         def cause4 = TooHumid
         def cause5 = CurrMode in "$Away"
         def cause6 = CRITICAL
@@ -3692,12 +3703,7 @@ OpenWhenEverPermitted = $OpenWhenEverPermitted
         }
         causeNotOkToOpen = MessageStr.toString();
         state.causeClose = causeNotOkToOpen
-        if(state.coldbutneedcool == 0){
-            message = "Windows are closed because $causeNotOkToOpen"
-        }
-        else {
-            message = "We need some fresh air here..."
-        }
+        
         log.info message
         state.messageclosed = message
         // send a reminder every X minutes 
