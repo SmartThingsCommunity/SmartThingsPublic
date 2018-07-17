@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Child Button", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Child Button", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-button-3") {
 		capability "Button"
 		capability "Holdable Button"
 		capability "Sensor"
