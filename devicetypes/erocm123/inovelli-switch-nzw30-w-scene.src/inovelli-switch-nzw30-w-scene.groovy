@@ -465,7 +465,7 @@ def holdDown() {
 }
 
 def setDefaultAssociations() {
-    def smartThingsHubID = zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )
+    def smartThingsHubID = (zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )).toUpperCase()
     state.defaultG1 = [smartThingsHubID]
     state.defaultG2 = []
 }
