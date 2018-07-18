@@ -138,9 +138,6 @@ def poll() {
 
 def on() {
 	log.debug "sending on"
-
-def on() {
-	log.debug "sending on"
 	// ICP-5323: Zipato siren sometimes fails to make sound for full duration
 	// Those alarms do not end with Siren Notification Report.
 	// For those cases we add additional state check after alarm duration to
@@ -158,7 +155,6 @@ def on() {
 			zwave.basicV1.basicGet().format()
 		]
 	}
-}
 }
 
 def off() {
