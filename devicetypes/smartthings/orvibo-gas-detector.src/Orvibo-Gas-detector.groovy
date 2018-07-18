@@ -25,7 +25,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 		capability "Refresh"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0009", outClusters: "0019",manufacturer: "Heiman",model:"d0e857bfd54f4a12816295db3945a421"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "Heiman", model:"d0e857bfd54f4a12816295db3945a421"
 	}
 
 	simulator {
@@ -34,8 +34,8 @@ metadata {
 
 	tiles {
 		standardTile("smoke", "device.smoke", width: 2, height: 2) {
-			state("clear", label:"Clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
-			state("detected", label:"Smoke!", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
+			state("clear", label: "Clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
+			state("detected", label: "Smoke!", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
 		}
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
@@ -44,17 +44,17 @@ metadata {
 		details(["smoke","refresh"])
 	}
 }
-def installed(){
+def installed() {
 	log.debug "installed"
 	refresh()
 }
 def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
-	if(!map){
+	if (!map) {
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
-		}else{
+		} else {
 			map = zigbee.parseDescriptionAsMap(description)
 		}
 	}
@@ -82,7 +82,7 @@ def getDetectedResult(value) {
 def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
-	refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	refreshCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
 }
 /**
@@ -95,5 +95,5 @@ def ping() {
 def configure() {
 	log.debug "configure"
 	//The gas heart beat is 30 mintues, so we set double time for one package loss.
-	sendEvent(name: "checkInterval", value:30 * 2 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 30 * 2 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
