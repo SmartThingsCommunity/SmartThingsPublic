@@ -25,7 +25,7 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint profileId:"0104, 000A", inClusters:"0000, 0001, 0003, 0009, 0020,0101, 0B05", outclusters:"000A, 0019, 0B05", manufacturer:"Danalock", model:"V3-BTZB", deviceJoinName:"Danalock V3 858125000074"
+		fingerprint profileId:"0104, 000A", inClusters:"0000, 0001, 0003, 0009, 0020,0101, 0B05", outclusters:"000A, 0019, 0B05", manufacturer:"Danalock", model:"V3-BTZB", deviceJoinName:"Danalock V3 Smart Lock"
 
 	}
 
