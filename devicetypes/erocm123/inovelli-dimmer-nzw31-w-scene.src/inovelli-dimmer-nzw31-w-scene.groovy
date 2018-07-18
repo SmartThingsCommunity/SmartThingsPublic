@@ -540,7 +540,7 @@ def setLevel(value, duration) {
     def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
         commands([
             zwave.switchMultilevelV2.switchMultilevelSet(value: value < 100 ? value : 99, dimmingDuration: dimmingDuration),
-            zwave.switchMultilevelV1.switchMultilevelGet().format()
+            zwave.switchMultilevelV1.switchMultilevelGet()
     ])
 }
 
@@ -622,7 +622,7 @@ def holdDown() {
 }
 
 def setDefaultAssociations() {
-    def smartThingsHubID = zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )
+    def smartThingsHubID = (zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )).toUppercase()
     state.defaultG1 = [smartThingsHubID]
     state.defaultG2 = []
     state.defaultG3 = []

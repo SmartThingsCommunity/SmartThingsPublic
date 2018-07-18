@@ -304,6 +304,29 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
     return result
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
+    log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
+    def integerValue = cmd2Integer(cmd.configurationValue)
+    switch (cmd.parameterNumber) {
+        case 8:
+            def children = childDevices
+            def childDevice = children.find{it.deviceNetworkId.endsWith("ep8")}
+            if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: integerValue > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: integerValue)            
+            }
+        break
+        case 9:
+            def children = childDevices
+            def childDevice = children.find{it.deviceNetworkId.endsWith("ep9")}
+            if (childDevice) {
+            childDevice.sendEvent(name: "switch", value: integerValue > 0 ? "on" : "off")
+            childDevice.sendEvent(name: "level", value: integerValue)
+            }
+        break
+    }
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
     def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x25: 1])
     if (encapsulatedCommand) {
@@ -382,6 +405,10 @@ void childSetLevel(String dni, value) {
 	sendHubCommand(cmds, 1000)
 }
 
+private channelNumber(String dni) {
+    dni.split("-ep")[-1] as Integer
+}
+
 def childExists(ep) {
     def children = childDevices
     def childDevice = children.find{it.deviceNetworkId.endsWith(ep)}
@@ -421,7 +448,7 @@ private commands(commands, delay=500) {
 }
 
 def setDefaultAssociations() {
-    def smartThingsHubID = zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )
+    def smartThingsHubID = (zwaveHubNodeId.toString().format( '%02x', zwaveHubNodeId )).toUppercase()
     state.defaultG1 = [smartThingsHubID]
     state.defaultG2 = []
     state.defaultG3 = []
