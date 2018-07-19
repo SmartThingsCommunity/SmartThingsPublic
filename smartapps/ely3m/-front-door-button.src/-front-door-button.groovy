@@ -55,7 +55,9 @@ preferences {
 		input "onFor", "number", title: "On for (default 500)", required: false
 		input "offFor", "number", title: "Off for (default 500)", required: false
 	}
-    
+    section("Text me at...") {
+        input "phonenum", "phone", title: "Phone number?", required: false
+	}    
     
 }
     
