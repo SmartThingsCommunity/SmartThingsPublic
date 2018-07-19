@@ -286,8 +286,13 @@ def getGpioDevices(gpios){
     def parentId = device.deviceNetworkId;
 
     for (e in gpios){
-        gpio = "${e.key}".substring(4).toInteger(); // "GPIOXX" --> XX
-
+        try{
+            gpio = "${e.key}".substring(4).toInteger(); // "GPIOXX" --> XX
+        } catch (all) {
+            // parsing the GPIO number failed, try the next one
+            continue;
+        }
+        
         switch(e.value){
 
             case "17 (Relay1)":
@@ -416,7 +421,6 @@ def refreshCallback(physicalgraph.device.HubResponse response){
 
 
     sendEvent(name : "module", value : response?.json?.Status?.Module)
-    sendEvent(name : "friendlyName", value : response?.json?.Status?.FriendlyName)
     sendEvent(name : "version", value : response?.json?.StatusFWR?.Version)
     sendEvent(name : "topic", value : response?.json?.Status?.Topic)
     sendEvent(name : "groupTopic", value : response?.json?.Status?.GroupTopic)
@@ -428,6 +432,18 @@ def refreshCallback(physicalgraph.device.HubResponse response){
     sendEvent(name : "vcc", value : response?.json?.StatusSTS?.Vcc)
     sendEvent(name : "apSsid", value : response?.json?.StatusSTS?.Wifi?.SSId)
     sendEvent(name : "apMac", value : response?.json?.StatusSTS?.Wifi?.APMac)
+
+    def fName = "";
+    if (response?.json?.Status?.FriendlyName instanceof Collection && response?.json?.Status?.FriendlyName.size() > 0){
+        fName = response?.json?.Status?.FriendlyName[0];
+    }
+    else
+    {
+        fName = response?.json?.Status?.FriendlyName;
+    }
+
+    sendEvent(name : "friendlyName", value : fName)
+    
 
     // need to send jsobj to all child devices.
 
