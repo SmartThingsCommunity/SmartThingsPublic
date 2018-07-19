@@ -3,7 +3,7 @@ SmartThings device handler for Sonoff-Tasmota firmware (https://github.com/arend
 
 # New Device Handler Implementation Available
 Please see the new 'Tasmota' device handler implementation.
-https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/BrettSheleski/tasmota.src
+https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/brettsheleski/tasmota.src
 
 This device handler should continue to function, but no meaningful further development will occur.
 
@@ -12,7 +12,7 @@ This device handler should continue to function, but no meaningful further devel
 1. Log in to the SmartThings IDE (https://graph.api.smartthings.com/)
 2. Go to `My Device Handlers`
 3. Click `Create New Device Handler`
-4. In the `From Code` tab paste in the code from https://github.com/BrettSheleski/SmartThingsPublic/blob/master/devicetypes/BrettSheleski/sonoff-tasmota.src/sonoff-tasmota.groovy
+4. In the `From Code` tab paste in the code from https://github.com/BrettSheleski/SmartThingsPublic/blob/master/devicetypes/brettsheleski/sonoff-tasmota.src/sonoff-tasmota.groovy
 5. Click `Create`
 6. Click `Publish` --> `For Me`
 

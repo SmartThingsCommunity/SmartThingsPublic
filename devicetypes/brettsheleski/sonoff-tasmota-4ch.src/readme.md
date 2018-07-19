@@ -7,7 +7,7 @@ SmartThings device handler for Sonoff-Tasmota firmware (https://github.com/arend
 2. Go to `My Device Handlers`
 3. Click `Create New Device Handler`
 4. In the `From Code` tab paste in the code from 
-https://github.com/BrettSheleski/SmartThingsPublic/blob/master/devicetypes/BrettSheleski/sonoff-tasmota-4ch.src/sonoff-tasmota-4ch.groovy
+https://github.com/BrettSheleski/SmartThingsPublic/blob/master/devicetypes/brettsheleski/sonoff-tasmota-4ch.src/sonoff-tasmota-4ch.groovy
 5. Click `Create`
 6. Click `Publish` --> `For Me`
 

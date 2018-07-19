@@ -386,7 +386,7 @@ def getGpioDevices(gpios){
             case "63 (SPI DC)":
             case "64 (BkLight)":
             case "65 (PMS5003)":
-                log.debug "Unsupported device '${e.value}'.  Maybe you want to support it? (see https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/BrettSheleski/tasmota.src)"
+                log.debug "Unsupported device '${e.value}'.  Maybe you want to support it? (see https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/brettsheleski/tasmota.src)"
                 break;
 
             case "0 (None)":

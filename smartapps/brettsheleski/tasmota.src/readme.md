@@ -1,16 +1,16 @@
 # Tasmota SmartApp
-SmartThings SmartApp for use with the SmartThings [Tasmota Device Handler](https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/BrettSheleski/tasmota.src)
+SmartThings SmartApp for use with the SmartThings [Tasmota Device Handler](https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/brettsheleski/tasmota.src)
 
 The Device Handler is used for updating devices running the [Sonoff-Tasmota](https://github.com/arendst/Sonoff-Tasmota) firmware.
 
-See Tasmota Device Handler (https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/BrettSheleski/tasmota.src) for more details.
+See Tasmota Device Handler (https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/brettsheleski/tasmota.src) for more details.
 
 ## Installation
 ### Adding SmartApp to SmartThings
 1. Log in to the SmartThings IDE (https://graph.api.smartthings.com/)
 2. Go to `My SmartApps`
 3. Click `New SmartApp`
-4. In the `From Code` tab paste in the code from https://github.com/BrettSheleski/SmartThingsPublic/blob/master/smartapps/BrettSheleski/tasmota.src/tasmota.groovy
+4. In the `From Code` tab paste in the code from https://github.com/BrettSheleski/SmartThingsPublic/blob/master/smartapps/brettsheleski/tasmota.src/tasmota.groovy
 5. Click `Create`
 6. Click `Publish` --> `For Me`
 
