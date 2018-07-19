@@ -48,7 +48,7 @@ preferences {
     }
    
 	section("Flash light?"){
-		input "flashlight", "capability.switch", title: "These lights", multiple: true
+		input "flashlight", "capability.switch", title: "These lights", multiple: true, required: false
 		input "numFlashes", "number", title: "This number of times (default 30)", required: false
 	}
 	section("Time settings in milliseconds (optional)..."){
