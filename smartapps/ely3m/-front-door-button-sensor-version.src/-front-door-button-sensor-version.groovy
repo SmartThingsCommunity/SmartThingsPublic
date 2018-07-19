@@ -56,22 +56,25 @@ preferences {
 		input "offFor", "number", title: "Off for (default 500)", required: false
 	}
     
+    section("Text me at...") {
+        input "phonenum", "phone", title: "Phone number?", required: false
+	}
+    
     
 }
     
 
 def installed()
 {   
-
-	subscribe(master, "switch.on", onHandler)
-	subscribe(master, "switch.off", offHandler)
+	subscribe(master, "contact.open", onHandler)
+	subscribe(master, "contact.close", offHandler)
 }
 
 def updated()
 {
 	unsubscribe()
- 	subscribe(master, "switch.on", onHandler)
-	subscribe(master, "switch.off", offHandler)
+ 	subscribe(master, "contact.open", onHandler)
+	subscribe(master, "contact.close", offHandler)
 }
 
 
@@ -90,6 +93,7 @@ def onHandler(evt) {
 	onSwitches()?.on()
     changecolor(evt) 
     flashLights()
+    textme(evt) 
 }
 
 def offHandler(evt) {
@@ -101,6 +105,7 @@ def offHandler(evt) {
 	onSwitches()?.on()
 	changecolor(evt)
     flashLights()
+    textme(evt) 
 
 }
 
@@ -224,3 +229,13 @@ private flashLights() {
 		}
 	}
 }
+
+
+private textme(evt) {
+  log.trace "$evt.value: $evt, $settings"
+  log.debug "$master was open/close, sending text"
+  sendSms(phonenum, "someone pressed my custom button!")
+
+}    
+ 
+ 

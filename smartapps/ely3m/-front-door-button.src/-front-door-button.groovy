@@ -90,6 +90,7 @@ def onHandler(evt) {
 	onSwitches()?.on()
     changecolor(evt) 
     flashLights()
+    textme(evt)
 }
 
 def offHandler(evt) {
@@ -101,6 +102,7 @@ def offHandler(evt) {
 	onSwitches()?.on()
 	changecolor(evt)
     flashLights()
+    textme(evt)
 
 }
 
@@ -225,3 +227,9 @@ private flashLights() {
 	}
 }
 
+private textme(evt) {
+  log.trace "$evt.value: $evt, $settings"
+  log.debug "$master was turned on/off, sending text"
+  sendSms(phonenum, "someone pressed my custom button!")
+
+}  
