@@ -42,6 +42,7 @@ metadata {
         attribute "productModel","String"
         attribute "firmwareVersion","String"
         
+        command "setAll"
         command "switchFanLevel"
         command "switchMode"
         command "raiseCoolSetpoint"
@@ -53,7 +54,14 @@ metadata {
         command "lowerTemperature"
         command "switchSwing"
         command "setThermostatMode"
-       
+        command "modeHeat"
+        command "modeCool"
+        command "modeDry"
+        command "modeFan"
+        command "modeAuto"
+        command "fullfan"
+        command "autofan"
+        command "fullswing"        
 	}
 
 	simulator {
@@ -188,8 +196,8 @@ metadata {
         standardTile("downCoolButtonControl", "device.targetTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
 			state "setpoint", action:"lowerCoolSetpoint", icon:"st.thermostat.thermostat-down", label :"Down"
 		}
-        
-       standardTile("swing", "device.swing",  width: 2, height: 2) {
+               
+        standardTile("swing", "device.swing",  width: 2, height: 2) {
             state "stopped", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/iWhvaQ/stopped.png", nextState:"fixedTop"
             state "fixedTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/nbV3Uk/fixedTop.png", nextState:"fixedMiddleTop"
             state "fixedMiddleTop", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/chbcpk/fixed_Middle_Top.png", nextState:"fixedMiddle"
@@ -207,10 +215,77 @@ metadata {
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"Refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		       
+		
+        standardTile("coolmode", "device.thermostatMode",  width: 1, height: 1) {
+       		state "cool", action:"modeCool", backgroundColor:"#00a0dc", icon:"https://image.ibb.co/bZ56FQ/cold.png"
+        }
+        standardTile("heatmode", "device.thermostatMode",  width: 1, height: 1) {
+       		state "heat", action:"modeHeat", backgroundColor:"#e86d13", icon:"https://image.ibb.co/c7Grh5/sun.png"
+        }
+        standardTile("fullfan", "device.fanLevel",  width: 1, height: 1) {
+       		state "high", action:"fullfan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/fcfFaQ/fan_high_2.png"
+        }
+        standardTile("autofan", "device.fanLevel",  width: 1, height: 1) {
+       		state "auto", action:"autofan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/m8oq9k/fan_auto_2.png"
+        }
+        standardTile("fullswing", "device.swing",  width: 1, height: 1) {
+       		state "rangeFull", action:"fullswing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/hHK8vQ/range_Full.png"
+        }
+        
 		main (["switch"])
-		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh","powerSource","firmwareVersion","productModel"])    
+		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh","coolmode","heatmode","fullfan","autofan","fullswing","powerSource","firmwareVersion","productModel"])    
 	}
+}
+
+def setAll(newMode,temp,fan)
+{
+    log.debug "mode " + newMode
+    
+    def Setpoint = temp.toInteger()
+    
+    def LevelBefore = fan
+    def capabilities = parent.getCapabilities(device.deviceNetworkId,newMode)
+    def Level = LevelBefore
+    if (capabilities.remoteCapabilities != null) {
+    	def fanLevels = capabilities.remoteCapabilities.fanLevels
+    	log.debug capabilities.remoteCapabilities.fanLevels
+        
+        Level = GetNextFanLevel(LevelBefore,capabilities.remoteCapabilities.fanLevels)
+        log.debug "Fan : " + Level
+   
+        def result = parent.setACStates(this, device.deviceNetworkId, "on", newMode, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+        if (result) {
+        	if (LevelBefore != Level) {
+                generatefanLevelEvent(Level)
+            }
+            sendEvent(name: 'thermostatMode', value: newMode, displayed: false,isStateChange: true)
+            if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
+
+            generateModeEvent(newMode)
+        }
+        else {
+            generateErrorEvent()
+        }      
+        generateStatusEvent()
+        refresh()
+	}
+    else {       
+    }
+}
+
+def fullfan()
+{
+	dfanLevel("high")
+}
+
+def autofan()
+{
+	dfanLevel("auto")
+}
+
+def fullswing()
+{
+	modeSwing("rangeFull")
 }
 
 def temperatureDown(temp)
@@ -720,6 +795,31 @@ def switchFanLevel() {
 	}
 
 	returnCommand
+}
+
+def modeHeat()
+{
+	modeMode("heat")
+}
+
+def modeCool()
+{
+	modeMode("cool")
+}
+
+def modeDry()
+{
+	modeMode("dry")
+}
+
+def modeFan()
+{
+	modeMode("fan")
+}
+
+def modeAuto()
+{
+	modeMode("auto")
 }
 
 // To change the AC mode
