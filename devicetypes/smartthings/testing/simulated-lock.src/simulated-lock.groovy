@@ -59,7 +59,7 @@ metadata {
         }
         standardTile("jam", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label:'', action:"jam", nextState: "unknown", backgroundColor:"#CCCCCC", defaultState: true
-            state "unknown", label:'jammed', backgroundColor:"#E86D13"   
+            state "unknown", label:'jammed', backgroundColor:"#E86D13"
         }
         valueTile("jamToggleLabel", "device.doesNextOperationJam", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
             state "default", label: "When button is active, lock will\nsimulate a jam on the next operation.", defaultState: true
@@ -78,7 +78,7 @@ metadata {
 
         main "toggle"
         details(["toggle",
-            "lock", "unlock", 
+            "lock", "unlock",
             "jamLabel", "jam",
             "jamToggleLabel", "jamToggle",
             "battery", "batterySliderControl" ])
@@ -103,9 +103,9 @@ def parse(String description) {
 
 def installed() {
     log.trace "installed()"
+    initialize()
     setBatteryLevel(94)
     unlock()
-    initialize()
 }
 
 def updated() {
@@ -116,7 +116,12 @@ def updated() {
 
 def initialize() {
     log.trace "initialize()"
-    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
+
+    // for HealthCheck
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+
     clearJamNextOperation()
 }
 
@@ -145,10 +150,6 @@ private processPreferences() {
 def refresh() {
     sendEvent(name: "lock", value: device.currentValue("lock"))
     sendEvent(name: "battery", value: device.currentValue("battery"))
-}
-
-def ping() {
-    refresh()
 }
 
 def lock() {
@@ -191,4 +192,3 @@ def setBatteryLevel(Number lvl) {
     log.trace "setBatteryLevel(level)"
     sendEvent(name: "battery", value: lvl)
 }
-

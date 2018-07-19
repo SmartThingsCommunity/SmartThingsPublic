@@ -25,8 +25,8 @@ import groovy.transform.Field
 
 @Field final IntRange COLOR_TEMP_RANGE = (2200..7000)
 @Field final Integer  COLOR_TEMP_DEFAULT = COLOR_TEMP_RANGE.getFrom() + ((COLOR_TEMP_RANGE.getTo() - COLOR_TEMP_RANGE.getFrom())/2)
-@Field final Integer  COLOR_TEMP_STEP = 500
-@Field final List     COLOR_TEMP_EXTRAS = [2700]
+@Field final Integer  COLOR_TEMP_STEP = 50 // Kelvin
+@Field final List     COLOR_TEMP_EXTRAS = []
 @Field final List     COLOR_TEMP_LIST = buildColorTempList(COLOR_TEMP_RANGE, COLOR_TEMP_STEP, COLOR_TEMP_EXTRAS)
 
 @Field final Map MODE = [
@@ -111,7 +111,7 @@ metadata {
         }
 
         valueTile("colorTempControlLabel", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-            state "default", label: "White Color Temperature" 
+            state "default", label: "White Color Temperature"
         }
 
         controlTile("colorTempControlSlider", "device.colorTemperature", "slider", width: 4, height: 1, inactiveLabel: false, range: "(2200..7000)") {
@@ -239,7 +239,13 @@ private initialize() {
     log.trace "Executing 'initialize'"
 
     // for HealthCheck
-    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 
     sendEvent(name: "colorTemperatureRange", value: COLOR_TEMP_RANGE)
     sendEvent(name: "colorTemperature", value: COLOR_TEMP_DEFAULT)
