@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2017-03-08 6:45 PM
+ *	Date: 2018-07-20 5:26 PM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -20,6 +20,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-07-20: Added a "region override" option to customize which region the firmware is from (EU, US, AU) if 
+ *              the device handler can't detect it on its own. 
  */
 
  metadata {
@@ -369,10 +371,10 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
     logging(cmd)
     if(cmd.applicationVersion && cmd.applicationSubVersion) {
-	    def firmware = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}${location.getTemperatureScale() == 'C' ? 'EU':''}"
+        state.rawFW = "${cmd.applicationVersion}.${cmd.applicationSubVersion.toString().padLeft(2,'0')}"
         state.needfwUpdate = "false"
-        updateDataValue("firmware", firmware)
-        createEvent(name: "currentFirmware", value: firmware)
+        updateDataValue("firmware", "${state.rawFW}${getOverride()}")
+        createEvent(name: "currentFirmware", value: "${state.rawFW}${getOverride()}")
     }
 }
 
@@ -463,12 +465,40 @@ def updated()
     if (device.currentValue("humidity") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
     if (device.currentValue("illuminance") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:5, scale:1)
     if (device.currentValue("ultravioletIndex") == null) cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:27, scale:1)
-        
+    
+    if (state.rawFW) {
+        updateDataValue("firmware", "${state.rawFW}${getOverride()}")
+        sendEvent(name: "currentFirmware", value: "${state.rawFW}${getOverride()}")
+    } else if (device.currentValue("currentFirmware") != null) {
+        updateDataValue("firmware", "${device.currentValue("currentFirmware") - ~/[A-Za-z]+/}${getOverride()}")
+        sendEvent(name: "currentFirmware", value: "${device.currentValue("currentFirmware") - ~/[A-Za-z]+/}${getOverride()}")
+    }
+    
     //updateStatus()
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
     response(commands(cmds))
+}
+
+private getOverride() {
+    switch(regionOverride) {
+    case "0":
+        return location.getTemperatureScale() == 'C' ? 'EU':''
+    break
+    case "1":
+        return ""
+    break
+    case "2":
+        return "EU"
+    break
+    case "3":
+        return "AU"
+    break
+    default:
+        return location.getTemperatureScale() == 'C' ? 'EU':''
+    break
+    }
 }
 
 def resetTamperAlert() {
@@ -1057,6 +1087,16 @@ Range: 8~255
 Default: 30
 Note: May help if config parameters aren't making it before device goes back to sleep.
     </Help>
+  </Value>
+<Value type="list" index="regionOverride" label="Region Override" min="0" max="3" value="0" setting_type="preference" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+    <Help>
+The device handler tries to automatically detect the region of your firmware (US, EU, AU). If it is detecting it incorrectly you can change it here.
+Default: Off
+    </Help>
+        <Item label="Off" value="0" />
+        <Item label="US" value="1" />
+        <Item label="EU" value="2" />
+        <Item label="AU" value="3" />
   </Value>
   <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
     <Help>
