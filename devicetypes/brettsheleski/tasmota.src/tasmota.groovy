@@ -250,11 +250,15 @@ def getModuleDevices(moduleId){
             }
             break;
 
+
+		case 18: // Generic (eg: Wemos D1 Mini)
+			// nothing to do, must read from gpio data.
+			break;
+
         case 14: // Motor C/AC
         case 15: // ElectroDragon
         case 16: // EXS Relay
         case 17: // WiOn
-        case 18: // Generic (eg: Wemos D1 Mini)
         case 20: // H801
         case 24: // Huafan SS
         case 27: // AiLight
@@ -267,10 +271,11 @@ def getModuleDevices(moduleId){
         case 37: // Arilux LC01
         case 38: // Arilux LC11
         case 40: // Arilux LC06
-        
         default:
             log.debug "Unknown Module ${state.module}"
             break;
+
+		
     }
 
     return devices;
@@ -281,9 +286,9 @@ def getGpioDevices(gpios){
     // eg: gpios = {"GPIO1":"0 (None)","GPIO3":"0 (None)","GPIO4":"0 (None)","GPIO14":"9 (Switch1)"}
     def gpio;
 
-
     def thisLabel = device.label ?: device.name;
     def parentId = device.deviceNetworkId;
+	def startIndex, endIndex;
 
     for (e in gpios){
         try{
@@ -292,104 +297,105 @@ def getGpioDevices(gpios){
             // parsing the GPIO number failed, try the next one
             continue;
         }
-        
-        switch(e.value){
 
-            case "17 (Relay1)":
-            case "25 (Relay1i)":
+		startIndex = e.value.indexOf('(', 0) + 1;
+		endIndex = e.value.indexOf(')', startIndex);
+
+        switch(e.value.substring(startIndex, endIndex).toLowerCase()){
+
+			case "relay1":
+			case "relay1i":
                 devices[parentId + '-Power-ch1'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 1", options : [powerChannel : 1, gpio : gpio]]
                 break;      
 
-            case "18 (Relay2)":
-            case "26 (Relay2i)":
+            case "relay2":
+            case "relay2i":
                 devices[parentId + '-Power-ch2'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 2", options : [powerChannel : 2, gpio : gpio]]
                 break;
 
-            case "19 (Relay3)":
-            case "27 (Relay3i)":
+            case "relay3":
+            case "relay3i":
                 devices[parentId + '-Power-ch3'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 3", options : [powerChannel : 3, gpio : gpio]]
                 break;
 
-            case "20 (Relay4)":
-            case "28 (Relay4i)":
+            case "relay4":
+            case "relay4i":
                 devices[parentId + '-Power-ch4'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 4", options : [powerChannel : 4, gpio : gpio]]
                 break;
 
-            case "21 (Relay5)":
-            case "29 (Relay5i)":
+            case "relay5":
+            case "relay5i":
                 devices[parentId + '-Power-ch5'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 5", options : [powerChannel : 5, gpio : gpio]]
                 break;
 
-            case "22 (Relay6)":
-            case "30 (Relay6i)":
+            case "relay6":
+            case "relay6i":
                 devices[parentId + '-Power-ch6'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 6", options : [powerChannel : 6, gpio : gpio]]
                 break;
 
-            case "23 (Relay7)":
-            case "31 (Relay7i)":
+            case "relay7":
+            case "relay7i":
                 devices[parentId + '-Power-ch7'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 7", options : [powerChannel : 7, gpio : gpio]]
                 break;
 
-            case "24 (Relay8)":
-            case "32 (Relay8i)":
+            case "relay8":
+            case "relay8i":
                 devices[parentId + '-Power-ch8'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch - Channel 8", options : [powerChannel : 8, gpio : gpio]]
                 break;
             
-            
-            
-            case "1 (DHT11)":
-            case "2 (AM2301)":
-            case "3 (SI7021)":
-            case "4 (DS18x20)":
-            case "5 (I2C SCL)":
-            case "6 (I2C SDA)":
-            case "7 (WS2812)":
-            case "8 (IRsend)":
-            case "9 (Switch1)":
-            case "10 (Switch2)":
-            case "11 (Switch3)":
-            case "12 (Switch4)":
-            case "13 (Button1)":
-            case "14 (Button2)":
-            case "15 (Button3)":
-            case "16 (Button4)":
-            case "33 (PWM1)":
-            case "34 (PWM2)":
-            case "35 (PWM3)":
-            case "36 (PWM4)":
-            case "37 (PWM5)":
-            case "38 (Counter1)":
-            case "39 (Counter2)":
-            case "40 (Counter3)":
-            case "41 (Counter4)":
-            case "42 (PWM1i)":
-            case "43 (PWM2i)":
-            case "44 (PWM3i)":
-            case "45 (PWM4i)":
-            case "46 (PWM5i)":
-            case "47 (IRrecv)":
-            case "48 (Led1)":
-            case "49 (Led2)":
-            case "50 (Led3)":
-            case "51 (Led4)":
-            case "52 (Led1i)":
-            case "53 (Led2i)":
-            case "54 (Led3i)":
-            case "55 (Led4i)":
-            case "56 (MHZ Tx)":
-            case "57 (MHZ Rx)":
-            case "58 (PZEM Tx)":
-            case "59 (PZEM Rx)":
-            case "60 (SAir Tx)":
-            case "61 (SAir Rx)":
-            case "62 (SPI CS)":
-            case "63 (SPI DC)":
-            case "64 (BkLight)":
-            case "65 (PMS5003)":
+            case "dht11":
+            case "am2301":
+            case "si7021":
+            case "ds18x20":
+            case "i2c scl":
+            case "i2c sda":
+            case "ws2812":
+            case "irsend":
+            case "switch1":
+            case "switch2":
+            case "switch3":
+            case "switch4":
+            case "button1":
+            case "button2":
+            case "button3":
+            case "button4":
+            case "pwm1":
+            case "pwm2":
+            case "pwm3":
+            case "pwm4":
+            case "pwm5":
+            case "counter1":
+            case "counter2":
+            case "counter3":
+            case "counter4":
+            case "pwm1i":
+            case "pwm2i":
+            case "pwm3i":
+            case "pwm4i":
+            case "pwm5i":
+            case "irrecv":
+            case "led1":
+            case "led2":
+            case "led3":
+            case "led4":
+            case "led1i":
+            case "led2i":
+            case "led3i":
+            case "led4i":
+            case "mhz tx":
+            case "mhz rx":
+            case "pzem tx":
+            case "pzem rx":
+            case "sair tx":
+            case "sair rx":
+            case "spi cs":
+            case "spi dc":
+            case "bklight":
+            case "pms5003":
                 log.debug "Unsupported device '${e.value}'.  Maybe you want to support it? (see https://github.com/BrettSheleski/SmartThingsPublic/tree/master/devicetypes/brettsheleski/tasmota.src)"
                 break;
 
-            case "0 (None)":
+            case "None":
                 break;
         }
     }
