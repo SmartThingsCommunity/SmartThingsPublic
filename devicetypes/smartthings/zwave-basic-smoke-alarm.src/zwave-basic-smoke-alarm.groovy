@@ -58,6 +58,7 @@ def installed() {
 	cmds << createEvent(name: "checkInterval", value: checkInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	createSmokeEvents("smokeClear", cmds)
 	cmds.each { cmd -> sendEvent(cmd) }
+	response(initialPoll())
 }
 
 def getCheckInterval() {
@@ -226,4 +227,24 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, results) {
 	event.linkText = device.label ?: device.name
 	event.descriptionText = "$event.linkText: $cmd"
 	results << createEvent(event)
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo?.zw?.endsWith("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private commands(commands, delay = 200) {
+	delayBetween(commands.collect { command(it) }, delay)
+}
+
+def initialPoll() {
+	def request = []
+	// check initial battery and smoke sensor state
+	request << zwave.batteryV1.batteryGet()
+	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_SMOKE)
+	commands(request, 500) + ["delay 6000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }

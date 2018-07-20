@@ -259,7 +259,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	log.debug "location: "+location
 	def timeDate = location.timeZone ? new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone) : new Date().format("yyyy MMM dd EEE h:mm:ss")
 
-	if (value == 0xFF) {  // Special value for low battery alert
+	if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
 		sendEvent(name: "battery", value: 1, descriptionText: "${device.displayName} has a low battery", isStateChange: true)
 	} else {
 		sendEvent(name: "battery", value: cmd.batteryLevel, descriptionText: "Current battery level")

@@ -497,7 +497,6 @@ def activityResponse(response, data) {
 	} else {
 		if (response.status == 200) {
 			log.trace "Harmony - Command sent succesfully"
-			poll()
 		} else {
 			log.trace "Harmony - Command failed. Error: $response.status"
 		}

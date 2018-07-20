@@ -14,7 +14,7 @@
  *
  */
 metadata {
-    definition (name: "Simulated Dimmable Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+    definition (name: "Simulated Dimmable Bulb", namespace: "smartthings/testing", author: "SmartThings", mnmn: "SmartThings", vid: "generic-dimmer") {
         capability "Health Check"
         capability "Actuator"
         capability "Sensor"
