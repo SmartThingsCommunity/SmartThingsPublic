@@ -944,10 +944,10 @@ Default: No (Enable for Better Battery Life)
         <Item label="No" value="0" />
         <Item label="Yes" value="1" />
   </Value>
-  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="5000" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="10" max="2120" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
     <Help>
 Threshold change in temperature to induce an automatic report.
-Range: 1~5000.
+Range: 10~2120.
 Default: 20
 Note:
 Only used if selective reporting is enabled.
