@@ -422,7 +422,7 @@ def Contacts_Management(){
                 if(ToggleBack){
                     input(name: "SwitchIfMode", type: "bool", title: "Keep $ContactAndSwitch off at all times when in certain modes", default: false, submitOnChange: true)
                     if(SwitchIfMode){
-                        input(name: "SwitchMode", type : "mode", title: "Select modes", multiple: true, required: true, submitOnChange: true)
+                        input(name: "ContactSwitchOffMode", type : "mode", title: "Select modes", multiple: true, required: true, submitOnChange: true)
                     }
 
                     input "ContactAndSwitchInSameRoom", "bool", title: "$ContactAndSwitch is in the same room as one of my other HVAC units", default: false, submitOnChange: true
@@ -1752,7 +1752,7 @@ def Evaluate(){
     log.debug """
 SomeSwAreOn.size() = ${SomeSwAreOn.size()}
 SomeSwAreOff.size() = ${SomeSwAreOff.size()}
-CurrMode in SwitchMode = ${CurrMode in SwitchMode}
+CurrMode in ContactSwitchOffMode = ${CurrMode in ContactSwitchOffMode}
 ToggleBack = $ToggleBack
 doorsOk = $doorsOk
 FollowException = $FollowException 
@@ -1761,6 +1761,7 @@ DoNotTurnOffModes = $DoNotTurnOffModes
 ContactExceptionIsClosed = $ContactExceptionIsClosed
 ControlWithBedSensor = $ControlWithBedSensor
 ConsideredOpen = $ConsideredOpen
+state.ACBedOnByApp = $state.ACBedOnByApp
 """
 
     if(ContactException && FollowException && InExceptionContactMode){
@@ -1772,34 +1773,38 @@ ConsideredOpen = $ConsideredOpen
         log.debug "contactClosed = $contactClosed (ALL CONTACTS)"
     }
     log.debug "contactClosed = $contactClosed"
-    def inOffMode = CurrMode in SwitchMode
+    def inOffMode = CurrMode in ContactSwitchOffMode
 
 
     //////////////////////// EXCEPTION AC (sort of vir therm) /////////////////////////////////
     // turn off if inOffMode (and if this option selected by user)
     if(KeepOffAtAllTimesWhenMode() && inOffMode){
+        log.debug "inOffMode = $inOffMode"
         // but not if user wants to keep it on while sitting on their bed
-
         if(ControlWithBedSensor && !ConsideredOpen){
-            log.debug """Current mode is in $SwitchMode, BUT $BedSensor is still CLOSED 
+
+            log.debug """Current mode is in $ContactSwitchOffMode, BUT $BedSensor is still CLOSED 
 so $ContactAndSwitch stays on until it opens
 """
-            // therefore make sure it is on
-            if(SomeSwAreOff.size() != 0 && contactClosed && state.ACBedOffByApp == true){
+            // therefore make sure related switch/device is on
+            if(SomeSwAreOff.size() != 0 /*&& contactClosed*/ && state.ACBedOffByApp == true){
                 //if at least one is off, turn on
                 ContactAndSwitchon()
             }
         }
-        else if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
-            // if at least one is on, turn off
-            ContactAndSwitchoff()
+        else if(SomeSwAreOn.size() != 0 ){
+            if(state.ACBedOnByApp == true){
+                // if at least one is on, turn off
+                ContactAndSwitchoff()
+                log.debug "$ContactAndSwitch turned off at level 1"
+            }
+            else {
+                log.debug "$ContactAndSwitch in OVERRIDE mode; not turning it off"
+            }
         }
         else {
             if(SomeSwAreOn.size() == 0){
                 log.debug "$ContactAndSwitch already off"
-            }
-            if(state.ACBedOnByApp != true){
-                log.debug "$ContactAndSwitch in OVERRIDE mode"
             }
         } 
     }
@@ -1808,6 +1813,7 @@ so $ContactAndSwitch stays on until it opens
         if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
             // if at least one is on, turn off
             ContactAndSwitchoff()
+            log.debug "$ContactAndSwitch turned off at level 2"
         }
         else {
             if(SomeSwAreOn.size() == 0){
@@ -1823,6 +1829,7 @@ so $ContactAndSwitch stays on until it opens
         if(IsHeatPump && outsideTemp <= 29){
             if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
                 ContactAndSwitchoff()
+                log.debug "$ContactAndSwitch turned off at level 3"
             }
         }
         else if(ToggleBack) {   
@@ -1888,8 +1895,9 @@ AltSensorMap = $AltSensorMap"""
             ///// OVERRIDE TEST///// 
             def ThermState = ThermSet.currentValue("thermostatMode")  
             // override is activated when thermostat is in auto mode
+            // so user can go back to manual settings 
             def AppMgt = ThermState in ["off", "cool", "heat"]
-            log.debug "NO OVERRIDE FOR $ThermSet = $AppMgt (ThermState == $ThermState)"
+            //log.debug "STATUS OF OVERRIDE FOR $ThermSet = $AppMgt (ThermState = $ThermState)"
             ///////////////// END OF OVERRIDE TEST //////////////////
 
             if(AppMgt){
@@ -2335,7 +2343,7 @@ HSPok = $HSPok
 
                     else {
                         BedSensorManagement = false
-                        //log.debug "BedSensorManagement set to false (BedSensorManagement = $BedSensorManagement)"
+                        log.debug "BedSensorManagement set to false (BedSensorManagement = $BedSensorManagement)"
                     }
                 }
 
@@ -2410,7 +2418,12 @@ FoundUnitToIgnore = $FoundUnitToIgnore
 """
                 if(ContactAndSwitchInSameRoom && FoundUnitToIgnore && ContactAndSwitchAreOn  && !inAway && AppMgt){
                     log.debug "Turning off $ThermSet because it is in the same room as $ContactAndSwitch, which is currently ON"
-                    ThermSet.setThermostatMode("off")
+                    if(ThermSet.currentValue("thermostatMode") != "off"){
+                        ThermSet.setThermostatMode("off")
+                    }
+                    else {
+                        log.debug "$ThermSet already off due to $UnitToIgnore being on"
+                    }
                 }
                 else {
                     if(doorsOk || (ContactExceptionIsClosed && ThisIsExceptionTherm)){
@@ -2670,8 +2683,9 @@ def WhichMode(){
 }
 def KeepOffAtAllTimesWhenMode(){
     def result = false
-    def inMode = location.currentMode in SwitchMode
+    def inMode = location.currentMode in ContactSwitchOffMode
     log.debug """
+ContactSwitchOffMode are: $ContactSwitchOffMode"
 ToggleBack = $ToggleBack
 SwitchIfMode = $SwitchIfMode
 inMode = $inMode
@@ -2858,7 +2872,6 @@ def motionSensorHandler(evt){
 
 
 }
-
 def ContactAndSwitchHandler(evt){
 
     log.debug "ContactAndSwitchHandler : ${evt.device} is ${evt.value}"
@@ -2938,7 +2951,7 @@ def BedSensorEvtSize() {
         ThisBedSensorIt = BedSensor[iteration]
         BedSensorEvents[iteration] = ThisBedSensorIt.eventsSince(new Date(now() - deltaMinutes)) 
         evts4thisiteration = BedSensorEvents[iteration]
-        log.debug "$ThisBedSensorIt events = ${evts4thisiteration}"      
+        log.debug "$ThisBedSensorIt events = ${evts4thisiteration?.size()}"      
 
         size = evts4thisiteration?.size()
         log.debug "Timer Found ${size} events in the last $minutes minutes at ${ThisBedSensorIt}"
@@ -2981,14 +2994,14 @@ def BedSensorStatus(){
         def evts = BedSensorEvtSize()
         log.debug "BedSensor events within time thres. = ${evts}"  
 
-        if(evts > 1) {
-            log.debug "too many events (evts = $evts), doing nothing"
-            ConsideredOpen = false // someone is moving around on the bed
-            //send("Someone is moving on the bed like a fool...") 
+        if(evts >= 1) {
+            log.debug "several events (evts = $evts), so $BedSensor is considered as pressed/closed"
+            ConsideredOpen = false 
+            // many events, therefore it will be considered as closed since that means that there's still someone there
         }
         else {
-            // if 1 event within time threshold then proceed or closed  
-            if(!isOpen && evts == 0){
+            // if 0 events then..  
+            if(!isOpen){
                 // if last status is closed while there has been no event during false alarm threshold,
                 // then it's a prolonged closed status (someone is sitting or lying down here)
 
@@ -2997,12 +3010,10 @@ def BedSensorStatus(){
                 log.debug "no event within the last $minutes minutes && $BedSensor is still closed, so it is now considered as closed"
 
             }
-            else if(isOpen && evts == 0) { 
-
-                /// this means thermostat won't go back to normal settings before an excess of time superior to thershold. 
-
+            else if(isOpen) { 
+                // if it is declared open with 0 events within time threshold, then it is considered as open
                 ConsideredOpen = true // 
-                log.debug "no event within the last $minutes minutes && $BedSensor is still open, so it is now considered as closed"
+                log.debug "no event within the last $minutes minutes && $BedSensor is still open, so it is now considered as open"
 
             }
         }
@@ -3233,48 +3244,46 @@ def DoubleChekcThermostats(){
                 }
             }
             else {
-                if(ThermState == "off"){
+                if(device.currentValue("thermostatMode") == "off"){
                     log.debug "$device already off"
                 }
-                if(!AppMgt && ThermState != "off") {
+                else {
+                    device.setThermostatMode("off") // if for some reason it's still on
+                }
+                if(!AppMgt) {
                     if(!ThisIsExceptionTherm){
-                        log.debug "$device in OVERRIDE MODE. Will be set to fan only" 
-                        if(device.currentValue("thermostatMode") != "off"){
-                            device.setThermostatMode("off") 
-                        }
+                        log.debug "$device was in OVERRIDE MODE. Will be set to fan only" 
+
                         if(device.currentValue("thermostatFanMode") != "on"){
                             device.setThermostatFanMode("on")
                             log.debug "$device NOW SET TO FAN ONLY"
                         }
                         else {
-                            log.debug "${thisdevice}' fan already set to on"
+                            log.debug "${thisdevice}' fan already on"
                         }
                     }
                     if(ThisIsExceptionTherm && !ExcepContactsClosed()){
-                        log.debug "$device in OVERRIDE MODE. Will be set to fan only"
-                        if(device.currentValue("thermostatMode") != "off"){
-                            device.setThermostatMode("off") 
-                        }
+                        log.debug "$device was in OVERRIDE MODE. Will be set to fan only"
+
                         if(device.currentValue("thermostatFanMode") != "on"){
                             device.setThermostatFanMode("on")
                             log.debug "$device NOW SET TO FAN ONLY"
                         }
                         else {
-                            log.debug "${device}' fan already set to on"
+                            log.debug "${device}' fan already on"
                         }
                     }
+                    // beware the difference here: previous = when closed, this one = when not in exception mode..
                     if(ThisIsExceptionTherm && !InExceptionContactMode){
-                        device.setThermostatMode("off") 
-                        log.debug "$device in OVERRIDE MODE. Will be set to fan only"
-                        if(device.currentValue("thermostatMode") != "off"){
-                            device.setThermostatMode("off") 
-                        }
+
+                        log.debug "$device was in OVERRIDE MODE. Will be set to fan only"
+
                         if(device.currentValue("thermostatFanMode") != "on"){
                             device.setThermostatFanMode("on")
                             log.debug "$device NOW SET TO FAN ONLY"
                         }
                         else {
-                            log.debug "${device}' fan already set to on"
+                            log.debug "${device}' fan already on"
                         }
                     }
                 }
@@ -3288,40 +3297,8 @@ def TurnOffThermostats(){
 
     def InExceptionContactMode = location.currentMode in DoNotTurnOffModes
     //log.debug "InExceptionContactMode = $InExceptionContactMode  DoNotTurnOffModes = $DoNotTurnOffModes (TurnOffThermostats)"
-    //CurrMode in SwitchMode
+    //CurrMode in ContactSwitchOffMode
 
-
-    if(ContactAndSwitch){
-        def contactClosed = false
-
-        if(ContactException && FollowException && InExceptionContactMode){
-
-            contactClosed = ExcepContactsClosed()
-        }
-        else{
-            contactClosed =  AllContactsAreClosed()
-        }
-        //log.debug "contactClosed = $contactClosed (TurnOffThermostats)"
-        def CurrentSwitch = ContactAndSwitch.currentSwitch
-        //log.debug "$ContactAndSwitch currentSwitch = $currentSwitch"
-        def SomeSwAreOn = CurrentSwitch.findAll { switchVal ->
-            switchVal == "on" ? true : false
-        }
-        log.trace "SomeSwAreOn = $SomeSwAreOn"
-        if(!contactClosed){
-            if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
-                ContactAndSwitchoff()
-            }
-            else {
-                if(SomeSwAreOn.size() == 0){
-                    log.debug "$ContactAndSwitch already off"
-                }
-                if(state.ACBedManagedByApp != true){
-                    log.debug "$ContactAndSwitch in OVERRIDE mode"
-                }
-            }
-        }
-    }
 
     def loopValue = 0
     def t = Thermostats.size()
@@ -3463,7 +3440,7 @@ state.messageSent($state.messageSent)
                 message = "I'm turning on $Actuators because $state.causeOpen"
             }
             log.info message 
-            send(message)
+            //send(message)
         }
     }
     // if not ok to open and it is open then close
@@ -3487,8 +3464,23 @@ state.OpenByApp = $state.OpenByApp
 """
 
     if(state.OpenByApp == true){
-        Actuators?.off()
-        ActuatorException?.off()
+        def AreOn = Actuators.findAll{it.currentValue != "off"}
+        if(AreOn.size() == 0){      
+            Actuators?.off()
+        }
+        else {
+            log.debug "on command to Actuators already sent"
+        }
+        log.debug "Closing windows (cmd sent from $val)"
+
+        AreOn = ActuatorException.findAll{it.currentValue != "off"}
+        if(AreOn.size() == 0){      
+            ActuatorException?.off()
+        }
+        else {
+            log.debug "off command to ActuatorException already sent"
+        }
+
         state.OpenByApp = false
         state.ClosedByApp = true
 
@@ -3516,11 +3508,22 @@ def OpenWindows(val, str){
 
 
     if(state.ClosedByApp == true || (location.currentMode in Away && OpenInfullWhenAway)){
-        Actuators?.on()
+        def AreOn = Actuators.findAll{it.currentValue != "on"}
+        if(AreOn.size() == 0){      
+            Actuators?.on()
+        }
+        else {
+            log.debug "on command to Actuators already sent"
+        }
         log.debug "Opening windows (cmd sent from $val)"
         if(str == "exception"){ 
-            ActuatorException?.on()
-
+            AreOn = ActuatorException.findAll{it.currentValue != "on"}
+            if(AreOn.size() == 0){      
+                ActuatorException?.on()
+            }
+            else {
+                log.debug "on command to ActuatorException already sent"
+            }
         }
         state.OpenByApp = true
         state.ClosedByApp = false
@@ -3580,10 +3583,10 @@ def OkToOpen(){
     WindValue = WindValue.toInteger()
 
     def ItfeelsLike = OutsideSensor?.currentValue("feelsLike") 
-   
+
     log.debug "new ItfeelsLike value = $ItfeelsLike" 
     def OutsideFeelsHotter = ItfeelsLike.toInteger() > Outside + 2
-log.debug "test ---"
+    log.debug "test ---"
 
     //log.debug "Humidity EVAL"
     def TooHumid = false
@@ -3703,7 +3706,7 @@ OpenWhenEverPermitted = $OpenWhenEverPermitted
         }
         causeNotOkToOpen = MessageStr.toString();
         state.causeClose = causeNotOkToOpen
-        
+
         log.info message
         state.messageclosed = message
         // send a reminder every X minutes 
@@ -3832,6 +3835,7 @@ def StopActuators(){
         }
     }
 }
+
 def ActuatorsDelay() {
 
     def seconds = 5000 as Long
