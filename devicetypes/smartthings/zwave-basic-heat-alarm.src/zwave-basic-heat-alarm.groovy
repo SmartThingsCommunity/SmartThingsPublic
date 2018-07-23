@@ -49,13 +49,13 @@ metadata {
 def installed() {
 	def cmds = []
 	cmds << checkIntervalEvent
-	cmds << createHeatEvents("heatClear")
+	cmds << createHeatEvents("clear")
 	cmds.each { cmd -> sendEvent(cmd) }
 	response(initialPoll())
 }
 
 def updated() {
-	sendEvent(checkIntervalEvent)
+	//sendEvent(checkIntervalEvent)
 }
 
 def getCheckIntervalEvent() {
@@ -150,7 +150,8 @@ def createHeatEvents(name) {
 			break
 		case "clear":
 			text = "$device.displayName heat is clear"
-			result = createEvent(name: "temperatureAlarm", value: "cleared", descriptionText: text)
+			result = createEvent(name: "temperatureAlarm", value: "cleared", descriptionText: text, isStateChange: true)
+			log.debug "Clear event created"
 			break
 	}
 	return result
