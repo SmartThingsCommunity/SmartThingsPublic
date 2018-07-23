@@ -126,16 +126,14 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		switch (cmd.event) {
 			case 0x00:
 			case 0xFE:
-				result = createHeatEvents("heatClear")
+				result = createHeatEvents("clear")
 				break
 			case 0x01: //Overheat detected
 			case 0x02: //Overheat detected Unknown Location
 			case 0x03: //Rapid Temperature Rise
 			case 0x03: //Rapid Temperature Rise Unknown Location
+			case 0x07: //Tested
 				result = createHeatEvents("heat")
-				break
-			case 0x07:
-				result = createHeatEvents("tested")
 				break
 		}
 	}
@@ -150,16 +148,8 @@ def createHeatEvents(name) {
 			text = "$device.displayName heat was detected!"
 			result = createEvent(name: "temperatureAlarm", value: "heat", descriptionText: text)
 			break
-		case "tested":
-			text = "$device.displayName heat tested"
-			result = createEvent(name: "temperatureAlarm", value: "heat", descriptionText: text)
-			break
-		case "heatClear":
+		case "clear":
 			text = "$device.displayName heat is clear"
-			result = createEvent(name: "temperatureAlarm", value: "cleared", descriptionText: text)
-			break
-		case "testClear":
-			text = "$device.displayName heat cleared"
 			result = createEvent(name: "temperatureAlarm", value: "cleared", descriptionText: text)
 			break
 	}
