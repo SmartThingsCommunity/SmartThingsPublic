@@ -440,7 +440,7 @@ def configure() {
 				zigbee.configureReporting(0xFC02, 0x0014, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
 	}
 
-	return refresh() + configCmds
+	return refresh() + configCmds + refresh()
 }
 
 def updated() {

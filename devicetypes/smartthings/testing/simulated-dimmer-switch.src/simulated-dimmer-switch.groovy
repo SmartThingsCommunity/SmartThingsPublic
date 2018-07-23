@@ -14,7 +14,8 @@
  *
  */
 metadata {
-    definition (name: "Simulated Dimmer Switch", namespace: "smartthings/testing", author: "SmartThings", runLocally: false) {
+    definition (name: "Simulated Dimmer Switch", namespace: "smartthings/testing", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-dimmer") {
+        capability "Health Check"
         capability "Actuator"
         capability "Sensor"
 
@@ -149,6 +150,11 @@ private initialize() {
     log.trace "Executing 'initialize'"
     sendEvent(name: "switch", value: "off")
     sendEvent(name: "level", value: 100)
+
+
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 private Map buildSetLevelEvent(value) {
@@ -181,7 +187,7 @@ private turnOff() {
     sendEvent(name: "switch", value: "off")
 }
 
-// Generate pretend physical events 
+// Generate pretend physical events
 private onPhysical() {
     log.trace "Executing 'onPhysical'"
     sendEvent(name: "switch", value: "on", type: "physical")

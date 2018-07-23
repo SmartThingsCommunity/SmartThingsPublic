@@ -13,11 +13,12 @@
  */
 metadata {
 
-    definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob", runLocally: false) {
+    definition (name: "Simulated Switch", namespace: "smartthings/testing", author: "bob", runLocally: false, mnmn: "SmartThings", vid: "generic-switch") {
         capability "Switch"
         capability "Relay Switch"
         capability "Sensor"
         capability "Actuator"
+        capability "Health Check"
 
         command "onPhysical"
         command "offPhysical"
@@ -37,6 +38,24 @@ metadata {
         main "switch"
         details(["switch","on","off"])
     }
+}
+
+def installed() {
+    log.trace "Executing 'installed'"
+    initialize()
+}
+
+def updated() {
+    log.trace "Executing 'updated'"
+    initialize()
+}
+
+private initialize() {
+    log.trace "Executing 'initialize'"
+
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 def parse(description) {

@@ -103,6 +103,10 @@ def installed() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
+	if (isSamsungLock()) { // Samsung locks won't allow you to enter the pairing menu when locked, so it must be unlocked
+		sendEvent(name: "lock", value: "unlocked", isStateChange: true, displayed: true)
+	}
+
 	scheduleInstalledCheck()
 }
 
@@ -433,7 +437,7 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 			} else {
 				// locked by pressing the Schlage button
 				map.descriptionText = "Locked manually"
@@ -445,7 +449,7 @@ private def handleAccessAlarmReport(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 7:
@@ -639,7 +643,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 				codeID = readCodeSlotId(cmd)
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Unlocked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 18: // Locked with keypad
@@ -652,7 +656,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			} else {
 				codeName = getCodeName(lockCodes, codeID)
 				map.descriptionText = "Locked by \"$codeName\""
-				map.data = [ usedCode: codeID, codeName: codeName, method: "keypad" ]
+				map.data = [ codeId: codeID, usedCode: codeID, codeName: codeName, method: "keypad" ]
 			}
 			break
 		case 21: // Manually locked
@@ -1698,6 +1702,21 @@ def isYaleLock() {
 	if ("0129" == zwaveInfo.mfr) {
 		if("Yale" != getDataValue("manufacturer")) {
 			updateDataValue("manufacturer", "Yale")
+		}
+		return true
+	}
+	return false
+}
+
+/**
+ * Utility function to check if the lock manufacturer is Samsung
+ *
+ * @return true if the lock manufacturer is Samsung, else false
+ */
+private isSamsungLock() {
+	if ("022E" == zwaveInfo.mfr) {
+		if ("Samsung" != getDataValue("manufacturer")) {
+			updateDataValue("manufacturer", "Samsung")
 		}
 		return true
 	}
