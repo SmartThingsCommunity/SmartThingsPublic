@@ -32,10 +32,9 @@ metadata {
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "heat", type: "lighting", width: 6, height: 4) {
-			tileAttribute("device.heat", key: "PRIMARY_CONTROL") {
+			tileAttribute("device.temperatureAlarm", key: "PRIMARY_CONTROL") {
 				attributeState("cleared", label: "cleared", icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff")
-				attributeState("detected", label: "HEAT", icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13")
-				attributeState("tested", label: "TEST", icon: "st.alarm.smoke.test", backgroundColor: "#e86d13")
+				attributeState("heat", label: "HEAT", icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13")
 			}
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -49,15 +48,19 @@ metadata {
 
 def installed() {
 	def cmds = []
-	// Device checks in every 4 hours, this interval allows us to miss one check-in notification before marking offline
-	cmds << createEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	cmds << createHeatEvents("heatClear")
+	cmds << checkIntervalEvent
+	cmds << createHeatEvents("clear")
 	cmds.each { cmd -> sendEvent(cmd) }
+	response(initialPoll())
 }
 
 def updated() {
+	//sendEvent(checkIntervalEvent)
+}
+
+def getCheckIntervalEvent() {
 	// Device checks in every 4 hours, this interval allows us to miss one check-in notification before marking offline
-	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	createEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def getCommandClassVersions() {
@@ -123,16 +126,14 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		switch (cmd.event) {
 			case 0x00:
 			case 0xFE:
-				result = createHeatEvents("heatClear")
+				result = createHeatEvents("clear")
 				break
 			case 0x01: //Overheat detected
 			case 0x02: //Overheat detected Unknown Location
 			case 0x03: //Rapid Temperature Rise
 			case 0x03: //Rapid Temperature Rise Unknown Location
+			case 0x07: //Tested
 				result = createHeatEvents("heat")
-				break
-			case 0x07:
-				result = createHeatEvents("tested")
 				break
 		}
 	}
@@ -145,20 +146,32 @@ def createHeatEvents(name) {
 	switch (name) {
 		case "heat":
 			text = "$device.displayName heat was detected!"
-			result = createEvent(name: "heat", value: "detected", descriptionText: text)
+			result = createEvent(name: "temperatureAlarm", value: "heat", descriptionText: text)
 			break
-		case "tested":
-			text = "$device.displayName heat tested"
-			result = createEvent(name: "heat", value: "tested", descriptionText: text)
-			break
-		case "heatClear":
+		case "clear":
 			text = "$device.displayName heat is clear"
-			result = createEvent(name: "heat", value: "cleared", descriptionText: text)
-			break
-		case "testClear":
-			text = "$device.displayName heat cleared"
-			result = createEvent(name: "heat", value: "cleared", descriptionText: text)
+			result = createEvent(name: "temperatureAlarm", value: "cleared", descriptionText: text, isStateChange: true)
+			log.debug "Clear event created"
 			break
 	}
 	return result
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo?.zw?.endsWith("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private commands(commands, delay = 200) {
+	delayBetween(commands.collect { command(it) }, delay)
+}
+
+def initialPoll() {
+	def request = []
+	// check initial battery
+	request << zwave.batteryV1.batteryGet()
+	commands(request, 500) + ["delay 6000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
