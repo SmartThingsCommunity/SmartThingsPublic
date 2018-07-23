@@ -20,13 +20,16 @@ metadata {
 		capability "Sensor"
 		capability "Switch"
 
-		fingerprint mfr:"014A", prod:"0006", model:"0005", deviceJoinName: "Smart Switch Single Rocker"
-		fingerprint mfr:"014A", prod:"0006", model:"0004", deviceJoinName: "Dual Toggle Switch"
-		fingerprint mfr:"014A", prod:"0006", model:"0003", deviceJoinName: "Smart Switch Dual Rocker"
-		fingerprint mfr:"014A", prod:"0006", model:"0002", deviceJoinName: "Single Gang Toggle Wirless Light Switch"
+		//zw:F type:1001 mfr:014A prod:0006 model:0005 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
+        fingerprint mfr:"014A", prod:"0006", model:"0005", deviceJoinName: "Ecolink Single Rocker Switch"
+        //zw:F type:1001 mfr:014A prod:0006 model:0004 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
+		fingerprint mfr:"014A", prod:"0006", model:"0004", deviceJoinName: "Ecolink Dual Toggle Switch"
+        //zw:F type:1001 mfr:014A prod:0006 model:0003 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
+		fingerprint mfr:"014A", prod:"0006", model:"0003", deviceJoinName: "Ecolink Dual Rocker Switch"
+        //zw:F type:1001 mfr:014A prod:0006 model:0002 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
+		fingerprint mfr:"014A", prod:"0006", model:"0002", deviceJoinName: "Ecolink Single Toggle Switch"
 	}
-
-
+    
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
@@ -48,31 +51,22 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	initialize()
 }
 
 def initialize() {
 	def cmds = []
 	cmds << zwave.batteryV1.batteryGet().format()
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def updated() {
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	response(refresh())
-}
-
-def getCommandClassVersions() {
-	[
-		0x20: 1,  // Basic
-		0x56: 1,  // Crc16Encap
-		0x70: 1,  // Configuration
-	]
+	initialize()
 }
 
 def parse(String description) {
-	def result = null
-	def cmd = zwave.parse(description, commandClassVersions)
+	def result
+	def cmd = zwave.parse(description)
 	if (cmd) {
 		result = createEvent(zwaveEvent(cmd))
 	}
@@ -81,15 +75,15 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
+	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
@@ -110,15 +104,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-	def versions = commandClassVersions
-	def version = versions[cmd.commandClass as Integer]
-	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
-	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
-	if (encapsulatedCommand) {
-		zwaveEvent(encapsulatedCommand)
-	}
-}
+
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [name: "battery", unit: "%"]
 	if (cmd.batteryLevel == 0xFF) {
@@ -136,25 +122,27 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	[:]
 }
+
 def poll() {
 	if (secondsPast(state.lastbatt, 36 * 60 * 60)) {
-		return zwave.batteryV1.batteryGet().format()
+		zwave.batteryV1.batteryGet().format()
 	} else {
 		return null
 	}
 }
+
 def on() {
-	delayBetween([
+	delayBetween ([
 		zwave.basicV1.basicSet(value: 0xFF).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format()
-	])
+	], 1000)
 }
 
 def off() {
-	delayBetween([
+	delayBetween ([
 		zwave.basicV1.basicSet(value: 0x00).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format()
-	])
+	], 1000)
 }
 
 def ping() {
@@ -162,9 +150,10 @@ def ping() {
 }
 
 def refresh() {
-	delayBetween([
+	delayBetween ([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format(),
 		zwave.batteryV1.batteryGet().format()
 	])
 }
+
