@@ -474,7 +474,16 @@ def updated()
         sendEvent(name: "currentFirmware", value: "${device.currentValue("currentFirmware") - ~/[A-Za-z]+/}${getOverride()}")
     }
     
-    //updateStatus()
+    if(state.batteryRuntimeStart != null){
+        sendEvent(name:"batteryRuntime", value:getBatteryRuntime(), displayed:false)
+        if (device.currentValue('currentFirmware') != null){
+            sendEvent(name:"statusText2", value: "Firmware: v${device.currentValue('currentFirmware')} - Battery: ${getBatteryRuntime()} Double tap to reset", displayed:false)
+        } else {
+            sendEvent(name:"statusText2", value: "Battery: ${getBatteryRuntime()} Double tap to reset", displayed:false)
+        }
+    } else {
+        state.batteryRuntimeStart = now()
+    }
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
@@ -944,10 +953,10 @@ Default: No (Enable for Better Battery Life)
         <Item label="No" value="0" />
         <Item label="Yes" value="1" />
   </Value>
-  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="10" max="2120" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="2120" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
     <Help>
-Threshold change in temperature to induce an automatic report.
-Range: 10~2120.
+Threshold change in temperature to induce an automatic report. 
+Range: 1~2120 (Firmware 1.09+ 10~2120)
 Default: 20
 Note:
 Only used if selective reporting is enabled.
