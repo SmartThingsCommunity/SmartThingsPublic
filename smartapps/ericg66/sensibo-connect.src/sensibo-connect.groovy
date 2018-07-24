@@ -428,7 +428,8 @@ def refresh() {
     	runEvery15Minutes("refreshDevices")
     else if (refreshinminutes == "30")
     	runEvery30Minutes("refreshDevices")
-    
+    else
+        runEvery10Minutes("refreshDevices")
 }
 
 
@@ -518,6 +519,8 @@ def initialize() {
     	runEvery15Minutes("refreshDevices")
     else if (refreshinminutes == "30")
     	runEvery30Minutes("refreshDevices")
+    else
+    	runEvery10Minutes("refreshDevices")
 }
 
 
