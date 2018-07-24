@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Switch Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
+	definition (name: "Z-Wave Switch Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", iprunLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
 		capability "Actuator"
 		capability "Battery"
 		capability "Health Check"
@@ -21,15 +21,15 @@ metadata {
 		capability "Switch"
 
 		//zw:F type:1001 mfr:014A prod:0006 model:0005 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
-        fingerprint mfr:"014A", prod:"0006", model:"0005", deviceJoinName: "Ecolink Single Rocker Switch"
-        //zw:F type:1001 mfr:014A prod:0006 model:0004 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
+		fingerprint mfr:"014A", prod:"0006", model:"0005", deviceJoinName: "Ecolink Single Rocker Switch"
+		//zw:F type:1001 mfr:014A prod:0006 model:0004 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
 		fingerprint mfr:"014A", prod:"0006", model:"0004", deviceJoinName: "Ecolink Dual Toggle Switch"
-        //zw:F type:1001 mfr:014A prod:0006 model:0003 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
+		//zw:F type:1001 mfr:014A prod:0006 model:0003 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
 		fingerprint mfr:"014A", prod:"0006", model:"0003", deviceJoinName: "Ecolink Dual Rocker Switch"
-        //zw:F type:1001 mfr:014A prod:0006 model:0002 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
+		//zw:F type:1001 mfr:014A prod:0006 model:0002 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
 		fingerprint mfr:"014A", prod:"0006", model:"0002", deviceJoinName: "Ecolink Single Toggle Switch"
 	}
-    
+	
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
@@ -58,6 +58,9 @@ def initialize() {
 	def cmds = []
 	cmds << zwave.batteryV1.batteryGet().format()
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	cmds << zwave.switchV1.switchBinaryGet().format()
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	
 }
 
 def updated() {
@@ -104,7 +107,15 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
-
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = commandClassVersions
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [name: "battery", unit: "%"]
 	if (cmd.batteryLevel == 0xFF) {
@@ -132,17 +143,17 @@ def poll() {
 }
 
 def on() {
-	delayBetween ([
+	delayBetween([
 		zwave.basicV1.basicSet(value: 0xFF).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format()
-	], 1000)
+	], 500)
 }
 
 def off() {
-	delayBetween ([
+	delayBetween([
 		zwave.basicV1.basicSet(value: 0x00).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format()
-	], 1000)
+	], 500)
 }
 
 def ping() {
@@ -150,7 +161,7 @@ def ping() {
 }
 
 def refresh() {
-	delayBetween ([
+	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
 		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format(),
 		zwave.batteryV1.batteryGet().format()
