@@ -255,6 +255,11 @@ def getModuleDevices(moduleId){
 			// nothing to do, must read from gpio data.
 			break;
 
+        case 44: // iFan02 (Need to confirm this number as it seems the numbering may have changed)
+            devices[parentId + '-Light'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Light", options : [powerChannel : 1]]
+            devices[parentId + '-Fan'] = [namespace : "BrettSheleski", type: "Tasmota-Fan", label : "${thisLabel} Fan Speed", options : []]
+            break;
+
         case 14: // Motor C/AC
         case 15: // ElectroDragon
         case 16: // EXS Relay
