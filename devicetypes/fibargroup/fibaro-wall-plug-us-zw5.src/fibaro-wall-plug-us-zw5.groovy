@@ -164,6 +164,7 @@ def configure() {
 
 def ping() {
 	log.debug "ping..()"
+	childRefresh()
 	refresh()
 	//response(refresh())
 }
