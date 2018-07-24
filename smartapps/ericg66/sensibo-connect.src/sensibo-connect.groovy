@@ -41,7 +41,7 @@ def getapikey() { apiKey }
 
 def setAPIKey()
 {
-	log.debug "setAPIKey()"
+	log.trace "setAPIKey()"
     
     def pod = appSettings.apikey
     
@@ -56,7 +56,7 @@ def setAPIKey()
 
 def SensiboPodList()
 {
-	log.debug "SensiboPodList()"
+	log.trace "SensiboPodList()"
 
 	def stats = getSensiboPodList()
 	log.debug "device list: $stats"
@@ -66,6 +66,10 @@ def SensiboPodList()
 			paragraph "Tap below to see the list of Sensibo Pods available in your Sensibo account and select the ones you want to connect to SmartThings."
 			input(name: "SelectedSensiboPods", title:"Pods", type: "enum", required:true, multiple:true, description: "Tap to choose",  metadata:[values:stats])
 		}
+        
+        section("Refresh") {
+        	input(name:"refreshinminutes", title: "Refresh rates in minutes", type: "enum", required:false, multiple: false, options: ["1", "5", "10","15","30"])
+        }
 
         section("Receive Pod sensors infos") {
         	input "boolnotifevery", "bool",submitOnChange: true, required: false, title: "Receive temperature, humidity and battery level notification every hour?"
@@ -120,7 +124,7 @@ def timePageEvent() {
 
 def getSensiboPodList()
 {
-	log.debug "getting device list"
+	log.trace "getSensiboPodList called"
        
     def deviceListParams = [
     uri: "${getServerUrl()}",
@@ -155,7 +159,7 @@ def getSensiboPodList()
 }
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
+	log.trace "Installed() called with settings: ${settings}"
 
 	state.lastTemperaturePush = null
     state.lastHumidityPush = null
@@ -178,7 +182,7 @@ def installed() {
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
+	log.trace "Updated() called with settings: ${settings}"
 
 	unschedule()
     unsubscribe()
@@ -204,6 +208,8 @@ def updated() {
 }
 
 def hournotification() {
+	log.trace "hournotification() called"
+    
 	def hour = new Date()
 	def curHour = hour.format("HH:mm",location.timeZone)
 	def curDay = hour.format("EEEE",location.timeZone)
@@ -220,7 +226,7 @@ def hournotification() {
     	{
     		def devices = getAllChildDevices()
             devices.each { d ->
-                log.debug "Notification every hour for device: ${d.id}"
+                log.trace "Notification every hour for device: ${d.id}"
                 def currentPod = d.displayName
                 def currentTemperature = d.currentState("temperature").value
                 def currentHumidity = d.currentState("humidity").value
@@ -235,7 +241,7 @@ def hournotification() {
     else {
     	 	def devices = getAllChildDevices()
             devices.each { d ->
-                log.debug "Notification every hour for device: ${d.id}"
+                log.trace "Notification every hour for device: ${d.id}"
                 def currentPod = d.displayName
                 def currentTemperature = d.currentState("temperature").value
                 def currentHumidity = d.currentState("humidity").value
@@ -406,23 +412,34 @@ def inDateThreshold(evt,sType) {
 }
 
 def refresh() {
-	log.debug "refresh() called"
+	log.trace "refresh() called with rate of " + refreshinminutes + " minutes"
 
     unschedule()
     
 	refreshDevices()
-    runEvery15Minutes("refreshDevices")
+    
+    if (refreshinminutes == "1") 
+    	runEvery1Minute("refreshDevices")
+    else if (refreshinminutes == "5")
+    	runEvery5Minutes("refreshDevices")
+    else if (refreshinminutes == "10")
+    	runEvery10Minutes("refreshDevices")
+    else if (refreshinminutes == "15") 
+    	runEvery15Minutes("refreshDevices")
+    else if (refreshinminutes == "30")
+    	runEvery30Minutes("refreshDevices")
+    
 }
 
 
 def refreshOneDevice(dni) {
-	log.debug "refreshOneDevice() called"
+	log.trace "refreshOneDevice() called"
 	def d = getChildDevice(dni)
 	d.refresh()
 }
 
 def refreshDevices() {
-	log.debug "refreshDevices() called"
+	log.trace "refreshDevices() called"
 	def devices = getAllChildDevices()
 	devices.each { d ->
 		log.debug "Calling refresh() on device: ${d.id}"
@@ -435,12 +452,11 @@ def getChildNamespace() { "EricG66" }
 def getChildTypeName() { "SensiboPod" }
 
 def initialize() {
-    log.debug "key "+ getapikey()
+    log.trace "initialize() called"
+    log.trace "key "+ getapikey()
     
     atomicState.apikey = getapikey()
-	
-    log.debug "initialize"
-
+	  
 	def devices = SelectedSensiboPods.collect { dni ->
 		log.debug dni
 		def d = getChildDevice(dni)
@@ -459,17 +475,17 @@ def initialize() {
                 d.setIcon("off","on","https://image.ibb.co/k5S6h5/on_color_large.png")
                 d.save()              
                 
-				log.debug "created ${d.displayName} with id $dni"
+				log.trace "created ${d.displayName} with id $dni"
 			}
 			else
 			{
-				log.debug "found ${d.displayName} with id $dni already exists"
+				log.trace "found ${d.displayName} with id $dni already exists"
 			}
 
 			return d
 		}
 
-	log.debug "created ${devices.size()} Sensibo Pod"
+	log.trace "created ${devices.size()} Sensibo Pod"
 
 	def delete
 	// Delete any that are no longer in settings
@@ -483,7 +499,7 @@ def initialize() {
 		delete = getChildDevices().findAll { !SelectedSensiboPods.contains(it.deviceNetworkId) }
 	}
 
-	log.debug "deleting ${delete.size()} Sensibo"
+	log.trace "deleting ${delete.size()} Sensibo"
 	delete.each { deleteChildDevice(it.deviceNetworkId) }
 
 	def PodList = getAllChildDevices()
@@ -492,14 +508,23 @@ def initialize() {
     
     refreshDevices()
     
-    runEvery15Minutes("refreshDevices")
+    if (refreshinminutes == "1") 
+    	runEvery1Minute("refreshDevices")
+    else if (refreshinminutes == "5")
+    	runEvery5Minutes("refreshDevices")
+    else if (refreshinminutes == "10")
+    	runEvery10Minutes("refreshDevices")
+    else if (refreshinminutes == "15") 
+    	runEvery15Minutes("refreshDevices")
+    else if (refreshinminutes == "30")
+    	runEvery30Minutes("refreshDevices")
 }
 
 
 // Subscribe functions
 
 def OnOffHandler(evt) {
-	log.debug "on activated "
+	log.trace "on off handler activated"
     debugEvent(evt.value)
     
 	//def name = evt.device.displayName
@@ -518,7 +543,7 @@ def getPollRateMillis() { return 45 * 1000 }
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
 def pollChild( child )
 {
-	log.debug "poll child"
+	log.trace "pollChild() called"
 	debugEvent ("poll child")
 	def now = new Date().time
 
@@ -599,7 +624,7 @@ def pollChild( child )
 
 def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swingM, sUnit)
 {
-	log.debug "SetACStates for $PodUid ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel - SWING MODE : $swingM - UNIT : $sUnit"
+	log.trace "setACStates() called for $PodUid ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel - SWING MODE : $swingM - UNIT : $sUnit"
     
     //Return false if no values was read from Sensibo API
     if (on == "--") { return false }
@@ -607,7 +632,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
     def OnOff = (on == "on") ? true : false
     //if (swingM == null) swingM = "stopped"
     
-    log.debug "Target Temperature :" + targetTemperature
+    log.trace "Target Temperature :" + targetTemperature
     
 	def jsonRequestBody = '{"acState":{"on": ' + OnOff.toString() + ',"mode": "' + mode + '"'
     
@@ -672,6 +697,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 //Get the capabilities of the A/C Unit
 def getCapabilities(PodUid, mode)
 {
+	log.trace "getCapabilities() called"
 	def data = [:]   
 	def pollParams = [
     	uri: "${getServerUrl()}",
@@ -725,6 +751,7 @@ def getCapabilities(PodUid, mode)
                            	]	
                         	break                        
                     }
+                    log.trace "Returning remoteCapabilities"
                     return data
                 }
                 else {
@@ -754,6 +781,7 @@ def getCapabilities(PodUid, mode)
 // Get the latest state from the Sensibo Pod
 def getACState(PodUid)
 {
+	log.trace "getACState() called"
 	def data = [:]
 	def pollParams = [
     	uri: "${getServerUrl()}",
@@ -774,7 +802,7 @@ def getACState(PodUid)
                 	
                 	if (stat.status == "Success") {
                     	
-                        log.debug "get ACState Success"
+                        log.trace "get ACState Success"
                         log.debug "PodUID : $PodUid : " + stat.acState
                         
                         def OnOff = stat.acState.on ? "on" : "off"
@@ -828,6 +856,7 @@ def getACState(PodUid)
                         ]
 
                         log.debug "On: ${data.on} targetTemp: ${data.targetTemperature} fanLevel: ${data.fanLevel} Thermostat mode: ${data.mode} swing: ${data.swing}"
+                        log.trace "Returning ACState"
                         return data
                 	}
                     else { log.debug "get ACState Failed"}
@@ -889,7 +918,7 @@ def getACState(PodUid)
 // Send state to the Sensibo Pod
 def sendJson(String PodUid, String jsonBody)
 {
-    log.debug "Request sent to Sensibo API(acStates) for PODUid : $PodUid - $jsonBody"
+    log.trace "sendJson() called - Request sent to Sensibo API(acStates) for PODUid : $PodUid - $jsonBody"
 	def cmdParams = [
 		uri: "${getServerUrl()}",
 		path: "/api/v2/pods/${PodUid}/acStates",
@@ -904,9 +933,9 @@ def sendJson(String PodUid, String jsonBody)
                 log.debug "updated ${resp.data}"
 				debugEvent("updated ${resp.data}")
 				returnStatus = resp.status
-				log.debug "Successful call to Sensibo API."
+				log.trace "Successful call to Sensibo API."
             }
-           	else { log.debug "Failed call to Sensibo API." }
+           	else { log.trace "Failed call to Sensibo API." }
        }
     }
     catch(Exception e)
@@ -924,11 +953,11 @@ def sendJson(String PodUid, String jsonBody)
 
 def pollChildren(PodUid)
 {
-	log.debug "polling children"
+    log.trace "pollChildren() called"
     
-   def thermostatIdsString = PodUid
+    def thermostatIdsString = PodUid
 
-	log.debug "polling children: $thermostatIdsString"
+	log.trace "polling children: $thermostatIdsString"
     
 	def pollParams = [
     	uri: "${getServerUrl()}",
@@ -947,7 +976,7 @@ def pollChildren(PodUid)
 			}
 
 			if(resp.status == 200) {
-				log.debug "poll results returned"                                
+				log.trace "poll results returned"                                
 
                 log.debug "DEBUG DATA RESULT" + resp.data.result
                 
