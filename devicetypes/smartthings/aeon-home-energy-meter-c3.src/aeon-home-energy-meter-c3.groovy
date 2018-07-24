@@ -97,19 +97,20 @@ def parse(String description) {
 	}
 	log.debug "Parse returned ${result?.descriptionText}"
 
-	if (result?.name && result.value) storeGraphData(result.name, result.value)
-
 	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
+	def result = [:]
 	if (cmd.scale == 0) {
-		[name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]
+		result = [name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]
 	} else if (cmd.scale == 1) {
-		[name: "energy", value: cmd.scaledMeterValue, unit: "kVAh"]
+		result = [name: "energy", value: cmd.scaledMeterValue, unit: "kVAh"]
 	} else {
-		[name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W"]
+		result = [name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W"]
 	}
+	storeGraphData(result.name, result.value)
+    result
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
