@@ -35,6 +35,7 @@ metadata {
 		fingerprint mfr: "0086", prod: "0102", model: "0059", deviceJoinName: "Aeotec Recessed Door Sensor"
 		fingerprint mfr: "014A", prod: "0001", model: "0002", deviceJoinName: "Ecolink Door/Window Sensor"
 		fingerprint mfr: "014A", prod: "0001", model: "0003", deviceJoinName: "Ecolink Tilt Sensor"
+		fingerprint mfr: "014A", prod: "0004", model: "0003", deviceJoinName: "Ecolink Tilt Sensor"
 		fingerprint mfr: "011A", prod: "0601", model: "0903", deviceJoinName: "Enerwave Magnetic Door/Window Sensor"
 		fingerprint mfr: "014F", prod: "2001", model: "0102", deviceJoinName: "Nortek GoControl Door/Window Sensor"
 		fingerprint mfr: "0063", prod: "4953", model: "3031", deviceJoinName: "Jasco Hinge Pin Door Sensor"

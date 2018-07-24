@@ -28,7 +28,7 @@ metadata {
 		capability "Health Check"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
-		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "Neo Coolcam Siren Alarm"
+		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "NEO Coolcam Siren Alarm"
 		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren"
 		fingerprint mfr: "0060", prod: "000C", model: "0001", deviceJoinName: "Utilitech Siren"
 		//zw:F type:1005 mfr:0131 prod:0003 model:1083 ver:2.17 zwv:6.02 lib:06 cc:5E,9F,55,73,86,85,8E,59,72,5A,25,71,87,70,80,6C role:07 ff:8F00 ui:8F00
