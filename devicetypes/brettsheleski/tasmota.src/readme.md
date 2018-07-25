@@ -143,7 +143,7 @@ See the table below of devices this device handler should work with.
 | Button2 | | | |
 | Button3 | | | |
 | Button4 | | | |
-| Relay1 | Should Work (Untested)  | | |
+| Relay1 | Working  | [@BrettSheleski](https://github.com/BrettSheleski) | |
 | Relay2 | Should Work (Untested)  | | |
 | Relay3 | Should Work (Untested)  | | |
 | Relay4 | Should Work (Untested)  | | |
@@ -151,7 +151,7 @@ See the table below of devices this device handler should work with.
 | Relay6 | Should Work (Untested)  | | |
 | Relay7 | Should Work (Untested) | | |
 | Relay8 | Should Work (Untested)  | | |
-| Relay1i | Should Work (Untested)  | | |
+| Relay1i | Working  | [@BrettSheleski](https://github.com/BrettSheleski) | |
 | Relay2i | Should Work (Untested)  | | |
 | Relay3i | Should Work (Untested)  | | |
 | Relay4i | Should Work (Untested)  | | |
