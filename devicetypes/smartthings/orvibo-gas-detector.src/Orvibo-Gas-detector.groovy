@@ -94,7 +94,5 @@ def ping() {
 }
 def configure() {
 	log.debug "configure"
-	//The gas sensor has no battery , it can response the ping immediately
-	//so i set the checkTinterval to 5 minutes .
-	sendEvent(name: "checkInterval", value: 5*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
