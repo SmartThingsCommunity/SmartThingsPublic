@@ -12,7 +12,8 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Switch Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
+	definition (name: "Z-Wave Switch Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", 
+	runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Battery"
 		capability "Health Check"
@@ -31,7 +32,7 @@ metadata {
 	}
 	
 	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
 				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
@@ -85,33 +86,6 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	[name: "switch", value: cmd.value ? "on" : "off"]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-	def value = "when off"
-	if (cmd.configurationValue[0] == 1) {value = "when on"}
-	if (cmd.configurationValue[0] == 2) {value = "never"}
-	[name: "indicatorStatus", value: value, displayed: false]
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	log.debug "manufacturerId:	 ${cmd.manufacturerId}"
-	log.debug "manufacturerName: ${cmd.manufacturerName}"
-	log.debug "productId:		 ${cmd.productId}"
-	log.debug "productTypeId:	 ${cmd.productTypeId}"
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	updateDataValue("manufacturer", cmd.manufacturerName)
-	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-	def versions = commandClassVersions
-	def version = versions[cmd.commandClass as Integer]
-	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
-	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
-	if (encapsulatedCommand) {
-		zwaveEvent(encapsulatedCommand)
-	}
-}
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [name: "battery", unit: "%"]
 	if (cmd.batteryLevel == 0xFF) {
@@ -123,7 +97,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	state.lastbatt = new Date().time
 	map
 }
-
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
@@ -154,4 +127,3 @@ def refresh() {
 		zwave.batteryV1.batteryGet().format()
 	])
 }
-
