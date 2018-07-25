@@ -39,7 +39,8 @@ metadata {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
 		valueTile("temperatureAlarm", "device.temperatureAlarm", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
-			state "temperatureAlarm", label: 'Freeze: ${currentValue}', unit: ""
+			state "cleared", icon: "st.Weather.weather14", label: '${currentValue}', unit: ""
+			state "freeze", icon: "st.Weather.weather7", label: '${currentValue}', unit: ""
 		}
 
 		main "water"
