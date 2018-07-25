@@ -116,5 +116,5 @@ def configure() {
 		zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format() // every 5 min
 	])
 	log.debug cmd
-	cmd
+	cmd + refresh()
 }
