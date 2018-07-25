@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Switch Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", iprunLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
+	definition (name: "Z-Wave Switch Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
 		capability "Actuator"
 		capability "Battery"
 		capability "Health Check"
@@ -55,12 +55,8 @@ def installed() {
 }
 
 def initialize() {
-	def cmds = []
-	cmds << zwave.batteryV1.batteryGet().format()
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	cmds << zwave.switchV1.switchBinaryGet().format()
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	
+	response(refresh())
 }
 
 def updated() {
@@ -74,7 +70,7 @@ def parse(String description) {
 		result = createEvent(zwaveEvent(cmd))
 	}
 	
-	return result
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -125,21 +121,13 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.value = cmd.batteryLevel
 	}
 	state.lastbatt = new Date().time
-	createEvent(map)
+	map
 }
 
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// Handles all Z-Wave commands we aren't interested in
 	[:]
-}
-
-def poll() {
-	if (secondsPast(state.lastbatt, 36 * 60 * 60)) {
-		zwave.batteryV1.batteryGet().format()
-	} else {
-		return null
-	}
 }
 
 def on() {
@@ -163,7 +151,6 @@ def ping() {
 def refresh() {
 	delayBetween([
 		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format(),
 		zwave.batteryV1.batteryGet().format()
 	])
 }
