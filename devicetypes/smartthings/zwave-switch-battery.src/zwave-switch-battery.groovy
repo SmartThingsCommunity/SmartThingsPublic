@@ -117,7 +117,7 @@ def off() {
 }
 
 def ping() {
-	zwave.switchBinaryV1.switchBinaryGet().format()
+	refresh()
 }
 
 def refresh() {
