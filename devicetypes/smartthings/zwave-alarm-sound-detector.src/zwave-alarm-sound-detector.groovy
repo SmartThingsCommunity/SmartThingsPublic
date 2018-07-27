@@ -14,37 +14,33 @@
 metadata {
 	definition (name: "Z-Wave Alarm Sound Detector", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Sound Sensor"
-    		capability "Sensor"
+    	capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
-
-		attribute "alarmState", "string"
 
 		fingerprint mfr:"014A", prod:"0005", model:"000F", deviceJoinName: "Ecolink Firefighter"
 	}
 
 	tiles (scale: 2){
-		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4){
-			tileAttribute ("device.alarmState", key: "PRIMARY_CONTROL") {
-				attributeState("clear", label:"clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
-				attributeState("smoke", label:"SMOKE", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
-				attributeState("carbonMonoxide", label:"MONOXIDE", icon:"st.alarm.carbon-monoxide.carbon-monoxide", backgroundColor:"#e86d13")
+		multiAttributeTile(name:"sound", type: "lighting", width: 6, height: 4){
+			tileAttribute ("device.sound", key: "PRIMARY_CONTROL") {
+				attributeState("not detected", label:'${name}', icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
+				attributeState("detected", label:'${name}', icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
 			}
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		main "smoke"
-		details(["smoke", "battery"])
+		main "sound"
+		details(["sound", "battery"])
 	}
 }
 
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	def cmds = []
-	createSmokeOrCOEvents("allClear", cmds)
-	cmds.each { cmd -> sendEvent(cmd) }
+	sendEvent(name: "sound", value: "not detected", displayed: false)
+    	response(zwave.batteryV1.batteryGet().format())
 }
 
 def updated() {
@@ -58,69 +54,44 @@ def parse(String description) {
 	} else {
 		def cmd = zwave.parse(description, [ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
 		if (cmd) {
-			zwaveEvent(cmd, results)
+			results << zwaveEvent(cmd)
 		}
 	}
 	log.debug "'$description' parsed to ${results.inspect()}"
-	return results
+	results
 }
 
-def createSmokeOrCOEvents(name, results) {
-	def text = null
-	switch (name) {
-		case "smoke":
-			text = "$device.displayName smoke was detected!"
-			results << createEvent(name: "smoke",          value: "detected", descriptionText: text, displayed: false)
-			break
-		case "carbonMonoxide":
-			text = "$device.displayName carbon monoxide was detected!"
-			results << createEvent(name: "carbonMonoxide", value: "detected", descriptionText: text, displayed: false)
-			break
-		case "smokeClear":
-			text = "$device.displayName smoke is clear"
-			results << createEvent(name: "smoke",          value: "clear", descriptionText: text, displayed: false)
-			name = "clear"
-			break
-		case "carbonMonoxideClear":
-			text = "$device.displayName carbon monoxide is clear"
-			results << createEvent(name: "carbonMonoxide", value: "clear", descriptionText: text, displayed: false)
-			name = "clear"
-			break
-		case "allClear":
-			text = "$device.displayName all clear"
-			results << createEvent(name: "smoke",          value: "clear", descriptionText: text, displayed: false)
-			results << createEvent(name: "carbonMonoxide", value: "clear", displayed: false)
-			name = "clear"
-			break
-	}
-	results << createEvent(name: "alarmState", value: name, descriptionText: text)
-}
+private ALARM_TYPE_SMOKE() { 1 }
+private ALARM_TYPE_CO() { 2 }
 
-def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
+def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 	log.debug "zwaveAlarmType: ${cmd.zwaveAlarmType}"
-	if (cmd.zwaveAlarmType == physicalgraph.zwave.commands.alarmv2.AlarmReport.ZWAVE_ALARM_TYPE_SMOKE) {
-		createSmokeOrCOEvents((cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "smoke" : "smokeClear", results)
-	} else if (cmd.zwaveAlarmType == physicalgraph.zwave.commands.alarmv2.AlarmReport.ZWAVE_ALARM_TYPE_CO) {
-		createSmokeOrCOEvents((cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "carbonMonoxide" : "carbonMonoxideClear", results)
-	} else {
-		results << createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
+	def event = null
+	if (cmd.zwaveAlarmType == ALARM_TYPE_SMOKE() || cmd.zwaveAlarmType == ALARM_TYPE_CO()) {
+    	def detection = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
+		event = createEvent(name: "sound", value: detection, descriptionText: "${device.displayName} sound was ${detection}")
+	}  else {
+		event = createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
 	}
+	event
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, results) {
-	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
+	def cmds = []
+	cmds << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results << response([
+		cmds << response([
 				zwave.batteryV1.batteryGet().format(),
 				"delay 2000",
 				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 			])
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		cmds << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
 	}
+	cmds
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, results) {
+def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	log.debug "Battery"
 	def map = [ name: "battery", unit: "%", isStateChange: true ]
 	state.lastbatt = now()
@@ -130,12 +101,12 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, results
 	} else {
 		map.value = cmd.batteryLevel
 	}
-	results << createEvent(map)
+	createEvent(map)
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd, results) {
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	def event = [ displayed: false ]
 	event.linkText = device.label ?: device.name
 	event.descriptionText = "$event.linkText: $cmd"
-	results << createEvent(event)
+	createEvent(event)
 }
