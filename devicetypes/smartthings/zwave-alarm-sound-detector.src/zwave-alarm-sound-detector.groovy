@@ -68,7 +68,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 	log.debug "zwaveAlarmType: ${cmd.zwaveAlarmType}"
 	def event = null
 	if (cmd.zwaveAlarmType == ALARM_TYPE_SMOKE() || cmd.zwaveAlarmType == ALARM_TYPE_CO()) {
-    	def detection = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
+		def detection = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
 		event = createEvent(name: "sound", value: detection, descriptionText: "${device.displayName} sound was ${detection}")
 	}  else {
 		event = createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
