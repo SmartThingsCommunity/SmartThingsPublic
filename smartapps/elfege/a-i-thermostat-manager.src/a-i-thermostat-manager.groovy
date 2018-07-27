@@ -517,7 +517,7 @@ $ContactExceptionSTr, when open, will turn off AC or heater but $Maincontacts wo
 """
                 }
             }
-            if(ContactException){
+            if(ContactException && ContactAndSwitch){
                 paragraph """
 You selected $ContactAndSwitch to be controled upon contact events.
 Do you wish to bind it to the same rule and have it controled exclusively with $ContactException events?"""
@@ -525,27 +525,20 @@ Do you wish to bind it to the same rule and have it controled exclusively with $
                 input(name: "FollowException", type: "bool", title: "yes? no?", default: false, submitOnChange: true)
             }
         }
-        section("Keep a unit running when a contact sensor is CLOSED"){
-            input(name: "KeepACon", type: "bool", title: "Use specific settings when a different contact is CLOSED", default: false, submitOnChange: true, description: "")
+        section("Turn off a thermostat and turn on a switch instead when a contact sensor is CLOSED"){
+            input(name: "KeepACon", type: "bool", title: "Turn off a thermostat when a contact is CLOSED", default: false, submitOnChange: true, description: "")
             if(KeepACon){
-
-                input(name: "ThermContact", type: "capability.thermostat", required: true, title: "Select a Thermostat", submitOnChange: true, description: "")
-
-                if(ThermContact){
-                    input "BedSensor", "capability.contactSensor", title: "Select a contact sensor", multiple: true, required: true, description: "$descript", submitOnChange: true 
-                    def MainCon = Maincontacts.collect{ it.toString() }
-                    def BedSen = BedSensor.collect{ it.toString() }
-                    def SensorIntersection = MainCon.intersect(BedSen)
-                    //log.debug "SensorIntersection: ${SensorIntersection}"
-                    if(SensorIntersection.size() != 0){
-                        //log.debug "WRONG DEVICE"
-                        paragraph "WRONG DEVICE! You selected a contact that is already being used by this app. Please select a different contact or uncheck this option" 
-                    }
-                    else {
-                        input(name: "HSPSetBedSensor", type: "decimal", title: "Set Heating temperature", required: true, submitOnChange: true )
-                        input(name: "CSPSetBedSensor", type: "decimal", title: "Set Cooling temperature", required: true, submitOnChange: true )
-                    }
+                input "BedSensor", "capability.contactSensor", title: "Select a contact sensor", multiple: true, required: true, description: "$descript", submitOnChange: true 
+                def MainCon = Maincontacts.collect{ it.toString() }
+                def BedSen = BedSensor.collect{ it.toString() }
+                def SensorIntersection = MainCon.intersect(BedSen)
+                //log.debug "SensorIntersection: ${SensorIntersection}"
+                if(SensorIntersection.size() != 0){
+                    //log.debug "WRONG DEVICE"
+                    paragraph "WRONG DEVICE! You selected a contact that is already being used by this app. Please select a different contact or uncheck this option" 
                 }
+
+                input(name: "ThermContact", type: "capability.thermostat", required: true, title: "Select the Thermostat to turn off", submitOnChange: true, description: "")              
                 if(ContactAndSwitch){
                     input "ControlWithBedSensor", "bool", title: "Keep $ContactAndSwitch on when $BedSensor is closed", default: false
                 }
@@ -882,8 +875,8 @@ def init() {
     state.ThermsOff = false; // tells the program that ThermostatsOff() has not already run
 
     // switch ac override management
-    state.ACBedOffByApp = true
-    state.ACBedOnByApp = true
+    //state.ACBedOffByApp = true
+    //state.ACBedOnByApp = true
 
     state.CSPSet = 72
     state.HSPSet = 72 // temporary values to prevent null error
@@ -1762,6 +1755,7 @@ ContactExceptionIsClosed = $ContactExceptionIsClosed
 ControlWithBedSensor = $ControlWithBedSensor
 ConsideredOpen = $ConsideredOpen
 state.ACBedOnByApp = $state.ACBedOnByApp
+state.ACBedOffByApp = $state.ACBedOffByApp
 """
 
     if(ContactException && FollowException && InExceptionContactMode){
@@ -1778,18 +1772,22 @@ state.ACBedOnByApp = $state.ACBedOnByApp
 
     //////////////////////// EXCEPTION AC (sort of vir therm) /////////////////////////////////
     // turn off if inOffMode (and if this option selected by user)
+    log.debug "KeepOffAtAllTimesWhenMode = ${KeepOffAtAllTimesWhenMode()} - inOffMode = $inOffMode"
     if(KeepOffAtAllTimesWhenMode() && inOffMode){
-        log.debug "inOffMode = $inOffMode"
+
         // but not if user wants to keep it on while sitting on their bed
-        if(ControlWithBedSensor && !ConsideredOpen){
+        if(ControlWithBedSensor && !ConsideredOpen && !inAway){
 
             log.debug """Current mode is in $ContactSwitchOffMode, BUT $BedSensor is still CLOSED 
 so $ContactAndSwitch stays on until it opens
 """
             // therefore make sure related switch/device is on
-            if(SomeSwAreOff.size() != 0 /*&& contactClosed*/ && state.ACBedOffByApp == true){
+            if(SomeSwAreOff.size() != 0 && contactClosed && state.ACBedOffByApp == true){
                 //if at least one is off, turn on
                 ContactAndSwitchon()
+            }
+            else if(state.ACBedOffByApp == false){
+                log.debug "$ContactAndSwitch in OVERRIDE mode; not turning it on"
             }
         }
         else if(SomeSwAreOn.size() != 0 ){
@@ -2203,6 +2201,38 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                     log.info "CurrTemp at ${ThermSet} is: $CurrTemp HSPSet was $defaultHSPSet. It is NOW $HSPSet due to outside's temperature being $outsideTemp"
 
                 }
+                // if this unit uses an alternative sensor, CSP and HSP must be dapted
+                // otherwise, for example, AC will turn off once its thermostat reaches CSP, 
+                // while alternative sensor is still beyond CSP
+                // not that this is safe only with turnOffWhenReached
+                // and only if active, otherwise it defeats the purpose of motion sensors based SP's
+                if(useAltSensor && turnOffWhenReached && Active && !inAway){
+                    if(CurrTemp > CSPSet){
+                        CSPSet = CSPSet - (CurrTemp - CSPSet)
+                        log.debug "CSPSet adjusted for Alternative sensor. New val = $CSPSet"
+                        // ex: if CSPSet initally 73, CurrTemp 80, then new CSPSet = 73 - (80-73) = 64
+                        // thus allowing the AC to run longer and be stopped by off command only
+                    }
+                    if(CurrTemp < HSPSet){
+                        HSPSet = HSPSet + (HSPSet - CurrTemp)
+                        log.debug "HSPSet adjusted for Alternative sensor. New val = $HSPSet"
+                    }
+                }
+
+                // now see if we're dealing, in this for loop, with a thermostat that is to be set with switch status
+
+                if(ExceptionSW && "$ThermSet" == "$ExceptionSwTherm" && SwitchesOn && !inAway){
+                    if(warmerorcooler == "warmer"){
+                        HSPSet = HSPSet + AddDegrees
+                        CSPSet = CSPSet + SubDegrees
+                    } 
+                    else {
+                        HSPSet = HSPSet - AddDegrees
+                        CSPSet = CSPSet - SubDegrees
+                    }
+
+                    log.debug "$ThermSet SetPoints ExceptionSW active"                                
+                }
 
                 /////////////////////////////////////////////////////////END OF SETPOINTS EVALS/////////////////////////////////////////////////////////
 
@@ -2241,20 +2271,7 @@ defaultCSPSet = $defaultCSPSet
 
 """       
 
-                def ThisIsExceptionTherm = ThermSet.displayName in NoTurnOffOnContact  
 
-                if(ExceptionSW && "$ThermSet" == "$ExceptionSwTherm" && SwitchesOn && !inAway){
-                    if(warmerorcooler == "warmer"){
-                        HSPSet = HSPSet + AddDegrees
-                        CSPSet = CSPSet + SubDegrees
-                    } 
-                    else {
-                        HSPSet = HSPSet - AddDegrees
-                        CSPSet = CSPSet - SubDegrees
-                    }
-
-                    log.debug "$ThermSet SetPoints ExceptionSW active"                                
-                }
 
                 // Now, before sending any command, pull current setpoint and compare to avoid redundencies
                 def CurrentCoolingSetPoint = ThermSet.currentValue("coolingSetpoint") 
@@ -2269,138 +2286,13 @@ defaultCSPSet = $defaultCSPSet
 
                 //// bedsensor/// 
                 def BedSensorManagement = false
-                //log.debug "BedSensorManagement defaulted to false (BedSensorManagement = $BedSensorManagement)"
+
+                log.debug "BedSensorManagement defaulted to false (BedSensorManagement = $BedSensorManagement)"
 
                 ////
-                if(KeepACon && ContactExceptionIsClosed && !inAway){
-
-                    if("${ThermSet}" == "${ThermContact}" && !ConsideredOpen ){ 
-                        log.debug "BedSensorManagement set to true (BedSensorManagement = $BedSensorManagement)"
-                        BedSensorManagement = true 
-
-
-                        //log.debug "$BedSensor closed, applying settings accordingly"  
-                        def CSPSetBedSensor = CSPSetBedSensor.toInteger()
-                        def HSPSetBedSensor = HSPSetBedSensor.toInteger()
-                        //log.debug "Integer HSPSetBedSensor = $HSPSetBedSensor"
-
-                        def needCool = ShouldCoolWithAC
-                        def needHeat = ShouldHeat
-                        if(needHeat){
-                            needCool = false 
-                        }
-
-
-                        if(needCool){
-                            if(!CurrentCoolingSetPoint != CSPSetBedSensor){
-                                ThermSet.setCoolingSetpoint(CSPSetBedSensor)
-                                log.debug "$ThermSet CSP set to $CSPSetBedSensor -- Bed Sensor" 
-                            }
-                            else {
-                                log.debug "$ThermSet CSP already set to $CSPSetBedSensor -- Bed Sensor" 
-                            }
-                            if(ThermState != "cool"){
-                                if(AppMgt){
-                                    ThermSet.setThermostatMode("cool") 
-                                    log.debug "$ThermSet set to cool -- Bed Sensor"
-                                }
-                            }
-                            else {
-                                log.debug "$ThermSet already set to cool -- Bed Sensor"
-                            }
-                        }
-                        else if(needHeat){
-                            if(CurrentHeatingSetPoint != HSPSetBedSensor){
-                                ThermSet.setHeatingSetpoint(HSPSetBedSensor)
-                                log.debug "$ThermSet HSP set to $HSPSetBedSensor -- Bed Sensor" 
-                            }
-                            else {
-                                log.debug "$ThermSet HSP already set to $HSPSetBedSensor -- Bed Sensor" 
-                            }
-                            if(ThermState != "heat" ){
-                                if(AppMgt){
-                                    ThermSet.setThermostatMode("heat") 
-                                    log.debug "$ThermSet set to heat -- Bed Sensor"
-                                }
-                            }
-                            else {
-                                log.debug "$ThermSet already set to heat -- Bed Sensor"
-                            }
-                        }
-                        log.trace """
-BED SENSOR DEBUG
-
-needHeat = $needHeat, 
-needCool = $needCool, 
-
-CurrTemp = $CurrTemp, 
-CSPSetBedSensor = $CSPSetBedSensor
-HSPSetBedSensor = $HSPSetBedSensor
-CSPok = $CSPok
-HSPok = $HSPok
-"""
-                    }
-
-                    else {
-                        BedSensorManagement = false
-                        log.debug "BedSensorManagement set to false (BedSensorManagement = $BedSensorManagement)"
-                    }
-                }
-
-
-                log.info "-- End of Temperatures Evals for $ThermSet" 
-
-                log.debug """
-
-CSPok?($CSPok)
-HSPok?($HSPok)
-HSPMap = $state.HSPMap
-CSPMap = $state.CSPMap
-inMotionModes?($inMotionModes)
-useMotion?($useMotion)
-Motion at $MotionSensor Active for the past $minutesMotion minutes?($Active)
-FINAL CSPSet for $ThermSet = $CSPSet
-ThisIsExceptionTherm is: $ThisIsExceptionTherm ($ThermSet.displayName is in '$NoTurnOffOnContact)
-ContactExceptionIsClosed = $ContactExceptionIsClosed
-Too Humid INSIDE?($TooHumidINSIDE : ${INSIDEhumidity}%)
-
-Too Humid OUTSIDE?($TooHumid : $humidity)
-WindValue = $WindValue
-ShouldCoolWithAC = $ShouldCoolWithAC (loop $loopValue), 
-ShouldHeat = $ShouldHeat
-Current setpoint for $ThermSet is $CurrentCoolingSetPoint, 
-Current Heating setpoint is $CurrentHeatingSetPoint,
-Final CSPSet is $CSPSet
-Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating: $CurrentHeatingSetPoint 
-"""
-
-
-                /////////////////////////END OF SP MODifICATIONS//////////////////////////
-
-                // state.HSPMap = [:] // for debug and test only
-                // state.CSPMap = [:]
-
-
-                state.HSPMap."$ThermSet" = "${HSPSet.toInteger()}"
-                state.CSPMap."$ThermSet" = "${CSPSet.toInteger()}"
-                log.info """state.HSPMap : $state.HSPMap 
-state.CSPMap : $state.CSPMap"""  
-
-                //log.debug "SP Maps updated"
-
-                // Set as integer
-                CSPSet = CSPSet.toInteger()
-                HSPSet = HSPSet.toInteger()
-                // record those values for further references like in windowscheck or overrides management
-
-                state.CSPSet = CSPSet
-                state.HSPSet = HSPSet              
-
-
-                /////////////////////////SENDING COMMANDS//////////////////////////
                 // find unit to ignore within list of UnitToIgnore[]
                 // because UnitToIgnore is a list we collect it using a for loop
-                def s = UnitToIgnore.size()
+                def s = UnitToIgnore?.size()
                 def i = 0
                 boolean FoundUnitToIgnore = false
                 for(!FoundUnitToIgnore ; i < s ; i++){
@@ -2426,6 +2318,136 @@ FoundUnitToIgnore = $FoundUnitToIgnore
                     }
                 }
                 else {
+                    if(ContactExceptionIsClosed && !inAway){
+
+                        if("${ThermSet}" == "${ThermContact}" && !ConsideredOpen ){ 
+                            log.debug "BedSensorManagement set to true (BedSensorManagement = $BedSensorManagement)"
+                            BedSensorManagement = true 
+
+                            //log.debug "$BedSensor closed, applying settings accordingly"  
+                            def CSPSetBedSensor = CSPSetBedSensor.toInteger()
+                            def HSPSetBedSensor = HSPSetBedSensor.toInteger()
+                            //log.debug "Integer HSPSetBedSensor = $HSPSetBedSensor"
+
+                            def needCool = ShouldCoolWithAC
+                            def needHeat = ShouldHeat
+                            if(needHeat){
+                                needCool = false 
+                            }
+
+                            if(needCool){
+                                if(!CurrentCoolingSetPoint != CSPSetBedSensor){
+                                    ThermSet.setCoolingSetpoint(CSPSetBedSensor)
+                                    log.debug "$ThermSet CSP set to $CSPSetBedSensor -- Bed Sensor" 
+                                }
+                                else {
+                                    log.debug "$ThermSet CSP already set to $CSPSetBedSensor -- Bed Sensor" 
+                                }
+                                if(ThermState != "cool"){
+                                    if(AppMgt){
+                                        if(!ItIsUnitToIgnore){
+                                            ThermSet.setThermostatMode("cool") 
+                                            log.debug "$ThermSet set to cool -- Bed Sensor"
+                                        }
+                                    }
+                                }
+                                else {
+                                    log.debug "$ThermSet already set to cool -- Bed Sensor"
+                                }
+                            }
+                            else if(needHeat){
+                                if(CurrentHeatingSetPoint != HSPSetBedSensor){
+                                    ThermSet.setHeatingSetpoint(HSPSetBedSensor)
+                                    log.debug "$ThermSet HSP set to $HSPSetBedSensor -- Bed Sensor" 
+                                }
+                                else {
+                                    log.debug "$ThermSet HSP already set to $HSPSetBedSensor -- Bed Sensor" 
+                                }
+                                if(ThermState != "heat" ){
+                                    if(AppMgt){
+                                        if(!ItIsUnitToIgnore){
+                                            ThermSet.setThermostatMode("heat") 
+                                            log.debug "$ThermSet set to heat -- Bed Sensor"
+                                        }
+                                    }
+                                }
+                                else {
+                                    log.debug "$ThermSet already set to heat -- Bed Sensor"
+                                }
+                            }
+                            log.trace """
+BED SENSOR DEBUG
+
+needHeat = $needHeat, 
+needCool = $needCool, 
+
+CurrTemp = $CurrTemp, 
+CSPSetBedSensor = $CSPSetBedSensor
+HSPSetBedSensor = $HSPSetBedSensor
+CSPok = $CSPok
+HSPok = $HSPok
+"""
+                        }
+
+                        else {
+                            BedSensorManagement = false
+                            log.debug "BedSensorManagement set to false (BedSensorManagement = $BedSensorManagement)"
+                        }
+                    }
+
+
+                    log.info "-- End of Temperatures Evals for $ThermSet" 
+
+                    log.debug """
+
+CSPok?($CSPok)
+HSPok?($HSPok)
+HSPMap = $state.HSPMap
+CSPMap = $state.CSPMap
+inMotionModes?($inMotionModes)
+useMotion?($useMotion)
+Motion at $MotionSensor Active for the past $minutesMotion minutes?($Active)
+FINAL CSPSet for $ThermSet = $CSPSet
+ThisIsExceptionTherm is: $ThisIsExceptionTherm ($ThermSet.displayName is in '$NoTurnOffOnContact)
+ContactExceptionIsClosed = $ContactExceptionIsClosed
+Too Humid INSIDE?($TooHumidINSIDE : ${INSIDEhumidity}%)
+
+Too Humid OUTSIDE?($TooHumid : $humidity)
+WindValue = $WindValue
+ShouldCoolWithAC = $ShouldCoolWithAC (loop $loopValue), 
+ShouldHeat = $ShouldHeat
+Current setpoint for $ThermSet is $CurrentCoolingSetPoint, 
+Current Heating setpoint is $CurrentHeatingSetPoint,
+Final CSPSet is $CSPSet
+Current Set Points for $ThermSet are: cooling: $CurrentCoolingSetPoint, heating: $CurrentHeatingSetPoint 
+"""
+
+
+                    /////////////////////////END OF SP MODifICATIONS//////////////////////////
+
+                    // state.HSPMap = [:] // for debug and test only
+                    // state.CSPMap = [:]
+
+
+                    state.HSPMap."$ThermSet" = "${HSPSet.toInteger()}"
+                    state.CSPMap."$ThermSet" = "${CSPSet.toInteger()}"
+                    log.info """state.HSPMap : $state.HSPMap 
+state.CSPMap : $state.CSPMap"""  
+
+                    //log.debug "SP Maps updated"
+
+                    // Set as integer
+                    CSPSet = CSPSet.toInteger()
+                    HSPSet = HSPSet.toInteger()
+                    // record those values for further references like in windowscheck or overrides management
+
+                    state.CSPSet = CSPSet
+                    state.HSPSet = HSPSet              
+
+
+                    /////////////////////////SENDING COMMANDS//////////////////////////
+                    def ThisIsExceptionTherm = ThermSet.displayName in NoTurnOffOnContact  
+
                     if(doorsOk || (ContactExceptionIsClosed && ThisIsExceptionTherm)){
 
                         def inAutoOrOff = ThermState in ["auto","off"]
@@ -3359,15 +3381,25 @@ def TurnOffThermostats(){
 }
 
 def ContactAndSwitchoff(){
-    ContactAndSwitch?.off()
-    log.debug "$ContactAndSwitch TURNED OFF"
+    if("on" in ContactAndSwitch?.currentSwitch){
+        ContactAndSwitch?.off()
+        log.debug "$ContactAndSwitch TURNED OFF"
+    }
+    else {
+        log.debug "$ContactAndSwitch ALREADY OFF"
+    }
     // set management values so if manually turned on, override will be triggered
-    state.ACBedOffByApp = true // allow app turn on
+    state.ACBedOffByApp = true // allow app to turn it back on
     state.ACBedOnByApp = false // if turned on by user, then don't turn it back off
 }
 def ContactAndSwitchon(){
-    ContactAndSwitch?.on()
-    log.debug "$ContactAndSwitch TURNED ON"
+    if("off" in ContactAndSwitch?.currentSwitch){
+        ContactAndSwitch?.on()
+        log.debug "$ContactAndSwitch TURNED ON"
+    }
+    else {
+        log.debug "$ContactAndSwitch ALREADY ON"
+    }
     state.ACBedOffByApp = false // if turned off by user, then don't turn it back on
     state.ACBedOnByApp = true // allow app turn off
 }
@@ -3552,234 +3584,239 @@ def OpenWindows(val, str){
 
 }
 def OkToOpen(){
-    int valw
-    def message = ""
-    //log.debug "OkToOpen()"
-    def ContactsClosed = AllContactsAreClosed()
+    def result = false
+    if(Actuators){
+        int valw
+        def message = ""
+        //log.debug "OkToOpen()"
+        def ContactsClosed = AllContactsAreClosed()
 
-    def CSPSet = state.CSPSet
-    def HSPSet = state.HSPSet
+        def CSPSet = state.CSPSet
+        def HSPSet = state.HSPSet
 
-    log.debug "NOW: CSPSet = $CSPSet &&  HSPSet = $HSPSet"
-    CSPSet = CSPSet?.toInteger()
-    HSPSet = HSPSet?.toInteger()
+        log.debug "NOW: CSPSet = $CSPSet &&  HSPSet = $HSPSet"
+        CSPSet = CSPSet?.toInteger()
+        HSPSet = HSPSet?.toInteger()
 
-    def CurrMode = location.currentMode
-    def Inside = XtraTempSensor.currentValue("temperature")
-    def CurrTemp = Inside 
+        def CurrMode = location.currentMode
+        def Inside = XtraTempSensor.currentValue("temperature")
+        def CurrTemp = Inside 
 
-    def Outside = OutsideSensor.currentValue("temperature")
-    def outsideTemp = Outside 
-    state.outsideTemp = Outside
-    def WithinCriticalOffSet = (Inside >= (CriticalTemp - OffSet)) && (Outside >= (CriticalTemp + OffSet))
-    log.debug "WithinCriticalOffSet = $WithinCriticalOffSet"
+        def Outside = OutsideSensor.currentValue("temperature")
+        def outsideTemp = Outside 
+        state.outsideTemp = Outside
 
-    def OutsideTempHighThres = ExceptACModes()
-    def ExceptHighThreshold1 = ExceptHighThreshold1
+        log.debug "--Inside = $Inside, Outside= $Outside, CriticalTemp = $CriticalTemp, OffSet = $OffSet"
 
-    def humidity = OutsideSensor?.currentValue("humidity")
-    //log.debug "Inside = $Inside | Outside = $Outside"
-    def WindValue = OutsideSensor?.currentValue("wind")
-    WindValue = WindValue.toInteger()
+        def WithinCriticalOffSet = (Inside >= (CriticalTemp - OffSet)) && (Outside >= (CriticalTemp + OffSet))
+        log.debug "WithinCriticalOffSet = $WithinCriticalOffSet"
 
-    def ItfeelsLike = OutsideSensor?.currentValue("feelsLike") 
+        def OutsideTempHighThres = ExceptACModes()
+        def ExceptHighThreshold1 = ExceptHighThreshold1
 
-    log.debug "new ItfeelsLike value = $ItfeelsLike" 
-    def OutsideFeelsHotter = ItfeelsLike.toInteger() > Outside + 2
-    log.debug "test ---"
+        def humidity = OutsideSensor?.currentValue("humidity")
+        //log.debug "Inside = $Inside | Outside = $Outside"
+        def WindValue = OutsideSensor?.currentValue("wind")
+        WindValue = WindValue.toInteger()
 
-    //log.debug "Humidity EVAL"
-    def TooHumid = false
-    if(humidity > HumidityTolerance.toInteger()){
-        TooHumid = true
-        log.debug "IT IS TOO HUMID OUTSIDE"
-    }
-    //if(WindValue > 3){
-    //log.debug "wind value is higher than 3 so TooHumid val corrected to 'false'"
-    //   TooHumid = false
-    // }
+        def ItfeelsLike = OutsideSensor?.currentValue("feelsLike") 
 
-    def OutSideWithinMargin = Outside >= OutsideTempLowThres && Outside <= OutsideTempHighThres && (!OutsideFeelsHotter || OutsideFeelsHotter == null)     
-    if(TooHumid){
-        OutSideWithinMargin = Outside >= OutsideTempLowThres && Outside <= OutsideTempHighThres - 4 && (!OutsideFeelsHotter || OutsideFeelsHotter == null)
-    }
+        log.debug "new ItfeelsLike value = $ItfeelsLike" 
+        def OutsideFeelsHotter = ItfeelsLike.toInteger() > Outside + 2
+        log.debug "test ---"
 
-    def ShouldCool = OutSideWithinMargin 
-    def ShouldHeat = state.ShouldHeat
-    //log.debug "ShouldHeat = ${ShouldHeat} "
+        //log.debug "Humidity EVAL"
+        def TooHumid = false
+        if(humidity > HumidityTolerance.toInteger()){
+            TooHumid = true
+            log.debug "IT IS TOO HUMID OUTSIDE"
+        }
+        //if(WindValue > 3){
+        //log.debug "wind value is higher than 3 so TooHumid val corrected to 'false'"
+        //   TooHumid = false
+        // }
 
-    if(!ShouldHeat && ShouldCool && CurrTemp >= CSPSet + 3) {
-        ShouldCool = false
-        // //log.debug "ShouldCool && ShouldHeat && !OutSideWithinMargin && CurrTemp >= CSPSet ==>> ShouldCool = $ShouldCool"
-    }
+        def OutSideWithinMargin = Outside >= OutsideTempLowThres && Outside <= OutsideTempHighThres && (!OutsideFeelsHotter || OutsideFeelsHotter == null)     
+        if(TooHumid){
+            OutSideWithinMargin = Outside >= OutsideTempLowThres && Outside <= OutsideTempHighThres - 4 && (!OutsideFeelsHotter || OutsideFeelsHotter == null)
+        }
+
+        def ShouldCool = OutSideWithinMargin 
+        def ShouldHeat = state.ShouldHeat
+        //log.debug "ShouldHeat = ${ShouldHeat} "
+
+        if(!ShouldHeat && ShouldCool && CurrTemp >= CSPSet + 3) {
+            ShouldCool = false
+            // //log.debug "ShouldCool && ShouldHeat && !OutSideWithinMargin && CurrTemp >= CSPSet ==>> ShouldCool = $ShouldCool"
+        }
 
 
-    def inHomeMode = CurrMode in Home
+        def inHomeMode = CurrMode in Home
 
-    def result = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool && !TooHumid && !OutsideFeelsHotter
+        result = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool && !TooHumid && !OutsideFeelsHotter
 
-    def ShouldCoolWithAC = state.ShouldCoolWithAC // AverageCurrTemp - 3 > AverageCSPSet
+        def ShouldCoolWithAC = state.ShouldCoolWithAC // AverageCurrTemp - 3 > AverageCSPSet
 
-    log.debug """
+        log.debug """
 ShouldCoolWithAC = $ShouldCoolWithAC
 OpenWhenEverPermitted = $OpenWhenEverPermitted
 """
 
 
-    state.OpenInFull = false
-    def ItIsNiceOutThere = Outside >= CSPSet - 2 && Outside < HSPSet
-
-    if(OpenWhenEverPermitted && ItIsNiceOutThere) { 
-        state.OpenInFull = true
-    }
-    else {
         state.OpenInFull = false
-    }
+        def ItIsNiceOutThere = Outside >= CSPSet - 2 && Outside < HSPSet
 
-
-    // open all the way when gone?
-    if(CurrMode in Away && WithinCriticalOffSet && OpenInfullWhenAway ){
-        result = true
-        state.OpenInFull = true
-    } 
-    def CRITICAL = false
-    if(state.CRITICAL == true){
-        result = false
-        CRITICAL = true
-        state.OpenByApp = true // so windows will close even if manually opened
-    }
-
-    if(!result){
-        // preparing a dynamic message which will tell why windows won't open (or fans won't turn on)
-        def cause1 = !OutSideWithinMargin
-        def cause2 = !WithinCriticalOffSet
-        def cause3 = !ShouldCoolWithAC
-        def cause4 = TooHumid
-        def cause5 = CurrMode in "$Away"
-        def cause6 = CRITICAL
-
-        def causeNotList = [ cause1, cause2, cause3, cause4]
-
-        def causeNotTest = causeNotList.findAll{ val ->
-            val == true ? true : false
-        }
-        def ManyCauses = causeNotTest.size() > 1
-        def and2 =""
-        def and3 = ""
-        def and4 = ""
-        def and5 = ""
-        def and6 = ""
-
-        if(ManyCauses && cause2){
-            and2 = ": " 
-        }
-        if(ManyCauses && cause3){
-            and3 = " and"
-        }
-        if(ManyCauses && cause4){
-            and4 = " and"
-        }
-        if(ManyCauses && cause5){
-            and5 = " and"
-        }
-        if(ManyCauses && cause6){
-            and6 = " and"
-        }
-
-
-        def causeNotMap = [ "outside temperature is not within comfortable margin" : cause1,  
-                           "$and2 it is not too hot inside ${XtraTempSensor}'s room" : cause2 , 
-                           "$and3 it is too hot $outsideWord" : cause3 ,  
-                           "$and4 it is too humid outisde" : cause4, 
-                           "$and5 home is in $Away Mode": cause5, 
-                           "$and6 it is too cold" : cause6, 
-                          ]
-
-        // creates a new map with only the keys that have values = true
-        def causeNotOkToOpen = causeNotMap.findAll{it.value == true}
-        // now collect the keys from this map 
-        causeNotOkToOpen = causeNotOkToOpen.collect{ it.key }
-        // build a string without the parentheses 
-        def MessageStr = new StringBuilder();
-        for (String value : causeNotOkToOpen) {
-            MessageStr.append(value);
-        }
-        causeNotOkToOpen = MessageStr.toString();
-        state.causeClose = causeNotOkToOpen
-
-        log.info message
-        state.messageclosed = message
-        // send a reminder every X minutes 
-
-        long MessageMinutes = 60L*60000L
-        long LastTimeMessageSent = state.LastTimeMessageSent
-        long SinceLast = LastTimeMessageSent + MessageMinutes
-
-        def MessageTimeDelay = now() > SinceLast
-        //log.debug "SinceLast = $SinceLast || MessageMinutes = $MessageMinutes || LastTimeMessageSent = $LastTimeMessageSent || MessageTimeDelay = $MessageTimeDelay"
-
-        if(MessageTimeDelay && ContactsClosed) {
-            //send(message)
-            LastTimeMessageSent = now() as Long
-            state.LastTimeMessageSent = LastTimeMessageSent as Long
-        }
-
-    }
-    // causes for opening windows or turning on fans
-    else {
-        def cause1 = CurrMode in $Away && WithinCriticalOffSet && OpenInfullWhenAway 
-        def cause2 = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool && !TooHumid
-        //def cause3 = WithinCriticalOffSet
-        //def cause4 = TooHumid
-
-        def causeOktList = [ cause1, cause2 ]
-        //log.debug "causeNotList = $causeNotList"
-        def causeOkTest = causeOktList.findAll{ val ->
-            val == true ? true : false
-        }
-        def and = ""
-
-        if(cause1 && cause2){
-            and = "and"
-        }
-        def causeOkMap = [ "Home is in $CurrMode and outside and inside temperatures are within safety margins" : cause1,  
-                          "$and It is not too humid nor too hot nor cold outside" : cause2 , 
-                         ]
-
-        // create a new map with only the keys that have values = true
-        def causeOkToOpen = causeOkMap.findAll{it.value == true}
-        // now get only the keys from this map 
-        causeOkToOpen = causeOkToOpen.collect{ it.key }
-        // build a string without the parentheses 
-        def MessageStr = new StringBuilder();
-        for (String value : causeOkToOpen) {
-            MessageStr.append(value);
-        }
-        causeOkToOpen = MessageStr.toString();
-        state.causeOpen = causeOkToOpen
-
-        message = "Windows are open because $causeOkToOpen"
-
-        state.messageopened = message // sent once as push message by checkwindows()
-
-    }
-
-    // and finaly if user has chosen this option, open windows when other mode than Away and based on switch status
-
-    if(SwtTrigWindModes && CurrMode in SwtTrigWindModes){
-        log.debug "SwtTrigWindModes = $SwtTrigWindModes"
-        if("on" in SwitchOffOpensWindows?.currentSwitch){
-            log.debug "home is in $SwtTrigWindModes mode but some switches are still on. Result remains unchanged"   
+        if(OpenWhenEverPermitted && ItIsNiceOutThere) { 
+            state.OpenInFull = true
         }
         else {
-            result = true
+            state.OpenInFull = false
         }
-    }
 
-    log.info """
+
+        // open all the way when gone?
+        if(CurrMode in Away && WithinCriticalOffSet && OpenInfullWhenAway ){
+            result = true
+            state.OpenInFull = true
+        } 
+        def CRITICAL = false
+        if(state.CRITICAL == true){
+            result = false
+            CRITICAL = true
+            state.OpenByApp = true // so windows will close even if manually opened
+        }
+
+        if(!result){
+            // preparing a dynamic message which will tell why windows won't open (or fans won't turn on)
+            def cause1 = !OutSideWithinMargin
+            def cause2 = !WithinCriticalOffSet
+            def cause3 = !ShouldCoolWithAC
+            def cause4 = TooHumid
+            def cause5 = CurrMode in "$Away"
+            def cause6 = CRITICAL
+
+            def causeNotList = [ cause1, cause2, cause3, cause4]
+
+            def causeNotTest = causeNotList.findAll{ val ->
+                val == true ? true : false
+            }
+            def ManyCauses = causeNotTest.size() > 1
+            def and2 =""
+            def and3 = ""
+            def and4 = ""
+            def and5 = ""
+            def and6 = ""
+
+            if(ManyCauses && cause2){
+                and2 = ": " 
+            }
+            if(ManyCauses && cause3){
+                and3 = " and"
+            }
+            if(ManyCauses && cause4){
+                and4 = " and"
+            }
+            if(ManyCauses && cause5){
+                and5 = " and"
+            }
+            if(ManyCauses && cause6){
+                and6 = " and"
+            }
+
+
+            def causeNotMap = [ "outside temperature is not within comfortable margin" : cause1,  
+                               "$and2 it is not too hot inside ${XtraTempSensor}'s room" : cause2 , 
+                               "$and3 it is too hot $outsideWord" : cause3 ,  
+                               "$and4 it is too humid outisde" : cause4, 
+                               "$and5 home is in $Away Mode": cause5, 
+                               "$and6 it is too cold" : cause6, 
+                              ]
+
+            // creates a new map with only the keys that have values = true
+            def causeNotOkToOpen = causeNotMap.findAll{it.value == true}
+            // now collect the keys from this map 
+            causeNotOkToOpen = causeNotOkToOpen.collect{ it.key }
+            // build a string without the parentheses 
+            def MessageStr = new StringBuilder();
+            for (String value : causeNotOkToOpen) {
+                MessageStr.append(value);
+            }
+            causeNotOkToOpen = MessageStr.toString();
+            state.causeClose = causeNotOkToOpen
+
+            log.info message
+            state.messageclosed = message
+            // send a reminder every X minutes 
+
+            long MessageMinutes = 60L*60000L
+            long LastTimeMessageSent = state.LastTimeMessageSent
+            long SinceLast = LastTimeMessageSent + MessageMinutes
+
+            def MessageTimeDelay = now() > SinceLast
+            //log.debug "SinceLast = $SinceLast || MessageMinutes = $MessageMinutes || LastTimeMessageSent = $LastTimeMessageSent || MessageTimeDelay = $MessageTimeDelay"
+
+            if(MessageTimeDelay && ContactsClosed) {
+                //send(message)
+                LastTimeMessageSent = now() as Long
+                state.LastTimeMessageSent = LastTimeMessageSent as Long
+            }
+
+        }
+        // causes for opening windows or turning on fans
+        else {
+            def cause1 = CurrMode in $Away && WithinCriticalOffSet && OpenInfullWhenAway 
+            def cause2 = OutSideWithinMargin && WithinCriticalOffSet && ShouldCool && !TooHumid
+            //def cause3 = WithinCriticalOffSet
+            //def cause4 = TooHumid
+
+            def causeOktList = [ cause1, cause2 ]
+            //log.debug "causeNotList = $causeNotList"
+            def causeOkTest = causeOktList.findAll{ val ->
+                val == true ? true : false
+            }
+            def and = ""
+
+            if(cause1 && cause2){
+                and = "and"
+            }
+            def causeOkMap = [ "Home is in $CurrMode and outside and inside temperatures are within safety margins" : cause1,  
+                              "$and It is not too humid nor too hot nor cold outside" : cause2 , 
+                             ]
+
+            // create a new map with only the keys that have values = true
+            def causeOkToOpen = causeOkMap.findAll{it.value == true}
+            // now get only the keys from this map 
+            causeOkToOpen = causeOkToOpen.collect{ it.key }
+            // build a string without the parentheses 
+            def MessageStr = new StringBuilder();
+            for (String value : causeOkToOpen) {
+                MessageStr.append(value);
+            }
+            causeOkToOpen = MessageStr.toString();
+            state.causeOpen = causeOkToOpen
+
+            message = "Windows are open because $causeOkToOpen"
+
+            state.messageopened = message // sent once as push message by checkwindows()
+
+        }
+
+        // and finaly if user has chosen this option, open windows when other mode than Away and based on switch status
+
+        if(SwtTrigWindModes && CurrMode in SwtTrigWindModes){
+            log.debug "SwtTrigWindModes = $SwtTrigWindModes"
+            if("on" in SwitchOffOpensWindows?.currentSwitch){
+                log.debug "home is in $SwtTrigWindModes mode but some switches are still on. Result remains unchanged"   
+            }
+            else {
+                result = true
+            }
+        }
+
+        log.info """
 Inside?($Inside), Outside?($Outside), 
 Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) 
-closed?($ContactsClosed)
+ContactsClosed?($ContactsClosed)
 OutSideWithinMargin?($OutSideWithinMargin)
 Inside is WithinCriticalOffSet?($WithinCriticalOffSet) 
 Should Cool (no AC)?($ShouldCool)
@@ -3793,12 +3830,18 @@ OutsideFeelsHotter?($OutsideFeelsHotter)
 OkToOpen?($result)
 """
 
-    /// FOR TESTS 
-    // result = false
+        /// FOR TESTS 
+        // result = false
 
-    // in any case, if temp outside is too hot OR too humid, don't open windows
-    if(Outside >= 80 || TooHumid){
-        result = false
+        // in any case, if temp outside is too hot OR too humid, don't open windows
+        if(Outside >= 80 || TooHumid){
+            result = false
+        }
+
+    }
+    else {
+        log.debug "user didn't select any device as windows or fans"
+
     }
 
     return result
@@ -3834,6 +3877,7 @@ def StopActuators(){
             Actuators?.stop()
         }
     }
+
 }
 
 def ActuatorsDelay() {
@@ -3858,16 +3902,16 @@ def ExceptACModes(){
     def OutsideTempHighThres = OutsideTempHighThres
     if(ExceptACMode1 && CurrMode in ExceptACMode1){
         def ToMinus = OutsideTempHighThres
-        //log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
+        log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
         def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold1
-        //log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold1" 
+        log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold1" 
         OutsideTempHighThres = NewOutsideTempHighThres
     }
     else if(ExceptACMode2 && CurrMode in ExceptACMode2){
         def ToMinus = OutsideTempHighThres
-        //log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
+        log.info "BEFORE CHANGE Inside?($Inside), Outside?($Outside), Margin?(LowThres:$OutsideTempLowThres - HighThres:$OutsideTempHighThres) -----------------------------------"
         def NewOutsideTempHighThres = ToMinus - ExceptHighThreshold2
-        //log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold2" 
+        log.debug "Home is in $CurrMode mode, so new high outside's temp threshold is: $NewOutsideTempHighThres = $OutsideTempHighThres - $ExceptHighThreshold2" 
         OutsideTempHighThres = NewOutsideTempHighThres
     }
     return OutsideTempHighThres
