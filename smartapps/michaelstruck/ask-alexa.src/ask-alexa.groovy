@@ -1,13 +1,13 @@
 /**
  *  Ask Alexa 
  *
- *  Version 2.3.9e - 3/16/18 Copyright © 2018 Michael Struck
+ *  Version 2.3.9f - 3/16/18 Copyright © 2018 Michael Struck
  *  Special thanks for Keith DeLong for overall code and assistance; jhamstead for Ecobee climate modes, Yves Racine for My Ecobee thermostat tips
  * 
  *  Version information prior to 2.3.8 listed here: https://github.com/MichaelStruck/SmartThingsPublic/blob/master/smartapps/michaelstruck/ask-alexa.src/Ask%20Alexa%20Version%20History.md
  *
  *  Version 2.3.8 (2/8/18) Added occupancy sensors to main devices and macros, updated code for new ST actions and restrictions for playback, setup data now sends POST data
- *  Version 2.3.9e (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
+ *  Version 2.3.9f (3/16/18) Added Alexa speaker idenification to many aspects of the applications, extensions and restrictions
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -2113,13 +2113,13 @@ private changeSHM(num, param){
 	def SHMFullStat = [off : "disarmed", away: "armed away", stay: "armed home"][SHMstatus] ?: SHMstatus
 	def newSHM = "", SHMNewStat = "" 
 	if (param==~/undefined|null/) outputTxt ="The Smart Home Monitor is currently set to, '${SHMFullStat}'. %2%"
-		if (listSHM && param != "undefined" && param != "null"){
+		if (listSHM && !(param ==~/undefined|null/)){
 			if (getOkPIN() && shmPW && pwNeeded && password && num ==~ /undefined|null/) {
             	outputTxt = "You must use a password to change the Smart Home Monitor. %P%"
                 state.cmdFollowup=[return: "changeSHM", num:num, param: param]
             }
-            if (getOkPIN() && shmPW && pwNeeded && password && num!="undefined" && num!="null" && num != password) outputTxt="I did not hear the correct password to change the Smart Home Monitor. %1%"
-            if (!getOkPIN() || shmPW || !pwNeeded || (getOkPIN() && shmPW && pwNeeded && num == password)){
+            if (getOkPIN() && shmPW && pwNeeded && password && !(num ==~ /undefined|null/) && num != password) outputTxt="I did not hear the correct password to change the Smart Home Monitor. %1%"
+            if (!getOkPIN() || !shmPW || !pwNeeded || (getOkPIN() && shmPW && pwNeeded && num == password)){
                 if (param==~/arm|armed/ && (listSHM.find{it =="Armed (Away)"} || listSHM.find{it =="Armed (Home)"})) outputTxt ="I did not understand how you want me to arm the Smart Home Monitor. Be sure to say, 'armed home' or 'armed away', to properly change the setting. %1%"   
                 if ((param ==~/off|disarm/) && listSHM.find{it =="Disarmed" }) newSHM="off"
                 if ((param ==~/away|armed away|arm away/) && listSHM.find{it =="Armed (Away)"}) newSHM="away"
@@ -4073,7 +4073,7 @@ private wrReq() { return 108 }
 private vrReq() { return 109 }
 private schReq() { return 104 }
 private rmReq() { return 104 }
-private versionLong(){ return "2.3.9e" }
+private versionLong(){ return "2.3.9f" }
 private versionDate(){ return "03/16/2018" }
 private textCopyright() {return "Copyright © 2018 Michael Struck" }
 private textLicense() {
