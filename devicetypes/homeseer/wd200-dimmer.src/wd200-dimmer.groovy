@@ -20,6 +20,7 @@
  *
  *	Changelog:
  *
+ *	1.0.dd.8  28-Jul-2018 Additional protection against floating point default preference values
  *	1.0.dd.6  27-Jul-2018 Added call to set led flash rate and added protection against floating point default preference values
  *	1.0.dd.5  26-Mar-2018 Corrected issues: 1) Turning off all LEDs did not return switch to Normal mode,
  *                        2) Turning off last lit LED would set Normal mode, but leave LED state as on (darwin@darwinsden.com)
@@ -829,14 +830,14 @@ def setDimRatePrefs()
   
    if(localcontrolramprate != null) {
    		//log.debug localcontrolramprate
-   		def localcontrolramprate = Math.max(Math.min(localcontrolramprate, 90), 0)
-   		cmds << zwave.configurationV2.configurationSet(configurationValue: [localcontrolramprate.toInteger()], parameterNumber: 12, size: 1).format()
+   		def localRamprate = Math.max(Math.min(localcontrolramprate.toInteger(), 90), 0)
+   		cmds << zwave.configurationV2.configurationSet(configurationValue: [localRamprate.toInteger()], parameterNumber: 12, size: 1).format()
    }
    
    if(remotecontrolramprate != null) {
-   		log.debug remotecontrolramprate
-   		def remotecontrolramprate = Math.max(Math.min(remotecontrolramprate, 90), 0)
-   		cmds << zwave.configurationV2.configurationSet(configurationValue: [remotecontrolramprate.toInteger()], parameterNumber: 11, size: 1).format()
+   		//log.debug remotecontrolramprate
+   		def remoteRamprate = Math.max(Math.min(remotecontrolramprate.toInteger(), 90), 0)
+   		cmds << zwave.configurationV2.configurationSet(configurationValue: [remoteRamprate.toInteger()], parameterNumber: 11, size: 1).format()
    }
    
    if (reverseSwitch)
