@@ -20,6 +20,7 @@
  *
  *	Changelog:
  *
+ *	1.0.dd.6  27-Jul-2018 Added call to set led flash rate and added protection against floating point default preference values
  *	1.0.dd.5  26-Mar-2018 Corrected issues: 1) Turning off all LEDs did not return switch to Normal mode,
  *                        2) Turning off last lit LED would set Normal mode, but leave LED state as on (darwin@darwinsden.com)
  *	1.0.dd.4  28-Feb-2018 Updated all LED option to use LED=0 (8 will be depricated) and increased delay by 50ms (darwin@darwinsden.com)
@@ -73,6 +74,7 @@ metadata {
         command "setSwitchModeNormal"
         command "setSwitchModeStatus"
         command "setDefaultColor"
+        command "setBlinkDurationMilliseconds"
         
         fingerprint mfr: "000C", prod: "4447", model: "3036"
 }
@@ -334,6 +336,21 @@ def setLevel (value) {
  *          6=cyan
  *          7=white
  */
+ 
+def setBlinkDurationMilliseconds (newBlinkDuration) { 
+     def cmds= []
+     if (0<newBlinkDuration && newBlinkDuration<25500){
+         log.debug "setting blink duration to: ${newBlinkDuration} ms"
+         state.blinkDuration = newBlinkDuration.toInteger()/100
+         log.debug "blink duration config parameter 30 is: ${state.blinkDuration}"
+         cmds << zwave.configurationV2.configurationSet(configurationValue: [state.blinkDuration.toInteger()], parameterNumber: 30, size: 1).format()
+     } else
+     {
+         log.debug "commanded blink duration ${newBlinkDuration} is outside range 0 .. 25500 ms"
+     }
+     return cmds
+}
+
 def setStatusLed (led,color,blink) {    
     def cmds= []
     
@@ -443,9 +460,11 @@ def setStatusLed (led,color,blink) {
                     break
             }
         	cmds << zwave.configurationV2.configurationSet(configurationValue: [blinkval], parameterNumber: 31, size: 1).format()
-            // set blink speed, also enables blink, 1=100ms blink frequency
-            cmds << zwave.configurationV2.configurationSet(configurationValue: [5], parameterNumber: 30, size: 1).format()
             state.blinkval = blinkval
+            // set blink frequency if not already set, 5=500ms
+            if(state.blinkDuration == null | state.blinkDuration < 0 | state.blinkDuration > 255) {
+               cmds << zwave.configurationV2.configurationSet(configurationValue: [5], parameterNumber: 30, size: 1).format()
+            }
      }
      else
      {
@@ -804,22 +823,20 @@ def setDimRatePrefs()
                 break
             case "Cyan":
             	cmds << zwave.configurationV2.configurationSet(configurationValue: [6], parameterNumber: 14, size: 1).format()
-                break
-            
-            
+                break      
       	}
     }    
-   
+  
    if(localcontrolramprate != null) {
    		//log.debug localcontrolramprate
    		def localcontrolramprate = Math.max(Math.min(localcontrolramprate, 90), 0)
-   		cmds << zwave.configurationV2.configurationSet(configurationValue: [localcontrolramprate], parameterNumber: 12, size: 1).format()
+   		cmds << zwave.configurationV2.configurationSet(configurationValue: [localcontrolramprate.toInteger()], parameterNumber: 12, size: 1).format()
    }
    
    if(remotecontrolramprate != null) {
    		log.debug remotecontrolramprate
    		def remotecontrolramprate = Math.max(Math.min(remotecontrolramprate, 90), 0)
-   		cmds << zwave.configurationV2.configurationSet(configurationValue: [remotecontrolramprate], parameterNumber: 11, size: 1).format()
+   		cmds << zwave.configurationV2.configurationSet(configurationValue: [remotecontrolramprate.toInteger()], parameterNumber: 11, size: 1).format()
    }
    
    if (reverseSwitch)
@@ -839,7 +856,7 @@ def setDimRatePrefs()
    {
       cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()
    }
-   
+  
    //Enable the following configuration gets to verify configuration in the logs
    //cmds << zwave.configurationV1.configurationGet(parameterNumber: 7).format()
    //cmds << zwave.configurationV1.configurationGet(parameterNumber: 8).format()
