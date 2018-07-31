@@ -19,6 +19,7 @@ metadata {
         capability "Health Check"
         capability "Actuator"
         capability "Sensor"
+        capability "Switch"
 
         command "stop"
 
@@ -226,6 +227,14 @@ def close() {
     def level = switchDirection ? 99 : 0
     zwave.basicV1.basicSet(value: level).format()
     //zwave.basicV1.basicSet(value: 0).format()
+}
+
+def on() {
+    open()
+}
+
+def off() {
+    close()   
 }
 
 def setLevel(value, duration = null) {
