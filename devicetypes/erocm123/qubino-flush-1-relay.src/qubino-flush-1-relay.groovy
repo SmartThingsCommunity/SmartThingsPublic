@@ -37,8 +37,9 @@ metadata {
         command "reset"
 
         fingerprint mfr: "0159", prod: "0002", model: "0052"
-		fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x31,0x60,0x85,0x8E,0x59,0x70", outClusters: "0x20"
-        
+		fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x85,0x8E,0x59,0x70", outClusters: "0x20"
+        fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x31,0x60,0x85,0x8E,0x59,0x70", outClusters: "0x20" // With temp sensor
+         
 	}
 
 	simulator {
@@ -191,8 +192,7 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
     logging("NotificationReport: $cmd", 2)
     def result
-
-	if (cmd.notificationType == 3) {
+	if (cmd.notificationType == 2 || cmd.notificationType == 3) {
     def children = childDevices
 	def childDevice = children.find{it.deviceNetworkId.endsWith("-i2")}
 		switch (cmd.event) {

@@ -35,6 +35,7 @@ metadata {
         command "reset"
 
         fingerprint mfr: "0159", prod: "0002", model: "0051"
+        fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x31,0x60,0x85,0x8E,0x59,0x70", outClusters:"0x20" // With temp sensor
         fingerprint deviceId: "0x1001", inClusters:"0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x32,0x60,0x85,0x8E,0x59,0x70", outClusters:"0x20"
     }
 
@@ -397,9 +398,7 @@ def update_needed_settings() {
 
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
-    
-    //cmds << zwave.multiChannelAssociationV2.multiChannelAssociationRemove(groupingIdentifier: 1, nodeId: [0,zwaveHubNodeId,1])
-    //cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1)
+
     cmds << zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
     cmds << zwave.associationV2.associationGet(groupingIdentifier: 1)
     
