@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Basic Heat Alarm", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Z-Wave Basic Heat Alarm", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 		capability "Temperature Alarm"
 		capability "Sensor"
 		capability "Battery"
