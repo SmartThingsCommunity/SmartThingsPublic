@@ -657,7 +657,7 @@ log.debug "getting token"
 }
 
 def apiGET(path, body = [:]) {
-log.debug "starting apiGET $path"
+//log.debug "starting apiGET Path='$path', body='$body'"
 	try {
     def cmdBody = [:]
     def paramsLogin = [
@@ -666,7 +666,7 @@ log.debug "starting apiGET $path"
     	tlsVersion: "TLSv1.1",
         body: $body
     ]
-	log.debug "$paramsLogin"
+//	log.debug "$paramsLogin"
     httpPost(paramsLogin) {responseLogin -> 
 			logResponse(responseLogin)
 			return responseLogin
