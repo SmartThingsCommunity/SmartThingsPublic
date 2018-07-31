@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
- *
+ *	31/07/2018	2.6 - 	TLS added to api**'s toget round securty issue
  *				2.5	-	Updated to remove all timings less device name (every 3 hours) in line with DH updates - code cleans to do
  *	15/03/2018: 2.1	-	Cron schdule removed to randomise timings for users (update every1min)
  *	16.01.2017: 2.0.1b - Bug fix. Wrong implementation of double wall socket fixed.
@@ -63,7 +63,7 @@ preferences {
     page(name: "selectDevicePAGE")
 }
 
-def apiURL(path = '/') 			 { return "https://mihome4u.co.uk/api/v1${path}" }
+def apiURL(path = '/') 			 { return "https://mihome4u.co.uk/api/v1/${path}" }
 
 def firstPage() {
 	if (username == null || username == '' || password == null || password == '') {
@@ -633,7 +633,7 @@ def refreshDevices() {
 
 def devicesList() {
 	logErrors([]) {
-		def resp = apiGET("/subdevices/list")
+		def resp = apiGET("subdevices/list")
 		if (resp.status == 200) {
 			return resp.data.data
 		} 
@@ -645,7 +645,8 @@ def devicesList() {
 }
 
 def getMiHomeAccessToken() {   
-	def resp = apiGET("/users/profile")
+log.debug "getting token"
+	def resp = apiGET("users/profile")
     if (resp.status == 200) {
 			state.miHomeAccessToken = resp.data.data.api_key
     		log.debug "miHomeAccessToken: $resp.data.data.api_key"  
@@ -655,22 +656,36 @@ def getMiHomeAccessToken() {
 		}
 }
 
-def apiGET(path) {
-	try {   			
-        httpGet(uri: apiURL(path), headers: apiRequestHeaders()) {response ->
-			logResponse(response)
-			return response
+def apiGET(path, body = [:]) {
+log.debug "starting apiGET $path"
+	try {
+    def cmdBody = [:]
+    def paramsLogin = [
+    	uri: apiURL(path),
+   		headers: apiRequestHeaders(),
+    	tlsVersion: "TLSv1.1",
+        body: $body
+    ]
+	log.debug "$paramsLogin"
+    httpPost(paramsLogin) {responseLogin -> 
+			logResponse(responseLogin)
+			return responseLogin
 		}
 	} catch (groovyx.net.http.HttpResponseException e) {
-		logResponse(e.response)
+	logResponse(e.response)
+    log.debug "apiGET exception respones $e.response"
 		return e.response
 	}
 }
 
 def apiPOST(path, body = [:]) {
+log.error "apiPOST used $path $body"
 	try {
 		log.debug("Beginning API POST: ${path}, ${body}")
-		httpGet(uri: apiURL(path), body: new groovy.json.JsonBuilder(body).toString(), headers: apiRequestHeaders() ) {response ->
+		httpPost(uri: apiURL(path),
+        		body: new groovy.json.JsonBuilder(body).toString(),
+                headers: apiRequestHeaders(),
+                tlsVersion: "TLSv1.1") {response ->
 			logResponse(response)
 			return response
 		}
