@@ -115,7 +115,7 @@ def initialize() {
 def configure() {
 	log.debug "config"
 	def cmds = []
-	if (zwaveInfo.mfr == "0258" && zwaveInfo.model == "1088") {
+	if (zwaveInfo.mfr == "0131" && zwaveInfo.model == "1083") {
 		// Set alarm volume to 2 (medium)
 		cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [2]).format()
 		cmds << "delay 500"
@@ -123,7 +123,7 @@ def configure() {
 		cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
 		cmds << "delay 500"
 		// Set alarm sound to no.1
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [1]).format()
+		cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [9]).format()
 	}
 	response(cmds)
 }
@@ -142,7 +142,7 @@ def on() {
 	// Those alarms do not end with Siren Notification Report.
 	// For those cases we add additional state check after alarm duration to
 	// synchronize cloud state with actual device state.
-	if (zwaveInfo.mfr == "0258" && zwaveInfo.model == "1088") {
+	if (zwaveInfo.mfr == "0131" && zwaveInfo.model == "1083") {
 		[
 			zwave.basicV1.basicSet(value: 0xFF).format(),
 			zwave.basicV1.basicGet().format(),
