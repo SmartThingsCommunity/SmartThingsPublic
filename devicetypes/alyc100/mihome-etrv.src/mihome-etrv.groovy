@@ -506,7 +506,7 @@ def checkin() {
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)    
     }
-	log.info "CHECKIN -'$device', MODE='$setmode', TTemp='$state.heatingSetpoint', ATemp='$state.temperature', BOOST='$state.boostLabel' @ '$settings.refreshRate' min refresh rate"
+	log.info "CHECKIN-$device', MODE='$setmode', TTemp='$state.heatingSetpoint', ATemp='$state.temperature', BOOST='$state.boostLabel', BAT='Math.round((((state.batteryVoltage-2.5)/0.7)*100))', @'$settings.refreshRate' min refresh rate"
 }
 
 def refresh() {
