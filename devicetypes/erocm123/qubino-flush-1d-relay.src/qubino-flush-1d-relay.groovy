@@ -33,6 +33,8 @@ metadata {
 
         fingerprint mfr: "0159", prod: "0002", model: "0053"
         fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x85,0x8E,0x59,0x70", outClusters: "0x20"
+        fingerprint deviceId: "0x1001", inClusters: "0x5E,0x86,0x72,0x5A,0x73,0x20,0x27,0x25,0x30,0x71,0x31,0x60,0x85,0x8E,0x59,0x70", outClusters: "0x20" // With temp sensor
+        
     }
 
     simulator {
@@ -140,7 +142,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
     logging("SensorBinaryReport: $cmd", 2)
     def children = childDevices
-    def childDevice = children.find{it.deviceNetworkId.endsWith("ep2")}
+    def childDevice = children.find{it.deviceNetworkId.endsWith("-i2")}
     switch (cmd.sensorValue) {
         case 0:
             switch(settings."i2") {
