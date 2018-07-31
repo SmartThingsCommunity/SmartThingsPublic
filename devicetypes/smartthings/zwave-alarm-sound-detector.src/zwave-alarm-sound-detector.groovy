@@ -50,7 +50,7 @@ def updated() {
 def parse(String description) {
 	def results = []
 	if (description.startsWith("Err")) {
-	    results << createEvent(descriptionText:description, displayed:true)
+		results << createEvent(descriptionText:description, displayed:true)
 	} else {
 		def cmd = zwave.parse(description, [ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
 		if (cmd) {
