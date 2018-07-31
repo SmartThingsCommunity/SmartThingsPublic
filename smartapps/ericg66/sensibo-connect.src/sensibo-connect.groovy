@@ -166,7 +166,7 @@ def installed() {
   
 	initialize()
     
-    def d = getAllChildDevices()
+    def d = getChildDevices()
 
 	if (boolnotifevery) {
     	//runEvery1Hour("hournotification")
@@ -192,7 +192,7 @@ def updated() {
     
     initialize()
     
-    def d = getAllChildDevices()
+    def d = getChildDevices()
     
     if (boolnotifevery) {
     	//runEvery1Hour("hournotification")
@@ -224,7 +224,7 @@ def hournotification() {
 
     	if (curHour >= minHourstr && curHour <= maxHourstr) 
     	{
-    		def devices = getAllChildDevices()
+    		def devices = getChildDevices()
             devices.each { d ->
                 log.trace "Notification every hour for device: ${d.id}"
                 def currentPod = d.displayName
@@ -239,7 +239,7 @@ def hournotification() {
     	}
     }
     else {
-    	 	def devices = getAllChildDevices()
+    	 	def devices = getChildDevices()
             devices.each { d ->
                 log.trace "Notification every hour for device: ${d.id}"
                 def currentPod = d.displayName
@@ -441,7 +441,7 @@ def refreshOneDevice(dni) {
 
 def refreshDevices() {
 	log.trace "refreshDevices() called"
-	def devices = getAllChildDevices()
+	def devices = getChildDevices()
 	devices.each { d ->
 		log.debug "Calling refresh() on device: ${d.id}"
         
@@ -493,7 +493,7 @@ def initialize() {
 	if(!SelectedSensiboPods)
 	{
 		log.debug "delete Sensibo"
-		delete = getAllChildDevices()
+		delete = getChildDevices()
 	}
 	else
 	{
@@ -503,7 +503,7 @@ def initialize() {
 	log.trace "deleting ${delete.size()} Sensibo"
 	delete.each { deleteChildDevice(it.deviceNetworkId) }
 
-	def PodList = getAllChildDevices()
+	def PodList = getChildDevices()
 	
     pollHandler()
     
@@ -1078,7 +1078,7 @@ def pollHandler() {
 	
     // Hit the Sensibo API for update on all the Pod
 	
-    def PodList = getAllChildDevices()
+    def PodList = getChildDevices()
     
     log.debug PodList
     PodList.each { 
