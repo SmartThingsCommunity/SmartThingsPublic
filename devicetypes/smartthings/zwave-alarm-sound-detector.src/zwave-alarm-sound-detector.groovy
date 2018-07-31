@@ -14,15 +14,15 @@
 metadata {
 	definition (name: "Z-Wave Alarm Sound Detector", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Sound Sensor"
-    	capability "Sensor"
+		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
 
 		fingerprint mfr:"014A", prod:"0005", model:"000F", deviceJoinName: "Ecolink Firefighter"
 	}
 
-	tiles (scale: 2){
-		multiAttributeTile(name:"sound", type: "lighting", width: 6, height: 4){
+	tiles (scale: 2) {
+		multiAttributeTile(name:"sound", type: "lighting", width: 6, height: 4) {
 			tileAttribute ("device.sound", key: "PRIMARY_CONTROL") {
 				attributeState("not detected", label:'${name}', icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
 				attributeState("detected", label:'${name}', icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
@@ -40,7 +40,7 @@ metadata {
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "sound", value: "not detected", displayed: false)
-    	response(zwave.batteryV1.batteryGet().format())
+	response(zwave.batteryV1.batteryGet().format())
 }
 
 def updated() {
@@ -70,7 +70,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 	if (cmd.zwaveAlarmType == ALARM_TYPE_SMOKE() || cmd.zwaveAlarmType == ALARM_TYPE_CO()) {
 		def detection = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
 		event = createEvent(name: "sound", value: detection, descriptionText: "${device.displayName} sound was ${detection}")
-	}  else {
+	} else {
 		event = createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
 	}
 	event
@@ -105,8 +105,5 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	def event = [ displayed: false ]
-	event.linkText = device.label ?: device.name
-	event.descriptionText = "$event.linkText: $cmd"
-	createEvent(event)
+	[:]
 }
