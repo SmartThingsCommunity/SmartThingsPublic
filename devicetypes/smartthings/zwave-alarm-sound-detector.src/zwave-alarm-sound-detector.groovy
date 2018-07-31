@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Alarm Sound Detector", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Z-Wave Alarm Sound Detector", namespace: "smartthings", author: "SmartThings") {
 		capability "Sound Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -61,15 +61,15 @@ def parse(String description) {
 	results
 }
 
-private ALARM_TYPE_SMOKE() { 1 }
-private ALARM_TYPE_CO() { 2 }
+private getALARM_TYPE_SMOKE() { 1 }
+private getALARM_TYPE_CO() { 2 }
 
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 	log.debug "zwaveAlarmType: ${cmd.zwaveAlarmType}"
 	def event = null
-	if (cmd.zwaveAlarmType == ALARM_TYPE_SMOKE() || cmd.zwaveAlarmType == ALARM_TYPE_CO()) {
-		def detection = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
-		event = createEvent(name: "sound", value: detection, descriptionText: "${device.displayName} sound was ${detection}")
+	if (cmd.zwaveAlarmType == ALARM_TYPE_SMOKE || cmd.zwaveAlarmType == ALARM_TYPE_CO) {
+		def value = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
+		event = createEvent(name: "sound", value: value, descriptionText: "${device.displayName} sound was ${value}")
 	} else {
 		event = createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
 	}
