@@ -436,34 +436,26 @@ def updateDevices() {
 
 def addETRV() {
 	updateDevices()
-
 	selectedETRVs.each { device ->
-
         def childDevice = getChildDevice("${device}")
         if (!childDevice && state.miETRVDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miETRVDevices[device]}")
-
         	def data = [
                 	name: state.miETRVDevices[device],
 					label: state.miETRVDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome eTRV", "$device", null, data)
-
 			log.debug "Created ${state.miETRVDevices[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.miETRVDevices[device]} with id ${device} already exists"
 		}
-
 	}
 }
 
 def addLight() {
 	updateDevices()
-
 	selectedLights.each { device ->
-
         def childDevice = getChildDevice("${device}")
-
         if (!childDevice && state.miLightDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miLightDevices[device]}")
             def data = [
@@ -471,79 +463,61 @@ def addLight() {
 					label: state.miLightDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Adapter", "$device", null, data)
-
 			log.debug "Created ${state.miLightDevices[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.miLightDevices[device]} with id ${device} already exists"
 		}
-
 	}
 }
 
 def addAdapter() {
 	updateDevices()
-
 	selectedAdapters.each { device ->
-
         def childDevice = getChildDevice("${device}")
-
         if (!childDevice && state.miAdapterDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miAdapterDevices[device]}")
-
         	def data = [
                 	name: state.miAdapterDevices[device],
 					label: state.miAdapterDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Adapter", "$device", null, data)
-
 			log.debug "Created ${state.miAdapterDevices[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.miAdapterDevices[device]} with id ${device} already exists"
 		}
-
 	}
 }
 
 def addAdapterPlus() {
 	updateDevices()
-
 	selectedAdapterPluses.each { device ->
-
         def childDevice = getChildDevice("${device}")
-
         if (!childDevice && state.miAdapterPlusDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miAdapterPlusDevices[device]}")
-
         	def data = [
                 	name: state.miAdapterPlusDevices[device],
 					label: state.miAdapterPlusDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Adapter Plus", "$device", null, data)
-
 			log.debug "Created ${state.miAdapterPlusDevices[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.miAdapterPlusDevices[device]} with id ${device} already exists"
 		}
-
 	}
 }
 
 def add4GangExtension() {
 	updateDevices()
-
 	selected4GangExtensions.each { device ->
     	0.upto(3, {
             def childDevice = getChildDevice("${device}/${it}")
-            
             if (!childDevice && state.mi4GangExtensionDevices[device] != null) {
     			log.info("Adding device ${device}/${it}: ${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}]")
-
         		def data = [
                 	name: "${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}]",
 					label: "${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}]"
 				]
             	childDevice = addChildDevice(app.namespace, "MiHome Adapter", "${device}/${it}", null, data)
-
 				log.debug "Created ${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}] with id: ${device}/${it}"
 			} else {
 				log.debug "found ${state.mi4GangExtensionDevices[device]} [Socket ${it + 1}] with id ${device}/${it} already exists"
@@ -554,19 +528,15 @@ def add4GangExtension() {
 
 def addSocket() {
 	updateDevices()
-
 	selectedSockets.each { device ->
             def childDevice = getChildDevice("${device}")
-            
             if (!childDevice && state.miSocketDevices[device] != null) {
     			log.info("Adding device ${device}: ${state.miSocketDevices[device]}")
-
         		def data = [
                 	name: "${state.miSocketDevices[device]}",
 					label: "${state.miSocketDevices[device]}"
 				]
             	childDevice = addChildDevice(app.namespace, "MiHome Adapter", "${device}", null, data)
-
 				log.debug "Created ${state.miSocketDevices[device]} with id: ${device}"
 			} else {
 				log.debug "found ${state.miSocketDevices[device]} with id ${device}} already exists"
@@ -576,54 +546,42 @@ def addSocket() {
 
 def addMonitor() {
 	updateDevices()
-
 	selectedMonitors.each { device ->
-
         def childDevice = getChildDevice("${device}")
-
         if (!childDevice && state.miMonitorDevices[device] != null) {
     		log.info("Adding device ${device}: ${state.miMonitorDevices[device]}")
-
         	def data = [
                 	name: state.miMonitorDevices[device],
 					label: state.miMonitorDevices[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Monitor", "$device", null, data)
-
 			log.debug "Created ${state.miMonitorDevices[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.miMonitorDevices[device]} with id ${device} already exists"
 		}
-
 	}
 }
 
 def addMotion() {
 	updateDevices()
-
 	selectedMotions.each { device ->
-
         def childDevice = getChildDevice("${device}")
-
         if (!childDevice && state.miMotionSensors[device] != null) {
     		log.info("Adding device ${device}: ${state.miMotionSensors[device]}")
-
         	def data = [
                 	name: state.miMotionSensors[device],
 					label: state.miMotionSensors[device]
 				]
             childDevice = addChildDevice(app.namespace, "MiHome Motion Sensor", "$device", null, data)
-
 			log.debug "Created ${state.miMotionSensors[device]} with id: ${device}"
 		} else {
 			log.debug "found ${state.miMotionSensors[device]} with id ${device} already exists"
 		}
-
 	}
 }
 
 def refreshDevices() {
-	log.error "nothing happening"
+	log.error "nothing happening, refresh is in the device handler"
 	//getChildDevices().each { device ->
     //	   	if (device.name.contains("eTRV") || device.name.contains("Monitor") || device.name.contains("Motion Sensor") || device.name.contains("Adapter Plus")) {
 	//			log.debug "HF Refreshing device ${device.name}"
@@ -664,10 +622,10 @@ def apiGET(path, body = [:]) {
     	uri: apiURL(path),
    		headers: apiRequestHeaders(),
     	tlsVersion: "TLSv1.1",
-        body: $body
+        body: body
     ]
-//	log.debug "$paramsLogin"
-    httpPost(paramsLogin) {responseLogin -> 
+//log.debug "message details '$paramsLogin'"
+    httpPost(paramsLogin) {responseLogin ->  //as per mihome documetaion post is prefered details are not logged
 			logResponse(responseLogin)
 			return responseLogin
 		}
@@ -678,7 +636,7 @@ def apiGET(path, body = [:]) {
 	}
 }
 
-def apiPOST(path, body = [:]) {
+/*def apiPOST(path, body = [:]) {
 log.error "apiPOST used $path $body"
 	try {
 		log.debug("Beginning API POST: ${path}, ${body}")
@@ -694,14 +652,13 @@ log.error "apiPOST used $path $body"
 		return e.response
 	}
 }
-
+*/
 Map apiRequestHeaders() {
 	def userpassascii = "${username}:${password}"
     if (state.miHomeAccessToken != null && state.miHomeAccessToken != '') {
     	userpassascii = "${username}:${state.miHomeAccessToken}"
     }
   	def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
-        
 	return ["User-Agent": "SmartThings Integration",
             "Authorization": "$userpass"
 	]
