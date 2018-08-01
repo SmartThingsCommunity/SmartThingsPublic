@@ -65,7 +65,7 @@ private getALARM_TYPE_SMOKE() { 1 }
 private getALARM_TYPE_CO() { 2 }
 
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
-	log.debug "zwaveAlarmType: ${cmd.zwaveAlarmType}"
+	log.debug "zwaveAlarmTypes: ${cmd.zwaveAlarmType}"
 	def event = null
 	if (cmd.zwaveAlarmType == ALARM_TYPE_SMOKE || cmd.zwaveAlarmType == ALARM_TYPE_CO) {
 		def value = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
@@ -92,7 +92,6 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-	log.debug "Battery"
 	def map = [ name: "battery", unit: "%", isStateChange: true ]
 	state.lastbatt = now()
 	if (cmd.batteryLevel == 0xFF) {
