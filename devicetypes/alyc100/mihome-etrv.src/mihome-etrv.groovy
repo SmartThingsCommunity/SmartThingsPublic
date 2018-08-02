@@ -110,8 +110,9 @@ metadata {
         controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false, range:"(12..30)") {
 			state ("heatingSetpoint", action:"setHeatingSetpoint") //need to send to a lag
 		}
+// battery
         valueTile("battery", "device.batteryVoltage", width: 2, height: 2) {
-			state ("battery", label:'Battery Voltage Is ${currentValue}', unit:"V", backgroundColors:[
+			state ("battery", label:'${currentValue}V', backgroundColors:[
                					[value: 3, color: "#44b621"],
 								[value: 2.8, color: "#f1d801"],
 								[value: 2.78, color: "#bc2323"],
@@ -488,9 +489,10 @@ def checkin() {
     sendEvent(name: "boostLabel", value: state.boostLabel, displayed: false) 						//change label back to boost time from start time        
    	sendEvent(name: "temperature", value: state.temperature, unit: "C")								// actual temp
     sendEvent(name: "heatingSetpoint", value: state.heatingSetpoint, unit: "C")						// set temp
-    sendEvent(name: "coolingSetpoint", value: state.heatingSetpoint, unit: "C")						// set temp
-    sendEvent(name: "batteryVoltage", value: state.batteryVoltage == null ? "Not Available" : state.batteryVoltage)
-    sendEvent(name: "battery", value: Math.round((((state.batteryVoltage-2.5)/0.7)*100)) , unit: "%") 		//0.7 is used to calculete %, ie max-min volts (3.2-2.5)
+    sendEvent(name: "coolingSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)	// set temp
+    sendEvent(name: "batteryVoltage", value: state.batteryVoltage == null ? "Not Available" : state.batteryVoltage, unit: "V")
+		def batper = Math.round((((state.batteryVoltage-2.5)/0.7)*100)) //0.7 is used to calculete %, ie diferance between max-min volts (3.2-2.5)
+	sendEvent(name: "battery", value: batper , unit: "%") 		
 
     
     def setmode = state.thermostatMode // for log info below
@@ -506,7 +508,7 @@ def checkin() {
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)    
     }
-	log.info "CHECKIN-$device', MODE='$setmode', TTemp='$state.heatingSetpoint', ATemp='$state.temperature', BOOST='$state.boostLabel', BAT='Math.round((((state.batteryVoltage-2.5)/0.7)*100))', @'$settings.refreshRate' min refresh rate"
+	log.info "CHECKIN-$device', MODE='$setmode', TTemp='$state.heatingSetpoint', ATemp='$state.temperature', BOOST='$state.boostLabel', BAT='$batper%', @'$settings.refreshRate' min refresh rate"
 }
 
 def refresh() {
