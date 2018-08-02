@@ -144,17 +144,15 @@ def poll() {
     else {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
-    def resp = parent.apiGET("/subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
+    def resp = parent.apiGET("subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
 //log.debug "poll status- ${resp.status} data- ${resp.data}" 
     if (resp.status != 200) {
 		log.error "POLL for - $device - $resp.status Unexpected result"
         sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
 	}
     else {
-//log.debug "power '$resp.data.data.power_state'"
     state.Switch = resp.data.data.power_state == 1 ? "on" : "off"
-//log.debug "POLL for -'$device'-'$state.Switch' - $resp.status - all good"
-    checkin()
+	checkin()
     }
 }
 def checkin() {
@@ -178,7 +176,7 @@ def on() {
     else {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
-    def resp = parent.apiGET("/subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
+    def resp = parent.apiGET("subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
     		log.warn "ON - '$device' response -'$resp.status' - '$resp.data' Unexpected result"
           	if (state.counter == null || state.counter >= 5) {
@@ -216,7 +214,7 @@ def off() {
     else {
     	body = [id: device.deviceNetworkId.toInteger()]
     }
-	def resp = parent.apiGET("/subdevices/power_off?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
+	def resp = parent.apiGET("subdevices/power_off?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
 // log.debug "off data status- ${resp.status} data- ${resp.data}"
     if (resp.status != 200) {
     	log.error "Unexpected result in off poll ${resp.status}"
