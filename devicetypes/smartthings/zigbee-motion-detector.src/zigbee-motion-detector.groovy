@@ -18,7 +18,7 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition(name: "Orvibo Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion-2") {
+	definition(name: "zigbee-motion-detector", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion-2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
