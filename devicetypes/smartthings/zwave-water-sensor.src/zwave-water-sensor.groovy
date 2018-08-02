@@ -54,6 +54,9 @@ metadata {
 def installed() {
 	// Dome Leak Sensor sends WakeUpNotification every 12 hours. Please add zwaveinfo.mfr check when adding other sensors with different interval.
 	sendEvent(name: "checkInterval", value: (2 * 12 + 2) * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if (zwaveInfo.mfr == "021F" && zwaveInfo.prod == "0003" && zwaveInfo.model == "0085" ) {
+		sendEvent(name: "water", value: "wet", isStateChange: false, displayed: false)
+	}
 }
 
 def updated() {
