@@ -14,6 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  2018-08-02: Added the ability to change the label on scenes.
+ *
  *  2018-06-20: Modified tile layout. Update firmware version reporting. Bug Fix.
  * 
  *  2018-06-08: Remove communication method check from updated().
@@ -100,6 +102,19 @@ metadata {
         input "group3remote", "bool", title: "Send command on z-wave action", description: "", required: false
         input "group3way", "bool", title: "Send command on 3-way action", description: "", required: false
         input "group3timer", "bool", title: "Send command on auto off timer", description: "", required: false
+        input "pressUpX1Label", "text", title: "Label for \"Tap ▲\"", description: "Tap to set", required: false
+        input "pressDownX1Label", "text", title: "Label for \"Tap ▼\"", description: "Tap to set", required: false
+        input "pressUpX2Label", "text", title: "Label for \"Tap ▲▲\"", description: "Tap to set", required: false
+        input "pressDownX2Label", "text", title: "Label for \"Tap ▼▼\"", description: "Tap to set", required: false
+        input "pressUpX3Label", "text", title: "Label for \"Tap ▲▲▲\"", description: "Tap to set", required: false
+        input "pressDownX3Label", "text", title: "Label for \"Tap ▼▼▼\"", description: "Tap to set", required: false
+        input "pressUpX4Label", "text", title: "Label for \"Tap ▲▲▲▲\"", description: "Tap to set", required: false
+        input "pressDownX4Label", "text", title: "Label for \"Tap ▼▼▼▼\"", description: "Tap to set", required: false
+        input "pressUpX5Label", "text", title: "Label for \"Tap ▲▲▲▲▲\"", description: "Tap to set", required: false
+        input "pressDownX5Label", "text", title: "Label for \"Tap ▼▼▼▼▼\"", description: "Tap to set", required: false
+        input "pressHoldUpLabel", "text", title: "Label for \"Hold ▲\"", description: "Tap to set", required: false
+        input "pressHoldDownLabel", "text", title: "Label for \"Hold ▼\"", description: "Tap to set", required: false
+
     }
     
     tiles {
@@ -138,52 +153,52 @@ metadata {
             state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
         }
         
-        standardTile("pressUpX1", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▲", backgroundColor: "#ffffff", action: "pressUpX1"
+        standardTile("pressUpX1", "device.pressUpX1", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressUpX1"
         }
         
-        standardTile("pressUpX2", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▲▲", backgroundColor: "#ffffff", action: "pressUpX2"
+        standardTile("pressUpX2", "device.pressUpX2", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressUpX2"
         }
         
-        standardTile("pressUpX3", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▲▲▲", backgroundColor: "#ffffff", action: "pressUpX3"
+        standardTile("pressUpX3", "device.pressUpX3", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressUpX3"
         }
         
-        standardTile("pressDownX1", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▼", backgroundColor: "#ffffff", action: "pressDownX1"
+        standardTile("pressDownX1", "device.pressDownX1", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressDownX1"
         }
         
-        standardTile("pressDownX2", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▼▼", backgroundColor: "#ffffff", action: "pressDownX2"
+        standardTile("pressDownX2", "device.pressDownX2", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressDownX2"
         }
         
-        standardTile("pressDownX3", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▼▼▼", backgroundColor: "#ffffff", action: "pressDownX3"
+        standardTile("pressDownX3", "device.pressDownX3", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressDownX3"
         }
         
-        standardTile("pressUpX4", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▲▲▲▲", backgroundColor: "#ffffff", action: "pressUpX4"
+        standardTile("pressUpX4", "device.pressUpX4", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressUpX4"
         }
         
-        standardTile("pressUpX5", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▲▲▲▲▲", backgroundColor: "#ffffff", action: "pressUpX5"
+        standardTile("pressUpX5", "device.pressUpX5", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressUpX5"
         }
         
-        standardTile("holdUp", "device.button", width: 2, height: 1, decoration: "flat") {
-			state "default", label: "Hold ▲", backgroundColor: "#ffffff", action: "holdUp"
+        standardTile("holdUp", "device.holdUp", width: 2, height: 1, decoration: "flat") {
+			state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "holdUp"
 		}
         
-        standardTile("pressDownX4", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▼▼▼▼", backgroundColor: "#ffffff", action: "pressDownX4"
+        standardTile("pressDownX4", "device.pressDownX4", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressDownX4"
         }
         
-        standardTile("pressDownX5", "device.button", width: 2, height: 1, decoration: "flat") {
-            state "default", label: "Tap ▼▼▼▼▼", backgroundColor: "#ffffff", action: "pressDownX5"
+        standardTile("pressDownX5", "device.pressDownX5", width: 2, height: 1, decoration: "flat") {
+            state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "pressDownX5"
         }
         
-        standardTile("holdDown", "device.button", width: 2, height: 1, decoration: "flat") {
-			state "default", label: "Hold ▼", backgroundColor: "#ffffff", action: "holdDown"
+        standardTile("holdDown", "device.holdDown", width: 2, height: 1, decoration: "flat") {
+			state "default", label: '${currentValue}', backgroundColor: "#ffffff", action: "holdDown"
 		}
         
     }
@@ -343,6 +358,19 @@ def initialize() {
         childDevice.setLabel("${device.displayName} (Disable Local Control)")
         state.oldLabel = device.label
     }
+
+    sendEvent([name:"pressUpX1", value:pressUpX1Label? pressUpX1Label : "Tap ▲", displayed: false])
+    sendEvent([name:"pressDownX1", value:pressDownX1Label? pressDownX1Label : "Tap ▼", displayed: false])
+    sendEvent([name:"pressUpX2", value:pressUpX2Label? pressUpX2Label : "Tap ▲▲", displayed: false])
+    sendEvent([name:"pressDownX2", value:pressDownX2Label? pressDownX2Label : "Tap ▼▼", displayed: false])
+    sendEvent([name:"pressUpX3", value:pressUpX3Label? pressUpX3Label : "Tap ▲▲▲", displayed: false])
+    sendEvent([name:"pressDownX3", value:pressDownX3Label? pressDownX3Label : "Tap ▼▼▼", displayed: false])
+    sendEvent([name:"pressUpX4", value:pressUpX4Label? pressUpX4Label : "Tap ▲▲▲▲", displayed: false])
+    sendEvent([name:"pressDownX4", value:pressDownX4Label? pressDownX4Label : "Tap ▼▼▼▼", displayed: false])
+    sendEvent([name:"pressUpX5", value:pressUpX5Label? pressUpX5Label : "Tap ▲▲▲▲▲", displayed: false])
+    sendEvent([name:"pressDownX5", value:pressDownX5Label? pressDownX5Label : "Tap ▼▼▼▼▼", displayed: false])
+    sendEvent([name:"holdUp", value:pressHoldUpLabel? pressHoldUpLabel : "Hold ▲", displayed: false])
+    sendEvent([name:"holdDown", value:pressHoldDownLabel? pressHoldDownLabel : "Hold ▼", displayed: false])
     
     def cmds = processAssociations()
     cmds << zwave.versionV1.versionGet()
