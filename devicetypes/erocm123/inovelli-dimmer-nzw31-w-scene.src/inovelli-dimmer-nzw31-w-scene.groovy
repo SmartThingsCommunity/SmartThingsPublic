@@ -1,7 +1,7 @@
  /**
  *  Inovelli Dimmer NZW31/NZW31T w/Scene
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-06-20
+ *  Date: 2018-08-02
  *
  *  Copyright 2018 Eric Maycock
  *
