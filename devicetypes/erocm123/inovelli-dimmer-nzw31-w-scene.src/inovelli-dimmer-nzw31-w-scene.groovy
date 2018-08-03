@@ -1,7 +1,7 @@
  /**
  *  Inovelli Dimmer NZW31/NZW31T w/Scene
  *  Author: Eric Maycock (erocm123)
- *  Date: 2018-08-02
+ *  Date: 2018-08-03
  *
  *  Copyright 2018 Eric Maycock
  *
@@ -14,7 +14,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  2018-08-02: Added the ability to change the label on scenes.
+ *  2018-08-03: Added the ability to change the label on scenes.
  *
  *  2018-06-20: Modified tile layout. Update firmware version reporting. Bug Fix.
  * 
@@ -360,18 +360,18 @@ def initialize() {
         state.oldLabel = device.label
     }
 
-    sendEvent([name:"pressUpX1", value:pressUpX1Label? pressUpX1Label : "Tap ▲", displayed: false])
-    sendEvent([name:"pressDownX1", value:pressDownX1Label? pressDownX1Label : "Tap ▼", displayed: false])
-    sendEvent([name:"pressUpX2", value:pressUpX2Label? pressUpX2Label : "Tap ▲▲", displayed: false])
-    sendEvent([name:"pressDownX2", value:pressDownX2Label? pressDownX2Label : "Tap ▼▼", displayed: false])
-    sendEvent([name:"pressUpX3", value:pressUpX3Label? pressUpX3Label : "Tap ▲▲▲", displayed: false])
-    sendEvent([name:"pressDownX3", value:pressDownX3Label? pressDownX3Label : "Tap ▼▼▼", displayed: false])
-    sendEvent([name:"pressUpX4", value:pressUpX4Label? pressUpX4Label : "Tap ▲▲▲▲", displayed: false])
-    sendEvent([name:"pressDownX4", value:pressDownX4Label? pressDownX4Label : "Tap ▼▼▼▼", displayed: false])
-    sendEvent([name:"pressUpX5", value:pressUpX5Label? pressUpX5Label : "Tap ▲▲▲▲▲", displayed: false])
-    sendEvent([name:"pressDownX5", value:pressDownX5Label? pressDownX5Label : "Tap ▼▼▼▼▼", displayed: false])
-    sendEvent([name:"holdUp", value:pressHoldUpLabel? pressHoldUpLabel : "Hold ▲", displayed: false])
-    sendEvent([name:"holdDown", value:pressHoldDownLabel? pressHoldDownLabel : "Hold ▼", displayed: false])
+    sendEvent([name:"pressUpX1", value:pressUpX1Label? "${pressUpX1Label} ▲" : "Tap ▲", displayed: false])
+    sendEvent([name:"pressDownX1", value:pressDownX1Label? "${pressDownX1Label} ▼" : "Tap ▼", displayed: false])
+    sendEvent([name:"pressUpX2", value:pressUpX2Label? "${pressUpX2Label} ▲▲" : "Tap ▲▲", displayed: false])
+    sendEvent([name:"pressDownX2", value:pressDownX2Label? "${pressDownX2Label} ▼▼" : "Tap ▼▼", displayed: false])
+    sendEvent([name:"pressUpX3", value:pressUpX3Label? "${pressUpX3Label} ▲▲▲" : "Tap ▲▲▲", displayed: false])
+    sendEvent([name:"pressDownX3", value:pressDownX3Label? "${pressDownX3Label} ▼▼▼" : "Tap ▼▼▼", displayed: false])
+    sendEvent([name:"pressUpX4", value:pressUpX4Label? "${pressUpX4Label} ▲▲▲▲" : "Tap ▲▲▲▲", displayed: false])
+    sendEvent([name:"pressDownX4", value:pressDownX4Label? "${pressDownX4Label} ▼▼▼▼" : "Tap ▼▼▼▼", displayed: false])
+    sendEvent([name:"pressUpX5", value:pressUpX5Label? "${pressUpX5Label} ▲▲▲▲▲" : "Tap ▲▲▲▲▲", displayed: false])
+    sendEvent([name:"pressDownX5", value:pressDownX5Label? "${pressDownX5Label} ▼▼▼▼▼" : "Tap ▼▼▼▼▼", displayed: false])
+    sendEvent([name:"holdUp", value:pressHoldUpLabel? "${pressHoldUpLabel} ▲" : "Hold ▲", displayed: false])
+    sendEvent([name:"holdDown", value:pressHoldDownLabel? "${pressHoldDownLabel} ▼" : "Hold ▼", displayed: false])
     
     def cmds = processAssociations()
     cmds << zwave.versionV1.versionGet()
