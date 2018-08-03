@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Zooz Power Strip Outlet", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Zooz Power Strip Outlet", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch", ocfDeviceType: "oic.d.smartplug") {
 		capability "Switch"
 		capability "Actuator"
 		capability "Sensor"
