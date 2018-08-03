@@ -102,6 +102,7 @@ metadata {
         input "group3remote", "bool", title: "Send command on z-wave action", description: "", required: false
         input "group3way", "bool", title: "Send command on 3-way action", description: "", required: false
         input "group3timer", "bool", title: "Send command on auto off timer", description: "", required: false
+        input description: "Below you can change the labels that appear for the various tap sequences.", title: "Scene Labels", displayDuringSetup: false, type: "paragraph", element: "paragraph"
         input "pressUpX1Label", "text", title: "Label for \"Tap ▲\"", description: "Tap to set", required: false
         input "pressDownX1Label", "text", title: "Label for \"Tap ▼\"", description: "Tap to set", required: false
         input "pressUpX2Label", "text", title: "Label for \"Tap ▲▲\"", description: "Tap to set", required: false
