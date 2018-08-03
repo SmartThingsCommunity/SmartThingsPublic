@@ -4,10 +4,11 @@
  *  Copyright © 2018 Michael Struck
  *  Original Author: Matt Lebaugh (@mlebaugh)
  *
- *  Version 1.0.1 7/15/18 
+ *  Version 1.0.2 8/2/18 
  *
- *  Version 1.0.1 (7/15/18)_ Format and syntax updates. Thanks to @Darwin for the motion sensitivity/timeout minutes idea!
- *  Version 1.0.0 - (3/17/17) Original release by Matt Lebaugh. Great Work!
+ *  Version 1.0.2 (8/2/18) - Updated some of the text/options on the Settings page
+ *  Version 1.0.1 (7/15/18) - Format and syntax updates. Thanks to @Darwin for the motion sensitivity/timeout minutes idea!
+ *  Version 1.0.0 (3/17/17)- Original release by Matt Lebaugh. Great Work!
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -98,15 +99,19 @@ metadata {
                 ],
                 required: false
             )
-            input (name: "motion", title: "Motion Sensor",
-                description: "Enable/Disable Motion Sensor.",
+            input (name: "modeOverride", title: "Double Press Operating Mode Override",
+            	description: "Physically press 'off' twice within 10 seconds to override the current operating mode",
                 type: "enum",
                 options: [
-                    "1" : "Enable (Default)",
-                    "0" : "Disable"
-                ]
+                    "1" : "Manual (no auto-on/no auto-off)",
+                    "2" : "Vacancy (no auto-on/auto-off)",
+                    "3" : "Occupancy (auto-on/auto-off)"
+                ],
+                required: false
             )
-			input (name: "motionsensitivity", title: "Motion Sensitivity",
+            //param 6
+            input "motion", "bool", title: "Enable Motion Sensor", defaultValue:tru
+			input (name: "motionsensitivity", title: "Motion Sensitivity (When Motion Sensor Enabled)",
                 description: "Motion Sensitivity",
                 type: "enum",
                 options: [
@@ -116,20 +121,11 @@ metadata {
                 ],
                 required: false
             )
-			input ("lightsense","enum",title: "Light Sensing (Occupancy)",
-                description: "If enabled, will only turn light on if it is dark",
-                options: [
-                    "1" : "Enabled (Default)",
-                    "0" : "Disabled"
-                ]
-            )
-            input (name: "invertSwitch", title: "Switch Orientation",
-                type: "enum",
-                options: [
-                    "0" : "Normal (Default)",
-                    "1" : "Inverted",
-                ]
-            )
+			//param 14
+            input "lightsense", "bool", title: "Enable Light Sensing (Occupancy)", defaultValue:true
+            //param 5
+            input "invertSwitch", "bool", title: "Invert Remote Switch Orientation", defaultValue:false
+            //param 15
             input ("resetcycle","enum",title: "Motion Reset Cycle", 
             	description: "Time to stop reporting motion once motion has stopped",
                 type: "enum",
@@ -143,9 +139,7 @@ metadata {
                 ]
             )
             input (
-            type: "paragraph",
-            element: "paragraph",
-            title: "",
+            type: "paragraph", element: "paragraph", title: "",
             description: "**Configure Association Groups**\nDevices in association group 2 will receive Basic Set commands directly from the switch when it is turned on or off. Use this to control another device as if it was connected to this switch.\n\n" +
                          "Devices in association group 3 will receive Basic Set commands directly from the switch when it is double tapped up or down.\n\n" +
                          "Devices are entered as a comma delimited list of the Device Network IDs in hexadecimal format."
@@ -226,6 +220,14 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
     }
 	else if (cmd.value == 0) {
     	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
+    	if (modeOverride && state.timerOff && (now()-state.timerOff)<10000) {
+        	log.debug "Double press in less than 10 seconds-Overriding mode"
+        	def cmds=[]
+            cmds << zwave.configurationV1.configurationSet(configurationValue: [modeOverride.toInteger()], parameterNumber: 3, size: 1)
+       		cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
+            sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
+    	}
+        state.timerOff=now()
     }
     return result
 }
@@ -427,6 +429,7 @@ def lightSenseOn() {
 	log.debug("Setting Light Sense On") 
     def cmds = []
     cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 14, size: 1)
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 14)
     sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
     showDashboard("", "", 1)
 }
@@ -434,6 +437,7 @@ def lightSenseOff() {
 	log.debug("Setting Light Sense Off") 
     def cmds = []
     cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 14, size: 1)
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 14)
     sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
     showDashboard("", "", 0)
 }
@@ -469,16 +473,9 @@ def updated() {
         motionSensor=2
     }
     //param 14 lightsense
-    if (settings.lightsense) {
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [settings.lightsense.toInteger()], parameterNumber: 14, size: 1)
-       	cmds << zwave.configurationV1.configurationGet(parameterNumber: 14)
-        lightSensor=lightsense.toInteger()
-    }
-    else{
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 14, size: 1)
-       	cmds << zwave.configurationV1.configurationGet(parameterNumber: 14)
-        lightSensor=1
-    }
+    lightSensor = lightsense ? 1 : 0
+    cmds << zwave.configurationV1.configurationSet(configurationValue: [lightSensor], parameterNumber: 14, size: 1)
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 14)
     //param 15 reset cycle
     if (settings.resetcycle) {
        	cmds << zwave.configurationV1.configurationSet(configurationValue: [settings.resetcycle.toInteger()], parameterNumber: 15, size: 1)
@@ -492,24 +489,12 @@ def updated() {
     if (settings.operationmode) cmds << zwave.configurationV1.configurationSet(configurationValue: [settings.operationmode.toInteger()], parameterNumber: 3, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
     //param 6 motion
-    if (settings.motion) {
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [settings.motion.toInteger()], parameterNumber: 6, size: 1)
-       	cmds << zwave.configurationV1.configurationGet(parameterNumber: 6)
-        motionSensor = !settings.motion.toInteger() ? 0 : motionSensor
-    }
-    else {
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 6, size: 1)
-       	cmds << zwave.configurationV1.configurationGet(parameterNumber: 6)
-    }
-	//param 5 invert switch
-	if (settings.invertSwitch) {
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [settings.invertSwitch.toInteger()], parameterNumber: 5, size: 1)
-       	cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
-	}
-    else {
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 5, size: 1)
-       	cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
-    }
+    motionSensor = !motion ? 0 : motionSensor
+    cmds << zwave.configurationV1.configurationSet(configurationValue: [motion ? 1 : 0], parameterNumber: 6, size: 1)
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 6)
+    //param 5 invert switch
+    cmds << zwave.configurationV1.configurationSet(configurationValue: [invertSwitch ? 1 : 0 ], parameterNumber: 5, size: 1)
+    cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
     // Make sure lifeline is associated - was missing on a dimmer:
 	cmds << zwave.associationV1.associationSet(groupingIdentifier:0, nodeId:zwaveHubNodeId)
     cmds << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
@@ -588,13 +573,13 @@ def showDashboard(timeDelay, motionSensor, lightSensor) {
     def motionSensorTxt = motionSensor == 1 ? "High" : motionSensor == 2 ? "Medium" : motionSensor==3 ? "Low" : "Disabled"
     def lightSensorTxt = lightSensor == 0 ? "Disabled" : "Enabled"
     def timeDelayTxt = timeDelay == 0 ? "5 seconds" : timeDelay == 1 ? "1 minute" : timeDelay == 5 ? "5 minutes" : timeDelay == 15 ? "15 minutes" : "30 minutes"
-    def motionSync = ((((!motion || (motion && motion=="1")) && motionSensorTxt !="Disabled" && motionsensitivity && state.currentMotionSensor==motionsensitivity.toInteger()) || (!motionsensitivity && state.currentMotionSensor==2)) ||
-    	(motion && motion=="0" && motionSensorTxt =="Disabled"))  ? "✔" : "‼"
-    def lightSync = (lightsense && state.currentLightSensor == lightsense.toInteger()) || (!lightsense && state.currentLightSensor == 1) ? "✔" : "‼"
+    def motionSync = ((motion && motionSensorTxt !="Disabled" && motionsensitivity && state.currentMotionSensor==motionsensitivity.toInteger()) || (!motionsensitivity && state.currentMotionSensor==2)) ||
+    	(!motion && motionSensorTxt =="Disabled")  ? "✔" : "‼"
+    def lightSync = (!lightsense && state.currentLightSensor == 0) || (lightsense && state.currentLightSensor == 1) ? "✔" : "‼"
     def timeSync = (timeoutduration && state.currentTimeDelay == timeoutduration.toInteger()) || (!timeoutduration && state.currentTimeDelay == 5)  ? "✔" : "‼"    
     result +="\n${motionSync} Motion Sensitivity: " + motionSensorTxt
    	result +="\n${lightSync} Light Sensing: " + lightSensorTxt
 	result +="\n${timeSync} Timeout Duration: " + timeDelayTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.1 (07/15/18)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.2 (08/02/18)") }
