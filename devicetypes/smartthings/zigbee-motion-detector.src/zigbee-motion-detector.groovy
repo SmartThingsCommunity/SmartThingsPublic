@@ -18,7 +18,7 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition(name: "zigbee-motion-detector", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion-2") {
+	definition(name: "Zigbee Motion Detector", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.018.0000', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion-2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
@@ -137,5 +137,5 @@ def refresh() {
 def configure() {
 	log.debug "configure"
 	sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
+	return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10) + refresh()
 }
