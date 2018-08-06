@@ -258,10 +258,13 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	if (state.sec == 0) {  // default to secure
-		cmd.format()
-	} else {
+	if ((zwaveInfo?.zw == null && state.sec != 0) ||
+		(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		log.debug "unsecurely sending $cmd"
+		cmd.format()
 	}
 }
 

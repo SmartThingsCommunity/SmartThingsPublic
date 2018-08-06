@@ -104,7 +104,7 @@ def updated() {
 	}
 	try {
 		if (!state.MSR) {
-			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+			response(encap(zwave.manufacturerSpecificV2.manufacturerSpecificGet()))
 		}
 	} catch (e) {
 		log.debug e
@@ -160,7 +160,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 	def value = (cmd.value ? "on" : "off")
 	def evt = createEvent(name: "switch", value: value, type: "physical", descriptionText: "$device.displayName was turned $value")
 	if (evt.isStateChange) {
-		[evt, response(["delay 3000", meterGet(scale: 2).format()])]
+		[evt, response(["delay 3000", encap(meterGet(scale: 2))])]
 	} else {
 		evt
 	}
@@ -294,7 +294,7 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 }
 
 private encap(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo?.zw?.contains("s")) {
+	if (zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId))) {
 		secEncap(cmd)
 	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)

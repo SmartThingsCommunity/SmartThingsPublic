@@ -166,5 +166,5 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	secure(zwave.basicV1.basicGet())
+	zwave.basicV1.basicGet().format()
 }

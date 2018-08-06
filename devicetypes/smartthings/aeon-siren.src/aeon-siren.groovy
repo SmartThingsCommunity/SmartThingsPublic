@@ -177,7 +177,11 @@ def test() {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	if (!zwaveInfo || (zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
 }
 
 /**

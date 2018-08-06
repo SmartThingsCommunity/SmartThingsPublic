@@ -69,13 +69,13 @@ def parse(String description) {
 
 def installed() {
 	if (zwaveInfo.cc?.contains("84")) {
-		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	[ createEvent(descriptionText: "${device.displayName} woke up"),
-	  response(zwave.wakeUpV1.wakeUpNoMoreInformation()) ]
+	  response(command(zwave.wakeUpV1.wakeUpNoMoreInformation())) ]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -136,7 +136,8 @@ def setLevel(value) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
+	if ((zwaveInfo?.zw == null && state.sec != 0) ||
+		(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()

@@ -306,11 +306,11 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 		//Only ask for battery if we haven't had a BatteryReport in a while
 		if (!state.lastbatt || (new Date().time) - state.lastbatt > 24*60*60*1000) {
 			log.debug("Device has been configured sending >> batteryGet()")
-			cmds << zwave.securityV1.securityMessageEncapsulation().encapsulate(zwave.batteryV1.batteryGet()).format()
+			cmds << command(zwave.batteryV1.batteryGet())
 			cmds << "delay 1200"
 		}
 		log.debug("Device has been configured sending >> wakeUpNoMoreInformation()")
-		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		cmds << command(zwave.wakeUpV1.wakeUpNoMoreInformation())
 		result << response(cmds) //tell device back to sleep
 	}
 	result
@@ -359,7 +359,7 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
 		result << createEvent(descriptionText: "$device.displayName is associated in group ${cmd.groupingIdentifier}")
 	} else if (cmd.groupingIdentifier == 1) {
 		result << createEvent(descriptionText: "Associating $device.displayName in group ${cmd.groupingIdentifier}")
-		result << response(zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:zwaveHubNodeId))
+		result << response(command(zwave.associationV1.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:zwaveHubNodeId)))
 	}
 	result
 }
@@ -463,7 +463,7 @@ def configure() {
 		//12. get temperature reading from device
 		request += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01)
 
-		commands(request) + ["delay 10000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+		commands(request) + ["delay 10000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 
 	}
 }
@@ -489,7 +489,8 @@ private def getNotificationOptionValueMap() { [
 ]}
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (isSecured()) {
+	if ((zwaveInfo?.zw == null && getDataValue("secured") == "true") ||
+		(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
 		log.info "Sending secured command: ${cmd}"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {

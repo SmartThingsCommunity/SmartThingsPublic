@@ -157,7 +157,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd, results) {
 			
 			// Check battery if we don't have a recent battery event
 			if (!state.lastbatt || (now() - state.lastbatt) >= 48*60*60*1000) {
-				results << response(zwave.batteryV1.batteryGet())
+				results << response(command(zwave.batteryV1.batteryGet()))
 			}
 			break
 		default:
@@ -189,12 +189,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd, res
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
 		results << response([
-				zwave.batteryV1.batteryGet().format(),
+				command(zwave.batteryV1.batteryGet()),
 				"delay 2000",
-				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+				command(zwave.wakeUpV1.wakeUpNoMoreInformation())
 			])
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))
 	}
 }
 
@@ -227,4 +227,19 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, results) {
 	event.linkText = device.label ?: device.name
 	event.descriptionText = "$event.linkText: $cmd"
 	results << createEvent(event)
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if ((zwaveInfo?.zw == null && state.sec != 0) ||
+		(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		log.debug "securely sending $cmd"
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		log.debug "unsecurely sending $cmd"
+		cmd.format()
+	}
+}
+
+private commands(commands, delay = 200) {
+	delayBetween(commands.collect { command(it) }, delay)
 }

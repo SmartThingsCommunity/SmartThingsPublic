@@ -91,12 +91,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56 * 60 * 60 * 1000) {
 		results << response([
-				zwave.batteryV1.batteryGet().format(),
+				command(zwave.batteryV1.batteryGet()),
 				"delay 2000",
-				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+				command(zwave.wakeUpV1.wakeUpNoMoreInformation())
 		])
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))
 	}
 	return results
 }

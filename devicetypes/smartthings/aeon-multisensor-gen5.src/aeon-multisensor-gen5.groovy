@@ -132,7 +132,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 		log.debug("not sending wakeUpNoMoreInformation yet: late configure")
 		result += response(configure())
 	} else {
-		result += response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		result += response(secure(zwave.wakeUpV1.wakeUpNoMoreInformation()))
 	}
 	result
 }
@@ -257,7 +257,7 @@ def configure() {
 
 	setConfigured()
 
-	secureSequence(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+	secureSequence(request) + ["delay 20000", secure(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
 
 private setConfigured() {
@@ -269,7 +269,12 @@ private isConfigured() {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	// Default to secure encapsulation, unless: zwaveInfo is defined and the device is secure and the command is one we should not encapsulte
+	if (!(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		cmd.format()
+	} else {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	}
 }
 
 private secureSequence(commands, delay=200) {

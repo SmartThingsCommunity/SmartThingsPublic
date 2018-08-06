@@ -190,7 +190,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 		result << response(configure())
 	} else {
 		log.debug("Device has been configured sending >> wakeUpNoMoreInformation()")
-		cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+		cmds << command(zwave.wakeUpV1.wakeUpNoMoreInformation())
 		result << response(cmds)
 	}
 	result
@@ -448,7 +448,7 @@ def configure() {
 	}
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
-	commands(request, (state.sec || zwaveInfo?.zw?.endsWith("s")) ? 2000 : 500) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+	commands(request, (state.sec || zwaveInfo?.zw?.endsWith("s")) ? 2000 : 500) + ["delay 20000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
 
 
@@ -481,7 +481,8 @@ private isConfigured() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec || zwaveInfo?.zw?.endsWith("s")) {
+	if ((zwaveInfo?.zw == null && state.sec != 0) ||
+		(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()

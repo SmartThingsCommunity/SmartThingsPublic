@@ -533,7 +533,12 @@ def refresh() {
  * @returns ret: The encapsulated command
  */
 private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	// Default to secure encapsulation, unless: zwaveInfo is defined and the device is secure and the command is one we should not encapsulte
+	if (!(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		cmd.format()
+	} else {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	}
 }
 
 /**

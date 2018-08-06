@@ -183,7 +183,7 @@ def uninstalled() {
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	[ createEvent(descriptionText: "${device.displayName} woke up", isStateChange:true),
-	  response(["delay 2000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]) ]
+	  response(["delay 2000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]) ]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -217,7 +217,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 	state.endpointInfo = [null] * cmd.endPoints
 	//response(zwave.associationV2.associationGroupingsGet())
 	[ createEvent(name: "epInfo", value: util.toJson(state.endpointInfo), displayed: false, descriptionText:""),
-	  response(zwave.multiChannelV3.multiChannelCapabilityGet(endPoint: 1)) ]
+	  response(command(zwave.multiChannelV3.multiChannelCapabilityGet(endPoint: 1))) ]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) {
@@ -226,7 +226,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 	if(!state.endpointInfo) state.endpointInfo = []
 	state.endpointInfo[cmd.endPoint - 1] = cmd.format()[6..-1]
 	if (cmd.endPoint < getDataValue("endpoints").toInteger()) {
-		cmds = zwave.multiChannelV3.multiChannelCapabilityGet(endPoint: cmd.endPoint + 1).format()
+		cmds = command(zwave.multiChannelV3.multiChannelCapabilityGet(endPoint: cmd.endPoint + 1))
 	} else {
 		log.debug "endpointInfo: ${state.endpointInfo.inspect()}"
 	}
@@ -238,7 +238,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationGroupingsReport cmd) {
 	state.groups = cmd.supportedGroupings
 	if (cmd.supportedGroupings > 1) {
-		[response(zwave.associationGrpInfoV1.associationGroupInfoGet(groupingIdentifier:2, listMode:1))]
+		[response(command(zwave.associationGrpInfoV1.associationGroupInfoGet(groupingIdentifier:2, listMode:1)))]
 	}
 }
 
@@ -253,7 +253,7 @@ def zwaveEvent(physicalgraph.zwave.commands.associationgrpinfov1.AssociationGrou
 		}
 	}*/
 	for (def i = 2; i <= state.groups; i++) {
-		cmds << response(zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier:i, nodeId:zwaveHubNodeId))
+		cmds << response(command(zwave.multiChannelAssociationV2.multiChannelAssociationSet(groupingIdentifier:i, nodeId:zwaveHubNodeId)))
 	}
 	cmds
 }
@@ -383,7 +383,8 @@ private getChildDeviceForEndpoint(Integer endpoint) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
+	if ((zwaveInfo?.zw == null && state.sec) ||
+		(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()

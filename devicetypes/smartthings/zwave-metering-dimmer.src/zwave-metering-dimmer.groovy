@@ -154,7 +154,7 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%")
 	}
 	if (switchEvent.isStateChange) {
-		result << response(["delay 3000", meterGet(scale: 2).format()])
+		result << response(["delay 3000", encap(meterGet(scale: 2))])
 	}
 	return result
 }
@@ -297,9 +297,9 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 }
 
 private encap(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo?.zw?.contains("s")) {
+	if (zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId))) {
 		secEncap(cmd)
-	} else if (zwaveInfo?.cc?.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")) {
 		crcEncap(cmd)
 	} else {
 		log.debug "no encapsulation supported for command: $cmd"
