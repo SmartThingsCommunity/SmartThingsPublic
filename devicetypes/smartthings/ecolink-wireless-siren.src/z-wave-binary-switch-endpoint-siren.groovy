@@ -12,28 +12,29 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Binary Switch Endpoint Siren", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch") {
+	definition(name: "Z-Wave Binary Switch Endpoint Siren", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-siren") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
+		capability "Alarm"
 	}
 
-	tiles(scale: 2) {
-		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
-				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			}
+	tiles {
+		standardTile("alarm", "device.alarm", width: 2, height: 2) {
+			state "off", label: 'off', action: 'alarm.strobe', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
+			state "both", label: 'alarm!', action: 'alarm.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#e86d13"
 		}
-
-		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+		standardTile("off", "device.alarm", inactiveLabel: false, decoration: "flat") {
+			state "default", label: '', action: "alarm.off", icon: "st.secondary.off"
+		}
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-		main "switch"
-		details(["switch", "refresh"])
+		main "alarm"
+		details(["alarm", "off", "refresh"])
 	}
 }
 
@@ -47,7 +48,9 @@ def updated() {
 
 def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "alarm", value: "off")
 	sendEvent(name: "switch", value: "off")
+
 	refresh()
 }
 
@@ -64,8 +67,18 @@ def handleZWave(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport c
 }
 
 def switchEvents(physicalgraph.zwave.Command cmd) {
-	def value = (cmd.value ? "on" : "off")
-	sendEvent(name: "switch", value: value)
+	def value = "off"
+	
+	if(cmd.value == 0) {
+		value = "off"
+	} else {
+		value = "both"
+	}
+	
+	def value1 = (cmd.value ? "on" : "off")
+	
+	sendEvent(name: "alarm", value: value)
+	sendEvent(name: "switch", value: value1)
 }
 
 def handleZWave(physicalgraph.zwave.Command cmd) {
@@ -73,7 +86,6 @@ def handleZWave(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-
 	//Endpoint no. 2 is double short beep. Second report is needed to change button display to current state "OFF" 
 	if (parent.channelNumber(device.deviceNetworkId) == 2) {
 		parent.sendCommand(device.deviceNetworkId, [zwave.basicV1.basicSet(value: 0xFF), zwave.switchBinaryV1.switchBinaryGet(),"delay 2000", zwave.switchBinaryV1.switchBinaryGet()])
@@ -84,6 +96,18 @@ def on() {
 
 def off() {
 	parent.sendCommand(device.deviceNetworkId, [zwave.basicV1.basicSet(value: 0), zwave.switchBinaryV1.switchBinaryGet()])
+}
+
+def strobe() {
+	on()
+}
+
+def siren() {
+	on()
+}
+
+def both() {
+	on()
 }
 
 def ping() {
