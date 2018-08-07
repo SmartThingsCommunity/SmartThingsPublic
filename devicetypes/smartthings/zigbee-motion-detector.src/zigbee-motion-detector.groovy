@@ -18,14 +18,14 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition(name: "Orvibo Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-motion-2") {
+	definition(name: "Zigbee Motion Detector", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.018.0000', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion-2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO",model:"895a2d80097f4ae2b2d40500d5e03dcc"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", model:"895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor"
 	}
 	simulator {
 		status "active": "zone status 0x0001 -- extended status 0x00"
@@ -137,4 +137,5 @@ def refresh() {
 def configure() {
 	log.debug "configure"
 	sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10) + refresh()
 }

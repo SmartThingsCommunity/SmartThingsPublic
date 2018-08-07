@@ -93,7 +93,7 @@ def on() {
 	def cmds = []
 	cmds << [zwave.basicV1.basicSet(value: 0xFF),1]
 	cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
-	encapSequence(cmds,500)
+	encapSequence(cmds,2000)
 }
 
 def off() {
@@ -101,7 +101,7 @@ def off() {
 	def cmds = []
 	cmds << [zwave.basicV1.basicSet(value: 0),1]
 	cmds << [zwave.switchBinaryV1.switchBinaryGet(),1]
-	encapSequence(cmds,500)
+	encapSequence(cmds,2000)
 }
 
 def reset() {
