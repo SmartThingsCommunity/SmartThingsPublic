@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Switch Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
+	definition (name: "Z-Wave Switch Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", mnmm: "SmartThings", vid: "generic-dimmer-2", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
 		capability "Actuator"
 		capability "Battery"
 		capability "Health Check"
