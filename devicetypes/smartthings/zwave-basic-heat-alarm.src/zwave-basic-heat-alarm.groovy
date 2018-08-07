@@ -158,9 +158,13 @@ def createHeatEvents(name) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo?.zw?.endsWith("s")) {
+	def zwInfo = zwaveInfo
+
+	if (zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))) {
+		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
+		log.debug "unsecurely sending $cmd"
 		cmd.format()
 	}
 }

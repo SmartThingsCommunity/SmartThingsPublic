@@ -337,9 +337,12 @@ private encap(Map encapMap) {
 }
 
 private encap(physicalgraph.zwave.Command cmd) {
-    if (zwaveInfo.zw.contains("s")) {
-        secEncap(cmd)
-    } else if (zwaveInfo.cc.contains("56")){
+	def zwInfo = zwaveInfo
+
+	if (zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))) {
+		log.debug "securely sending $cmd"
+		secEncap(cmd)
+	} else if (zwInfo.cc.contains("56")) {
         crcEncap(cmd)
     } else {
         logging("no encapsulation supported for command: $cmd","info")

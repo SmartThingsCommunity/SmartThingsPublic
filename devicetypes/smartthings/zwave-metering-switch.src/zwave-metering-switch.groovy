@@ -294,9 +294,13 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 }
 
 private encap(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId))) {
-		secEncap(cmd)
-	} else if (zwaveInfo?.cc?.contains("56")){
+	def zwInfo = zwaveInfo
+
+	if ((zwInfo?.zw == null && state.sec != 0) ||
+		(zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		log.debug "securely sending $cmd"
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else if (zwInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		log.debug "no encapsulation supported for command: $cmd"

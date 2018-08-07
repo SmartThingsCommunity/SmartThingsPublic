@@ -219,7 +219,10 @@ def setRemaining() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec != 0 && !(cmd instanceof physicalgraph.zwave.commands.batteryv1.BatteryGet)) {
+	def zwInfo = zwaveInfo
+
+	if ((zwInfo?.zw == null && state.sec != 0 && !(cmd instanceof physicalgraph.zwave.commands.batteryv1.BatteryGet)) ||
+		(zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
     	log.debug "cmd = " + cmd + ", encapsulation"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {

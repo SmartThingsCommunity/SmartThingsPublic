@@ -489,12 +489,14 @@ private def getNotificationOptionValueMap() { [
 ]}
 
 private command(physicalgraph.zwave.Command cmd) {
-	if ((zwaveInfo?.zw == null && getDataValue("secured") == "true") ||
-		(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
-		log.info "Sending secured command: ${cmd}"
+	def zwInfo = zwaveInfo
+
+	if ((zwInfo?.zw == null && getDataValue("secured") == "true") ||
+		(zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
-		log.info "Sending unsecured command: ${cmd}"
+		log.debug "unsecurely sending $cmd"
 		cmd.format()
 	}
 }

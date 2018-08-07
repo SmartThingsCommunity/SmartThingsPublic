@@ -383,10 +383,14 @@ private getChildDeviceForEndpoint(Integer endpoint) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if ((zwaveInfo?.zw == null && state.sec) ||
-		(zwaveInfo?.zw?.contains("s") && zwaveInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+	def zwInfo = zwaveInfo
+
+	if ((zwInfo?.zw == null && state.sec) ||
+		(zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
+		log.debug "unsecurely sending $cmd"
 		cmd.format()
 	}
 }
@@ -401,7 +405,7 @@ private encap(cmd, endpoint) {
 			command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd))
 		} else {
 			// If command is already formatted, we can't use the multiChannelCmdEncap class
-			def header = state.sec ? "988100600D00" : "600D00"
+			def header = state.sec || zwaveInfo?.zw?.contains("s") ? "988100600D00" : "600D00"
 			String.format("%s%02X%s", header, endpoint, cmd)
 		}
 	} else {
