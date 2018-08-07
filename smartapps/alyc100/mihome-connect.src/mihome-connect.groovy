@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	07/08/2018	2.6a-	added double light device type
  *	31/07/2018	2.6 - 	TLS added to api**'s toget round securty issue
  *				2.5	-	Updated to remove all timings less device name (every 3 hours) in line with DH updates - code cleans to do
  *	15/03/2018: 2.1	-	Cron schdule removed to randomise timings for users (update every1min)
@@ -296,7 +297,7 @@ def updateDevices() {
 				}
      		}
     	}
-        else if (device.device_type == 'light') {
+        else if (device.device_type == 'light'|| device.device_type == 'double_light') {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Light Switch"
@@ -592,6 +593,7 @@ def refreshDevices() {
 def devicesList() {
 	logErrors([]) {
 		def resp = apiGET("subdevices/list")
+//log.debug "device list all '$resp.data'"
 		if (resp.status == 200) {
 			return resp.data.data
 		} 
