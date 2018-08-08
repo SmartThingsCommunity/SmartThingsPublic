@@ -265,10 +265,12 @@ def initialize() {
 }
 
 def updateDevices() {
+//log.debug "updateDevices"
 	if (!state.devices) {
 		state.devices = [:]
 	}
 	def devices = devicesList()
+//log.debug "updateDevices post device list"
   	state.miETRVDevices = [:]
   	state.miLightDevices = [:]
     state.miAdapterDevices = [:]
@@ -385,7 +387,7 @@ def updateDevices() {
      			}
             })
         }
-        else if (device.device_type == 'monitor' || device.device_type == 'home') {
+        else if (device.device_type == 'monitor' || device.device_type == 'house' || device.device_type == 'home') {
         	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Monitor"
@@ -593,7 +595,7 @@ def refreshDevices() {
 def devicesList() {
 	logErrors([]) {
 		def resp = apiGET("subdevices/list")
-//log.debug "device list all '$resp.data'"
+log.debug "device list '$resp.data'"
 		if (resp.status == 200) {
 			return resp.data.data
 		} 
