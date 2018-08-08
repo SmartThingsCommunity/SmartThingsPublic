@@ -48,37 +48,24 @@ def updated() {
 
 def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	sendEvent(name: "alarm", value: "off")
-	sendEvent(name: "switch", value: "off")
-
 	refresh()
 }
 
 def handleZWave(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	switchEvents(cmd)
+	sendAlarmAndSwitchEvents(cmd)
 }
 
 def handleZWave(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	switchEvents(cmd)
+	sendAlarmAndSwitchEvents(cmd)
 }
 
 def handleZWave(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	switchEvents(cmd)
+	sendAlarmAndSwitchEvents(cmd)
 }
 
-def switchEvents(physicalgraph.zwave.Command cmd) {
-	def value = "off"
-	
-	if(cmd.value == 0) {
-		value = "off"
-	} else {
-		value = "both"
-	}
-	
-	def value1 = (cmd.value ? "on" : "off")
-	
-	sendEvent(name: "alarm", value: value)
-	sendEvent(name: "switch", value: value1)
+def sendAlarmAndSwitchEvents(physicalgraph.zwave.Command cmd) {
+	sendEvent(name: "alarm", value: cmd.value ? "both" : "off")
+	sendEvent(name: "switch", value: cmd.value ? "on" : "off")
 }
 
 def handleZWave(physicalgraph.zwave.Command cmd) {

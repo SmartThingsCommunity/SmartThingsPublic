@@ -44,7 +44,6 @@ metadata {
 }
 
 def installed() {
-	addChildren()
 	initialize()
 }
 
@@ -57,8 +56,7 @@ def initialize() {
 		addChildren()
 	}
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	off()
-	setSirenChildrenOff()
+	refresh()
 }
 
 def parse(String description) {
@@ -87,18 +85,8 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def createEvents(value) {
-	
-	def val = "off"
-	if(value == 0) {
-		val = "off"
-	} else {
-		val = "both"
-	}
-	
-	def value1 = (value ? "on" : "off")
-	
-	sendEvent(name: "alarm", value: val)
-	sendEvent(name: "switch", value: value1)
+	sendEvent(name: "alarm", value: value ? "both" : "off")
+	sendEvent(name: "switch", value: value ? "on" : "off")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
@@ -152,7 +140,7 @@ def refresh() {
 		cmds << basicGetCmd(it)
 	}
 	cmds << basicGetCmd(1)
-	return delayBetween(cmds, 100)
+	return delayBetween(cmds, 200)
 }
 
 def setSirenChildrenOff() {
