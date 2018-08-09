@@ -39,7 +39,7 @@ metadata {
 
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	sendEvent(name: "sound", value: "not detected", displayed: false)
+	sendEvent(name: "sound", value: "not detected", displayed: false, isStateChanged: true)
 	response(zwave.batteryV1.batteryGet().format())
 }
 
@@ -69,7 +69,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 	def event = null
 	if (cmd.zwaveAlarmType == ALARM_TYPE_SMOKE || cmd.zwaveAlarmType == ALARM_TYPE_CO) {
 		def value = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
-		event = createEvent(name: "sound", value: value, descriptionText: "${device.displayName} sound was ${value}")
+		event = createEvent(name: "sound", value: value, descriptionText: "${device.displayName} sound was ${value}", isStateChanged: true)
 	} else {
 		event = createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
 	}
