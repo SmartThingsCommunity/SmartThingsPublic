@@ -69,7 +69,6 @@ def installed() {
 }
 
 def parse(String description) {
-    log.debug "Parsing: '${description}'"
     def map = zigbee.getEvent(description)
 
     if(!map) {
@@ -80,7 +79,6 @@ def parse(String description) {
         }
     }
 
-    log.debug "Parse returned ${map}"
     def result = map ? createEvent(map) : [:]
 
     if (description?.startsWith('enroll request')) {
@@ -165,8 +163,6 @@ def refresh() {
 }
 
 def configure() {
-    log.debug "Configure Function Called"
-
     sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     //send zone enroll response, configure short and long poll, fast poll timeout and check in interval
