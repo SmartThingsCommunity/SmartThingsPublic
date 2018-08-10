@@ -140,7 +140,6 @@ private Map getBatteryPercentageResult(rawValue) {
             roundedPct = 1
         result.value = Math.min(100, roundedPct)
     }
-    log.debug "Battery Percentage rawValue = ${rawValue} -> ${(rawValue-23)/7.0 * 100}"
     result.name = 'battery'
     result.translatable = true
     result.descriptionText = "${device.displayName} battery was ${result.value}%"
