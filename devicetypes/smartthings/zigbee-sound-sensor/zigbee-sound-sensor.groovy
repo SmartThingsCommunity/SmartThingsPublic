@@ -15,9 +15,11 @@
  */
 
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+import physicalgraph.zigbee.zcl.ZCLMessage
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition(name: "Zigbee Sound Sensor", namespace: "smartthings", author: "Samsung SRPOL") {
+    definition(name: "Zigbee Sound Sensor", namespace: "smartthings", author: "Samsung SRPOL", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Sound_Sensor") {
         capability "Battery"
         capability "Configuration"
         capability "Health Check"
@@ -55,6 +57,10 @@ metadata {
         details(["sound", "battery", "temperature"])
     }
 }
+
+private getPOLL_CONTROL_CLUSTER() { 0x0020 }
+private getFAST_POLL_TIMEOUT_ATTR() { 0x0003 }
+private getCHECK_IN_INTERVAL_ATTR() { 0x0000 }
 
 def installed() {
     sendEvent(name: "sound", value: "not detected", displayed: false)
@@ -108,7 +114,7 @@ private Map parseAttrMessage(description) {
         } else {
             log.warn "TEMP REPORTING CONFIG FAILED - error code: ${descMap.data[0]}"
         }
-    } else if(descMap.clusterInt == 0x0020 && descMap.commandInt == 0x00) {
+    } else if(descMap.clusterInt == POLL_CONTROL_CLUSTER && descMap.commandInt == ZCLMessage.READ_ATTRIBUTE_CMD) {
         log.debug "Check in interval command received!"
         sendEvent(name: "checkInterval", value: 60 * 60, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     } else if (map.name == "temperature") {
@@ -148,13 +154,10 @@ private Map getSoundDetectionResult(value) {
 }
 
 def ping() {
-    log.debug "Ping call"
-    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-            zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)
+    refresh()
 }
 
 def refresh() {
-    log.debug "Refresh call"
     return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
             zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)
 }
@@ -165,9 +168,9 @@ def configure() {
     sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     //send zone enroll response, configure short and long poll, fast poll timeout and check in interval
-    def enrollCmds = (zigbee.command(0x0020, 0x02, "B0040000") + zigbee.command(0x0020, 0x03, "0200") +
-            zigbee.writeAttribute(0x0020, 0x0003, 0x21, 0x0028) + zigbee.writeAttribute(0x0020, 0x0000, 0x23, 0x00001950))
+    def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, ZCLMessage.WRITE_ATTRIBUTE_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, 0x03, "0200") +
+            zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
 
     //send enroll commands, configures battery reporting to happen every 5-27 minutes, create binding for check in attribute so check ins will occur
-    return zigbee.enrollResponse() + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(0x0020, 0x0000, 0x23, 0, 3600, null) + refresh() + enrollCmds
+    return zigbee.enrollResponse() + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + refresh() + enrollCmds
 }
