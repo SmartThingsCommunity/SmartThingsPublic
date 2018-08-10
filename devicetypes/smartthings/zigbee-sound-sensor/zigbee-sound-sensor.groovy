@@ -61,6 +61,8 @@ metadata {
 private getPOLL_CONTROL_CLUSTER() { 0x0020 }
 private getFAST_POLL_TIMEOUT_ATTR() { 0x0003 }
 private getCHECK_IN_INTERVAL_ATTR() { 0x0000 }
+private getBATTERY_VOLTAGE_VALUE() { 0x0020 }
+private getTEMPERATURE_MEASURE_VALUE() { 0x0000 }
 
 def installed() {
     sendEvent(name: "sound", value: "not detected", displayed: false)
@@ -158,8 +160,8 @@ def ping() {
 }
 
 def refresh() {
-    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-            zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)
+    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE) +
+            zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURE_VALUE)
 }
 
 def configure() {
