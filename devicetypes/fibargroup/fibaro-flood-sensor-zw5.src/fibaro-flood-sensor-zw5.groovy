@@ -444,7 +444,7 @@ private encap(Map encapMap) {
 private encap(physicalgraph.zwave.Command cmd) {
 	def zwInfo = zwaveInfo
 
-	if (zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))) {
+	if (zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
 		log.debug "securely sending $cmd"
 		secEncap(cmd)
 	} else if (zwInfo.cc.contains("56")) {

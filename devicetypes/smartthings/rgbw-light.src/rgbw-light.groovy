@@ -214,7 +214,7 @@ private command(physicalgraph.zwave.Command cmd) {
 	def zwInfo = zwaveInfo
 
 	if ((zwInfo?.zw == null && state.sec != 0) ||
-		(zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		(zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
 		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {

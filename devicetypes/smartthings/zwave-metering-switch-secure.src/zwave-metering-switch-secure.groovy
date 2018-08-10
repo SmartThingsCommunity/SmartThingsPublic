@@ -298,7 +298,7 @@ private encap(physicalgraph.zwave.Command cmd) {
 	def secureClasses = [0x25, 0x5A, 0x70, 0x85, 0x8E]
 
 	if ((zwInfo?.zw == null && state.sec != 0 && secureClasses.find{ it == cmd.commandClassId }) ||
-		(zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		(zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		crc16(cmd)
