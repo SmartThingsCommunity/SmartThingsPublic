@@ -142,18 +142,40 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	result
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+	def result = []
+
+	if (cmd.groupingIdentifier == 1) {
+		if (cmd.nodeId.any { it == zwaveHubNodeId }) {
+			state.group1Assoc = true
+			result << createEvent(descriptionText: "$device.displayName is associated in group ${cmd.groupingIdentifier}", isStateChange: false)
+		} else {
+			result << createEvent(descriptionText: "Associating $device.displayName in group ${cmd.groupingIdentifier}", isStateChange: false)
+			result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
+		}
+	}
+	result << decrWakeUpRequestRefCount()
+
+	result
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
 
-	if (isEnerwave() && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
-		result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
+	incrWakeUpRequestRefCount(true)
+
+	if (isEnerwave() && !state.group1Assoc) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join, so check and re-send if needed
+		result << response(zwave.associationV1.associationGet())
+		incrWakeUpRequestRefCount()
 	}
 	if (!state.lastbat || (new Date().time) - state.lastbat > 53*60*60*1000) {
 		result << response(zwave.batteryV1.batteryGet())
-	} else {
-		result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		incrWakeUpRequestRefCount()
 	}
+
+	result << decrWakeUpRequestRefCount()
+
 	result
 }
 
@@ -167,7 +189,8 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.value = cmd.batteryLevel
 	}
 	state.lastbat = new Date().time
-	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
+
+	[createEvent(map), decrWakeUpRequestRefCount()]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
@@ -259,7 +282,6 @@ def initialPoll() {
 }
 
 private commands(commands, delay=200) {
-	log.info "sending commands: ${commands}"
 	delayBetween(commands.collect{ command(it) }, delay)
 }
 
@@ -275,4 +297,46 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private isEnerwave() {
 	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
+}
+
+/**
+ * Increment the ref count of requests made from WakeUpNotification.
+ *
+ * @param initial If set to true reset the ref count. Should only be set to true in the first call in
+ *                WakeUpNotification to avoid the chance that a WakeUpNotification arrived right before
+ *                we sent the first WakeUpNoMoreInformation (to which the device would promptly go back
+ *                to sleep and never receive nor respond to our second set of requests, leaving ref count > 0..
+ *
+ */
+private incrWakeUpRequestRefCount(Boolean initial = false) {
+	if (state.wakeUpRequestRefCount == null || initial) {
+		state.wakeUpRequestRefCount = 0
+	}
+
+	state.wakeUpRequestRefCount = state.wakeUpRequestRefCount + 1
+}
+
+/**
+ * Decrement the ref count of requests made from WakeUpNotification.
+ *
+ * @return This function will return a valid HubAction object containing either an empty action when
+ *         ref count > 0, or a valid HubAction containing a WakeUpNoMoreInformation when ref count < 1.
+ *
+ */
+private decrWakeUpRequestRefCount() {
+	def result = response("")
+
+	if (state.wakeUpRequestRefCount == null) {
+		state.wakeUpRequestRefCount = 0 // Uh oh, someone was naughty, but we guarentee a wakeUpNoMoreInfo if refCount < 1, so give them what they want
+	}
+
+	state.wakeUpRequestRefCount = state.wakeUpRequestRefCount - 1
+
+	if (state.wakeUpRequestRefCount < 1) {
+		state.wakeUpRequestRefCount = 0
+
+		result = response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	}
+
+	result
 }
