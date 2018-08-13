@@ -18,43 +18,44 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition(name: "Zigbee Sound Sensor", namespace: "smartthings", author: "Samsung SRPOL", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Sound_Sensor") {
-        capability "Battery"
-        capability "Configuration"
-        capability "Health Check"
-        capability "Refresh"
-        capability "Sensor"
-        capability "Sound Sensor"
+	definition(name: "Zigbee Sound Sensor", namespace: "smartthings", author: "Samsung SRPOL", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Sound_Sensor") {
+		capability "Battery"
+		capability "Configuration"
+		capability "Health Check"
+		capability "Refresh"
+		capability "Sensor"
+		capability "Sound Sensor"
+		capability "Temperature Measurement"
 
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "FFZB1-SM-ECO", deviceJoinName: "Ecolink Firefighter"
-    }
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "FFZB1-SM-ECO", deviceJoinName: "Ecolink Firefighter"
+	}
 
-    tiles(scale: 2) {
-        multiAttributeTile(name:"sound", type: "lighting", width: 6, height: 4) {
-            tileAttribute ("device.sound", key: "PRIMARY_CONTROL") {
-                attributeState("not detected", label:'${name}', icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
-                attributeState("detected", label:'${name}', icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
-            }
-        }
-        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "battery", label:'${currentValue}% battery', unit:""
-        }
-        valueTile("temperature", "device.temperature", width: 2, height: 2) {
-            state("temperature", label: '${currentValue}°',
-                    backgroundColors: [
-                            [value: 31, color: "#153591"],
-                            [value: 44, color: "#1e9cbb"],
-                            [value: 59, color: "#90d2a7"],
-                            [value: 74, color: "#44b621"],
-                            [value: 84, color: "#f1d801"],
-                            [value: 95, color: "#d04e00"],
-                            [value: 96, color: "#bc2323"]
-                    ])
-        }
+	tiles(scale: 2) {
+		multiAttributeTile(name:"sound", type: "lighting", width: 6, height: 4) {
+			tileAttribute ("device.sound", key: "PRIMARY_CONTROL") {
+				attributeState("not detected", label:'${name}', icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
+				attributeState("detected", label:'${name}', icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
+			}
+		}
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
+		}
+		valueTile("temperature", "device.temperature", width: 2, height: 2) {
+			state("temperature", label: '${currentValue}°',
+					backgroundColors: [
+							[value: 31, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+					])
+		}
 
-        main "sound"
-        details(["sound", "battery", "temperature"])
-    }
+		main "sound"
+		details(["sound", "battery", "temperature"])
+	}
 }
 
 private getPOLL_CONTROL_CLUSTER() { 0x0020 }
@@ -67,109 +68,112 @@ private getSET_SHORT_POLL_INTERVAL_CMD() { 0x03 }
 private getCHECK_IN_INTERVAL_CMD() { 0x00 }
 
 def installed() {
-    sendEvent(name: "sound", value: "not detected", displayed: false)
+	sendEvent(name: "sound", value: "not detected", displayed: false)
 }
 
 def parse(String description) {
-    def map = zigbee.getEvent(description)
+	def map = zigbee.getEvent(description)
 
-    if(!map) {
-        if(description?.startsWith('zone status')) {
-            map = parseIasMessage(description)
-        } else {
-            map = parseAttrMessage(description)
-        }
-    }
+	if(!map) {
+		if(description?.startsWith('zone status')) {
+			map = parseIasMessage(description)
+		} else {
+			map = parseAttrMessage(description)
+		}
+	} else if (map.name == "temperature") {
+		if (tempOffset) {
+			map.value = (int) map.value + (int) tempOffset
+		}
+		map.descriptionText = temperatureScale == 'C' ? '${device.displayName} was ${value}°C' : '${device.displayName} was ${value}°F'
+		map.translatable = true
+	}
 
-    def result = map ? createEvent(map) : [:]
+	def result = map ? createEvent(map) : [:]
 
-    if (description?.startsWith('enroll request')) {
-        def cmds = zigbee.enrollResponse()
-        log.debug "enroll response: ${cmds}"
-        result = cmds?.collect { new physicalgraph.device.HubAction(it)}
-    }
-    return result
+	if (description?.startsWith('enroll request')) {
+		def cmds = zigbee.enrollResponse()
+		log.debug "enroll response: ${cmds}"
+		result = cmds?.collect { new physicalgraph.device.HubAction(it)}
+	}
+	return result
 }
 
 private Map parseIasMessage(String description) {
-    ZoneStatus zs = zigbee.parseZoneStatus(description)
-    def result = [:]
-    if(zs.isAlarm1Set() || zs.isAlarm2Set()) {
-        result = getSoundDetectionResult("detected")
-    } else if(!zs.isTamperSet()) {
-        result = getSoundDetectionResult("not detected")
-    } else {
-        result = [displayed: true, descriptionText: "${device.displayName}'s case is opened"]
-    }
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	def result = [:]
+	if(zs.isAlarm1Set() || zs.isAlarm2Set()) {
+		result = getSoundDetectionResult("detected")
+	} else if(!zs.isTamperSet()) {
+		result = getSoundDetectionResult("not detected")
+	} else {
+		result = [displayed: true, descriptionText: "${device.displayName}'s case is opened"]
+	}
 
-    return result
+	return result
 }
 
 private Map parseAttrMessage(description) {
-    def descMap = zigbee.parseDescriptionAsMap(description)
-    def map = [:]
-    if(descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
-        map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-    } else if(descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
-        if (descMap.data[0] == "00") {
-            sendEvent(name: "checkInterval", value: 60 * 60, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-        } else {
-            log.warn "TEMP REPORTING CONFIG FAILED - error code: ${descMap.data[0]}"
-        }
-    } else if(descMap.clusterInt == POLL_CONTROL_CLUSTER && descMap.commandInt == CHECK_IN_INTERVAL_CMD) {
-        log.debug "Check in interval command received!"
-        sendEvent(name: "checkInterval", value: 60 * 60, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-    } else if (map.name == "temperature") {
-        if (tempOffset) {
-            map.value = (int) map.value + (int) tempOffset
-        }
-        map.descriptionText = temperatureScale == 'C' ? '${device.displayName} was ${value}°C' : '${device.displayName} was ${value}°F'
-        map.translatable = true
-    }
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	def map = [:]
+	if(descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
+		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+	} else if(descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
+		if (descMap.data[0] == "00") {
+			sendCheckIntervalEvent()
+		} else {
+			log.warn "TEMP REPORTING CONFIG FAILED - error code: ${descMap.data[0]}"
+		}
+	} else if(descMap.clusterInt == POLL_CONTROL_CLUSTER && descMap.commandInt == CHECK_IN_INTERVAL_CMD) {
+		sendCheckIntervalEvent()
+	}
 
-    return map
+	return map
 }
 
 private Map getBatteryPercentageResult(rawValue) {
-    def result = [:]
-    def volts = rawValue / 10
-    if (!(rawValue == 0 || rawValue == 255)) {
-        def minVolts = 2.2
-        def maxVolts = 3.0
-        def pct = (volts - minVolts) / (maxVolts - minVolts)
-        def roundedPct = Math.round(pct * 100)
-        if (roundedPct <= 0)
-            roundedPct = 1
-        result.value = Math.min(100, roundedPct)
-    }
-    result.name = 'battery'
-    result.translatable = true
-    result.descriptionText = "${device.displayName} battery was ${result.value}%"
-    return result
+	def result = [:]
+	def volts = rawValue / 10
+	if (!(rawValue == 0 || rawValue == 255)) {
+		def minVolts = 2.2
+		def maxVolts = 3.0
+		def pct = (volts - minVolts) / (maxVolts - minVolts)
+		def roundedPct = Math.round(pct * 100)
+		if (roundedPct <= 0)
+			roundedPct = 1
+		result.value = Math.min(100, roundedPct)
+	}
+	result.name = 'battery'
+	result.translatable = true
+	result.descriptionText = "${device.displayName} battery was ${result.value}%"
+	return result
 }
 
 private Map getSoundDetectionResult(value) {
-    def text = "Sound was ${value}"
-    def result = [name: "sound", value: value, descriptionText: text, displayed: true]
-    return result
+	def text = "Sound was ${value}"
+	def result = [name: "sound", value: value, descriptionText: text, displayed: true]
+	return result
+}
+
+private sendCheckIntervalEvent() {
+	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def ping() {
-    refresh()
+	refresh()
 }
 
 def refresh() {
-    return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE) +
-            zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURE_VALUE)
+	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE) +
+			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURE_VALUE)
 }
 
 def configure() {
-    sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendCheckIntervalEvent()
 
-    //send zone enroll response, configure short and long poll, fast poll timeout and check in interval
-    def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
-            zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
+	//send zone enroll response, configure short and long poll, fast poll timeout and check in interval
+	def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
+			zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
 
-    //send enroll commands, configures battery reporting to happen every 5-27 minutes, create binding for check in attribute so check ins will occur
-    return zigbee.enrollResponse() + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + refresh() + enrollCmds
+	//send enroll commands, configures battery reporting to happen every 5-27 minutes, create binding for check in attribute so check ins will occur
+	return zigbee.enrollResponse() + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + refresh() + enrollCmds
 }
