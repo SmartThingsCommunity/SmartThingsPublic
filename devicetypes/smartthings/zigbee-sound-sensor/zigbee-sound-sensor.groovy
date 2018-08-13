@@ -15,7 +15,6 @@
  */
 
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
-import physicalgraph.zigbee.zcl.ZCLMessage
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -63,6 +62,9 @@ private getFAST_POLL_TIMEOUT_ATTR() { 0x0003 }
 private getCHECK_IN_INTERVAL_ATTR() { 0x0000 }
 private getBATTERY_VOLTAGE_VALUE() { 0x0020 }
 private getTEMPERATURE_MEASURE_VALUE() { 0x0000 }
+private getSET_LONG_POLL_INTERVAL_CMD() { 0x02 }
+private getSET_SHORT_POLL_INTERVAL_CMD() { 0x03 }
+private getCHECK_IN_INTERVAL_CMD() { 0x00 }
 
 def installed() {
     sendEvent(name: "sound", value: "not detected", displayed: false)
@@ -114,7 +116,7 @@ private Map parseAttrMessage(description) {
         } else {
             log.warn "TEMP REPORTING CONFIG FAILED - error code: ${descMap.data[0]}"
         }
-    } else if(descMap.clusterInt == POLL_CONTROL_CLUSTER && descMap.commandInt == ZCLMessage.READ_ATTRIBUTE_CMD) {
+    } else if(descMap.clusterInt == POLL_CONTROL_CLUSTER && descMap.commandInt == CHECK_IN_INTERVAL_CMD) {
         log.debug "Check in interval command received!"
         sendEvent(name: "checkInterval", value: 60 * 60, displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     } else if (map.name == "temperature") {
@@ -165,7 +167,7 @@ def configure() {
     sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     //send zone enroll response, configure short and long poll, fast poll timeout and check in interval
-    def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, ZCLMessage.WRITE_ATTRIBUTE_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, 0x03, "0200") +
+    def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
             zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
 
     //send enroll commands, configures battery reporting to happen every 5-27 minutes, create binding for check in attribute so check ins will occur
