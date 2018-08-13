@@ -18,7 +18,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Zigbee Sound Sensor", namespace: "smartthings", author: "Samsung SRPOL", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Sound_Sensor") {
+	definition(name: "Zigbee Sound Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Sound_Sensor") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
@@ -69,6 +69,7 @@ private getCHECK_IN_INTERVAL_CMD() { 0x00 }
 
 def installed() {
 	sendEvent(name: "sound", value: "not detected", displayed: false)
+	refresh()
 }
 
 def parse(String description) {
@@ -138,8 +139,9 @@ private Map getBatteryPercentageResult(rawValue) {
 		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		def roundedPct = Math.round(pct * 100)
-		if (roundedPct <= 0)
+		if (roundedPct <= 0) {
 			roundedPct = 1
+		}
 		result.value = Math.min(100, roundedPct)
 	}
 	result.name = 'battery'
@@ -174,6 +176,6 @@ def configure() {
 	def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
 			zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
 
-	//send enroll commands, configures battery reporting to happen every 5-27 minutes, create binding for check in attribute so check ins will occur
-	return zigbee.enrollResponse() + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + refresh() + enrollCmds
+	//send enroll commands, configures battery reporting to happen every 30 minutes, create binding for check in attribute so check ins will occur
+	return refresh() + zigbee.enrollResponse() + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + enrollCmds
 }
