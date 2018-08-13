@@ -19,7 +19,7 @@
  *
  */
 metadata {
-	definition(name: "Inovelli 2-Channel Smart Plug", namespace: "erocm123", author: "Eric Maycock") {
+	definition(name: "Inovelli 2-Channel Smart Plug", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-switch") {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"
