@@ -52,3 +52,7 @@ def reset() {
 def refresh() {
 	parent.childRefresh()
 }
+
+def ping() {
+	parent.childRefresh()
+}
