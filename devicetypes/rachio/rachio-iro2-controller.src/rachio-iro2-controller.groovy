@@ -13,7 +13,6 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *    Modified: 8-13-2018
  */
 
 import java.text.SimpleDateFormat
@@ -189,7 +188,7 @@ def verifyDataAttr() {
 void installed() {
     initialize()
     state.isInstalled = true
-    sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
 }
 
 void updated() {
@@ -363,7 +362,7 @@ def rainDelayValEvent(val) {
 
 def setZoneWaterTime(timeVal) {
     def newVal = timeVal ? timeVal.toInteger() : parent?.settings?.defaultZoneTime.toInteger()
-    log.debug("Manual Zone Water Time (${newVal}) | Previous: (${curState})")
+    log.debug("Manual Zone Water Time (${newVal})")
     sendEvent(name: 'curZoneWaterTime', value: newVal, displayed: true)
 }
 
@@ -445,7 +444,6 @@ def doSetRainDelay() {
     def value = device.latestValue('rainDelay')
     log.debug "Set Rain Delay ${value}"
     if (parent?.setRainDelay(this, state.deviceId, value)) {
-        sendEvent(name: 'rainDelay', value: value)
         setRainDelayString(value)
     } else {
         markOffLine()
