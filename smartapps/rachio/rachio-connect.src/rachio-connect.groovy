@@ -13,7 +13,6 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *    Modified: 08-13-2018
  */
 
 import groovy.json.*
@@ -979,7 +978,6 @@ def pollChildren(childDev, devData) {
             def devStatus = devData
             def rainDelay = getCurrentRainDelay(devStatus)
             def status = devStatus?.status
-            def onlStatus = status?.toString()?.toLowerCase() == "online" ? "online" : "offline"
             if(!childDev.getDataValue("HealthEnrolled")) { childDev.updated() }
             Boolean pauseInStandby = settings.pauseInStandby == false ? false : true
             Boolean inStandby = devData.on.toString() != "true" ? true : false
@@ -1284,10 +1282,8 @@ def getControlLblById(id) {
 def getCurrentRainDelay(res) {
     //log.debug("getCurrentRainDelay($devId)...")
     // convert to configured rain delay to days.
-    // as it seems rainDelayStartDate is never returned in the API response and it seems the value doesn't change using hardcoded default value of
-    // 1534193839000 as (1534287439000 - 1534193839000)/(26*60*60*1000) = 1
     //def ret =  (res?.rainDelayExpirationDate || res?.rainDelayStartDate) ? (res?.rainDelayExpirationDate - res?.rainDelayStartDate)/(26*60*60*1000) : 0
-    def rainDelayStartDate = 1534193839000
+    def rainDelayStartDate = res?.rainDelayStartDate ?: (new Date().getTime())
     def ret =  (res?.rainDelayExpirationDate) ? (res?.rainDelayExpirationDate - rainDelayStartDate)/(26*60*60*1000) : 0
     def value = (long) Math.floor(ret + 0.5d)
     return value
