@@ -525,7 +525,8 @@ def pollResponse(response, data) {
 		// Device-Watch relies on the Logitech Harmony Cloud to get the Device state.
 		activities.each { activity ->
 			if ("${activity.deviceNetworkId}".contains("harmony-${it.key}")) {
-				activity.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
+				//C2C-4 Temporarily disabiling device health for Logitech.
+				activity.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
 			}
 		}
 		if (response.status == 401) { // token is expired
