@@ -897,8 +897,6 @@ def addRemoveDevices(uninst=false) {
         return true
     } catch (physicalgraph.exception.ConflictException ex) {
         log.warn "Error: Can't Delete App because Devices are still in use in other Apps, Routines, or Rules.  Please double check before trying again."
-    } catch (physicalgraph.app.exception.UnknownDeviceTypeException ex) {
-        log.warn "Error: Device Handlers are likely Missing or Not Published.  Please verify all device handlers are present before continuing."
     } catch (ex) {
         log.error "addRemoveDevices Exception: ${ex}"
         return false
