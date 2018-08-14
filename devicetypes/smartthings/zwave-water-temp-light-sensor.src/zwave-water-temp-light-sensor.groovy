@@ -125,7 +125,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	if (cmd.notificationType == 0x05) {
 		switch (cmd.event) {
 			case 0x00:
-				if (cmd.eventParametersLength && cmd.eventParameter.size() && eventParameter[0] > 0x02) {
+				if (cmd.eventParametersLength && cmd.eventParameter.size() && cmd.eventParameter[0] > 0x02) {
 					result << createEvent(descriptionText: "Water alarm cleared", isStateChange: true)
 				} else {
 					result << createEvent(name: "water", value: "dry")
