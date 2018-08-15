@@ -126,20 +126,20 @@ def initialize() {
 
 def parse(String description)
 {
-	def result = null
+	def result = []
 	if (description == "updated") {
 	} else {
 		def zwcmd = zwave.parse(description, [0x42:1, 0x43:2, 0x31: 3])
 		if (zwcmd) {
-			result = zwaveEvent(zwcmd)
+			result << zwaveEvent(zwcmd)
+			if (!state.lastbat || (new Date().time) - state.lastbat > 53 * 60 * 60 * 1000) {
+				result << response(zwave.batteryV1.batteryGet())
+			}
 		} else {
 			log.debug "$device.displayName couldn't parse $description"
 		}
 	}
-	if (!result) {
-		return []
-	}
-	return [result]
+	return result
 }
 
 // Event Generation
@@ -300,6 +300,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.value = cmd.batteryLevel
 	}
 
+	state.lastbat = new Date().time
 	log.debug "battery - ${map.value}${map.unit}"
 	createEvent(map)
 }
