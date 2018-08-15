@@ -86,11 +86,11 @@ metadata {
     tiles (scale: 2){
         multiAttributeTile(name: "valveTile", type: "generic", width: 6, height: 4) {
             tileAttribute("device.watering", key: "PRIMARY_CONTROL" ) {
-                attributeState "on", label: 'Watering', action: "close", icon: "st.valves.water.open", backgroundColor: "#00a0dc", nextState: "updating"
                 attributeState "off", label: 'Off', action: "open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"updating"
                 attributeState "offline", label: 'Offline', icon: "st.valves.water.closed", backgroundColor: "#cccccc"
                 attributeState "disabled", label: 'Disabled', icon: "st.valves.water.closed", backgroundColor: "#cccccc"
                 attributeState "standby", label: 'Standby Mode', icon: "st.valves.water.closed", backgroundColor: "#cccccc"
+                attributeState "on", label: 'Watering', action: "close", icon: "st.valves.water.open", backgroundColor: "#00a0dc", nextState: "updating"
                 attributeState "updating", label:"Working"
             }
             tileAttribute("device.zoneRunStatus", key: "SECONDARY_CONTROL") {

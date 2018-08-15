@@ -1281,9 +1281,12 @@ def getCurrentRainDelay(res) {
     //log.debug("getCurrentRainDelay($devId)...")
     // convert to configured rain delay to days.
     //def ret =  (res?.rainDelayExpirationDate || res?.rainDelayStartDate) ? (res?.rainDelayExpirationDate - res?.rainDelayStartDate)/(26*60*60*1000) : 0
+    def value =  0
     def rainDelayStartDate = res?.rainDelayStartDate ?: (new Date().getTime())
-    def ret =  (res?.rainDelayExpirationDate) ? (res?.rainDelayExpirationDate - rainDelayStartDate)/(26*60*60*1000) : 0
-    def value = (long) Math.floor(ret + 0.5d)
+    if(res?.rainDelayExpirationDate && (rainDelayStartDate < res.rainDelayExpirationDate)) {
+        value = (res.rainDelayExpirationDate - rainDelayStartDate)/(26*60*60*1000)
+        value = (long) Math.floor(value + 0.5d)
+    }
     return value
 }
 
