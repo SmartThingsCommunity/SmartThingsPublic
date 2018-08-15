@@ -17,6 +17,7 @@
 import groovy.json.JsonOutput
 metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
+		capability "Health Check"
 		capability "Sensor"
 		capability "Temperature Measurement"
 		capability "Motion Sensor"
