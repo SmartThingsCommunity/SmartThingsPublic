@@ -79,7 +79,6 @@ def installed() {
 }
 
 def parse(String description) {
-	log.debug "Description: ${description}"
 	def map = zigbee.getEvent(description)
 	if(!map) {
 		if(description?.startsWith('zone status')) {
@@ -102,7 +101,6 @@ def parse(String description) {
 		def cmds = zigbee.enrollResponse()
 		result = cmds?.collect { new physicalgraph.device.HubAction(it)}
 	}
-	log.debug "Parse returned: ${result}"
 	return result
 }
 
@@ -146,7 +144,6 @@ private freezeStatus(temperature) {
 }
 
 private Map getBatteryPercentageResult(rawValue) {
-	log.debug "Battery rawValue: ${rawValue}"
 	def result = [:]
 	def volts = rawValue / 10
 	if(!(rawValue == 0 || rawValue == 255)) {
@@ -159,7 +156,7 @@ private Map getBatteryPercentageResult(rawValue) {
 		}
 		result.value = Math.min(100, roundedPct)
 	} else if(rawValue == 0) {
-		result.value == 100
+		result.value = 100
 	}
 	result.name = 'battery'
 	result.translatable = true
