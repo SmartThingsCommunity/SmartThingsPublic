@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Sound Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Sound Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 		capability "Sound Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -38,13 +38,13 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendCheckIntervalEvent()
 	sendEvent(name: "sound", value: "not detected", displayed: false, isStateChanged: true)
 	response(zwave.batteryV1.batteryGet().format())
 }
 
 def updated() {
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendCheckIntervalEvent()
 }
 
 def parse(String description) {
@@ -104,5 +104,10 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	log.warn "Unhandled command: ${cmd}"
 	[:]
+}
+
+private sendCheckIntervalEvent() {
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
