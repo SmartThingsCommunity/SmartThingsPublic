@@ -177,7 +177,16 @@ def test() {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	def zwInfo = zwaveInfo
+
+	// This model is explicitly secure, so if it paired "the old way" and zwaveInfo doesn't exist then encapsulate
+	if (!zwInfo || (zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
+		log.debug "securely sending $cmd"
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		log.debug "unsecurely sending $cmd"
+		cmd.format()
+	}
 }
 
 /**

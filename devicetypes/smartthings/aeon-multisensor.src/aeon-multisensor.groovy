@@ -193,7 +193,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	secure(zwave.batteryV1.batteryGet())
+	[zwave.batteryV1.batteryGet().format()]
 }
 
 def configure() {

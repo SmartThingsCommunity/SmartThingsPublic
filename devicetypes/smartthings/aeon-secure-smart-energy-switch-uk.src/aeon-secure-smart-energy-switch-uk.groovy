@@ -206,7 +206,16 @@ def updated() {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	def zwInfo = zwaveInfo
+
+	// For now this DTH is explicitly secure, so if device paired "the old way" and no zwaveInfo value exists, encapsulate
+	if (!zwInfo || (zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
+		log.debug "securely sending $cmd"
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		log.debug "unsecurely sending $cmd"
+		cmd.format()
+	}
 }
 
 private secureSequence(commands, delay=200) {

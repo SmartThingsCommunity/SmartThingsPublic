@@ -353,7 +353,7 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 		map.descriptionText = "Unlocked"
 		if (state.assoc != zwaveHubNodeId) {
 			result << response(secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)))
-			result << response(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId))
+			result << response(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId)) // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 			result << response(secure(zwave.associationV1.associationGet(groupingIdentifier:1)))
 		}
 	}
@@ -934,12 +934,12 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
 		result << createEvent(descriptionText: "Is associated")
 		state.assoc = zwaveHubNodeId
 		if (cmd.groupingIdentifier == 2) {
-			result << response(zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId))
+			result << response(zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId)) // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 		}
 	} else if (cmd.groupingIdentifier == 1) {
 		result << response(secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)))
 	} else if (cmd.groupingIdentifier == 2) {
-		result << response(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId))
+		result << response(zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId)) // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 	}
 	result
 }
@@ -979,9 +979,9 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	// The old Schlage locks use group 1 for basic control - we don't want that, so unsubscribe from group 1
 	def result = [ createEvent(name: "lock", value: cmd.value ? "unlocked" : "locked") ]
 	def cmds = [
-			zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId).format(),
+			zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:zwaveHubNodeId).format(), // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 			"delay 1200",
-			zwave.associationV1.associationGet(groupingIdentifier:2).format()
+			zwave.associationV1.associationGet(groupingIdentifier:2).format() // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 	]
 	[result, response(cmds)]
 }
@@ -1153,14 +1153,14 @@ def refresh() {
 	def cmds = secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()])
 	if (!state.associationQuery) {
 		cmds << "delay 4200"
-		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()  // old Schlage locks use group 2 and don't secure the Association CC
+		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()  // old Schlage locks use group 2 and don't secure the Association CC // TODO: wrap this in a mfr check
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
 		state.associationQuery = now()
 	} else if (now() - state.associationQuery.toLong() > 9000) {
 		cmds << "delay 6000"
-		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
+		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format() // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 		cmds << secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()
+		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format() // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
 		state.associationQuery = now()
 	}
@@ -1185,9 +1185,9 @@ def poll() {
 		state.lastbatt = now()  //inside-214
 	}
 	if (state.assoc != zwaveHubNodeId && secondsPast(state.associationQuery, 19 * 60)) {
-		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format()
+		cmds << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:zwaveHubNodeId).format() // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 		cmds << secure(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
-		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format()
+		cmds << zwave.associationV1.associationGet(groupingIdentifier:2).format() // TODO: if this is for a specific model wrap this in a mfr check or use secure() which will auto-magically do that
 		cmds << "delay 6000"
 		cmds << secure(zwave.associationV1.associationGet(groupingIdentifier:1))
 		cmds << "delay 6000"
@@ -1198,9 +1198,9 @@ def poll() {
 			cmds << secure(zwave.doorLockV1.doorLockOperationGet())
 			state.lastPoll = now()
 		} else if (!state.MSR) {
-			cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
+			cmds << secure(zwave.manufacturerSpecificV1.manufacturerSpecificGet())
 		} else if (!state.fw) {
-			cmds << zwave.versionV1.versionGet().format()
+			cmds << secure(zwave.versionV1.versionGet())
 		} else if (!device.currentValue("maxCodes")) {
 			state.pollCode = 1
 			cmds << secure(zwave.userCodeV1.usersNumberGet())
@@ -1410,10 +1410,19 @@ def deleteCode(codeID) {
  *
  * @param cmd: The command to be encapsulated
  *
- * @returns ret: The encapsulated command
+ * @returns ret: The encapsulated command if supported by the device
  */
 private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	def zwInfo = zwaveInfo
+
+	if ((zwInfo?.zw == null && state.sec != 0) ||
+		(zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
+		log.debug "securely sending $cmd"
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		log.debug "unsecurely sending $cmd"
+		cmd.format()
+	}
 }
 
 /**

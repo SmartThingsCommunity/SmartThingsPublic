@@ -317,10 +317,15 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	if (!isSecured()) {  // default to secure
-		cmd.format()
-	} else {
+	def zwInfo = zwaveInfo
+
+	if ((zwInfo?.zw == null && state.sec != 0) ||
+		(zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
+		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		log.debug "unsecurely sending $cmd"
+		cmd.format()
 	}
 }
 
@@ -329,9 +334,5 @@ private secureSequence(commands, delay=200) {
 }
 
 private isSecured() {
-	if (zwaveInfo && zwaveInfo.zw) {
-		return zwaveInfo.zw.endsWith("s")
-	} else {
-		return state.sec == 1
-	}
+	return (zwaveInfo?.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")
 }

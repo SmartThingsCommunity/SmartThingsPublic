@@ -294,27 +294,13 @@ private encapSequence(commands, delay=200) {
 }
 
 private encap(physicalgraph.zwave.Command cmd) {
+	def zwInfo = zwaveInfo
 	def secureClasses = [0x25, 0x5A, 0x70, 0x85, 0x8E]
 
-	//todo: check if secure inclusion was successful
-	//if not do not send security-encapsulated command
-	if (secureClasses.find{ it == cmd.commandClassId }) {
-		secure(cmd)
+	if ((zwInfo?.zw == null && state.sec != 0 && secureClasses.find{ it == cmd.commandClassId }) ||
+		(zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		crc16(cmd)
 	}
-}
-
-private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec != 0) {
-		log.debug "securely sending $cmd"
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
-		log.debug "unsecurely sending $cmd"
-		cmd.format()
-	}
-}
-
-private commands(commands, delay=200) {
-	delayBetween(commands.collect{ command(it) }, delay)
 }

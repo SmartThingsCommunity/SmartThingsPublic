@@ -128,7 +128,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			result << sensorValueEvent(0)
 		} else if (cmd.event == 0x03) {
 			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName covering was removed", isStateChange: true)
-			result << response(zwave.batteryV1.batteryGet())
+			result << response(command(zwave.batteryV1.batteryGet()))
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
 		}
@@ -147,12 +147,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
 
 	if (isEnerwave() && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
-		result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
+		result << response(command(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)))
 	}
 	if (!state.lastbat || (new Date().time) - state.lastbat > 53*60*60*1000) {
-		result << response(zwave.batteryV1.batteryGet())
+		result << response(command(zwave.batteryV1.batteryGet()))
 	} else {
-		result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		result << response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))
 	}
 	result
 }
@@ -167,7 +167,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.value = cmd.batteryLevel
 	}
 	state.lastbat = new Date().time
-	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
+	[createEvent(map), response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd)
@@ -255,7 +255,7 @@ def initialPoll() {
 	}
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
-	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+	commands(request) + ["delay 20000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
 
 private commands(commands, delay=200) {
@@ -264,9 +264,13 @@ private commands(commands, delay=200) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo && zwaveInfo.zw?.contains("s")) {
+	def zwInfo = zwaveInfo
+
+	if ((zwInfo?.zw == null && state.sec != 0) ||
+		(zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
+		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else if (zwaveInfo && zwaveInfo.cc?.contains("56")){
+	} else if (zwInfo && zwInfo.cc?.contains("56")) {
 		zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 	} else {
 		cmd.format()

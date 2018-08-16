@@ -91,12 +91,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	results << createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56 * 60 * 60 * 1000) {
 		results << response([
-				zwave.batteryV1.batteryGet().format(),
+				command(zwave.batteryV1.batteryGet()),
 				"delay 2000",
-				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+				command(zwave.wakeUpV1.wakeUpNoMoreInformation())
 		])
 	} else {
-		results << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		results << response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))
 	}
 	return results
 }
@@ -158,9 +158,13 @@ def createHeatEvents(name) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo?.zw?.endsWith("s")) {
+	def zwInfo = zwaveInfo
+
+	if (zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
+		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
+		log.debug "unsecurely sending $cmd"
 		cmd.format()
 	}
 }

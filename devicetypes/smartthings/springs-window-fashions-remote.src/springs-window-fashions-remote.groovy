@@ -44,8 +44,8 @@ metadata {
 }
 
 def installed() {
-    if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
-        response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+    if (zwaveInfo.zw && (zwaveInfo.cc?.contains("84") || zwaveInfo.sec?.contains("84"))) {
+        response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))
     }
 }
 
@@ -68,7 +68,7 @@ def parse(String description) {
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
     def result = []
     result << createEvent(descriptionText: "${device.displayName} woke up", isStateChange: true)
-    result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+    result << response(command(zwave.wakeUpV1.wakeUpNoMoreInformation()))
     result
 }
 
@@ -99,17 +99,14 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-    if (deviceIsSecure) {
-        zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-    } else {
-        cmd.format()
-    }
-}
+	def zwInfo = zwaveInfo
 
-private getDeviceIsSecure() {
-    if (zwaveInfo && zwaveInfo.zw) {
-        return zwaveInfo.zw.endsWith("s")
-    } else {
-        return state.sec ? true : false
-    }
+	if ((zwInfo?.zw == null && state.sec != 0) ||
+		(zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
+		log.debug "securely sending $cmd"
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		log.debug "unsecurely sending $cmd"
+		cmd.format()
+	}
 }
