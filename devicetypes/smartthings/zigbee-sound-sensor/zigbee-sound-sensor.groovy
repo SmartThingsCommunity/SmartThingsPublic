@@ -18,7 +18,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Zigbee Sound Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Sound_Sensor") {
+	definition(name: "Zigbee Sound Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
@@ -85,7 +85,7 @@ def parse(String description) {
 		if (tempOffset) {
 			map.value = (int) map.value + (int) tempOffset
 		}
-		map.descriptionText = temperatureScale == 'C' ? '${device.displayName} was ${value}°C' : '${device.displayName} was ${value}°F'
+		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${value}°C" : "${device.displayName} was ${value}°F"
 		map.translatable = true
 	}
 
