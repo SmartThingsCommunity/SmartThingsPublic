@@ -46,7 +46,7 @@ metadata {
 
 def installed() {
 	// device checks in every 2.5 minutes, but we'll give it the same checkinterval as our other devices
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
 }
 
 def parse(String description) {
