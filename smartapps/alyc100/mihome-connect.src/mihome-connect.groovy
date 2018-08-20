@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY
+ *	08/08/2018	2.6b-	added house device type for monitors
  *	07/08/2018	2.6a-	added double light device type
  *	31/07/2018	2.6 - 	TLS added to api**'s toget round securty issue
  *				2.5	-	Updated to remove all timings less device name (every 3 hours) in line with DH updates - code cleans to do
