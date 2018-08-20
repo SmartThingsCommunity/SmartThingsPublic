@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Aeon LED Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb") {
+	definition (name: "Aeon LED Bulb Gen 6", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb") {
 		capability "Switch Level"
 		capability "Color Control"
 		capability "Color Temperature"
@@ -32,8 +32,8 @@ metadata {
 		fingerprint inClusters: "0x26,0x33,0x98"
 		fingerprint deviceId: "0x11", inClusters: "0x98,0x33"
 		fingerprint deviceId: "0x1102", inClusters: "0x98"
-		fingerprint mfr: "0371", prod: "0103", model: "0002", deviceJoinName: "Aeotec LED Bulb" //US
-		fingerprint mfr: "0371", prod: "0003", model: "0002", deviceJoinName: "Aeotec LED Bulb" //EU
+		fingerprint mfr: "0371", prod: "0103", model: "0002", deviceJoinName: "Aeotec LED Bulb - Gen 6" //US
+		fingerprint mfr: "0371", prod: "0003", model: "0002", deviceJoinName: "Aeotec LED Bulb - Gen 6" //EU
         fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
 		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
 	}
