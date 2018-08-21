@@ -1,5 +1,5 @@
 /**
- *  Copyright 2015 SmartThings
+ *  Copyright 2018 Samsung
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Aeon LED Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb") {
+	definition (name: "Aeon LED Bulb Gen 6", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb") {
 		capability "Switch Level"
 		capability "Color Control"
 		capability "Color Temperature"
@@ -29,19 +29,19 @@ metadata {
 
 		command "reset"
 
-		fingerprint inClusters: "0x26,0x33,0x98"
-		fingerprint deviceId: "0x11", inClusters: "0x98,0x33"
-		fingerprint deviceId: "0x1102", inClusters: "0x98"
+		//fingerprint inClusters: "0x26,0x33,0x98"
+		//fingerprint deviceId: "0x11", inClusters: "0x98,0x33"
+		//fingerprint deviceId: "0x1102", inClusters: "0x98"
 		fingerprint mfr: "0371", prod: "0103", model: "0002", deviceJoinName: "Aeon LED Bulb" //US
 		fingerprint mfr: "0371", prod: "0003", model: "0002", deviceJoinName: "Aeon LED Bulb" //EU
-        fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
-		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
+		//fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
+		//fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
 	}
 
 	simulator {
 	}
 
-    tiles(scale: 2) {
+	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 1, height: 1, canChangeIcon: true) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState("on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff")
@@ -148,18 +148,16 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[linkText: linkText, descriptionText: "$linkText: $cmd", displayed: false]
 }
 
+def buildOffOnEvent(cmd){
+	[zwave.basicV1.basicSet(value: cmd),zwave.switchMultilevelV3.switchMultilevelGet()]
+}
+
 def on() {
-	commands([
-		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1000)
+	commands(buildOffOnEvent(0xFF), 1000)
 }
 
 def off() {
-	commands([
-		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1000)
+	commands(buildOffOnEvent(0x00), 1000)
 }
 
 def refresh() {
@@ -236,10 +234,21 @@ def reset() {
 	setColorTemperature(0)
 }
 
+private secEncap(physicalgraph.zwave.Command cmd) {
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crcEncap(physicalgraph.zwave.Command cmd) {
+	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec != 0) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	if (zwaveInfo.zw.contains("s") || state.sec != 0) {
+		secEncap(cmd)
+	} else if (zwaveInfo.cc.contains("56")){
+		crcEncap(cmd)
 	} else {
+		logging("${device.displayName} - no encapsulation supported for command: $cmd","info")
 		cmd.format()
 	}
 }
@@ -248,26 +257,6 @@ private commands(commands, delay=200) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
 
-def rgbToHSV(red, green, blue) {
-	float r = red / 255f
-	float g = green / 255f
-	float b = blue / 255f
-	float max = [r, g, b].max()
-	float delta = max - [r, g, b].min()
-	def hue = 13
-	def saturation = 0
-	if (max && delta) {
-		saturation = 100 * delta / max
-		if (r == max) {
-			hue = ((g - b) / delta) * 100 / 6
-		} else if (g == max) {
-			hue = (2 + (b - r) / delta) * 100 / 6
-		} else {
-			hue = (4 + (r - g) / delta) * 100 / 6
-		}
-	}
-	[hue: hue, saturation: saturation, value: max * 100]
-}
 
 def huesatToRGB(hue, sat) {
 	while(hue >= 100) hue -= 100
