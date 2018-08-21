@@ -248,7 +248,6 @@ private command(physicalgraph.zwave.Command cmd) {
 	} else if (zwaveInfo.cc.contains("56")){
 		crcEncap(cmd)
 	} else {
-		logging("${device.displayName} - no encapsulation supported for command: $cmd","info")
 		cmd.format()
 	}
 }
