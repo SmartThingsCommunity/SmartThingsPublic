@@ -19,7 +19,7 @@
  */
  
 metadata {
-    definition (name: "Inovelli 1-Channel Smart Plug NZW36 w/Scene", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Inovelli 1-Channel Smart Plug NZW36 w/Scene", namespace: "erocm123", author: "Eric Maycock", vid: "generic-switch") {
         capability "Switch"
         capability "Refresh"
         capability "Polling"

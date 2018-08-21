@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Inovelli Dimmer Smart Plug NZW39", namespace: "erocm123", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+	definition (name: "Inovelli Dimmer Smart Plug NZW39", namespace: "erocm123", author: "SmartThings", ocfDeviceType: "oic.d.light", vid: "generic-dimmer") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Switch"

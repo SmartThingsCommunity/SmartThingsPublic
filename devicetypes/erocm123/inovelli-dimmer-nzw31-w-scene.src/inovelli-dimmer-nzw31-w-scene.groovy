@@ -38,7 +38,7 @@
  */
  
 metadata {
-    definition (name: "Inovelli Dimmer NZW31 w/Scene", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Inovelli Dimmer NZW31 w/Scene", namespace: "erocm123", author: "Eric Maycock", vid: "generic-dimmer") {
         capability "Switch"
         capability "Refresh"
         capability "Polling"

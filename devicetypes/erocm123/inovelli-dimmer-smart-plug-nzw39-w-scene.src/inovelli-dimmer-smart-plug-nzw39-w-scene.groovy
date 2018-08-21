@@ -19,7 +19,7 @@
  */
  
 metadata {
-    definition (name: "Inovelli Dimmer Smart Plug NZW39 w/Scene", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Inovelli Dimmer Smart Plug NZW39 w/Scene", namespace: "erocm123", author: "Eric Maycock", vid: "generic-dimmer") {
         capability "Switch"
         capability "Refresh"
         capability "Polling"

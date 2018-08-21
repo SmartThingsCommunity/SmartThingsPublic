@@ -19,7 +19,7 @@
  */
  
 metadata {
-    definition(name: "Inovelli 2-Channel Smart Plug NZW37 w/Scene", namespace: "erocm123", author: "Eric Maycock") {
+    definition(name: "Inovelli 2-Channel Smart Plug NZW37 w/Scene", namespace: "erocm123", author: "Eric Maycock", vid: "generic-switch") {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"

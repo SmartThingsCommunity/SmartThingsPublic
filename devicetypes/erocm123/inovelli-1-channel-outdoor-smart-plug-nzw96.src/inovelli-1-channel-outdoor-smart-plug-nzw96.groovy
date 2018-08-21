@@ -21,7 +21,7 @@
  */
  
 metadata {
-    definition (name: "Inovelli 1-Channel Outdoor Smart Plug NZW96", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Inovelli 1-Channel Outdoor Smart Plug NZW96", namespace: "erocm123", author: "Eric Maycock", vid: "generic-switch") {
         capability "Switch"
         capability "Refresh"
         capability "Polling"

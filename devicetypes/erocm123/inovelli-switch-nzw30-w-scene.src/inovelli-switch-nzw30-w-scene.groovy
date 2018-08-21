@@ -33,7 +33,7 @@
  */
  
 metadata {
-	definition (name: "Inovelli Switch NZW30 w/Scene", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Inovelli Switch NZW30 w/Scene", namespace: "erocm123", author: "Eric Maycock", vid: "generic-switch") {
 		capability "Switch"
 		capability "Refresh"
 		capability "Polling"
