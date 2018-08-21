@@ -87,9 +87,7 @@ def installed() {
 
 def parse(description) {
 	def result = null
-	if (description.startsWith("Err 106")) {
-		state.sec = 0
-	} else if (description != "updated") {
+	if (description != "updated") {
 		def cmd = zwave.parse(description, [0x20: 1, 0x26: 3, 0x70: 1, 0x33:3])
 		if (cmd) {
 			result = zwaveEvent(cmd)
@@ -130,7 +128,6 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x84: 1])
 	if (encapsulatedCommand) {
-		state.sec = 1
 		def result = zwaveEvent(encapsulatedCommand)
 		result = result.collect {
 			if (it instanceof physicalgraph.device.HubAction && !it.toString().startsWith("9881")) {
@@ -148,18 +145,16 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[linkText: linkText, descriptionText: "$linkText: $cmd", displayed: false]
 }
 
+def buildOffOnEvent(cmd){
+	[zwave.basicV1.basicSet(value: cmd),zwave.switchMultilevelV3.switchMultilevelGet()]
+}
+
 def on() {
-	commands([
-		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1000)
+	commands(buildOffOnEvent(0xFF), 1000)
 }
 
 def off() {
-	commands([
-		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1000)
+	commands(buildOffOnEvent(0x00), 1000)
 }
 
 def refresh() {
@@ -236,9 +231,19 @@ def reset() {
 	setColorTemperature(0)
 }
 
+private secEncap(physicalgraph.zwave.Command cmd) {
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crcEncap(physicalgraph.zwave.Command cmd) {
+	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec != 0) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	if (zwaveInfo.zw.contains("s")) {
+		secEncap(cmd)
+	} else if (zwaveInfo.cc.contains("56")){
+		crcEncap(cmd)
 	} else {
 		cmd.format()
 	}
@@ -248,26 +253,6 @@ private commands(commands, delay=200) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
 
-def rgbToHSV(red, green, blue) {
-	float r = red / 255f
-	float g = green / 255f
-	float b = blue / 255f
-	float max = [r, g, b].max()
-	float delta = max - [r, g, b].min()
-	def hue = 13
-	def saturation = 0
-	if (max && delta) {
-		saturation = 100 * delta / max
-		if (r == max) {
-			hue = ((g - b) / delta) * 100 / 6
-		} else if (g == max) {
-			hue = (2 + (b - r) / delta) * 100 / 6
-		} else {
-			hue = (4 + (r - g) / delta) * 100 / 6
-		}
-	}
-	[hue: hue, saturation: saturation, value: max * 100]
-}
 
 def huesatToRGB(hue, sat) {
 	while(hue >= 100) hue -= 100
