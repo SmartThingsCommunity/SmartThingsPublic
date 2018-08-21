@@ -243,7 +243,7 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo.zw.contains("s") || state.sec != 0) {
+	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
 	} else if (zwaveInfo.cc.contains("56")){
 		crcEncap(cmd)
