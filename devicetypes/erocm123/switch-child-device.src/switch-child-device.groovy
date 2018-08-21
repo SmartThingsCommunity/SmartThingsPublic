@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Switch Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Switch Child Device", namespace: "erocm123", author: "Eric Maycock", vid: "generic-switch") {
 		capability "Switch"
 		capability "Actuator"
 		capability "Sensor"
