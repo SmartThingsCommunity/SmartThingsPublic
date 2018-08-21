@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Switch Level Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Switch Level Child Device", namespace: "erocm123", author: "Eric Maycock", vid: "generic-dimmer") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Switch"
