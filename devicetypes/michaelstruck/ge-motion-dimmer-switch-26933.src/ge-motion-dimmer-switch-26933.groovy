@@ -6,11 +6,12 @@
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.2 8/2/18 
+ *  Version 1.0.3 8/21/18 
  *
- *  Version 1.0.2 (7/27/18) - Updated some of the text, added/updated options on the Settings page
+ *  Version 1.0.3 (8/21/18) - Changed the setLevel mode to boolean
+ *  Version 1.0.2 (8/2/18) - Updated some of the text, added/updated options on the Settings page
  *  Version 1.0.1 (7/15/18) - Format and syntax updates. Thanks to @Darwin for the motion sensitivity/timeout minutes idea!
- *  Version 1.0.0 - (3/17/17) Original release by Matt Lebaugh. Great Work!
+ *  Version 1.0.0 (3/17/17) Original release by Matt Lebaugh. Great Work!
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -165,13 +166,7 @@ metadata {
         	input ( name: "requestedGroup3", title: "Association Group 3 Members (Max of 4):", description: "Use the 'Device Network ID' for each device", type: "text", required: false )            
             //description
             input title: "", description: "**setLevel Default Function (Advanced)**\nDefines how 'setLevel' behavior affects the light.",  type: "paragraph", element: "paragraph"
-            input ("setlevelmode","enum", title: "setLevel Command Mode",
-                type: "enum",
-                options: [
-                    "0" : "Light on with setLevel (Default)",
-                    "1" : "Does NOT turn on light; Only performs 'setLevel'"
-                ]
-            )
+            input "setlevelmode", "bool", title: "setLevel Does Not Activate Light", defaultValue:false
     }
 simulator {
 		status "on":  "command: 2003, payload: FF"
@@ -415,8 +410,8 @@ def setLevel(value) {
 	def valueaux = value as Integer
 	def level = Math.min(valueaux, 99)
     def cmds = []    	
-    if (settings.setlevelmode == "1"){ 
-    	log.debug "setlevel with advanced mode"
+    if (settings.setlevelmode){ 
+    	log.debug "setlevel does not activate light"
     	if (device.currentValue("switch") == "on") {
             sendEvent(name: "level", value: level, unit: "%")
             cmds << zwave.configurationV1.configurationSet(configurationValue: [level] , parameterNumber: 17, size: 1)
@@ -429,7 +424,7 @@ def setLevel(value) {
         }        
         sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 500)
     } else {
-    	log.debug "setlevel with basic mode ${settings.setlevelmode}"
+    	log.debug "setlevel activates light"
     	sendEvent(name: "level", value: level, unit: "%")
 		delayBetween ([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV3.switchMultilevelGet().format()], 500)
     }
@@ -754,4 +749,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.2 (08/02/18)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.3 (08/21/18)") }
