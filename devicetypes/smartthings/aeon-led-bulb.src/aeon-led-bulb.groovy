@@ -87,9 +87,7 @@ def installed() {
 
 def parse(description) {
 	def result = null
-	if (description.startsWith("Err 106")) {
-		state.sec = 0
-	} else if (description != "updated") {
+	if (description != "updated") {
 		def cmd = zwave.parse(description, [0x20: 1, 0x26: 3, 0x70: 1, 0x33:3])
 		if (cmd) {
 			result = zwaveEvent(cmd)
@@ -130,7 +128,6 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x84: 1])
 	if (encapsulatedCommand) {
-		state.sec = 1
 		def result = zwaveEvent(encapsulatedCommand)
 		result = result.collect {
 			if (it instanceof physicalgraph.device.HubAction && !it.toString().startsWith("9881")) {
