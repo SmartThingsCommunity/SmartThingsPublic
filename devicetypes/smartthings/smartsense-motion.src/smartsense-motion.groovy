@@ -17,6 +17,7 @@ metadata {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
+		capability "Health Check"
 
 		fingerprint profileId: "0104", deviceId: "013A", inClusters: "0000", outClusters: "0006"
 		fingerprint profileId: "FC01", deviceId: "013A"
@@ -41,6 +42,11 @@ metadata {
 		main "motion"
 		details(["motion", "battery"])
 	}
+}
+
+def installed() {
+	// device checks in every 2.5 minutes, but we'll give it the same checkinterval as our other devices
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
 }
 
 def parse(String description) {
