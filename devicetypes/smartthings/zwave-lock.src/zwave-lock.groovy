@@ -533,11 +533,11 @@ private def handleAccessAlarmReport(cmd) {
 			map = [ name: "codeChanged", value: "0 set", descriptionText: "${getStatusForDescription('set')} \"$codeName\"", isStateChange: true ]
 			map.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}" ]
 			break
-		case 24: // KeyWe manual unlock
+		case 0x18: // KeyWe manual unlock
 			map = [ name: "lock", value: "unlocked", data: [ method: "manual" ] ]
 			map.descriptionText = "Unlocked manually"
 			break
-		case 25: // KeyWe manual lock
+		case 0x19: // KeyWe manual lock
 			map = [ name: "lock", value: "locked", data: [ method: "manual" ] ]
 			map.descriptionText = "Locked manually"
 			break
