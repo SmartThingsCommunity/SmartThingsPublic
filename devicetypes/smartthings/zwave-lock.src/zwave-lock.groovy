@@ -55,6 +55,8 @@ metadata {
 		fingerprint mfr:"0129", prod:"0001", model:"0409", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRL-220-ZW-605
 		// Samsung
 		fingerprint mfr:"022E", prod:"0001", model:"0001", deviceJoinName: "Samsung Digital Lock" // SHP-DS705, SHP-DHP728, SHP-DHP525
+		//KeyWe
+		fingerprint mfr:"037B", prod:"0002", model:"0001", deviceJoinName: "KeyWe Lock" // GKW-2000D
 	}
 
 	simulator {
@@ -530,6 +532,14 @@ private def handleAccessAlarmReport(cmd) {
 			codeName = getCodeNameFromState(lockCodes, 0)
 			map = [ name: "codeChanged", value: "0 set", descriptionText: "${getStatusForDescription('set')} \"$codeName\"", isStateChange: true ]
 			map.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}" ]
+			break
+		case 24: // KeyWe manual unlock
+			map = [ name: "lock", value: "unlocked", data: [ method: "manual" ] ]
+			map.descriptionText = "Unlocked manually"
+			break
+		case 25: // KeyWe manual lock
+			map = [ name: "lock", value: "locked", data: [ method: "manual" ] ]
+			map.descriptionText = "Locked manually"
 			break
 		case 0xFE:
 			// delegating it to handleAlarmReportUsingAlarmType
