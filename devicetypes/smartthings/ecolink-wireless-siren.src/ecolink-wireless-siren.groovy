@@ -45,6 +45,7 @@ metadata {
 
 def installed() {
 	initialize()
+	sendEvent(name: "alarm", value: "off", isStateChange: true)
 }
 
 def updated() {
