@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Lock", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Z-Wave Lock", namespace: "smartthings", author: "SmartThings", minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Lock"
 		capability "Polling"
@@ -55,8 +55,6 @@ metadata {
 		fingerprint mfr:"0129", prod:"0001", model:"0409", deviceJoinName: "Yale Touchscreen Lever Door Lock" // YRL-220-ZW-605
 		// Samsung
 		fingerprint mfr:"022E", prod:"0001", model:"0001", deviceJoinName: "Samsung Digital Lock" // SHP-DS705, SHP-DHP728, SHP-DHP525
-		//KeyWe
-		fingerprint mfr:"037B", prod:"0002", model:"0001", deviceJoinName: "KeyWe Lock"
         //KWIKSET OBSIDIAN
         //zw:Fs type:4003 mfr:0090 prod:0003 model:0742 ver:4.10 zwv:4.34 lib:03 cc:5E,72,5A,98,73,7A sec:86,80,62,63,85,59,71,70,4E,8B,4C,5D role:07 ff:8300 ui:8300
         fingerprint mfr:"0090", prod:"0003", model:"0742", deviceJoinName: "OBSIDIAN Lock"
@@ -536,14 +534,6 @@ private def handleAccessAlarmReport(cmd) {
 			codeName = getCodeNameFromState(lockCodes, 0)
 			map = [ name: "codeChanged", value: "0 set", descriptionText: "${getStatusForDescription('set')} \"$codeName\"", isStateChange: true ]
 			map.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}" ]
-			break
-		case 24: //KeyWe manual unlock
-			map = [ name: "lock", value: "unlocked", data: [ method: "manual" ] ]
-			map.descriptionText = "Unlocked manually"
-			break
-		case 25: //Keywe manual lock
-			map = [ name: "lock", value: "locked", data: [ method: "manual" ] ]
-			map.descriptionText = "Locked manually"
 			break
 		case 0xFE:
 			// delegating it to handleAlarmReportUsingAlarmType
