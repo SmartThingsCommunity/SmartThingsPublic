@@ -63,6 +63,7 @@ def installed() {
 	def cmds = [ zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01).format(),
 				zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03).format(),
 				zwave.notificationV3.notificationGet(notificationType: 0x05).format(), //water alarm
+                zwave.configurationV2.configurationGet(parameterNumber:12).format(),
 				zwave.batteryV1.batteryGet().format()]
 	response(cmds)
 }
@@ -211,7 +212,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			break;
 		case 3:
 			map.name = "illuminance"
-			map.value = cmd.scaledSensorValue.toInteger().toString()
 			map.unit = "lux"
 			break
 		// This is commented out as the device's notification reports for water tend to be a better baseline
@@ -221,6 +221,14 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			break;*/
 	}
 	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	log.debug "Report. Param: $cmd.parameterNumber scaledValue: $cmd.scaledConfigurationValue"
+	if (cmd.parameterNumber == 12 && cmd.scaledConfigurationValue == 0) {
+		log.debug "Sensative Comfort detected. Changing device type."
+		setDeviceType("Z-Wave Temp/Light Sensor")
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
