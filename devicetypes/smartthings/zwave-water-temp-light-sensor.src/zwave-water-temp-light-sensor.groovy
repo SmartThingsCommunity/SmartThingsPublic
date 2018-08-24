@@ -63,7 +63,7 @@ def installed() {
 	def cmds = [ zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01).format(),
 				zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03).format(),
 				zwave.notificationV3.notificationGet(notificationType: 0x05).format(), //water alarm
-                zwave.configurationV2.configurationGet(parameterNumber:12).format(),
+				zwave.configurationV2.configurationGet(parameterNumber:12).format(),
 				zwave.batteryV1.batteryGet().format()]
 	response(cmds)
 }
