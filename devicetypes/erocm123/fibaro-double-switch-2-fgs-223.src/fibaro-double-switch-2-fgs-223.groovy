@@ -1,7 +1,7 @@
 /**
  *  Note: This handler requires the "Metering Switch Child Device" to be installed.
  *
- *  Copyright 2016 Eric Maycock
+ *  Copyright 2018 Eric Maycock
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -15,7 +15,8 @@
  *  Fibaro FGS-223 Dual Relay
  *
  *  Author: Eric Maycock (erocm123)
- *  
+ *
+ *  08/24/2018 - Modify handler to work with secure and non-secure inclusion.
  *  04/25/2017 - Fix for combined energy & power reports & switch endpoints showing correct info.
  *  04/18/2017 - This handler requires the Metering Switch Child device to create the multiple switch endpoints.
  */
@@ -89,12 +90,17 @@ tiles(scale: 2){
 
 def parse(String description) {
     def result = []
-    def cmd = zwave.parse(description)
-    if (cmd) {
-        result += zwaveEvent(cmd)
-        //log.debug "Parsed ${cmd} to ${result.inspect()}"
+    if (description.startsWith("Err 106")) {
+        state.sec = 0
+        result = createEvent(descriptionText: description, isStateChange: true)
     } else {
-        log.debug "Non-parsed event: ${description}"
+        def cmd = zwave.parse(description)
+        if (cmd) {
+            result += zwaveEvent(cmd)
+            //log.debug "Parsed ${cmd} to ${result.inspect()}"
+        } else {
+            log.debug "Non-parsed event: ${description}"
+        }
     }
     
     def statusTextmsg = ""
@@ -171,7 +177,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
         def cmds = []
         cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
         cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-        return response(secureSequence(cmds)) // returns the result of reponse()
+        return response(commands(cmds)) // returns the result of reponse()
     }
 }
 
@@ -200,7 +206,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
 			cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
             cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
 	   }
-       return response(secureSequence(cmds))
+       return response(commands(cmds))
     }
 }
 
@@ -268,7 +274,7 @@ def refresh() {
 		cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
         cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
 	}
-	secureSequence(cmds, 1000)
+	commands(cmds, 1000)
 }
 
 def reset() {
@@ -279,14 +285,14 @@ def reset() {
         cmds << encap(zwave.meterV2.meterGet(scale: 0), endpoint)
         cmds << encap(zwave.meterV2.meterGet(scale: 2), endpoint)
     }
-	secureSequence(cmds, 1000)
+	commands(cmds, 1000)
 }
 
 def ping() {
 	def cmds = []
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-	secureSequence(cmds, 1000)
+	commands(cmds, 1000)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -299,7 +305,7 @@ def poll() {
 	def cmds = []
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
     cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-	secureSequence(cmds, 1000)
+	commands(cmds, 1000)
 }
 
 def configure() {
@@ -309,7 +315,7 @@ def configure() {
 
     cmds = update_needed_settings()
     
-    if (cmds != []) secureSequence(cmds)
+    if (cmds != []) commands(cmds)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
@@ -351,17 +357,17 @@ def updated()
     
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
     
-    if (cmds != []) response(secureSequence(cmds))
+    if (cmds != []) response(commands(cmds))
 }
 
 def on() { 
-   secureSequence([
+   commands([
         encap(zwave.basicV1.basicSet(value: 0xFF), 1),
         encap(zwave.basicV1.basicSet(value: 0xFF), 2)
     ])
 }
 def off() {
-   secureSequence([
+   commands([
         encap(zwave.basicV1.basicSet(value: 0x00), 1),
         encap(zwave.basicV1.basicSet(value: 0x00), 2)
     ])
@@ -370,41 +376,35 @@ def off() {
 void childOn(String dni) {
     logging("childOn($dni)")
     def cmds = []
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
 }
 
 void childOff(String dni) {
     logging("childOff($dni)")
 	def cmds = []
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
 }
 
 void childRefresh(String dni) {
     logging("childRefresh($dni)")
 	def cmds = []
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 0), channelNumber(dni))))
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 2), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.meterV2.meterGet(scale: 0), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.meterV2.meterGet(scale: 2), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
 }
 
 void childReset(String dni) {
     logging("childReset($dni)")
 	def cmds = []
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterReset(), channelNumber(dni))))
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 0), channelNumber(dni))))
-    cmds << new physicalgraph.device.HubAction(secure(encap(zwave.meterV2.meterGet(scale: 2), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.meterV2.meterReset(), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.meterV2.meterGet(scale: 0), channelNumber(dni))))
+    cmds << new physicalgraph.device.HubAction(command(encap(zwave.meterV2.meterGet(scale: 2), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
-}
-
-private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-}
-
-private secureSequence(commands, delay=1500) {
-	delayBetween(commands.collect{ secure(it) }, delay)
 }
 
 private encap(cmd, endpoint) {
@@ -416,6 +416,7 @@ private encap(cmd, endpoint) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+    state.sec = 1
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x32: 3, 0x25: 1, 0x98: 1, 0x70: 2, 0x85: 2, 0x9B: 1, 0x90: 1, 0x73: 1, 0x30: 1, 0x28: 1, 0x2B: 1]) // can specify command class versions here like in zwave.parse
 	if (encapsulatedCommand) {
 		return zwaveEvent(encapsulatedCommand)
@@ -619,8 +620,7 @@ def integer2Cmd(value, size) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-    
-	if (state.sec && cmd.toString() != "WakeUpIntervalGet()") {
+	if (state.sec) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
