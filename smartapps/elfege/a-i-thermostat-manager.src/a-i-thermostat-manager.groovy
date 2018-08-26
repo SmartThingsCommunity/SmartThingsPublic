@@ -415,7 +415,7 @@ def Contacts_Management(){
             if(Maincontacts){
                 input(name: "TimeBeforeClosing", type: "number", title: "Turn off units after this amount of time when contacts are open", required: false, description: "time in seconds", uninstall: true, install: true)
                 input(name: "CriticalTemp", type:"number", title: "but do not allow the temperature to fall bellow this value", required: true, decription: "Enter a safety temperature value")
-                input(name: "XtraTempSensor", type:"capability.temperatureMeasurement", title: "select a temperature sensor that will serve as reference", required: true, submitOnChange: true)			
+                input(name: "XtraTempSensor", type:"capability.temperatureMeasurement", title: "select a temperature sensor that will serve as reference", required: true, submitOnChange: true)      
             }
             if(ContactAndSwitch){
                 input(name: "ToggleBack", type: "bool", title: "Turn $ContactAndSwitch back on once all windows are closed", default: true, submitOnChange: true)
@@ -808,7 +808,7 @@ allows for it, instead of only when cooling is required (see below)"""
 ////////////////////////////////////// INSTAL AND UPDATE ///////////////////////////////
 def installed() {
     state.LastTimeMessageSent = now() as Long 
-    //log.debug "enter installed, state: $state"	
+    //log.debug "enter installed, state: $state"  
     state.windowswereopenandclosedalready = false // this value must not be reset by updated() because updated() is run by contacthandler
 
     // default values to avoid NullPointer // must be set as such only for new installation not in init or updated  
@@ -834,6 +834,17 @@ state."{newValueT${loopV}HSP}" = 72
 */
 
     state.MotionSensor = []
+
+    ///initialize override values for ContactAndSwitch device
+
+    if(ContactAndSwitch){
+        def currVal = ContactAndSwitch[0].currentValue("switch")
+
+        ACBedLastCmd(currVal, false) // only take the value of the first device in ContactAndSwitch list
+
+        log.debug "$ContactAndSwitch override values updated: ${state.lastCmdWas}, ${state.isOverride}"
+    }
+
     init()
 }
 def updated() {
@@ -857,11 +868,15 @@ def updated() {
     }
 
     subscribe(XtraTempSensor, "temperature", temperatureHandler)
-    subscribe(location, "mode", ChangedModeHandler)	
+    subscribe(location, "mode", ChangedModeHandler) 
 
     if(ContactAndSwitch){
         subscribe(ContactAndSwitch, "switch", ContactAndSwitchHandler)
     }
+
+
+
+
     init()
 }
 def init() {
@@ -873,10 +888,6 @@ def init() {
 
     state.attempt = 0 // bed sensor attempts before declaring open as true
     state.ThermsOff = false; // tells the program that ThermostatsOff() has not already run
-
-    // switch ac override management
-    //state.ACBedOffByApp = true
-    //state.ACBedOnByApp = true
 
     state.CSPSet = 72
     state.HSPSet = 72 // temporary values to prevent null error
@@ -895,6 +906,9 @@ state.CSPSet = $state.CSPSet"""
     // reset A.I. override maps
     state.HSPMap = [:]
     state.CSPMap = [:]
+    
+state.ClosedByApp = true
+state.OpenByApp = true
 
     MiscSubscriptions()
 }
@@ -1754,8 +1768,8 @@ DoNotTurnOffModes = $DoNotTurnOffModes
 ContactExceptionIsClosed = $ContactExceptionIsClosed
 ControlWithBedSensor = $ControlWithBedSensor
 ConsideredOpen = $ConsideredOpen
-state.ACBedOnByApp = $state.ACBedOnByApp
-state.ACBedOffByApp = $state.ACBedOffByApp
+override values: ${state.lastCmdWas}, ${state.isOverride}
+
 """
 
     if(ContactException && FollowException && InExceptionContactMode){
@@ -1782,23 +1796,23 @@ state.ACBedOffByApp = $state.ACBedOffByApp
 so $ContactAndSwitch stays on until it opens
 """
             // therefore make sure related switch/device is on
-            if(SomeSwAreOff.size() != 0 && contactClosed && state.ACBedOffByApp == true){
+            if(SomeSwAreOff.size() != 0 && contactClosed){
                 //if at least one is off, turn on
                 ContactAndSwitchon()
             }
-            else if(state.ACBedOffByApp == false){
-                log.debug "$ContactAndSwitch in OVERRIDE mode; not turning it on"
+            else if(!contactClosed){
+                log.debug "$ContactAndSwitch not turned on because contacts are open"
+            }
+            else if(SomeSwAreOff.size() == 0){
+                log.debug "$ContactAndSwitch already on"
             }
         }
         else if(SomeSwAreOn.size() != 0 ){
-            if(state.ACBedOnByApp == true){
-                // if at least one is on, turn off
-                ContactAndSwitchoff()
-                log.debug "$ContactAndSwitch turned off at level 1"
-            }
-            else {
-                log.debug "$ContactAndSwitch in OVERRIDE mode; not turning it off"
-            }
+
+            // if at least one is on, turn off
+            ContactAndSwitchoff()
+            log.debug "$ContactAndSwitch turned off at level 1"
+
         }
         else {
             if(SomeSwAreOn.size() == 0){
@@ -1808,34 +1822,32 @@ so $ContactAndSwitch stays on until it opens
     }
     else if(!contactClosed){
         // previous lines take care of knowing if contactClosed must include contact exception
-        if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
+        if(SomeSwAreOn.size() != 0){
             // if at least one is on, turn off
             ContactAndSwitchoff()
             log.debug "$ContactAndSwitch turned off at level 2"
         }
         else {
-            if(SomeSwAreOn.size() == 0){
-                log.debug "$ContactAndSwitch already off"
-            }
-            if(state.ACBedManagedByApp != true){
-                log.debug "$ContactAndSwitch in OVERRIDE mode"
-            }
+            log.debug "$ContactAndSwitch already off"
         }             
     }
     else if(contactClosed) {
 
         if(IsHeatPump && outsideTemp <= 29){
-            if(SomeSwAreOn.size() != 0 && state.ACBedOnByApp == true){
+            if(SomeSwAreOn.size()){
                 ContactAndSwitchoff()
                 log.debug "$ContactAndSwitch turned off at level 3"
             }
         }
         else if(ToggleBack) {   
-            if(SomeSwAreOff.size() != 0 && contactClosed && state.ACBedOffByApp == true){
+            if(SomeSwAreOff.size() != 0 && contactClosed){
                 //if at least one is off, turn on
                 ContactAndSwitchon()
             }
-            else {
+            else if(!contactClosed){
+                log.debug "$ContactAndSwitch not turned on because contacts are open"
+            }
+            else if(SomeSwAreOff.size() == 0){
                 log.debug "$ContactAndSwitch already on"
             }
         }       
@@ -1904,7 +1916,7 @@ AltSensorMap = $AltSensorMap"""
 
                     def TheSensor = AltSensorMap.find{it.key == "$ThermSet"}
                     TheSensor = TheSensor?.value
-                    log.info "TheSensor String = $TheSensor"	
+                    log.info "TheSensor String = $TheSensor"  
                     def refSensor = null
                     /// retrieve corresponding device object
                     def c = 0
@@ -1919,7 +1931,7 @@ AltSensorMap = $AltSensorMap"""
 
                     TheSensor = refSensor
 
-                    log.info "TheSensor = $TheSensor"	                      
+                    log.info "TheSensor = $TheSensor"                       
 
                     //log.info "------------------------------------TheAltSensor = $TheAltSensor"
 
@@ -2029,17 +2041,17 @@ inAway = $inAway
                 if(adjustments == "Yes, use a linear variation" && !inAway){
                     log.debug "LINEAR"
                     /////////////////////////COOL////////////////////  linear function for Cooling
-                    xa = 75	//outside temp a
+                    xa = 75 //outside temp a
                     ya = MaxLinearCool // desired cooling temp a 
 
-                    xb = 100 		//outside temp b
+                    xb = 100    //outside temp b
                     yb = MinLinearCool // desired cooling temp b  
 
                     // take humidity into account
                     // if outside humidity is higher than .... 
                     if(TooHumid){
-                        xa = 75				//outside temp a LESS VARIATION WHEN HUMID
-                        ya = CSPSet	   // desired cooling temp a 
+                        xa = 75       //outside temp a LESS VARIATION WHEN HUMID
+                        ya = CSPSet    // desired cooling temp a 
                         xb = 100 //outside temp b
                         yb = CSPSet + 2 // desired cooling temp b  LESS VARIATION WHEN HUMID
                     }
@@ -2054,10 +2066,10 @@ inAway = $inAway
 
                     //////////////////////////LINEAR HEAT/////////////////////////////// 
                     log.debug "LINEAR HEAT --"
-                    xa = 40	//outside temp a
+                    xa = 40 //outside temp a
                     ya = MinLinearHeat // min desired heating temp a 
 
-                    xb = 35 	//outside temp b
+                    xb = 35   //outside temp b
                     yb = MaxLinearHeat  // max desired heating temp b  
 
                     coef = (yb-ya)/(xb-xa)
@@ -2206,17 +2218,11 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 // while alternative sensor is still beyond CSP
                 // not that this is safe only with turnOffWhenReached
                 // and only if active, otherwise it defeats the purpose of motion sensors based SP's
-                if(useAltSensor && turnOffWhenReached && Active && !inAway){
-                    if(CurrTemp > CSPSet){
-                        CSPSet = CSPSet - (CurrTemp - CSPSet)
-                        log.debug "CSPSet adjusted for Alternative sensor. New val = $CSPSet"
-                        // ex: if CSPSet initally 73, CurrTemp 80, then new CSPSet = 73 - (80-73) = 64
-                        // thus allowing the AC to run longer and be stopped by off command only
-                    }
-                    if(CurrTemp < HSPSet){
-                        HSPSet = HSPSet + (HSPSet - CurrTemp)
-                        log.debug "HSPSet adjusted for Alternative sensor. New val = $HSPSet"
-                    }
+                
+                if(useAltSensor && turnOffWhenReached && Active && !inAway && ThermSet.currentValue("temperature") < CurrTemp){                                  
+                        def ratioDiff = CurrTemp / CSPSet 
+                        CSPSet = CSPSet - (Math.log(CurrTemp))+2
+                        log.debug "CSPSet amplitude adjustment CSPSet now = $CSPSet ratioDiff = $ratioDiff" 
                 }
 
                 // now see if we're dealing, in this for loop, with a thermostat that is to be set with switch status
@@ -2308,7 +2314,7 @@ ContactAndSwitch are on = $ContactAndSwitchAreOn
 ThermSet.displayName == $ThermContact = ${ThermSet.displayName == "$ThermContact" }
 FoundUnitToIgnore = $FoundUnitToIgnore
 """
-                if(ContactAndSwitchInSameRoom && FoundUnitToIgnore && ContactAndSwitchAreOn  && !inAway && AppMgt){
+                if(ContactAndSwitchInSameRoom && FoundUnitToIgnore && ContactAndSwitchAreOn && !inAway && AppMgt){
                     log.debug "Turning off $ThermSet because it is in the same room as $ContactAndSwitch, which is currently ON"
                     if(ThermSet.currentValue("thermostatMode") != "off"){
                         ThermSet.setThermostatMode("off")
@@ -2898,20 +2904,29 @@ def ContactAndSwitchHandler(evt){
 
     log.debug "ContactAndSwitchHandler : ${evt.device} is ${evt.value}"
 
-    /*
-if(evt.value == "off" && state.ACBedOffByApp == false){
-// was in override, reseting values for next ON app command
-log.debug "state.ACBedOffByApp RESET TO TRUE"
-state.ACBedOffByApp = true    
-}
-else if(evt.value == "on" && state.ACBedOnByApp == false) {
-// was in override, reseting values for next OFF app command
-log.debug "state.ACBedOnByApp RESET TO TRUE"
-state.ACBedOnByApp = true
-}
-*/
+    // are we out of corresponding mode for that value?
+    def inOffMode = location.currentMode in ContactSwitchOffMode 
+
+    def override = null
+    if(evt.value == "on" && inOffMode){
+        override = true  
+    }
+    else if(evt.value == "off" && inOffMode){
+        override = false
+    }
+    else if(evt.value == "on" && !inOffMode){
+        override = false  
+    }
+    else if(evt.value == "off" && !inOffMode){
+        override = true
+    }
+
+    log.debug "$evt.device override (handler) = $override"
+
+    ACBedLastCmd(evt.value, override)// here a true arg will become override = true and reciprocally 
 
 }
+
 def BedSensorHandler(evt){
 
     log.debug """$evt.device is $evt.value """
@@ -3279,6 +3294,7 @@ def DoubleChekcThermostats(){
                         if(device.currentValue("thermostatFanMode") != "on"){
                             device.setThermostatFanMode("on")
                             log.debug "$device NOW SET TO FAN ONLY"
+                            //send("FAN5")
                         }
                         else {
                             log.debug "${thisdevice}' fan already on"
@@ -3290,6 +3306,7 @@ def DoubleChekcThermostats(){
                         if(device.currentValue("thermostatFanMode") != "on"){
                             device.setThermostatFanMode("on")
                             log.debug "$device NOW SET TO FAN ONLY"
+                            //send("FAN4")
                         }
                         else {
                             log.debug "${device}' fan already on"
@@ -3303,6 +3320,7 @@ def DoubleChekcThermostats(){
                         if(device.currentValue("thermostatFanMode") != "on"){
                             device.setThermostatFanMode("on")
                             log.debug "$device NOW SET TO FAN ONLY"
+                            //send("FAN3")
                         }
                         else {
                             log.debug "${device}' fan already on"
@@ -3381,27 +3399,52 @@ def TurnOffThermostats(){
 }
 
 def ContactAndSwitchoff(){
+
     if("on" in ContactAndSwitch?.currentSwitch){
-        ContactAndSwitch?.off()
-        log.debug "$ContactAndSwitch TURNED OFF"
+        log.debug "state.isOverride = $state.isOverride "
+        if(state.isOverride == false){
+            ACBedLastCmd("off", false)// record cmds so if manually turned on, override will be triggered
+            ContactAndSwitch?.off()
+            log.debug "$ContactAndSwitch TURNED OFF"
+        }
+        else { 
+            log.debug "$ContactAndSwitch NOT TURNED OFF due to override" 
+        }
     }
     else {
         log.debug "$ContactAndSwitch ALREADY OFF"
     }
-    // set management values so if manually turned on, override will be triggered
-    state.ACBedOffByApp = true // allow app to turn it back on
-    state.ACBedOnByApp = false // if turned on by user, then don't turn it back off
+
 }
 def ContactAndSwitchon(){
+
     if("off" in ContactAndSwitch?.currentSwitch){
-        ContactAndSwitch?.on()
-        log.debug "$ContactAndSwitch TURNED ON"
+        if(state.isOverride == false){
+            ACBedLastCmd("on", false)
+            ContactAndSwitch?.on()
+            log.debug "$ContactAndSwitch TURNED ON"   
+        }
+        else { 
+            log.debug "$ContactAndSwitch NOT TURNED ON due to override" 
+        }
     }
     else {
         log.debug "$ContactAndSwitch ALREADY ON"
     }
-    state.ACBedOffByApp = false // if turned off by user, then don't turn it back on
-    state.ACBedOnByApp = true // allow app turn off
+
+}
+
+def ACBedLastCmd(val, override){
+    log.debug "ACBedLastCmd vals are: $val, $override"
+    state.lastCmdWas = val
+    state.isOverride = override
+
+    if(override){
+        log.debug "$ContactAndSwitch in override mode"
+    }
+    else {
+        log.debug "NO OVERRIDE for $ContactAndSwitch"
+    }
 }
 
 // windows mgt and bools
@@ -3540,25 +3583,27 @@ def OpenWindows(val, str){
 
 
     if(state.ClosedByApp == true || (location.currentMode in Away && OpenInfullWhenAway)){
-        def AreOn = Actuators.findAll{it.currentValue != "on"}
-        if(AreOn.size() == 0){      
+        def AreOn = "on" in Actuators.currentValue("switch")
+        if(!AreOn){      
             Actuators?.on()
+            state.OpenByApp = true
+        state.ClosedByApp = false
         }
         else {
             log.debug "on command to Actuators already sent"
         }
         log.debug "Opening windows (cmd sent from $val)"
         if(str == "exception"){ 
-            AreOn = ActuatorException.findAll{it.currentValue != "on"}
-            if(AreOn.size() == 0){      
+            AreOn = "on" in ActuatorException.currentValue("switch") 
+            if(!AreOn){      
                 ActuatorException?.on()
+                
             }
             else {
                 log.debug "on command to ActuatorException already sent"
             }
         }
-        state.OpenByApp = true
-        state.ClosedByApp = false
+        
     }
     else {
         log.debug "NOT Opening windows (cmd sent from $val)"
@@ -3575,6 +3620,7 @@ def OpenWindows(val, str){
             if(ThisTherm.currentValue("thermostatFanMode") != "on") { // avoid repeated commands
                 ThisTherm.setThermostatFanMode("on")
                 log.debug "$ThisTherm fan turned on"
+                //send("FAN6")
             }
             else {
                 log.debug "$ThisTherm fan already turned on"
