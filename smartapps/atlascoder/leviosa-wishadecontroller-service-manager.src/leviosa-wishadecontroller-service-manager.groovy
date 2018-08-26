@@ -26,9 +26,6 @@ def getSelectedDevices() {
 	def list = []
 	def devices = getVerifiedDevices()
 	devices.each {
-//    	def key = it.value.ssdpUSN.split(':')[1]
-//		def value = it.value.name ?: "Group ${key}"
-//		list["${key}"] = value
 		list << it.value.ssdpUSN.split(':')[1]
 	}
     list
@@ -39,14 +36,6 @@ def deviceDiscovery() {
 	state.searchTarget = "urn:schemas-upnp-org:service:TwoWayMotor:1"
     
 	log.debug "Discovery start for ${state.searchTarget}"
-
-//	def options = [:]
-//	def devices = getVerifiedDevices()
-//	devices.each {
-//    	def key = it.value.ssdpUSN.split(':')[1]
-//		def value = it.value.name ?: "Group ${key}"
-//		options["${key}"] = value
-//	}
 
 	ssdpSubscribe()
 
@@ -75,7 +64,6 @@ def deviceDiscovery() {
         		paragraph "${l} shade groups discovered."
 	            paragraph "Every controller has 6 groups, please, decide yourself when stop to discover."
             }
-//			input "selectedDevices", "enum", required: false, title: "Select Groups (${options.size() ?: 0} found)", multiple: true, options: options
 		}
 	}
 }
