@@ -32,8 +32,8 @@ metadata {
 		fingerprint inClusters: "0x26,0x33,0x98"
 		fingerprint deviceId: "0x11", inClusters: "0x98,0x33"
 		fingerprint deviceId: "0x1102", inClusters: "0x98"
-		fingerprint mfr: "0371", prod: "0103", model: "0002", deviceJoinName: "Aeon LED Bulb" //US
-		fingerprint mfr: "0371", prod: "0003", model: "0002", deviceJoinName: "Aeon LED Bulb" //EU
+		fingerprint mfr: "0371", prod: "0103", model: "0002", deviceJoinName: "Aeotec LED Bulb - Multicolor" //US
+		fingerprint mfr: "0371", prod: "0003", model: "0002", deviceJoinName: "Aeotec LED Bulb - Multicolor" //EU
 		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
 		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
 	}
@@ -60,19 +60,16 @@ metadata {
 		}
 	}
 
-	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", height: 2, width: 2,) {
+	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
 	}
-	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", height: 2, width: 2,) {
-		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-	}
 
-	controlTile("colorTempControl", "device.colorTemperature", "slider", height: 2, width: 2, inactiveLabel: false) {
-		state "colorTemperature", action:"setColorTemperature"
+	controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
+		state "colorTemperature", action:"color temperature.setColorTemperature"
 	}
 
 	main(["switch"])
-	details(["switch", "levelSliderControl", "rgbSelector", "colorTempControl", "refresh", "reset"])
+	details(["switch", "levelSliderControl", "rgbSelector", "colorTempSliderControl", "reset"])
 }
 
 def updated() {
@@ -82,13 +79,16 @@ def updated() {
 
 def installed() {
 	log.debug "installed()..."
+	state.colorReceived = ["red": null, "green": null, "blue": null, "warmWhite": null, "coldWhite": null]
 	sendEvent(name: "checkInterval", value: 1860, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "level", value: 100, unit: "%")
+	response(refresh())
 }
 
 def parse(description) {
 	def result = null
 	if (description != "updated") {
-		def cmd = zwave.parse(description, [0x20: 1, 0x26: 3, 0x70: 1, 0x33:3])
+		def cmd = zwave.parse(description)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 			log.debug("'$description' parsed to $result")
@@ -98,7 +98,6 @@ def parse(description) {
 	}
 	result
 }
-
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	dimmerEvents(cmd)
@@ -110,6 +109,43 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
 	dimmerEvents(cmd)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.switchcolorv3.SwitchColorReport cmd) {
+	log.debug "got SwitchColorReport: $cmd"
+	state.colorReceived[cmd.colorComponent] = cmd.value
+	def result = []
+	def rgbNames = ["red", "green", "blue"]
+	def tempNames = ["warmWhite", "coldWhite"]
+	// Check if we got all the RGB color components
+	if (rgbNames.every { state.colorReceived[it] != null }) {
+		def colors = rgbNames.collect { state.colorReceived[it] }
+		log.debug "colors: $colors"
+		// Send the color as hex format
+		def hexColor = "#" + colors.collect { Integer.toHexString(it).padLeft(2, "0") }.join("")
+		result << createEvent(name: "color", value: hexColor)
+		// Send the color as hue and saturation
+		def hsv = rgbToHSV(*colors)
+		result << createEvent(name: "hue", value: hsv.hue)
+		result << createEvent(name: "saturation", value: hsv.saturation)
+		// Reset the values
+		rgbNames.collect { state.colorReceived[it] = null}
+	}
+	// Check if we got all the color temperature values
+	if (tempNames.every { state.colorReceived[it] != null}) {
+		def warmWhite = state.colorReceived["warmWhite"]
+		def coldWhite = state.colorReceived["coldWhite"]
+		log.debug "warmWhite: $warmWhite, coldWhite: $coldWhite"
+		// When the device is first installed, warmWhite == coldWhite == 255
+		//  so default to mid-range color temp.
+		def colorTemp = COLOR_TEMP_MIN + (COLOR_TEMP_DIFF / 2)
+		if (warmWhite != coldWhite)
+			colorTemp = (COLOR_TEMP_MAX - (COLOR_TEMP_DIFF * warmWhite) / 255) as Integer
+		result << createEvent(name: "colorTemperature", value: colorTemp)
+		// Reset the values
+		tempNames.collect { state.colorReceived[it] = null }
+	}
+	result
 }
 
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
@@ -126,7 +162,7 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x84: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand()
 	if (encapsulatedCommand) {
 		def result = zwaveEvent(encapsulatedCommand)
 		result = result.collect {
@@ -146,7 +182,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def buildOffOnEvent(cmd){
-	[zwave.basicV1.basicSet(value: cmd),zwave.switchMultilevelV3.switchMultilevelGet()]
+	[zwave.basicV1.basicSet(value: cmd), zwave.switchMultilevelV3.switchMultilevelGet()]
 }
 
 def on() {
@@ -158,9 +194,7 @@ def off() {
 }
 
 def refresh() {
-	commands([
-		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 1000)
+	commands([zwave.switchMultilevelV3.switchMultilevelGet()] + queryAllColors(), 1000)
 }
 
 def ping() {
@@ -205,30 +239,36 @@ def setColor(value) {
 		def rgb = huesatToRGB(hue, saturation)
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:0, coldWhite:0)
 	}
-
-	if(value.hue) sendEvent(name: "hue", value: value.hue)
-	if(value.hex) sendEvent(name: "color", value: value.hex)
-	if(value.switch) sendEvent(name: "switch", value: value.switch)
-	if(value.saturation) sendEvent(name: "saturation", value: value.saturation)
+	result += queryAllColors()
 
 	commands(result)
 }
 
-def setColorTemperature(percent) {
-	log.debug "setColorTemperature($percent)"
-	if(percent > 99) percent = 99
-	int warmValue = percent * 255 / 99
-    sendEvent(name: "colorTemperature", value: percent)
-    commands([
-        zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite:warmValue, coldWhite:(255 - warmValue)),
-        zwave.switchMultilevelV3.switchMultilevelGet()
-    ], 2000)
+private getCOLOR_TEMP_MAX() { 6500 }
+private getCOLOR_TEMP_MIN() { 2700 }
+private getCOLOR_TEMP_DIFF() { COLOR_TEMP_MAX - COLOR_TEMP_MIN }
+
+def setColorTemperature(temp) {
+	if(temp > COLOR_TEMP_MAX)
+		temp = COLOR_TEMP_MAX
+	else if(temp < COLOR_TEMP_MIN)
+		temp = COLOR_TEMP_MIN
+	log.debug "setColorTemperature($temp)"
+	def warmValue = ((COLOR_TEMP_MAX - temp) / COLOR_TEMP_DIFF * 255) as Integer
+	def coldValue = 255 - warmValue
+	def cmds = [zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)]
+	cmds += queryAllColors()
+	commands(cmds)
+}
+
+private queryAllColors() {
+	def colors = ["red", "green", "blue", "warmWhite", "coldWhite"]
+	colors.collect { zwave.switchColorV3.switchColorGet(colorComponent: it) }
 }
 
 def reset() {
 	log.debug "reset()"
-	sendEvent(name: "color", value: "#ffffff")
-	setColorTemperature(0)
+	setColorTemperature(COLOR_TEMP_MIN + (COLOR_TEMP_DIFF / 2))
 }
 
 private secEncap(physicalgraph.zwave.Command cmd) {
@@ -253,6 +293,26 @@ private commands(commands, delay=200) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
 
+def rgbToHSV(red, green, blue) {
+	float r = red / 255f
+	float g = green / 255f
+	float b = blue / 255f
+	float max = [r, g, b].max()
+	float delta = max - [r, g, b].min()
+	def hue = 13
+	def saturation = 0
+	if (max && delta) {
+		saturation = 100 * delta / max
+		if (r == max) {
+			hue = ((g - b) / delta) * 100 / 6
+		} else if (g == max) {
+			hue = (2 + (b - r) / delta) * 100 / 6
+		} else {
+			hue = (4 + (r - g) / delta) * 100 / 6
+		}
+	}
+	[hue: hue, saturation: saturation, value: max * 100]
+}
 
 def huesatToRGB(hue, sat) {
 	while(hue >= 100) hue -= 100
