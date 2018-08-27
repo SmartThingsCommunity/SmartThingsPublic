@@ -68,6 +68,8 @@ import physicalgraph.zwave.commands.barrieroperatorv1.*
 def installed(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	def cmds = [zwave.barrierOperatorV1.barrierOperatorSignalSupportedGet(), zwave.barrierOperatorV1.barrierOperatorSignalGet()]
+	response(secureSequence(cmds))
 }
 
 def updated(){
