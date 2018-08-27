@@ -15,7 +15,12 @@ metadata {
 	definition (name: "Z-Wave Battery Thermostat", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Temperature Measurement"
-		capability "Thermostat"
+		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Cooling Setpoint"
+		capability "Thermostat Operating State"
+		capability "Thermostat Mode"
+		capability "Thermostat Fan Mode"
+		capability "Configuration"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
@@ -32,6 +37,7 @@ metadata {
 
 		fingerprint inClusters: "0x43,0x40,0x44,0x31,0x80"
 		fingerprint mfr: "014F", prod: "5442", model: "5431", deviceJoinName: "Linear Z-Wave Thermostat"
+		fingerprint mfr: "014F", prod: "5442", model: "5436", deviceJoinName: "2Gig Z-Wave Programmable Thermostat"
 	}
 
 	tiles {
@@ -124,6 +130,28 @@ def initialize() {
 	pollDevice()
 }
 
+def configure() {
+	def cmds = []
+	/*
+	Configuration of reporting values. Bitmask based on:
+	1	TEMPERATURE (CC_SENSOR_MULTILEVEL)
+	2	SETPOINT H
+	4	SETPOINT C
+	8	MODE
+	16	FANMODE
+	32	FANSTATE
+	64	OPERATING STATE
+	128	SCHEDENABLE
+	256	SETBACK
+	512	RUNHOLD
+	1024	DISPLAYLOCK
+	8192	BATTERY
+	16384	MECH STATUS
+	32768	SCP STATUS
+	*/
+	cmds << zwave.configurationV1.configurationSet(parameterNumber: 23, size: 2, scaledConfigurationValue: 8319).format()
+}
+
 def parse(String description)
 {
 	def result = []
@@ -139,6 +167,7 @@ def parse(String description)
 			log.debug "$device.displayName couldn't parse $description"
 		}
 	}
+	log.debug "parse $description to $result"
 	return result
 }
 
@@ -274,7 +303,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 	if(cmd.heat) { supportedModes << "heat" }
 	if(cmd.cool) { supportedModes << "cool" }
 	if(cmd.auto) { supportedModes << "auto" }
-	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" }
+//	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" } // device doesn't actually support this
 
 	state.supportedModes = supportedModes
 	createEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
@@ -334,7 +363,7 @@ def pollDevice() {
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1).format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2).format())
 	cmds << new physicalgraph.device.HubAction(zwave.batteryV1.batteryGet().format())
-	sendHubCommand(cmds)
+	sendHubCommand(cmds, 1200)
 }
 
 def raiseHeatingSetpoint() {
