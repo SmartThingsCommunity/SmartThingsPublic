@@ -30,8 +30,9 @@ metadata {
 		command "lowerCoolSetpoint"
 		command "raiseCoolSetpoint"
 
-		fingerprint inClusters: "0x43,0x40,0x44,0x31,0x80"
-		fingerprint mfr: "014F", prod: "5442", model: "5431", deviceJoinName: "Linear Z-Wave Thermostat"
+        //TODO: Uncomment these lines when merging full changes to staging.
+//		fingerprint inClusters: "0x43,0x40,0x44,0x31,0x80"
+//		fingerprint mfr: "014F", prod: "5442", model: "5431", deviceJoinName: "Linear Z-Wave Thermostat"
 	}
 
 	tiles {
