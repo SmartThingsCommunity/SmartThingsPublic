@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Ecolink Wireless Siren", namespace: "SmartThings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-siren") {
+	definition (name: "Ecolink Wireless Siren", namespace: "SmartThings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Siren", ocfDeviceType: "x.com.st.d.siren") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Switch"
@@ -45,6 +45,7 @@ metadata {
 
 def installed() {
 	initialize()
+	sendEvent(name: "alarm", value: "off", isStateChange: true)
 }
 
 def updated() {
@@ -56,7 +57,7 @@ def initialize() {
 		addChildren()
 	}
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	refresh()
+	response(refresh())
 }
 
 def parse(String description) {

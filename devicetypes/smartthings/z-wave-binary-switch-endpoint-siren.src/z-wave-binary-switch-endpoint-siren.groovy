@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Binary Switch Endpoint Siren", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-siren") {
+	definition(name: "Z-Wave Binary Switch Endpoint Siren", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Siren", ocfDeviceType: "x.com.st.d.siren") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Refresh"
@@ -40,6 +40,8 @@ metadata {
 
 def installed() {
 	configure()
+	sendEvent(name: "alarm", value: "off", isStateChange: true)
+
 }
 
 def updated() {
@@ -48,7 +50,7 @@ def updated() {
 
 def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	refresh()
+	response(refresh())
 }
 
 def handleZWave(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
