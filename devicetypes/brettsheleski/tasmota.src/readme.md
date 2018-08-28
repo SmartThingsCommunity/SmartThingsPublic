@@ -41,7 +41,7 @@ For Sonoff-Basic, Sonoff-4CH, and Sonoff Dual devices this is required
 1. Log in to the SmartThings IDE (https://graph.api.smartthings.com/)
 2. Go to `My Device Handlers`
 3. Click `Create New Device Handler`
-4. In the `From Code` tab paste in the code from https://github.com/BrettSheleski/SmartThingsPublic/blob/master/devicetypes/brettsheleski/tasmota.src/tasmota-power.groovy
+4. In the `From Code` tab paste in the code from https://github.com/BrettSheleski/SmartThingsPublic/blob/master/devicetypes/brettsheleski/tasmota-power.src/tasmota-power.groovy
 5. Click `Create`
 6. Click `Publish` --> `For Me`
 
