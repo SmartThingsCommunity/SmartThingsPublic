@@ -41,7 +41,7 @@ metadata {
 	simulator {
 	}
 
-    tiles(scale: 2) {
+	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 1, height: 1, canChangeIcon: true) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState("on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff")
@@ -194,7 +194,7 @@ def off() {
 }
 
 def refresh() {
-	commands([zwave.switchMultilevelV3.switchMultilevelGet()] + queryAllColors(), 1000)
+	commands([zwave.switchMultilevelV3.switchMultilevelGet()] + queryAllColors())
 }
 
 def ping() {
@@ -207,7 +207,7 @@ def setLevel(level) {
 }
 
 def setLevel(level, duration) {
-    log.debug "setLevel($level, $duration)"
+	log.debug "setLevel($level, $duration)"
 	if(level > 99) level = 99
 	commands([
 		zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: duration),
