@@ -29,7 +29,7 @@
             "name": "Alexa Switch",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
             "published": true,
-            "version": "2.0.7",
+            "version": "2.0.8",
             "appUrl": "devicetypes/michaelstruck/alexa-switch.src/alexa-switch.groovy",
             "optional": false
         },
