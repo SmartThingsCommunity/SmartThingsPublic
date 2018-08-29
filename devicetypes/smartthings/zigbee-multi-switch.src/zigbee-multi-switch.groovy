@@ -68,6 +68,7 @@ def parse(String description) {
     if (map) {
         if (description?.startsWith('on/off')) {
             log.debug "receive on/off message without endpoint id"
+            sendHubCommand(refresh().collect { new physicalgraph.device.HubAction(it) }, 0)
         } else {
             Map descMap = zigbee.parseDescriptionAsMap(description)
             log.debug "$descMap"
@@ -75,12 +76,14 @@ def parse(String description) {
             if (descMap?.clusterId == "0006" && descMap.sourceEndpoint == "01") {
                 def result = map ? createEvent(map) : [:]
                 sendEvent(result)
-             } else if (descMap?.clusterId == "0006" && descMap.sourceEndpoint == "02") {
+             } else if (descMap?.clusterId == "0006") {
                 def result = map ? createEvent(map) : [:]
                 def childDevice = childDevices.find {
-                        it.deviceNetworkId == "$device.deviceNetworkId:02"
+                    it.deviceNetworkId == "$device.deviceNetworkId:${descMap.sourceEndpoint}"
                 }
-                childDevice.sendEvent(result)
+                if (childDevice && result) {
+                    childDevice.sendEvent(result)
+                }
             }
         }
     }
@@ -94,28 +97,28 @@ private void createChildDevices() {
 
 }
 
-private channelNumber(String dni) {
+private getChildEndpoint(String dni) {
     dni.split(":")[-1] as Integer
 }
 
 def on() {
     log.debug("on")
-    zigbee.command(0x0006, 0x01, "", [destEndpoint: 0x01])
+    zigbee.on()
 }
 
 def off() {
     log.debug("off")
-    zigbee.command(0x0006, 0x00, "", [destEndpoint: 0x01])
+    zigbee.off()
 }
 
 def childOn(String dni) {
-    log.debug("    child on ${dni}")
-    zigbee.command(0x0006, 0x01, "", [destEndpoint: channelNumber(dni)])
+    log.debug(" child on ${dni}")
+    zigbee.command(0x0006, 0x01, "", [destEndpoint: getChildEndpoint(dni)])
 }
 
 def childOff(String dni) {
     log.debug(" child off ${dni}")
-    zigbee.command(0x0006, 0x00, "", [destEndpoint: channelNumber(dni)])
+    zigbee.command(0x0006, 0x00, "", [destEndpoint: getChildEndpoint(dni)])
 }
 
 /**
@@ -127,7 +130,7 @@ def ping() {
 
 def refresh()
 {
-    log.debug "refresh broatcast"
+    log.debug "refresh broadcast"
     return zigbee.readAttribute(0x0006, 0x0000, [destEndpoint: 0xFF])
 }
 
