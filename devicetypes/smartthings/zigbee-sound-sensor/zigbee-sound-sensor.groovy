@@ -69,7 +69,7 @@ private getCHECK_IN_INTERVAL_CMD() { 0x00 }
 
 def installed() {
 	sendEvent(name: "sound", value: "not detected", displayed: false)
-	refresh()
+	response(refresh())
 }
 
 def parse(String description) {
@@ -85,7 +85,7 @@ def parse(String description) {
 		if (tempOffset) {
 			map.value = (int) map.value + (int) tempOffset
 		}
-		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${value}°C" : "${device.displayName} was ${value}°F"
+		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${map.value}°C" : "${device.displayName} was ${map.value}°F"
 		map.translatable = true
 	}
 
@@ -157,7 +157,7 @@ private Map getSoundDetectionResult(value) {
 }
 
 private sendCheckIntervalEvent() {
-	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def ping() {
