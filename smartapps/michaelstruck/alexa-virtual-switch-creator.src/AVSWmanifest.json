@@ -5,7 +5,7 @@
     "repoBranch": "master",
     "name": "Alexa Virtual Switch Creator",
     "author": "Michael Struck",
-    "description": "Allows for creation of SmartThings virtual switches that can be tied to items controlled by Amazon Echo('Alexa').",
+    "description": "Allows for creation of SmartThings virtual devices that can be tied to items controlled by Amazon Echo('Alexa').",
     "category": "My Apps",
     "videoUrl": "",
     "photoUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
