@@ -109,5 +109,6 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private sendCheckIntervalEvent() {
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	response(zwave.wakeUpV2.wakeUpIntervalSet(seconds:14400, nodeid: zwaveHubNodeId).format()) // sometimes the 4hr wakeup interval is not durable
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
