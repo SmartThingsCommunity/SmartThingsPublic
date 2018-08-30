@@ -1,5 +1,5 @@
 /**
- *	Copyright 2015 SmartThings
+ *	Copyright 2018 SmartThings
  *
  *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *	in compliance with the License. You may obtain a copy of the License at:
@@ -24,7 +24,6 @@ metadata {
 		multiAttributeTile(name: "status", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.status", key: "PRIMARY_CONTROL") {
 				attributeState "online", label: 'online', icon: "st.motion.motion.active", backgroundColor: "#00A0DC"
-				attributeState "offline", label: 'offline', icon: "st.motion.motion.inactive", backgroundColor: "#ffffff"
 			}
 		}
 		main "status"
@@ -38,7 +37,7 @@ def installed() {
 }
 
 def parse(String description) {
-	def cmd = zwave.parse(description, [0x20: 1, 0x70: 1])
+	def cmd = zwave.parse(description)
 	log.debug "Parse returned ${cmd}"
 	cmd ? zwaveEvent(cmd) : null
 }
