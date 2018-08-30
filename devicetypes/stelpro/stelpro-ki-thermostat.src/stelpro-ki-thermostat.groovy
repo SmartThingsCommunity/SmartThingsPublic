@@ -29,6 +29,7 @@ metadata {
 		capability "Polling"
 		capability "Sensor"
 		capability "Refresh"
+		capability "Health Check"
 
 		attribute "outsideTemp", "number"
 
@@ -118,13 +119,22 @@ def getHeatingSetpointRange() {
 	thermostatSetpointRange
 }
 
+def setupHealthCheck() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def installed() {
+	setupHealthCheck()
+
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 }
 
 def updated() {
+	setupHealthCheck()
+
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
@@ -207,18 +217,26 @@ def updateWeather() {
 }
 
 // Command Implementations
+
+/**
+  * PING is used by Device-Watch in attempt to reach the Device
+**/
+def ping() {
+	zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format()
+}
+
 def poll() {
 	return pollCalled()
 }
 
 def pollCalled() {
+	sendEvent( name: 'change', value: 0 )
 	delayBetween([
 			updateWeather(),
 			zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format(),
 			zwave.thermostatModeV2.thermostatModeGet().format(),
 			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1).format(),
-			zwave.sensorMultilevelV3.sensorMultilevelGet().format(), // current temperature
-			sendEvent( name: 'change', value: 0 )
+			zwave.sensorMultilevelV3.sensorMultilevelGet().format() // current temperature
 		], 100)
 }
 
@@ -249,7 +267,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	state.size = cmd.size
 	state.scale = cmd.scale
 	state.precision = cmd.precision
-	//sendEvent(name:"heatingSetpoint", value:map.value)
+
 	map
 }
 
@@ -284,7 +302,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
 		map.unit = "%"
 		map.name = "humidity"
 	}
-	//sendEvent(name:"temperature", value:map.value)
+
 	map
 }
 
@@ -321,7 +339,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 			break
 	}
 	map.name = "thermostatMode"
-	//sendEvent(name:"thermostatMode", value:map.value)
+
 	map
 }
 

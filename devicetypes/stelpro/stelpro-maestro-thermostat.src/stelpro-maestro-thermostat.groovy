@@ -23,10 +23,14 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 		capability "Thermostat"
+		capability "Thermostat Mode"
+		capability "Thermostat Operating State"
+		capability "Thermostat Heating Setpoint"
 		capability "Configuration"
 		capability "Polling"
 		capability "Sensor"
 		capability "Refresh"
+		capability "Health Check"
 		
 		attribute "outsideTemp", "number"
 		attribute "humidity", "number"
@@ -41,7 +45,8 @@ metadata {
 		command "setCustomThermostatMode"
 		command "updateWeather"
 
-		fingerprint profileId: "0104", endpointId: "19", inClusters: " 0000,0003,0201,0204,0405", outClusters: "0402"
+		// Disable until certified - update with device specific values
+		// fingerprint profileId: "0104", endpointId: "19", inClusters: " 0000,0003,0201,0204,0405", outClusters: "0402"
 	}
 	
 	// simulator metadata
@@ -251,11 +256,19 @@ def updateWeather() {
 	}
 }
 
+/**
+  * PING is used by Device-Watch in attempt to reach the Device
+**/
+def ping() {
+	zigbee.readAttribute(0x201, 0x0008)
+}
+
 def poll() {
 	return pollCalled()
 }
 
 def pollCalled() {
+	sendEvent( name: 'change', value: 0 )
 	delayBetween([
 			updateWeather(),
 			zigbee.readAttribute(0x201, 0x0000),	//Read Local Temperature
@@ -264,7 +277,6 @@ def pollCalled() {
 			zigbee.readAttribute(0x204, 0x0000),	//Read Temperature Display Mode
 			zigbee.readAttribute(0x204, 0x0001),	//Read Keypad Lockout
 			zigbee.readAttribute(0x405, 0x0000),	//Read Local Humidity
-			sendEvent( name: 'change', value: 0 )
 		], 200)
 }
 

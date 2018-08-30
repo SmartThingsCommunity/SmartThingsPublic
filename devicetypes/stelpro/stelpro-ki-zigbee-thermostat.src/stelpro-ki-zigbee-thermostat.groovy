@@ -29,6 +29,7 @@ metadata {
 		capability "Polling"
 		capability "Sensor"
 		capability "Refresh"
+		capability "Health Check"
 		
 		attribute "outsideTemp", "number"
 		
@@ -42,7 +43,8 @@ metadata {
 		command "eco"
 		command "updateWeather"
 
-		fingerprint profileId: "0104", endpointId: "19", inClusters: " 0000,0003,0201,0204", outClusters: "0402"
+		// Disable until certified - update with device specific values
+		// fingerprint profileId: "0104", endpointId: "19", inClusters: " 0000,0003,0201,0204", outClusters: "0402"
 	}
 
 	// simulator metadata
@@ -125,7 +127,14 @@ def getHeatingSetpointRange() {
 	thermostatSetpointRange
 }
 
+def setupHealthCheck() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 def installed() {
+	setupHealthCheck()
+
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
@@ -261,11 +270,19 @@ def getFanModeMap() { [
 	"05":"fanAuto"
 ]}
 
+/**
+  * PING is used by Device-Watch in attempt to reach the Device
+**/
+def ping() {
+	zigbee.readAttribute(0x201, 0x001C)
+}
+
 def poll() {
 	return pollCalled()
 }
 
 def pollCalled() {
+	sendEvent( name: 'change', value: 0 )
 	delayBetween([
 			updateWeather(),
 			zigbee.readAttribute(0x201, 0x0000),	//Read Local Temperature
@@ -276,7 +293,6 @@ def pollCalled() {
 			zigbee.readAttribute(0x204, 0x0000),	//Read Temperature Display Mode
 			zigbee.readAttribute(0x204, 0x0001)		//Read Keypad Lockout
 		], 200)
-	sendEvent( name: 'change', value: 0 )
 }
 
 
@@ -590,6 +606,8 @@ def configure() {
 }
 
 def updated() {
+	setupHealthCheck()
+
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
