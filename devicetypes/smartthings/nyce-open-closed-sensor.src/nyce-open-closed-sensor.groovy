@@ -18,7 +18,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 
 metadata {
-	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE") {
+	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE", mnmn: "SmartThings", vid: "generic-contact-3") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
