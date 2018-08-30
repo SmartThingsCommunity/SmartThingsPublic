@@ -76,8 +76,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 	def event = createEvent(descriptionText: "${device.displayName} have $epc EndPoints")
 
     log.debug "${device.displayName} have $epc EndPoints. Cmds: ${cmds}"
-    
-    return cmds
+    [event, response(cmds)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd)
@@ -124,7 +123,7 @@ private void createChildDevices(def cc, def ep) {
                 	log.debug "case '0x26'"
                 	break;
                 case 0x25: 
-                	deviceCCType = "Binary Switch"
+                	deviceCCType =  "Binary Switch"
                 	deviceCCHandler = "Child Binary Switch"
                     log.debug "case '0x25'"
                     break;
