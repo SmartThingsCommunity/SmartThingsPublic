@@ -43,8 +43,6 @@ def installed() {
 	response([
 			zwave.batteryV1.batteryGet().format(),
 			"delay 2000",
-			zwave.wakeUpV1.wakeUpIntervalSet(seconds:14400, nodeid: zwaveHubNodeId).format(), // sometimes the 4hr wakeup interval is not durable
-			"delay 2000",
 			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 	])
 }
@@ -115,5 +113,5 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private sendCheckIntervalEvent() {
-	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
