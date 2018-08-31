@@ -76,7 +76,7 @@ def parse(String description) {
 	def map = zigbee.getEvent(description)
 
 	if(!map) {
-		if(description?.startsWith('zone status')) {
+		if(isZoneMessage(description)) {
 			map = parseIasMessage(description)
 		} else {
 			map = parseAttrMessage(description)
@@ -178,5 +178,9 @@ def configure() {
 			zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
 
 	//send enroll commands, configures battery reporting to happen every 30 minutes, create binding for check in attribute so check ins will occur
-	return refresh() + zigbee.enrollResponse() + zigbee.iasZoneConfig() + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + enrollCmds
+	return refresh() + zigbee.enrollResponse() + zigbee.iasZoneConfig(30, 60 * 30) + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + enrollCmds
+}
+
+private boolean isZoneMessage(description) {
+	return (description?.startsWith('zone status') || description?.startsWith('zone report'))
 }
