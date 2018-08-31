@@ -52,7 +52,6 @@ def installed() {
  	sendEvent(name: "sensType", value: "Waiting for device report")
 }
 
-// parse events into attributes
 def parse(def description) {
 	
     def cmd = zwave.parse(description)
@@ -151,8 +150,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
         case 11:
         	break
     }
-    
-
     
     log.debug "cmd:${cmd}"
     sendEvent(name: "sensValue", value: "${offsetValue}${scale}")

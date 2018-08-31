@@ -21,6 +21,7 @@ metadata {
       	command "initMC"
         command "debug"
         command "associationSet"
+        command "parentCommand"
                 
         fingerprint mfr: "0115", prod: "0110", model: "0001", inClusters: "0x60"    
 	}
@@ -38,7 +39,6 @@ metadata {
     }    
 }
 
-// parse events into attributes
 def parse(String description) {
 
 	def msg = zwave.parse(description)?.format()
@@ -75,13 +75,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 
 	def event = createEvent(descriptionText: "${device.displayName} have $epc EndPoints")
 
-    log.debug "${device.displayName} have $epc EndPoints. Cmds: ${cmds}"
+    log.debug "${device.displayName} have $epc EndPoints"
     [event, response(cmds)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd)
 {
-	log.debug cmd
 	def cc = cmd.commandClass
     def ep = cmd.endPoint
     createChildDevices(cc, ep)
@@ -98,7 +97,6 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
     
 	if (childDevice) {
     	log.debug "Parse ${childDevice.deviceNetworkId}, cmd: ${cmd}"
-        log.debug ""
         childDevice.parse(cmd.encapsulatedCommand().format())
     } else {
         log.debug "Child device not found.cmd: ${cmd}"
@@ -171,22 +169,12 @@ private void createChildDevices(def cc, def ep) {
     catch (e) {
         log.error "Child device creation failed with error = ${e}"
         state.alertMessage = "Child device creation failed. Please make sure that the '${deviceCCHandler}' is installed and published."
-        runIn(2, "sendAlert")
     }
 }
 
-private sendAlert() {
-   sendEvent(
-      descriptionText: state.alertMessage,
-	  eventType: "ALERT",
-	  name: "childDeviceCreation",
-	  value: "failed",
-	  displayed: true,
-   )
-}
 def configure() {
-	log.debug "Executing 'configure()'"
-	initMC()
+	// TODO: think about this
+    initMC()
 }
 
 def initMC() {
@@ -207,10 +195,7 @@ def associationSet() {
         	def multiChannelNodeId = i > 9 ? i : "0${i}"
             cmds << "${multiChannelAssociationCC}${setCmd}${groupingIdentifier}${nodeId}${marker}${multiChannelNodeId}${ep}"
         }
-    }
-    //cmds << "${encap(extractEP("ad-ep1"), zwaveHubNodeId, zwave.sensorMultilevelV5.sensorMultilevelGet(scale: 0, sensorType: 1))}"
-	
-    log.warn cmds
+    }	
     delayBetween(cmds, 100)
     return cmds    
 }
@@ -223,6 +208,10 @@ def command(physicalgraph.zwave.Command cmd) {
 	}
 }
 
+def parentCommand(def cmd) {
+	"${cmd}"
+}
+
 def encap(def source, def destination, def cmd) {
 	def result = null
     if (source || destination) {
@@ -231,9 +220,8 @@ def encap(def source, def destination, def cmd) {
         def sourceEP = 							source > 9 ? source : "0${source}"
         def destinationEP = 					destination > 9 ? destination : "0${destination}"
 
-    	result = "${multiChannel}${cmdEncap}${sourceEP}${destinationEP}${cmd.format()}"
+    	result = "${multiChannel}${cmdEncap}${sourceEP}${destinationEP}${cmd}"
 	}
-    log.debug result
     return result
 }
 
@@ -245,7 +233,7 @@ def extractEP(def s) {
 	return result as Integer
 }
 
-private boolean contains(String s, def ss) {
+private boolean contains(def s, def ss) {
     boolean contains = false
     log.debug "Search ${ss} in ${s} string"
     if (s != null && !s.isEmpty()) {

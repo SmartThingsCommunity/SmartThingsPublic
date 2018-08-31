@@ -15,11 +15,9 @@
  */
 metadata {
 	definition (name: "Child Binary Switch", namespace: "baadev", author: "Alexander Belov") {
-
+		capability "Switch"
         capability "Refresh"
-        
-        command "update" 
-        
+                
         attribute "lastUpdated", "String"
         attribute "switchState", "String"
 	}
@@ -33,10 +31,12 @@ metadata {
         valueTile("lastUpdated", "device.lastUpdated", decoration: "flat", width: 5, height: 1) {
         	state "default", label:'Last updated ${currentValue}'
         }
-		multiAttributeTile(name: "switchState", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.switchState", key: "PRIMARY_CONTROL") {
-				attributeState("switchState", label: '${currentValue}', defaultState: true, backgroundColor: "#44b621")
-			}
+		multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.switch",decoration: "flat", key: "PRIMARY_CONTROL") {
+                attributeState "on", label: '${name}', action: "switch.off", icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png", backgroundColor: "#00A0DC"
+                attributeState "off", label: '${name}', action: "switch.on", icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png", backgroundColor: "#ffffff"
+            }
+
             tileAttribute("device.refresh", inactiveLabel: false, key: "SECONDARY_CONTROL") {
             	attributeState("refresh", label: '', action:"refresh.refresh", icon:"st.secondary.refresh")
             }
@@ -44,7 +44,6 @@ metadata {
     }
 }
 
-// parse events into attributes
 def parse(def description) {
     def cmd = zwave.parse(description)
     
@@ -60,29 +59,21 @@ def parse(def description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	def switchState = null
-    log.debug cmd.value
-    
-    if (switchReverse == 1) {
-        switchState = cmd.value > 0 ? "ON" : "OFF"    
-    }
+	def switchState = cmd.value > 0 ? "on" : "off" 
+
     if (switchReverse == 2) {
-        switchState = cmd.value > 0 ? "OFF" : "ON"  
+        switchState = cmd.value > 0 ? "off" : "on"  
     }
     
-    sendEvent(name: "switchState", value: switchState)
+    createEvent(name: "switchState", value: switchState)
 }
 
 def refresh() {
-	def cmds = []
-	cmds << zwave.switchBinaryV1.switchBinaryGet().format()
-    cmds << zwave.switchBinaryV1.switchBinarySet(switchValue: 255).format()
-	log.debug "exec refresh: ${cmds}"
-	return cmds
+	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinaryGet().format()))
 }
-def update() {
-	def cmds = []
-	cmds << command(zwave.switchBinaryV1.switchBinaryGet())
-    cmds << command(zwave.switchBinaryV1.switchBinarySet(switchValue: FF))
-	log.debug "exec refresh: ${cmds}"
+def on() {
+	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format()))
+}
+def off() {
+	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format()))
 }
