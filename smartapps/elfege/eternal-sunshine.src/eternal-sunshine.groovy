@@ -46,11 +46,20 @@ def pageSetup() {
     return dynamicPage(pageProperties) {
 
         section("Select the dimmers you wish to control") {
-            input "dimmers", "capability.switchLevel", title: "pick a dimmer", required:true, multiple: true
+            input "dimmers", "capability.switchLevel", title: "pick a dimmer", required:true, multiple: true      
         }
 
         section("Select Illuminance Sensor") {
-            input "LSen", "capability.illuminanceMeasurement", title: "pick a sensor", required:true, multiple: false
+            input "LSen", "capability.illuminanceMeasurement", title: "pick a sensor", required:true, multiple: false, submitOnChange: true
+
+            if(LSen){
+                def attr = LSen.supportedAttributes
+                log.debug "supportedAttributes for $LSen: $attr"
+                def FindUnit = LSen.currentState("illuminance")
+                if(FindUnit.unit == "lux"){
+                    input "maxValue", "number", title: "$LSen uses lux units instead of %. Please, select max lux value for this sensor", default: false
+                }
+            }
             input "pause", "bool", title: "pause if all selected dimmers are off", default: false
         }
         section([mobileOnly:true]) {
@@ -58,6 +67,19 @@ def pageSetup() {
             mode title: "Set for specific mode(s)", required: false, uninstall: true
         }
 
+        section("Differentiate Values With Location Mode") {
+            input "modes", "mode", title:"select modes", required: false, multiple: true, submitOnChange: true
+
+            if(modes){
+                def i = 0
+                state.dimValMode = []
+                def dimValMode = []
+                for(modes.size() != 0; i < modes.size(); i++){
+                    input "dimValMode${i}", "number", required:true, title: "select a maximum value for ${modes[i]}"
+                
+                }
+            }
+        }
     }
 }
 
@@ -79,6 +101,7 @@ def initialize() {
     subscribe(LSen, "illuminance", illuminanceHandler)
     //subscribe(location, "mode", ChangedModeHandler)	
     log.debug "initialization ok"
+    evaluate()
 }
 
 def dimmersHandler(evt){
@@ -118,7 +141,7 @@ illuminance is: $illum"""
         /// ALGEBRA corrected with lux frame of reference
         xa = 0 		// min illuminance
         ya = 100 	// corresponding dimmer level
-        xb = 10000 	// max illuminance
+        xb = maxValue 	// max illuminance
         yb = 0 		// corresponding dimmer level
 
     }
@@ -128,12 +151,9 @@ illuminance is: $illum"""
 
     def dimVal = coef*illum + b
 
-
     if(dimVal <= 0){
         dimVal = 1
     }
-
-    
 
     if(atLeastOneIsOn){
         if(dimVal == 0){
@@ -146,7 +166,7 @@ illuminance is: $illum"""
         log.debug "doing nothing"
     }
 
-log.debug "dimVal = $dimVal"
+    log.debug "dimVal = $dimVal"
 }
 
 def setDimmers(val){
@@ -156,10 +176,29 @@ def setDimmers(val){
     def i = 0
     def s = dimmers.size()
 
+    if(modes)
+    {
+        if(location.currentMode in modes){
+        
+            while(location.currentMode != modes[i]){
+                i++
+                    log.debug "; $i ;"
+            }
+            def valMode = "dimValMode${i}"
+            valMode = settings.find{it.key == valMode}.value
+           
+            log.debug "ADJUSTED WITH CURRENT MODE == > valMode = $valMode "
+            
+            val = valMode
+        }
+    }
+
+    i = 0
     for(s != 0; i < s; i++){
         isNotOff = "on" in dimmers[i].currentValue("switch")
         if(isNotOff){
             dimmers[i].setLevel(val)
+            log.debug "${dimmers[i]} set to $val"
         }
     }
 
