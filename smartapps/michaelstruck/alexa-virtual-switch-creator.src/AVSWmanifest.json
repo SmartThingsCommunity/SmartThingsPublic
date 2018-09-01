@@ -15,11 +15,11 @@
     "docUrl": "http://thingsthataresmart.wiki/index.php?title=Alexa_Virtual_Switch_Creator",
     "smartApps": {
         "parent": {
-            "name": "Alexa Virtual Switch Creator",
+            "name": "Alexa Virtual Device Creator",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper.src/Alexa@2x.png",
             "published": true,
             "oAuth": false,
-            "version": "1.0.1",
+            "version": "1.0.2",
             "appSettings": {},
             "appUrl": "smartapps/michaelstruck/alexa-virtual-switch-creator.src/alexa-virtual-switch-creator.groovy"
         },
@@ -34,11 +34,19 @@
             "optional": false
         },
         {
-            "name": "Momentary Button Tile ",
+            "name": "Momentary Button Tile",
             "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
             "published": true,
             "version": "1.0.3",
             "appUrl": "devicetypes/michaelstruck/momentary-button-tile.src/momentary-button-tile.groovy",
+            "optional": false
+        },                  
+        {
+            "name": "Virtual Motion Detector",
+            "iconUrl": "https://raw.githubusercontent.com/MichaelStruck/SmartThingsPublic/master/smartapps/michaelstruck/alexa-helper-scenario.src/Alexa%402x.png",
+            "published": true,
+            "version": "1.0.0",
+            "appUrl": "devicetypes/michaelstruck/virtual-motion-detector.src/virtual-motion-detector.groovy",
             "optional": false
         }
     ]
