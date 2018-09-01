@@ -3,7 +3,7 @@
     "repoOwner": "MichaelStruck",
     "repoName": "SmartThingsPublic",
     "repoBranch": "master",
-    "name": "Alexa Virtual Switch Creator",
+    "name": "Alexa Virtual Device Creator",
     "author": "Michael Struck",
     "description": "Allows for creation of SmartThings virtual devices that can be tied to items controlled by Amazon Echo('Alexa').",
     "category": "My Apps",
