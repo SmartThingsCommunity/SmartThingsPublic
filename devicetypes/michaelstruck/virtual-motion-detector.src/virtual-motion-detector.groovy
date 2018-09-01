@@ -2,7 +2,7 @@
  *  Virtual Motion Detector
  *
  *  Copyright 2016 Michael Struck
- *  Version 1.0.3 8/29/16
+ *  Version 1.0.0 8/29/16
  *
  *  Version 1.0.0 Initial release
  *
