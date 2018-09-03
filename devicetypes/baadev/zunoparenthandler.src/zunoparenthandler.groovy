@@ -22,19 +22,22 @@ metadata {
         command "debug"
         command "associationSet"
         command "parentCommand"
+        command "fixcommand"
                 
         fingerprint mfr: "0115", prod: "0110", model: "0001", inClusters: "0x60"    
 	}
 
 	tiles (scale: 2) {
         childDeviceTiles('all')
-        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "configure", label:'Configure', action:"configure", icon:"st.secondary.tools"
+        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+            state "configure", label:'Update devices', action:"configure", icon:"st.secondary.tools"
         }
-        standardTile("associationSet","device.associationSet", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("associationSet","device.associationSet", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
         	state "associationSet", label:'Association set', action:"associationSet", icon:"st.secondary.tools"
         }
-        
+        standardTile("fixcommand", "device.fixcommand", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+			state "fixcommand", label:'Fix child devices', action:"fixcommand", icon:"st.secondary.tools"
+		}
         main ([configure])
     }    
 }
@@ -83,7 +86,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 {
 	def cc = cmd.commandClass
     def ep = cmd.endPoint
-    createChildDevices(cc, ep)
+    def needCreate = null
+    if (!childDevices.find{ it.deviceNetworkId.endsWith("-ep${ep}") }) {
+        createChildDevices(cc, ep)
+    } else if (!childDevices) {
+        createChildDevices(cc, ep)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
@@ -174,6 +182,9 @@ private void createChildDevices(def cc, def ep) {
 
 def configure() {
 	// TODO: think about this
+    //if (childDevices) {
+    	// TODO: remove old childs and create new
+    //}
     initMC()
 }
 
@@ -190,12 +201,14 @@ def associationSet() {
     def ep = 								"00"
     def nodeId = zwaveHubNodeId > 9 ? zwaveHubNodeId : "0${zwaveHubNodeId}"
 	
-    if (state.epc > 1) {
+    if (state.epc >= 1) {
         for (byte i = 1; i <= state.epc; i++) {
         	def multiChannelNodeId = i > 9 ? i : "0${i}"
             cmds << "${multiChannelAssociationCC}${setCmd}${groupingIdentifier}${nodeId}${marker}${multiChannelNodeId}${ep}"
         }
-    }	
+    } else {
+        log.debug "Device don't have any endpoints to set association"
+    }
     delayBetween(cmds, 100)
     return cmds    
 }
@@ -242,3 +255,30 @@ private boolean contains(def s, def ss) {
     return contains
 }
 
+
+// TODO: Fix error with removing/adding child devices or find workaround
+def fixcommand() {
+	log.debug "Sometimes it refuses to create a device, adding one test device now to fix things"
+    try {
+        def curdevice = getChildDevices()?.find { it.deviceNetworkId == "fixChild"}
+        if (curdevice) {
+            //Do nothing as we already have a test device
+        }
+        else {
+        	//Might reach here if have no child devices
+            addChildDevice("Child Multilevel Sensor", "fixChild", null, [name: "fix childs device", label: name, completedSetup: true])
+        }
+    } catch (e) {
+    	//Might reach here if you have child devices but not the current one
+        log.debug "Couldnt find device, probably doesn't exist so safe to add a new one: ${e}"
+        addChildDevice("Child Binary Switch", "fixChild", null, [name: "fix childs device", label: name, completedSetup: true])
+    }
+    try {
+        def curdevice = getChildDevices()?.find { it.deviceNetworkId == "fixChild"}
+        if (curdevice) {
+            deleteChildDevice("fixChild")
+        }
+    } catch (e) {
+    	log.debug "Error while deleting ${curdevice}: ${e}"
+    }
+}
