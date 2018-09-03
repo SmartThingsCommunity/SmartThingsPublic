@@ -58,6 +58,7 @@ metadata {
 }
 
 def installed() {
+    updateDataValue("updatedOnOff", "true")
     createChildDevices()
 }
 
