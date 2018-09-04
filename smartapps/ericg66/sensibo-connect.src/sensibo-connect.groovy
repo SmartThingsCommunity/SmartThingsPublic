@@ -20,9 +20,9 @@ definition(
     author: "Eric Gosselin",
     description: "Connect your Sensibo Pod to SmartThings.",
     category: "Green Living",
-    iconUrl: "https://image.ibb.co/f8gMFQ/on_color_large_sm.png",
-    iconX2Url: "https://image.ibb.co/eOwA9k/on_color_large2x.png",
-    iconX3Url: "https://image.ibb.co/cq9V9k/on_color_large3x.png",
+    iconUrl: "https://image.ibb.co/j7qAPT/Sensibo_1x.png",
+    iconX2Url: "https://image.ibb.co/coZtdo/Sensibo_2x.png",
+    iconX3Url: "https://image.ibb.co/cBwTB8/Sensibo_3x.png",
     singleInstance: true) 
 
 {
@@ -38,6 +38,9 @@ preferences {
 
 def getServerUrl() { "https://home.sensibo.com" }
 def getapikey() { apiKey }
+//def version() { "SmartThingsv1.5" }
+
+public static String version() { return "SmartThingsv1.5" }
 
 def setAPIKey()
 {
@@ -130,7 +133,7 @@ def getSensiboPodList()
     uri: "${getServerUrl()}",
     path: "/api/v2/users/me/pods",
     requestContentType: "application/json",
-    query: [apiKey:"${getapikey()}", type:"json",fields:"id,room" ]]
+    query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json",fields:"id,room" ]]
 
 	def pods = [:]
 	
@@ -144,6 +147,7 @@ def getSensiboPodList()
                         
 					pods[key] = value
 				}
+                state.pods = pods
 			}
 	  }
     }
@@ -456,7 +460,7 @@ def initialize() {
     log.trace "initialize() called"
     log.trace "key "+ getapikey()
     
-    atomicState.apikey = getapikey()
+    state.apikey = getapikey()
 	  
 	def devices = SelectedSensiboPods.collect { dni ->
 		log.debug dni
@@ -542,6 +546,7 @@ def OnOffHandler(evt) {
 }
 
 def getPollRateMillis() { return 45 * 1000 }
+def getCapabilitiesRateMillis() {return 60 * 1000 }
 
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
 def pollChild( child )
@@ -550,12 +555,12 @@ def pollChild( child )
 	debugEvent ("poll child")
 	def now = new Date().time
 
-	debugEvent ("Last Poll Millis = ${atomicState.lastPollMillis}")
-	def last = atomicState.lastPollMillis ?: 0
+	debugEvent ("Last Poll Millis = ${state.lastPollMillis}")
+	def last = state.lastPollMillis ?: 0
 	def next = last + pollRateMillis
-
-	log.debug "pollChild( ${child.device.deviceNetworkId} ): $now > $next ?? w/ current state: ${atomicState.sensibo}"
-	debugEvent ("pollChild( ${child.device.deviceNetworkId} ): $now > $next ?? w/ current state: ${atomicState.sensibo}")
+	
+	log.debug "pollChild( ${child.device.deviceNetworkId} ): $now > $next ?? w/ current state: ${state.sensibo}"
+	debugEvent ("pollChild( ${child.device.deviceNetworkId} ): $now > $next ?? w/ current state: ${state.sensibo}")
 
 	//if( now > next )
 	if( true ) // for now let's always poll/refresh
@@ -565,14 +570,14 @@ def pollChild( child )
 
 		pollChildren(child.device.deviceNetworkId)
 
-		log.debug "polled children and looking for ${child.device.deviceNetworkId} from ${atomicState.sensibo}"
-		debugEvent ("polled children and looking for ${child.device.deviceNetworkId} from ${atomicState.sensibo}")
+		log.debug "polled children and looking for ${child.device.deviceNetworkId} from ${state.sensibo}"
+		debugEvent ("polled children and looking for ${child.device.deviceNetworkId} from ${state.sensibo}")
 
 		def currentTime = new Date().time
 		debugEvent ("Current Time = ${currentTime}")
-		atomicState.lastPollMillis = currentTime
+		state.lastPollMillis = currentTime
 
-		def tData = atomicState.sensibo[child.device.deviceNetworkId]
+		def tData = state.sensibo[child.device.deviceNetworkId]
         
         if (tData == null) return
         
@@ -594,11 +599,11 @@ def pollChild( child )
 		
 		return tData.data
 	}
-	else if(atomicState.sensibo[child.device.deviceNetworkId] != null)
+	else if(state.sensibo[child.device.deviceNetworkId] != null)
 	{
 		log.debug "not polling children, found child ${child.device.deviceNetworkId} "
 
-		def tData = atomicState.sensibo[child.device.deviceNetworkId]
+		def tData = state.sensibo[child.device.deviceNetworkId]
 		if(!tData.updated)
 		{
 			// we have pulled new data for this thermostat, but it has not asked us for it
@@ -608,7 +613,7 @@ def pollChild( child )
 		}
 		return null
 	}
-	else if(atomicState.sensibo[child.device.deviceNetworkId] == null)
+	else if(state.sensibo[child.device.deviceNetworkId] == null)
 	{
 		log.error "ERROR: Device connection removed? no data for ${child.device.deviceNetworkId}"
 
@@ -662,11 +667,16 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 	debugEvent ("Mode Request Body = ${jsonRequestBody}")
 
 	def result = sendJson(PodUid, jsonRequestBody)
-
-	if (result) {
-		def tData = atomicState.sensibo[child.device.deviceNetworkId]
+    
+	if (result) {          
+		def tData = state.sensibo[child.device.deviceNetworkId]      
         
-        if (tData == null) return false
+        if (tData == null) {
+        	pollChildren(child.device.deviceNetworkId)
+            tData = state.sensibo[child.device.deviceNetworkId]
+        }        
+        
+        log.debug "Device : " + child.device.deviceNetworkId + " state : " + tData
         
 		tData.data.fanLevel = fanLevel
         tData.data.thermostatFanMode = fanLevel
@@ -688,7 +698,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
         tData.data.Error = "Success"
 	}
     else {
-    	def tData = atomicState.sensibo[child.device.deviceNetworkId]
+    	def tData = state.sensibo[child.device.deviceNetworkId]
         if (tData == null) return false
     	
         tData.data.Error = "Failed"
@@ -701,96 +711,164 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 def getCapabilities(PodUid, mode)
 {
 	log.trace "getCapabilities() called"
-	def data = [:]   
-	def pollParams = [
+    def now = new Date().time
+    
+    def last = state.lastPollCapabilitiesMillis ?: 0
+	def next = last + getCapabilitiesRateMillis()
+    
+    def data = [:] 
+    
+    if (state.capabilities.$PodUid == null || now > next)
+    //if (true)
+	{
+    	log.debug "Now : " + now + " Next : " + next    	
+        
+    	//def data = [:]   
+		def pollParams = [
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${PodUid}",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json", fields:"remoteCapabilities,productModel"]]
-     try {
-
-     	 httpGet(pollParams) { resp ->
-
-         if (resp.data) {
-         		log.debug "Status : " + resp.status
-                if(resp.status == 200) {
-                	//resp.data = [result: [remoteCapabilities: [modes: [heat: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], fan: [swing: ["stopped", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], cool: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: ["C": ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "high", "auto"]]]]]]
-                    //resp.data = ["result": ["productModel": "skyv2", "remoteCapabilities": ["modes": ["dry": ["temperatures": ["C": ["isNative": false, "values": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], "F": ["isNative": true, "values": [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]]], "swing": ["stopped", "rangeFull"]], "auto": ["temperatures": ["C": ["isNative": false, "values": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], "F": ["isNative": true, "values": [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]]], "swing": ["stopped", "rangeFull"]], "heat": ["swing": ["stopped", "rangeFull"], "temperatures": ["C": ["isNative": false, "values": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], "F": ["isNative": true, "values": [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]]], "fanLevels": ["low", "medium", "high", "auto"]], "fan": ["swing": ["stopped", "rangeFull"], "temperatures": [], "fanLevels": ["low", "medium", "high", "auto"]], "cool": ["swing": ["stopped", "rangeFull"], "temperatures": ["C": ["isNative": false, "values": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], "F": ["isNative": true, "values": [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]]], "fanLevels": ["low", "medium", "high", "auto"]]]]]]
-                    switch (mode){
-                    	case "dry":
-                        	data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.dry,
-                                productModel : resp.data.result.productModel
-                           	]	
-                        	break
-                        case "cool":
-                       		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.cool,
-                                productModel : resp.data.result.productModel
-                           	]	
-                        	break
-                        case "heat":
-                       		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.heat,
-                                productModel : resp.data.result.productModel
-                           	]	
-                        	break
-                        case "fan":
-                       		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.fan,
-                                productModel : resp.data.result.productModel
-                           	]	
-                        	break
-                        case "auto":
-                       		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes.auto,
-                                productModel : resp.data.result.productModel
-                           	]	
-                        	break
-                        case "modes":
-                       		data = [
-                            	remoteCapabilities : resp.data.result.remoteCapabilities.modes,
-                                productModel : resp.data.result.productModel
-                           	]	
-                        	break                        
+    	query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json", fields:"remoteCapabilities,productModel"]]
+     
+     	try {
+			log.trace "getCapabilities() called - Request sent to Sensibo API(remoteCapabilities) for PODUid : $PodUid - ${version()}"
+            
+     		httpGet(pollParams) { resp ->
+                if (resp.data) {
+                    log.debug "Status : " + resp.status
+                    if(resp.status == 200) {
+                        //resp.data = [result: [remoteCapabilities: [modes: [heat: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], fan: [swing: ["stopped", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: [C: ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "medium", "high", "auto"]], cool: [swing: ["stopped", "fixedTop", "fixedMiddleTop", "fixedMiddle", "fixedMiddleBottom", "fixedBottom", "rangeTop", "rangeMiddle", "rangeBottom", "rangeFull"], temperatures: ["C": ["isNative": true, "values": [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], F: ["isNative": false, "values": [61, 63, 64, 66, 68, 70, 72, 73, 75, 77, 79, 81, 82, 84, 86]]], fanLevels: ["low", "high", "auto"]]]]]]
+                        //resp.data = ["result": ["productModel": "skyv2", "remoteCapabilities": ["modes": ["dry": ["temperatures": ["C": ["isNative": false, "values": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], "F": ["isNative": true, "values": [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]]], "swing": ["stopped", "rangeFull"]], "auto": ["temperatures": ["C": ["isNative": false, "values": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], "F": ["isNative": true, "values": [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]]], "swing": ["stopped", "rangeFull"]], "heat": ["swing": ["stopped", "rangeFull"], "temperatures": ["C": ["isNative": false, "values": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], "F": ["isNative": true, "values": [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]]], "fanLevels": ["low", "medium", "high", "auto"]], "fan": ["swing": ["stopped", "rangeFull"], "temperatures": [], "fanLevels": ["low", "medium", "high", "auto"]], "cool": ["swing": ["stopped", "rangeFull"], "temperatures": ["C": ["isNative": false, "values": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]], "F": ["isNative": true, "values": [62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86]]], "fanLevels": ["low", "medium", "high", "auto"]]]]]]
+                      
+                        state.capabilities.$PodUid = resp.data
+                        log.debug "Succes read from Sensibo"
+                        log.trace "Capabilities from Sensibo for ${PodUid} : " + state.capabilities.$PodUid			
+						
+                        def currentTime = new Date().time
+						debugEvent ("Current Time = ${currentTime}")
+						state.lastPollCapabilitiesMillis = currentTime
+                        
+                        switch (mode){
+                            case "dry":
+                                data = [
+                                    remoteCapabilities : resp.data.result.remoteCapabilities.modes.dry,
+                                    productModel :  resp.data.result.productModel
+                                ]	
+                                break
+                            case "cool":
+                                data = [
+                                    remoteCapabilities : resp.data.result.remoteCapabilities.modes.cool,
+                                    productModel : resp.data.result.productModel
+                                ]	
+                                break
+                            case "heat":
+                                data = [
+                                    remoteCapabilities : resp.data.result.remoteCapabilities.modes.heat,
+                                    productModel : resp.data.result.productModel
+                                ]	
+                                break
+                            case "fan":
+                                data = [
+                                    remoteCapabilities : resp.data.result.remoteCapabilities.modes.fan,
+                                    productModel : resp.data.result.productModel
+                                ]	
+                                break
+                            case "auto":
+                                data = [
+                                    remoteCapabilities : resp.data.result.remoteCapabilities.modes.auto,
+                                    productModel : resp.data.result.productModel
+                                ]	
+                                break
+                            case "modes":
+                                data = [
+                                    remoteCapabilities : resp.data.result.remoteCapabilities.modes,
+                                    productModel : resp.data.result.productModel
+                                ]	
+                                break                        
+                        }
+                        log.trace "Returning remoteCapabilities from Sensibo"
+                        return data
                     }
-                    log.trace "Returning remoteCapabilities"
-                    return data
+                    else {
+                        log.debug "get remoteCapabilities Failed"
+
+                        data = [
+                            remoteCapabilities : "",
+                            productModel : ""
+                        ]                    
+                        return data
+                    }
                 }
-                else {
-                	log.debug "get remoteCapabilities Failed"
-                    
-                    data = [
-						remoteCapabilities : "",
-                        productModel : ""
-                    ]                    
-              		return data
-                }
-			}
-         }
-         return data
-     }
-     catch(Exception e) {     	
-        log.debug "get remoteCapabilities Failed"
+        	}
+        	return data
+     	}
+     	catch(Exception e) {     	
+        	log.debug "get remoteCapabilities Failed"
         
-        data = [
-        	remoteCapabilities : "",
-            productModel : ""
-        ]        
-     	return data
-     }
+        	data = [
+        		remoteCapabilities : "",
+            	productModel : ""
+        	]        
+     		return data
+     	}
+    }
+    
+    else {
+    	log.trace "Capabilities from local for ${PodUid} : " + state.capabilities.$PodUid
+        //return
+    	switch (mode){
+            case "dry":
+            data = [
+                remoteCapabilities : state.capabilities.$PodUid.result.remoteCapabilities.modes.dry,
+                productModel : state.capabilities.$PodUid.result.productModel
+            ]	
+            break
+            case "cool":
+            data = [
+                remoteCapabilities : state.capabilities.$PodUid.result.remoteCapabilities.modes.cool,
+                productModel : state.capabilities.$PodUid.result.productModel
+            ]	
+            break
+            case "heat":
+            data = [
+                remoteCapabilities :state.capabilities.$PodUid.result.remoteCapabilities.modes.heat,
+                productModel : state.capabilities.$PodUid.result.productModel
+            ]	
+            break
+            case "fan":
+            data = [
+                remoteCapabilities : state.capabilities.$PodUid.result.remoteCapabilities.modes.fan,
+                productModel : state.capabilities.$PodUid.result.productModel
+            ]	
+            break
+            case "auto":
+            data = [
+                remoteCapabilities : state.capabilities.$PodUid.result.remoteCapabilities.modes.auto,
+                productModel : state.capabilities.$PodUid.result.productModel
+            ]	
+            break
+            case "modes":
+            data = [
+                remoteCapabilities : state.capabilities.$PodUid.result.remoteCapabilities.modes,
+                productModel : state.capabilities.$PodUid.result.productModel
+            ]	
+            break                        
+        }
+        log.trace "Returning remoteCapabilities from local"
+        return data
+    }                  
 }
 
 // Get the latest state from the Sensibo Pod
 def getACState(PodUid)
 {
-	log.trace "getACState() called"
+	log.trace "getACState() called - ${version()}"
 	def data = [:]
 	def pollParams = [
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${PodUid}/acStates",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json", limit:1, fields:"status,acState,device"]]
+    	query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json", limit:1, fields:"status,acState,device"]]
     
     try {
        httpGet(pollParams) { resp ->
@@ -921,26 +999,33 @@ def getACState(PodUid)
 // Send state to the Sensibo Pod
 def sendJson(String PodUid, String jsonBody)
 {
-    log.trace "sendJson() called - Request sent to Sensibo API(acStates) for PODUid : $PodUid - $jsonBody"
+    log.trace "sendJson() called - Request sent to Sensibo API(acStates) for PODUid : $PodUid - ${version()} - $jsonBody"
 	def cmdParams = [
 		uri: "${getServerUrl()}",
 		path: "/api/v2/pods/${PodUid}/acStates",
 		headers: ["Content-Type": "application/json"],
-        query: [apiKey:"${getapikey()}", type:"json", fields:"acState"],
+        query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json", fields:"acState"],
 		body: jsonBody]
 
-	def returnStatus = -1
+	//def returnStatus = -1
     try{
        httpPost(cmdParams) { resp ->
 			if(resp.status == 200) {
                 log.debug "updated ${resp.data}"
 				debugEvent("updated ${resp.data}")
-				returnStatus = resp.status
-				log.trace "Successful call to Sensibo API."
+                log.trace "Successful call to Sensibo API."
+				
+                //returnStatus = resp.status
+                
+                log.debug "Returning True"
+				return true
             }
-           	else { log.trace "Failed call to Sensibo API." }
+           	else { 
+            	log.trace "Failed call to Sensibo API."
+                return false
+            }
        }
-    }
+    }    
     catch(Exception e)
 	{
 		log.debug "Exception Sending Json: " + e
@@ -948,10 +1033,13 @@ def sendJson(String PodUid, String jsonBody)
 		return false
 	}
     
-    if (returnStatus == 200)
-		return true
-	else
-		return false
+    //if (returnStatus == 200)
+    //{
+    //	log.debug "Returning True"
+	//	return true
+    //}
+	//else
+	//	return false
 }
 
 def pollChildren(PodUid)
@@ -966,7 +1054,7 @@ def pollChildren(PodUid)
     	uri: "${getServerUrl()}",
     	path: "/api/v2/pods/${thermostatIdsString}/measurements",
     	requestContentType: "application/json",
-    	query: [apiKey:"${getapikey()}", type:"json", fields:"batteryVoltage,temperature,humidity,time"]]
+    	query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json", fields:"batteryVoltage,temperature,humidity,time"]]
 
 	debugEvent ("Before HTTPGET to Sensibo.")
 
@@ -992,7 +1080,7 @@ def pollChildren(PodUid)
                 def setTemp = getACState(thermostatIdsString)
                 if (setTemp.Error != "Failed") {
                 
-				 atomicState.sensibo = resp.data.result.inject([:]) { collector, stat ->
+				 state.sensibo = resp.data.result.inject([:]) { collector, stat ->
 
 					def dni = thermostatIdsString
 					
@@ -1055,8 +1143,8 @@ def pollChildren(PodUid)
 				 }				
                 }
                 
-				log.debug "updated ${atomicState.sensibo[thermostatIdsString].size()} stats: ${atomicState.sensibo[thermostatIdsString]}"
-                debugEvent ("updated ${atomicState.sensibo[thermostatIdsString]}",false)
+				log.debug "updated ${state.sensibo[thermostatIdsString].size()} stats: ${state.sensibo[thermostatIdsString]}"
+                debugEvent ("updated ${state.sensibo[thermostatIdsString]}",false)
 			}
 			else
 			{
@@ -1085,7 +1173,7 @@ def pollHandler() {
     	log.debug "polling " + it.deviceNetworkId
         pollChildren(it.deviceNetworkId) }
 	
-    atomicState.sensibo.each {stat ->
+    state.sensibo.each {stat ->
 
 		def dni = stat.key
 
@@ -1099,8 +1187,8 @@ def pollHandler() {
 			log.debug ("Found Child Device.")
 			debugEvent ("Found Child Device.")
 			debugEvent("Event Data before generate event call = ${stat}")
-			log.debug atomicState.sensibo[dni]
-			d.generateEvent(atomicState.sensibo[dni].data)
+			log.debug state.sensibo[dni]
+			d.generateEvent(state.sensibo[dni].data)
 		}
 	}
 }
