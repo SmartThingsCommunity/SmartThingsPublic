@@ -58,8 +58,12 @@ metadata {
 }
 
 def installed() {
-    updateDataValue("updatedOnOff", "true")
     createChildDevices()
+}
+
+def updated() {
+    log.debug "updated()"
+    updateDataValue("onOff", "catchall")
 }
 
 // Parse incoming device messages to generate events
