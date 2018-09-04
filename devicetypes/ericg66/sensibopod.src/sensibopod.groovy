@@ -65,18 +65,7 @@ metadata {
 	}
 
 	simulator {
-		// TODO: define status and reply messages here
-		
-        // status messages
-		status "on": "on/off: 1"
-		status "off": "on/off: 0"
-        status "temperature":"22"
-        status "targetTemperature":"22"
-        //status "humidity": "humidity"
-        
-        // reply messages
-		reply "zcl on-off on": "on/off: 1"
-		reply "zcl on-off off": "on/off: 0"
+
 	}
 
 	tiles(scale: 2) {
@@ -260,6 +249,7 @@ def setAll(newMode,temp,fan)
         log.debug "Fan : " + Level
    
         def result = parent.setACStates(this, device.deviceNetworkId, "on", newMode, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+       
         if (result) {
         	if (LevelBefore != Level) {
                 generatefanLevelEvent(Level)
@@ -268,12 +258,15 @@ def setAll(newMode,temp,fan)
             if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
 
             generateModeEvent(newMode)
+            
+            generateStatusEvent()
+            refresh()
         }
         else {
             generateErrorEvent()
-        }      
-        generateStatusEvent()
-        refresh()
+            
+            generateStatusEvent()
+        }              
 	}
     else {       
     }
@@ -466,14 +459,17 @@ void lowerCoolSetpoint() {
        
         generateSetTempEvent(Setpoint)
         
-    	log.debug "New target Temperature = ${Setpoint}"       
+    	log.debug "New target Temperature = ${Setpoint}"
+        
+        generateStatusEvent()
+    	refresh()
     }
 	else {
     	log.debug "error"
        	generateErrorEvent()
-    }
-	generateStatusEvent()
-    refresh()
+        
+        generateStatusEvent()
+    }	
 }
 
 
@@ -528,13 +524,16 @@ void raiseCoolSetpoint() {
         
         generateSetTempEvent(Setpoint)
         
-    	log.debug "New target Temperature = ${Setpoint}"       
+    	log.debug "New target Temperature = ${Setpoint}"
+        
+        generateStatusEvent()
+    	refresh()
     }
 	else {
        	generateErrorEvent()
-    }
-	generateStatusEvent()
-    refresh()
+        
+        generateStatusEvent()
+    }	
 }
 
 void raiseHeatSetpoint() {
@@ -558,13 +557,17 @@ void raiseHeatSetpoint() {
         
         generateSetTempEvent(Setpoint)
         
-    	log.debug "New target Temperature = ${Setpoint}"       
+    	log.debug "New target Temperature = ${Setpoint}"
+        
+        generateStatusEvent()
+    	refresh()
     }
 	else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }
-	generateStatusEvent()
-    refresh()
+	
 }
 
 void lowerHeatSetpoint() {
@@ -588,13 +591,16 @@ void lowerHeatSetpoint() {
         
         generateSetTempEvent(Setpoint)
         
-    	log.debug "New target Temperature = ${Setpoint}"       
+    	log.debug "New target Temperature = ${Setpoint}"
+        
+        generateStatusEvent()
+    	refresh()
     }
 	else {
        	generateErrorEvent()
-    }
-	generateStatusEvent()
-    refresh()
+        
+        generateStatusEvent()
+    }	
 }
 
 def refresh()
@@ -622,13 +628,15 @@ def setFanSetpoint(temp) {
          
         sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
     }
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }
-    
-    generateStatusEvent()
-    refresh()
 }
 
 // Set Temperature
@@ -648,13 +656,15 @@ def setDrySetpoint(temp) {
          
         sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
     }
     else {
        	generateErrorEvent()
-    }
-    
-    generateStatusEvent()
-    refresh()
+        
+        generateStatusEvent()
+    }   
 }
 
 
@@ -677,13 +687,15 @@ def setCoolingSetpoint(temp) {
         sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	//sendEvent(name: 'heatingSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
     }
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }
-    
-    generateStatusEvent()
-    refresh()
 }
 
 def setHeatingSetpoint(temp) {
@@ -702,12 +714,15 @@ def setHeatingSetpoint(temp) {
     	sendEvent(name: 'heatingSetpoint', value: temp, displayed: false)
         sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
 	}	
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }    
-    generateStatusEvent()
-    refresh()
 }
 
 def generateSetTempEvent(temp) {
@@ -722,18 +737,22 @@ def on() {
    
     log.debug "Temp Unit : " + device.currentState("temperatureUnit").value
     def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+    log.debug "Result : " + result
     if (result) {
     	log.info "AC turned ON for " + device.deviceNetworkId
     	sendEvent(name: 'thermostatMode', value: device.currentState("mode").value, displayed: false,isStateChange: true)
         //sendEvent(name: 'thermostatOperatingState', value: "idle",isStateChange: true)
     	
         generateSwitchEvent("on")
+        
+        generateStatusEvent() 
+    	refresh()
     }
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent() 
     }        
-    generateStatusEvent() 
-    refresh()
 }
 
 def off() {
@@ -751,12 +770,15 @@ def off() {
         //sendEvent(name: 'thermostatOperatingState', value: "idle",isStateChange: true)
     	
         generateSwitchEvent("off")
+        
+        generateStatusEvent()
+    	refresh()
      }
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }         
-    generateStatusEvent()
-    refresh()
 }
 
 def generateSwitchEvent(mode) {
@@ -770,7 +792,7 @@ def dfanLevel(String newLevel){
 	log.trace "dfanLevel called with fan = " + newLevel
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
-   
+    
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)      
     def Level = LevelBefore
     if (capabilities.remoteCapabilities != null) {
@@ -781,6 +803,7 @@ def dfanLevel(String newLevel){
         //log.debug "Fan : " + Level
         
         def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+
         if (result) {
         	log.info "Fan level changed to " + Level + " for " + device.deviceNetworkId
             
@@ -792,12 +815,15 @@ def dfanLevel(String newLevel){
                 sendEvent(name: 'thermostatFanMode', value: "on", displayed: false)
             }
             generatefanLevelEvent(Level)
+            
+            generateStatusEvent()
+        	refresh()
         }
         else {
             generateErrorEvent()
-        }      
-        generateStatusEvent()
-        refresh()
+            
+            generateStatusEvent()
+        }             
 	}
     else {
     	//TODO when the mode do not exist
@@ -931,12 +957,15 @@ def modeMode(String newMode){
             if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
 
             generateModeEvent(newMode)
+            
+            generateStatusEvent()
+        	refresh()
         }
         else {
             generateErrorEvent()
-        }      
-        generateStatusEvent()
-        refresh()
+            
+            generateStatusEvent()
+        }             
 	}
     else {
        def themodes = parent.getCapabilities(device.deviceNetworkId,"modes")
@@ -947,7 +976,7 @@ def modeMode(String newMode){
 }
 
 def generateModeEvent(mode) {
-   sendEvent(name: "mode", value: mode, descriptionText: "$device.displayName Thermostat mode is now ${mode}", displayed: true, isStateChange: true)   
+   sendEvent(name: "thermostatMode", value: mode, descriptionText: "$device.displayName Thermostat mode is now ${mode}", displayed: true, isStateChange: true)   
 }
    
 def returnNext(liste1, liste2, val) throws Exception
@@ -1105,12 +1134,15 @@ def modeSwing(String newSwing)
             if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
 			sendEvent(name: 'thermostatFanMode', value: "on", displayed: false)
             generateSwingModeEvent(Swing)
+            
+            generateStatusEvent()
+        	refresh()
         }
         else {
             generateErrorEvent()
-        }      
-        generateStatusEvent()
-        refresh()
+            
+            generateStatusEvent()
+        }              
 	}
     else
     {
@@ -1123,7 +1155,7 @@ def generateSwingModeEvent(mode) {
 }
 
 def generateErrorEvent() {
-   log.debug "Event Error"
+   log.debug "$device.displayName FAILED to set the AC State"
    sendEvent(name: "Error", value: "Error", descriptionText: "$device.displayName FAILED to set or get the AC State", displayed: true, isStateChange: true)  
 }
 
