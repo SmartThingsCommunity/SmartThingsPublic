@@ -28,7 +28,8 @@ metadata {
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Micro Smart Switch"
 		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch"
-		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"
+		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"  //US
+		fingerprint mfr: "0086", prod: "0003", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"  //EU
 		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeotec Nano Switch"
 		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeotec Nano Switch"
 		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "GoControl Wall-Mounted Outlet"
@@ -37,6 +38,8 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "0087", deviceJoinName: "NEO Coolcam Power plug"
 		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Wall Plug ZW5" // EU
 		fingerprint mfr: "010F", prod: "1801", model: "1000", deviceJoinName: "Fibaro Wall Plug ZW5" // UK
+		fingerprint mfr: "0086", prod: "0003", model: "004E", deviceJoinName: "Aeotec Heavy Duty Smart Switch" //EU
+		fingerprint mfr: "0086", prod: "0103", model: "004E", deviceJoinName: "Aeotec Heavy Duty Smart Switch" //US
 	}
 
 	// simulator metadata
