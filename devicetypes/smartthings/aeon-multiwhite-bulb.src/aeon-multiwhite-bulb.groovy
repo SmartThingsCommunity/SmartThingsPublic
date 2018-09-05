@@ -17,7 +17,9 @@
  */
 
 metadata {
-	definition (name: "Aeon LED Bulb 6 Multi-White", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb") {
+	definition (name: "Aeon LED Bulb 6 Multi-White", namespace: "smartthings", author: "SmartThings",
+				ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb",
+				runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Switch Level"
 		capability "Color Temperature"
 		capability "Switch"
@@ -70,7 +72,6 @@ def updated() {
 
 def installed() {
 	log.debug "installed()..."
-	state.colorReceived = ["warmWhite": null, "coldWhite": null]
 	sendEvent(name: "checkInterval", value: 1860, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
 	sendEvent(name: "level", value: 100, unit: "%")
 	sendEvent(name: "colorTemperature", value: COLOR_TEMP_MIN)
@@ -109,22 +110,10 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 
 def zwaveEvent(physicalgraph.zwave.commands.switchcolorv3.SwitchColorReport cmd) {
 	log.debug "got SwitchColorReport: $cmd"
-	state.colorReceived[cmd.colorComponent] = cmd.value
 	def result = []
-	def tempNames = ["warmWhite", "coldWhite"]
-	// Check if we got all the color temperature values
-	if (tempNames.every { state.colorReceived[it] != null}) {
-		def warmWhite = state.colorReceived["warmWhite"]
-		def coldWhite = state.colorReceived["coldWhite"]
-		log.debug "warmWhite: $warmWhite, coldWhite: $coldWhite"
-		if (warmWhite == 0 && coldWhite == 0) {
-			result = createEvent(name: "colorTemperature", value: COLOR_TEMP_MIN)
-		} else {
-			def parameterNumber = warmWhite ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
-			result << response(command(zwave.configurationV2.configurationGet([parameterNumber: parameterNumber])))
-		}
-		// Reset the values
-		tempNames.collect { state.colorReceived[it] = null }
+	if (cmd.value == 255) {
+		def parameterNumber = (cmd.colorComponent == "warmWhite") ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
+		result << response(command(zwave.configurationV2.configurationGet([parameterNumber: parameterNumber])))
 	}
 	result
 }
@@ -217,8 +206,7 @@ def setColorTemperature(temp) {
 	def coldValue = temp >= 5000 ? 255 : 0
 	def parameterNumber = temp < 5000 ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
 	def cmds = [zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp]),
-			zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)]
-	//sendEvent(name: "colorTemperature", value: temp)
+				zwave.switchColorV3.switchColorSet(warmWhite: warmValue, coldWhite: coldValue)]
 	commands(cmds) + "delay 5000" + commands(queryAllColors(), 500)
 }
 
