@@ -108,6 +108,7 @@ private Map parseIasMessage(String description) {
 		result = getSoundDetectionResult("not detected")
 	} else {
 		result = [displayed: true, descriptionText: "${device.displayName}'s case is opened"]
+		sendHubCommand zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE)
 	}
 
 	return result
