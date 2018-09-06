@@ -55,6 +55,13 @@ preferences {
 		input "onFor", "number", title: "On for (default 500)", required: false
 		input "offFor", "number", title: "Off for (default 500)", required: false
 	}
+	
+	
+	section("Text me at...") {
+        input "phonenum", "phone", title: "Phone number?", required: false
+		input "phonetext", "text", title: "text?", required: false
+	}
+	
     
     
 }
@@ -229,7 +236,7 @@ private flashLights() {
 
 private textme(evt) {
   log.trace "$evt.value: $evt, $settings"
-  log.debug "$master was turned on/off, sending text"
-  sendSms(phonenum, "someone pressed my custom button!")
+  log.debug "$master was pressed, sending text"
+  sendSms(phonenum, phonetext)
 
 }  

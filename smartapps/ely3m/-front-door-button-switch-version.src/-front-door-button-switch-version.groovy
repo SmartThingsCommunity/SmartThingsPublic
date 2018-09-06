@@ -1,7 +1,7 @@
 /**
- *  !Front Door Button - Sensor version!
+ *  !Front Door Button!
  *
- *  Copyright 2018 ELY M.
+ *  Copyright 2017 ELY M.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -14,10 +14,10 @@
  *
  */
 definition(
-    name: "!Front Door Button - Sensor version!",
+    name: "!Front Door Button - Switch version!",
     namespace: "ELY3M",
     author: "ELY M.",
-    description: "if someone presses this button hooked to contact sensor. it will turn on the strobe and green lights on.  ",
+    description: "if someone presses this button. it will turn on the strobe and green lights on.  ",
     category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -25,8 +25,8 @@ definition(
 
 
 preferences {
-	section("When this sensor is open or closed") {
-		input "master", "capability.contactSensor", title: "Where?"
+	section("When this switch is turned on or off") {
+		input "master", "capability.switch", title: "Where?"
 	}
 	section("Turn on all of these switches as well") {
 		input "switches", "capability.switch", multiple: true, required: false
@@ -61,21 +61,21 @@ preferences {
 		input "phonetext", "text", title: "text?", required: false
 	}
     
-    
 }
     
 
 def installed()
 {   
-	subscribe(master, "contact.open", onHandler)
-	subscribe(master, "contact.close", offHandler)
+
+	subscribe(master, "switch.on", onHandler)
+	subscribe(master, "switch.off", offHandler)
 }
 
 def updated()
 {
 	unsubscribe()
- 	subscribe(master, "contact.open", onHandler)
-	subscribe(master, "contact.close", offHandler)
+ 	subscribe(master, "switch.on", onHandler)
+	subscribe(master, "switch.off", offHandler)
 }
 
 
@@ -94,7 +94,7 @@ def onHandler(evt) {
 	onSwitches()?.on()
     changecolor(evt) 
     flashLights()
-    textme(evt) 
+    textme(evt)
 }
 
 def offHandler(evt) {
@@ -106,7 +106,7 @@ def offHandler(evt) {
 	onSwitches()?.on()
 	changecolor(evt)
     flashLights()
-    textme(evt) 
+    textme(evt)
 
 }
 
@@ -231,12 +231,9 @@ private flashLights() {
 	}
 }
 
-
 private textme(evt) {
   log.trace "$evt.value: $evt, $settings"
-  log.debug "$master was open/close, sending text"
+  log.debug "$master was turned on/off, sending text"
   sendSms(phonenum, phonetext)
 
-}    
- 
- 
+}  
