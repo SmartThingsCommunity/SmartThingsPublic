@@ -187,16 +187,17 @@ def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	configureCommands << refresh() + zigbee.batteryConfig(30, 60 * 30) + zigbee.temperatureConfig(30, 60 * 5)
 	if(isEcolink()) {
+		configureCommands << zigbee.iasZoneConfig(30, 60 * 30) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 5) + refresh()
 		def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
 				zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
-		configureCommands << zigbee.iasZoneConfig(30, 60 * 30)
 		configureCommands << enrollCmds
+	} else {
+		configureCommands << refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
 	}
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
-	return configureCommands // send refresh cmds as part of config
+	return configureCommands
 }
 
 private boolean isEcolink() {
