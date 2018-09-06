@@ -26,8 +26,9 @@ metadata {
 	}
     preferences {
         section("Prefs") {
-            input "tempUnitConversion", "enum", title: "Temperature Unit Conversion - select F to C, C to F, or no conversion", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"Fahrenheit to Celsius"], ["3":"Celsius to Fahrenheit"]], displayDuringSetup: false
-            input "atmosphericUnitConversion", "enum", title: "Atmospheric Pressure Unit Conversion - select kPa to ″Hg, ″Hg to kPa, or no conversion", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"kPa to ″Hg"], ["3":"″Hg to kPa"]], displayDuringSetup: false
+            /*1*/ input "tempUnitConversion", "enum", title: "Temperature Unit Conversion - select F to C, C to F, or no conversion", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"Fahrenheit to Celsius"], ["3":"Celsius to Fahrenheit"]], displayDuringSetup: false
+            /*8*/ input "atmosphericUnitConversion", "enum", title: "Atmospheric Pressure Unit Conversion - select kPa to ″Hg, ″Hg to kPa, or no conversion", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"kPa to ″Hg"], ["3":"″Hg to kPa"]], displayDuringSetup: false
+            /*20*/ input "distanceUnitConversion", "enum", title: "Distance Unit Conversion", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"Centimeters to inches"], ["3":"Meters to inches"], ["4":"Feets to inches"]], displayDuringSetup: false
         }
     }
 	tiles(scale: 2) {
@@ -148,6 +149,36 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
         case 10:
         	break
         case 11:
+        	break
+        case 20: // Distance
+            switch (cmd.scale) {
+                case 0: 
+                scale = "m"
+                break
+                case 1:
+                scale = "cm"
+                break
+                case 2:
+                scale = "ft"
+                break
+            }
+            if (distanceUnitConversion == "2") {
+                double newValue = offsetValue / 2.54
+                offsetValue = newValue.round(2)
+                scale = "″"
+            }
+        	if (distanceUnitConversion == "3") {
+                double newValue = (offsetValue * 100) / 2.54
+                offsetValue = newValue.round(2)
+                scale = "″"
+            }
+        	if (distanceUnitConversion == "4") {
+                double newValue = offsetValue * 12
+                offsetValue = newValue.round(2)
+                scale = "″"   
+            }
+        	sensType = "Distance"
+
         	break
     }
     
