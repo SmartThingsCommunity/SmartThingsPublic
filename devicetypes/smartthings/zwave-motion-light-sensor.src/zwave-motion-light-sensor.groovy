@@ -74,12 +74,12 @@ metadata {
 
 def installed() {
 	response([zwave.batteryV1.batteryGet().format(),
-			  "delay 500",
-			  zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C).format(), // motion
-			  "delay 500",
-			  zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03, scale: 1).format(), // illuminance
-			  "delay 10000",
-			  zwave.wakeUpV2.wakeUpNoMoreInformation().format()])
+			"delay 500",
+			zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C).format(), // motion
+			"delay 500",
+			zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03, scale: 1).format(), // illuminance
+			"delay 10000",
+			zwave.wakeUpV2.wakeUpNoMoreInformation().format()])
 }
 
 def updated() {
