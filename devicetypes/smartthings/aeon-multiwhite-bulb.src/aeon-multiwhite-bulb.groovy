@@ -19,7 +19,7 @@
 metadata {
 	definition (name: "Aeon LED Bulb 6 Multi-White", namespace: "smartthings", author: "SmartThings",
 				ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb",
-				runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+				runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Switch Level"
 		capability "Color Temperature"
 		capability "Switch"
@@ -27,9 +27,6 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Health Check"
-		capability "Configuration"
-
-		command "reset"
 
 		fingerprint mfr: "0371", prod: "0103", model: "0001", deviceJoinName: "Aeon LED Bulb 6 Multi-White" //US
 		fingerprint mfr: "0371", prod: "0003", model: "0001", deviceJoinName: "Aeon LED Bulb 6 Multi-White" //EU
@@ -53,16 +50,12 @@ metadata {
 		}
 	}
 
-	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
-	}
-
 	controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
 		state "colorTemperature", action:"color temperature.setColorTemperature"
 	}
 
 	main(["switch"])
-	details(["switch", "levelSliderControl", "colorTempSliderControl", "reset"])
+	details(["switch", "levelSliderControl", "colorTempSliderControl"])
 }
 
 def updated() {
@@ -75,11 +68,6 @@ def installed() {
 	sendEvent(name: "checkInterval", value: 1860, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
 	sendEvent(name: "level", value: 100, unit: "%")
 	sendEvent(name: "colorTemperature", value: COLOR_TEMP_MIN)
-}
-
-def configure() {
-	// Set the dimming ramp rate
-	zwave.configurationV1.configurationSet(parameterNumber: 0x10, size: 1, scaledConfigurationValue: 5)
 }
 
 def parse(description) {
@@ -105,6 +93,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
+	unschedule(offlinePing)
 	dimmerEvents(cmd)
 }
 
@@ -125,10 +114,6 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%")
 	}
 	return result
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
-	response(command(zwave.switchMultilevelV1.switchMultilevelGet()))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
@@ -174,7 +159,14 @@ def refresh() {
 
 def ping() {
 	log.debug "ping().."
-	refresh()
+	unschedule(offlinePing)
+	runEvery5Minutes(offlinePing)
+	command(zwave.switchMultilevelV3.switchMultilevelGet())
+}
+
+def offlinePing() {
+	log.debug "offlinePing()..."
+	sendHubCommand(new physicalgraph.device.HubAction(command(zwave.switchMultilevelV3.switchMultilevelGet())))
 }
 
 def setLevel(level) {
@@ -207,17 +199,12 @@ def setColorTemperature(temp) {
 	def parameterNumber = temp < 5000 ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
 	def cmds = [zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp]),
 				zwave.switchColorV3.switchColorSet(warmWhite: warmValue, coldWhite: coldValue)]
-	commands(cmds) + "delay 5000" + commands(queryAllColors(), 500)
+	commands(cmds) + "delay 7000" + commands(queryAllColors(), 500)
 }
 
 private queryAllColors() {
 	def colors = ["warmWhite", "coldWhite"]
 	colors.collect { zwave.switchColorV3.switchColorGet(colorComponent: it) }
-}
-
-def reset() {
-	log.debug "reset()"
-	setColorTemperature(COLOR_TEMP_MIN)
 }
 
 private secEncap(physicalgraph.zwave.Command cmd) {
