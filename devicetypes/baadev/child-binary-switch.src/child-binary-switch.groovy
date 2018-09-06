@@ -19,7 +19,6 @@ metadata {
         capability "Refresh"
                 
         attribute "lastUpdated", "String"
-        attribute "switchState", "String"
 	}
     preferences {
             input "switchReverse", "enum", title: "Switch state revers from ON to OFF and from OFF to ON", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"Reverse on"]], displayDuringSetup: false
@@ -32,13 +31,13 @@ metadata {
         	state "default", label:'Last updated ${currentValue}'
         }
 		multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.switch",decoration: "flat", key: "PRIMARY_CONTROL") {
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
                 attributeState "on", label: '${name}', action: "switch.off", icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png", backgroundColor: "#00A0DC"
                 attributeState "off", label: '${name}', action: "switch.on", icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png", backgroundColor: "#ffffff"
             }
 
             tileAttribute("device.refresh", inactiveLabel: false, key: "SECONDARY_CONTROL") {
-            	attributeState("refresh", label: '', action:"refresh.refresh", icon:"st.secondary.refresh")
+            	attributeState "refresh", label: '', action:"refresh.refresh", icon:"st.secondary.refresh"
             }
 		}
     }
@@ -65,15 +64,25 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
         switchState = cmd.value > 0 ? "off" : "on"  
     }
     
-    createEvent(name: "switchState", value: switchState)
+    sendEvent(name: "switch", value: switchState)
 }
 
 def refresh() {
 	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinaryGet().format()))
 }
+
 def on() {
-	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format()))
+	def value = 0xFF
+    if (switchReverse == 2) 
+    	value = 0x00  
+	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: value).format()))
+	refresh()
 }
+
 def off() {
-	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format()))
+	def value = 0x00
+    if (switchReverse == 2) 
+    	value = 0xFF  
+	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: value).format()))
+	refresh()
 }
