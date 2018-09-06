@@ -40,7 +40,11 @@ metadata {
 def installed() {
 	sendCheckIntervalEvent()
 	sendEvent(name: "sound", value: "not detected", displayed: false, isStateChanged: true)
-	response(zwave.batteryV1.batteryGet().format())
+	response([
+			zwave.batteryV1.batteryGet().format(),
+			"delay 2000",
+			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	])
 }
 
 def updated() {
@@ -50,11 +54,11 @@ def updated() {
 def parse(String description) {
 	def results = []
 	if (description.startsWith("Err")) {
-		results << createEvent(descriptionText:description, displayed:true)
+		results = createEvent(descriptionText:description, displayed:true)
 	} else {
 		def cmd = zwave.parse(description, [ 0x80: 1, 0x84: 1, 0x71: 2, 0x72: 1 ])
 		if (cmd) {
-			results << zwaveEvent(cmd)
+			results = zwaveEvent(cmd)
 		}
 	}
 	log.debug "'$description' parsed to ${results.inspect()}"
@@ -84,7 +88,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 				zwave.batteryV1.batteryGet().format(),
 				"delay 2000",
 				zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-			])
+		])
 	} else {
 		cmds << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
 	}
@@ -109,6 +113,5 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private sendCheckIntervalEvent() {
-	response(zwave.wakeUpV2.wakeUpIntervalSet(seconds:14400, nodeid: zwaveHubNodeId).format()) // sometimes the 4hr wakeup interval is not durable
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }

@@ -138,7 +138,8 @@ private Map parseAttrMessage(description) {
 
 private freezeStatus(temperature) {
 	def result = [name: "temperatureAlarm", isStateChanged: true]
-	result.value = (temperature <= 0) ? "freeze" : "cleared"
+	def freezePoint = temperatureScale == 'C' ? 0 : 32
+	result.value = (temperature <= freezePoint) ? "freeze" : "cleared"
 	result.descriptionText = "${device.displayName}'s state is ${result.value}"
 	sendEvent(result)
 }
