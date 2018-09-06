@@ -189,10 +189,10 @@ def ping() {
 
 def refresh() {
 	log.debug "sending battery refresh command"
-	[
+	delayBetween([
 		zwave.basicV1.basicGet().format(),
 		zwave.batteryV1.batteryGet().format()
-	]
+	], 2000)
 }
 
 def parse(String description) {
