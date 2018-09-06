@@ -90,7 +90,7 @@ def parse(String description) {
 
 	Map map = zigbee.getEvent(description)
 	if (!map) {
-		if (isZoneMessage(description)) {
+		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
@@ -176,8 +176,7 @@ def ping() {
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
 
 	return refreshCmds + zigbee.enrollResponse()
 }
@@ -188,12 +187,12 @@ def configure() {
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	if(isEcolink()) {
-		configureCommands << zigbee.iasZoneConfig(30, 60 * 30) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 5) + refresh()
+		configureCommands += zigbee.iasZoneConfig(30, 60 * 30) + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(30, 60 * 5) + refresh()
 		def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
 				zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
-		configureCommands << enrollCmds
+		configureCommands += enrollCmds
 	} else {
-		configureCommands << refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
+		configureCommands += refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
 	}
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
@@ -202,8 +201,4 @@ def configure() {
 
 private boolean isEcolink() {
 	return (getDataValue("manufacturer") == "Ecolink")
-}
-
-private boolean isZoneMessage(description) {
-	return (description?.startsWith('zone status') || description?.startsWith('zone report'))
 }
