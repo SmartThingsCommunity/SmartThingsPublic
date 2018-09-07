@@ -113,7 +113,7 @@ private int getBatteryPercentage(int value) {
     def pct = (volts - minVolts) / (maxVolts - minVolts)
     if(pct>1)
         pct=1		//if battery is overrated, decreasing battery value to 100%
-    return (int) pct * 100
+    return (int)(pct * 100)
 }
 
 def parseDescriptionAsMap(description) {

@@ -196,7 +196,7 @@ private int getBatteryPercentage(int value) {
 	{
 		pct = 0.06
 	}
-	return (int) pct * 100
+	return (int)(pct * 100)
 }
 
 private boolean shouldProcessMessage(cluster) {
