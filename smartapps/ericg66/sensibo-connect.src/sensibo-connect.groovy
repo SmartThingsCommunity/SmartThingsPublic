@@ -718,7 +718,7 @@ def getCapabilities(PodUid, mode)
     
     def data = [:] 
     
-    if (state.capabilities.$PodUid == null || now > next)
+    if (state.capabilities == null || state.capabilities.$PodUid == null || now > next)
     //if (true)
 	{
     	log.debug "Now : " + now + " Next : " + next    	
