@@ -21,6 +21,7 @@ metadata {
 	definition (name: "Stelpro Ki Thermostat", namespace: "stelpro", author: "Stelpro", ocfDeviceType: "oic.d.thermostat") {
 		capability "Actuator"
 		capability "Temperature Measurement"
+		capability "Temperature Alarm"
 		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Thermostat Operating State"
@@ -141,10 +142,6 @@ def updated() {
 }
 
 def parse(String description) {
-	return parseCalled(description)
-}
-
-def parseCalled(String description) {
 	//if (description == "updated")
 		//return []
 
@@ -226,10 +223,6 @@ def ping() {
 }
 
 def poll() {
-	return pollCalled()
-}
-
-def pollCalled() {
 	sendEvent( name: 'change', value: 0 )
 	delayBetween([
 			updateWeather(),
@@ -282,14 +275,20 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv3.SensorMultilevelR
 		map.name = "temperature"
 		
 		temp = map.value
-		if (temp == "32765") {			//0x7FFD 
-			map.value = "low"
+		if (temp == "32765") {			//0x7FFD
+			map.name = "temperatureAlarm"
+			map.value = "freeze"
+			map.unit = ""
 		}
 		else if (temp == "32767") {		//0x7FFF
-			map.value = "high"
+			map.name = "temperatureAlarm"
+			map.value = "heat"
+			map.unit = ""
 		}
 		else if (temp == "-32768"){		//0x8000
-			map.value = "--"
+			map.name = "temperatureAlarm"
+			map.value = "cleared"
+			map.unit = ""
 		}
 		else {
 			tempfloat = (Math.round(temp.toFloat() * 2)) / 2

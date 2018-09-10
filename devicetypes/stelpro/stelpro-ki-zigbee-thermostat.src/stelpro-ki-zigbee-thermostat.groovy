@@ -21,6 +21,7 @@ metadata {
 	definition (name: "Stelpro Ki ZigBee Thermostat", namespace: "stelpro", author: "Stelpro", ocfDeviceType: "oic.d.thermostat") {
 		capability "Actuator"
 		capability "Temperature Measurement"
+		capability "Temperature Alarm"
 		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Thermostat Operating State"
@@ -43,8 +44,8 @@ metadata {
 		command "eco"
 		command "updateWeather"
 
-		// Disable until certified - update with device specific values
-		// fingerprint profileId: "0104", endpointId: "19", inClusters: " 0000,0003,0201,0204", outClusters: "0402"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "STZB402+", deviceJoinName: "Stelpro Ki ZigBee Thermostat"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "ST218", deviceJoinName: "Stelpro Ki ZigBee Thermostat"
 	}
 
 	// simulator metadata
@@ -59,10 +60,7 @@ metadata {
 	tiles(scale : 2) {
 		multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("temp", label:'${currentValue}')
-				attributeState("high", label:'HIGH')
-				attributeState("low", label:'LOW')
-				attributeState("--", label:'--')
+				attributeState("temp", label:'${currentValue}°')
 			}
 			tileAttribute("device.heatingSetpoint", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", action: "increaseHeatSetpoint")
@@ -78,7 +76,7 @@ metadata {
 				attributeState("eco", label:'${name}')
 			}
 			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
-				attributeState("heatingSetpoint", label:'${currentValue}')
+				attributeState("heatingSetpoint", label:'${currentValue}°')
 			}
 		}
 		standardTile("mode", "device.thermostatMode", width: 2, height: 2) {
@@ -87,7 +85,7 @@ metadata {
 			state "eco", label:'${name}', action:"switchMode", nextState:"off", icon:"http://cdn.device-icons.smartthings.com/Outdoor/outdoor3-icn@2x.png"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state "temperature", label:'Setpoint ${currentValue}', backgroundColors:[
+			state "temperature", label:'Setpoint ${currentValue}°', backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
 					[value: 59, color: "#90d2a7"],
@@ -96,7 +94,6 @@ metadata {
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
 			]
-			state "--", label:'--', backgroundColor:"#bdbdbd"
 		}
 		standardTile("refresh", "device.refresh", decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -129,7 +126,7 @@ def getHeatingSetpointRange() {
 
 def setupHealthCheck() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def installed() {
@@ -140,28 +137,67 @@ def installed() {
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 }
 
-def parse(String description) {
-	return parseCalled(description)
+def updated() {
+	setupHealthCheck()
+
+	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
+	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
+	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
+
+	response(parameterSetting())
 }
 
-def parseCalled(String description) {
+def parameterSetting() {
+	def lockmode = null
+	def valid_lock = 0
+
+	log.debug "lock : $settings.lock"
+	if (settings.lock == "Yes") {
+		lockmode = 0x01
+		valid_lock = 1
+	}
+	else if (settings.lock == "No") {
+		lockmode = 0x00
+		valid_lock = 1
+	}
+
+	if (valid_lock == 1)
+	{
+		log.debug "lock valid"
+		delayBetween([
+			zigbee.writeAttribute(0x204, 0x01, 0x30, lockmode),	//Write Lock Mode
+			poll(),
+		], 200)
+	}
+	else {
+		log.debug "nothing valid"
+	}
+}
+
+def parse(String description) {
 	log.debug "Parse description $description"
 	def map = [:]
 	if (description?.startsWith("read attr -")) {
-		def descMap = parseDescriptionAsMap(description)
+		def descMap = zigbee.parseDescriptionAsMap(description)
 		log.debug "Desc Map: $descMap"
 		if (descMap.cluster == "0201" && descMap.attrId == "0000") {
 			map.name = "temperature"
 			map.unit = getTemperatureScale()
 			map.value = getTemperature(descMap.value)
 			if (descMap.value == "7ffd") {		//0x7FFD
-				map.value = "low"
+				map.name = "temperatureAlarm"
+				map.value = "freeze"
+				map.unit = ""
 			}
 			else if (descMap.value == "7fff") {	//0x7FFF
-				map.value = "high"
+				map.name = "temperatureAlarm"
+				map.value = "heat"
+				map.unit = ""
 			}
 			else if (descMap.value == "8000") {	//0x8000
-				map.value = "--"
+				map.name = "temperatureAlarm"
+				map.value = "cleared"
+				map.unit = ""
 			}
 			
 			else if (descMap.value > "8000") {
@@ -174,7 +210,9 @@ def parseCalled(String description) {
 			map.value = getTemperature(descMap.value)
 			map.data = [heatingSetpointRange: heatingSetpointRange]
 			if (descMap.value == "8000") {		//0x8000
-				map.value = "--"
+				map.name = "temperatureAlarm"
+				map.value = "cleared"
+				map.data = []
 			}
 		}
 		else if (descMap.cluster == "0201" && descMap.attrId == "001c") {
@@ -223,13 +261,6 @@ def parseCalled(String description) {
 	return result
 }
 
-def parseDescriptionAsMap(description) {
-	(description - "read attr - ").split(",").inject([:]) { map, param ->
-		def nameAndValue = param.split(":")
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-	}
-}
-
 def updateWeather() {
 	log.debug "updating weather"
 	def weather
@@ -274,14 +305,10 @@ def getFanModeMap() { [
   * PING is used by Device-Watch in attempt to reach the Device
 **/
 def ping() {
-	zigbee.readAttribute(0x201, 0x001C)
+	zigbee.readAttribute(0x201, 0x0000)
 }
 
 def poll() {
-	return pollCalled()
-}
-
-def pollCalled() {
 	sendEvent( name: 'change', value: 0 )
 	delayBetween([
 			updateWeather(),
@@ -289,7 +316,7 @@ def pollCalled() {
 			zigbee.readAttribute(0x201, 0x0008),	//Read PI Heating State
 			zigbee.readAttribute(0x201, 0x0012),	//Read Heat Setpoint
 			zigbee.readAttribute(0x201, 0x001C),	//Read System Mode
-			my_readAttribute(0x201, 0x401C, ["mfgCode": "0x1185"]),	//Read Manufacturer Specific Setpoint Mode
+			zigbee.readAttribute(0x201, 0x401C, ["mfgCode": "0x1185"]),	//Read Manufacturer Specific Setpoint Mode
 			zigbee.readAttribute(0x204, 0x0000),	//Read Temperature Display Mode
 			zigbee.readAttribute(0x204, 0x0001)		//Read Keypad Lockout
 		], 200)
@@ -364,7 +391,7 @@ def setOutdoorTemperature(Double degrees, Integer delay = 0) {
 		tempToSend = (celsius*100)
 	}
 	tempToSendInString = zigbee.convertToHexString(tempToSend, 4)
-	my_writeAttribute(0x201, 0x4001, 0x29, tempToSendInString, ["mfgCode": "0x1185"])
+	zigbee.writeAttribute(0x201, 0x4001, 0x29, tempToSendInString, ["mfgCode": "0x1185"])
 }
 
 def increaseHeatSetpoint() {
@@ -450,7 +477,7 @@ def switchMode() {
 	modeToSendInString = zigbee.convertToHexString(setpointModeNumber, 2)
 	delayBetween([
 		"st wattr 0x${device.deviceNetworkId} 0x19 0x201 0x001C 0x30 {$modeNumber}",
-		my_writeAttribute(0x201, 0x401C, 0x30, modeToSendInString, ["mfgCode": "0x1185"]),
+		zigbee.writeAttribute(0x201, 0x401C, 0x30, modeToSendInString, ["mfgCode": "0x1185"]),
 		poll()
 	], 1000)
 }
@@ -511,7 +538,7 @@ def setThermostatMode(String value) {
 	modeToSendInString = zigbee.convertToHexString(setpointModeNumber, 2)
 	delayBetween([
 		"st wattr 0x${device.deviceNetworkId} 0x19 0x201 0x001C 0x30 {$modeNumber}",
-		my_writeAttribute(0x201, 0x401C, 0x30, modeToSendInString, ["mfgCode": "0x1185"]),
+		zigbee.writeAttribute(0x201, 0x401C, 0x30, modeToSendInString, ["mfgCode": "0x1185"]),
 		poll()
 	], 1000)
 }
@@ -546,13 +573,13 @@ def eco() {
 	modeToSendInString = zigbee.convertToHexString(setpointModeNumber, 2)
 	sendEvent("name":"thermostatMode", "value":"eco", "data":[supportedThermostatModes: supportedThermostatModes])
 	delayBetween(["st wattr 0x${device.deviceNetworkId} 0x19 0x201 0x1C 0x30 {04}",
-	my_writeAttribute(0x201, 0x401C, 0x30, modeToSendInString, ["mfgCode": "0x1185"])], 200)
+	zigbee.writeAttribute(0x201, 0x401C, 0x30, modeToSendInString, ["mfgCode": "0x1185"])], 200)
 }
 
 def emergencyHeat() {
 	log.debug "emergencyHeat"
-	sendEvent("name":"thermostatMode", "value":"emergency heat", "data":[supportedThermostatModes: supportedThermostatModes])
-	"st wattr 0x${device.deviceNetworkId} 0x19 0x201 0x1C 0x30 {05}"
+	/*sendEvent("name":"thermostatMode", "value":"emergency heat", "data":[supportedThermostatModes: supportedThermostatModes])
+	"st wattr 0x${device.deviceNetworkId} 0x19 0x201 0x1C 0x30 {05}"*/
 }
 
 def setCustomThermostatMode(mode) {
@@ -598,101 +625,15 @@ def configure() {
 		zigbee.readAttribute(0x201, 0x0000),	//Read Local Temperature
 		zigbee.readAttribute(0x201, 0x0012),	//Read Heat Setpoint
 		zigbee.readAttribute(0x201, 0x001C),	//Read System Mode
-		my_readAttribute(0x201, 0x401C, ["mfgCode": "0x1185"]),	//Read Manufacturer Specific Setpoint Mode
+		zigbee.readAttribute(0x201, 0x401C, ["mfgCode": "0x1185"]),	//Read Manufacturer Specific Setpoint Mode
 		zigbee.readAttribute(0x201, 0x0008),	//Read PI Heating State
 		zigbee.readAttribute(0x204, 0x0000),	//Read Temperature Display Mode
 		zigbee.readAttribute(0x204, 0x0001),	//Read Keypad Lockout
 	], 200)
 }
 
-def updated() {
-	setupHealthCheck()
-
-	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
-	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
-	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
-
-	response(parameterSetting())
-}
-
-def parameterSetting() {
-	def lockmode = null
-	def valid_lock = 0
-
-	log.debug "lock : $settings.lock"
-	if (settings.lock == "Yes") {
-		lockmode = 0x01
-		valid_lock = 1
-	}
-	else if (settings.lock == "No") {
-		lockmode = 0x00
-		valid_lock = 1
-	}
-	
-	if (valid_lock == 1)
-	{
-		log.debug "lock valid"
-		delayBetween([
-			zigbee.writeAttribute(0x204, 0x01, 0x30, lockmode),	//Write Lock Mode
-			poll(),
-		], 200)
-	}
-	else {
-		log.debug "nothing valid"
-	}
-}
-
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
 
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
-}
 
-private String swapEndianHex(String hex) {
-	reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-	int i = 0;
-	int j = array.length - 1;
-	byte tmp;
-	while (j > i) {
-		tmp = array[j];
-		array[j] = array[i];
-		array[i] = tmp;
-		j--;
-		i++;
-	}
-	return array
-}
-
-def my_readAttribute(cluster, attributeId, Map additional=null)
-{
-	if (additional?.get("mfgCode")) {
-		delayBetween([
-				"zcl mfg-code ${additional['mfgCode']}",
-				"zcl global read ${cluster} ${attributeId}",
-				"send 0x${device.deviceNetworkId} 1 ${endpointId}"
-			], 200)
-	}
-	else {
-		zigbee.readAttribute(cluster, attributeId)
-	}
-}
-
-def my_writeAttribute(cluster, attributeId, dataType, value, Map additional=null)
-{
-	value = swapEndianHex(value)
-	if (additional?.get("mfgCode")) {
-		delayBetween([
-				"zcl mfg-code ${additional['mfgCode']}",
-				"zcl global write ${cluster} ${attributeId} ${dataType} {${value}}",
-				"send 0x${device.deviceNetworkId} 1 ${endpointId}"
-			], 200)
-	}
-	else {
-		zigbee.writeAttribute(cluster, attributeId, dataType, value)
-	}
-}
