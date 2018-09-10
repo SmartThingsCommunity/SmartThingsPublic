@@ -61,6 +61,11 @@ def installed() {
     createChildDevices()
 }
 
+def updated() {
+    log.debug "updated()"
+    updateDataValue("onOff", "catchall")
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
