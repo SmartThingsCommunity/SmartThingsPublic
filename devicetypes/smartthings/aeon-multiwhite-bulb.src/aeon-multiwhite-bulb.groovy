@@ -58,6 +58,12 @@ metadata {
 	details(["switch", "levelSliderControl", "colorTempSliderControl"])
 }
 
+private getWARM_WHITE_CONFIG() { 0x51 }
+private getCOLD_WHITE_CONFIG() { 0x52 }
+private getWARM_WHITE() { "warmWhite" }
+private getCOLD_WHITE() { "coldWhite" }
+private getWHITE_NAMES() { [WARM_WHITE, COLD_WHITE] }
+
 def updated() {
 	log.debug "updated().."
 	response(refresh())
@@ -67,7 +73,7 @@ def installed() {
 	log.debug "installed()..."
 	sendEvent(name: "checkInterval", value: 1860, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
 	sendEvent(name: "level", value: 100, unit: "%")
-	sendEvent(name: "colorTemperature", value: COLOR_TEMP_MIN)
+	sendEvent(name: "colorTemperature", value: 2700)
 }
 
 def parse(description) {
@@ -101,7 +107,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchcolorv3.SwitchColorReport cmd)
 	log.debug "got SwitchColorReport: $cmd"
 	def result = []
 	if (cmd.value == 255) {
-		def parameterNumber = (cmd.colorComponent == "warmWhite") ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
+		def parameterNumber = (cmd.colorComponent == WARM_WHITE) ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
 		result << response(command(zwave.configurationV2.configurationGet([parameterNumber: parameterNumber])))
 	}
 	result
@@ -119,21 +125,19 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	if (encapsulatedCommand) {
-		def result = zwaveEvent(encapsulatedCommand)
-		result = result.collect {
-			if (it instanceof physicalgraph.device.HubAction && !it.toString().startsWith("9881")) {
-				response(cmd.CMD + "00" + it.toString())
-			} else {
-				it
-			}
-		}
-		result
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	log.debug "got ConfigurationReport: $cmd"
-	[createEvent(name: "colorTemperature", value: cmd.scaledConfigurationValue)]
+	def result = null
+	if (cmd.parameterNumber == WARM_WHITE_CONFIG || cmd.parameterNumber == COLD_WHITE_CONFIG)
+		result = createEvent(name: "colorTemperature", value: cmd.scaledConfigurationValue)
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -182,17 +186,7 @@ def setLevel(level, duration) {
 	], (duration && duration < 12) ? (duration * 1000) : 3500)
 }
 
-private getCOLOR_TEMP_MAX() { 6500 }
-private getCOLOR_TEMP_MIN() { 2700 }
-private getCOLOR_TEMP_DIFF() { COLOR_TEMP_MAX - COLOR_TEMP_MIN }
-private getWARM_WHITE_CONFIG() { 0x51 }
-private getCOLD_WHITE_CONFIG() { 0x52 }
-
 def setColorTemperature(temp) {
-	if(temp > COLOR_TEMP_MAX)
-		temp = COLOR_TEMP_MAX
-	else if(temp < COLOR_TEMP_MIN)
-		temp = COLOR_TEMP_MIN
 	log.debug "setColorTemperature($temp)"
 	def warmValue = temp < 5000 ? 255 : 0
 	def coldValue = temp >= 5000 ? 255 : 0
@@ -203,8 +197,7 @@ def setColorTemperature(temp) {
 }
 
 private queryAllColors() {
-	def colors = ["warmWhite", "coldWhite"]
-	colors.collect { zwave.switchColorV3.switchColorGet(colorComponent: it) }
+	WHITE_NAMES.collect { zwave.switchColorV3.switchColorGet(colorComponent: it) }
 }
 
 private secEncap(physicalgraph.zwave.Command cmd) {
