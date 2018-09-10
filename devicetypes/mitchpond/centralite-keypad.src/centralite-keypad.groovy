@@ -217,15 +217,18 @@ private getBatteryResult(rawValue) {
 	def result = [name: 'battery']
 
 	def volts = rawValue / 10
-	def descriptionText
+
 	if (volts > 3.5) {
 		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
 	}
 	else {
 		def minVolts = 2.1
 		def maxVolts = 3.0
-		def pct = (volts - minVolts) / (maxVolts - minVolts)
-		result.value = Math.min(100, (int) pct * 100)
+		def pct = Math.round(((volts - minVolts) / (maxVolts - minVolts)) * 100)
+		if (pct <= 0) {
+			pct = 1
+		}
+		result.value = Math.min(100, pct)
 		result.descriptionText = "${linkText} battery was ${result.value}%"
 	}
 
