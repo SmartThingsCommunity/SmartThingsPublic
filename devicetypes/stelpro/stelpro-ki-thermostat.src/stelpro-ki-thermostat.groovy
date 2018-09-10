@@ -1,5 +1,5 @@
 /*
- *  Copyright 2017 Stelpro
+ *  Copyright 2017 - 2018 Stelpro
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -57,10 +57,7 @@ metadata {
 	tiles(scale : 2) {
 		multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("temp", label:'${currentValue}')
-				attributeState("high", label:'HIGH')
-				attributeState("low", label:'LOW')
-				attributeState("--", label:'--')
+				attributeState("temperature", label:'${currentValue}°')
 			}
 			tileAttribute("device.heatingSetpoint", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", action: "increaseHeatSetpoint")
@@ -75,7 +72,7 @@ metadata {
 				attributeState("eco", label:'${name}')
 			}
 			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
-				attributeState("heatingSetpoint", label:'${currentValue}')
+				attributeState("heatingSetpoint", label:'${currentValue}°')
 			}
 		}
 		standardTile("mode", "device.thermostatMode", width: 2, height: 2) {
@@ -83,7 +80,7 @@ metadata {
 			state "eco", label:'${name}', action:"switchMode", nextState:"heat", icon:"http://cdn.device-icons.smartthings.com/Outdoor/outdoor3-icn@2x.png"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state "temperature", label:'Setpoint ${currentValue}', backgroundColors:[
+			state "heatingSetpoint", label:'Setpoint ${currentValue}°', backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
 					[value: 59, color: "#90d2a7"],
@@ -92,7 +89,6 @@ metadata {
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
 			]
-			state "--", label:'--', backgroundColor:"#bdbdbd"
 		}
 		standardTile("refresh", "device.refresh", decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -139,6 +135,14 @@ def updated() {
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
+
+	if (settings.zipcode) {
+		unschedule(scheduledUpdateWeather)
+		runEvery1Hour(scheduledUpdateWeather)
+		scheduledUpdateWeather()
+	} else {
+		unschedule(scheduledUpdateWeather)
+	}
 }
 
 def parse(String description) {
@@ -213,17 +217,24 @@ def updateWeather() {
 	}
 }
 
+def scheduledUpdateWeather() {
+	def actions = updateWeather()
+
+	if (actions) {
+		sendHubCommand(actions)
+	}
+}
+
 // Command Implementations
 
 /**
   * PING is used by Device-Watch in attempt to reach the Device
 **/
 def ping() {
-	zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format()
+	zwave.sensorMultilevelV3.sensorMultilevelGet().format()
 }
 
 def poll() {
-	sendEvent( name: 'change', value: 0 )
 	delayBetween([
 			updateWeather(),
 			zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format(),
@@ -240,7 +251,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	float tempfloat;
 	def map = [:]
 	if (cmd.scaledValue >= 327) {
-		map.value = "--"
+		return [:]
 	}
 	else {
 		temp = convertTemperatureIfNeeded(cmd.scaledValue, cmdScale, cmd.precision)
@@ -367,7 +378,18 @@ def refresh() {
 }
 
 def configure() {
-	poll()
+	def requests = []
+
+	if (settings.zipcode) {
+		requests += scheduledUpdateWeather()
+		unschedule(scheduledUpdateWeather)
+		runEvery1Hour(scheduledUpdateWeather)
+	} else {
+		unschedule(scheduledUpdateWeather)
+	}
+	requests += poll()
+
+	requests
 }
 
 def quickSetHeat(degrees) {
@@ -489,10 +511,6 @@ def getModeMap() { [
 		"eco": 11,
 ]}
 
-def getDataByName(String name) {
-	state[name] ?: device.getDataValue(name)
-}
-
 def setCoolingSetpoint(coolingSetpoint) {
 	log.trace "${device.displayName} does not support cool setpoint"
 }
@@ -533,11 +551,15 @@ def setCustomThermostatMode(mode) {
    setThermostatMode(mode)
 }
 
-def setThermostatMode(String value) {
-	delayBetween([
-		zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format(),
-		zwave.thermostatModeV2.thermostatModeGet().format()
-	], 1000)
+def setThermostatMode(value) {
+	if (modeMap.containsKey(value)) {
+		delayBetween([
+			zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format(),
+			zwave.thermostatModeV2.thermostatModeGet().format()
+		], 1000)
+	} else {
+		log.trace "${device.displayName} does not support $value mode"
+	}
 }
 
 def fanOn() {

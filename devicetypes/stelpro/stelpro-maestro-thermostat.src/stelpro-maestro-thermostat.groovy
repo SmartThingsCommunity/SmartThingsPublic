@@ -69,7 +69,7 @@ metadata {
 	tiles(scale : 2) {
 		multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("temp", label:'${currentValue}°')
+				attributeState("temperature", label:'${currentValue}°')
 			}
 			tileAttribute("device.heatingSetpoint", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", action: "increaseHeatSetpoint")
@@ -106,7 +106,7 @@ metadata {
 		}
 		
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state "temperature", label:'Setpoint ${currentValue}', unit:"F", backgroundColors:[
+			state "heatingSetpoint", label:'Setpoint ${currentValue}', unit:"F", backgroundColors:[
 					[value: 67, color: "#45ea1c"],
 					[value: 68, color: "#94fc1e"],
 					[value: 69, color: "#cbed25"],
@@ -158,13 +158,24 @@ def installed() {
 }
 
 def updated() {
+	def requests = []
+
 	setupHealthCheck()
 
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 
-	response(parameterSetting())
+	if (settings.zipcode) {
+		requests += scheduledUpdateWeather()
+		unschedule(scheduledUpdateWeather)
+		runEvery1Hour(scheduledUpdateWeather)
+	} else {
+		unschedule(scheduledUpdateWeather)
+	}
+
+	requests += parameterSetting()
+	response(requests)
 }
 
 def parameterSetting() {
@@ -308,6 +319,14 @@ def updateWeather() {
 		}	   
 		sendEvent( name: 'outsideTemp', value: tempToSend )
 		quickSetOutTemp(tempToSend)
+	}
+}
+
+def scheduledUpdateWeather() {
+	def actions = updateWeather()
+
+	if (actions) {
+		sendHubCommand(actions)
 	}
 }
 
@@ -471,7 +490,7 @@ def setThermostatMode(value) {
 		off()
 	}
 	else {
-		log.debug "MODE NOT SUPPORTED"
+		log.debug "MODE $value NOT SUPPORTED"
 	}
 }
 
@@ -523,8 +542,18 @@ def fanAuto() {
 */
 
 def configure() {
+	def requests = []
 	log.debug "binding to Thermostat cluster"
-	delayBetween([
+
+	if (settings.zipcode) {
+		requests += scheduledUpdateWeather()
+		unschedule(scheduledUpdateWeather)
+		runEvery1Hour(scheduledUpdateWeather)
+	} else {
+		unschedule(scheduledUpdateWeather)
+	}
+
+	requests += delayBetween([
 		sendEvent("name":"thermostatMode", "value":"heat"),
 		"zdo bind 0x${device.deviceNetworkId} 1 0x19 0x201 {${device.zigbeeId}} {}",
 		//Cluster ID (0x0201 = Thermostat Cluster), Attribute ID, Data Type, Payload (Min report, Max report, On change trigger)
@@ -546,6 +575,8 @@ def configure() {
 		zigbee.readAttribute(0x204, 0x0001),	//Read Keypad Lockout
 		zigbee.readAttribute(0x405, 0x0000),	//Read Local Humidity
 	], 200)
+
+	requests
 }
 
 private hex(value) {

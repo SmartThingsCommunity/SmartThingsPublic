@@ -1,5 +1,5 @@
 /**
- *  Copyright 2017 Stelpro
+ *  Copyright 2017 - 2018 Stelpro
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -60,7 +60,7 @@ metadata {
 	tiles(scale : 2) {
 		multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("temp", label:'${currentValue}°')
+				attributeState("temperature", label:'${currentValue}°')
 			}
 			tileAttribute("device.heatingSetpoint", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", action: "increaseHeatSetpoint")
@@ -85,7 +85,7 @@ metadata {
 			state "eco", label:'${name}', action:"switchMode", nextState:"off", icon:"http://cdn.device-icons.smartthings.com/Outdoor/outdoor3-icn@2x.png"
 		}
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state "temperature", label:'Setpoint ${currentValue}°', backgroundColors:[
+			state "heatingSetpoint", label:'Setpoint ${currentValue}°', backgroundColors:[
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
 					[value: 59, color: "#90d2a7"],
@@ -138,13 +138,23 @@ def installed() {
 }
 
 def updated() {
+	def requests = []
 	setupHealthCheck()
 
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 
-	response(parameterSetting())
+	if (settings.zipcode) {
+		requests += scheduledUpdateWeather()
+		unschedule(scheduledUpdateWeather)
+		runEvery1Hour(scheduledUpdateWeather)
+	} else {
+		unschedule(scheduledUpdateWeather)
+	}
+
+	requests += parameterSetting()
+	response(requests)
 }
 
 def parameterSetting() {
@@ -287,6 +297,14 @@ def updateWeather() {
 		}	   
 		sendEvent( name: 'outsideTemp', value: tempToSend )
 		quickSetOutTemp(tempToSend)
+	}
+}
+
+def scheduledUpdateWeather() {
+	def actions = updateWeather()
+
+	if (actions) {
+		sendHubCommand(actions)
 	}
 }
 
@@ -607,8 +625,18 @@ def fanAuto() {
 }
 
 def configure() {
+	def requests = []
 	log.debug "binding to Thermostat cluster"
-	delayBetween([
+
+	if (settings.zipcode) {
+		requests += scheduledUpdateWeather()
+		unschedule(scheduledUpdateWeather)
+		runEvery1Hour(scheduledUpdateWeather)
+	} else {
+		unschedule(scheduledUpdateWeather)
+	}
+
+	requests += delayBetween([
 		"zdo bind 0x${device.deviceNetworkId} 1 0x19 0x201 {${device.zigbeeId}} {}",
 		//Cluster ID (0x0201 = Thermostat Cluster), Attribute ID, Data Type, Payload (Min report, Max report, On change trigger)
 		zigbee.configureReporting(0x0201, 0x0000, 0x29, 10, 60, 50), 	//Attribute ID 0x0000 = local temperature, Data Type: S16BIT
@@ -630,6 +658,8 @@ def configure() {
 		zigbee.readAttribute(0x204, 0x0000),	//Read Temperature Display Mode
 		zigbee.readAttribute(0x204, 0x0001),	//Read Keypad Lockout
 	], 200)
+
+	requests
 }
 
 private hex(value) {
