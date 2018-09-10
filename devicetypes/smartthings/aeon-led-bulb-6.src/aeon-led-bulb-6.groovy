@@ -62,6 +62,18 @@ metadata {
 	details(["switch", "levelSliderControl", "rgbSelector", "colorTempSliderControl"])
 }
 
+private getCOLOR_TEMP_MIN() { 2700 }
+private getCOLOR_TEMP_MAX() { 6500 }
+private getWARM_WHITE_CONFIG() { 0x51 }
+private getCOLD_WHITE_CONFIG() { 0x52 }
+private getRED() { "red" }
+private getGREEN() { "green" }
+private getBLUE() { "blue" }
+private getWARM_WHITE() { "warmWhite" }
+private getCOLD_WHITE() { "coldWhite" }
+private getRGB_NAMES() { [RED, GREEN, BLUE] }
+private getWHITE_NAMES() { [WARM_WHITE, COLD_WHITE] }
+
 def updated() {
 	log.debug "updated().."
 	response(refresh())
@@ -69,7 +81,7 @@ def updated() {
 
 def installed() {
 	log.debug "installed()..."
-	state.colorReceived = ["red": null, "green": null, "blue": null, "warmWhite": null, "coldWhite": null]
+	state.colorReceived = [RED: null, GREEN: null, BLUE: null, WARM_WHITE: null, COLD_WHITE: null]
 	sendEvent(name: "checkInterval", value: 1860, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
 	sendEvent(name: "level", value: 100, unit: "%")
 	sendEvent(name: "colorTemperature", value: COLOR_TEMP_MIN)
@@ -116,11 +128,9 @@ def zwaveEvent(physicalgraph.zwave.commands.switchcolorv3.SwitchColorReport cmd)
 	log.debug "got SwitchColorReport: $cmd"
 	state.colorReceived[cmd.colorComponent] = cmd.value
 	def result = []
-	def rgbNames = ["red", "green", "blue"]
-	def tempNames = ["warmWhite", "coldWhite"]
 	// Check if we got all the RGB color components
-	if (rgbNames.every { state.colorReceived[it] != null }) {
-		def colors = rgbNames.collect { state.colorReceived[it] }
+	if (RGB_NAMES.every { state.colorReceived[it] != null }) {
+		def colors = RGB_NAMES.collect { state.colorReceived[it] }
 		log.debug "colors: $colors"
 		// Send the color as hex format
 		def hexColor = "#" + colors.collect { Integer.toHexString(it).padLeft(2, "0") }.join("")
@@ -130,12 +140,12 @@ def zwaveEvent(physicalgraph.zwave.commands.switchcolorv3.SwitchColorReport cmd)
 		result << createEvent(name: "hue", value: hsv.hue)
 		result << createEvent(name: "saturation", value: hsv.saturation)
 		// Reset the values
-		rgbNames.collect { state.colorReceived[it] = null}
+		RGB_NAMES.collect { state.colorReceived[it] = null}
 	}
 	// Check if we got all the color temperature values
-	if (tempNames.every { state.colorReceived[it] != null}) {
-		def warmWhite = state.colorReceived["warmWhite"]
-		def coldWhite = state.colorReceived["coldWhite"]
+	if (WHITE_NAMES.every { state.colorReceived[it] != null}) {
+		def warmWhite = state.colorReceived[WARM_WHITE]
+		def coldWhite = state.colorReceived[COLD_WHITE]
 		log.debug "warmWhite: $warmWhite, coldWhite: $coldWhite"
 		if (warmWhite == 0 && coldWhite == 0) {
 			result = createEvent(name: "colorTemperature", value: COLOR_TEMP_MIN)
@@ -144,7 +154,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchcolorv3.SwitchColorReport cmd)
 			result << response(command(zwave.configurationV2.configurationGet([parameterNumber: parameterNumber])))
 		}
 		// Reset the values
-		tempNames.collect { state.colorReceived[it] = null }
+		WHITE_NAMES.collect { state.colorReceived[it] = null }
 	}
 	result
 }
@@ -161,21 +171,19 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	if (encapsulatedCommand) {
-		def result = zwaveEvent(encapsulatedCommand)
-		result = result.collect {
-			if (it instanceof physicalgraph.device.HubAction && !it.toString().startsWith("9881")) {
-				response(cmd.CMD + "00" + it.toString())
-			} else {
-				it
-			}
-		}
-		result
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	log.debug "got ConfigurationReport: $cmd"
-	[createEvent(name: "colorTemperature", value: cmd.scaledConfigurationValue)]
+	def result = null
+	if (cmd.parameterNumber == WARM_WHITE_CONFIG || cmd.parameterNumber == COLD_WHITE_CONFIG)
+		result = createEvent(name: "colorTemperature", value: cmd.scaledConfigurationValue)
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -221,7 +229,7 @@ def setLevel(level, duration) {
 	commands([
 		zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: duration),
 		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], (duration && duration < 12) ? (duration * 1000) : 3500)
+	], 5000)
 }
 
 def setSaturation(percent) {
@@ -239,7 +247,7 @@ def setColor(value) {
 	def result = []
 	if (value.hex) {
 		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
-		result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
+		result << zwave.switchColorV3.switchColorSet(red: c[0], green: c[1], blue: c[2], warmWhite: 0, coldWhite: 0)
 	} else {
 		def hue = value.hue ?: device.currentValue("hue")
 		def saturation = value.saturation ?: device.currentValue("saturation")
@@ -251,28 +259,18 @@ def setColor(value) {
 	commands(result) + "delay 7000" + commands(queryAllColors(), 1000)
 }
 
-private getCOLOR_TEMP_MAX() { 6500 }
-private getCOLOR_TEMP_MIN() { 2700 }
-private getCOLOR_TEMP_DIFF() { COLOR_TEMP_MAX - COLOR_TEMP_MIN }
-private getWARM_WHITE_CONFIG() { 0x51 }
-private getCOLD_WHITE_CONFIG() { 0x52 }
-
 def setColorTemperature(temp) {
-	if(temp > COLOR_TEMP_MAX)
-		temp = COLOR_TEMP_MAX
-	else if(temp < COLOR_TEMP_MIN)
-		temp = COLOR_TEMP_MIN
 	log.debug "setColorTemperature($temp)"
 	def warmValue = temp < 5000 ? 255 : 0
 	def coldValue = temp >= 5000 ? 255 : 0
 	def parameterNumber = temp < 5000 ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
 	def cmds = [zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp]),
-			zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)]
+				zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)]
 	commands(cmds) + "delay 7000" + commands(queryAllColors(), 1000)
 }
 
 private queryAllColors() {
-	def colors = ["red", "green", "blue", "warmWhite", "coldWhite"]
+	def colors = RGB_NAMES + WHITE_NAMES
 	colors.collect { zwave.switchColorV3.switchColorGet(colorComponent: it) }
 }
 
