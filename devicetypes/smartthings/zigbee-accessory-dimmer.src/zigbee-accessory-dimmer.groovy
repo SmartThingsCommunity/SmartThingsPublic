@@ -73,7 +73,7 @@ def parse(String description) {
 				log.debug "move to ${descMap.data}"
 				if (descMap.data[0] == "00") {
 					log.debug "move up"
-                    sendEvent(name: "switch", value: "on")
+					sendEvent(name: "switch", value: "on")
 					sendEvent(name: "level", value: value)
 				} else if (descMap.data[0] == "01") {
 					log.debug "move down"
@@ -86,7 +86,7 @@ def parse(String description) {
 			} else if (descMap.commandInt == 0x01) {
 //				def step = descMap.data[0] == "00" ? 10 : -10
 				sendEvent(name: "level", value: descMap.data[0] == "00" ? 100 : STEP)
-                sendEvent(name: "switch", value: "on" )
+				sendEvent(name: "switch", value: "on" )
 //				def events = []
 //                for (currentLevel..target).step(step).each{
 //					events << createEvent(name: "level", value: currentLevel + it)
@@ -97,7 +97,7 @@ def parse(String description) {
 			}
 		} else if (descMap && descMap.clusterInt == 0x0005) {
 			if (descMap.commandInt == 0x05) {
-                sendEvent(name: "button", value: "pressed", isStateChange: true)
+				sendEvent(name: "button", value: "pressed", isStateChange: true)
 			} else if (descMap.commandInt == 0x04) {
 				sendEvent(name: "button", value: "held", isStateChange: true)
 			}
