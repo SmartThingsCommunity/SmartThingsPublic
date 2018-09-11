@@ -79,12 +79,6 @@ metadata {
 	}
 }
 
-private getPOLL_CONTROL_CLUSTER() { 0x0020 }
-private getFAST_POLL_TIMEOUT_ATTR() { 0x0003 }
-private getCHECK_IN_INTERVAL_ATTR() { 0x0000 }
-private getSET_LONG_POLL_INTERVAL_CMD() { 0x02 }
-private getSET_SHORT_POLL_INTERVAL_CMD() { 0x03 }
-
 def parse(String description) {
 	log.debug "description: $description"
 
@@ -188,9 +182,6 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	if(isEcolink()) {
 		configureCommands += zigbee.iasZoneConfig(30, 60 * 30) + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(30, 60 * 5) + refresh()
-		def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
-				zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
-		configureCommands += enrollCmds
 	} else {
 		configureCommands += refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
 	}
