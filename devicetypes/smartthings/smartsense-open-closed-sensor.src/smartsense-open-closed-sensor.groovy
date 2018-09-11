@@ -172,7 +172,11 @@ def refresh() {
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
 
-	return refreshCmds + zigbee.enrollResponse()
+	if(!isEcolink()) {
+		refreshCmds += zigbee.enrollResponse()
+	}
+
+	return refreshCmds
 }
 
 def configure() {
