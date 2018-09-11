@@ -22,6 +22,7 @@ metadata {
 		// This DTH uses 2 switch endpoints. Parent DTH controlls endpoint 1 so please use '1' at the end of deviceJoinName
 		// Child device (isComponent : false) representing endpoint 2 will substitude 1 with 2 for easier identification.
 		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Light Switch 1"
+		fingerprint mfr: "0258", prod: "0003", model: "108B", deviceJoinName: "NEO coolcam Light Switch 1"
 	}
 
 	// tile definitions

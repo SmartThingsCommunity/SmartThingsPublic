@@ -42,9 +42,12 @@ metadata {
 		fingerprint mfr: "0063", prod: "4953", model: "3031", deviceJoinName: "Jasco Hinge Pin Door Sensor"
 		fingerprint mfr: "019A", prod: "0003", model: "0003", deviceJoinName: "Sensative Strips"
 		fingerprint mfr: "0258", prod: "0003", model: "0082", deviceJoinName: "NEO Coolcam Door/Window Sensor"
+		fingerprint mfr: "0258", prod: "0003", model: "1082", deviceJoinName: "NEO Coolcam Door/Window Sensor" // NAS-DS01ZE
 		fingerprint mfr: "021F", prod: "0003", model: "0101", deviceJoinName: "Dome Door/Window Sensor"
 		//zw:S type:0701 mfr:014A prod:0004 model:0002 ver:10.01 zwv:4.05 lib:06 cc:5E,86,72,73,80,71,85,59,84,30,70 ccOut:20 role:06 ff:8C07 ui:8C00
 		fingerprint mfr: "014A", prod: "0004", model: "0002", deviceJoinName: "Ecolink Door/Window Sensor"
+		//zw:Ss type:0701 mfr:0086 prod:0002 model:0059 ver:1.14 zwv:3.92 lib:03 cc:5E,86,72,98,5A ccOut:82 sec:30,80,84,70,85,59,71,7A,73 role:06 ff:8C00 ui:8C00
+		fingerprint mfr: "0086", prod: "0002", model: "0059", deviceJoinName: "Aeon Recessed Door Sensor"
 
 	}
 
