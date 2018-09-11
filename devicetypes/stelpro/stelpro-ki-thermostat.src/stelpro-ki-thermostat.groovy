@@ -121,27 +121,27 @@ def setupHealthCheck() {
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
-def installed() {
-	setupHealthCheck()
-
+def configureSupportedRanges() {
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 }
 
+def installed() {
+	setupHealthCheck()
+
+	configureSupportedRanges()
+}
+
 def updated() {
 	setupHealthCheck()
 
-	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
-	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
-	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
+	configureSupportedRanges()
 
+	unschedule(scheduledUpdateWeather)
 	if (settings.zipcode) {
-		unschedule(scheduledUpdateWeather)
 		runEvery1Hour(scheduledUpdateWeather)
 		scheduledUpdateWeather()
-	} else {
-		unschedule(scheduledUpdateWeather)
 	}
 }
 
@@ -378,18 +378,11 @@ def refresh() {
 }
 
 def configure() {
-	def requests = []
-
+	unschedule(scheduledUpdateWeather)
 	if (settings.zipcode) {
-		requests += scheduledUpdateWeather()
-		unschedule(scheduledUpdateWeather)
 		runEvery1Hour(scheduledUpdateWeather)
-	} else {
-		unschedule(scheduledUpdateWeather)
 	}
-	requests += poll()
-
-	requests
+	poll()
 }
 
 def quickSetHeat(degrees) {
