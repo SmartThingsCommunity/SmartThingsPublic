@@ -21,7 +21,6 @@ metadata {
 		capability "Switch"
 		capability "Button"
 		capability "Switch Level"
-		capability "Health Check"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003", outClusters: "0000,0004,0003,0006,0008,0005", manufacturer: "Aurora", model: "Remote50AU", deviceJoinName: "Aurora Wireless Wall Remote"
 	}
@@ -123,22 +122,11 @@ def setLevel(value) {
 	if (value != 0) sendEvent(name: "switch", value: "on")
 	sendEvent(name: "level", value: value)
 }
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
-def ping() {
-	return refresh()
-}
-
-def refresh() {
-	zigbee.readAttribute(0x0000, 0x0000)
-}
 
 def installed() {
 	sendEvent(name: "switch", value: "off", isStateChange: false, displayed: false)
 	sendEvent(name: "level", value: 0, isStateChange: false, displayed: false)
 	sendEvent(name: "button", value: "pressed", isStateChange: false, displayed: false)
-	sendEvent(name: "checkInterval", value: 24 * 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 def configure() {
