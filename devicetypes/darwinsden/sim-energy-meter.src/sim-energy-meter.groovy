@@ -27,6 +27,7 @@ metadata {
 		command "reset"	
         command "setPower"
         command "setEnergy"
+        command "setDemandGoal"
     }
     
 	simulator {
@@ -36,10 +37,15 @@ metadata {
     tiles(scale: 2) {
 		multiAttributeTile(name:"power", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute("device.power", key: "PRIMARY_CONTROL") {
-				attributeState("default", label:'Power: ${currentValue} W')
+				attributeState("default", label:'Power: ${currentValue} W',
+                backgroundColors:[
+                    [value: 0, color: "#44b621"],
+					[value: 100, color: "#aaaaaa	"]
+                     ])
+
 			}
-			tileAttribute("device.energy", key: "SECONDARY_CONTROL") {
-				attributeState("default", label:'Energy: ${currentValue} Kilowatt Hours',icon: "st.secondary.activity")
+			tileAttribute("timeSet", key: "SECONDARY_CONTROL") {
+				attributeState("default", label:'${currentValue}',icon: "st.secondary.activity")
 			}
 		}
      
@@ -96,6 +102,7 @@ def sendData() {
      sendEvent(name: 'power', value: state.power, unit: "W")
      state.lastSentPower=state.power
      state.lastPowerSendTime = now()
+     sendEvent(name: 'timeSet', value: state.timeSet)
   }
   if ((!state.lastSentEnergy || Math.abs(state.lastSentEnergy - state.energy) > 0.0001) ||
       (!state.lastEnergySendTime || (now()-state.lastPowerSendTime)/1000 > 120))
@@ -109,6 +116,7 @@ def sendData() {
 def setPower (value)
 {
   state.power = value
+  state.timeSet = new Date(now()).format("EEE MMM yyyy '@' HH:mm z" , location.timeZone)
   sendData()
 }
 
@@ -117,3 +125,4 @@ def setEnergy (value)
   state.energy = value
   sendData()
 }
+
