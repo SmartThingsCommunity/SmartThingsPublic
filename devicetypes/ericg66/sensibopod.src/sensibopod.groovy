@@ -1200,6 +1200,7 @@ def parseTempUnitEventData(Map results)
 def parseEventData(Map results)
 {
 	log.debug "parsing Event data $results"
+    
 	if(results)
 	{
 		results.each { name, value -> 
@@ -1209,9 +1210,9 @@ def parseEventData(Map results)
             def isChange = false
             def isDisplayed = true
                              
-            if (name=="voltage") {            	                
-                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = true
+            if (name=="voltage") {
+                isChange = true //isTemperatureStateChange(device, name, value.toString())
+                isDisplayed = false
                   
 				sendEvent(
 					name: name,
@@ -1225,7 +1226,7 @@ def parseEventData(Map results)
             	}
             else if (name== "battery") {            	                
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = true
+                isDisplayed = false
                  
 				sendEvent(
 					name: name,
@@ -1239,7 +1240,7 @@ def parseEventData(Map results)
             	}
             else if (name== "powerSource") {            	                
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = true
+                isDisplayed = false
                   
 				sendEvent(
 					name: name,
@@ -1315,7 +1316,7 @@ def parseEventData(Map results)
             	}
             else if (name=="temperatureUnit") { 
                 isChange = true
-                isDisplayed = true
+                isDisplayed = false
                    
 				sendEvent(
 					name: name,
@@ -1346,7 +1347,7 @@ def parseEventData(Map results)
  			else if (name=="swing") {
               	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = true
+                isDisplayed = false
                    
 				sendEvent(
 					name: name,
@@ -1359,7 +1360,7 @@ def parseEventData(Map results)
             	}
             else if (name=="temperature" || name== "lastTemperaturePush" || name== "lastHumidityPush") {
 				isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = isChange
+                isDisplayed = false
 				
 				sendEvent(
 					name: name,
@@ -1374,7 +1375,7 @@ def parseEventData(Map results)
             }
             else if (name=="humidity") {
 				isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = isChange
+                isDisplayed = false
 				
 				sendEvent(
 					name: name,
