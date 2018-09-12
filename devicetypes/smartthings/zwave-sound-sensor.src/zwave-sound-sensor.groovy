@@ -40,11 +40,7 @@ metadata {
 def installed() {
 	sendCheckIntervalEvent()
 	sendEvent(name: "sound", value: "not detected", displayed: false, isStateChanged: true)
-	response([
-			zwave.batteryV1.batteryGet().format(),
-			"delay 2000",
-			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-	])
+	getBatteryAndSleep()
 }
 
 def updated() {
@@ -70,14 +66,15 @@ private getALARM_TYPE_CO() { 2 }
 
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 	log.debug "zwaveAlarmTypes: ${cmd.zwaveAlarmType}"
-	def event = null
+	def result = []
 	if (cmd.zwaveAlarmType == ALARM_TYPE_SMOKE || cmd.zwaveAlarmType == ALARM_TYPE_CO) {
 		def value = (cmd.zwaveAlarmEvent == 1 || cmd.zwaveAlarmEvent == 2) ? "detected" : "not detected"
-		event = createEvent(name: "sound", value: value, descriptionText: "${device.displayName} sound was ${value}", isStateChanged: true)
+		result << createEvent(name: "sound", value: value, descriptionText: "${device.displayName} sound was ${value}", isStateChanged: true)
 	} else {
-		event = createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
+		result << createEvent(displayed: true, descriptionText: "Alarm $cmd.alarmType ${cmd.alarmLevel == 255 ? 'activated' : cmd.alarmLevel ?: 'deactivated'}".toString())
+		result << getBatteryAndSleep()
 	}
-	event
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
@@ -114,4 +111,12 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 private sendCheckIntervalEvent() {
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+private getBatteryAndSleep() {
+	response([
+			zwave.batteryV1.batteryGet().format(),
+			"delay 2000",
+			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	])
 }
