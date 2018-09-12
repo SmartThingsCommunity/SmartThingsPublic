@@ -164,7 +164,7 @@ def refresh() {
 def ping() {
 	log.debug "ping().."
 	unschedule(offlinePing)
-	runEvery5Minutes(offlinePing)
+	runEvery30Minutes(offlinePing)
 	command(zwave.switchMultilevelV3.switchMultilevelGet())
 }
 
