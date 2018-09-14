@@ -118,6 +118,7 @@ metadata {
 def installed() {
 	sendEvent(name: "tamper", value: "clear", displayed: false)
 	sendEvent(name: "motionText", value: "Disabled", displayed: false)
+	sendEvent(name: "motion", value: "inactive", displayed: false)
 	multiStatusEvent("Sync OK.", true, true)
 }
 
