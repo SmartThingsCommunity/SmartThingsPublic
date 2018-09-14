@@ -406,7 +406,7 @@ private motionEvent(Integer sensorType, value) {
 	}
 }
 
-private axisEvent() {
+def axisEvent() {
 	logging("${device.displayName} - Executing axisEvent() values are: ${device.currentValue("xAxis")}, ${device.currentValue("yAxis")}, ${device.currentValue("zAxis")}", "debug")
 	def xAxis = Math.round((device.currentValue("xAxis") as Float) * 100)
 	def yAxis = Math.round((device.currentValue("yAxis") as Float) * 100)
@@ -445,7 +445,7 @@ private syncStart() {
 	}
 }
 
-private syncNext() {
+def syncNext() {
 	logging("${device.displayName} - Executing syncNext()", "debug")
 	def cmds = []
 	for (param in parameterMap()) {
@@ -465,7 +465,7 @@ private syncNext() {
 	}
 }
 
-private syncCheck() {
+def syncCheck() {
 	logging("${device.displayName} - Executing syncCheck()", "debug")
 	def failed = []
 	def incorrect = []

@@ -148,11 +148,11 @@ def configure(){
 def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
 	logging("${device.displayName} - Executing updated()","info")
-	runIn(3,"syncStart")
+	runIn(3, "syncStart")
 	state.lastUpdated = now()
 }
 
-private syncStart() {
+def syncStart() {
 	boolean syncNeeded = false
 	parameterMap().each {
 		if(settings."$it.key" != null) {
