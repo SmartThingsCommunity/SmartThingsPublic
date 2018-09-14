@@ -67,6 +67,11 @@ def updated() {
     updateDataValue("onOff", "catchall")
 }
 
+def updated() {
+    log.debug "updated()"
+    updateDataValue("onOff", "catchall")
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
@@ -136,17 +141,34 @@ def ping() {
 
 def refresh()
 {
-    log.debug "refresh broadcast"
+    //log.debug "refresh broadcast"
     return zigbee.readAttribute(0x0006, 0x0000, [destEndpoint: 0xFF])
 }
 
-def configure() {
-    log.debug "config"
-    // Device-Watch allows 2 check-in misses from device + ping (plus 2 min lag time)
-    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-
-    return zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null, [destEndpoint: 0x01]) +
-                zigbee.configureReporting(0x0006, 0x0000, 0x10, 0, 600, null, [destEndpoint: 0x02]) +
-                zigbee.readAttribute(0x0006, 0x0000,[destEndpoint: 0xFF])
+def poll() {
+	refresh()
 }
 
+def healthPoll() {
+	log.debug "healthPoll()"
+	def cmds = refresh()
+	cmds.each { sendHubCommand(new physicalgraph.device.HubAction(it)) }
+}
+
+def configureHealthCheck() {
+	Integer hcIntervalMinutes = 12
+	if (!state.hasConfiguredHealthCheck) {
+		log.debug "Configuring Health Check, Reporting"
+		unschedule("healthPoll", [forceForLocallyExecuting: true])
+		runEvery5Minutes("healthPoll", [forceForLocallyExecuting: true])
+		// Device-Watch allows 2 check-in misses from device
+		sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+		state.hasConfiguredHealthCheck = true
+	}
+}
+
+def configure() {
+	log.debug "configure()"
+	configureHealthCheck()
+	zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01)
+}
