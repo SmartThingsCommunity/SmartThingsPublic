@@ -143,20 +143,20 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-	// parent DTH conrols endpoint 1
+	// parent DTH controls endpoint 1
 	def endpointNumber = 1
 	delayBetween([
-		command(encap(endpointNumber, zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF))),
-		command(encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet()))
+		encap(endpointNumber, zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF)),
+		encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
 	])
 }
 
 def off() {
-	// parent DTH conrols endpoint 1
+	// parent DTH controls endpoint 1
 	def endpointNumber = 1
 	delayBetween([
-		command(encap(endpointNumber, zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00))),
-		command(encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet()))
+		encap(endpointNumber, zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00)),
+		encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
 	])
 }
 
@@ -168,9 +168,9 @@ def ping() {
 }
 
 def refresh() {
-	// parent DTH conrols endpoint 1
+	// parent DTH controls endpoint 1
 	def endpointNumber = 1
-	command(encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet()))
+	encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
 }
 
 // sendCommand is called by endpoint 2 child device handler
@@ -181,13 +181,13 @@ def sendCommand(endpointDevice, commands) {
 	if (commands instanceof String) {
 		commands = commands.split(',') as List
 	}
-	result = commands.collect { command(encap(endpointNumber, it)) }
+	result = commands.collect { encap(endpointNumber, it) }
 	sendHubCommand(result, 100)
 }
 
 def encap(endpointNumber, cmd) {
 	if (cmd instanceof physicalgraph.zwave.Command) {
-		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd)
+		command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
 	} else if (cmd.startsWith("delay")) {
 		cmd
 	} else {
