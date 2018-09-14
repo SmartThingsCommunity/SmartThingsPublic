@@ -199,7 +199,7 @@ private syncStart() {
 	}
 }
 
-private syncNext() {
+def syncNext() {
 	logging("${device.displayName} - Executing syncNext()","debug")
 	def cmds = []
 	for ( param in parameterMap() ) {
@@ -219,7 +219,7 @@ private syncNext() {
 	}
 }
 
-private syncCheck() {
+def syncCheck() {
 	logging("${device.displayName} - Executing syncCheck()","debug")
 	def failed = []
 	def incorrect = []
@@ -264,7 +264,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	}
 	cmds << zwave.batteryV1.batteryGet()
 	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
-	runIn(1,"syncNext")
+	runIn(1, "syncNext")
 	[response(encapSequence(cmds,1000))]
 }
 
