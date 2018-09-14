@@ -20,7 +20,6 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-		capability "Light"
 
 		fingerprint inClusters: "0x26", deviceJoinName: "Z-Wave Dimmer"
 		fingerprint mfr: "001D", prod: "1902", deviceJoinName: "Z-Wave Dimmer"
