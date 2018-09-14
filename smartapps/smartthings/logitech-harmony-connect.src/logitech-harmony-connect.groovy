@@ -978,11 +978,11 @@ def deleteHarmony() {
 	render status: 204, data: "{}"
 }
 
-private getAllDevices() {
+def getAllDevices() {
 	([] + switches + motionSensors + contactSensors + thermostats + presenceSensors + temperatureSensors + accelerationSensors + waterSensors + lightSensors + humiditySensors + alarms + locks)?.findAll()?.unique { it.id }
 }
 
-private deviceItem(device) {
+def deviceItem(device) {
 	[
 		id: device.id,
 		label: device.displayName,
@@ -1006,7 +1006,7 @@ private deviceItem(device) {
 	]
 }
 
-private hubItem(hub) {
+def hubItem(hub) {
 	[
 		id: hub.id,
 		name: hub.name,

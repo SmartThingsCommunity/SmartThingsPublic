@@ -720,7 +720,7 @@ private startSimHvac() {
     }
 }
 
-private runSimHvacCycle() {
+def runSimHvacCycle() {
     def operatingState = getOperatingState()
     def currentTemp = getTemperature()
     def heatSet = getHeatingSetpoint()
