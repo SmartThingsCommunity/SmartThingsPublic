@@ -210,7 +210,7 @@ private syncNext() {
 	}
 }
 
-private syncCheck() {
+def syncCheck() {
 	logging("Executing syncCheck()","info")
 	def failed = []
 	def incorrect = []
