@@ -7,7 +7,7 @@
 ESP8266HTTPUpdateServer httpUpdater;
 #include <Arduino.h>
 
-#define SONOFF
+//#define SONOFF
 //#define SONOFF_TH
 //#define SONOFF_S20
 //#define SONOFF_TOUCH //ESP8285 !!!!!!!!!!
@@ -16,6 +16,7 @@ ESP8266HTTPUpdateServer httpUpdater;
 //#define SONOFF_DUAL
 //#define SONOFF_4CH //ESP8285 !!!!!!!!!!
 //#define ECOPLUG
+#define SONOFF_IFAN02 //ESP8285 !!!!!!!!!!
 
 #ifdef SONOFF_POW
 #include "HLW8012.h"
@@ -43,6 +44,7 @@ boolean inAutoOff3 = false;
 boolean inAutoOff4 = false;
 boolean needReboot = false;
 boolean shortPress = false;
+int previousFanSpeed = -1;
 
 //stores if the switch was high before at all
 int state1 = LOW;
@@ -89,6 +91,10 @@ String softwareVersion = "2.0.5";
 #endif
 #ifdef SONOFF_4CH
 const char * projectName = "Sonoff 4CH";
+String softwareVersion = "2.0.5";
+#endif
+#ifdef SONOFF_IFAN02
+const char * projectName = "Sonoff IFan02";
 String softwareVersion = "2.0.5";
 #endif
 
@@ -192,36 +198,36 @@ void calibrate(int voltage = 120) {
 #endif
 
 #if defined SONOFF || defined SONOFF_TOUCH || defined SONOFF_S20 || defined SONOFF_DUAL
-#define REL_PIN1       12             // GPIO 12 = Red Led and Relay (0 = Off, 1 = On)
-#define LED_PIN1       13             // GPIO 13 = Green Led (0 = On, 1 = Off)
-#define KEY_PIN1       0              // GPIO 00 = Button
-#define EXT_PIN        14             // GPIO 14 = Fifth pin in flashing header
+#define REL_PIN1       12
+#define LED_PIN1       13
+#define KEY_PIN1       0
+#define EXT_PIN        14
 #endif
 
-#if defined SONOFF_4CH
-#define REL_PIN1       12             // GPIO 12 = Red Led and Relay (0 = Off, 1 = On)
-#define KEY_PIN1       0              // GPIO 00 = Button
-#define REL_PIN2       5             // GPIO 12 = Red Led and Relay (0 = Off, 1 = On)
-#define KEY_PIN2       9              // GPIO 00 = Button
-#define REL_PIN3       4             // GPIO 12 = Red Led and Relay (0 = Off, 1 = On)
-#define KEY_PIN3       10              // GPIO 00 = Button
-#define REL_PIN4       15             // GPIO 12 = Red Led and Relay (0 = Off, 1 = On)
-#define KEY_PIN4       14              // GPIO 00 = Button
+#if defined SONOFF_4CH || defined SONOFF_IFAN02
+#define REL_PIN1       12
+#define KEY_PIN1       0
+#define REL_PIN2       5
+#define KEY_PIN2       9
+#define REL_PIN3       4
+#define KEY_PIN3       10
+#define REL_PIN4       15
+#define KEY_PIN4       14
 
-#define LED_PIN1       13             // GPIO 13 = Green Led (0 = On, 1 = Off)
+#define LED_PIN1       13
 #endif
 
 #if defined ECOPLUG
-#define REL_PIN1       2             // GPIO 12 = Red Led and Relay (0 = Off, 1 = On)
-#define LED_PIN1       13             // GPIO 13 = Green Led (0 = On, 1 = Off)
-#define KEY_PIN1       0              // GPIO 00 = Button
-#define EXT_PIN        14             // GPIO 14 = Fifth pin in flashing header
+#define REL_PIN1       2
+#define LED_PIN1       13
+#define KEY_PIN1       0
+#define EXT_PIN        14
 #endif
 
 #ifdef SONOFF_TH
-#define REL_PIN1       12             // GPIO 12 = Red Led and Relay (0 = Off, 1 = On)
-#define LED_PIN1       13             // GPIO 13 = Green Led (0 = On, 1 = Off)
-#define KEY_PIN1       0              // GPIO 00 = Button
+#define REL_PIN1       12
+#define LED_PIN1       13
+#define KEY_PIN1       0
 #endif
 
 #if defined SONOFF || defined SONOFF_TH
@@ -246,7 +252,7 @@ void dsSetup() {
 }
 #endif
 
-#if defined SONOFF || defined SONOFF_S20 || defined SONOFF_TOUCH || defined SONOFF_TH || defined ECOPLUG || defined SONOFF_DUAL || defined SONOFF_4CH
+#if defined SONOFF || defined SONOFF_S20 || defined SONOFF_TOUCH || defined SONOFF_TH || defined ECOPLUG || defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
 #define LEDoff1 digitalWrite(LED_PIN1,HIGH)
 #define LEDon1 digitalWrite(LED_PIN1,LOW)
 #else
@@ -319,6 +325,41 @@ void dsSetup() {
   Serial.write(0xA1); \
   Serial.flush(); \
   Settings.currentState2 = true; \
+}
+#elif defined SONOFF_IFAN02
+#define Relayoff1 {\
+  if (Settings.currentState1) needUpdate1 = true; \
+  digitalWrite(REL_PIN1,LOW); \
+  Settings.currentState1 = false; \
+}
+#define Relayon1 {\
+  if (!Settings.currentState1) needUpdate1 = true; \
+  digitalWrite(REL_PIN1,HIGH); \
+  Settings.currentState1 = true; \
+}
+#define Relayoff2 {\
+  digitalWrite(REL_PIN2,LOW); \
+  Settings.currentState2 = false; \
+}
+#define Relayon2 {\
+  digitalWrite(REL_PIN2,HIGH); \
+  Settings.currentState2 = true; \
+}
+#define Relayoff3 {\
+  digitalWrite(REL_PIN3,LOW); \
+  Settings.currentState3 = false; \
+}
+#define Relayon3 {\
+  digitalWrite(REL_PIN3,HIGH); \
+  Settings.currentState3 = true; \
+}
+#define Relayoff4 {\
+  digitalWrite(REL_PIN4,LOW); \
+  Settings.currentState4 = false; \
+}
+#define Relayon4 {\
+  digitalWrite(REL_PIN4,HIGH); \
+  Settings.currentState4 = true; \
 }
 #elif defined SONOFF_4CH
 #define Relayoff1 {\
@@ -486,7 +527,7 @@ struct SettingsStruct
   int           externalType;
   char          hostName[26];
 #endif
-#if defined SONOFF_4CH
+#if defined SONOFF_4CH || defined SONOFF_IFAN02
   int           usePort;
   int           switchType;
   int           autoOff1;
@@ -603,7 +644,7 @@ void relayControl(int relay, int value) {
           #if defined SONOFF_DUAL
           Relayoff2;
           #endif
-          #if defined SONOFF_4CH
+          #if defined SONOFF_4CH || defined SONOFF_IFAN02
           Relayoff2;
           Relayoff3;
           Relayoff4;
@@ -622,7 +663,7 @@ void relayControl(int relay, int value) {
           }
           Relayon2;
           #endif
-          #if defined SONOFF_4CH
+          #if defined SONOFF_4CH || defined SONOFF_IFAN02
           if (!inAutoOff2) {
             autoOffTimer2 = millis();
             inAutoOff2 = true;
@@ -661,7 +702,7 @@ void relayControl(int relay, int value) {
             Relayon2;
           }
           #endif
-          #if defined SONOFF_4CH
+          #if defined SONOFF_4CH || defined SONOFF_IFAN02
           if (Settings.currentState2) { 
             Relayoff2;
           } else {
@@ -726,7 +767,7 @@ void relayControl(int relay, int value) {
       }
     case 2: //Relay 2
       {
-        #if defined SONOFF_DUAL || defined SONOFF_4CH
+        #if defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
         if (value == 0) {
           Relayoff2;
         }
@@ -753,7 +794,7 @@ void relayControl(int relay, int value) {
       }
       case 3: //Relay 3
       {
-        #if defined SONOFF_4CH
+        #if defined SONOFF_4CH || defined SONOFF_IFAN02
         if (value == 0) {
           Relayoff3;
         }
@@ -780,7 +821,7 @@ void relayControl(int relay, int value) {
       }
       case 4: //Relay 4
       {
-        #if defined SONOFF_4CH
+        #if defined SONOFF_4CH || defined SONOFF_IFAN02
         if (value == 0) {
           Relayoff4;
         }
@@ -843,7 +884,7 @@ void relayToggle1() {
   }
 }
 
-#ifdef SONOFF_4CH
+#if defined SONOFF_4CH || defined SONOFF_IFAN02
 void relayToggle2() {
   int reading = digitalRead(KEY_PIN2);
   if (reading == LOW) {
@@ -954,29 +995,19 @@ const char * endString(int s, const char *input) {
 
 #ifdef SONOFF_POW
 String getStatus() {
-  if (digitalRead(REL_PIN1) == 0) {
-    //return "{\"power\":\"off\", \"uptime\":\"" + uptime() + "\", \"W\":\"" + W + "\", \"V\":\"" + V + "\", \"A\":\"" + A +  + "\", \"VA\":\"" + VA +  + "\", \"PF\":\"" + PF +  "\"}";
-    return "{\"power\":\"off\", \"uptime\":\"" + uptime() + "\", \"W\":\"" + W + "\", \"V\":\"" + V + "\", \"A\":\"" + A + "\"}";
-  } else {
-    //return "{\"power\":\"on\", \"uptime\":\"" + uptime() + "\", \"W\":\"" + W + "\", \"V\":\"" + V + "\", \"A\":\"" + A +  + "\", \"VA\":\"" + VA +  + "\", \"PF\":\"" + PF +  "\"}";
-    return "{\"power\":\"on\", \"uptime\":\"" + uptime() + "\", \"W\":\"" + W + "\", \"V\":\"" + V + "\", \"A\":\"" + A + "\"}";
-  }
+  return "{\"power\":\"" + String(digitalRead(REL_PIN1) == 0? "off" : "on") + "\", \"uptime\":\"" + uptime() + "\", \"W\":\"" + W + "\", \"V\":\"" + V + "\", \"A\":\"" + A + "\"}";
 }
 #elif defined SONOFF_TH
 String getStatus() {
-  if (digitalRead(REL_PIN1) == 0) {
-    return "{\"power\":\"off\", \"uptime\":\"" + uptime() + "\", \"temperature\":\"" + temperature + "\", \"scale\":\"" + getTempScale() + "\", \"humidity\":\"" + humidity +  "\"}";
-  } else {
-    return "{\"power\":\"on\", \"uptime\":\"" + uptime() + "\", \"temperature\":\"" + temperature + "\", \"scale\":\"" + getTempScale() + "\", \"humidity\":\"" + humidity +  "\"}";
-  }
+  return "{\"power\":\"" + String(digitalRead(REL_PIN1) == 0? "off" : "on") + "\", \"uptime\":\"" + uptime() + "\", \"temperature\":\"" + temperature + "\", \"scale\":\"" + getTempScale() + "\", \"humidity\":\"" + humidity +  "\"}";
+}
+#elif defined SONOFF_IFAN02
+String getStatus() {
+  return "{\"power\":\"" + String(digitalRead(REL_PIN1) == 0? "off" : "on") + "\", \"uptime\":\"" + uptime() + "\", " + "\"fan\":\"" + getFanSpeed() + "\"}";
 }
 #else
 String getStatus() {
-  if (digitalRead(REL_PIN1) == 0) {
-    return "{\"power\":\"off\", \"uptime\":\"" + uptime() + "\"}";
-  } else {
-    return "{\"power\":\"on\", \"uptime\":\"" + uptime() + "\"}";
-  }
+  return "{\"power\":\"" + String(digitalRead(REL_PIN1) == 0? "off" : "on") + "\", \"uptime\":\"" + uptime() + "\"}";
 }
 #endif
 
@@ -1081,6 +1112,45 @@ void runEach5Minutes()
 
 }
 
+int getFanSpeed(){
+  if (Settings.currentState4 == true) return 3;
+  else if (Settings.currentState3 == true) return 2;
+  else if (Settings.currentState2 == true) return 1;
+  else  return 0;
+}
+
+String getFanSpeedString(){
+  if (Settings.currentState4 == true) return "High";
+  else if (Settings.currentState3 == true) return "Medium";
+  else if (Settings.currentState2 == true) return "Low";
+  else  return "Off";
+}
+
+void setFanSpeed(int speed){
+  switch(speed){
+    case 0:
+      relayControl(2, 0);
+      relayControl(3, 0);
+      relayControl(4, 0);
+    break;
+    case 1:
+      relayControl(2, 1);
+      relayControl(3, 0);
+      relayControl(4, 0);
+    break;
+    case 2:
+      relayControl(2, 1);
+      relayControl(3, 1);
+      relayControl(4, 0);
+    break;
+    case 3:
+      relayControl(2, 1);
+      relayControl(3, 0);
+      relayControl(4, 1);
+    break;
+  }
+}
+
 boolean sendStatus(int number) {
   String authHeader = "";
   boolean success = false;
@@ -1113,7 +1183,7 @@ boolean sendStatus(int number) {
     case 0: {
       #if defined SONOFF_DUAL
       message = "{\"type\":\"relay\", \"number\":\"0\", \"power\":\"" + String(Settings.currentState1 == true || Settings.currentState2 == true? "on" : "off") + "\"}";
-      #elif defined SONOFF_4CH
+      #elif defined SONOFF_4CH || defined SONOFF_IFAN02
       message = "{\"type\":\"relay\", \"number\":\"0\", \"power\":\"" + String(Settings.currentState1 == true || Settings.currentState2 == true || Settings.currentState3 == true || Settings.currentState4 == true? "on" : "off") + "\"}";
       #else
       message = "{\"type\":\"relay\", \"number\":\"0\", \"power\":\"" + String(Settings.currentState1 == true? "on" : "off") + "\"}";
@@ -1124,19 +1194,23 @@ boolean sendStatus(int number) {
       message = "{\"type\":\"relay\", \"number\":\"1\", \"power\":\"" + String(Settings.currentState1 == true? "on" : "off") + "\"}";
       break;
     }
-    #if defined SONOFF_DUAL || defined SONOFF_4CH
+    #if defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
     case 2: {
       message = "{\"type\":\"relay\", \"number\":\"2\", \"power\":\"" + String(Settings.currentState2 == true? "on" : "off") + "\"}";
       break;
     }
     #endif
-    #if defined SONOFF_4CH
+    #if defined SONOFF_4CH || defined SONOFF_IFAN02
     case 3: {
       message = "{\"type\":\"relay\", \"number\":\"3\", \"power\":\"" + String(Settings.currentState3 == true? "on" : "off") + "\"}";
       break;
     }
     case 4: {
       message = "{\"type\":\"relay\", \"number\":\"4\", \"power\":\"" + String(Settings.currentState4 == true? "on" : "off") + "\"}";
+      break;
+    }
+    case 98: {
+      message = "{\"type\":\"fan\", \"number\":\"1\", \"speed\":\"" + String(getFanSpeed()) + "\"}";
       break;
     }
     #endif
@@ -1538,7 +1612,7 @@ void setup()
     dht.begin();
   }
 #endif
-#ifdef SONOFF_4CH
+#if defined SONOFF_4CH || defined SONOFF_IFAN02
   pinMode(KEY_PIN2, INPUT_PULLUP);
   attachInterrupt(KEY_PIN2, relayToggle2, CHANGE);
   pinMode(REL_PIN2, OUTPUT);
@@ -1605,11 +1679,11 @@ void setup()
       {
         if (Settings.currentState1) relayControl(1, 1);
         else relayControl(1, 0);
-        #if defined SONOFF_DUAL || defined SONOFF_4CH
+        #if defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
         if (Settings.currentState2) relayControl(2, 1);
         else relayControl(2, 0);
         #endif
-        #if defined SONOFF_4CH
+        #if defined SONOFF_4CH || defined SONOFF_IFAN02
         if (Settings.currentState3) relayControl(3, 1);
         else relayControl(3, 0);
         if (Settings.currentState4) relayControl(4, 1);
@@ -1621,11 +1695,11 @@ void setup()
       {
         if (!Settings.currentState1) relayControl(1, 1);
         else relayControl(1, 0);
-        #if defined SONOFF_DUAL || defined SONOFF_4CH
+        #if defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
         if (!Settings.currentState2) relayControl(2, 1);
         else relayControl(2, 0);
         #endif
-        #if defined SONOFF_4CH
+        #if defined SONOFF_4CH || defined SONOFF_IFAN02
         if (!Settings.currentState3) relayControl(3, 1);
         else relayControl(3, 0);
         if (!Settings.currentState4) relayControl(4, 1);
@@ -1698,10 +1772,10 @@ void setup()
   if (SecuritySettings.settingsVersion < 203) {
     Settings.switchType = DEFAULT_SWITCH_TYPE;
     Settings.autoOff1 = DEFAULT_AUTO_OFF1;
-    #if defined SONOFF_DUAL || defined SONOFF_4CH
+    #if defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
     Settings.autoOff2 = DEFAULT_AUTO_OFF2;
     #endif
-    #if defined SONOFF_4CH
+    #if defined SONOFF_4CH || defined SONOFF_IFAN02
     Settings.autoOff3 = DEFAULT_AUTO_OFF3;
     Settings.autoOff4 = DEFAULT_AUTO_OFF4;
     #endif
@@ -1878,7 +1952,7 @@ void setup()
     #ifdef SONOFF_DUAL
     String autoOff2 = server->arg("autooff2");
     #endif
-    #ifdef SONOFF_4CH
+    #if defined SONOFF_4CH || defined SONOFF_IFAN02
     String autoOff2 = server->arg("autooff2");
     String autoOff3 = server->arg("autooff3");
     String autoOff4 = server->arg("autooff4");
@@ -2024,7 +2098,7 @@ void setup()
         Settings.autoOff2 = autoOff2.toInt();
       }
       #endif
-      #ifdef SONOFF_4CH
+      #if defined SONOFF_4CH || defined SONOFF_IFAN02
       if (autoOff2.length() != 0)
       {
         Settings.autoOff2 = autoOff2.toInt();
@@ -2180,7 +2254,7 @@ void setup()
       reply += F("<option value='3'>Inverse Previous State</option>");
     }
     reply += F("</select>");
-    #if not defined SONOFF_DUAL || not defined SONOFF_4CH 
+    #if not defined SONOFF_DUAL || not defined SONOFF_4CH
     reply += F("<TR><TD>Auto Off:<TD><input type='text' name='autooff1' value='");
     reply += Settings.autoOff1;
     reply += F("'>");
@@ -2194,7 +2268,10 @@ void setup()
     reply += Settings.autoOff2;
     reply += F("'>");
     #endif
-    #ifdef SONOFF_4CH
+    #if defined SONOFF_IFAN02
+    
+    #endif
+    #if defined SONOFF_4CH
     reply += F("<TR><TD>Auto Off Relay 2:<TD><input type='text' name='autooff2' value='");
     reply += Settings.autoOff2;
     reply += F("'>");
@@ -2326,6 +2403,12 @@ void setup()
     String value2 = server->arg("relayValue2");
     String value3 = server->arg("relayValue3");
     String value4 = server->arg("relayValue4");
+    #elif  defined SONOFF_IFAN02
+    String value1 = server->arg("relayValue1");
+    String fanValue1 = server->arg("fanValue0");
+    String fanValue2 = server->arg("fanValue1");
+    String fanValue3 = server->arg("fanValue2");
+    String fanValue4 = server->arg("fanValue3");
     #else
     String value = server->arg("relayValue");
     #endif
@@ -2380,6 +2463,31 @@ void setup()
     if (value4 == "off")
     {
       relayControl(4, 0);
+    }
+    #elif defined SONOFF_IFAN02
+    if (value1 == "on")
+    {
+      relayControl(1, 1);
+    }
+    if (value1 == "off")
+    {
+      relayControl(1, 0);
+    }
+    if (fanValue1 == "on")
+    {
+      setFanSpeed(0);
+    }
+    if (fanValue2 == "on")
+    {
+      setFanSpeed(1);
+    }
+    if (fanValue3 == "on")
+    {
+      setFanSpeed(2);
+    }
+    if (fanValue4 == "on")
+    {
+      setFanSpeed(3);
     }
     #else
     if (value == "on")
@@ -2460,7 +2568,48 @@ void setup()
     }
     reply += F("<TR><TD><form name='powerOn4' method='post'><input type='hidden' name='relayValue4' value='on'><input class=\"button-link\" type='submit' value='On'></form>");
     reply += F("<TD><form name='powerOff24' method='post'><input type='hidden' name='relayValue4' value='off'><input class=\"button-link\" type='submit' value='Off'></form>");
+    
+    #elif defined SONOFF_IFAN02
+    reply += F("<TD><TR><TD><B>Relay 1</B><TD><TR><TD>Current State:");
 
+    if (Settings.currentState1) {
+      reply += F("<TD>ON<TD>");
+    } else {
+      reply += F("<TD>OFF<TD>");
+    }
+    reply += F("<TR><TD><form name='powerOn1' method='post'><input type='hidden' name='relayValue1' value='on'><input class=\"button-link\" type='submit' value='On'></form>");
+    reply += F("<TD><form name='powerOff1' method='post'><input type='hidden' name='relayValue1' value='off'><input class=\"button-link\" type='submit' value='Off'></form>");
+    reply += F("<TD><TR><TD><B>Fan</B><TD><TR><TD>Current State:");
+
+    switch (getFanSpeed())
+    {
+      case 0: 
+      {
+        reply += F("<TD>OFF<TD>");
+        break;
+      }
+      case 1: 
+      {
+        reply += F("<TD>LOW<TD>");
+        break;
+      }
+      case 2: 
+      {
+        reply += F("<TD>MEDIUM<TD>");
+        break;
+      }
+      case 3: 
+      {
+        reply += F("<TD>HIGH<TD>");
+        break;
+      }
+    }
+
+    reply += F("<TR><TD><form name='setFan0' method='post'><input type='hidden' name='fanValue0' value='on'><input class=\"button-link\" type='submit' value='Off'></form>");
+    reply += F("<TR><TD><form name='setFan1' method='post'><input type='hidden' name='fanValue1' value='on'><input class=\"button-link\" type='submit' value='LOW'></form>");
+    reply += F("<TR><TD><form name='setFan2' method='post'><input type='hidden' name='fanValue2' value='on'><input class=\"button-link\" type='submit' value='MEDIUM'></form>");
+    reply += F("<TR><TD><form name='setFan3' method='post'><input type='hidden' name='fanValue3' value='on'><input class=\"button-link\" type='submit' value='HIGH'></form>");
+    
     #else
     reply += F("<TR><TD><TD><TR><TD>Current State:");
 
@@ -2514,6 +2663,12 @@ void setup()
     reply += F("<a href='/off1'>off1</a><BR>");
     reply += F("<a href='/on2'>on2</a><BR>");
     reply += F("<a href='/off2'>off2</a><BR>");
+    #endif
+    #if defined SONOFF_IFAN02
+    reply += F("<a href='/fan0'>fan0</a><BR>");
+    reply += F("<a href='/fan1'>fan1</a><BR>");
+    reply += F("<a href='/fan2'>fan2</a><BR>");
+    reply += F("<a href='/fan3'>fan3</a><BR>");
     #endif
     #if defined SONOFF_4CH
     reply += F("<a href='/on1'>on1</a><BR>");
@@ -2602,12 +2757,12 @@ void setup()
       reply += "{\"name\":\"hreport\", \"value\":\"" + String(Settings.hReport) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
     #endif
-    #if defined SONOFF_DUAL || defined SONOFF_4CH
+    #if defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
     if (configName == "autooff2") {
       reply += "{\"name\":\"autooff2\", \"value\":\"" + String(Settings.autoOff2) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
     #endif
-    #if defined SONOFF_4CH
+    #if defined SONOFF_4CH || defined SONOFF_IFAN02
     if (configName == "autooff23") {
       reply += "{\"name\":\"autooff3\", \"value\":\"" + String(Settings.autoOff3) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
@@ -2767,7 +2922,7 @@ void setup()
       reply += "{\"name\":\"hreport\", \"value\":\"" + String(Settings.hReport) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
     #endif
-    #if defined SONOFF_DUAL || defined SONOFF_4CH
+    #if defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
     if (configName == "autooff2") {
       if (configValue.length() != 0)
       {
@@ -2776,7 +2931,7 @@ void setup()
       reply += "{\"name\":\"autooff2\", \"value\":\"" + String(Settings.autoOff2) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
     #endif
-    #if defined SONOFF_4CH
+    #if defined SONOFF_4CH || defined SONOFF_IFAN02
     if (configName == "autooff3") {
       if (configValue.length() != 0)
       {
@@ -2834,6 +2989,29 @@ void setup()
 
     relayControl(2, 0);
     server->send(200, "application/json", "{\"type\":\"relay\", \"number\":\"2\", \"power\":\"" + String(Settings.currentState2? "on" : "off") + "\"}");
+  });
+  #elif defined SONOFF_IFAN02
+  server->on("/off", []() {
+    boolean relayStatus = false;
+    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+    {
+      if (!server->authenticate("admin", SecuritySettings.Password))
+        return server->requestAuthentication();
+    }
+
+    relayControl(1, 0);
+    server->send(200, "application/json", "{\"type\":\"relay\", \"number\":\"0\", \"power\":\"" + String(Settings.currentState1? "on" : "off") + "\"}");
+  });
+  server->on("/fan0", []() {
+
+    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+    {
+      if (!server->authenticate("admin", SecuritySettings.Password))
+        return server->requestAuthentication();
+    }
+
+    setFanSpeed(0);
+    server->send(200, "application/json", "{\"type\":\"fan\", \"number\":\"1\", \"speed\":\"" + String(getFanSpeed()) + "\"}");
   });
   
   #elif defined SONOFF_4CH
@@ -2941,6 +3119,51 @@ void setup()
     relayControl(2, 1);
     server->send(200, "application/json", "{\"type\":\"relay\", \"number\":\"2\", \"power\":\"" + String(Settings.currentState2? "on" : "off") + "\"}");
   });
+  #elif defined SONOFF_IFAN02
+  server->on("/on", []() {
+    boolean relayStatus = false;
+    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+    {
+      if (!server->authenticate("admin", SecuritySettings.Password))
+        return server->requestAuthentication();
+    }
+    relayControl(1, 1);
+    server->send(200, "application/json", "{\"type\":\"relay\", \"number\":\"0\", \"power\":\"" + String(Settings.currentState1? "on" : "off") + "\"}");
+  });
+  server->on("/fan1", []() {
+
+    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+    {
+      if (!server->authenticate("admin", SecuritySettings.Password))
+        return server->requestAuthentication();
+    }
+
+    setFanSpeed(1);
+    server->send(200, "application/json", "{\"type\":\"fan\", \"number\":\"1\", \"speed\":\"" + String(getFanSpeed()) + "\"}");
+  });
+  server->on("/fan2", []() {
+
+    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+    {
+      if (!server->authenticate("admin", SecuritySettings.Password))
+        return server->requestAuthentication();
+    }
+
+    setFanSpeed(2);
+    server->send(200, "application/json", "{\"type\":\"fan\", \"number\":\"1\", \"speed\":\"" + String(getFanSpeed()) + "\"}");
+  });
+  server->on("/fan3", []() {
+
+    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+    {
+      if (!server->authenticate("admin", SecuritySettings.Password))
+        return server->requestAuthentication();
+    }
+
+    setFanSpeed(3);
+    server->send(200, "application/json", "{\"type\":\"fan\", \"number\":\"1\", \"speed\":\"" + String(getFanSpeed()) + "\"}");
+  });
+  
   #elif defined SONOFF_4CH
   server->on("/on", []() {
     boolean relayStatus = false;
@@ -3057,6 +3280,13 @@ void loop()
     sendStatus(0);
   }
 
+  #if defined SONOFF_IFAN02
+    if (previousFanSpeed != getFanSpeed()) {
+      sendStatus(98);
+      previousFanSpeed = getFanSpeed();
+    }
+  #endif
+
   if (needUpdate1 == true) {
 #ifdef SONOFF_TH
     checkTempAndHumidity();
@@ -3128,14 +3358,14 @@ void loop()
     autoOffTimer1 = 0;
     inAutoOff1 = false;
   }
-  #if defined SONOFF_DUAL || defined SONOFF_4CH
+  #if defined SONOFF_DUAL || defined SONOFF_4CH || defined SONOFF_IFAN02
   if ((Settings.autoOff2 != 0) && inAutoOff2 && ((millis() - autoOffTimer2) > (1000 * Settings.autoOff2))) {
     relayControl(2, 0);
     autoOffTimer2 = 0;
     inAutoOff2 = false;
   }
   #endif
-  #if defined SONOFF_4CH
+  #if defined SONOFF_4CH || defined SONOFF_IFAN02
   if ((Settings.autoOff3 != 0) && inAutoOff3 && ((millis() - autoOffTimer3) > (1000 * Settings.autoOff3))) {
     relayControl(3, 0);
     autoOffTimer3 = 0;
