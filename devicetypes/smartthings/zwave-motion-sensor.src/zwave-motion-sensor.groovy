@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion") {
+	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -37,12 +37,14 @@ metadata {
 		status "active": "command: 3003, payload: FF"
 	}
 
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
-			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
+				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("battery", label:'${currentValue}% battery', unit:"")
 		}
 
@@ -54,6 +56,7 @@ metadata {
 def installed() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	response(initialPoll())
 }
 
 def updated() {
@@ -61,12 +64,16 @@ def updated() {
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
+private getCommandClassVersions() {
+	[0x20: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1]
+}
+
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
 	    result = createEvent(descriptionText:description)
 	} else {
-		def cmd = zwave.parse(description, [0x20: 1, 0x30: 1, 0x31: 5, 0x80: 1, 0x84: 1, 0x71: 3, 0x9C: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		} else {
@@ -139,7 +146,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
 
-	if (state.MSR == "011A-0601-0901" && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
+	if (isEnerwave() && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
 		result << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId))
 	}
 	if (!state.lastbat || (new Date().time) - state.lastbat > 53*60*60*1000) {
@@ -189,6 +196,43 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	createEvent(map)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	// log.debug "encapsulated: $encapsulatedCommand"
+	if (encapsulatedCommand) {
+		state.sec = 1
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
+{
+	// def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	def version = commandClassVersions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		return zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	def result = null
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
+	log.debug "Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}"
+	if (encapsulatedCommand) {
+		result = zwaveEvent(encapsulatedCommand)
+	}
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
+	log.debug "MultiCmd with $numberOfCommands inner commands"
+	cmd.encapsulatedCommands(commandClassVersions).collect { encapsulatedCommand ->
+		zwaveEvent(encapsulatedCommand)
+	}.flatten()
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
 }
@@ -202,4 +246,33 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 	result
+}
+
+def initialPoll() {
+	def request = []
+	if (isEnerwave()) { // Enerwave motion doesn't always get the associationSet that the hub sends on join
+		request << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
+	}
+	request << zwave.batteryV1.batteryGet()
+	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+}
+
+private commands(commands, delay=200) {
+	log.info "sending commands: ${commands}"
+	delayBetween(commands.collect{ command(it) }, delay)
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo && zwaveInfo.zw?.contains("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else if (zwaveInfo && zwaveInfo.cc?.contains("56")){
+		zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private isEnerwave() {
+	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
 }

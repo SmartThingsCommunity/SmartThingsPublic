@@ -1,5 +1,5 @@
 /**
- *  Spruce Sensor -Pre-release V2 10/8/2015
+ *  Spruce Sensor -updated with SLP model number 5/2017
  *
  *  Copyright 2014 Plaid Systems
  *
@@ -14,25 +14,33 @@
  *
  -------10/20/2015 Updates--------
  -Fix/add battery reporting interval to update
- -remove polling and/or refresh(?)
+ -remove polling and/or refresh
+ 
+ -------5/2017 Updates--------
+ -Add fingerprints for SLP
+ -add device health, check every 60mins + 2mins
  */
+ 
 metadata {
-	definition (name: "Spruce Sensor", namespace: "plaidsystems", author: "NCauffman") {
+	definition (name: "Spruce Sensor", namespace: "plaidsystems", author: "Plaid Systems") {
 		
 		capability "Configuration"
 		capability "Battery"
         capability "Relative Humidity Measurement"
         capability "Temperature Measurement"
         capability "Sensor"
+        capability "Health Check"
         //capability "Polling"
 		
         attribute "maxHum", "string"
         attribute "minHum", "string"        
         
+        
         command "resetHumidity"
         command "refresh"
         
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Sensor"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Sensor"
 	}
 
 	preferences {
@@ -65,7 +73,7 @@ metadata {
 					[value: 64, color: "#44B621"],
 					[value: 80, color: "#3D79D9"],
 					[value: 96, color: "#0A50C2"]
-				]
+				], icon:"st.Weather.weather12"
 		}
         
         valueTile("maxHum", "device.maxHum", canChangeIcon: false, canChangeBackground: false) {
@@ -293,6 +301,11 @@ def setConfig(){
     sendEvent(name: 'configuration',value: configInterval, descriptionText: "Configuration initialized")
 }
 
+def installed(){
+	//check every 1 hour + 2mins
+    sendEvent(name: "checkInterval", value: 1 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
+
 //when device preferences are changed
 def updated(){	
     log.debug "device updated"
@@ -303,6 +316,8 @@ def updated(){
             sendEvent(name: 'configuration',value: 0, descriptionText: "Settings changed and will update at next report. Measure interval set to ${interval} mins")
     	}
     }
+    //check every 1 hour + 2mins
+    sendEvent(name: "checkInterval", value: 1 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 //poll

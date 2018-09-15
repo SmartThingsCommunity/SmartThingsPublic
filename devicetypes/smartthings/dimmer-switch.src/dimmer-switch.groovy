@@ -12,12 +12,11 @@
  *
  */
 metadata {
-	definition (name: "Dimmer Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+	definition (name: "Dimmer Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Indicator"
 		capability "Switch"
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
@@ -26,7 +25,6 @@ metadata {
 		fingerprint mfr:"0063", prod:"4457", deviceJoinName: "GE In-Wall Smart Dimmer"
 		fingerprint mfr:"0063", prod:"4944", deviceJoinName: "GE In-Wall Smart Dimmer"
 		fingerprint mfr:"0063", prod:"5044", deviceJoinName: "GE Plug-In Smart Dimmer"
-		fingerprint mfr:"0063", prod:"4944", model:"3034", deviceJoinName: "GE In-Wall Smart Fan Control"
 	}
 
 	simulator {
@@ -87,6 +85,8 @@ metadata {
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	response(refresh())
 }
 
 def updated(){
@@ -155,7 +155,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmd.value && cmd.value <= 100) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
 	}
 	return result
 }
@@ -226,7 +226,6 @@ def setLevel(value) {
 	} else {
 		sendEvent(name: "switch", value: "off")
 	}
-	sendEvent(name: "level", value: level, unit: "%")
 	delayBetween ([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
@@ -238,10 +237,6 @@ def setLevel(value, duration) {
 	def getStatusDelay = duration < 128 ? (duration*1000)+2000 : (Math.round(duration / 60)*60*1000)+2000
 	delayBetween ([zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration).format(),
 				   zwave.switchMultilevelV1.switchMultilevelGet().format()], getStatusDelay)
-}
-
-def poll() {
-	zwave.switchMultilevelV1.switchMultilevelGet().format()
 }
 
 /**

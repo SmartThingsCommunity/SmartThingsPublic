@@ -16,30 +16,32 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition (name: "NYCE Motion Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "NYCE Motion Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
 		capability "Sensor"
         
-        command "enrollResponse"
+        	command "enrollResponse"
 
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3041"
-        fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3043", deviceJoinName: "NYCE Ceiling Motion Sensor"
-        fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3045", deviceJoinName: "NYCE Curtain Motion Sensor"
+        	fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3043", deviceJoinName: "NYCE Ceiling Motion Sensor"
+        	fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3045", deviceJoinName: "NYCE Curtain Motion Sensor"
 	}
 
-	tiles {
-		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
-			state("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"motion", type: "generic", width: 6, height: 4){
+			tileAttribute("device.motion", key: "PRIMARY_CONTROL") {
+				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
+				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
+			}
 		}
         
-         valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+         	valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery'
 		}
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+        	standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		
@@ -111,7 +113,7 @@ private int getBatteryPercentage(int value) {
     def pct = (volts - minVolts) / (maxVolts - minVolts)
     if(pct>1)
         pct=1		//if battery is overrated, decreasing battery value to 100%
-    return (int) pct * 100
+    return (int)(pct * 100)
 }
 
 def parseDescriptionAsMap(description) {
