@@ -154,8 +154,8 @@ def configureHealthCheck() {
 	Integer hcIntervalMinutes = 12
 	if (!state.hasConfiguredHealthCheck) {
 		log.debug "Configuring Health Check, Reporting"
-		unschedule("healthPoll", [forceForLocallyExecuting: true])
-		runEvery5Minutes("healthPoll", [forceForLocallyExecuting: true])
+		unschedule("healthPoll")
+		runEvery5Minutes("healthPoll")
 		// Device-Watch allows 2 check-in misses from device
 		sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 		state.hasConfiguredHealthCheck = true
