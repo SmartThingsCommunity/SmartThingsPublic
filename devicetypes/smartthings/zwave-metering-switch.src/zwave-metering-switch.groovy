@@ -51,11 +51,11 @@ metadata {
 
 		for (int i = 0; i <= 10000; i += 1000) {
 			status "power  ${i} W": new physicalgraph.zwave.Zwave().meterV1.meterReport(
-				scaledMeterValue: i, precision: 3, meterType: 4, scale: 2, size: 4).incomingMessage()
+					scaledMeterValue: i, precision: 3, meterType: 4, scale: 2, size: 4).incomingMessage()
 		}
 		for (int i = 0; i <= 100; i += 10) {
 			status "energy	${i} kWh": new physicalgraph.zwave.Zwave().meterV1.meterReport(
-			   scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
+					scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
 		}
 
 		// reply messages
@@ -118,11 +118,11 @@ def updated() {
 
 def getCommandClassVersions() {
 	[
-		0x20: 1,  // Basic
-		0x32: 3,  // Meter
-		0x56: 1,  // Crc16Encap
-		0x70: 1,  // Configuration
-		0x72: 2,  // ManufacturerSpecific
+			0x20: 1,  // Basic
+			0x32: 3,  // Meter
+			0x56: 1,  // Crc16Encap
+			0x70: 1,  // Configuration
+			0x72: 2,  // ManufacturerSpecific
 	]
 }
 
@@ -145,13 +145,18 @@ def parse(String description) {
 def handleMeterReport(cmd){
 	if (cmd.meterType == 1) {
 		if (cmd.scale == 0) {
+			//automatically updates Watts on GoControl Plug-in Switch
+			if(zwaveInfo.mfr == "014F" && zwaveInfo.prod == "5053" && zwaveInfo.model == "3531") {
+				sendHubCommand(encap(meterGet(scale: 2)))
+			}
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 		} else if (cmd.scale == 1) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 		} else if (cmd.scale == 2) {
-			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+			createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W", isStateChange: true)
 		}
 	}
+
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
@@ -195,17 +200,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def on() {
 	encapSequence([
-		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 2)
+			zwave.basicV1.basicSet(value: 0xFF),
+			zwave.switchBinaryV1.switchBinaryGet(),
+			meterGet(scale: 2)
 	], 3000)
 }
 
 def off() {
 	encapSequence([
-		zwave.basicV1.basicSet(value: 0x00),
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 2)
+			zwave.basicV1.basicSet(value: 0x00),
+			zwave.switchBinaryV1.switchBinaryGet(),
+			meterGet(scale: 2)
 	], 3000)
 }
 
@@ -224,9 +229,9 @@ def poll() {
 def refresh() {
 	log.debug "refresh()"
 	encapSequence([
-		zwave.switchBinaryV1.switchBinaryGet(),
-		meterGet(scale: 0),
-		meterGet(scale: 2)
+			zwave.switchBinaryV1.switchBinaryGet(),
+			meterGet(scale: 0)//,
+			//meterGet(scale: 2)
 	])
 }
 
@@ -251,8 +256,8 @@ def configure() {
 
 def reset() {
 	encapSequence([
-		meterReset(),
-		meterGet(scale: 0)
+			meterReset(),
+			meterGet(scale: 0)
 	])
 }
 
