@@ -230,8 +230,7 @@ def refresh() {
 	log.debug "refresh()"
 	encapSequence([
 			zwave.switchBinaryV1.switchBinaryGet(),
-			meterGet(scale: 0)//,
-			//meterGet(scale: 2)
+			meterGet(scale: 0)
 	])
 }
 
