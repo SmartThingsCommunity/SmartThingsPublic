@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Sound Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
+	definition (name: "Z-Wave Sound Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren") {
 		capability "Sound Sensor"
 		capability "Sensor"
 		capability "Battery"
