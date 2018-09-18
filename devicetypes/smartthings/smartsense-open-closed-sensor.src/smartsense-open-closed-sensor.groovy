@@ -92,12 +92,12 @@ def parse(String description) {
 			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
-			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt == 0x07) {
 				if (descMap.data[0] == "00") {
-					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
+					log.debug "IAS ZONE REPORTING CONFIG RESPONSE: $descMap"
 					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 				} else {
-					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
+					log.warn "IAS ZONE REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
 			}
 		}
