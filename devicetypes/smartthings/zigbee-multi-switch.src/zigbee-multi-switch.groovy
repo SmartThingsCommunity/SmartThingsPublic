@@ -136,7 +136,6 @@ def ping() {
 
 def refresh()
 {
-    //log.debug "refresh broadcast"
     return zigbee.readAttribute(0x0006, 0x0000, [destEndpoint: 0xFF])
 }
 
@@ -165,5 +164,6 @@ def configureHealthCheck() {
 def configure() {
 	log.debug "configure()"
 	configureHealthCheck()
-	return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01)
+        //the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
+	return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01,[mfgCode: 0x0000])
 }
