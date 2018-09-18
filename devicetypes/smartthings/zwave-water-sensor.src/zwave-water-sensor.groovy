@@ -57,8 +57,8 @@ metadata {
 
 def initialize() {
 	if (zwaveInfo.mfr.equals("0086"))
-		// 4 hour ping for Aeotec
-		sendEvent(name: "checkInterval", value: 4 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+		// 8 hour (+ 2 minutes) ping for Aeotec
+		sendEvent(name: "checkInterval", value: (8 * 60 * 60) + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	else
 		// 12 hours for other devices
 		sendEvent(name: "checkInterval", value: (2 * 12 + 2) * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -72,14 +72,6 @@ def installed() {
 	response(cmds)
 }
 
-def installed() {
-	initialize()
-	//water alarm
-	def cmds = [ zwave.notificationV3.notificationGet(notificationType: 0x05).format(),
-				 zwave.batteryV1.batteryGet().format()]
-	response(cmds)
-}
-
 def updated() {
 	initialize()
 }
@@ -89,7 +81,6 @@ def configure() {
 		def commands = []
 		// Tell sensor to send us battery information instead of USB power information
 		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x5E, scaledConfigurationValue: 1, size: 1))
-		commands << encap(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId))
 		response(delayBetween(commands, 1000) + ["delay 20000", encap(zwave.wakeUpV1.wakeUpNoMoreInformation())])
 	}
 }
