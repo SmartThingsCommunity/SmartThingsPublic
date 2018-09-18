@@ -27,6 +27,7 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL15S", deviceJoinName: "Leviton Lumina RF Switch"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Plug 01", deviceJoinName: "OSRAM SMART+ Plug"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05, FC01, FC08", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "PLUG", deviceJoinName: "SYLVANIA SMART+ Smart Plug"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E1C-NB6", deviceJoinName: "Sengled Element Outlet"
     }
 
     // simulator metadata
