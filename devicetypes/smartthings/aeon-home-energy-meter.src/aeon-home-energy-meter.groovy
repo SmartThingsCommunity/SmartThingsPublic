@@ -22,10 +22,14 @@ metadata {
 		capability "Power Meter"
 		capability "Configuration"
 		capability "Sensor"
+        capability "Health Check"
+        capability "Refresh"
 
 		command "reset"
 
 		fingerprint deviceId: "0x2101", inClusters: " 0x70,0x31,0x72,0x86,0x32,0x80,0x85,0x60"
+		fingerprint mfr: "0086", prod: "0102", model: "005F", deviceJoinName: "Home Energy Meter (Gen5)" // US
+		fingerprint mfr: "0086", prod: "0002", model: "005F", deviceJoinName: "Home Energy Meter (Gen5)" // EU
 	}
 
 	// simulator metadata
@@ -65,6 +69,16 @@ metadata {
 	}
 }
 
+def installed() {
+	log.debug "installed()..."
+	sendEvent(name: "checkInterval", value: 1860, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
+}
+
+def ping() {
+	log.debug "ping()..."
+	refresh()
+}
+
 def parse(String description) {
 	def result = null
 	def cmd = zwave.parse(description, [0x31: 1, 0x32: 1, 0x60: 3])
@@ -92,29 +106,58 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def refresh() {
+	log.debug "refresh()..."
 	delayBetween([
-		zwave.meterV2.meterGet(scale: 0).format(),
-		zwave.meterV2.meterGet(scale: 2).format()
+		encap(zwave.meterV2.meterGet(scale: 0)),
+		encap(zwave.meterV2.meterGet(scale: 2))
 	])
 }
 
 def reset() {
+	log.debug "reset()..."
 	// No V1 available
-	return [
-		zwave.meterV2.meterReset().format(),
-		zwave.meterV2.meterGet(scale: 0).format()
-	]
+	delayBetween([
+		encap(zwave.meterV2.meterReset()),
+		encap(zwave.meterV2.meterGet(scale: 0))
+	])
 }
 
 def configure() {
-	def cmd = delayBetween([
-		zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4).format(),   // combined power in watts
-		zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-		zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8).format(),   // combined energy in kWh
-		zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300).format(), // every 5 min
-		zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0).format(),    // no third report
-		zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300).format() // every 5 min
-	])
-	log.debug cmd
-	cmd
+	log.debug "configure()..."
+	if (zwaveInfo.model.equals("005F")) {
+		delayBetween([
+			// Send combined power in watts to report group 1 every 5 minutes
+            encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2)),
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)),
+			// Send combined energy in kWh to report group 2 every 5 minutes
+            encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)),
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300))
+		])
+	} else
+		delayBetween([
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4)),   // combined power in watts
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)), // every 5 min
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 8)),   // combined energy in kWh
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300)), // every 5 min
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 103, size: 4, scaledConfigurationValue: 0)),    // no third report
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 113, size: 4, scaledConfigurationValue: 300)) // every 5 min
+		])
+}
+
+private encap(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo.zw.contains("s")) {
+		secEncap(cmd)
+	} else if (zwaveInfo.cc.contains("56")){
+		crcEncap(cmd)
+	} else {
+		cmd.format()
+	}
+}
+
+private secEncap(physicalgraph.zwave.Command cmd) {
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crcEncap(physicalgraph.zwave.Command cmd) {
+	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 }
