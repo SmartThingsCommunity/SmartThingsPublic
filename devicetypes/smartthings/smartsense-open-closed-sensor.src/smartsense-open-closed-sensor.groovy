@@ -14,7 +14,6 @@
  *
  */
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
-import physicalgraph.zigbee.zcl.DataType
 
 metadata {
 	definition(name: "SmartSense Open/Closed Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
@@ -84,7 +83,7 @@ def parse(String description) {
 
 	Map map = zigbee.getEvent(description)
 	if (!map) {
-		if (description?.startsWith('zone status')) {
+		if (description?.startsWith('zone status') || description?.startsWith('zone report')) {
 			map = parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
@@ -172,28 +171,17 @@ def refresh() {
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
 
-	if(!isEcolink()) {
-		refreshCmds += zigbee.enrollResponse()
-	}
-
-	return refreshCmds
+	return refreshCmds + zigbee.enrollResponse()
 }
 
 def configure() {
-	def configureCommands = []
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	if(isEcolink()) {
-		configureCommands += zigbee.iasZoneConfig(30, 60 * 30) + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(30, 60 * 5) + refresh()
-	} else {
-		configureCommands += refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
-	}
+
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 
-	return configureCommands
-}
-
-private boolean isEcolink() {
-	return (getDataValue("manufacturer") == "Ecolink")
+	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
+	return refresh() + zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 30) // send refresh cmds as part of config
 }
