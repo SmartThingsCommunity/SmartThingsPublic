@@ -51,6 +51,6 @@ def temperatureHandler(event)
 {
 	log.debug "temperature received from remote device: ${event?.value}"
 	if (event?.value) {
-		thermostats?.quickSetOutTemp(event.value)
+		thermostats?.setOutdoorTemperature(event.value)
 	}
 }
