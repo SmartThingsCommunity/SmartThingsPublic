@@ -1,5 +1,5 @@
 /**
- *  Child Binary Switch
+ *  Notification
  *
  *  Copyright 2018 Alexander Belov
  *
@@ -14,15 +14,13 @@
  *
  */
 metadata {
-	definition (name: "Child Binary Switch", namespace: "baadev", author: "Alexander Belov") {
-		capability "Switch"
+	definition (name: "Child Notification", namespace: "baadev", author: "Alexander Belov") {
+		capability "Notification"
         capability "Refresh"
-                
+        
         attribute "lastUpdated", "String"
 	}
-    preferences {
-            input "switchReverse", "enum", title: "Switch state revers from ON to OFF and from OFF to ON", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"Reverse on"]], displayDuringSetup: false
-    }
+    
 	tiles(scale: 2) {
         standardTile("switchLogo", "device.switchLogo", inactiveLabel: true, decoration: "flat", width: 1, height: 1) {
             state "default", label:'', icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png"
@@ -32,10 +30,9 @@ metadata {
         }
 		multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label: '${name}', action: "switch.off", icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png", backgroundColor: "#00A0DC"
-                attributeState "off", label: '${name}', action: "switch.on", icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png", backgroundColor: "#ffffff"
+                attributeState "idle", label: '${name}', icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png", backgroundColor: "#00A0DC"
+                attributeState "triggered", label: '${name}', icon: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png", backgroundColor: "#ff0000"
             }
-
             tileAttribute("device.refresh", inactiveLabel: false, key: "SECONDARY_CONTROL") {
             	attributeState "refresh", label: '', action:"refresh.refresh", icon:"st.secondary.refresh"
             }
@@ -57,29 +54,33 @@ def parse(def description) {
     }
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	def switchState = cmd.value > 0 ? "on" : "off" 
-    if (switchReverse == 2) switchState = cmd.value > 0 ? "off" : "on"  
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	def switchState = cmd.event > 0 ? "triggered" : "idle" 
+    log.debug "$cmd.event,$cmd.eventParameter, $cmd.notificationStatus, $cmd.sequence"
     
     sendEvent(name: "switch", value: switchState)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationSupportedReport cmd) {
+    if (cmd.smoke) state.notificationType = 1
+    if (cmd.co) state.notificationType = 2
+	if (cmd.co2) state.notificationType = 3
+    if (cmd.heat) state.notificationType = 4
+    if (cmd.water) state.notificationType = 5
+    if (cmd.accessControl) state.notificationType = 6
+    if (cmd.burglar) state.notificationType = 7
+    if (cmd.powerManagement) state.notificationType = 8
+    if (cmd.system) state.notificationType = 9
+    if (cmd.emergency) state.notificationType = 10
+}
+
 def refresh() {
-	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinaryGet().format()))
+	if (state.notificationType) {
+	   	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.notificationV3.notificationGet(notificationType: state.notificationType, event: 1).format()))
+    } else {
+    	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.notificationV3.notificationSupportedGet().format()))
+    	log.debug "Can't execute refresh. Waiting for Notification Supported Report Command"
+    }
 }
 
-def on() {
-	def value = 0xFF
-    if (switchReverse == 2) value = 0x00  
-	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: value).format()))
-    
-	refresh()
-}
-
-def off() {
-	def value = 0x00
-    if (switchReverse == 2)	value = 0xFF  
-	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: value).format()))
-    
-	refresh()
-}
+def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {}

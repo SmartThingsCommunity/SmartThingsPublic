@@ -72,7 +72,6 @@ def parse(def description) {
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterSupportedReport cmd) {
     setLabels(cmd.meterType, cmd.scale, null)
-    log.debug "Scale: ${cmd.scaleSupported}; Meter Type: ${cmd.meterType}"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
@@ -98,9 +97,7 @@ def refresh() {
     }
 }
 
-def setLabels(def meterType, def scale, def rateType) {
-	//TODO: make meterType decode here
-    
+def setLabels(def meterType, def scale, def rateType) {    
     switch(meterType) {
     	case 1:
         	state.type = "Electric meter"
