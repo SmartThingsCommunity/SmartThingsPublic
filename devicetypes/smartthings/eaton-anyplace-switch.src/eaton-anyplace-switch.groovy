@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition(name: "Eaton Anyplace Switch", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Eaton Anyplace Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-wave_Switch_Generic") {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"
