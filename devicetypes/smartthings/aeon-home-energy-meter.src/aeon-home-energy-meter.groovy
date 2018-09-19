@@ -72,6 +72,12 @@ metadata {
 def installed() {
 	log.debug "installed()..."
 	sendEvent(name: "checkInterval", value: 1860, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
+	response(refresh())
+}
+
+def updated() {
+	log.debug "updated()..."
+	response(refresh())
 }
 
 def ping() {
@@ -89,14 +95,35 @@ def parse(String description) {
 	return result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
-	if (cmd.scale == 0) {
-		[name: "energy", value: cmd.scaledMeterValue, unit: "kWh"]
-	} else if (cmd.scale == 1) {
-		[name: "energy", value: cmd.scaledMeterValue, unit: "kVAh"]
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand()
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
 	}
-	else {
-		[name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W"]
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
+	meterReport(cmd.scale, cmd.scaledMeterValue)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv2.MeterReport cmd) {
+	meterReport(cmd.scale, cmd.scaledMeterValue)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
+	meterReport(cmd.scale, cmd.scaledMeterValue)
+}
+
+private meterReport(scale, value) {
+	if (scale == 0) {
+		[name: "energy", value: value, unit: "kWh"]
+	} else if (scale == 1) {
+		[name: "energy", value: value, unit: "kVAh"]
+	} else {
+		[name: "power", value: Math.round(value), unit: "W"]
 	}
 }
 
@@ -124,16 +151,16 @@ def reset() {
 
 def configure() {
 	log.debug "configure()..."
-	if (zwaveInfo.model.equals("005F")) {
+	if (zwaveInfo.model.equals("005F"))
 		delayBetween([
-			// Send combined power in watts to report group 1 every 5 minutes
+			// Send combined power in watts to report group 1 every 5 seconds (if difference exceeds 10% or 50W)
             encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2)),
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)),
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 5)),
 			// Send combined energy in kWh to report group 2 every 5 minutes
             encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)),
 			encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300))
 		])
-	} else
+	else
 		delayBetween([
 			encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 4)),   // combined power in watts
 			encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)), // every 5 min
