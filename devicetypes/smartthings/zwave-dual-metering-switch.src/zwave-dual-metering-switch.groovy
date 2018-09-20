@@ -252,11 +252,11 @@ private addChildSwitch() {
 	String childDni = "${device.deviceNetworkId}/$endpoint"
 	def componentLabel = device.displayName[0..-2] + " ${endpoint}"
 	addChildDevice("Child Metering Switch", childDni, null, [
-			completedSetup: true,
-			label         : componentLabel,
-			isComponent   : false,
-			hubId		  : device.getHub().getId(),
-			componentName : "switch$endpoint",
-			componentLabel: "Switch $endpoint"
+			completedSetup	:	true,
+			label			: componentLabel,
+			isComponent		: false,
+			hubId			: device.getHub().getId(),
+			componentName	: "switch$endpoint",
+			componentLabel	: "Switch $endpoint"
 	])
 }
