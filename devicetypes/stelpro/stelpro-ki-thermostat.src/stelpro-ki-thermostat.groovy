@@ -38,7 +38,7 @@ metadata {
 		command "setOutdoorTemperature"
 		command "increaseHeatSetpoint"
 		command "decreaseHeatSetpoint"
-		command "eco" // Command does not exist in "Thermostat Operating State"
+		command "eco" // Command does not exist in "Thermostat Mode"
 		command "updateWeather"
 
 		fingerprint deviceId: "0x0806", inClusters: "0x5E,0x86,0x72,0x40,0x43,0x31,0x85,0x59,0x5A,0x73,0x20,0x42", mfr: "0239", prod: "0001", model: "0001", deviceJoinName: "Stelpro Ki Thermostat"
