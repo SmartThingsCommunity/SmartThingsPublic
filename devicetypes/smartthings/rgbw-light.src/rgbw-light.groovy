@@ -113,6 +113,8 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 
 def zwaveEvent(physicalgraph.zwave.commands.switchcolorv3.SwitchColorReport cmd) {
 	log.debug "got SwitchColorReport: $cmd"
+	if (!state.colorReceived)
+		state.colorReceived = ["red": null, "green": null, "blue": null, "warmWhite": null, "coldWhite": null]
 	state.colorReceived[cmd.colorComponent] = cmd.value
 	def result = []
 	def rgbNames = ["red", "green", "blue"]
