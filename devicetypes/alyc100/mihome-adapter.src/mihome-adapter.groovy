@@ -25,12 +25,13 @@
  *	08.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
  */
 metadata {
-	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updeated by Mark Cockcroft") {
-		//capability "Polling" // polling disabled as refresh is schedualed in preferences (rates)
+	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updeated by Mark Cockcroft", ocfDeviceType: "oic.d.switch", vid: "generic-switch") {
+		//capability "Polling" // polling disabled as refresh is schedualed in preferences (rates) 				mnmn: "SmartThings",
 		capability "Actuator"	// best practice
         capability "Sensor"		// best practice
         capability "Refresh"
 		capability "Switch"
+        capability  "Health Check"
         
         command "on"
         command "off"
