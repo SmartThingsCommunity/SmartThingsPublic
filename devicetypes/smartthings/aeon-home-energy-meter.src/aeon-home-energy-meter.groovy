@@ -153,12 +153,8 @@ def configure() {
 	log.debug "configure()..."
 	if (zwaveInfo.model.equals("005F"))
 		delayBetween([
-			// Send combined power in watts to report group 1 every 5 seconds (if difference exceeds 10% or 50W)
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2)),
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 5)),
-			// Send combined energy in kWh to report group 2 every 5 minutes
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)),
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300))
+			// Reset the device to the default settings
+			encap(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 4, scaledConfigurationValue: 1))
 		])
 	else
 		delayBetween([
