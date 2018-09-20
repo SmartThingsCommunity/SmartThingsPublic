@@ -145,6 +145,8 @@ def configureSupportedRanges() {
 }
 
 def installed() {
+	sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
+
 	setupHealthCheck()
 
 	configureSupportedRanges()
