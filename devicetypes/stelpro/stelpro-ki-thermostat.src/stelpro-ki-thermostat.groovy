@@ -28,7 +28,6 @@ metadata {
 		capability "Thermostat Operating State"
 		capability "Thermostat Heating Setpoint"
 		capability "Configuration"
-		capability "Polling"
 		capability "Sensor"
 		capability "Refresh"
 		capability "Health Check"
