@@ -95,7 +95,7 @@ metadata {
 					[value: 84, color: "#f1d801"],
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
-			]
+				]
 		}
 		standardTile("temperatureAlarm", "device.temperatureAlarm", decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'No Alarm', icon: "st.alarm.temperature.normal", backgroundColor: "#ffffff"
