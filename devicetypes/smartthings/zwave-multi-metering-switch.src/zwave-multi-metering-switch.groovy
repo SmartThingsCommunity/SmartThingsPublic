@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Dual Metering Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Metering_Switch") {
+	definition (name: "Z-Wave Multi Metering Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
 		capability "Switch"
 		capability "Power Meter"
 		capability "Energy Meter"
@@ -20,6 +20,7 @@ metadata {
 		capability "Configuration"
 		capability "Actuator"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "reset"
 
@@ -136,9 +137,10 @@ def childHandleMeterReport(cmd, endpoint) {
 	result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, ep) {
-	updateDataValue("MSR", String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId))
-	null
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep) {
+	if(!childDevices) {
+		addChildSwitches(cmd.endPoints)
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
@@ -163,21 +165,23 @@ private refreshCmd(endpoint) {
 }
 
 def on() {
-	onOffCmd(255, 1)
+	onOffCmd(0xFF, 1)
 }
 
 def off() {
-	onOffCmd(0, 1)
+	onOffCmd(0x00, 1)
 }
 
 def refresh() {
-	def name = device.displayName.split(" ")
-	log.debug "Splited: ${name[0..-1]}"
 	refreshCmd(1)
 }
 
+def ping() {
+	refresh()
+}
+
 def resetCmd(endpoint = null) {
-	log.debug "Reseting endpoint: ${endpoint}"
+	log.debug "Resetting endpoint: ${endpoint}"
 	delayBetween([
 			encap(zwave.meterV3.meterReset(), endpoint),
 			encap(zwave.meterV3.meterGet(scale: 0), endpoint),
@@ -191,12 +195,12 @@ def reset() {
 
 def childOn(deviceNetworkId) {
 	def switchId = deviceNetworkId?.split("/")[1] as Integer
-	sendHubCommand onOffCmd(255, switchId)
+	sendHubCommand onOffCmd(0xFF, switchId)
 }
 
 def childOff(deviceNetworkId) {
 	def switchId = deviceNetworkId?.split("/")[1] as Integer
-	sendHubCommand onOffCmd(0, switchId)
+	sendHubCommand onOffCmd(0x00, switchId)
 }
 
 def childRefresh(deviceNetworkId) {
@@ -209,11 +213,6 @@ def childReset(deviceNetworkId) {
 	sendHubCommand resetCmd(switchId)
 }
 
-def installed() {
-	log.debug "Installed ${device.displayName}"
-	addChildSwitch()
-}
-
 private refreshAll() {
 	childDevices.each { childRefresh(it.deviceNetworkId) }
 	sendHubCommand refresh()
@@ -222,6 +221,11 @@ private refreshAll() {
 private resetAll() {
 	childDevices.each { childReset(it.deviceNetworkId) }
 	sendHubCommand reset()
+}
+
+def installed() {
+	log.debug "Installed ${device.displayName}"
+	response(zwave.multiChannelV3.multiChannelEndPointGet().format())
 }
 
 def configure() {
@@ -247,16 +251,17 @@ private encap(cmd, endpoint = null) {
 	}
 }
 
-private addChildSwitch() {
-	def endpoint = 2
-	String childDni = "${device.deviceNetworkId}/$endpoint"
-	def componentLabel = device.displayName[0..-2] + " ${endpoint}"
-	addChildDevice("Child Metering Switch", childDni, null, [
-			completedSetup	:	true,
-			label			: componentLabel,
-			isComponent		: false,
-			hubId			: device.getHub().getId(),
-			componentName	: "switch$endpoint",
-			componentLabel	: "Switch $endpoint"
-	])
+private addChildSwitches(numberOfSwitches) {
+	for(def endpoint : 2..numberOfSwitches) {
+		String childDni = "${device.deviceNetworkId}/$endpoint"
+		def componentLabel = device.displayName[0..-2] + " ${endpoint}"
+		addChildDevice("Child Metering Switch", childDni, null, [
+				completedSetup: true,
+				label         : componentLabel,
+				isComponent   : false,
+				hubId         : device.getHub().getId(),
+				componentName : "switch$endpoint",
+				componentLabel: "Switch $endpoint"
+		])
+	}
 }

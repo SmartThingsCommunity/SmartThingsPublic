@@ -12,13 +12,14 @@
  *
  */
 metadata {
-	definition(name: "Child Metering Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Metering_Switch") {
+	definition(name: "Child Metering Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
 		capability "Switch"
 		capability "Power Meter"
 		capability "Energy Meter"
 		capability "Refresh"
 		capability "Actuator"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "reset"
 	}
@@ -58,6 +59,10 @@ def off() {
 
 def refresh() {
 	parent.childRefresh(device.deviceNetworkId)
+}
+
+def ping() {
+	refresh()
 }
 
 def reset() {
