@@ -105,6 +105,23 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def versions = [
+		0x20: 1,  // Basic
+		0x32: 3,  // Meter
+		0x56: 1,  // Crc16Encap
+		0x70: 1,  // Configuration
+		0x72: 1,  // ManufacturerSpecific
+	]
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
+	[:]
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.meterv1.MeterReport cmd) {
 	meterReport(cmd.scale, cmd.scaledMeterValue)
 }
