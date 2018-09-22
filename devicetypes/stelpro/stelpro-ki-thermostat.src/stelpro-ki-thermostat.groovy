@@ -165,6 +165,11 @@ def updated() {
 }
 
 def parse(String description) {
+	// If the user installed with an old DTH version, update so that the new mobile client will work
+	if (!device.currentValue("supportedThermostatModes")) {
+		configureSupportedRanges()
+	}
+
 	if (description == "updated") {
 		return null
 	}
