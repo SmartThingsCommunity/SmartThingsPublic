@@ -16,7 +16,7 @@
  *  Date: 2013-03-05
  */
 metadata {
-	definition (name: "SmartAlert Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "SmartAlert Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"

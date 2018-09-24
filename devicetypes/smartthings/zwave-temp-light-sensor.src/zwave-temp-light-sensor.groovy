@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "Z-Wave Temp/Light Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.sensor", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Z-Wave Temp/Light Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.multifunction", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"

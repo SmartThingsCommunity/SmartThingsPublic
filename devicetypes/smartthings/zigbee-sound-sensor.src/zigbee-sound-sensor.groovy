@@ -18,7 +18,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "ZigBee Sound Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke") {
+	definition(name: "ZigBee Sound Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
@@ -69,14 +69,14 @@ private getCHECK_IN_INTERVAL_CMD() { 0x00 }
 
 def installed() {
 	sendEvent(name: "sound", value: "not detected", displayed: false)
-	refresh()
+	response(refresh())
 }
 
 def parse(String description) {
 	def map = zigbee.getEvent(description)
 
 	if(!map) {
-		if(description?.startsWith('zone status')) {
+		if(isZoneMessage(description)) {
 			map = parseIasMessage(description)
 		} else {
 			map = parseAttrMessage(description)
@@ -85,7 +85,7 @@ def parse(String description) {
 		if (tempOffset) {
 			map.value = (int) map.value + (int) tempOffset
 		}
-		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${value}°C" : "${device.displayName} was ${value}°F"
+		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} was ${map.value}°C" : "${device.displayName} was ${map.value}°F"
 		map.translatable = true
 	}
 
@@ -108,6 +108,7 @@ private Map parseIasMessage(String description) {
 		result = getSoundDetectionResult("not detected")
 	} else {
 		result = [displayed: true, descriptionText: "${device.displayName}'s case is opened"]
+		sendHubCommand zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE)
 	}
 
 	return result
@@ -157,7 +158,7 @@ private Map getSoundDetectionResult(value) {
 }
 
 private sendCheckIntervalEvent() {
-	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def ping() {
@@ -166,7 +167,8 @@ def ping() {
 
 def refresh() {
 	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE) +
-			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURE_VALUE)
+			zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURE_VALUE) +
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def configure() {
@@ -177,5 +179,9 @@ def configure() {
 			zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
 
 	//send enroll commands, configures battery reporting to happen every 30 minutes, create binding for check in attribute so check ins will occur
-	return refresh() + zigbee.enrollResponse() + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + enrollCmds
+	return zigbee.enrollResponse() + zigbee.iasZoneConfig(30, 60 * 30) + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + refresh() + enrollCmds
+}
+
+private boolean isZoneMessage(description) {
+	return (description?.startsWith('zone status') || description?.startsWith('zone report'))
 }
