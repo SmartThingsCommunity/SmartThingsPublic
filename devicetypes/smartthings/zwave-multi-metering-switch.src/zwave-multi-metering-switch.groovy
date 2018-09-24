@@ -24,8 +24,8 @@ metadata {
 
 		command "reset"
 
-		fingerprint type:"1001", mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
-		fingerprint type:"1001", mfr:"0086", prod:"0103", model:"0084", deviceJoinname: "Aoetec Nano Switch 1"
+		fingerprint mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
+		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aoetec Nano Switch 1"
 	}
 
 	tiles(scale: 2){
@@ -84,7 +84,7 @@ private changeSwitch(endpoint, value) {
 	if(endpoint == 1) {
 		result += createEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	} else {
-		String childDni = "${device.deviceNetworkId}/$endpoint"
+		String childDni = "${device.deviceNetworkId}:$endpoint"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	}
@@ -93,14 +93,17 @@ private changeSwitch(endpoint, value) {
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
-	def result
+	def result = []
 	if(ep == 1) {
-		result = handleMeterReport(cmd)
+		result += createEvent(createMeterEventMap(cmd))
 	} else if(ep) {
-		result = childHandleMeterReport(cmd, ep)
+		String childDni = "${device.deviceNetworkId}:$ep"
+		def child = childDevices.find { it.deviceNetworkId == childDni }
+		child?.sendEvent(createMeterEventMap(cmd))
 	} else {
-		result = zwaveEvent(cmd)
+		result += zwaveEvent(cmd)
 	}
+	result += response(encap(zwave.meterV3.meterGet(scale: 2), ep))
 	result
 }
 
@@ -109,32 +112,20 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	[event, response(refreshAll())]
 }
 
-def handleMeterReport(cmd) {
-	def result = []
+private createMeterEventMap(cmd) {
+	def eventMap = [:]
 	if (cmd.meterType == 1) {
 		if (cmd.scale == 0) {
-			result += createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
-			result += response(encap(zwave.meterV3.meterGet(scale: 2), 1))
+			eventMap.name = "energy"
+			eventMap.value = cmd.scaledMeterValue
+			eventMap.unit = "kWh"
 		} else if (cmd.scale == 2) {
-			result += createEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
+			eventMap.name = "power"
+			eventMap.value = Math.round(cmd.scaledMeterValue)
+			eventMap.unit = "W"
 		}
 	}
-	result
-}
-
-def childHandleMeterReport(cmd, endpoint) {
-	String childDni = "${device.deviceNetworkId}/$endpoint"
-	def child = childDevices.find { it.deviceNetworkId == childDni }
-	def result = []
-	if (cmd.meterType == 1) {
-		if (cmd.scale == 0) {
-			child?.sendEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
-			result += response(encap(zwave.meterV3.meterGet(scale: 2), endpoint))
-		} else if (cmd.scale == 2) {
-			child?.sendEvent(name: "power", value: Math.round(cmd.scaledMeterValue), unit: "W")
-		}
-	}
-	result
+	eventMap
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep) {
@@ -147,7 +138,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
 	log.warn "Unhandled ${cmd}" + (ep ? " from endpoint $ep" : "")
 }
 
-private onOffCmd(value, Integer endpoint = null) {
+private onOffCmd(value, endpoint = 1) {
 	delayBetween([
 			encap(zwave.basicV1.basicSet(value: value), endpoint),
 			encap(zwave.basicV1.basicGet(), endpoint),
@@ -156,7 +147,7 @@ private onOffCmd(value, Integer endpoint = null) {
 	])
 }
 
-private refreshCmd(endpoint) {
+def refresh(endpoint = 1) {
 	delayBetween([
 			encap(zwave.basicV1.basicGet(), endpoint),
 			encap(zwave.meterV3.meterGet(scale: 0), endpoint),
@@ -165,22 +156,18 @@ private refreshCmd(endpoint) {
 }
 
 def on() {
-	onOffCmd(0xFF, 1)
+	onOffCmd(0xFF)
 }
 
 def off() {
-	onOffCmd(0x00, 1)
-}
-
-def refresh() {
-	refreshCmd(1)
+	onOffCmd(0x00)
 }
 
 def ping() {
 	refresh()
 }
 
-def resetCmd(endpoint = null) {
+def reset(endpoint = 1) {
 	log.debug "Resetting endpoint: ${endpoint}"
 	delayBetween([
 			encap(zwave.meterV3.meterReset(), endpoint),
@@ -189,28 +176,20 @@ def resetCmd(endpoint = null) {
 	], 500)
 }
 
-def reset() {
-	resetCmd(1)
-}
-
-def childOn(deviceNetworkId) {
-	def switchId = deviceNetworkId?.split("/")[1] as Integer
-	sendHubCommand onOffCmd(0xFF, switchId)
-}
-
-def childOff(deviceNetworkId) {
-	def switchId = deviceNetworkId?.split("/")[1] as Integer
-	sendHubCommand onOffCmd(0x00, switchId)
+def childOnOff(deviceNetworkId, value) {
+	def switchId = deviceNetworkId?.split(":")[1] as Integer
+	sendHubCommand onOffCmd(value, switchId)
 }
 
 def childRefresh(deviceNetworkId) {
-	def switchId = deviceNetworkId?.split("/")[1] as Integer
-	sendHubCommand refreshCmd(switchId)
+	def switchId = deviceNetworkId?.split(":")[1] as Integer
+	sendHubCommand refresh(switchId)
 }
 
 def childReset(deviceNetworkId) {
-	def switchId = deviceNetworkId?.split("/")[1] as Integer
-	sendHubCommand resetCmd(switchId)
+	def switchId = deviceNetworkId?.split(":")[1] as Integer
+	log.debug "Child reset switchId: ${switchId}"
+	sendHubCommand reset(switchId)
 }
 
 private refreshAll() {
@@ -225,21 +204,25 @@ private resetAll() {
 
 def installed() {
 	log.debug "Installed ${device.displayName}"
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	response(zwave.multiChannelV3.multiChannelEndPointGet().format())
 }
 
 def configure() {
-	def cmds = [
-			encap(zwave.configurationV2.configurationSet(parameterNumber: 255, size: 1, configurationValue: [0])), 	// resets configuration
-			encap(zwave.configurationV2.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1])),	// enables overheat protection
-			encap(zwave.configurationV2.configurationSet(parameterNumber: 80, size: 1, configurationValue: [2])),	// send BasicReport CC
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2048)), 	// enabling kWh energy reports on ep 1
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 600)),	//... every 10 minutes
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 4096)), 	// enabling kWh energy reports on ep 2
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 600)), 	//... every 10 minutes
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1)),	//enables reporting based on wattage change
-			encap(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 20)) 	//report any 20W change
-	]
+	def cmds
+	if(zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) {
+		cmds = [
+				encap(zwave.configurationV2.configurationSet(parameterNumber: 255, size: 1, configurationValue: [0])),    // resets configuration
+				encap(zwave.configurationV2.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1])),    // enables overheat protection
+				encap(zwave.configurationV2.configurationSet(parameterNumber: 80, size: 1, configurationValue: [2])),    // send BasicReport CC
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2048)),    // enabling kWh energy reports on ep 1
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 600)),    //... every 10 minutes
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 4096)),    // enabling kWh energy reports on ep 2
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 600)),    //... every 10 minutes
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1)),    //enables reporting based on wattage change
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 20))    //report any 20W change
+		]
+	}
 	delayBetween(cmds) + "delay 1000" + resetAll() + refreshAll()
 }
 
@@ -253,8 +236,8 @@ private encap(cmd, endpoint = null) {
 
 private addChildSwitches(numberOfSwitches) {
 	for(def endpoint : 2..numberOfSwitches) {
-		String childDni = "${device.deviceNetworkId}/$endpoint"
-		def componentLabel = device.displayName[0..-2] + " ${endpoint}"
+		String childDni = "${device.deviceNetworkId}:$endpoint"
+		def componentLabel = device.displayName[0..-2] + "${endpoint}"
 		addChildDevice("Child Metering Switch", childDni, null, [
 				completedSetup: true,
 				label         : componentLabel,
