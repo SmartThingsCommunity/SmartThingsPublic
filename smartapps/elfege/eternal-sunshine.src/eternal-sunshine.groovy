@@ -21,9 +21,9 @@ definition(
     author: "elfege",
     description: "Adjust dimmers with illuminance",
     category: "Convenience",
-    iconUrl: "http://elfege.com/assets/penrose.png",
-    iconX2Url: "http://elfege.com/assets/penrose.png",
-    //pausable: false
+    iconUrl: "http://static1.squarespace.com/static/5751f711d51cd45f35ec6b77/t/59c561cb268b9638e8ba6c23/1512332763339/?format=1500w",
+    iconX2Url: "http://static1.squarespace.com/static/5751f711d51cd45f35ec6b77/t/59c561cb268b9638e8ba6c23/1512332763339/?format=1500w",
+    iconX3Url: "http://static1.squarespace.com/static/5751f711d51cd45f35ec6b77/t/59c561cb268b9638e8ba6c23/1512332763339/?format=1500w",
 )
 
 preferences {
@@ -62,10 +62,7 @@ def pageSetup() {
             }
             input "pause", "bool", title: "pause if all selected dimmers are off", default: false
         }
-        section([mobileOnly:true]) {
-            label title: "Assign a name", required: false
-            mode title: "Set for specific mode(s)", required: false, uninstall: true
-        }
+
 
         section("Differentiate Values With Location Mode") {
             input "modes", "mode", title:"select modes", required: false, multiple: true, submitOnChange: true
@@ -76,10 +73,19 @@ def pageSetup() {
                 def dimValMode = []
                 for(modes.size() != 0; i < modes.size(); i++){
                     input "dimValMode${i}", "number", required:true, title: "select a maximum value for ${modes[i]}"
-                
+
                 }
             }
         }
+        section("override"){
+            input "OVRD", "bool", default: false, title: "Allow manual input to override this application"
+            paragraph "NB: this will apply until you turn the lights off and on."
+        }
+        section([mobileOnly:true]) {
+            label title: "Assign a name", required: false
+            mode title: "Set for specific mode(s)", required: false, uninstall: true
+        }
+
     }
 }
 
@@ -98,15 +104,46 @@ def updated() {
 def initialize() {
 
     subscribe(dimmers, "level", dimmersHandler)
+    subscribe(dimmers, "switch", switchHandler)
     subscribe(LSen, "illuminance", illuminanceHandler)
     //subscribe(location, "mode", ChangedModeHandler)	
+    atomicState.override = false
     log.debug "initialization ok"
     evaluate()
 }
 
+def switchHandler(evt){
+    log.debug "$evt.device is now set to $evt.value"
+    
+    if(atomicState.override){
+    log.debug "END OF OVERRIDE"
+    atomicState.override = false
+    }
+    
+    if(evt.value == "off"){  // prevent currently running loop from turning it back on
+    def device = evt.device
+    device.setLevel(0)
+    }
+    
+    
+}
+
 def dimmersHandler(evt){
     log.debug "$evt.device is now set to $evt.value"
-    evaluate()
+
+    def autoDim = atomicState.dimVal
+    def val = evt.value.toInteger()
+    log.debug "autoDim = $autoDim // $val"
+
+
+    if(autoDim != val && evt.value != "off" && evt.value != "on"){
+        log.debug "OVERRIDE TRIGGERED"
+        atomicState.override = true
+    }
+    else {
+        log.debug "NO OVERRIDE.."
+        atomicState.override = false
+    }
 }
 
 def illuminanceHandler(evt){
@@ -166,7 +203,8 @@ illuminance is: $illum"""
         log.debug "doing nothing"
     }
 
-    log.debug "dimVal = $dimVal"
+
+
 }
 
 def setDimmers(val){
@@ -179,28 +217,39 @@ def setDimmers(val){
     if(modes)
     {
         if(location.currentMode in modes){
-        
+
             while(location.currentMode != modes[i]){
                 i++
                     log.debug "; $i ;"
             }
             def valMode = "dimValMode${i}"
             valMode = settings.find{it.key == valMode}.value
-           
+
             log.debug "ADJUSTED WITH CURRENT MODE == > valMode = $valMode "
-            
+
             val = valMode
         }
     }
+  
+    atomicState.dimVal = val
 
-    i = 0
-    for(s != 0; i < s; i++){
-        isNotOff = "on" in dimmers[i].currentValue("switch")
-        if(isNotOff){
-            dimmers[i].setLevel(val)
-            log.debug "${dimmers[i]} set to $val"
+    if(!atomicState.override){
+        i = 0
+        for(s != 0; i < s; i++){
+            isNotOff = "on" in dimmers[i].currentValue("switch")
+            if(isNotOff){
+                dimmers[i].setLevel(val)
+                log.debug "${dimmers[i]} set to $val"
+            }
         }
+
     }
+    else {
+        log.debug "OVERRIDE MODE, DOING NOTHING"
+    }
+
+
+
 
 }
 
