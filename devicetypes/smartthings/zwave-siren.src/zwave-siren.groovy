@@ -118,8 +118,8 @@ def configure() {
 	log.debug "config"
 	def cmds = []
 	if (zwaveInfo.mfr == "0131" && zwaveInfo.model == "1083") {
-		// Set alarm volume to 2 (medium)
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [2]).format()
+		// Set alarm volume to 3 (loud)
+		cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [3]).format()
 		cmds << "delay 500"
 		// Set alarm duration to 60s (default)
 		cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
