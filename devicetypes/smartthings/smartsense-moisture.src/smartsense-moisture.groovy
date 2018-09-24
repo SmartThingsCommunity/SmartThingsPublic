@@ -21,7 +21,8 @@ metadata {
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x9C,0x9D,0x85,0x80,0x72,0x31,0x84,0x86"
 		fingerprint deviceId: "0x2101", inClusters: "0x71,0x70,0x85,0x80,0x72,0x31,0x84,0x86"
-		fingerprint mfr:"0084", prod:"0063", model:"010C", deviceJoinName: "FortrezZ Moisture Sensor"
+		fingerprint mfr:"0084", prod:"0063", model:"010C"
+        fingerprint mfr:"0084", prod:"0053", model:"0216", deviceJoinName: "FortrezZ Moisture Sensor"
 	}
 
 	simulator {
