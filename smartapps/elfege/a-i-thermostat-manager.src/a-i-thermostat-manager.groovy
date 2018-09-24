@@ -906,9 +906,9 @@ state.CSPSet = $state.CSPSet"""
     // reset A.I. override maps
     state.HSPMap = [:]
     state.CSPMap = [:]
-    
-state.ClosedByApp = true
-state.OpenByApp = true
+
+    state.ClosedByApp = true
+    state.OpenByApp = true
 
     MiscSubscriptions()
 }
@@ -2066,10 +2066,10 @@ inAway = $inAway
 
                     //////////////////////////LINEAR HEAT/////////////////////////////// 
                     log.debug "LINEAR HEAT --"
-                    xa = 40 //outside temp a
+                    xa = 68 //outside temp a
                     ya = MinLinearHeat // min desired heating temp a 
 
-                    xb = 35   //outside temp b
+                    xb = 60   //outside temp b
                     yb = MaxLinearHeat  // max desired heating temp b  
 
                     coef = (yb-ya)/(xb-xa)
@@ -2112,13 +2112,23 @@ Math.log(256) / Math.log(2)
                     log.debug "Logarithmic CSPSet  for $ThermSet = $CSPSet"
 
 
-                    /////////////////// LOGARITHMIC HEAT ///////////////// 
+                    /////////////////// HEAT ALWAYS LINEAR ///////////////// 
                     // log base is: the average desired temperature
-                    Base = (MinLinearHeat + MaxLinearHeat)/3
-                    /////////////////////////COOL//////////////////// 
-                    //outsideTemp = 90 // for test only 
-                    HSPSet = (Math.log(Base) / Math.log(outsideTemp)) * HSPSet
-                    log.debug "Logarithmic HSPSet for $ThermSet = $HSPSet"
+                    log.debug "LINEAR HEAT --"
+                    xa = 68 //outside temp a
+                    ya = MinLinearHeat // min desired heating temp a 
+
+                    xb = 60   //outside temp b
+                    yb = MaxLinearHeat  // max desired heating temp b  
+
+                    coef = (yb-ya)/(xb-xa)
+                    b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b
+
+
+                    HSPSet = coef*outsideTemp + b 
+                    log.info "linear HSPSet FLOAT = $HSPSet"
+                    HSPSet = HSPSet.toInteger()
+
 
 
                 }
@@ -2218,11 +2228,11 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 // while alternative sensor is still beyond CSP
                 // not that this is safe only with turnOffWhenReached
                 // and only if active, otherwise it defeats the purpose of motion sensors based SP's
-                
+
                 if(useAltSensor && turnOffWhenReached && Active && !inAway && ThermSet.currentValue("temperature") < CurrTemp){                                  
-                        def ratioDiff = CurrTemp / CSPSet 
-                        CSPSet = CSPSet - (Math.log(CurrTemp))+2
-                        log.debug "CSPSet amplitude adjustment CSPSet now = $CSPSet ratioDiff = $ratioDiff" 
+                    def ratioDiff = CurrTemp / CSPSet 
+                    CSPSet = CSPSet - (Math.log(CurrTemp))+2
+                    log.debug "CSPSet amplitude adjustment CSPSet now = $CSPSet ratioDiff = $ratioDiff" 
                 }
 
                 // now see if we're dealing, in this for loop, with a thermostat that is to be set with switch status
@@ -2243,8 +2253,8 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 /////////////////////////////////////////////////////////END OF SETPOINTS EVALS/////////////////////////////////////////////////////////
 
                 /////////////////////////////////////////////////////////EVAL OF NEEDS ////////////////////////////////////////////////////////////////
-                def WarmOutside = outsideTemp >= defaultCSPSet || outsideTemp <= defaultHSPSet
-                def WarmInside = (CurrTemp > defaultCSPSet && WarmOutside) || (CurrTemp > defaultCSPSet && TooHumidINSIDE && Active) 
+                def WarmOutside = outsideTemp >= OutsideTempLowThres 
+                def WarmInside = (CurrTemp > (defaultCSPSet - 1) && WarmOutside) || (CurrTemp > defaultCSPSet && TooHumidINSIDE && Active) 
                 //log.debug "CurrTemp = $CurrTemp, outsideTemp = $outsideTemp, CSPSet = $CSPSet, WarmOutside = $WarmOutside, WarmInside = $WarmInside"
 
                 def ShouldCoolWithAC = WarmOutside && WarmInside
@@ -2331,8 +2341,8 @@ FoundUnitToIgnore = $FoundUnitToIgnore
                             BedSensorManagement = true 
 
                             //log.debug "$BedSensor closed, applying settings accordingly"  
-                            def CSPSetBedSensor = CSPSetBedSensor.toInteger()
-                            def HSPSetBedSensor = HSPSetBedSensor.toInteger()
+                            def CSPSetBedSensor = CSPSetBedSensor?.toInteger()
+                            def HSPSetBedSensor = HSPSetBedSensor?.toInteger()
                             //log.debug "Integer HSPSetBedSensor = $HSPSetBedSensor"
 
                             def needCool = ShouldCoolWithAC
@@ -3143,8 +3153,8 @@ def RunOpenWindowsFix(){
     runIn(20, RunCloseWindowsFix)
 }
 def RunCloseWindowsFix(){
-    CloseWindows(0, "fixattempt")
     state.FixAwait = false
+    CloseWindows(0, "fixattempt")
 }
 
 def ExcepContactsClosed(){
@@ -3538,6 +3548,14 @@ state.coldbutneedcool = $state.coldbutneedcool
 state.OpenByApp = $state.OpenByApp
 """
 
+    if(str == "fixattempt"){
+        log.debug "attempting fix, CLOSE MODE"
+        state.OpenByApp = true
+        state.ClosedByApp = false
+        Actuators?.off()
+        ActuatorException?.off()
+    }
+
     if(state.OpenByApp == true){
         def AreOn = Actuators.findAll{it.currentValue != "off"}
         if(AreOn.size() == 0){      
@@ -3581,13 +3599,20 @@ state.OpenByApp = $state.OpenByApp
 def OpenWindows(val, str){ 
     def outsideTemp = OutsideSensor?.currentValue("temperature")
 
+    if(str == "fixattempt"){
+        log.debug "attempting fix, OPEN MODE"
+        state.OpenByApp = true
+        state.ClosedByApp = false
+        Actuators?.on()
+        ActuatorException?.on()
+    }
 
     if(state.ClosedByApp == true || (location.currentMode in Away && OpenInfullWhenAway)){
         def AreOn = "on" in Actuators.currentValue("switch")
-        if(!AreOn){      
-            Actuators?.on()
+        if(!AreOn){  
             state.OpenByApp = true
-        state.ClosedByApp = false
+            state.ClosedByApp = false
+            Actuators?.on() 
         }
         else {
             log.debug "on command to Actuators already sent"
@@ -3597,13 +3622,13 @@ def OpenWindows(val, str){
             AreOn = "on" in ActuatorException.currentValue("switch") 
             if(!AreOn){      
                 ActuatorException?.on()
-                
+
             }
             else {
                 log.debug "on command to ActuatorException already sent"
             }
         }
-        
+
     }
     else {
         log.debug "NOT Opening windows (cmd sent from $val)"
