@@ -45,16 +45,17 @@ metadata {
 
 def installed() {
 	log.debug "Installed $device.displayName"
-	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false)
+	//sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false)
 	if(hasMultipleButtons()) {
 		addChildButtons()
 	}
-	setPanicAlarm("clear")
 	def cmds = [
 			zwave.batteryV1.batteryGet().format(),
 			zwave.notificationV3.notificationGet().format(),
+			"delay 1000",
 			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 	]
+	sendEvent(name: "panicAlarm", value: "clear", descriptionText: "Panic Alarm status: clear", displayed: true, isStateChange: true)
 	response(cmds)
 }
 
@@ -88,11 +89,13 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def results = [createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)]
 
-	def prevBattery = device.currentState("battery")
-	if (!prevBattery || (new Date().time - prevBattery.date.time)/60000 >= 60 * 53) {
+	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
 		results += response(zwave.batteryV1.batteryGet().format())
 	}
-	results += response(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
+	results += response([
+			"delay 1000",
+			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	])
 	results
 }
 
@@ -118,7 +121,7 @@ private setPanicAlarm(status) {
 
 private setButtonState(buttonId, state) {
 	def event
-	String childDni = "${device.deviceNetworkId}/$buttonId"
+	String childDni = "${device.deviceNetworkId}:$buttonId"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
 	if (!child) {
 		log.error "Child device $childDni not found"
@@ -132,7 +135,7 @@ private setButtonState(buttonId, state) {
 private addChildButtons() {
 	log.debug "Creating child devices"
 	for (i in 1..3) {
-		String childDni = "${device.deviceNetworkId}/$i"
+		String childDni = "${device.deviceNetworkId}:$i"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		addChildDevice("Child Button", childDni, null, [
 				completedSetup: true,
