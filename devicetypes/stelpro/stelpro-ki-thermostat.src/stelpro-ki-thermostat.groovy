@@ -36,6 +36,7 @@ metadata {
 		//attribute "outsideTemp", "number"
 
 		command "setOutdoorTemperature"
+		command "quickSetOutTemp" // Maintain backward compatibility with self published versions of the "Stelpro Get Remote Temperature" SmartApp
 		command "increaseHeatSetpoint"
 		command "decreaseHeatSetpoint"
 		command "eco" // Command does not exist in "Thermostat Mode"
@@ -403,6 +404,11 @@ def setHeatingSetpoint(preciseDegrees) {
 	} else {
 		log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"	
 	}
+}
+
+// Maintain backward compatibility with self published versions of the "Stelpro Get Remote Temperature" SmartApp
+def quickSetOutTemp(outsideTemp) {
+	setOutdoorTemperature(outsideTemp)
 }
 
 def setOutdoorTemperature(outsideTemp) {
