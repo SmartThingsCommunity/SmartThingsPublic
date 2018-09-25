@@ -27,7 +27,7 @@ metadata {
         command "childOn", ["string"]
         command "childOff", ["string"]
 
-        fingerprint  profileId: "0104", inClusters: "0000, 0005, 0004, 0006", manufacturer: "0000000", model: "cc891c853291418daa4e26cb315a3a0c", deviceJoinName: "Orvibo Smart Switch 1"
+        fingerprint  profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo Smart Switch 1"
     }
     // simulator metadata
     simulator {
