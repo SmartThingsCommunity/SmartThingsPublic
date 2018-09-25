@@ -1,7 +1,7 @@
 /**
  *  altZunoHandler
  *
- *  Copyright 2018 Alexander Belov
+ *  Copyright 2018 Alexander Belov, Z-Wave.Me
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -26,9 +26,9 @@ metadata {
 	}
     preferences {
         section("Prefs") {
-            /* 1 */ input "tempUnitConversion", "enum", title: "Temperature Unit Conversion - select F to C, C to F, or no conversion", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"Fahrenheit to Celsius"], ["3":"Celsius to Fahrenheit"]], displayDuringSetup: false
-            /* 8 *//* 9 */ input "atmosphericUnitConversion", "enum", title: "Atmospheric Pressure Unit Conversion - select kPa to ″Hg, ″Hg to kPa, or no conversion", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"kPa to ″Hg"], ["3":"″Hg to kPa"]], displayDuringSetup: false
-            /* 20 */ input "distanceUnitConversion", "enum", title: "Distance Unit Conversion", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"Centimeters to inches"], ["3":"Meters to inches"], ["4":"Feets to inches"]], displayDuringSetup: false
+            input "tempUnitConversion", "enum", title: "Temperature Unit", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"Device default"],["2":"Celsius"], ["3":"Fahrenheit"]], displayDuringSetup: false
+            input "atmosphericUnitConversion", "enum", title: "Atmospheric Pressure Unit", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"Device default"],["2":"kPa"], ["3":"″Hg"]], displayDuringSetup: false
+            input "distanceUnitConversion", "enum", title: "Distance Unit", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"Device default"],["2":"Meters"], ["3":"Centimeters"], ["4":"Inches"], ["5":"Feets"]], displayDuringSetup: false
         }
     }
 	tiles(scale: 2) {
@@ -53,7 +53,7 @@ def parse(def description) {
     def cmd = zwave.parse(description)
     
 	if (description.startsWith("Err")) {
-		result = createEvent(descriptionText: description, isStateChange:true)
+		createEvent(descriptionText: description, isStateChange:true)
 	} else if (description != "updated") {
         zwaveEvent(cmd)
         
@@ -68,173 +68,164 @@ def installed() {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-    double offsetValue = cmd.scaledSensorValue
+    double sensorValue = cmd.scaledSensorValue
     def scale = null
     def sensType = null
+    
     switch (cmd.sensorType) {
-    	case 1: 
-        	sensType = "Air temperature"
-            
+    	case 0x01:
+        case 0x0B:
+        case 0x17:
+        case 0x18:
+        case 0x22:
+        	if (cmd.sensorType == 0x01) sensType = "Air temperature"
+        	if (cmd.sensorType == 0x0B) sensType = "Dew point"
+        	if (cmd.sensorType == 0x17) sensType = "Water temperature"
+        	if (cmd.sensorType == 0x18) sensType = "Soil temperature"
+        	if (cmd.sensorType == 0x22) sensType = "Target temperature"
+
         	if (cmd.scale == 0) scale = "°C"
             if (cmd.scale == 1) scale = "°F"
-    		
-            if (tempUnitConversion == "2") {
-                offsetValue = fahrenheitToCelsius(offsetValue)
+    		            
+            if (tempUnitConversion == "2" && cmd.scale == 1) {
+                sensorValue = fahrenheitToCelsius(sensorValue)
                 scale = "°C"
             }
-            if (tempUnitConversion == "3") {
-                offsetValue = celsiusToFahrenheit(offsetValue)
+            if (tempUnitConversion == "3" && cmd.scale == 0) {
+                sensorValue = celsiusToFahrenheit(sensorValue)
                 scale = "°F"
             }
             break
             
-        case 2: 
+        case 0x02: 
         	sensType = "General purpose"
             
         	if (cmd.scale == 0) scale = "%"
             if (cmd.scale == 1) scale = ""
         	break
             
-        case 3: 
+        case 0x03: 
         	sensType = "Luminance"
             
 			if (cmd.scale == 0) scale = "%"
 			if (cmd.scale == 1) scale = "lx"
         	break
             
-        case 4:
+        case 0x04:
         	sensType = "Power"
             
             if (cmd.scale == 0) scale = "W"
         	if (cmd.scale == 1) scale = "btu/h"
         	break
             
-        case 5:
+        case 0x05:
         	sensType = "Humidity"
             
             if (cmd.scale == 0) scale = "%"
        		if (cmd.scale == 1) scale = "g/m³"
         	break
             
-        case 6:
+        case 0x06:
         	sensType = "Velocity"
             
         	if (cmd.scale == 0) scale = "m/s"
        		if (cmd.scale == 1) scale = "mph"
         	break
             
-        case 7:
+        case 0x07:
         	sensType = "Direction"
             
-            if (offsetValue == 0) scale = ""
-        	if (offsetValue >= 45 && offsetValue < 135) scale = "E"
-       		if (offsetValue >= 135 && offsetValue < 225) scale = "S"
-        	if (offsetValue >= 225 && offsetValue < 315) scale = "w"
-       		if (offsetValue >= 315 && offsetValue <= 360 || offsetValue >= 1 && offsetValue < 45) scale = "N"
+            if (sensorValue == 0) scale = ""
+        	if (sensorValue >= 45 && sensorValue < 135) scale = "E"
+       		if (sensorValue >= 135 && sensorValue < 225) scale = "S"
+        	if (sensorValue >= 225 && sensorValue < 315) scale = "w"
+       		if (sensorValue >= 315 && sensorValue <= 360 || sensorValue >= 1 && sensorValue < 45) scale = "N"
         	break
             
-        case 8: 
-        	sensType = "Atmospheric pressure"
+        case 0x08:
+        case 0x09:
+        	sensType = cmd.sensorType == 0x08 ? "Atmospheric pressure" : "Barometric pressure"
             
         	if (cmd.scale == 0) scale = "kPa"
             if (cmd.scale == 1) scale = "″Hg"
 
-        	if (atmosphericUnitConversion == "2") {
-                offsetValue = offsetValue * 0.29529980164712
+        	if (atmosphericUnitConversion == "3" && cmd.scale == 0) {
+                sensorValue /= 3.3864
                 scale = "″Hg"
             }
-        	if (atmosphericUnitConversion == "3") {
-                offsetValue = offsetValue * 3.3864
+        	if (atmosphericUnitConversion == "2" && cmd.scale == 1) {
+                sensorValue *= 3.3864
                 scale = "kPa"
             }
         	break
             
-        case 9:
-            sensType = "Barometric pressure"
-
-        	if (cmd.scale == 0) scale = "kPa"
-            if (cmd.scale == 1) scale = "″Hg"
-        	
-            if (atmosphericUnitConversion == "2") {
-                offsetValue = offsetValue * 0.29529980164712
-                scale = "″Hg"
-            }
-        	if (atmosphericUnitConversion == "3") {
-                offsetValue = offsetValue * 3.3864
-                scale = "kPa"
-            }
-        	break
-            
-        case 10:
+        case 0x0A:
         	sensType = "Solar radiation"
 
         	if (cmd.scale == 0) scale = "W/m²"
         	break
-            
-        case 11:
-        	sensType = "Dew point"
-            
-        	if (cmd.scale == 0) scale = "C"
-       		if (cmd.scale == 1) scale = "F"
-        	break
-            
-        case 12:
+
+        case 0x0C:
+        //TODO: convert
         	sensType = "Rain rate"
             
         	if (cmd.scale == 0) scale = "mm/h"
        		if (cmd.scale == 1) scale = "in/h"
         	break
             
-        case 13:
+        case 0x0D:
+        //TODO: convert
         	sensType = "Tide level"
             
         	if (cmd.scale == 0) scale = "m"
        		if (cmd.scale == 1) scale = "ft"
         	break
             
-        case 14:
+        case 0x0E:
+        //TODO: convert
         	sensType = "Weight"
             
         	if (cmd.scale == 0) scale = "kg"
        		if (cmd.scale == 1) scale = "lb"
         	break
             
-        case 15:
+        case 0x0F:
         	sensType = "Voltage"
             
         	if (cmd.scale == 0) scale = "V"
        		if (cmd.scale == 1) scale = "mV"
         	break
             
-        case 16:
+        case 0x10:
         	sensType = "Current"
             
         	if (cmd.scale == 0) scale = "A"
        		if (cmd.scale == 1) scale = "mA"
         	break
             
-        case 17:
+        case 0x11:
         	sensType = "CO2-level"
             
         	if (cmd.scale == 0) scale = "ppm"
         	break
             
-        case 18:
+        case 0x12:
         	sensType = "Air flow"
             
         	if (cmd.scale == 0) scale = "m³/h"
        		if (cmd.scale == 1) scale = "cfm"
         	break
             
-        case 19:
+        case 0x13:
+        //TODO: convert
         	sensType = "Tank capacity"
             
         	if (cmd.scale == 0) scale = "l"
        		if (cmd.scale == 1) scale = "m³"
-            if (cmd.scale == 1) scale = "gal"
+            if (cmd.scale == 2) scale = "gal"
         	break
             
-        case 20:
+        case 0x14:
 	        sensType = "Distance"
             
        		if (cmd.scale == 0) scale = "m"
@@ -242,66 +233,185 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
             if (cmd.scale == 2) scale = "ft"
 
 			if (distanceUnitConversion == "2") {
-                offsetValue = offsetValue / 2.54
                 scale = "″"
-            }
-        	if (distanceUnitConversion == "3") {
-                offsetValue = (offsetValue * 100) / 2.54
+            	if (cmd.scale == 1) sensorValue /= 100
+            	if (cmd.scale == 2) sensorValue /= 0.3048
+			}
+			if (distanceUnitConversion == "3") {
                 scale = "″"
-            }
-        	if (distanceUnitConversion == "4") {
-                offsetValue = offsetValue * 12
-                scale = "″"   
-            }
+            	if (cmd.scale == 0) sensorValue *= 100
+            	if (cmd.scale == 2) sensorValue *= 30.48
+			}
+			if (distanceUnitConversion == "4") {
+                scale = "″"
+            	if (cmd.scale == 0) sensorValue /= 254
+            	if (cmd.scale == 1) sensorValue /= 2.54
+            	if (cmd.scale == 2) sensorValue *= 12
+			}
+			if (distanceUnitConversion == "5") {
+                scale = "″"
+            	if (cmd.scale == 0) sensorValue /= 0.3048
+            	if (cmd.scale == 1) sensorValue /= 30.48
+    		}
+            
+        	break  
+            
+        case 0x15:
+        	sensType = "Angle position"
+            
+        	if (cmd.scale == 0) scale = "%"
+       		if (cmd.scale == 1) scale = ""
+            if (cmd.scale == 2) scale = ""
+        	break
+            
+        case 0x16:
+        	sensType = "Rotation"
+            
+        	if (cmd.scale == 0) scale = "rpm"
+       		if (cmd.scale == 1) scale = "Hz"
+        	break
+                        
+        case 0x19:
+        	sensType = "Seismic intensity"
+            
+        	if (cmd.scale == 0) scale = "М"
+       		if (cmd.scale == 1) scale = "EMS"
+        	if (cmd.scale == 2) scale = "L"
+       		if (cmd.scale == 3) scale = "S"
+        	break   
+            
+        case 0x1A:
+        	sensType = "Seismic magnitude"
+            
+        	if (cmd.scale == 0) scale = "Local"
+       		if (cmd.scale == 1) scale = "Moment"
+            if (cmd.scale == 2) scale = "Surface wave "
+            if (cmd.scale == 3) scale = "Body wave"
+        	break
+            
+        case 0x1B:
+        	sensType = "Ultraviolet"
+            
+        	if (cmd.scale == 0) scale = "UV"
+        	break
+            
+        case 0x1C:
+        	sensType = "Electrical resistivity"
+            
+        	if (cmd.scale == 0) scale = "Ω"
+        	break  
+            
+        case 0x1D:
+        	sensType = "Electrical conductivity"
+            
+        	if (cmd.scale == 0) scale = "S/m"
+        	break 
+            
+        case 0x1E:
+        	sensType = "Loudness"
+            
+        	if (cmd.scale == 0) scale = "dB"
+       		if (cmd.scale == 1) scale = "dBA"
+        	break
+            
+        case 0x1F:
+        	sensType = "Moisture"
+            
+        	if (cmd.scale == 0) scale = "%"
+       		if (cmd.scale == 1) scale = "m³/m³"
+            if (cmd.scale == 2) scale = "kΩ"
+            if (cmd.scale == 3) scale = "aw"
+        	break
+            
+    ////////////////////////////////////////////////////////////////
+    /* Next cases don't supported by ST (needed CC V6 and higher) */
+    ////////////////////////////////////////////////////////////////
+    
+        case 0x20:
+        	sensType = "Frequency"
+            
+        	if (cmd.scale == 0) scale = "Hz"
+       		if (cmd.scale == 1) scale = "kHz"
+        	break      
+            
+        case 0x21:
+        	sensType = "Time"
+            
+        	if (cmd.scale == 0) scale = "s"
+        	break              
+            
+         case 0x23:
+        	sensType = "Particulate Matter 2.5"
+            
+        	if (cmd.scale == 0) scale = "mol/m³"
+        	if (cmd.scale == 1) scale = "µg/m³"
+        	break 
+            
+        case 0x24:
+        	sensType = "CH2O-level"
+            
+        	if (cmd.scale == 0) scale = "mol/m³"
+        	break  
+            
+         case 0x25:
+        	sensType = "Radon concentration"
+            
+        	if (cmd.scale == 0) scale = "bq/m³"
+        	if (cmd.scale == 1) scale = "oCi/I"
+        	break  
+            
+         case 0x26:
+        	sensType = "CH4 density"
+            
+        	if (cmd.scale == 0) scale = "mol/m³"
+        	break  
+            
+         case 0x27:
+        	sensType = "Volatile Organic Compound level"
+            
+        	if (cmd.scale == 0) scale = "mol/m³"
+        	if (cmd.scale == 1) scale = "ppm"
+        	break  
+            
+         case 0x28:
+        	sensType = "CO level"
+            
+        	if (cmd.scale == 0) scale = "mol/m³"
+        	if (cmd.scale == 1) scale = "ppm"
+        	break  
+            
+         case 0x29:
+        	sensType = "Soil humidity"
+            
+        	if (cmd.scale == 0) scale = "%"
+        	break  
+            
+         case 0x2A:
+        	sensType = "Soil reactivity"
+            
+        	if (cmd.scale == 0) scale = "pH"
+        	break  
+            
+         case 0x2B:
+        	sensType = "Soil salinity"
+            
+        	if (cmd.scale == 0) scale = "mol/m³"
+        	break  
+            
+         case 0x2C:
+        	sensType = "Heart rate"
+            
+        	if (cmd.scale == 0) scale = "bpm"
+        	break  
+            
+         case 0x2A:
+        	sensType = "Soil reactivity"
+            
+        	if (cmd.scale == 0) scale = "pH"
         	break
     }
     
     log.debug "cmd:${cmd}"
-    sendEvent(name: "sensValue", value: "${offsetValue.round(2)}${scale}")
+    sendEvent(name: "sensValue", value: "${sensorValue.round(2)}${scale}")
     sendEvent(name: "sensType", value: sensType)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
