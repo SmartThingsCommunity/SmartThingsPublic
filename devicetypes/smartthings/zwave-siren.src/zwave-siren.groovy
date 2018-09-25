@@ -16,7 +16,7 @@
  *  Date: 2014-07-15
  */
 metadata {
-	definition(name: "Z-Wave Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Z-Wave Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Alarm"
 		capability "Battery"
@@ -118,8 +118,8 @@ def configure() {
 	log.debug "config"
 	def cmds = []
 	if (zwaveInfo.mfr == "0131" && zwaveInfo.model == "1083") {
-		// Set alarm volume to 2 (medium)
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [2]).format()
+		// Set alarm volume to 3 (loud)
+		cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [3]).format()
 		cmds << "delay 500"
 		// Set alarm duration to 60s (default)
 		cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()

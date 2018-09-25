@@ -442,10 +442,7 @@ def configure() {
 
 	// set the check interval based on the report interval preference. (default 122 minutes)
 	// we do this here in case the device is in wakeup mode
-	def checkInterval = 2 * 60 * 60 + 2 * 60
-	if (reportInterval) {
-		checkInterval = 2 * timeOptionValueMap[reportInterval] + (2 * 60)
-	}
+	def checkInterval = 2 * (timeOptionValueMap[reportInterval] ?: 60 * 60) + 2 * 60
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
 	commands(request, (state.sec || zwaveInfo?.zw?.endsWith("s")) ? 2000 : 500) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]

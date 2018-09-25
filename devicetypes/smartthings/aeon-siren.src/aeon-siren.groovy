@@ -16,7 +16,7 @@
  *	Date: 2014-07-15
  */
 metadata {
- definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+ definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 	capability "Actuator"
 	capability "Alarm"
 	capability "Switch"

@@ -83,7 +83,7 @@ def parse(String description) {
 
 	Map map = zigbee.getEvent(description)
 	if (!map) {
-		if (description?.startsWith('zone status')) {
+		if (description?.startsWith('zone status') || description?.startsWith('zone report')) {
 			map = parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
@@ -92,12 +92,12 @@ def parse(String description) {
 			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
-			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt == 0x07) {
 				if (descMap.data[0] == "00") {
-					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
+					log.debug "IAS ZONE REPORTING CONFIG RESPONSE: $descMap"
 					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 				} else {
-					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
+					log.warn "IAS ZONE REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
 			}
 		}
@@ -130,7 +130,7 @@ private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
 
-    def result = [:]
+	def result = [:]
 
 	def volts = rawValue / 10
 	if (!(rawValue == 0 || rawValue == 255)) {
@@ -183,5 +183,5 @@ def configure() {
 
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
+	return refresh() + zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 30) // send refresh cmds as part of config
 }
