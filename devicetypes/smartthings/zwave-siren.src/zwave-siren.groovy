@@ -124,8 +124,8 @@ def configure() {
 		// Set alarm duration to 60s (default)
 		cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
 		cmds << "delay 500"
-		// Set alarm sound to no.1
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [9]).format()
+		// Set alarm sound to no.10
+		cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [10]).format()
 	}
 	response(cmds)
 }
