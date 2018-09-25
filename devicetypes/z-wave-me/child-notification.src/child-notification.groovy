@@ -1,7 +1,7 @@
 /**
  *  Notification
  *
- *  Copyright 2018 Alexander Belov
+ *  Copyright 2018 Alexander Belov, Z-Wave.Me
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -44,7 +44,7 @@ def parse(def description) {
     def cmd = zwave.parse(description)
     
 	if (description.startsWith("Err")) {
-		result = createEvent(descriptionText: description, isStateChange:true)
+		createEvent(descriptionText: description, isStateChange:true)
 	} else if (description != "updated") {
         zwaveEvent(cmd)
         
