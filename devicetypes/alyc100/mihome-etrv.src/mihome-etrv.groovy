@@ -53,7 +53,7 @@ metadata {
         capability "Thermostat Heating Setpoint" 	//attribute- heatingSetpoint 	command - setHeatingSetpoint - having both alows extra settings in routines
 		capability "Thermostat Mode" 				//attribute-thermostatMode  auto/eco/rush hour/cool/emergency heat/heat/'off' command-setThermostatMode
         capability "Battery" 
-        capability  "Health Check"
+        capability "Health Check"
 	
         command "setThermostatMode"					//might need for google
         command "ThermostatSetMode"					//might need for google
@@ -68,16 +68,18 @@ metadata {
         attribute "thermostatTemperatureSetpoint", "String"						//might need for google
         attribute "ThermostatSetpoint", "String"								//might be needed for google
         attribute "boostLength", "String"
-	}
+		//attribute "battery", "String"
+    }
 
 	simulator {
 		// TODO: define status and reply messages here
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name: "thermostat", type: "generic", width: 6, height: 4, canChangeIcon: true) {  
+		multiAttributeTile(name: "thermostat", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("thermostat", label: '${currentValue}°', unit:"C", icon: "https://raw.githubusercontent.com/Mark-C-uk/SmartThingsPublic/master/devicetypes/alyc100/mihome-etrv.src/radiator120x120.png" ,defaultState: true, backgroundColors:[
+				attributeState("thermostat", label: '${currentValue}°', unit:"C", icon: "https://raw.githubusercontent.com/Mark-C-uk/SmartThingsPublic/master/devicetypes/alyc100/mihome-etrv.src/radiator120x120.png" ,
+                defaultState: true, backgroundColors:[
 					[value: 0, color: "#153591"],
 					[value: 10, color: "#1e9cbb"],
 					[value: 13, color: "#90d2a7"],
@@ -95,27 +97,47 @@ metadata {
 		}
 //set target temp
         valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state ("heatingSetpoint", label:'${currentValue}°',  backgroundColors:[
-					[value: 0, color: "#153591"],
-					[value: 10, color: "#1e9cbb"],
-					[value: 13, color: "#90d2a7"],
-					[value: 17, color: "#44b621"],
-					[value: 20, color: "#f1d801"],
-					[value: 25, color: "#d04e00"],
-					[value: 29, color: "#bc2323"]
+			state ("heatingSetpoint", label:'${currentValue}°',  defaultState: true, backgroundColors:[
+					[value: 0, color: "#b8c2de"],
+					[value: 10, color: "#bbe1ea"],
+					[value: 13, color: "#ddf1e4"],
+					[value: 17, color: "#c6e9bc"],
+					[value: 20, color: "#faf3b2"],
+					[value: 25, color: "#f0c9b2"],
+					[value: 29, color: "#eabdbd"]
 				]
                 )
 		}
+		        valueTile("temp", "device.temperature", width: 2, height: 2, inactiveLabel: true,) { // hear to enable it to show in activity feed
+					state ("temp", label:'${currentValue}°', defaultState: true, backgroundColors:[
+						[value: 0, color: "#153591"],
+						[value: 10, color: "#1e9cbb"],
+						[value: 13, color: "#90d2a7"],
+						[value: 17, color: "#44b621"],
+						[value: 20, color: "#f1d801"],
+						[value: 25, color: "#d04e00"],
+						[value: 29, color: "#bc2323"]
+					]
+                	)
+                } 
 //target temp slider
         controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false, range:"(12..30)") {
 			state ("heatingSetpoint", action:"setHeatingSetpoint") //need to send to a lag
 		}
 // battery
-        valueTile("battery", "device.batteryVoltage", width: 2, height: 2) {
-			state ("battery", label:'${currentValue}V', backgroundColors:[
-               					[value: 3, color: "#44b621"],
-								[value: 2.8, color: "#f1d801"],
-								[value: 2.78, color: "#bc2323"],
+        valueTile("battery", "device.batteryVoltage", width: 1, height: 1) {
+			state ("battery", label:'${currentValue}V',  icon:"st.samsung.da.RC_ic_charge",defaultState: true, backgroundColors:[
+               					[value: 3.2, color: "#44b621"],
+								[value: 2.85, color: "#f1d801"],
+								[value: 2.5, color: "#bc2323"],
+         		           ]
+                           )
+        }
+        valueTile("batteryper", "device.battery", width: 1, height: 1) {
+			state ("battery", label:'${currentValue}%', icon:"st.samsung.da.RC_ic_charge", defaultState: true, backgroundColors:[
+               					[value: 100, color: "#44b621"],
+								[value: 50, color: "#f1d801"],
+								[value: 0, color: "#bc2323"],
          		           ]
                            )
         }
@@ -125,7 +147,7 @@ metadata {
 		}
 //set boost time
         controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 2, inactiveLabel: false, range:"(30..120)") {
-			state ("boostLength", action:"setBoostLength")
+			state ("boostLength", action:"setBoostLength", defaultState: true)
 		}
 //boost button
         standardTile("boostSwitch", "device.boostSwitch", decoration: "flat", height: 2, width: 2, inactiveLabel: false) {
@@ -143,27 +165,26 @@ metadata {
 			state ("off", label: 'Press for Heat \n(or press boost below)', action:"heat", icon:"st.thermostat.heating-cooling-off")
 			state ("summer", label: 'Valve full open \nTurn off below',  icon:"st.custom.wuk.clear")
             state ("offline", label: 'Error', action:"refresh",  icon:"st.secondary.refresh-icon")
-            // google does not recognise //state ("auto", label: 'auto Press for off', action:"off" , icon:"st.thermostat.auto-cool")
 		}
-//summer mode on/off button - summer mode prevents routiens etc from changing the temp ie clossing the valve becaus its hot in summer
+//summer mode on/off button - summer mode prevents routiens etc from changing the temp ie clossing the valve becaus its hot in summer also blocks and temp change to save battery
 		standardTile("summer", "device.summer", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
 			state ("auto", label:'Summer', action: "summer", icon:"st.thermostat.auto")
             state ("summer", label:'Deactivite', action: "heat", icon:"st.custom.wuk.clear")
  		}
         main (["thermostat"])
-		details (["thermostat", "heatingSetpoint", "heatSliderControl", "thermostatMode", "boostLabel", "battery", "boostSliderControl", "boostSwitch", "refresh", "summer"])
+		details (["thermostat", "heatingSetpoint", "heatSliderControl", "thermostatMode", "boostLabel", "battery","batteryper","boostSliderControl", "boostSwitch", "refresh", "summer"])
 	}
 
 	preferences {
 //setting how often to refesh with miHome
-  		input (name: "refreshRate", title: "Refresh Rate", type: "enum", 
+  		input (name: "refreshRate", title: "Refresh Rate", type: "enum",
             options: [
             	"5":"Refresh every 5 minutes (eTRVs)",
                 "10":"Refresh every 10 minutes (power monitors)",
                 "15":"Refresh every 15 minutes (sockets)",
                 "30":"Refresh every 30 minutes",
                 "No":"Manual Refresh - Default (Sockets)"
-			], defaultValue: "No", required: false)
+			], defaultValue: "No", required: false) 			
 //setting for diplay format for last comunication/refresh
 		input (name: "checkinInfo", title: "Show last Check-in info", type: "enum",
             options: [
@@ -173,7 +194,7 @@ metadata {
                 "dd/MM/yyyy h:mm", 
                 "dd-MM-yyyy HH:mm", 
                 "h:mma dd/MM/yy"
-                ], defaultValue: "h:mma dd/MM/yy", required: false)
+                ], defaultValue: "h:mma dd/MM/yy", required: false)		
 //setting default boost to temp for device
         input (name: "emergencyheattemp", title: "Temp to boost to - 13 to 30", type: "number", range: "13..30", required: false) // description: "Boost aka cool to temp", required: false)
 //help descriptions
@@ -244,7 +265,7 @@ def heatingSetpointDown(){
 
 /// ============ Set temp ==================
 def setCoolingSetpoint(temp){
-	log.info "Set cooling setpoint temp of ${temp}, off to set heating setpoint "
+	log.info "Set cooling setpoint temp of ${temp}, sending temp value to setHeatingSetpoint"
 	setHeatingSetpoint(temp)
 }
 def setHeatingSetpoint(temp) {
@@ -270,14 +291,14 @@ def setHeatingSetpoint(temp) {
 		}
         if (state.counter < 5) {
         	state.counter = state.counter + 1
-        	sendEvent(name: "refresh", value: '', descriptionText: "error setting temp '$state.counter' try", isStateChange: true)
+        	sendEvent(name: "refresh", value: '', descriptionText: "error setting temp '${state.counter}' try", isStateChange: true)
         	log.warn "runnting set temp '${state.counter}' attempt"
         	runIn (7, errordelay,[data: [value: temp]])
         }
         else {
         	unschedule(errordelay) 			//clean up to prevent memory leak
        		unschedule(setHeatingSetpoint) 	//clean up to prevent memory leak
-        	sendEvent(name: "thermostat", value: 'offline', descriptionText: "error setting temp try '$state.counter' try. The device is offline", isStateChange: true)
+        	sendEvent(name: "thermostat", value: 'offline', descriptionText: "error setting temp try '${state.counter}' try. The device is offline", isStateChange: true)
             log.error "error setting temp try '${state.counter}' try. The device is offline"
             state.counter = 0
 		}
@@ -287,15 +308,15 @@ def setHeatingSetpoint(temp) {
         unschedule(setHeatingSetpoint) 		//clean up to prevent memory leak
         unschedule(stopBoost)				// leave hear so that if setting temp fails completely at least stopBoost will still be active
     	if (state.boostSwitch == 'emergencyHeat'){
-        def boosttill = new Date(now() + (state.boostLength * 60000)).format("HH:mma", location.timeZone)
-        state.boostLabel = "Boosting till $boosttill"
-        state.thermostatOperatingState  = 'cooling'
-        runIn(state.boostLength * 60, stopBoost)
+        	def boosttill = new Date(now() + (state.boostLength * 60000)).format("HH:mma", location.timeZone)
+        	state.boostLabel = "Boosting till ${boosttill}"
+        	state.thermostatOperatingState  = 'cooling'
+        	runIn(state.boostLength * 60, stopBoost)
         }
         else { //off / auto / heat
-        state.boostLabel = "${state.boostLength} Min Boost"
-        state.thermostatMode = state.summer == 'summer'  ? 'summer' : 'heat'
-        state.thermostatOperatingState  = 'heating'
+        	state.boostLabel = "${state.boostLength} Min Boost"
+        	state.thermostatMode = state.summer == 'summer'  ? 'summer' : 'heat'
+        	state.thermostatOperatingState  = 'heating'
         }
         state.counter = 0
         state.heatingSetpoint = resp.data.data.target_temperature
@@ -320,7 +341,7 @@ def errordelay(temp) { // delay resending of set temprature
 def setLastHeatingSetpoint(temp) { //this is to resume after off or boost
 	if (temp < 12 || temp > 30 ) {
     	state.lastHeatingSetPoint = 16
-    	log.warn "'${temp}' is out of 12-30 range set to 16"
+    	log.warn "'${temp}' is out of 12-30 range setting to 16"
     }
     else if (state.thermostatMode == 'emergencyHeat' || state.thermostatMode == 'cool' ) {
 		log.warn "emergencyHeat, temp not saved as its '${temp}'"
@@ -339,9 +360,8 @@ def setLastmode(mode) { 					//this is to resume after off or boost
     	log.warn "last mode was off and current mode is off, not saving twice = mode HEAT"
         state.lastmode = 'heat'
     }
-     
     else if (mode == null){ 				//heat and other modes
-    	log.warn " mode is NULL - mode = heat"
+    	log.warn "mode is NULL seting mode to heat"
         state.lastmode = 'heat'
     }
 	else {
@@ -379,6 +399,7 @@ def stopBoost() { 				//used for stop boots on mode
 	log.debug "Executing 'stopBoost'"
     state.summer = 'auto'
     sendEvent(name: "summer", value: state.summer, displayed: false)
+    state.boostLabel = "${state.boostLength} Min Boost"
     setThermostatMode(state.lastmode)
 }
 
@@ -414,7 +435,7 @@ def setThermostatMode(mode) { 	//requested mode NOT actualy in it yet - -google 
     	setLastHeatingSetpoint(device.currentValue('heatingSetpoint')) 	//save current set temp
         setLastmode(device.currentValue('thermostatMode')) 				//save current mode
         temp = 12
-        setHeatingSetpoint(temp)										//labels for boostswitch-stby and mode-off set in 'checkin' for == 12
+        setHeatingSetpoint(temp)										//labels for boostswitch-stby and mode-off are set in 'checkin' for == 12
     }
     else if (mode == 'emergencyHeat' || mode == 'cool') {
     	setLastHeatingSetpoint(device.currentValue('heatingSetpoint'))
@@ -459,30 +480,33 @@ def checkin() {
     	   	unschedule(stopBoost)
             state.boostSwitch = 'stby'
             state.thermostatMode = 'off'
-            state.boostLabel = "${state.boostLength Min Boost}"
+            state.boostLabel = "${state.boostLength} Min Boost"
             state.thermostatOperatingState  = 'idle' //might be for google
     }
 //bolt ons for google not sure which are needed
  	sendEvent(name: "thermostatOperatingState", value: state.thermostatOperatingState, displayed: false) 
-//deprecated// sendEvent(name: "thermostatSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)
 	sendEvent(name: "ThermostatSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)
 	sendEvent(name: "thermostatTemperatureSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)
 	sendEvent(name: "thermostatTemperatureAmbient", value: state.temperature, unit: "C", displayed: false)
 
 
 //main display stuff
-    sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true) 				//mode & off icon
+	if (state.batteryVoltage == null){
+    	state.batteryVoltage = '0'
+    }
+    state.battery = Math.round(((state.batteryVoltage-2.5)/0.7)*100)		// 0.7 is used to calculete %, ie diferance between max-min volts (3.2-2.5)
+    state.batteryVoltage = 	Math.round(state.batteryVoltage * 100)/100 		// *100)/100 to round to 2 decimal places
+
+	sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true) 				//mode & off icon
     sendEvent(name: "boostSwitch", value: state.boostSwitch, displayed: false)						// boost button
     sendEvent(name: "boostLabel", value: state.boostLabel, displayed: false) 						//change label back to boost time from start time        
    	sendEvent(name: "temperature", value: state.temperature, unit: "C")								// actual temp
     sendEvent(name: "heatingSetpoint", value: state.heatingSetpoint, unit: "C")						// set temp
     sendEvent(name: "coolingSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)	// set temp
-    sendEvent(name: "batteryVoltage", value: state.batteryVoltage == null ? "Not Available" : state.batteryVoltage, unit: "V")
-		def batper = Math.round((((state.batteryVoltage-2.5)/0.7)*100)) //0.7 is used to calculete %, ie diferance between max-min volts (3.2-2.5)
-	sendEvent(name: "battery", value: batper , unit: "%") 		
+    sendEvent(name: "batteryVoltage", value: state.batteryVoltage, unit: "V") 
+	sendEvent(name: "battery", value: state.battery, unit: "%") 
 
-    
-    def setmode = state.thermostatMode // for log info below
+def setmode = state.thermostatMode // for log info below
     if (state.thermostatMode == 'cool'){
     setmode = state.thermostatMode + ' (aka boost)'
     }
@@ -495,7 +519,7 @@ def checkin() {
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)    
     }
-	log.info "CHECKIN-${device}', MODE='${setmode}', TTemp='${state.heatingSetpoint}', ATemp='${state.temperature}', BOOST='${state.boostLabel}', BAT='${batper}%', @'${settings.refreshRate}' min refresh rate"
+	log.info "CHECKIN-${device}', MODE='${setmode}', TTemp='${state.heatingSetpoint}', ATemp='${state.temperature}', BOOST='${state.boostLabel}', BAT='${state.battery}%', @'${settings.refreshRate}' min refresh rate"
 }
 
 def refresh() {

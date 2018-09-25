@@ -148,7 +148,7 @@ def poll() {
     def resp = parent.apiGET("subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
 //log.debug "poll status- ${resp.status} data- ${resp.data}" 
     if (resp.status != 200) {
-		log.error "POLL for - $device - $resp.status Unexpected result"
+		log.error "POLL for - ${device} - ${resp.status} Unexpected result"
         sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
 	}
     else {
@@ -166,7 +166,7 @@ def checkin() {
         } catch (all) { }
     sendEvent(name: "lastCheckin", value: now, displayed: false)
     }
-    log.info "CHECKIN complete-'$device', '$state.Switch' @ '$settings.refreshRate' min refresh rate"
+    log.info "CHECKIN complete-'${device}', '${state.Switch}' @ '${settings.refreshRate}' min refresh rate"
 }
 
 def on() {
@@ -179,21 +179,21 @@ def on() {
     }
     def resp = parent.apiGET("subdevices/power_on?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
     if (resp.status != 200) {
-    		log.warn "ON - '$device' response -'$resp.status' - '$resp.data' Unexpected result"
+    		log.warn "ON - '${device}' response -'${resp.status}' - '${resp.data}' Unexpected result"
           	if (state.counter == null || state.counter >= 5) {
 				state.counter = 0
 			}
             if (state.counter < 5) {
             	state.counter = state.counter + 1
-        		sendEvent(name: "switch", value: "turningOn", descriptionText: "error turning on '$state.counter' try", isStateChange: true)
-        		log.warn "RERUN ON - '$device', '$state.counter' attempt"
+        		sendEvent(name: "switch", value: "turningOn", descriptionText: "error turning on '${state.counter}' try", isStateChange: true)
+        		log.warn "RERUN ON - '${device}', '${state.counter}' attempt"
         		runIn(13, on)
             }          
             else { 
-            	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning On '$state.counter' times. The on command was not actioned. The device is offline", isStateChange: true)
+            	sendEvent(name: "switch", value: "offline", descriptionText: "Error turning On '${state.counter}' times. The on command was not actioned. The device is offline", isStateChange: true)
                 unschedule(on)
                 state.counter = 0
-                log.error "ON ERROR - '$device' on command was not processed"
+                log.error "ON ERROR - '${device}' on command was not processed"
 			}
 	}
 	else {
@@ -201,7 +201,7 @@ def on() {
        	state.counter = 0
 //log.debug "power '$resp.data.data.power_state'"
         state.Switch = resp.data.data.power_state == true ? "on" : "off"
-        log.info "ON - '$device' '$state.Switch' all good '$resp.status'"
+        log.info "ON - '${device}' '${state.Switch}' all good '${resp.status}'"
     	checkin()
     }
 }
@@ -239,7 +239,7 @@ def off() {
         state.counter = 0
 //log.debug "power '$resp.data.data.power_state'"
         state.Switch = resp.data.data.power_state == true ? "on" : "off"
-        log.info "Off - '$device' '$state.Switch' all good '$resp.status'"
+        log.info "Off - '${device}' '${state.Switch}' all good '${resp.status}'"
     	checkin()
     }
 }
