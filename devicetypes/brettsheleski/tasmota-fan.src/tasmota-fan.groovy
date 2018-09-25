@@ -7,6 +7,8 @@ metadata {
         command "setFanSpeed1"
         command "setFanSpeed2"
         command "setFanSpeed3"
+        command "raiseFanSpeed"
+		command "lowerFanSpeed"
 
         // According to 
         //    https://docs.smartthings.com/en/latest/capabilities-reference.html#id33 
@@ -14,29 +16,29 @@ metadata {
         //    https://smartthings.developer.samsung.com/develop/api-ref/capabilities.html#Fan-Speed
         // this capability is currently only proposed.
         // Therefore I am not sure if this capability is even supported (yet)
-        capability "FanSpeed" 
+        capability "Fan Speed" 
 
         // if the above capability is already working, the following attribute definition may not be necessary
-        attribute "fanSpeed", "number"
+        //attribute "fanSpeed", "number"
 	}
 
 	// UI tile definitions
 	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "momentary.push", icon: "http://cdn.device-icons.smartthings.com/Lighting/light24-icn@2x.png", backgroundColor: "#79b821"
-				attributeState "off", label: '${name}', action: "momentary.push", icon: "http://cdn.device-icons.smartthings.com/Lighting/light24-icn@2x.png", backgroundColor: "#ffffff"
+		multiAttributeTile(name: "fanSpeed", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.fanSpeed", key: "PRIMARY_CONTROL") {
+				attributeState "0", label: "off", action: "switch.on", icon: "st.thermostat.fan-off", backgroundColor: "#ffffff"
+				attributeState "1", label: "low", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
+				attributeState "2", label: "medium", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
+				attributeState "3", label: "high", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
+			}
+			tileAttribute("device.fanSpeed", key: "VALUE_CONTROL") {
+				attributeState "VALUE_UP", action: "raiseFanSpeed"
+				attributeState "VALUE_DOWN", action: "lowerFanSpeed"
 			}
 		}
 
-        valueTile("fanSpeed", "fanSpeed", width: 3, height: 1) {
-			state "fanSpeed", label: 'Fan Speed: ${currentValue}', backgroundColor: "#ffffff"
-		}
-
-        // TODO: Add tiles to set fan speed to 0 (off), 1, 2, 3
-
-		main "name"
-		details(["name", "fanSpeed"])
+		main "switch"
+		details(["switch", "fanSpeed"])
 	}
 }
 
@@ -55,16 +57,19 @@ def push(){
 
     def speed = device.latestValue("fanSpeed");
 
+
     if (speed == 0){
+    	
         on();
     }
     else{
+    	
         off();
     }
 }
 
 def on(){
-
+log.debug "turning on"
     def speed = device.latestValue("fanSpeed");
 
     if (speed == 0){
@@ -73,6 +78,7 @@ def on(){
 }
 
 def off(){
+log.debug "turning off"
     fanSpeed(0);
 }
 
@@ -90,6 +96,14 @@ def setFanSpeed2(){
 
 def setFanSpeed3(){
     setFanSpeed(3);
+}
+
+def raiseFanSpeed() {
+	setFanSpeed(Math.min((device.currentValue("fanSpeed") as Integer) + 1, 3))
+}
+
+def lowerFanSpeed() {
+	setFanSpeed(Math.max((device.currentValue("fanSpeed") as Integer) - 1, 0))
 }
 
 def setFanSpeed(int speed){
