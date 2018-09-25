@@ -18,56 +18,55 @@ metadata {
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
-        
-        attribute "lastUpdated", "String"
+		
+		attribute "lastUpdated", "String"
 	}
 
-
 	tiles(scale: 2) {
-        standardTile("switchLogo", "device.switchLogo", inactiveLabel: true, decoration: "flat", width: 1, height: 1) {
-            state "default", label:'', icon: "http://cdn.device-icons.smartthings.com/Electronics/electronics14-icn@2x.png"
-        }
-        valueTile("lastUpdated", "device.lastUpdated", decoration: "flat", width: 5, height: 1) {
-        	state "default", label:'Last updated ${currentValue}'
-        }
-        multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-            tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label: '${name}', action: "switch.off", icon: "http://cdn.device-icons.smartthings.com/Electronics/electronics14-icn@2x.png", backgroundColor: "#00A0DC"
-                attributeState "off", label: '${name}', action: "switch.on", icon: "http://cdn.device-icons.smartthings.com/Electronics/electronics14-icn@2x.png", backgroundColor: "#ffffff"
-            } 
-            tileAttribute("device.level", key: "SLIDER_CONTROL") {
+		standardTile("switchLogo", "device.switchLogo", inactiveLabel: true, decoration: "flat", width: 1, height: 1) {
+			state "default", label:'', icon: "http://cdn.device-icons.smartthings.com/Electronics/electronics14-icn@2x.png"
+		}
+		valueTile("lastUpdated", "device.lastUpdated", decoration: "flat", width: 5, height: 1) {
+			state "default", label:'Last updated ${currentValue}'
+		}
+		multiAttributeTile(name: "switch", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label: '${name}', action: "switch.off", icon: "http://cdn.device-icons.smartthings.com/Electronics/electronics14-icn@2x.png", backgroundColor: "#00A0DC"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "http://cdn.device-icons.smartthings.com/Electronics/electronics14-icn@2x.png", backgroundColor: "#ffffff"
+			} 
+			tileAttribute("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action: "switch level.setLevel"
 			}
-        }
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+		}
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
 			state "refresh", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-        valueTile("level", "device.level", inactiveLabel: false, decoration: "flat", width: 5, height: 1) {
+		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat", width: 5, height: 1) {
 			state "level", label: '${currentValue} %', unit: "%", backgroundColor: "#ffffff"
 		}
-    }
+	}
 }
 
 def parse(description) {
-    def cmd = zwave.parse(description)
-    log.debug "encap cmd: ${description}"
-    
+	def cmd = zwave.parse(description)
+	log.debug "encap cmd: ${description}"
+	
 	if (description.startsWith("Err")) {
 		createEvent(descriptionText: description, isStateChange:true)
 	} else if (description != "updated") {
-        zwaveEvent(cmd)
-        
-        def nowDay = new Date().format("MMM dd", location.timeZone)
-    	def nowTime = new Date().format("h:mm a", location.timeZone)
-    	sendEvent(name: "lastUpdated", value: nowDay + " at " + nowTime, displayed: false)
-    }
+		zwaveEvent(cmd)
+		
+		def nowDay = new Date().format("MMM dd", location.timeZone)
+		def nowTime = new Date().format("h:mm a", location.timeZone)
+		sendEvent(name: "lastUpdated", value: nowDay + " at " + nowTime, displayed: false)
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
 	def switchState = cmd.value > 0 ? "on" : "off" 
 	
-    sendEvent(name: "level", value: "Last value: ${cmd.value}")
-    sendEvent(name: "switch", value: switchState)
+	sendEvent(name: "level", value: "Last value: ${cmd.value}")
+	sendEvent(name: "switch", value: switchState)
 }
 
 def refresh() {
