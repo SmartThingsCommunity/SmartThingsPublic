@@ -59,7 +59,11 @@ metadata {
         command "modeDry"
         command "modeFan"
         command "modeAuto"
-        command "fullfan"
+        command "lowfan"
+        command "mediumfan"
+        command "highfan"
+        command "quietfan"
+        command "strongfan"
         command "autofan"
         command "fullswing"        
 	}
@@ -217,8 +221,8 @@ metadata {
         standardTile("fanmode", "device.thermostatMode",  width: 1, height: 1) {
        		state "heat", action:"modeFan", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/n1dhpk/status_message_fan.png"
         }        
-        standardTile("fullfan", "device.fanLevel",  width: 1, height: 1) {
-       		state "high", action:"fullfan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/fcfFaQ/fan_high_2.png"
+        standardTile("highfan", "device.fanLevel",  width: 1, height: 1) {
+       		state "high", action:"highfan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/fcfFaQ/fan_high_2.png"
         }
         standardTile("autofan", "device.fanLevel",  width: 1, height: 1) {
        		state "auto", action:"autofan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/m8oq9k/fan_auto_2.png"
@@ -228,7 +232,7 @@ metadata {
         }
         
 		main (["switch"])
-		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh","coolmode","heatmode","fanmode","drymode","fullfan","autofan","fullswing","powerSource","firmwareVersion","productModel"])    
+		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh","coolmode","heatmode","fanmode","drymode","highfan","autofan","fullswing","powerSource","firmwareVersion","productModel"])    
 	}
 }
 
@@ -272,10 +276,34 @@ def setAll(newMode,temp,fan)
     }
 }
 
-def fullfan()
+def lowfan()
 {
-	log.trace "fullfan() called"
+	log.trace "lowfan() called"
+	dfanLevel("low")
+}
+
+def mediumfan()
+{
+	log.trace "mediumfan() called"
+	dfanLevel("medium")
+}
+
+def highfan()
+{
+	log.trace "highfan() called"
 	dfanLevel("high")
+}
+
+def quietfan()
+{
+	log.trace "quietfan() called"
+	dfanLevel("quiet")
+}
+
+def strongfan()
+{
+	log.trace "strongfan() called"
+	dfanLevel("strong")
 }
 
 def autofan()
