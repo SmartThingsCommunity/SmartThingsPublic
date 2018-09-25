@@ -1,7 +1,7 @@
 /**
  *  Z-Uno Handler
  *
- *  Copyright 2018 Alexander Belov
+ *  Copyright 2018 Alexander Belov, Z-Wave.Me
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -18,11 +18,11 @@ metadata {
         capability "Refresh"
         capability "Configuration"
       
-        command "debug"
         command "associationSet"
         command "parentCommand"
                 
-        fingerprint mfr: "0115", prod: "0110", model: "0001", inClusters: "0x60"    
+        fingerprint mfr: "0115", prod: "0110", model: "0001", inClusters: "0x60"
+        fingerprint mfr: "0115", prod: "0111", inClusters: "0x60"
 	}
 
 	tiles (scale: 2) {
@@ -30,15 +30,11 @@ metadata {
         standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "configure", label:'Update devices', action:"configure", icon:"st.secondary.tools"
         }
-        standardTile("associationSet","device.associationSet", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
-        	state "associationSet", label:'Association set', action:"associationSet", icon:"st.secondary.tools"
-        }
         main ([configure])
     }    
 }
 
 def parse(String description) {
-
 	def msg = zwave.parse(description)?.format()
     def parts = []
     def name = ""
@@ -60,13 +56,12 @@ def parse(String description) {
 	result
 }
 
-def installed(){
+def installed() {
 	command(zwave.multiChannelV3.multiChannelEndPointGet())
 }
 
 // EVENTS
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd) {
 	def epc = cmd.endPoints
     def cmds = []
     state.epc = epc
@@ -75,20 +70,15 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
         cmds << command(zwave.multiChannelV3.multiChannelCapabilityGet(endPoint: i))
   	}
 
-	def event = createEvent(descriptionText: "${device.displayName} have $epc EndPoints")
-
-    log.debug "${device.displayName} have $epc EndPoints"
-    [event, response(cmds)]
+    [response(cmds)]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd)
-{
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilityReport cmd) {
 	def cc = cmd.commandClass
     def ep = cmd.endPoint
     def needCreate = null
-    if (!childDevices.find{ it.deviceNetworkId.endsWith("-ep${ep}") }) {
-        createChildDevices(cc, ep)
-    } else if (!childDevices) {
+    
+    if (!childDevices.find{ it.deviceNetworkId.endsWith("-ep${ep}") || !childDevices}) {
         createChildDevices(cc, ep)
     }
 }
@@ -96,6 +86,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	def ep = cmd.sourceEndPoint
     def childDevice = null
+    
     childDevices.each {
     	if (it.deviceNetworkId =="${device.deviceNetworkId}-ep${ep}") {
         	childDevice = it
@@ -109,85 +100,81 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
         log.debug "Child device not found.cmd: ${cmd}"
     }
 }
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {}
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {}
-def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {}
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {}
-def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {}
-def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {}
+
+// To ignore reports from channel 0
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) 	{ createEvent(descriptionText: "Unallocated Sensor Multilevel Report: $cmd.scaledValue") }
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) 			{ createEvent(descriptionText: "Unallocated Switch Binary Report: $cmd.value") }
+def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) 	{ createEvent(descriptionText: "Unallocated Switch Multilevel Report: $cmd.value") }
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) 						{ createEvent(descriptionText: "Unallocated Meter Report: $cmd.scaledMeterValue") }
+def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) 			{ createEvent(descriptionText: "Unallocated Sensor Binary Report: cmd.event") }
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd)  		{ createEvent(descriptionText: "Unallocated Notification Report: cmd.event") }
 
 // handle commands
-private void createChildDevices(def cc, def ep) {
-	try
-    {
+void createChildDevices(def cc, def ep) {
+	try {
     	def deviceCCHandler = ""
         def deviceCCType = ""
-        for (def i = 1; i <= cc.size(); i++) {
-            switch (cc[i - 1]) {
+        
+        for (def i = 0; i < cc.size(); i++) {
+            switch (cc[i]) {
                 case 0x26: 
-                	deviceCCType = "Multilevel Switch"
-                	deviceCCHandler = "Child Multilevel Switch"
-                	log.debug "case '0x26'"
-                	break;
+                    deviceCCType = "Multilevel Switch"
+                    deviceCCHandler = "Child Multilevel Switch"
+                    break
+                    
                 case 0x25: 
-                	deviceCCType =  "Binary Switch"
-                	deviceCCHandler = "Child Binary Switch"
-                    log.debug "case '0x25'"
-                    break;
+                    deviceCCType =  "Binary Switch"
+                    deviceCCHandler = "Child Binary Switch"
+                    break
+                    
                 case 0x31: 
-                	deviceCCType = "Multilevel Sensor"
-                	deviceCCHandler = "Child Multilevel Sensor"
-                    log.debug "case '0x31'"
-                    break;
+                    deviceCCType = "Multilevel Sensor"
+                    deviceCCHandler = "Child Multilevel Sensor"
+                    break
+                    
                 case 0x32:
-                	deviceCCType = "Meter"
+                    deviceCCType = "Meter"
                     deviceCCHandler = "Child Meter"
-                    log.debug "case '0x32'"
-                    break;	
+                    break
+                    
                 case 0x71: 
-               		deviceCCType = "Notification"
-                	deviceCCHandler = "Child Notification"
-                    log.debug "case '0x71'"
-                    break;
-                case 0x40:
-                	deviceCCType = "Thermostat"
-                	deviceCCHandler = "Child Thermostat"
-                    log.debug "case '0x40'"
-                    break;
+               	    deviceCCType = "Notification"
+                    deviceCCHandler = "Child Notification"
+                    break
+                    
+                case 0x40:                    
                 case 0x43: 
-                	deviceCCType = "Thermostat"
-                	deviceCCHandler = "Child Thermostat"
-                    log.debug "case '0x43'"
-                    break;
+                    deviceCCType = "Thermostat"
+                    deviceCCHandler = "Child Thermostat"
+                    break
 
                 default:
                     log.debug "No Child Device Handler case for command class: '$cc'"
         	}
-			if(deviceCCHandler != "") 
-        		break;
+            
+			// stop on the first matched CC
+			if (deviceCCHandler != "") break
         }
         
-        if(deviceCCHandler != "") {
-        	try {
+        if (deviceCCHandler != "") {
+            try {
             	addChildDevice(deviceCCHandler, "${device.deviceNetworkId}-ep${ep}", null,
-            				[completedSetup: true, label: "${deviceCCType}-${ep}", 
-                             isComponent: false, componentName: "${deviceCCType}-${ep}", componentLabel: "${deviceCCType}-${ep}"])
-            }
-        	catch (e) {
-            log.error "Creation child devices failed with error = ${e}"
+            					[completedSetup: true, label: "${deviceCCType}-${ep}", 
+                            	isComponent: false, componentName: "${deviceCCType}-${ep}", componentLabel: "${deviceCCType}-${ep}"])
+            } catch (e) {
+            	log.error "Creation child devices failed with error = ${e}"
             }
         }
         
         associationSet()
-    }
-    catch (e) {
+    } catch (e) {
         log.error "Child device creation failed with error = ${e}"
     }
 }
 
 def associationSet() {
-	def cmds = []
-	def multiChannelAssociationCC = 		"8E"
+    def cmds = []
+    def multiChannelAssociationCC = 		"8E"
     def setCmd = 							"01"
 	def groupingIdentifier = 				"01"
     def marker = 							"00"
@@ -200,49 +187,47 @@ def associationSet() {
 }
 
 def command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
+    if (state.sec) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
+    } else {
 		cmd.format()
-	}
+    }
 }
 
 def parentCommand(def cmd) {
-	"${cmd}"
+    "${cmd}"
 }
 
 def encap(def source, def destination, def cmd) {
-	def result = null
-    if (source || destination) {
-        def multiChannel = 						"60"
-        def cmdEncap =			 				"0D"
-        def sourceEP = 							prependZero(source)
-        def destinationEP = 					prependZero(destination)
+    def multiChannel = 						"60"
+    def cmdEncap =			 				"0D"
+    def sourceEP = 							prependZero(source)
+    def destinationEP = 					prependZero(destination)
 
-		result = "${multiChannel}${cmdEncap}${sourceEP}${destinationEP}${cmd}"
-	}
-    return result
+    return "${multiChannel}${cmdEncap}${sourceEP}${destinationEP}${cmd}"
 }
 
 def extractEP(def s) {
-	def result = null
-	if (contains(s, "-")) {
+    def result = null
+    
+    if (contains(s, "-")) {
     	result = s.substring(s.length() - (s.indexOf("-") - 1)) 
     }
-	return result as Integer
+    return result as Integer
 }
 
-private boolean contains(def s, def ss) {
-    boolean contains = false
+boolean contains(def s, def ss) {
+    boolean result = false
+    
     if (s != null && !s.isEmpty()) {
-		contains = s.matches(".*${ss}.*")
+		result = s.matches(".*${ss}.*")
     }
-    return contains
+    return result
 }
 
 def prependZero(def s) {
-	if (s > 9) 
-    	return s
+    if (s > 9)
+	    return s
     else
     	return "0$s"
 }
