@@ -17,7 +17,6 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 	definition (name: "ZigBee Accessory Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", runLocally: false, minHubCoreVersion: '000.019.00012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-dimmer") {
 		capability "Actuator"
-		capability "Configuration"
 		capability "Switch"
 		capability "Button"
 		capability "Switch Level"
@@ -66,7 +65,7 @@ def parse(String description) {
 				log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
 			}
 		} else if (descMap && descMap.clusterInt == 0x0008) {
-			def currentLevel = device.currentValue("level") as Integer
+			def currentLevel = device.currentValue("level") as Integer ?: 0
 			if (descMap.commandInt == 0x02) {
 				def value = Math.min(currentLevel + STEP, 100)
 				log.debug "move to ${descMap.data}"
@@ -77,19 +76,16 @@ def parse(String description) {
 				} else if (descMap.data[0] == "01") {
 					log.debug "move down"
 					value = Math.max(currentLevel - STEP, 0)
-					sendEvent(name: "level", value: value)
+					// don't change level if switch will be turning off
 					if (value == 0) {
 						sendEvent(name: "switch", value: "off")
+					} else {
+						sendEvent(name: "level", value: value)
 					}
 				}
 			} else if (descMap.commandInt == 0x01) {
-//				def step = descMap.data[0] == "00" ? 10 : -10
 				sendEvent(name: "level", value: descMap.data[0] == "00" ? 100 : STEP)
 				sendEvent(name: "switch", value: "on" )
-//				def events = []
-//                for (currentLevel..target).step(step).each{
-//					events << createEvent(name: "level", value: currentLevel + it)
-//				}
 				log.debug "step to ${descMap.data}"
 			} else if (descMap.commandInt == 0x03) {
 				log.debug "stop move"
@@ -108,14 +104,11 @@ def parse(String description) {
 }
 
 def off() {
-	sendEvent(name: "switch", value: "off")
+	sendEvent(name: "switch", value: "off", isStateChange: true)
 }
 
 def on() {
-	if (device.currentValue("level") == 0) {
-		sendEvent(name: "level", value: STEP)
-	}
-	sendEvent(name: "switch", value: "on")
+	sendEvent(name: "switch", value: "on", isStateChange: true)
 }
 
 def setLevel(value) {
@@ -127,16 +120,4 @@ def installed() {
 	sendEvent(name: "switch", value: "off", isStateChange: false, displayed: false)
 	sendEvent(name: "level", value: 0, isStateChange: false, displayed: false)
 	sendEvent(name: "button", value: "pressed", isStateChange: false, displayed: false)
-}
-
-def configure() {
-	log.debug "Configuring Reporting, IAS CIE, and Bindings."
-	def cmds = []
-	return zigbee.onOffConfig() +
-			zigbee.levelConfig() +
-			//zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x20, DataType.UINT8, 30, 21600, 0x01) +
-			//zigbee.enrollResponse() +
-			//zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x20) +
-			zigbee.configureReporting(0x0005, 0x0001, DataType.UINT8, 1, 3600, null)
-	cmds
 }
