@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Child Notification", namespace: "baadev", author: "Alexander Belov") {
+	definition (name: "Child Notification", namespace: "z-wave-me", author: "Alexander Belov") {
 		capability "Notification"
 		capability "Refresh"
 		

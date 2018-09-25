@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Child Meter", namespace: "baadev", author: "Alexander Belov") {
+	definition (name: "Child Meter", namespace: "z-wave-me", author: "Alexander Belov") {
 		capability "Refresh"
 		
 		command "reset"

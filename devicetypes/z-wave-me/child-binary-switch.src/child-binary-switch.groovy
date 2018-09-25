@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Child Binary Switch", namespace: "baadev", author: "Alexander Belov") {
+	definition (name: "Child Binary Switch", namespace: "z-wave-me", author: "Alexander Belov") {
 		capability "Switch"
 		capability "Refresh"
 				

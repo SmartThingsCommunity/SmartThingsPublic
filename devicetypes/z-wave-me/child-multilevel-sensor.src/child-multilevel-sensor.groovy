@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Child Multilevel Sensor", namespace: "baadev", author: "Alexander Belov") {		
+	definition (name: "Child Multilevel Sensor", namespace: "z-wave-me", author: "Alexander Belov") {
 	
 		capability "Temperature Measurement"
 		capability "Sensor"

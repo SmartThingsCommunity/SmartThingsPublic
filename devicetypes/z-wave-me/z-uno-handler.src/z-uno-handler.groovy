@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Uno Handler", namespace: "baadev", author: "Alexander Belov") {
+	definition (name: "Z-Uno Handler", namespace: "z-wave-me", author: "Alexander Belov") {
 		capability "Refresh"
 		capability "Configuration"
 	  

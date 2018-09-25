@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Child Multilevel Switch", namespace: "baadev", author: "Alexander Belov") {
+	definition (name: "Child Multilevel Switch", namespace: "z-wave-me", author: "Alexander Belov") {
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
