@@ -1,7 +1,7 @@
 /**
  *  Child Meter
  *
- *  Copyright 2018 Alexander Belov
+ *  Copyright 2018 Alexander Belov, Z-Wave.Me
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -60,7 +60,7 @@ def parse(def description) {
     def cmd = zwave.parse(description)
     
 	if (description.startsWith("Err")) {
-		result = createEvent(descriptionText: description, isStateChange:true)
+		createEvent(descriptionText: description, isStateChange:true)
 	} else if (description != "updated") {
         zwaveEvent(cmd)
         
@@ -98,7 +98,7 @@ def refresh() {
 }
 
 def setLabels(def meterType, def scale, def rateType) {    
-    switch(meterType) {
+    switch (meterType) {
     	case 1:
         	state.type = "Electric meter"
         	if (scale == 0)
@@ -115,11 +115,10 @@ def setLabels(def meterType, def scale, def rateType) {
             	state.typeLetter = "a"
         	else if (scale == 6)
             	state.typeLetter = "p.f."
-        	else if (scale == 7)
-            	state.typeLetter = "mst"
            	break
             
     	case 2:
+        //TODO: convert
         	state.type = "Gas meter"
         	if (scale == 0)
             	state.typeLetter = "m³"
@@ -130,6 +129,7 @@ def setLabels(def meterType, def scale, def rateType) {
         	break
             
     	case 3:
+        //TODO: convert
         	state.type = "Water meter"
             if (scale == 0)
             	state.typeLetter = "m³"
@@ -139,8 +139,6 @@ def setLabels(def meterType, def scale, def rateType) {
             	state.typeLetter = "gal"
         	else if (scale == 3)
             	state.typeLetter = "p.c."
-        	else if (scale == 7) 
-            	state.typeLetter = "mst"
            	break
             
         default:
@@ -148,7 +146,7 @@ def setLabels(def meterType, def scale, def rateType) {
     }
     
     // not used in Z-Uno
-    if(rateType) {
+    if (rateType) {
         switch (rateType) {
             case 0:
                 state.rateType = "Unspecified"
@@ -164,5 +162,6 @@ def setLabels(def meterType, def scale, def rateType) {
                 log.debug "Wrong rateType:'${rateType}'"
         }
     }
+    
   	sendEvent(name: "meterType", value: state.type)
 }
