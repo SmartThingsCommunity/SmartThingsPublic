@@ -1,44 +1,44 @@
 metadata {
-	definition(name: "Tasmota-Fan", namespace: "BrettSheleski", author: "Brett Sheleski", ocfDeviceType: "oic.d.smartplug") {
-		capability "Switch" // on(), off() commands
-        capability "Momentary" // push() command
+	definition(name: "Tasmota-Fan", namespace: "BrettSheleski", author: "Brett Sheleski", ocfDeviceType: "oic.d.fan") {
+		capability "Switch"
+        capability "Momentary"
+        capability "Fan Speed"
 
         command "setFanSpeed0"
         command "setFanSpeed1"
         command "setFanSpeed2"
         command "setFanSpeed3"
         command "raiseFanSpeed"
-		command "lowerFanSpeed"
+		command "lowerFanSpeed"        
 
-        // According to 
-        //    https://docs.smartthings.com/en/latest/capabilities-reference.html#id33 
-        //    and 
-        //    https://smartthings.developer.samsung.com/develop/api-ref/capabilities.html#Fan-Speed
-        // this capability is currently only proposed.
-        // Therefore I am not sure if this capability is even supported (yet)
-        capability "Fan Speed" 
-
-        // if the above capability is already working, the following attribute definition may not be necessary
-        //attribute "fanSpeed", "number"
+        command "turnOn"
+        command "turnOff"
+        command "togglePower"
 	}
 
 	// UI tile definitions
 	tiles(scale: 2) {
-		multiAttributeTile(name: "fanSpeed", type: "generic", width: 6, height: 4, canChangeIcon: true) {
-			tileAttribute("device.fanSpeed", key: "PRIMARY_CONTROL") {
-				attributeState "0", label: "off", action: "switch.on", icon: "st.thermostat.fan-off", backgroundColor: "#ffffff"
-				attributeState "1", label: "low", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
-				attributeState "2", label: "medium", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
-				attributeState "3", label: "high", action: "switch.off", icon: "st.thermostat.fan-on", backgroundColor: "#00a0dc"
-			}
-			tileAttribute("device.fanSpeed", key: "VALUE_CONTROL") {
-				attributeState "VALUE_UP", action: "raiseFanSpeed"
-				attributeState "VALUE_DOWN", action: "lowerFanSpeed"
-			}
-		}
+        multiAttributeTile(name:"fanSpeed", type:"generic", width:6, height:4) {
+            tileAttribute("device.fanSpeed", key: "PRIMARY_CONTROL") {
+                attributeState "0", label: "off", action: "switch.on", backgroundColor: "#ffffff"
+				attributeState "1", label: "low", action: "switch.off", backgroundColor: "#00a0dc"
+				attributeState "2", label: "medium", action: "switch.off", backgroundColor: "#00a0dc"
+				attributeState "3", label: "high", action: "switch.off", backgroundColor: "#00a0dc"
+            }
+            tileAttribute("device.switch", key: "SECONDARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.thermostat.fan-on", backgroundColor:"#00A0DC", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.thermostat.fan-off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'…', action:"switch.off", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOff", label:'…', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+            tileAttribute("device.fanSpeed", key: "VALUE_CONTROL") {
+                attributeState "VALUE_UP", action: "raiseFanSpeed"
+                attributeState "VALUE_DOWN", action: "lowerFanSpeed"
+            }
+        }
 
-		main "switch"
-		details(["switch", "fanSpeed"])
+		main "fanSpeed"
+		details(["fanSpeed"])
 	}
 }
 
@@ -51,12 +51,11 @@ def updateStatus(status){
     // update the status of this device accordingly
 }
 
-def push(){
+def push() {
     // if on, then off()
     // else setFanSpeed(lastFanSpeed)
 
     def speed = device.latestValue("fanSpeed");
-
 
     if (speed == 0){
     	
@@ -68,8 +67,8 @@ def push(){
     }
 }
 
-def on(){
-log.debug "turning on"
+def on() {
+    log.debug "ON"
     def speed = device.latestValue("fanSpeed");
 
     if (speed == 0){
@@ -77,8 +76,8 @@ log.debug "turning on"
     }
 }
 
-def off(){
-log.debug "turning off"
+def off() {
+    log.debug "OFF"
     fanSpeed(0);
 }
 
@@ -110,7 +109,7 @@ def setFanSpeed(int speed){
     log.debug "Setting Fan Speed to: $speed"
 
 	def commandName = "FanSpeed";
-	def payload = speed;
+	def payload = "$speed";
 
 	log.debug "COMMAND: $commandName ($payload)"
 
