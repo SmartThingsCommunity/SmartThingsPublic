@@ -31,8 +31,8 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 000F, 0B04", outClusters: "0019", manufacturer: "SmartThings", model: "outletv4", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0006,0009,0B04", outClusters: "0019", manufacturer: "Samjin", model: "outlet", deviceJoinName: "Outlet"
-		fingerprint profileId: "0010", inClusters: "0000 0003 0004 0005 0006 0008 0702 0B05", outClusters: "0019", manufacturer: "innr", model: "SP 120", deviceJoinName: "Outlet" 
-
+		fingerprint profileId: "0010", inClusters: "0000 0003 0004 0005 0006 0008 0702 0B05", outClusters: "0019", manufacturer: "innr", model: "SP 120", deviceJoinName: "Outlet"
+		fingerprint profileId: "0104", inClusters: "0000,0002,0003,0004,0005,0006,0009,0B04,0702", outClusters: "0019,000A,0003,0406", manufacturer: "Aurora", model: "SmartPlug51AU", deviceJoinName: "Aurora SmartPlug"
 	}
 
 	// simulator metadata
