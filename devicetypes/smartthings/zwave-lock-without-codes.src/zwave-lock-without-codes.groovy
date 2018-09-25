@@ -23,8 +23,8 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-    //zw:Fs type:4003 mfr:033F prod:0001 model:0001 ver:1.59 zwv:4.61 lib:03 cc:5E,55,98,9F,72 sec:86,5A,73,80,62,85,71,8E,59,6C,7A role:07 ff:8300 ui:8300
-    fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Smart Lock Pro"
+		//zw:Fs type:4003 mfr:033F prod:0001 model:0001 ver:1.59 zwv:4.61 lib:03 cc:5E,55,98,9F,72 sec:86,5A,73,80,62,85,71,8E,59,6C,7A role:07 ff:8300 ui:8300
+		fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Smart Lock Pro"
 		fingerprint mfr: "010E", prod: "0009", model: "0001", deviceJoinName: "Danalock V3 Smart Lock"
 		fingerprint mfr: "0090", prod: "0003", model: "0446", deviceJoinName: "Kwikset Convert Deadbolt Door Lock" //99140
 	}
