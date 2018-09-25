@@ -25,7 +25,7 @@ metadata {
 		command "reset"
 
 		fingerprint mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
-		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aoetec Nano Switch 1"
+		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
 	}
 
 	tiles(scale: 2){
