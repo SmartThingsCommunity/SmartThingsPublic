@@ -68,13 +68,17 @@ def parse(String description) {
 		result = zwaveEvent(cmd)
 		
 		if(result!=null) {
-			createEvent(result)
+			//device sends 'OK' message when is plugged in
+			if(!result.contains('OK')) {
+				createEvent(result)
+			}
 		}
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {	
 	createEvents(cmd.value)
+	sendHubCommand(refresh())
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
