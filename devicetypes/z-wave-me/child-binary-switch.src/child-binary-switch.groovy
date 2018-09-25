@@ -1,7 +1,7 @@
 /**
  *  Child Binary Switch
  *
- *  Copyright 2018 Alexander Belov
+ *  Copyright 2018 Alexander Belov, Z-Wave.Me
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -21,7 +21,7 @@ metadata {
         attribute "lastUpdated", "String"
 	}
     preferences {
-            input "switchReverse", "enum", title: "Switch state revers from ON to OFF and from OFF to ON", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"none"], ["2":"Reverse on"]], displayDuringSetup: false
+            input "switchRevert", "enum", title: "Revert switch state", description: "", defaultValue: "1", required: true, multiple: false, options:[["1":"Don't revert"], ["2":"Revert"]], displayDuringSetup: false
     }
 	tiles(scale: 2) {
         standardTile("switchLogo", "device.switchLogo", inactiveLabel: true, decoration: "flat", width: 1, height: 1) {
@@ -47,7 +47,7 @@ def parse(def description) {
     def cmd = zwave.parse(description)
     
 	if (description.startsWith("Err")) {
-		result = createEvent(descriptionText: description, isStateChange:true)
+		createEvent(descriptionText: description, isStateChange:true)
 	} else if (description != "updated") {
         zwaveEvent(cmd)
         
@@ -58,9 +58,8 @@ def parse(def description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	def switchState = cmd.value > 0 ? "on" : "off" 
-    if (switchReverse == 2) switchState = cmd.value > 0 ? "off" : "on"  
-    
+	def switchState = ((cmd.value > 0) ^ (switchRevert == 2)) ? "on" : "off" 
+        
     sendEvent(name: "switch", value: switchState)
 }
 
@@ -69,16 +68,16 @@ def refresh() {
 }
 
 def on() {
-	def value = 0xFF
-    if (switchReverse == 2) value = 0x00  
+	def value = switchRevert == 1 ? 0xFF : 0x00
+
 	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: value).format()))
     
 	refresh()
 }
 
 def off() {
-	def value = 0x00
-    if (switchReverse == 2)	value = 0xFF  
+	def value = switchRevert == 1 ? 0x00 : 0xFF
+    
 	parent.parentCommand(parent.encap(zwaveHubNodeId, parent.extractEP(device.deviceNetworkId), zwave.switchBinaryV1.switchBinarySet(switchValue: value).format()))
     
 	refresh()
