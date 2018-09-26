@@ -15,7 +15,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZigBee Accessory Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", runLocally: false, minHubCoreVersion: '000.019.00012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-dimmer") {
+	definition (name: "ZigBee Accessory Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mnmn: "SmartThings", vid: "generic-dimmer") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Button"
@@ -113,6 +113,7 @@ def on() {
 
 def setLevel(value) {
 	if (value != 0) sendEvent(name: "switch", value: "on")
+	else if (value == 0) sendEvent(name: "switch", value: "off")
 	sendEvent(name: "level", value: value)
 }
 
