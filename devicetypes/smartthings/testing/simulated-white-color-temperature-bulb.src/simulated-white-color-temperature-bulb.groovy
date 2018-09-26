@@ -35,7 +35,7 @@ import groovy.transform.Field
 ]
 
 metadata {
-    definition (name: "Simulated White Color Temperature Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+    definition (name: "Simulated White Color Temperature Bulb", namespace: "smartthings/testing", author: "SmartThings", ocfDeviceType: "oic.d.light") {
         capability "HealthCheck"
         capability "Actuator"
         capability "Sensor"
@@ -53,6 +53,9 @@ metadata {
         attribute  "bulbValue", "STRING"
         attribute  "colorIndicator", "NUMBER"
         command    "simulateBulbState"
+
+        command    "markDeviceOnline"
+        command    "markDeviceOffline"
     }
 
     // UI tile definitions
@@ -61,8 +64,8 @@ metadata {
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#FFFFFF", nextState:"turningOn"
-                attributeState "turningOn", label:'Turning On', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"on"
-                attributeState "turningOff", label:'Turning Off', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#FFFFFF", nextState:"off"
+                attributeState "turningOn", label:'Turning On', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#FFFFFF", nextState:"on"
+                attributeState "turningOff", label:'Turning Off', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#00A0DC", nextState:"off"
             }
 
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
@@ -130,8 +133,15 @@ metadata {
             state "default", label: "Reset", action: "configure"
         }
 
+        standardTile("deviceHealthControl", "device.healthStatus", decoration: "flat", width: 2, height: 2, inactiveLabel: false) {
+            state "online",  label: "ONLINE", backgroundColor: "#00A0DC", action: "markDeviceOffline", icon: "st.Health & Wellness.health9", nextState: "goingOffline", defaultState: true
+            state "offline", label: "OFFLINE", backgroundColor: "#E86D13", action: "markDeviceOnline", icon: "st.Health & Wellness.health9", nextState: "goingOnline"
+            state "goingOnline", label: "Going ONLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+            state "goingOffline", label: "Going OFFLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+        }
+
         main(["switch"])
-        details(["switch", "colorTempControlLabel", "colorTempControlSlider", "bulbValue", "colorIndicator", "refresh", "reset"])
+        details(["switch", "colorTempControlLabel", "colorTempControlSlider", "bulbValue", "colorIndicator", "deviceHealthControl", "refresh", "reset"])
     }
 }
 
@@ -159,7 +169,7 @@ def parse(String description) {
 
 def installed() {
     log.trace "Executing 'installed'"
-    initialize()
+    configure()
     done()
 }
 
@@ -189,6 +199,12 @@ def refresh() {
 
 def configure() {
     log.trace "Executing 'configure'"
+    // this would be for a physical device when it gets a handler assigned to it
+
+    // for HealthCheck
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    markDeviceOnline()
+
     initialize()
     done()
 }
@@ -232,14 +248,29 @@ def setColorTemperature(kelvin) {
     done()
 }
 
+def markDeviceOnline() {
+    setDeviceHealth("online")
+}
+
+def markDeviceOffline() {
+    setDeviceHealth("offline")
+}
+
+private setDeviceHealth(String healthState) {
+    log.debug("healthStatus: ${device.currentValue('healthStatus')}; DeviceWatch-DeviceStatus: ${device.currentValue('DeviceWatch-DeviceStatus')}")
+    // ensure healthState is valid
+    List validHealthStates = ["online", "offline"]
+    healthState = validHealthStates.contains(healthState) ? healthState : device.currentValue("healthStatus")
+    // set the healthState
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: healthState)
+    sendEvent(name: "healthStatus", value: healthState)
+}
+
 /**
  * initialize all the attributes and state variable
  */
 private initialize() {
     log.trace "Executing 'initialize'"
-
-    // for HealthCheck
-    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
 
     sendEvent(name: "colorTemperatureRange", value: COLOR_TEMP_RANGE)
     sendEvent(name: "colorTemperature", value: COLOR_TEMP_DEFAULT)
