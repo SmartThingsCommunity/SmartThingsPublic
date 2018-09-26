@@ -20,6 +20,7 @@ metadata {
 	  
 		command "associationSet"
 		command "parentCommand"
+        command "updateChildDevices"
 				
 		fingerprint mfr: "0115", prod: "0110", model: "0001", inClusters: "0x60"
 		fingerprint mfr: "0115", prod: "0111", inClusters: "0x60"
@@ -27,10 +28,16 @@ metadata {
 
 	tiles (scale: 2) {
 		childDeviceTiles('all')
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
-			state "configure", label:'Update devices', action:"configure", icon:"st.secondary.tools"
+        standardTile("empty", "device.empty", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "default", label:''
 		}
-		main ([configure])
+		standardTile("updateChildDevices", "device.updateChildDevices", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "default", label:'Update devices', action:"updateChildDevices", icon:"st.secondary.tools"
+		}
+        standardTile("empty", "device.empty", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "default", label:''
+		}
+		main ([updateChildDevices])
 	}	
 }
 
@@ -57,7 +64,7 @@ def parse(String description) {
 }
 
 def installed() {
-	command(zwave.multiChannelV3.multiChannelEndPointGet())
+    updateChildDevices()
 }
 
 // EVENTS
@@ -78,9 +85,11 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCapabilit
 	def ep = cmd.endPoint
 	def needCreate = null
 	
-	if (!childDevices.find{ it.deviceNetworkId.endsWith("-ep${ep}") || !childDevices}) {
-		createChildDevices(cc, ep)
-	}
+    if (!childDevices.find{ it.deviceNetworkId.endsWith("-ep${ep}") }) {
+        createChildDevices(cc, ep)
+    } else if (!childDevices) {  // if we find device, this branch will need to prevent creation of new devices
+        createChildDevices(cc, ep)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
@@ -88,7 +97,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	def childDevice = null
 	
 	childDevices.each {
-		if (it.deviceNetworkId =="${device.deviceNetworkId}-ep${ep}") {
+		if (it.deviceNetworkId == "${device.deviceNetworkId}-ep${ep}") {
 			childDevice = it
 		}
 	}
@@ -173,7 +182,7 @@ void createChildDevices(def cc, def ep) {
 }
 
 def associationSet() {
-	def cmds = []
+	def cmd = []
 	def multiChannelAssociationCC = "8E"
 	def setCmd =                    "01"
 	def groupingIdentifier =        "01"
@@ -181,7 +190,7 @@ def associationSet() {
 	def nodeId =                    prependZero(zwaveHubNodeId)
 	def ep =                        "00"
 	
-	cmd << "${multiChannelAssociationCC}${setCmd}${groupingIdentifier}${marker}${nodeId}${ep}"
+    cmd << "${multiChannelAssociationCC}${setCmd}${groupingIdentifier}${marker}${nodeId}${ep}"
 
 	return cmd	
 }
@@ -230,4 +239,8 @@ def prependZero(def s) {
 		return s
 	else
 		return "0$s"
+}
+
+def updateChildDevices() {
+	command(zwave.multiChannelV3.multiChannelEndPointGet())
 }
