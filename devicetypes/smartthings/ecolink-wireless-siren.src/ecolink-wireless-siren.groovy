@@ -74,10 +74,10 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {	
-	createEvents(cmd.value)
 	if(cmd.value == 0) {
 		sendHubCommand(refreshChildren())
 	}
+	createEvents(cmd.value)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
