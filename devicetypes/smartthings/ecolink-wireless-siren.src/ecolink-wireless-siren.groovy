@@ -68,17 +68,16 @@ def parse(String description) {
 		result = zwaveEvent(cmd)
 		
 		if(result!=null) {
-			//device sends 'OK' message when is plugged in
-			if(!result.contains('OK')) {
-				createEvent(result)
-			}
+			createEvent(result)
 		}
 	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {	
 	createEvents(cmd.value)
-	sendHubCommand(refresh())
+	if(cmd.value == 0) {
+		sendHubCommand(refreshChildren())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
@@ -145,6 +144,14 @@ def refresh() {
 		cmds << basicGetCmd(it)
 	}
 	cmds << basicGetCmd(1)
+	return delayBetween(cmds, 200)
+}
+
+def refreshChildren() {
+	def cmds = []
+	endPoints.each {
+		cmds << basicGetCmd(it)
+	}
 	return delayBetween(cmds, 200)
 }
 
