@@ -9,27 +9,23 @@ metadata {
         command "setFanSpeed2"
         command "setFanSpeed3"
         command "raiseFanSpeed"
-		command "lowerFanSpeed"        
-
-        command "turnOn"
-        command "turnOff"
-        command "togglePower"
+		command "lowerFanSpeed"
 	}
 
 	// UI tile definitions
 	tiles(scale: 2) {
         multiAttributeTile(name:"fanSpeed", type:"generic", width:6, height:4) {
             tileAttribute("device.fanSpeed", key: "PRIMARY_CONTROL") {
-                attributeState "0", label: "off", action: "switch.on", backgroundColor: "#ffffff"
-				attributeState "1", label: "low", action: "switch.off", backgroundColor: "#00a0dc"
-				attributeState "2", label: "medium", action: "switch.off", backgroundColor: "#00a0dc"
-				attributeState "3", label: "high", action: "switch.off", backgroundColor: "#00a0dc"
+                attributeState "0", label: "off", action: "momentary.push", backgroundColor: "#ffffff"
+				attributeState "1", label: "low", action: "momentary.push", backgroundColor: "#00a0dc"
+				attributeState "2", label: "medium", action: "momentary.push", backgroundColor: "#00a0dc"
+				attributeState "3", label: "high", action: "momentary.push", backgroundColor: "#00a0dc"
             }
             tileAttribute("device.switch", key: "SECONDARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.thermostat.fan-on", backgroundColor:"#00A0DC", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.thermostat.fan-off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'…', action:"switch.off", backgroundColor:"#79b821", nextState:"turningOff"
-                attributeState "turningOff", label:'…', action:"switch.on", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "on", label:'${name}', action:"momentary.push", icon:"st.thermostat.fan-on", backgroundColor:"#00A0DC", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"momentary.push", icon:"st.thermostat.fan-off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'…', action:"momentary.push", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOff", label:'…', action:"momentary.push", backgroundColor:"#ffffff", nextState:"turningOn"
             }
             tileAttribute("device.fanSpeed", key: "VALUE_CONTROL") {
                 attributeState "VALUE_UP", action: "raiseFanSpeed"
@@ -39,6 +35,11 @@ metadata {
 
 		main "fanSpeed"
 		details(["fanSpeed"])
+	}
+    preferences {
+		section("Main") {
+     		input(name: "onSpeed", type: "number", title: "On Speed", description: "Speed the fan should be set to when turned on", displayDuringSetup: true, required: false, defaultValue: 2)
+		}
 	}
 }
 
@@ -52,17 +53,12 @@ def updateStatus(status){
 }
 
 def push() {
-    // if on, then off()
-    // else setFanSpeed(lastFanSpeed)
-
     def speed = device.latestValue("fanSpeed");
 
-    if (speed == 0){
-    	
+    if (speed == 0){    	
         on();
     }
     else{
-    	
         off();
     }
 }
@@ -72,13 +68,13 @@ def on() {
     def speed = device.latestValue("fanSpeed");
 
     if (speed == 0){
-        setFanSpeed(state.lastFanSpeed);
+        setFanSpeed(device.latestValue("onSpeed") as Integer);
     }
 }
 
 def off() {
     log.debug "OFF"
-    fanSpeed(0);
+    setFanSpeed(0);
 }
 
 def setFanSpeed0(){
@@ -106,6 +102,16 @@ def lowerFanSpeed() {
 }
 
 def setFanSpeed(int speed){
+
+	if (speed < 0)
+    {
+    	speed = 0;
+    }
+    else if (speed > 3)
+    {
+    	speed = 3;
+    }
+
     log.debug "Setting Fan Speed to: $speed"
 
 	def commandName = "FanSpeed";
@@ -122,7 +128,7 @@ def setFanSpeedCallback(physicalgraph.device.HubResponse response){
     def speed = response.json.FanSpeed;
 
     if (speed > 0){
-        state.lastFanSpeed = speed;
+        sendEvent(name : "onSpeed", value: speed);
     }
 
     sendEvent(name: "fanSpeed", value: speed)
