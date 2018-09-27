@@ -73,11 +73,13 @@ def parse(String description) {
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {	
-	if(cmd.value == 0) {
-		sendHubCommand(refreshChildren())
-	}
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+	//When device is plugged in, it sends BasicReport with value "0" to parent endpoint.
+	//It means that parent and child devices are available, but status of child devices must be updated.
 	createEvents(cmd.value)
+	if(cmd.value == 0) {
+		sendHubCommand(addDelay(refreshChildren()))
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
@@ -139,12 +141,10 @@ def ping() {
 }
 
 def refresh() {
-	def cmds = []	
-	endPoints.each {
-		cmds << basicGetCmd(it)
-	}
+	def cmds = []
+	cmds << refreshChildren()
 	cmds << basicGetCmd(1)
-	return delayBetween(cmds, 200)
+	return addDelay(cmds)
 }
 
 def refreshChildren() {
@@ -152,7 +152,11 @@ def refreshChildren() {
 	endPoints.each {
 		cmds << basicGetCmd(it)
 	}
-	return delayBetween(cmds, 200)
+	return cmds
+}
+
+def addDelay(cmds) {
+	delayBetween(cmds, 200)
 }
 
 def setSirenChildrenOff() {
