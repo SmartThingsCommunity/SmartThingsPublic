@@ -70,7 +70,8 @@ def parse(def description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterSupportedReport cmd) {
-	setLabels(cmd.meterType, cmd.scale, null)
+    state.scale = cmd.scaleSupported
+	setLabels(cmd.meterType, cmd.scaleSupported, null)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
