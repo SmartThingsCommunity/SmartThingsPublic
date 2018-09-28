@@ -36,6 +36,7 @@ metadata {
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS clear 950lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E14 WS opal 400lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS opal 980lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 148 T", deviceJoinName: "innr Smart Bulb (Tunable White)"
     }
 
     // UI tile definitions
