@@ -62,8 +62,6 @@ def parse(String description) {
 					sendEvent(name: "level", value: STEP)
 				}
 				sendEvent(name: "switch", value: device.currentValue("switch") == "on" ? "off" : "on")
-			} else {
-				log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
 			}
 		} else if (descMap && descMap.clusterInt == 0x0008) {
 			def currentLevel = device.currentValue("level") as Integer ?: 0
@@ -113,18 +111,20 @@ def on() {
 }
 
 def setLevel(value) {
-	if (value != 0) sendEvent(name: "switch", value: "on")
-	else if (value == 0) sendEvent(name: "switch", value: "off")
-	sendEvent(name: "level", value: value)
+	if (value == 0) sendEvent(name: "switch", value: "off")
+	else sendEvent(name: "switch", value: "on") {
+		sendEvent(name: "level", value: value)
+	}
 }
 
 def installed() {
-	sendEvent(name: "switch", value: "off", isStateChange: false, displayed: false)
-	sendEvent(name: "level", value: 0, isStateChange: false, displayed: false)
+	sendEvent(name: "switch", value: "on", isStateChange: false, displayed: false)
+	sendEvent(name: "level", value: 100, isStateChange: false, displayed: false)
 	sendEvent(name: "button", value: "pressed", isStateChange: false, displayed: false)
 }
 
 def configure() {
     // strangely, these are necessary to have the device report when its buttons are pressed
-	zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.configureReporting(0x0005, 0x0001, DataType.UINT8, 1, 3600, null)
+	zigbee.addBinding(0x0006) + zigbee.addBinding(0x0008) + zigbee.addBinding(0x0005)
+//	zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.configureReporting(0x0005, 0x0001, DataType.UINT8, 1, 3600, null)
 }
