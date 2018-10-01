@@ -127,6 +127,5 @@ def installed() {
 
 def configure() {
     // strangely, these are necessary to have the device report when its buttons are pressed
-	zigbee.addBinding(0x0006) + zigbee.addBinding(0x0008) + zigbee.addBinding(0x0005)
-//	zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.configureReporting(0x0005, 0x0001, DataType.UINT8, 1, 3600, null)
+	zigbee.addBinding(zigbee.ONOFF_CLUSTER) + zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) + zigbee.addBinding(0x0005)
 }
