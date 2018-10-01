@@ -111,9 +111,11 @@ def on() {
 }
 
 def setLevel(value) {
-	if (value == 0) sendEvent(name: "switch", value: "off")
-	else sendEvent(name: "switch", value: "on") {
-		sendEvent(name: "level", value: value)
+	if (value == 0) {
+		sendEvent(name: "switch", value: "off")
+	} else {
+		sendEvent(name: "switch", value: "on")
+        sendEvent(name: "level", value: value)
 	}
 }
 
