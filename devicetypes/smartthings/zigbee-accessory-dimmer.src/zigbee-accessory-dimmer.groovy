@@ -15,11 +15,12 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZigBee Accessory Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mnmn: "SmartThings", vid: "generic-dimmer") {
+	definition (name: "ZigBee Accessory Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Button"
 		capability "Switch Level"
+		capability "Configuration"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003", outClusters: "0000,0004,0003,0006,0008,0005", manufacturer: "Aurora", model: "Remote50AU", deviceJoinName: "Aurora Wireless Wall Remote"
 	}
@@ -121,4 +122,9 @@ def installed() {
 	sendEvent(name: "switch", value: "off", isStateChange: false, displayed: false)
 	sendEvent(name: "level", value: 0, isStateChange: false, displayed: false)
 	sendEvent(name: "button", value: "pressed", isStateChange: false, displayed: false)
+}
+
+def configure() {
+    // strangely, these are necessary to have the device report when its buttons are pressed
+	zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.configureReporting(0x0005, 0x0001, DataType.UINT8, 1, 3600, null)
 }
