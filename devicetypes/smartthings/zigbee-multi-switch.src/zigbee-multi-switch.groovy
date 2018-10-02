@@ -17,44 +17,44 @@
  */
 
 metadata {
-    definition (name: "ZigBee Multi Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", vid: "generic-switch" ) {
-        capability "Actuator"
-        capability "Configuration"
-        capability "Refresh"
-        capability "Health Check"
-        capability "Switch"
+	definition(name: "ZigBee Multi Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "generic-switch") {
+		capability "Actuator"
+		capability "Configuration"
+		capability "Refresh"
+		capability "Health Check"
+		capability "Switch"
 
-        command "childOn", ["string"]
-        command "childOff", ["string"]
+		command "childOn", ["string"]
+		command "childOff", ["string"]
 
-        fingerprint  profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo Smart Switch 1"
-    }
-    // simulator metadata
-    simulator {
-        // status messages
-        status "on": "on/off: 1"
-        status "off": "on/off: 0"
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo Smart Switch 1"
+	}
+	// simulator metadata
+	simulator {
+		// status messages
+		status "on": "on/off: 1"
+		status "off": "on/off: 0"
 
-        // reply messages
-        reply "zcl on-off on": "on/off: 1"
-        reply "zcl on-off off": "on/off: 0"
-    }
+		// reply messages
+		reply "zcl on-off on": "on/off: 1"
+		reply "zcl on-off off": "on/off: 0"
+	}
 
-    tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
-                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-        }
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
-        main "switch"
-        details(["switch", "refresh"])
-    }
+	tiles(scale: 2) {
+		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.light.on", backgroundColor: "#00A0DC", nextState: "turningOff"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.light.off", backgroundColor: "#ffffff", nextState: "turningOn"
+				attributeState "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.light.on", backgroundColor: "#00A0DC", nextState: "turningOff"
+				attributeState "turningOff", label: '${name}', action: "switch.on", icon: "st.switches.light.off", backgroundColor: "#ffffff", nextState: "turningOn"
+			}
+		}
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
+		}
+		main "switch"
+		details(["switch", "refresh"])
+	}
 }
 
 def installed() {
@@ -69,38 +69,35 @@ def updated() {
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-    log.debug "description is $description"
-    Map map = zigbee.getEvent(description)
-    if (map) {
-        if (description?.startsWith('on/off')) {
-            log.debug "receive on/off message without endpoint id"
-            sendHubCommand(refresh().collect { new physicalgraph.device.HubAction(it) }, 0)
-        } else {
-            Map descMap = zigbee.parseDescriptionAsMap(description)
-            log.debug "$descMap"
+	log.debug "description is $description"
+	Map map = zigbee.getEvent(description)
+	if (map) {
+		if (description?.startsWith('on/off')) {
+			log.debug "receive on/off message without endpoint id"
+			sendHubCommand(refresh().collect { new physicalgraph.device.HubAction(it) }, 0)
+		} else {
+			Map descMap = zigbee.parseDescriptionAsMap(description)
+			log.debug "$descMap"
 
-            if (descMap?.clusterId == "0006" && descMap.sourceEndpoint == "01") {
-                def result = map ? createEvent(map) : [:]
-                sendEvent(result)
-             } else if (descMap?.clusterId == "0006") {
-                def result = map ? createEvent(map) : [:]
-                def childDevice = childDevices.find {
-                    it.deviceNetworkId == "$device.deviceNetworkId:${descMap.sourceEndpoint}"
-                }
-                if (childDevice && result) {
-                    childDevice.sendEvent(result)
-                }
-            }
-        }
-    }
+			if (descMap?.clusterId == "0006" && descMap.sourceEndpoint == "01") {
+				sendEvent(map)
+			} else if (descMap?.clusterId == "0006") {
+				def childDevice = childDevices.find {
+					it.deviceNetworkId == "$device.deviceNetworkId:${descMap.sourceEndpoint}"
+				}
+				if (childDevice) {
+					childDevice.sendEvent(map)
+				}
+			}
+		}
+	}
 }
 
 private void createChildDevices() {
-    def i = 2
-    addChildDevice("Child Switch", "${device.deviceNetworkId}:0${i}", null,
-                     [completedSetup: true, label: "${device.displayName.split("1")[-1]} ${i}",
-                     isComponent: false, componentName: "ch$i", componentLabel: "Channel $i"])
-
+	def i = 2
+	addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+			[completedSetup: true, label: "${device.displayName.split("1")[-1]}${i}",
+			 isComponent   : false, componentName: "ch$i", componentLabel: "Channel $i"])
 }
 
 private getChildEndpoint(String dni) {
@@ -155,8 +152,12 @@ def configureHealthCheck() {
 		log.debug "Configuring Health Check, Reporting"
 		unschedule("healthPoll")
 		runEvery5Minutes("healthPoll")
+		def healthEvent = [name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
 		// Device-Watch allows 2 check-in misses from device
-		sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+		sendEvent(healthEvent)
+		childDevices.each {
+			it.sendEvent(healthEvent)
+		}
 		state.hasConfiguredHealthCheck = true
 	}
 }
