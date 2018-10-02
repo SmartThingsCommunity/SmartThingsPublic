@@ -93,7 +93,9 @@ def parse(String description) {
 private Map parseAttrMessage(description) {
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
-	if(descMap?.clusterInt == EVENTS_ALERTS_CLUSTER) {
+	if(descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
+		map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+	} else if(descMap?.clusterInt == EVENTS_ALERTS_CLUSTER && descMap?.commandInt == 0x01) {
 		map = descMap?.data[1] == "81" ? getWaterDetection(descMap?.data[2]) : [:]
 	} else if(descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 		if (descMap.data[0] == "00") {
@@ -109,6 +111,14 @@ private Map getWaterDetection(alertData) {
 	def value = (alertData == "11") ? "wet" : "dry"
 	def description = (value == "wet") ? "detected" : "not detected"
 	def result = [name: "water", value: value, descriptionText: "Water was ${description}", displayed: true, isStateChanged: true]
+	return result
+}
+
+private Map getBatteryResult(value) {
+	def result = [:]
+	result.value = value / 2
+	result.name = 'battery'
+	result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	return result
 }
 
