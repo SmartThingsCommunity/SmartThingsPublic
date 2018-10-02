@@ -681,7 +681,7 @@ def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swin
 		tData.data.fanLevel = fanLevel
         tData.data.thermostatFanMode = fanLevel
         tData.data.on = on
-        tData.data.mode = mode
+        tData.data.currentmode = mode
         log.debug "Thermostat mode " + on
         if (on=="off") {
         	tData.data.thermostatMode = "off"
@@ -924,7 +924,7 @@ def getACState(PodUid)
                         data = [
                             targetTemperature : stemp,
                             fanLevel : stat.acState.fanLevel,
-                            mode : stat.acState.mode,
+                            currentmode : stat.acState.mode,
                             on : OnOff.toString(),
                             switch: OnOff.toString(),
                             thermostatMode: tMode,
@@ -951,7 +951,7 @@ def getACState(PodUid)
            	  data = [
                  targetTemperature : "0",
                  fanLevel : "--",
-                 mode : "--",
+                 currentmode : "--",
                  on : "--",
                  switch : "--",
                  thermostatMode: "--",
@@ -980,7 +980,7 @@ def getACState(PodUid)
         data = [
             targetTemperature : "0",
             fanLevel : "--",
-            mode : "--",
+            currentmode : "--",
             on : "--",
             switch : "--",
             thermostatMode: "--",
@@ -1102,7 +1102,7 @@ def pollChildren(PodUid)
         				tMode = "off"
         			}
 				    else {
-        	 			tMode = setTemp.mode
+        	 			tMode = setTemp.currentmode
                     }
 
 					def battpourcentage = 100
@@ -1121,7 +1121,7 @@ def pollChildren(PodUid)
 						humidity: shumidify,
                         targetTemperature: setTemp.targetTemperature,
                         fanLevel: setTemp.fanLevel,
-                        mode: setTemp.mode,
+                        currentmode: setTemp.currentmode,
                         on: setTemp.on,
                         switch : setTemp.on,
                         thermostatMode: tMode,
