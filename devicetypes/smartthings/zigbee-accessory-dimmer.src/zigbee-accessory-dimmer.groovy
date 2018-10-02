@@ -123,7 +123,7 @@ def installed() {
 	sendEvent(name: "switch", value: "on", isStateChange: false, displayed: false)
 	sendEvent(name: "level", value: 100, isStateChange: false, displayed: false)
 	sendEvent(name: "button", value: "pressed", isStateChange: false, displayed: false)
-	sendEvent(name: "numberOfButtons", value: 1)
+	sendEvent(name: "numberOfButtons", value: 1, displayed: false)
 }
 
 def configure() {
