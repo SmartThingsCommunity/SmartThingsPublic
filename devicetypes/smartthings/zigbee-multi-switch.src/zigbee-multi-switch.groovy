@@ -58,13 +58,13 @@ metadata {
 }
 
 def installed() {
-    createChildDevices()
-    updateDataValue("onOff", "catchall")
+	createChildDevices()
+	updateDataValue("onOff", "catchall")
 }
 
 def updated() {
-    log.debug "updated()"
-    updateDataValue("onOff", "catchall")
+	log.debug "updated()"
+	updateDataValue("onOff", "catchall")
 }
 
 // Parse incoming device messages to generate events
@@ -101,39 +101,38 @@ private void createChildDevices() {
 }
 
 private getChildEndpoint(String dni) {
-    dni.split(":")[-1] as Integer
+	dni.split(":")[-1] as Integer
 }
 
 def on() {
-    log.debug("on")
-    zigbee.on()
+	log.debug("on")
+	zigbee.on()
 }
 
 def off() {
-    log.debug("off")
-    zigbee.off()
+	log.debug("off")
+	zigbee.off()
 }
 
 def childOn(String dni) {
-    log.debug(" child on ${dni}")
-    zigbee.command(0x0006, 0x01, "", [destEndpoint: getChildEndpoint(dni)])
+	log.debug(" child on ${dni}")
+	zigbee.command(0x0006, 0x01, "", [destEndpoint: getChildEndpoint(dni)])
 }
 
 def childOff(String dni) {
-    log.debug(" child off ${dni}")
-    zigbee.command(0x0006, 0x00, "", [destEndpoint: getChildEndpoint(dni)])
+	log.debug(" child off ${dni}")
+	zigbee.command(0x0006, 0x00, "", [destEndpoint: getChildEndpoint(dni)])
 }
 
 /**
-* PING is used by Device-Watch in attempt to reach the Device
-* */
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
 def ping() {
-    return refresh()
+	return refresh()
 }
 
-def refresh()
-{
-    return zigbee.readAttribute(0x0006, 0x0000, [destEndpoint: 0xFF])
+def refresh() {
+	return zigbee.readAttribute(0x0006, 0x0000, [destEndpoint: 0xFF])
 }
 
 def poll() {
@@ -165,6 +164,6 @@ def configureHealthCheck() {
 def configure() {
 	log.debug "configure()"
 	configureHealthCheck()
-        //the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
-	return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01,[mfgCode: 0x0000])
+	//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
+	return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
 }
