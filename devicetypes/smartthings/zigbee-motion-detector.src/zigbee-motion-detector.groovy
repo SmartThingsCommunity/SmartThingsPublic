@@ -18,14 +18,14 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 metadata {
-	definition(name: "Zigbee Motion Detector", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.018.0000', executeCommandsLocally: true, mnmn: "SmartThings", vid: "generic-motion-2") {
+	definition(name: "Zigbee Motion Detector", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-motion-2") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", model:"895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer:"ORVIBO", model:"895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor"
 	}
 	simulator {
 		status "active": "zone status 0x0001 -- extended status 0x00"
@@ -50,25 +50,27 @@ metadata {
 		details(["motion","battery", "refresh"])
 	}
 }
+
 def stopMotion() {
 	log.debug "motion inactive"
 	sendEvent(getMotionResult(false))
 }
+
 def installed(){
 	log.debug "installed"
 	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
 }
+
 def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
 	if(!map){
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
-			motionHandler(description);
 		} else {
-			map = batteyHandler(description);
+			map = batteyHandler(description)
 		}
 	}
 	log.debug "Parse returned $map"
@@ -80,27 +82,27 @@ def parse(String description) {
 	}
 	return result
 }
+
 def batteyHandler(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
 	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
 		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 	}
-	return map;
+	return map
 }
-def motionHandler(String description){
-	//inactive
-	def isActive = zigbee.translateStatusZoneType19(description)
-	if (isActive) {
+
+def parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	Boolean motionActive = zs.isAlarm1Set() || zs.isAlarm2Set()
+	if (motionActive) {
 		def timeout = 3
 		log.debug "Stopping motion in ${timeout} seconds"
 		runIn(timeout, stopMotion)
 	}
+	return getMotionResult(motionActive)
 }
-def parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	return  getMotionResult(zs.isAlarm1Set() || zs.isAlarm2Set())
-}
+
 def getBatteryPercentageResult(rawValue) {
 	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
 	def result = [:]
@@ -112,6 +114,7 @@ def getBatteryPercentageResult(rawValue) {
 	}
 	return result
 }
+
 def getMotionResult(value) {
 	def descriptionText = value ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
 	return [
@@ -121,6 +124,7 @@ def getMotionResult(value) {
 			translatable	: true
 	]
 }
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -128,12 +132,14 @@ def ping() {
 	log.debug "ping "
 	return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 }
+
 def refresh() {
 	log.debug "Refreshing Values"
 	return  zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER,zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
 					zigbee.enrollResponse()
 }
+
 def configure() {
 	log.debug "configure"
 	sendEvent(name: "checkInterval", value:20 * 60 + 2*60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
