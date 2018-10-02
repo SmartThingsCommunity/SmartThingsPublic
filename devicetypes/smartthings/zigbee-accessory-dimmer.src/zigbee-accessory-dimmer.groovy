@@ -115,7 +115,7 @@ def setLevel(value) {
 		sendEvent(name: "switch", value: "off")
 	} else {
 		sendEvent(name: "switch", value: "on")
-        sendEvent(name: "level", value: value)
+		sendEvent(name: "level", value: value)
 	}
 }
 
@@ -123,9 +123,10 @@ def installed() {
 	sendEvent(name: "switch", value: "on", isStateChange: false, displayed: false)
 	sendEvent(name: "level", value: 100, isStateChange: false, displayed: false)
 	sendEvent(name: "button", value: "pressed", isStateChange: false, displayed: false)
+	sendEvent(name: "numberOfButtons", value: 1)
 }
 
 def configure() {
-    // strangely, these are necessary to have the device report when its buttons are pressed
+	//these are necessary to have the device report when its buttons are pressed
 	zigbee.addBinding(zigbee.ONOFF_CLUSTER) + zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) + zigbee.addBinding(0x0005)
 }
