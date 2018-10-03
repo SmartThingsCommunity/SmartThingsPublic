@@ -36,6 +36,7 @@ metadata {
         capability "Health Check"
         capability "Power Source"
         capability "Voltage Measurement"
+        capability "Air Conditioner Mode"
         
         attribute "swing", "String"
         attribute "temperatureUnit","String"
@@ -65,7 +66,8 @@ metadata {
         command "quietfan"
         command "strongfan"
         command "autofan"
-        command "fullswing"        
+        command "fullswing"
+        command "setAirConditionerMode"
 	}
 
 	simulator {
@@ -505,7 +507,7 @@ void setThermostatMode(modes)
 { 
 	log.trace "setThermostatMode() called"
     
-  	//def currentMode = device.currentState("mode")?.value
+  	def currentMode = device.currentState("currentmode").value
   
   	log.debug "switching AC mode from current mode: $currentMode"
 
@@ -528,6 +530,34 @@ void setThermostatMode(modes)
         case "off":
             off()
             break
+	}
+}
+
+void setAirConditionerMode(modes)
+{ 
+	log.trace "setAirConditionerMode() called"
+    
+  	def currentMode = device.currentState("currentmode").value
+  
+  	log.debug "switching AC mode from current mode: $currentMode"
+
+  	switch (modes) {
+		case "cool":
+			modeCool()
+			break
+		case "fanOnly":
+        case "fan":
+			modeFan()
+			break		
+		case "dry":
+			modeDry()
+			break
+        case "auto":
+	        modeAuto()
+			break
+        case "heat":
+			modeHeat()
+			break
 	}
 }
 
@@ -1299,19 +1329,43 @@ def parseEventData(Map results)
                 isDisplayed = false
                  
 				if (value=="cool") {
-					sendEvent(name: 'thermostatOperatingState', value: "cooling", 
+                	sendEvent(name: 'airConditionerMode', value: "cool", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+					
+                    sendEvent(name: 'thermostatOperatingState', value: "cooling", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
 				} else if (value=="heat") {
-					sendEvent(name: 'thermostatOperatingState', value: "heating", 
+					sendEvent(name: 'airConditionerMode', value: "heat", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                    
+                    sendEvent(name: 'thermostatOperatingState', value: "heating", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
 				} else if (value=="fan") {
+             		sendEvent(name: 'airConditionerMode', value: "fanOnly", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                
 					sendEvent(name: 'thermostatOperatingState', value: "fan only", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
                 } else if (value=="dry") {
-					sendEvent(name: 'thermostatOperatingState', value: "Dry", 
+                    sendEvent(name: 'airConditionerMode', value: "dry", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                    
+					sendEvent(name: 'thermostatOperatingState', value: "dry", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                 } else if (value=="auto") {
+                    sendEvent(name: 'airConditionerMode', value: "auto", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                    
+					sendEvent(name: 'thermostatOperatingState', value: "auto", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
 				} else {
