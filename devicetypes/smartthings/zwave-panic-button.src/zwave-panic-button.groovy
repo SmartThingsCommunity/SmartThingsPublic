@@ -15,7 +15,6 @@
 metadata {
 	definition(name: "Z-Wave Panic Button", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Sensor"
-		capability "Health Check"
 		capability "Battery"
 		capability "Panic Alarm"
 
@@ -45,13 +44,11 @@ metadata {
 
 def installed() {
 	log.debug "Installed $device.displayName"
-	//sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false)
 	if(hasMultipleButtons()) {
 		addChildButtons()
 	}
 	def cmds = [
 			zwave.batteryV1.batteryGet().format(),
-			zwave.notificationV3.notificationGet().format(),
 			"delay 1000",
 			zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 	]
@@ -133,7 +130,6 @@ private setButtonState(buttonId, state) {
 }
 
 private addChildButtons() {
-	log.debug "Creating child devices"
 	for (i in 1..3) {
 		String childDni = "${device.deviceNetworkId}:$i"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
