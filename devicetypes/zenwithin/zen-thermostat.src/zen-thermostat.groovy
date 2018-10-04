@@ -15,6 +15,11 @@ metadata {
         capability "Sensor"
         capability "Temperature Measurement"
         capability "Thermostat"
+        capability "Thermostat Heating Setpoint"
+        capability "Thermostat Cooling Setpoint"
+        capability "Thermostat Operating State"
+        capability "Thermostat Mode"
+        capability "Thermostat Fan Mode"
 
         command "setpointUp"
         command "setpointDown"
