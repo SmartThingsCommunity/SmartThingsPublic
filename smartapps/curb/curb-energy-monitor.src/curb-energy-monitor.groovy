@@ -119,7 +119,7 @@ def authPage() {
                   type: "enum",
                   title: "Energy Interval",
                   options: ["Billing Period", "Day", "Hour", "Half Hour"],
-                  default: "hour"
+                  defaultValue: "Hour"
                   )
             }
         }
