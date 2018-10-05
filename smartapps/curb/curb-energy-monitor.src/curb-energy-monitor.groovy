@@ -81,10 +81,14 @@ def initialize() {
 
     def curbCircuits = getCurbCircuits()
     log.debug "Found devices: ${curbCircuits}"
-
+    log.debug settings
     runEvery1Minute(getPowerData)
+    if (settings.energyInterval=="Hour" || settings.energyInterval == "Half Hour")
+    {
+      runEvery1Minute(getKwhData)
+    } else {
     runEvery1Hour(getKwhData)
-
+    }
 }
 
 def uninstalled() {
@@ -110,6 +114,13 @@ def authPage() {
                     options: state.locations
 
                 )
+                input(
+                  name: "energyInterval",
+                  type: "enum",
+                  title: "Energy Interval",
+                  options: ["Billing Period", "Day", "Hour", "Half Hour"],
+                  default: "hour"
+                  )
             }
         }
     } else {
@@ -232,9 +243,16 @@ def getPowerData(create=false) {
 
 def getKwhData() {
   log.debug "Getting kwh data at ${settings.curbLocation} with token: ${state.authToken}"
+  def url = "/api/aggregate/${settings.curbLocation}/"
+
+  if (settings.energyInterval == "Hour"){ url = url + "1h/m"}
+  if (settings.energyInterval == "Billing Period"){ url = url + "billing/h"}
+  if (settings.energyInterval == "Half Hour"){ url = url + "30m/m"}
+  if (settings.energyInterval == "Day"){ url = url + "24h/h"}
+	log.debug "KWH FOR: ${url}"
     def params = [
         uri: "https://app.energycurb.com",
-        path: "/api/aggregate/${settings.curbLocation}/billing/h",
+        path: url,
         headers: ["Authorization": "Bearer ${state.authToken}"],
         requestContentType: 'application/json'
     ]
