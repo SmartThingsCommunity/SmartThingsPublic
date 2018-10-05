@@ -23,6 +23,8 @@ metadata {
 		capability "Relative Humidity Measurement"
 		capability "Ultraviolet Index"
 		capability "Sensor"
+		capability "Polling"
+		capability "Refresh"
 
 		attribute "localSunrise", "string"
 		attribute "localSunset", "string"
