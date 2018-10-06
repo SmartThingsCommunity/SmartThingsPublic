@@ -1,13 +1,13 @@
 metadata {
 	definition(name: "Tasmota-Fan", namespace: "BrettSheleski", author: "Brett Sheleski", ocfDeviceType: "oic.d.fan") {
 		capability "Switch"
+        capability "Switch Level"
         capability "Momentary"
         capability "Fan Speed"
 
-        command "setFanSpeed0"
-        command "setFanSpeed1"
-        command "setFanSpeed2"
-        command "setFanSpeed3"
+        command "low"
+        command "medium"
+        command "high"
         command "raiseFanSpeed"
 		command "lowerFanSpeed"
 	}
@@ -30,6 +30,9 @@ metadata {
             tileAttribute("device.fanSpeed", key: "VALUE_CONTROL") {
                 attributeState "VALUE_UP", action: "raiseFanSpeed"
                 attributeState "VALUE_DOWN", action: "lowerFanSpeed"
+            }
+             tileAttribute("device.level", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"switch level.setLevel", defaultState: true
             }
         }
 
@@ -77,20 +80,40 @@ def off() {
     setFanSpeed(0);
 }
 
-def setFanSpeed0(){
-    setFanSpeed(0);
-}
 
-def setFanSpeed1(){
+def low(){
     setFanSpeed(1);
 }
 
-def setFanSpeed2(){
+def medium(){
     setFanSpeed(2);
 }
 
-def setFanSpeed3(){
+def high(){
     setFanSpeed(3);
+}
+
+def setLevel(value) {
+	// if 0 -> off
+    
+    // if < 33 -> low
+    
+    // if < 66 -> medium
+    
+    // else high
+    
+    if (value == 0){
+    	off();
+    }
+    else if (value <= 33){
+    	low();
+    }
+    else if (value <= 66){
+    	medium();
+    }
+    else{
+    	high();
+    }
 }
 
 def raiseFanSpeed() {
@@ -131,6 +154,25 @@ def setFanSpeedCallback(physicalgraph.device.HubResponse response){
         sendEvent(name : "onSpeed", value: speed);
     }
 
-    sendEvent(name: "fanSpeed", value: speed)
-    sendEvent(name: "switch", value: speed > 0 ? "on" : "off")
+    sendEvent(name: "fanSpeed", value: speed);
+    sendEvent(name: "switch", value: speed > 0 ? "on" : "off");
+    
+    def switchLevel = 0;
+    
+    if (speed == 0){
+    	switchLevel = 0;
+    }
+    else if (speed == 1){
+    	switchLevel = 33;
+    }
+    else if (speed == 2){
+    	switchLevel = 66;
+    }
+    else{
+    	switchLevel = 100;
+    }
+    
+    sendEvent(name: "level", value: switchLevel);
+    //sendEvent(name: "level", value: "$switchLevel", isStateChange: true, displayed: false)
+	//sendEvent(name: "level", value: device.currentValue("level"), isStateChange: true, displayed: false)
 }
