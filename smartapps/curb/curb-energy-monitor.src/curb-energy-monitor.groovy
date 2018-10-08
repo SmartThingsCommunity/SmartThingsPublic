@@ -83,11 +83,11 @@ def initialize() {
     log.debug "Found devices: ${curbCircuits}"
     log.debug settings
     runEvery1Minute(getPowerData)
-    if (settings.energyInterval=="Hour" || settings.energyInterval == "Half Hour")
+    if (settings.energyInterval=="Hour" || settings.energyInterval == "Half Hour" || settings.energyInterval == "Fifteen Minutes")
     {
       runEvery1Minute(getKwhData)
     } else {
-    runEvery1Hour(getKwhData)
+      runEvery1Hour(getKwhData)
     }
 }
 
@@ -118,7 +118,7 @@ def authPage() {
                   name: "energyInterval",
                   type: "enum",
                   title: "Energy Interval",
-                  options: ["Billing Period", "Day", "Hour", "Half Hour"],
+                  options: ["Billing Period", "Day", "Hour", "Half Hour", "Fifteen Minutes"],
                   defaultValue: "Hour"
                   )
             }
@@ -249,6 +249,7 @@ def getKwhData() {
   if (settings.energyInterval == "Billing Period"){ url = url + "billing/h"}
   if (settings.energyInterval == "Half Hour"){ url = url + "30m/m"}
   if (settings.energyInterval == "Day"){ url = url + "24h/h"}
+  if (settings.energyInterval == "Fifteen Minutes"){ url = url + "15m/m"}
 	log.debug "KWH FOR: ${url}"
     def params = [
         uri: "https://app.energycurb.com",
