@@ -265,10 +265,11 @@ def currentPowerMode = device.currentValue("thermostatPowerMode")
 def switchToPowerMode(mode) {
 def deviceId =  device.currentValue("deviceBID")
 def deviceMId =  device.currentValue("deviceID")
-
-	log.debug "switchToMode: ${mode} device_id:${deviceId}"
+def statushub=device.currentValue("deviceAlive")
+	log.debug "switchToMode: ${mode} device_id:${deviceId} Status:${statushub}"
 	
 	// Thermostat's mode for "emergency heat" is "auxHeatOnly"
+    if(statushub=="true"){
 	if (!(parent.setPowerMode( mode, deviceId,deviceMId))) {
 		log.warn "Error setting mode:$mode"
 		// Ensure the DTH tile is reset
@@ -279,6 +280,11 @@ def deviceMId =  device.currentValue("deviceID")
     {
     mode = device.currentValue("thermostatPowerMode")
      refresh()
+    }
+    }
+    else
+    {
+    parent.messagePush("Your B.One Hub is Offline")
     }
     mode = device.currentValue("thermostatPowerMode")
 	generatePowerModeEvent(mode)
@@ -303,10 +309,13 @@ def switchMode() {
 }
 
 def switchToMode(mode) {
+
 def powerMo=device.currentValue("thermostatPowerMode")
 	log.debug "switchToMode: ${mode} ${powerMo}"
 	def deviceId =  device.currentValue("deviceBID")
     def deviceMId =  device.currentValue("deviceID")
+       def statushub=device.currentValue("deviceAlive")
+    if(statushub=="true"){
     if(powerMo!="off")
 {
 	// Thermostat's mode for "emergency heat" is "auxHeatOnly"
@@ -331,6 +340,16 @@ def powerMo=device.currentValue("thermostatPowerMode")
 	generateStatusEvent()
     parent.messagePush("$device.displayName is Turned OFF. Please Turn ON and try again.")
     }
+    }
+    else
+    {
+    log.debug "sCheck Mode ToMode: ${mode} ${powerMo}"
+    mode = device.currentValue("thermostatMode")
+    
+    generateModeEvent(mode)
+	generateStatusEvent()
+    parent.messagePush("Your B.One Hub is Offline")
+    }
 }
 
 
@@ -354,6 +373,8 @@ def powerMo=device.currentValue("thermostatPowerMode")
 log.debug "switchToFanMode: ${fanMode} ${powerMo}"
 def deviceId =  device.currentValue("deviceBID")
 def deviceMId =  device.currentValue("deviceID")
+  def statushub=device.currentValue("deviceAlive")
+    if(statushub=="true"){
 if(powerMo!="off")
 {
 if (!(parent.setFanMode(fanMode,deviceId,deviceMId))) {
@@ -374,9 +395,13 @@ fanMode = device.currentValue("thermostatFanMode")
 generateFanModeEvent(fanMode)
 parent.messagePush("$device.displayName is Turned OFF. Please Turn ON and try again.")
 }
-
-	
-   
+}
+else
+{
+fanMode = device.currentValue("thermostatFanMode")
+generateFanModeEvent(fanMode)
+parent.messagePush("Your B.One Hub is Offline")
+}   
 }
 
 def getDataByName(String name) {
@@ -506,11 +531,25 @@ def generateSetpointEvent() {
 }
 
 def raiseHeatingSetpoint() {
+  def statushub=device.currentValue("deviceAlive")
+    if(statushub=="true"){
 	alterSetpoint(true, "temperature")   
+    }
+    else
+    {
+    parent.messagePush("Your B.One Hub is Offline")
+    }
 }
 
 def lowerHeatingSetpoint() {
-	alterSetpoint(false, "temperature")
+	  def statushub=device.currentValue("deviceAlive")
+    if(statushub=="true"){
+	alterSetpoint(false, "temperature")   
+    }
+    else
+    {
+    parent.messagePush("Your B.One Hub is Offline")
+    }
     
     
 }
@@ -520,7 +559,9 @@ def lowerHeatingSetpoint() {
 // Adjusts nextHeatingSetpoint either .5° C/1°F) if raise true/false
 def alterSetpoint(raise, setpoint) {
 	// don't allow setpoint change if thermostat is off
+    def Tempstatus="0"
 	if (device.currentValue("thermostatPowerMode") == "off") {
+    parent.messagePush("$device.displayName is Turned OFF. Please Turn ON and try again.")
 		return
 	}
     else if(device.currentValue("thermostatMode")=="cool" || device.currentValue("thermostatMode")=="heat")
@@ -542,16 +583,21 @@ def alterSetpoint(raise, setpoint) {
     }
     else
     {
-    if(tempVal.toInteger()<17)
+    if(tempVal.toInteger()<18)
     {
-    tempVal="17"
+    Tempstatus="1"
+    parent.messagePush("Can not set Temperature below 18°C.") 
     }
     if(tempVal.toInteger()>30)
     {
-    tempVal="30"
+    Tempstatus="1"
+    parent.messagePush("Can not set Temperature above 30°C.") 
     }
     }
+    if(Tempstatus=="0")
+    {
    parent.setTemperatueAc(tempVal,deviceId,deviceMId)
+   }
     
     generateStatusEvent()
     def tempVal1 = device.currentValue("temperature")
