@@ -30,7 +30,6 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x33"
-		fingerprint deviceId: "0x1102", inClusters: "0x26,0x33"
 		fingerprint inClusters: "0x33"
 		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
 		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
