@@ -46,6 +46,8 @@ metadata {
 		fingerprint mfr: "001A", prod: "5352", model: "0000", deviceJoinName: "Eaton RF Accessory Switch"
 		fingerprint mfr: "014F", prod: "5753", model: "3535", deviceJoinName: "GoControl Smart In-Wall Switch"
 		fingerprint mfr: "014F", prod: "5257", model: "3033", deviceJoinName: "GoControl Wall Relay Switch"
+		//zw:L type:1001 mfr:0307 prod:4447 model:3033 ver:5.16 zwv:4.34 lib:03 cc:5E,86,72,5A,85,59,73,25,27,70,2C,2B,5B,7A ccOut:5B role:05 ff:8700 ui:8700
+		fingerprint mfr: "0307", prod: "4447", model: "3033", deviceJoinName: "Satco In-Wall Light Switch"
 	}
 
 	// simulator metadata

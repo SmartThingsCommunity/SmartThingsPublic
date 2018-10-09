@@ -2,7 +2,7 @@
  *	Fibaro Wall Plug ZW5
  */
 metadata {
-	definition (name: "Fibaro Wall Plug US ZW5", namespace: "FibarGroup", author: "Fibar Group") {
+	definition (name: "Fibaro Wall Plug US ZW5", namespace: "FibarGroup", author: "Fibar Group", ocfDeviceType: "oic.d.smartplug") {
 		capability "Switch"
 		capability "Energy Meter"
 		capability "Power Meter"
@@ -210,7 +210,7 @@ private syncNext() {
 	}
 }
 
-private syncCheck() {
+def syncCheck() {
 	logging("Executing syncCheck()","info")
 	def failed = []
 	def incorrect = []

@@ -524,9 +524,7 @@ def pollResponse(response, data) {
 		def activities = getChildDevices()
 		// Device-Watch relies on the Logitech Harmony Cloud to get the Device state.
 		activities.each { activity ->
-			if ("${activity.deviceNetworkId}".contains("harmony-${it.key}")) {
-				activity.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
-			}
+			activity.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
 		}
 		if (response.status == 401) { // token is expired
 			state.remove("HarmonyAccessToken")
@@ -980,11 +978,11 @@ def deleteHarmony() {
 	render status: 204, data: "{}"
 }
 
-private getAllDevices() {
+def getAllDevices() {
 	([] + switches + motionSensors + contactSensors + thermostats + presenceSensors + temperatureSensors + accelerationSensors + waterSensors + lightSensors + humiditySensors + alarms + locks)?.findAll()?.unique { it.id }
 }
 
-private deviceItem(device) {
+def deviceItem(device) {
 	[
 		id: device.id,
 		label: device.displayName,
@@ -1008,7 +1006,7 @@ private deviceItem(device) {
 	]
 }
 
-private hubItem(hub) {
+def hubItem(hub) {
 	[
 		id: hub.id,
 		name: hub.name,

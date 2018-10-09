@@ -18,10 +18,16 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
+		capability "Configuration"
 
-		// This DTH uses 2 switch endpoints. Parent DTH controlls endpoint 1 so please use '1' at the end of deviceJoinName
-		// Child device (isComponent : false) representing endpoint 2 will substitude 1 with 2 for easier identification.
+		// This DTH uses 2 switch endpoints. Parent DTH controls endpoint 1 so please use '1' at the end of deviceJoinName
+		// Child device (isComponent : false) representing endpoint 2 will substitute 1 with 2 for easier identification.
+		fingerprint mfr: "0086", prod: "0103", model: "008C", deviceJoinName: "Aeotec Dual Nano Switch 1" //US
+		fingerprint mfr: "0086", prod: "0003", model: "008C", deviceJoinName: "Aeotec Dual Nano Switch 1" //EU
+		// sometimes the aeotec nano dual switch does not update its NIF when adding securely
+		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut: "0x82", ui: "0x8700", deviceJoinName: "Aeotec Dual Nano Switch 1"
 		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Light Switch 1"
+		fingerprint mfr: "0258", prod: "0003", model: "108B", deviceJoinName: "NEO coolcam Light Switch 1"
 	}
 
 	// tile definitions
@@ -54,7 +60,7 @@ def installed() {
 		String dni = "${device.deviceNetworkId}-ep2"
 		addChildDevice("Z-Wave Binary Switch Endpoint", dni, device.hub.id,
 			[completedSetup: true, label: "${componentLabel}",
-			 isComponent   : false, componentName: "ch2", componentLabel: "${componentLabel}"])
+			 isComponent: false, componentName: "ch2", componentLabel: "${componentLabel}"])
 		log.debug "Endpoint 2 (Z-Wave Binary Switch Endpoint) added as $componentLabel"
 	} catch (e) {
 		log.warn "Failed to add endpoint 2 ($desc) as Z-Wave Binary Switch Endpoint - $e"
@@ -68,13 +74,17 @@ def updated() {
 
 def configure() {
 	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
-	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	def commands = []
 	if (zwaveInfo.mfr.equals("0258")) {
 		commands << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [0]).format()
 		commands << "delay 100"
 	}
-	commands << zwave.basicV1.basicGet().format()
+	if (zwaveInfo.mfr.equals("0086")) {
+		//set command report to basic report
+		commands << command(zwave.configurationV1.configurationSet(parameterNumber: 0x50, scaledConfigurationValue: 2, size: 1))
+	}
+	commands << command(zwave.basicV1.basicGet())
 	response(commands)
 }
 
@@ -88,22 +98,32 @@ def parse(String description) {
 	return createEvent(result)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off"]
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, endpoint=null) {
+	(endpoint == 1) ? [name: "switch", value: cmd.value ? "on" : "off"] : [:]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off"]
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, endpoint=null) {
+	(endpoint == 1) ? [name: "switch", value: cmd.value ? "on" : "off"] : [:]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off"]
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, endpoint=null) {
+	(endpoint == 1) ? [name: "switch", value: cmd.value ? "on" : "off"] : [:]
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand()
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (cmd.sourceEndPoint == 1) {
-		zwaveEvent(encapsulatedCommand)
+		zwaveEvent(encapsulatedCommand, 1)
 	} else { // sourceEndPoint == 2
 		childDevices[0]?.handleZWave(encapsulatedCommand)
 		[:]
@@ -126,7 +146,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-	// parent DTH conrols endpoint 1
+	// parent DTH controls endpoint 1
 	def endpointNumber = 1
 	delayBetween([
 		encap(endpointNumber, zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF)),
@@ -135,7 +155,7 @@ def on() {
 }
 
 def off() {
-	// parent DTH conrols endpoint 1
+	// parent DTH controls endpoint 1
 	def endpointNumber = 1
 	delayBetween([
 		encap(endpointNumber, zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00)),
@@ -151,7 +171,7 @@ def ping() {
 }
 
 def refresh() {
-	// parent DTH conrols endpoint 1
+	// parent DTH controls endpoint 1
 	def endpointNumber = 1
 	encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
 }
@@ -170,7 +190,7 @@ def sendCommand(endpointDevice, commands) {
 
 def encap(endpointNumber, cmd) {
 	if (cmd instanceof physicalgraph.zwave.Command) {
-		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd).format()
+		command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
 	} else if (cmd.startsWith("delay")) {
 		cmd
 	} else {
@@ -179,3 +199,20 @@ def encap(endpointNumber, cmd) {
 	}
 }
 
+private command(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo.zw.contains("s")) {
+		secEncap(cmd)
+	} else if (zwaveInfo.cc.contains("56")){
+		crcEncap(cmd)
+	} else {
+		cmd.format()
+	}
+}
+
+private secEncap(physicalgraph.zwave.Command cmd) {
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crcEncap(physicalgraph.zwave.Command cmd) {
+	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
