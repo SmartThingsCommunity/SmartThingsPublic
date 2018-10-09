@@ -232,6 +232,10 @@ def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
+def updated() {
+	sendHubCommand secure(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+}
+
 def configure() {
 	log.debug "Configure..."
 	response([
