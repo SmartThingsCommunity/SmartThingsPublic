@@ -55,6 +55,7 @@ metadata {
         command "setBlueLevel"
         command "setWhite1Level"
         command "setWhite2Level"
+        command "flashGreen"
 	}
 
 	simulator {
