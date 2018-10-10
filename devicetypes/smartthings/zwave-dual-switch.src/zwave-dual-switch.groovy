@@ -66,6 +66,7 @@ def installed() {
 		log.warn "Failed to add endpoint 2 ($desc) as Z-Wave Binary Switch Endpoint - $e"
 	}
 	configure()
+	response(refresh())
 }
 
 def updated() {
