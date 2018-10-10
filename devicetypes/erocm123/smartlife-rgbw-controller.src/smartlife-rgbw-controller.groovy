@@ -55,7 +55,16 @@ metadata {
         command "setBlueLevel"
         command "setWhite1Level"
         command "setWhite2Level"
+
+        // Flash green for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
         command "flashGreen"
+        
+        // Flash red for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+        command "flashRed"
+        
+        // Flash blue for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+        command "flashBlue"
+
 	}
 
 	simulator {
@@ -844,12 +853,6 @@ def greenOn() {
 	log.debug "greenOn()"
     getAction("/g?value=ff&channels=$channels&transition=$transition")
 }
-def flashGreen() {
-	log.debug "flashGreen()"
-    def uri = "/program?value=f~00ff00~2000_f~000000~2000&repeat=20&off=false"
-    getAction(uri)
-}
-
 def greenOff() {
 	log.debug "greenOff()"
     getAction("/g?value=00&channels=$channels&transition=$transition")
@@ -914,6 +917,30 @@ def setWhite2Level(value) {
 	def whiteLevel = hex(level)
     getAction("/w2?value=$whiteLevel&channels=$channels&transition=$transition")
 }
+
+
+// Flash green for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+def flashGreen() {
+	log.debug "flashGreen()"
+    def uri = "/program?value=f~00ff00~2000_f~000000~2000&repeat=2400&off=false"
+    getAction(uri)
+}
+
+// Flash red for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+def flashRed() {
+	log.debug "flashRed()"
+    def uri = "/program?value=f~ff0000~2000_f~000000~2000&repeat=2400&off=false"
+    getAction(uri)
+}
+
+// Flash blue for 2 seconds, then off for 2 seconds. Repeat for 10 minutes. Call off to stop.
+def flashBlue() {
+	log.debug "flashBlue()"
+    def uri = "/program?value=f~0000ff~2000_f~000000~2000&repeat=2400&off=false"
+    getAction(uri)
+}
+
+
 
 private getHexColor(value){
 def color = ""
