@@ -233,7 +233,7 @@ def installed() {
 }
 
 def updated() {
-	sendHubCommand secure(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+	sendHubCommand secure(zwave.multiChannelV3.multiChannelEndPointGet())
 }
 
 def configure() {
