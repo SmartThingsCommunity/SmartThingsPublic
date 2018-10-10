@@ -844,6 +844,12 @@ def greenOn() {
 	log.debug "greenOn()"
     getAction("/g?value=ff&channels=$channels&transition=$transition")
 }
+def flashGreen() {
+	log.debug "flashGreen()"
+    def uri = "/program?value=f~00ff00~2000_f~000000~2000&repeat=20&off=false"
+    getAction(uri)
+}
+
 def greenOff() {
 	log.debug "greenOff()"
     getAction("/g?value=00&channels=$channels&transition=$transition")
