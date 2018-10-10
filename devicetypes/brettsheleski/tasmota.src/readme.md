@@ -120,6 +120,7 @@ See the table below of devices this device handler should work with.
 | Sonoff Dual R2 | | | |
 | Arilux LC06 | | | |
 | Sonoff S31 | | | |
+| Sonoff iFan02 | Working | [@BrettSheleski](https://github.com/BrettSheleski)  | |
 
 
 ## Supported GPIO
