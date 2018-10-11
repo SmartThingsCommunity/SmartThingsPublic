@@ -43,6 +43,7 @@ metadata {
 
 def installed() {
 	configure()
+	response(refresh())
 }
 
 def updated() {
