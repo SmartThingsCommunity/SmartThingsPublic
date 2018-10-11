@@ -14,7 +14,8 @@
  *
  *
  *	VERSION HISTORY
- *	31.07.2018	3.1 - debugin depeciated & depeciated terms depeciated
+ *				3.2 - new app terms added, nb google does not like summer mode (valve full open) - but fully functioning
+ *  31.07.2018	3.1 - debugin depeciated & depeciated terms depeciated
  *	24.04.2018	3.0	- summer mode added to over valse fully and prevent automation change the temp, debugin depeciated/removed, guides added to settings page
  *  			2.6 - added google voice command compatibility - release for testing
  *						Turn off -			"turn off **device name/room** thermostat(s)" 				--Save last settings and turn off (aka 12deg) 
@@ -41,7 +42,7 @@
  */
  
 metadata {
-	definition (name: "MiHome eTRV", namespace: "alyc100", author: "Alex Lee Yuk Cheung and updated by mark cockcroft", vid: "SmartThings-smartthings-Z-Wave_Thermostat") {
+	definition (name: "MiHome eTRV", namespace: "alyc100", author: "Alex Lee Yuk Cheung and updated by mark cockcroft",  ocfDeviceType: "oic.d.thermostat", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Thermostat") {
 		
 //capability "Polling" not needed as refresh is schdualed in the DH
        	capability "Actuator"						// best practice

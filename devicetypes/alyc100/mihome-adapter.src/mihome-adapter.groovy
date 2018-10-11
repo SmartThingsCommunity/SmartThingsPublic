@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	VERSION HISTORY - FORMER VERSION NOW RENAMED AS ADAPTER PLUS
- *					-	runin an hour added
+ *				3.1	-	refersh period updated, new app terms added
  *				3.0 -	Code cleansed debugging removed
  *				2.5	-	Major review to move schdualing into the DH, created error handler / seetings added for refresh rate and check in time
  *	17.09.2017: 2.0a -	Disable setting device to Offline on unexpected API response.
@@ -25,13 +25,13 @@
  *	08.11.2016:	2.0 BETA Release 1 - Support for MiHome (Connect) v2.0. Inital version of device.
  */
 metadata {
-	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updeated by Mark Cockcroft", ocfDeviceType: "oic.d.switch", vid: "generic-switch") {
-		//capability "Polling" // polling disabled as refresh is schedualed in preferences (rates) 				mnmn: "SmartThings",
+	definition (name: "MiHome Adapter", namespace: "alyc100", author: "Alex Lee Yuk Cheung & updeated by Mark Cockcroft", ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "generic-switch") {
+		//capability "Polling" // polling disabled as refresh is schedualed in preferences (rates) 
 		capability "Actuator"	// best practice
         capability "Sensor"		// best practice
         capability "Refresh"
 		capability "Switch"
-        capability  "Health Check"
+        capability "Health Check"
         
         command "on"
         command "off"
