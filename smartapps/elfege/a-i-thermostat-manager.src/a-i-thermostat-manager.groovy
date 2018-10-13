@@ -2029,13 +2029,13 @@ inAway = $inAway
 
                 /// ALGEBRA
 
-                def xa = 0
-                def ya = 0
+                double xa = 0.00
+                double ya = 0.00
 
-                def xb = 0
-                def yb = 0
-                def b = 0
-                def coef = 0
+                double xb = 0.00
+                double yb = 0.00
+                float b = 0.00
+                float coef = 0.00
 
 
                 if(adjustments == "Yes, use a linear variation" && !inAway){
@@ -2065,28 +2065,8 @@ inAway = $inAway
                     //
 
                     //////////////////////////LINEAR HEAT/////////////////////////////// 
-                    log.debug "LINEAR HEAT --"
-                    xa = 68 //outside temp a
-                    ya = MinLinearHeat // min desired heating temp a 
-
-                    xb = 60   //outside temp b
-                    yb = MaxLinearHeat  // max desired heating temp b  
-
-                    coef = (yb-ya)/(xb-xa)
-                    b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b
-
-
-                    HSPSet = coef*outsideTemp + b 
-                    log.info "linear HSPSet FLOAT = $HSPSet"
-                    HSPSet = HSPSet.toInteger()
-
-                    log.debug """
-outsideTemp is $outsideTemp 
-b is: $b 
-slope: $coef 
-MinLinearHeat = $MinLinearHeat
-MaxLinearHeat = $MaxLinearHeat
-linear HSPSet for $ThermSet = $HSPSet """
+                    HSPSet = LinearHeat(outsideTemp).toInteger()
+                    log.info "linear HSPSet = $HSPSet"
 
 
                 } 
@@ -2105,36 +2085,23 @@ Math.log(256) / Math.log(2)
 
                     ////////////////// LOGARITHMIC COOL ///////////////// 
                     // log base is: CSPSet
-                    def Base = CSPSet?.toInteger()
+
+                    def Base = CSPSet
                     /////////////////////////COOL//////////////////// 
                     //outsideTemp = 90 // for test only 
-                    CSPSet = (Math.log(outsideTemp) / Math.log(Base)) * CSPSet
-                    log.debug "Logarithmic CSPSet  for $ThermSet = $CSPSet"
+                    CSPSet = (Math.log(outsideTemp) / Math.log(Base)) * CSPSet as double
+                        log.debug "Logarithmic CSPSet  for $ThermSet = $CSPSet"
 
 
-                    /////////////////// HEAT ALWAYS LINEAR ///////////////// 
-                    // log base is: the average desired temperature
-                    log.debug "LINEAR HEAT --"
-                    xa = 68 //outside temp a
-                    ya = MinLinearHeat // min desired heating temp a 
-
-                    xb = 60   //outside temp b
-                    yb = MaxLinearHeat  // max desired heating temp b  
-
-                    coef = (yb-ya)/(xb-xa)
-                    b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b
-
-
-                    HSPSet = coef*outsideTemp + b 
-                    log.info "linear HSPSet FLOAT = $HSPSet"
-                    HSPSet = HSPSet.toInteger()
+                    HSPSet = LinearHeat(outsideTemp).toInteger()
+                    log.info "linear HSPSet = $HSPSet"
 
 
 
                 }
                 ///////////////////////////// END OF ALGEBRA ////////////////////////////////////////////
                 /////////////////////////// HEAT MAXIMA MINIMA ///////////////////////
-                if(HSPSet > MaxLinearHeat && (Active || !inMotionModes) && !inAway){
+                if(HSPSet > MaxLinearHeat && /*(Active || !inMotionModes)&& */ !inAway){
                     HSPSet = MaxLinearHeat
                     def message = "$ThermSet heating set point is too high, brought back to your prefered Maximum: ${MaxLinearHeat}F | sendalert = $state.sendalert"
                     log.info message
@@ -2251,7 +2218,6 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
                 }
 
                 /////////////////////////////////////////////////////////END OF SETPOINTS EVALS/////////////////////////////////////////////////////////
-
                 /////////////////////////////////////////////////////////EVAL OF NEEDS ////////////////////////////////////////////////////////////////
                 def WarmOutside = outsideTemp >= OutsideTempLowThres 
                 def WarmInside = (CurrTemp > (defaultCSPSet - 1) && WarmOutside) || (CurrTemp > defaultCSPSet && TooHumidINSIDE && Active) 
@@ -2264,7 +2230,7 @@ But, because CSPSet is too much lower than default value ($defaultCSPSet), defau
 
                 def ShouldHeat = !WarmOutside && !WarmInside
 
-                if((WarmInside && TooHumidINSIDE) && !ShouldHeat && Active){
+                if((WarmInside && TooHumidINSIDE && WarmOutside) && !ShouldHeat && Active){
                     ShouldCoolWithAC = true
                     log.debug "ShouldCoolWithAC set to true loop $loopValue due to humidity levels inside"
                 }
@@ -2282,7 +2248,8 @@ OutsideTempLowThres = $OutsideTempLowThres
 OutsideTempHighThres = $OutsideTempHighThres
 TooHumidINSIDE = $TooHumidINSIDE
 outsideTemp = $outsideTemp
-CSPSet = $CSPSet
+FINAL CSPSet = $CSPSet
+FINAL HSPSet = $HSPSet
 defaultCSPSet = $defaultCSPSet
 
 """       
@@ -2345,13 +2312,7 @@ FoundUnitToIgnore = $FoundUnitToIgnore
                             def HSPSetBedSensor = HSPSetBedSensor?.toInteger()
                             //log.debug "Integer HSPSetBedSensor = $HSPSetBedSensor"
 
-                            def needCool = ShouldCoolWithAC
-                            def needHeat = ShouldHeat
-                            if(needHeat){
-                                needCool = false 
-                            }
-
-                            if(needCool){
+                            if(ShouldCoolWithAC && !ShouldHeat){
                                 if(!CurrentCoolingSetPoint != CSPSetBedSensor){
                                     ThermSet.setCoolingSetpoint(CSPSetBedSensor)
                                     log.debug "$ThermSet CSP set to $CSPSetBedSensor -- Bed Sensor" 
@@ -2371,7 +2332,7 @@ FoundUnitToIgnore = $FoundUnitToIgnore
                                     log.debug "$ThermSet already set to cool -- Bed Sensor"
                                 }
                             }
-                            else if(needHeat){
+                            else if(ShouldHeat){
                                 if(CurrentHeatingSetPoint != HSPSetBedSensor){
                                     ThermSet.setHeatingSetpoint(HSPSetBedSensor)
                                     log.debug "$ThermSet HSP set to $HSPSetBedSensor -- Bed Sensor" 
@@ -2481,7 +2442,7 @@ AppMgt = $AppMgt
                         if(!BedSensorManagement){ // avoid redundancies if BedSensor's already managing unit. 
                             // if temp is within desired settings then turn off units
                             if(!ShouldCoolWithAC && !ShouldHeat){
-                                // + 1 is too frequent turn on/off 
+
                                 if(useAltSensor){ 
 
                                     /// this allows for turn off request whenever a unit is linked to an alternate sensor
@@ -2521,7 +2482,7 @@ AppMgt = $AppMgt
                             }
                             // if turnOffWhenReached, then as soon as temp is no longer within desired temperature normal eval will resume
                             // now turn on heat or cool depending on situation and if no turn off request previously occurred 
-                            else if(ShouldCoolWithAC /*|| !CSPok*/){
+                            else if(ShouldCoolWithAC){
                                 // deprecated: it may happen that old settings get stuck if estimate of shouldcool is false 
                                 // so if no override but discrepancy between current csp and what should be
                                 // go on
@@ -4054,4 +4015,50 @@ def send(msg){
     }
 
     //log.debug msg
+}
+
+def LinearHeat(outsideTemp){
+    double xa = 0.00
+    double ya = 0.00
+
+    double xb = 0.00
+    double yb = 0.00
+    float b = 0.00
+    float coef = 0.00
+
+    /////////////////// HEAT ALWAYS LINEAR ///////////////// 
+    // log base is: the average desired temperature
+    log.debug "LINEAR HEAT --"
+    xa = 68 //outside temp a
+    ya = MinLinearHeat //  desired heating at temp xa 
+
+    xb = 0   //outside temp b
+    yb = MaxLinearHeat  // desired heating at temp xb  
+
+    // the hotter outside, the cooler HSP
+    // the cooler outside, the hotter HSP
+
+
+    //// TEST ONLY : 
+    //outsideTemp = 30
+    ////////////
+
+    coef = (yb-ya)/(xb-xa)
+
+    // solve intercept, b
+    b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b //
+    //b = ya - coef * outsideTemp  //
+
+
+    int HSPSet = coef * outsideTemp + b 
+
+    log.debug """
+                    outsideTemp = $outsideTemp
+                    slope = $coef
+                    intercept = $b
+                    MaxLinearHeat = $MaxLinearHeat
+                    MinLinearHeat = $MinLinearHeat
+                    """
+
+    return HSPSet
 }
