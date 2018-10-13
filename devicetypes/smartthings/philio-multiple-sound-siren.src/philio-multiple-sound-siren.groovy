@@ -125,9 +125,13 @@ def getDurationMap() {[
 def getDefaultSound() { "Emergency" }
 def getDefaultDuration() { "Forever" }
 
-def installed() {
+def setupHealthCheck() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+def installed() {
+	setupHealthCheck()
 
 	state.sound = defaultSound
 	state.duration = defaultDuration
@@ -138,8 +142,8 @@ def installed() {
 
 def updated() {
 	def commands = []
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	setupHealthCheck()
 
 	log.debug "settings: ${settings.inspect()}, state: ${state.inspect()}"
 
@@ -229,13 +233,13 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def handleDeviceEvent(value) {
 	log.debug "handleDeviceEvent $value"
 	def result = [
-		createEvent([name: "switch", value: value ? "on" : "off", displayed: false]),
-		createEvent([name: "alarm", value: value ? "both" : "off"])
+		createEvent([name: "switch", value: value == 0xFF ? "on" : "off", displayed: false]),
+		createEvent([name: "alarm", value: value == 0xFF ? "both" : "off"])
 	]
 
 	// value != 0 doesn't necessarily trigger the below events,
 	// but value == 0 clears them
-	if (!value) {
+	if (value == 0) {
 		result << createEvent([name: "chime", value: "off"])
 		result << createEvent([name: "tamper", value: "clear"])
 	}
@@ -288,16 +292,16 @@ def both() {
 
 def test() {
 	[
-		secure(zwave.basicV1.basicSet(value: 0xFF)),
+		on(),
 		"delay 3000",
-		secure(zwave.basicV1.basicSet(value: 0x00))
+		off()
 	]
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
 	def zwInfo = zwaveInfo
 	// This model is explicitly secure, so if it paired "the old way" and zwaveInfo doesn't exist then encapsulate
-	if (!zwInfo || (zwInfo?.zw?.contains("s") && (cmd.commandClassId == 0x20 || zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId))))) {
+	if (!zwInfo || (zwInfo?.zw?.contains("s") && zwInfo.sec?.contains(String.format("%02X", cmd.commandClassId)))) {
 		log.debug "securely sending $cmd"
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
