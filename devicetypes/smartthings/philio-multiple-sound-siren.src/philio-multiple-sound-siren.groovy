@@ -10,7 +10,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Aeon Siren
+ *	Philio Multiple Sound Siren
  *
  *	Author: SmartThings
  *	Date: 2018-10-1
@@ -54,7 +54,7 @@ metadata {
 		state "default", label:'', action:"alarm.off", icon:"st.secondary.off"
 	}
 	standardTile("chime", "device.chime", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:'', action:"chime.chime", icon:"st.illuminance.illuminance.dark"
+		state "default", label:'chime', action:"chime.chime", icon:"st.illuminance.illuminance.dark"
 	}
 	valueTile("tamper", "device.tamper", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
 		state "detected", label:'tampered', backgroundColor: "#ff0000"
@@ -63,7 +63,7 @@ metadata {
 
 	preferences {
 		input "sound", "enum", title: "What sound should play for an alarm event?", description: "Default is 'Emergency'", options: ["Smoke", "Emergency", "Police", "Fire", "Ambulance"]
-		input "duration", "enum", title: "How long should the sound play?", description: "Default is '3 minutes'", options: ["Never stop", "30 seconds", "1 minute", "2 minutes", "3 minutes", "5 minutes", "10 minutes", "20 minutes", "30 minutes", "45 minutes", "1 hour"]
+		input "duration", "enum", title: "How long should the sound play?", description: "Default is 'Forever'", options: ["Forever", "30 seconds", "1 minute", "2 minutes", "3 minutes", "5 minutes", "10 minutes", "20 minutes", "30 minutes", "45 minutes", "1 hour"]
 	}
 
 	main "alarm"
@@ -109,7 +109,7 @@ def getSoundMap() {[
  * Range: 0-127
  */
 def getDurationMap() {[
-	"Never stop": 0,
+	"Forever": 0,
 	"30 seconds": 1,
 	"1 minute": 2,
 	"2 minutes": 4,
@@ -123,7 +123,7 @@ def getDurationMap() {[
 ]}
 
 def getDefaultSound() { "Emergency" }
-def getDefaultDuration() { "3 minutes" }
+def getDefaultDuration() { "Forever" }
 
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
@@ -133,7 +133,7 @@ def installed() {
 	state.duration = defaultDuration
 
 	// Get default values
-	response(secure(zwave.basicV1.basicGet()))
+	response([secure(zwave.basicV1.basicGet()), secure(zwave.configurationV1.configurationSet(parameterNumber: 31, size: 1, configurationValue: [durationMap[state.duration]]))])
 }
 
 def updated() {
@@ -193,6 +193,18 @@ def zwaveEvent(basicv1.BasicReport cmd) {
 	handleDeviceEvent(cmd.value)
 }
 
+def zwaveEvent(sensorbinaryv2.SensorBinaryReport cmd) {
+	log.debug "rx $cmd"
+	def result = []
+
+	if (cmd.sensorType == sensorbinaryv2.SensorBinaryReport.SENSOR_TYPE_TAMPER) {
+		result << createEvent(name: "tamper", value: "detected")
+	} else {
+		result = handleDeviceEvent(cmd.sensorValue)
+	}
+	result
+}
+
 def zwaveEvent(notificationv3.NotificationReport cmd) {
 	def result = []
 
@@ -202,7 +214,6 @@ def zwaveEvent(notificationv3.NotificationReport cmd) {
 		if (cmd.event == 3) {
 			result << createEvent(name: "tamper", value: "detected")
 		}
-		result = result + handleDeviceEvent(cmd.event)
 	} else {
 		log.warn "Unknown cmd.notificationType: ${cmd.notificationType}"
 		result << createEvent(descriptionText: cmd.toString(), isStateChange: false)
@@ -235,20 +246,21 @@ def handleDeviceEvent(value) {
 def generateCommand(command) {
 	def sound = (command && soundMap.containsKey(command)) ? soundMap[command] : soundMap[defaultSound]
 	log.debug "Sending $command"
-	[
-		secure(zwave.notificationV3.notificationReport(notificationType: sound.notificationType, event: sound.event)),
-		secure(zwave.basicV1.basicGet())
-	]
+
+	secure(zwave.notificationV3.notificationReport(notificationType: sound.notificationType, event: sound.event))
 }
 
 def chime() {
 	log.debug "chime!"
 
-	// Chime is kind of special as the alarm treats it as momentary,
-	// so we'll send this, then get an off in response to our BasicGet.
+	// Chime is kind of special as the alarm treats it as momentary
+	// and thus sends no updates to us, so we'll send this and request an update
 	sendEvent(name: "chime", value: "chime")
 
-	generateCommand("Chime")
+	[
+		generateCommand("Chime"),
+		secure(zwave.basicV1.basicGet())
+	]
 }
 
 def on() {
@@ -258,10 +270,8 @@ def on() {
 
 def off() {
 	log.debug "sending off"
-	[
-		secure(zwave.basicV1.basicSet(value: 0x00)),
-		secure(zwave.basicV1.basicGet())
-	]
+
+	secure(zwave.basicV1.basicSet(value: 0x00))
 }
 
 def strobe() {
@@ -280,8 +290,7 @@ def test() {
 	[
 		secure(zwave.basicV1.basicSet(value: 0xFF)),
 		"delay 3000",
-		secure(zwave.basicV1.basicSet(value: 0x00)),
-		secure(zwave.basicV1.basicGet())
+		secure(zwave.basicV1.basicSet(value: 0x00))
 	]
 }
 
