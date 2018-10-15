@@ -25,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Relative Humidity Measurement"
 		capability "Health Check"
+		capability "Switch"
 
 		command "generateEvent"
 		command "resumeProgram"
@@ -196,8 +197,8 @@ def generateEvent(Map results) {
 				// Store min/max setpoint in device unit to avoid conversion rounding error when updating setpoints
 				device.updateDataValue(name+"Fahrenheit", "${value}")
 			} else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
-				if (value == true) {
-					supportedThermostatModes << ((name == "auxHeatMode") ? "emergency heat" : name - "Mode")
+            	if (value == true || name!="auxHeatMode") {//heat, cool, auto are supported in Ecobee 3 Lite so do not check the value
+                    supportedThermostatModes << ((name == "auxHeatMode") ? "emergency heat" : name - "Mode")
 				}
 				return // as we don't want to send this event here, proceed to next name/value pair
 			} else if (name=="thermostatFanMode"){
@@ -416,6 +417,13 @@ def generateOperatingStateEvent(operatingState) {
 }
 
 def off() { setThermostatMode("off") }
+def on() { 
+    def currentMode = device.currentValue("thermostatMode")
+    if (currentMode == "off") {
+        def nextMode = state.lastOnMode ?: "auto"
+        switchToMode(nextMode)
+    }
+}
 def heat() { setThermostatMode("heat") }
 def emergencyHeat() { setThermostatMode("emergency heat") }
 def cool() { setThermostatMode("cool") }
@@ -542,6 +550,10 @@ def generateStatusEvent() {
 	def temperature = device.currentValue("temperature")
 	def statusText = "Right Now: Idle"
 	def operatingState = "idle"
+
+    if (mode != "off") {
+    	state.lastOnMode = mode
+    }
 
 	if (mode == "heat" || mode == "emergency heat") {
 		if (temperature < heatingSetpoint) {
