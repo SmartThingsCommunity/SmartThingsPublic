@@ -65,7 +65,7 @@ def installed() {
 	} catch (e) {
 		log.warn "Failed to add endpoint 2 ($desc) as Z-Wave Binary Switch Endpoint - $e"
 	}
-	[response(refresh()), configure()]
+	response(configure())
 }
 
 def updated() {
@@ -86,6 +86,7 @@ def configure() {
 	}
 	commands << command(zwave.basicV1.basicGet())
 	response(commands)
+	refresh()
 }
 
 def parse(String description) {
