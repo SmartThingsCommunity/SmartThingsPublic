@@ -12,30 +12,30 @@
  *
  */
 metadata {
-    definition(name: "Z-Wave Open Close For Lock Child", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
-        capability "Contact Sensor"
-        capability "Sensor"
-        capability "Battery"
-        capability "Configuration"
-        capability "Health Check"
-    }
+	definition(name: "Z-Wave Open Close For Lock Child", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
+		capability "Contact Sensor"
+		capability "Sensor"
+		capability "Battery"
+		capability "Configuration"
+		capability "Health Check"
+	}
 
-    tiles(scale: 2) {
-        multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
-            tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-                attributeState("open", slabel: '${name}', icon: "st.contact.contfact.open", backgroundColor: "#e86d13")
-                attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
-            }
-        }
-        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "battery", label: '${currentValue}% battery', unit: ""
-        }
+	tiles(scale: 2) {
+		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", slabel: '${name}', icon: "st.contact.contfact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			}
+		}
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "battery", label: '${currentValue}% battery', unit: ""
+		}
 
-        main "contact"
-        details(["contact", "battery"])
-    }
+		main "contact"
+		details(["contact", "battery"])
+	}
 }
 
 def sendCommand(cmd) {
-    parent.sendCommand(name: "battery", value: cmd.batteryLevel)
+	parent.sendCommand(name: "battery", value: cmd.batteryLevel)
 }
