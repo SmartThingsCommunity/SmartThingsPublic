@@ -14,48 +14,48 @@
  *
  */
 metadata {
-    definition(name: "Z-Wave Lock Without Codes", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-lock-2") {
-        capability "Actuator"
-        capability "Lock"
-        capability "Refresh"
-        capability "Sensor"
-        capability "Battery"
-        capability "Health Check"
-        capability "Configuration"
+	definition(name: "Z-Wave Lock Without Codes", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-lock-2") {
+		capability "Actuator"
+		capability "Lock"
+		capability "Refresh"
+		capability "Sensor"
+		capability "Battery"
+		capability "Health Check"
+		capability "Configuration"
 
-        fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Smart Lock Pro"
-    }
+		fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Smart Lock Pro"
+	}
 
-    simulator {
-    }
+	simulator {
+	}
 
-    tiles(scale: 2) {
-        multiAttributeTile(name: "toggle", type: "generic", width: 6, height: 4) {
-            tileAttribute("device.lock", key: "PRIMARY_CONTROL") {
-                attributeState "locked", label: 'locked', action: "lock.unlock", icon: "st.locks.lock.locked", backgroundColor: "#00A0DC", nextState: "unlocking"
-                attributeState "unlocked", label: 'unlocked', action: "lock.lock", icon: "st.locks.lock.unlocked", backgroundColor: "#ffffff", nextState: "locking"
-                attributeState "unlocked with timeout", label: 'unlocked', action: "lock.lock", icon: "st.locks.lock.unlocked", backgroundColor: "#ffffff", nextState: "locking"
-                attributeState "unknown", label: "unknown", action: "lock.lock", icon: "st.locks.lock.unknown", backgroundColor: "#ffffff", nextState: "locking"
-                attributeState "locking", label: 'locking', icon: "st.locks.lock.locked", backgroundColor: "#00A0DC"
-                attributeState "unlocking", label: 'unlocking', icon: "st.locks.lock.unlocked", backgroundColor: "#ffffff"
-            }
-        }
-        standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: 'lock', action: "lock.lock", icon: "st.locks.lock.locked", nextState: "locking"
-        }
-        standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: 'unlock', action: "lock.unlock", icon: "st.locks.lock.unlocked", nextState: "unlocking"
-        }
-        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "battery", label: '${currentValue}% battery', unit: ""
-        }
-        standardTile("refresh", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
-        }
+	tiles(scale: 2) {
+		multiAttributeTile(name: "toggle", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.lock", key: "PRIMARY_CONTROL") {
+				attributeState "locked", label: 'locked', action: "lock.unlock", icon: "st.locks.lock.locked", backgroundColor: "#00A0DC", nextState: "unlocking"
+				attributeState "unlocked", label: 'unlocked', action: "lock.lock", icon: "st.locks.lock.unlocked", backgroundColor: "#ffffff", nextState: "locking"
+				attributeState "unlocked with timeout", label: 'unlocked', action: "lock.lock", icon: "st.locks.lock.unlocked", backgroundColor: "#ffffff", nextState: "locking"
+				attributeState "unknown", label: "unknown", action: "lock.lock", icon: "st.locks.lock.unknown", backgroundColor: "#ffffff", nextState: "locking"
+				attributeState "locking", label: 'locking', icon: "st.locks.lock.locked", backgroundColor: "#00A0DC"
+				attributeState "unlocking", label: 'unlocking', icon: "st.locks.lock.unlocked", backgroundColor: "#ffffff"
+			}
+		}
+		standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label: 'lock', action: "lock.lock", icon: "st.locks.lock.locked", nextState: "locking"
+		}
+		standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label: 'unlock', action: "lock.unlock", icon: "st.locks.lock.unlocked", nextState: "unlocking"
+		}
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "battery", label: '${currentValue}% battery', unit: ""
+		}
+		standardTile("refresh", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
+		}
 
-        main "toggle"
-        details(["toggle", "lock", "unlock", "battery", "refresh"])
-    }
+		main "toggle"
+		details(["toggle", "lock", "unlock", "battery", "refresh"])
+	}
 }
 
 import physicalgraph.zwave.commands.doorlockv1.*
@@ -65,24 +65,23 @@ import physicalgraph.zwave.commands.doorlockv1.*
  */
 def installed() {
 
-    if (zwaveInfo.mfr == "033F") {
-        initialize()
-    } else {
+	if (zwaveInfo.mfr == "033F") {
+		initialize()
+	} else {
 
-        // Device-Watch pings if no device events received for 1 hour (checkInterval)
-        sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-        scheduleInstalledCheck()
-    }
+		// Device-Watch pings if no device events received for 1 hour (checkInterval)
+		sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+		scheduleInstalledCheck()
+	}
 }
 
 def initialize() {
-    if (!childDevices) {
-        addChild()
-    }
-    sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-    response(refresh())
+	if (!childDevices) {
+		addChild()
+	}
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	response(refresh())
 }
-
 
 /**
  * Verify that we have actually received the lock's initial states.
@@ -90,32 +89,32 @@ def initialize() {
  * and check again.
  */
 def scheduleInstalledCheck() {
-    runIn(120, installedCheck, [forceForLocallyExecuting: true])
+	runIn(120, installedCheck, [forceForLocallyExecuting: true])
 }
 
 def installedCheck() {
-    if (device.currentState("lock") && device.currentState("battery")) {
-        unschedule("installedCheck")
-    } else {
-        // We might have called updated() or configure() at some point but not have received a reply, so don't flood the network
-        if (!state.lastLockDetailsQuery || secondsPast(state.lastLockDetailsQuery, 2 * 60)) {
-            def actions = updated()
+	if (device.currentState("lock") && device.currentState("battery")) {
+		unschedule("installedCheck")
+	} else {
+		// We might have called updated() or configure() at some point but not have received a reply, so don't flood the network
+		if (!state.lastLockDetailsQuery || secondsPast(state.lastLockDetailsQuery, 2 * 60)) {
+			def actions = updated()
 
-            if (actions) {
-                sendHubCommand(actions.toHubAction())
-            }
-        }
-        scheduleInstalledCheck()
-    }
+			if (actions) {
+				sendHubCommand(actions.toHubAction())
+			}
+		}
+		scheduleInstalledCheck()
+	}
 }
 
 /**
  * Called on app uninstalled
  */
 def uninstalled() {
-    def deviceName = device.displayName
-    log.trace "[DTH] Executing 'uninstalled()' for device $deviceName"
-    sendEvent(name: "lockRemoved", value: device.id, isStateChange: true, displayed: false)
+	def deviceName = device.displayName
+	log.trace "[DTH] Executing 'uninstalled()' for device $deviceName"
+	sendEvent(name: "lockRemoved", value: device.id, isStateChange: true, displayed: false)
 }
 
 /**
@@ -124,53 +123,53 @@ def uninstalled() {
  * @return hubAction: The commands to be executed
  */
 def updated() {
-    // Device-Watch pings if no device events received for 1 hour (checkInterval)
-    sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	// Device-Watch pings if no device events received for 1 hour (checkInterval)
+	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-    def hubAction = null
-    try {
-        def cmds = []
-        if (!device.currentState("lock") || !state.configured) {
-            log.debug "Returning commands for lock operation get and battery get"
-            if (!state.configured) {
-                cmds << doConfigure()
-            }
-            cmds << refresh()
-            hubAction = response(delayBetween(cmds, 30 * 1000))
-        }
-    } catch (e) {
-        log.warn "updated() threw $e"
-    }
-    hubAction
+	def hubAction = null
+	try {
+		def cmds = []
+		if (!device.currentState("lock") || !state.configured) {
+			log.debug "Returning commands for lock operation get and battery get"
+			if (!state.configured) {
+				cmds << doConfigure()
+			}
+			cmds << refresh()
+			hubAction = response(delayBetween(cmds, 30 * 1000))
+		}
+	} catch (e) {
+		log.warn "updated() threw $e"
+	}
+	hubAction
 }
 
 /**
  * Configures the device to settings needed by SmarthThings at device discovery time
  */
 def configure() {
-    log.trace "[DTH] Executing 'configure()' for device ${device.displayName}"
-    def cmds = doConfigure()
-    log.debug "Configure returning with commands := $cmds"
-    cmds
+	log.trace "[DTH] Executing 'configure()' for device ${device.displayName}"
+	def cmds = doConfigure()
+	log.debug "Configure returning with commands := $cmds"
+	cmds
 }
 
 /**
  * Returns the list of commands to be executed when the device is being configured/paired
  */
 def doConfigure() {
-    log.trace "[DTH] Executing 'doConfigure()' for device ${device.displayName}"
-    state.configured = true
-    def cmds = []
-    cmds << secure(zwave.doorLockV1.doorLockOperationGet())
-    if (zwaveInfo.mfr != "010E") {
-        cmds << secure(zwave.batteryV1.batteryGet())
-        cmds = delayBetween(cmds, 30 * 1000)
-    }
+	log.trace "[DTH] Executing 'doConfigure()' for device ${device.displayName}"
+	state.configured = true
+	def cmds = []
+	cmds << secure(zwave.doorLockV1.doorLockOperationGet())
+	if (zwaveInfo.mfr != "010E") {
+		cmds << secure(zwave.batteryV1.batteryGet())
+		cmds = delayBetween(cmds, 30 * 1000)
+	}
 
-    state.lastLockDetailsQuery = now()
+	state.lastLockDetailsQuery = now()
 
-    log.debug "Do configure returning with commands := $cmds"
-    cmds
+	log.debug "Do configure returning with commands := $cmds"
+	cmds
 }
 
 /**
@@ -182,29 +181,29 @@ def doConfigure() {
  *
  */
 def parse(String description) {
-    log.trace "[DTH] Executing 'parse(String description)' for device ${device.displayName} with description = $description"
+	log.trace "[DTH] Executing 'parse(String description)' for device ${device.displayName} with description = $description"
 
-    def result = null
-    if (description.startsWith("Err")) {
-        if (state.sec) {
-            result = createEvent(descriptionText: description, isStateChange: true, displayed: false)
-        } else {
-            result = createEvent(
-                    descriptionText: "This lock failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
-                    eventType: "ALERT",
-                    name: "secureInclusion",
-                    value: "failed",
-                    displayed: true,
-            )
-        }
-    } else {
-        def cmd = zwave.parse(description, [0x98: 1, 0x72: 2, 0x85: 2, 0x86: 1])
-        if (cmd) {
-            result = zwaveEvent(cmd)
-        }
-    }
-    log.debug "[DTH] parse() - returning result=$result"
-    result
+	def result = null
+	if (description.startsWith("Err")) {
+		if (state.sec) {
+			result = createEvent(descriptionText: description, isStateChange: true, displayed: false)
+		} else {
+			result = createEvent(
+					descriptionText: "This lock failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
+					eventType: "ALERT",
+					name: "secureInclusion",
+					value: "failed",
+					displayed: true,
+			)
+		}
+	} else {
+		def cmd = zwave.parse(description, [0x98: 1, 0x72: 2, 0x85: 2, 0x86: 1])
+		if (cmd) {
+			result = zwaveEvent(cmd)
+		}
+	}
+	log.debug "[DTH] parse() - returning result=$result"
+	result
 }
 
 /**
@@ -216,11 +215,11 @@ def parse(String description) {
  *
  */
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-    log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation)' with cmd = $cmd"
-    def encapsulatedCommand = cmd.encapsulatedCommand([0x62: 1, 0x71: 2, 0x80: 1, 0x85: 2, 0x63: 1, 0x98: 1, 0x86: 1])
-    if (encapsulatedCommand) {
-        zwaveEvent(encapsulatedCommand)
-    }
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation)' with cmd = $cmd"
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x62: 1, 0x71: 2, 0x80: 1, 0x85: 2, 0x63: 1, 0x98: 1, 0x86: 1])
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
 }
 
 /**
@@ -232,8 +231,8 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
  *
  */
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify cmd) {
-    log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify)' with cmd = $cmd"
-    createEvent(name: "secureInclusion", value: "success", descriptionText: "Secure inclusion was successful", isStateChange: true)
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify)' with cmd = $cmd"
+	createEvent(name: "secureInclusion", value: "success", descriptionText: "Secure inclusion was successful", isStateChange: true)
 }
 
 /**
@@ -245,12 +244,12 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify cmd) {
  *
  */
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
-    log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport)' with cmd = $cmd"
-    state.sec = cmd.commandClassSupport.collect { String.format("%02X ", it) }.join()
-    if (cmd.commandClassControl) {
-        state.secCon = cmd.commandClassControl.collect { String.format("%02X ", it) }.join()
-    }
-    createEvent(name: "secureInclusion", value: "success", descriptionText: "Lock is securely included", isStateChange: true)
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport)' with cmd = $cmd"
+	state.sec = cmd.commandClassSupport.collect { String.format("%02X ", it) }.join()
+	if (cmd.commandClassControl) {
+		state.secCon = cmd.commandClassControl.collect { String.format("%02X ", it) }.join()
+	}
+	createEvent(name: "secureInclusion", value: "success", descriptionText: "Lock is securely included", isStateChange: true)
 }
 
 /**
@@ -262,38 +261,38 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupported
  *
  */
 def zwaveEvent(DoorLockOperationReport cmd) {
-    log.trace "[DTH] Executing 'zwaveEvent(DoorLockOperationReport)' with cmd = $cmd"
-    def result = []
+	log.trace "[DTH] Executing 'zwaveEvent(DoorLockOperationReport)' with cmd = $cmd"
+	def result = []
 
-    unschedule("followupStateCheck")
-    unschedule("stateCheck")
+	unschedule("followupStateCheck")
+	unschedule("stateCheck")
 
-    // DoorLockOperationReport is called when trying to read the lock state or when the lock is locked/unlocked from the DTH or the smart app
-    def map = [name: "lock"]
-    map.data = [lockName: device.displayName]
-    if (cmd.doorLockMode == 0xFF) {
-        map.value = "locked"
-        map.descriptionText = "Locked"
-    } else if (cmd.doorLockMode >= 0x40) {
-        map.value = "unknown"
-        map.descriptionText = "Unknown state"
-    } else if (cmd.doorLockMode == 0x01) {
-        map.value = "unlocked with timeout"
-        map.descriptionText = "Unlocked with timeout"
-    } else {
-        map.value = "unlocked"
-        map.descriptionText = "Unlocked"
-    }
-    //Sends an event to August Child
-    if(zwaveInfo.mfr == "033F") {
-        String childDni = "${device.deviceNetworkId}:2"
-        def child = childDevices.find { it.deviceNetworkId == childDni }
+	// DoorLockOperationReport is called when trying to read the lock state or when the lock is locked/unlocked from the DTH or the smart app
+	def map = [name: "lock"]
+	map.data = [lockName: device.displayName]
+	if (cmd.doorLockMode == 0xFF) {
+		map.value = "locked"
+		map.descriptionText = "Locked"
+	} else if (cmd.doorLockMode >= 0x40) {
+		map.value = "unknown"
+		map.descriptionText = "Unknown state"
+	} else if (cmd.doorLockMode == 0x01) {
+		map.value = "unlocked with timeout"
+		map.descriptionText = "Unlocked with timeout"
+	} else {
+		map.value = "unlocked"
+		map.descriptionText = "Unlocked"
+	}
+	//Sends an event to August Child
+	if (zwaveInfo.mfr == "033F") {
+		String childDni = "${device.deviceNetworkId}:2"
+		def child = childDevices.find { it.deviceNetworkId == childDni }
 
-        def value = cmd.doorCondition == 2 || cmd.doorCondition == 0 ? "open" : "closed"
+		def value = cmd.doorCondition == 2 || cmd.doorCondition == 0 ? "open" : "closed"
 
-        child?.sendEvent(name: "contact", value: value )
-    }
-    return result ? [createEvent(map), *result] : createEvent(map)
+		child?.sendEvent(name: "contact", value: value)
+	}
+	return result ? [createEvent(map), *result] : createEvent(map)
 }
 
 /**
@@ -305,21 +304,21 @@ def zwaveEvent(DoorLockOperationReport cmd) {
  *
  */
 def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
-    log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport)' with cmd = $cmd"
-    def result = []
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport)' with cmd = $cmd"
+	def result = []
 
-    if (cmd.zwaveAlarmType == 6) {
-        result = handleAccessAlarmReport(cmd)
-    } else if (cmd.zwaveAlarmType == 8) {
-        //I don't this is supported now, but better safe than sorry.
-        result = handleBatteryAlarmReport(cmd)
-    } else {
-        result = handleAlarmReportUsingAlarmType(cmd)
-    }
+	if (cmd.zwaveAlarmType == 6) {
+		result = handleAccessAlarmReport(cmd)
+	} else if (cmd.zwaveAlarmType == 8) {
+		//I don't this is supported now, but better safe than sorry.
+		result = handleBatteryAlarmReport(cmd)
+	} else {
+		result = handleAlarmReportUsingAlarmType(cmd)
+	}
 
-    result = result ?: null
-    log.debug "[DTH] zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport) returning with result = $result"
-    result
+	result = result ?: null
+	log.debug "[DTH] zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport) returning with result = $result"
+	result
 }
 
 /**
@@ -331,68 +330,68 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
  *
  */
 private def handleAccessAlarmReport(cmd) {
-    log.trace "[DTH] Executing 'handleAccessAlarmReport' with cmd = $cmd"
-    def result = []
-    def map = null
-    def codeID, changeType, codeName
-    def deviceName = device.displayName
-    if (1 <= cmd.zwaveAlarmEvent && cmd.zwaveAlarmEvent < 10) {
-        map = [name: "lock", value: (cmd.zwaveAlarmEvent & 1) ? "locked" : "unlocked"]
-    }
-    switch (cmd.zwaveAlarmEvent) {
-        case 1: // Manually locked
-            map.descriptionText = "Locked manually"
-            map.data = [method: (cmd.alarmLevel == 2) ? "keypad" : "manual"]
-            break
-        case 2: // Manually unlocked
-            map.descriptionText = "Unlocked manually"
-            map.data = [method: "manual"]
-            break
-        case 3: // Locked by command
-            map.descriptionText = "Locked"
-            map.data = [method: "command"]
-            break
-        case 4: // Unlocked by command
-            map.descriptionText = "Unlocked"
-            map.data = [method: "command"]
-            break
-        case 7:
-            map = [name: "lock", value: "unknown", descriptionText: "Unknown state"]
-            map.data = [method: "manual"]
-            break
-        case 8:
-            map = [name: "lock", value: "unknown", descriptionText: "Unknown state"]
-            map.data = [method: "command"]
-            break
-        case 9: // Auto locked
-            map = [name: "lock", value: "locked", data: [method: "auto"]]
-            map.descriptionText = "Auto locked"
-            break
-        case 0xA:
-            map = [name: "lock", value: "unknown", descriptionText: "Unknown state"]
-            map.data = [method: "auto"]
-            break
-        case 0xB:
-            map = [name: "lock", value: "unknown", descriptionText: "Unknown state"]
-            break
-        case 0x13:
-            map = [name: "tamper", value: "detected", descriptionText: "Keypad attempts exceed code entry limit", isStateChange: true, displayed: true]
-            break
-        default:
-            map = [displayed: false, descriptionText: "Alarm event ${cmd.alarmType} level ${cmd.alarmLevel}"]
-            break
-    }
+	log.trace "[DTH] Executing 'handleAccessAlarmReport' with cmd = $cmd"
+	def result = []
+	def map = null
+	def codeID, changeType, codeName
+	def deviceName = device.displayName
+	if (1 <= cmd.zwaveAlarmEvent && cmd.zwaveAlarmEvent < 10) {
+		map = [name: "lock", value: (cmd.zwaveAlarmEvent & 1) ? "locked" : "unlocked"]
+	}
+	switch (cmd.zwaveAlarmEvent) {
+		case 1: // Manually locked
+			map.descriptionText = "Locked manually"
+			map.data = [method: (cmd.alarmLevel == 2) ? "keypad" : "manual"]
+			break
+		case 2: // Manually unlocked
+			map.descriptionText = "Unlocked manually"
+			map.data = [method: "manual"]
+			break
+		case 3: // Locked by command
+			map.descriptionText = "Locked"
+			map.data = [method: "command"]
+			break
+		case 4: // Unlocked by command
+			map.descriptionText = "Unlocked"
+			map.data = [method: "command"]
+			break
+		case 7:
+			map = [name: "lock", value: "unknown", descriptionText: "Unknown state"]
+			map.data = [method: "manual"]
+			break
+		case 8:
+			map = [name: "lock", value: "unknown", descriptionText: "Unknown state"]
+			map.data = [method: "command"]
+			break
+		case 9: // Auto locked
+			map = [name: "lock", value: "locked", data: [method: "auto"]]
+			map.descriptionText = "Auto locked"
+			break
+		case 0xA:
+			map = [name: "lock", value: "unknown", descriptionText: "Unknown state"]
+			map.data = [method: "auto"]
+			break
+		case 0xB:
+			map = [name: "lock", value: "unknown", descriptionText: "Unknown state"]
+			break
+		case 0x13:
+			map = [name: "tamper", value: "detected", descriptionText: "Keypad attempts exceed code entry limit", isStateChange: true, displayed: true]
+			break
+		default:
+			map = [displayed: false, descriptionText: "Alarm event ${cmd.alarmType} level ${cmd.alarmLevel}"]
+			break
+	}
 
-    if (map) {
-        if (map.data) {
-            map.data.lockName = deviceName
-        } else {
-            map.data = [lockName: deviceName]
-        }
-        result << createEvent(map)
-    }
-    result = result.flatten()
-    result
+	if (map) {
+		if (map.data) {
+			map.data.lockName = deviceName
+		} else {
+			map.data = [lockName: deviceName]
+		}
+		result << createEvent(map)
+	}
+	result = result.flatten()
+	result
 }
 
 /**
@@ -403,23 +402,23 @@ private def handleAccessAlarmReport(cmd) {
  * @return The event(s) to be sent out
  */
 private def handleBatteryAlarmReport(cmd) {
-    log.trace "[DTH] Executing 'handleBatteryAlarmReport' with cmd = $cmd"
-    def result = []
-    def deviceName = device.displayName
-    def map = null
-    switch (cmd.zwaveAlarmEvent) {
-        case 0x0A:
-            map = [name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true, data: [lockName: deviceName]]
-            break
-        case 0x0B:
-            map = [name: "battery", value: 0, descriptionText: "Battery too low to operate lock", isStateChange: true, displayed: true, data: [lockName: deviceName]]
-            break
-        default:
-            map = [displayed: false, descriptionText: "Alarm event ${cmd.alarmType} level ${cmd.alarmLevel}"]
-            break
-    }
-    result << createEvent(map)
-    result
+	log.trace "[DTH] Executing 'handleBatteryAlarmReport' with cmd = $cmd"
+	def result = []
+	def deviceName = device.displayName
+	def map = null
+	switch (cmd.zwaveAlarmEvent) {
+		case 0x0A:
+			map = [name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true, data: [lockName: deviceName]]
+			break
+		case 0x0B:
+			map = [name: "battery", value: 0, descriptionText: "Battery too low to operate lock", isStateChange: true, displayed: true, data: [lockName: deviceName]]
+			break
+		default:
+			map = [displayed: false, descriptionText: "Alarm event ${cmd.alarmType} level ${cmd.alarmLevel}"]
+			break
+	}
+	result << createEvent(map)
+	result
 }
 
 /**
@@ -431,28 +430,27 @@ private def handleBatteryAlarmReport(cmd) {
  *
  */
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-    log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport)' with cmd = $cmd"
-    def map = [name: "battery", unit: "%"]
-    if (cmd.batteryLevel == 0xFF) {
-        map.value = 1
-        map.descriptionText = "${device.displayName} has a low battery"
-        map.isStateChange = true
-    } else {
-        map.value = cmd.batteryLevel
-        if(zwaveInfo.mfr == "033F") {
-            updateChildBattery(cmd)
-        }
-    }
-    state.lastbatt = now()
-    if (cmd.batteryLevel == 0 && device.latestValue("battery") > 20) {
-        // We will ignore this level to mimic normal operation of the device (battery level is refreshed only when motor is operating)
-        log.warn "Erroneous battery report dropped from ${device.latestValue("battery")} to $map.value. Not reporting"
-    } else {
-        createEvent(map)
-    }
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport)' with cmd = $cmd"
+	def map = [name: "battery", unit: "%"]
+	if (cmd.batteryLevel == 0xFF) {
+		map.value = 1
+		map.descriptionText = "${device.displayName} has a low battery"
+		map.isStateChange = true
+	} else {
+		map.value = cmd.batteryLevel
+		if (zwaveInfo.mfr == "033F") {
+			updateChildBattery(cmd)
+		}
+	}
+	state.lastbatt = now()
+	if (cmd.batteryLevel == 0 && device.latestValue("battery") > 20) {
+		// We will ignore this level to mimic normal operation of the device (battery level is refreshed only when motor is operating)
+		log.warn "Erroneous battery report dropped from ${device.latestValue("battery")} to $map.value. Not reporting"
+	} else {
+		createEvent(map)
+	}
 
 }
-
 
 /**
  * Responsible for parsing zwave command
@@ -463,82 +461,82 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
  *
  */
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-    log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.Command)' with cmd = $cmd"
-    createEvent(displayed: false, descriptionText: "$cmd")
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.Command)' with cmd = $cmd"
+	createEvent(displayed: false, descriptionText: "$cmd")
 }
 
 /**
  * Executes lock and then check command with a delay on a lock
  */
 def lockAndCheck(doorLockMode) {
-    def cmds = []
-    cmds << zwave.doorLockV1.doorLockOperationSet(doorLockMode: doorLockMode)
-    cmds << zwave.doorLockV1.doorLockOperationGet()
-    secureSequence(cmds, 4200)
+	def cmds = []
+	cmds << zwave.doorLockV1.doorLockOperationSet(doorLockMode: doorLockMode)
+	cmds << zwave.doorLockV1.doorLockOperationGet()
+	secureSequence(cmds, 4200)
 }
 
 /**
  * Executes lock command on a lock
  */
 def lock() {
-    log.trace "[DTH] Executing lock() for device ${device.displayName}"
-    lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_SECURED)
+	log.trace "[DTH] Executing lock() for device ${device.displayName}"
+	lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_SECURED)
 }
 
 /**
  * Executes unlock command on a lock
  */
 def unlock() {
-    log.trace "[DTH] Executing unlock() for device ${device.displayName}"
-    lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_UNSECURED)
+	log.trace "[DTH] Executing unlock() for device ${device.displayName}"
+	lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_UNSECURED)
 }
 
 /**
  * Executes unlock with timeout command on a lock
  */
 def unlockWithTimeout() {
-        log.trace "[DTH] Executing unlockWithTimeout() for device ${device.displayName}"
-        lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_UNSECURED_WITH_TIMEOUT)
+	log.trace "[DTH] Executing unlockWithTimeout() for device ${device.displayName}"
+	lockAndCheck(DoorLockOperationSet.DOOR_LOCK_MODE_DOOR_UNSECURED_WITH_TIMEOUT)
 }
 
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  */
 def ping() {
-    log.trace "[DTH] Executing ping() for device ${device.displayName}"
-    runIn(30, followupStateCheck)
-    if (zwaveInfo.mfr == "010E") {
-        secure(zwave.doorLockV1.doorLockOperationGet())
-    } else {
-        secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()])
-    }
+	log.trace "[DTH] Executing ping() for device ${device.displayName}"
+	runIn(30, followupStateCheck)
+	if (zwaveInfo.mfr == "010E") {
+		secure(zwave.doorLockV1.doorLockOperationGet())
+	} else {
+		secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()])
+	}
 }
 
 /**
  * Checks the door lock state. Also, schedules checking of door lock state every one hour.
  */
 def followupStateCheck() {
-    runEvery1Hour(stateCheck)
-    stateCheck()
+	runEvery1Hour(stateCheck)
+	stateCheck()
 }
 
 /**
  * Checks the door lock state
  */
 def stateCheck() {
-    sendHubCommand(new physicalgraph.device.HubAction(secure(zwave.doorLockV1.doorLockOperationGet())))
+	sendHubCommand(new physicalgraph.device.HubAction(secure(zwave.doorLockV1.doorLockOperationGet())))
 }
 
 /**
  * Called when the user taps on the refresh button
  */
 def refresh() {
-    log.trace "[DTH] Executing refresh() for device ${device.displayName}"
-    if (zwaveInfo.mfr == "010E") {
-        secure(zwave.doorLockV1.doorLockOperationGet())
-    } else {
-        secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()])
-    }
+	log.trace "[DTH] Executing refresh() for device ${device.displayName}"
+	if (zwaveInfo.mfr == "010E") {
+		secure(zwave.doorLockV1.doorLockOperationGet())
+	} else {
+		secureSequence([zwave.doorLockV1.doorLockOperationGet(), zwave.batteryV1.batteryGet()])
+	}
 }
 
 /**
@@ -549,7 +547,7 @@ def refresh() {
  * @returns ret: The encapsulated command
  */
 private secure(physicalgraph.zwave.Command cmd) {
-    zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
 /**
@@ -561,7 +559,7 @@ private secure(physicalgraph.zwave.Command cmd) {
  * @returns The encapsulated commands
  */
 private secureSequence(commands, delay = 4200) {
-    delayBetween(commands.collect { secure(it) }, delay)
+	delayBetween(commands.collect { secure(it) }, delay)
 }
 
 /**
@@ -573,16 +571,16 @@ private secureSequence(commands, delay = 4200) {
  * @returns true if elapsed time is greater than number of seconds provided, else false
  */
 private Boolean secondsPast(timestamp, seconds) {
-    if (!(timestamp instanceof Number)) {
-        if (timestamp instanceof Date) {
-            timestamp = timestamp.time
-        } else if ((timestamp instanceof String) && timestamp.isNumber()) {
-            timestamp = timestamp.toLong()
-        } else {
-            return true
-        }
-    }
-    return (now() - timestamp) > (seconds * 1000)
+	if (!(timestamp instanceof Number)) {
+		if (timestamp instanceof Date) {
+			timestamp = timestamp.time
+		} else if ((timestamp instanceof String) && timestamp.isNumber()) {
+			timestamp = timestamp.toLong()
+		} else {
+			return true
+		}
+	}
+	return (now() - timestamp) > (seconds * 1000)
 }
 
 /**
@@ -592,34 +590,34 @@ private Boolean secondsPast(timestamp, seconds) {
  */
 
 def addChild() {
-    String childDni = "${device.deviceNetworkId}:2"
-    String componentLabel =       "$device.displayName 2"
-    String ch = "2"
+	String childDni = "${device.deviceNetworkId}:2"
+	String componentLabel = "$device.displayName 2"
+	String ch = "2"
 
-    addChildDevice("Z-Wave Open Close Child",
-            childDni, device.hub.id,
-            [
-                    completedSetup: true,
-                    label: "Open/Close Sensor August",
-                    isComponent: false,
-                    componentName: ch,
-                    componentLabel: componentLabel
-            ])
+	addChildDevice("Z-Wave Open Close For Lock Child",
+			childDni, device.hub.id,
+			[
+					completedSetup: true,
+					label         : "Open/Close Sensor August",
+					isComponent   : false,
+					componentName : ch,
+					componentLabel: componentLabel
+			])
 }
 
 def updateChildBattery(cmd) {
-    String childDni = "${device.deviceNetworkId}:2"
-    def child = childDevices.find { it.deviceNetworkId == childDni }
+	String childDni = "${device.deviceNetworkId}:2"
+	def child = childDevices.find { it.deviceNetworkId == childDni }
 
-    child?.sendEvent(name: "battery", value: cmd.batteryLevel, unit: "%" )
+	child?.sendEvent(name: "battery", value: cmd.batteryLevel, unit: "%")
 
-    child?.sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [
-            protocol: "zwave",
-            hubHardwareId: device.hub.hardwareID,
-            offlinePingable: "1"
-    ])
+	child?.sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [
+			protocol       : "zwave",
+			hubHardwareId  : device.hub.hardwareID,
+			offlinePingable: "1"
+	])
 }
 
 def sendCommand(cmd) {
-    sendHubCommand(cmd)
+	sendHubCommand(cmd)
 }
