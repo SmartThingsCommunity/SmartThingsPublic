@@ -16,8 +16,6 @@
  *  Date: 2015-7-12
  */
 
-import physicalgraph.developer.ColorUtilities
-
 metadata {
 	definition (name: "Aeon LED Bulb", namespace: "smartthings", author: "SmartThings") {
 		capability "Switch Level"
@@ -218,12 +216,12 @@ private commands(commands, delay=200) {
 }
 
 def rgbToHSV(red, green, blue) {
-	def hex = ColorUtilities.rgbToHex(red as int, green as int, blue as int)
-	def hsv = ColorUtilities.hexToHsv(hex)
+	def hex = colorUtil.rgbToHex(red as int, green as int, blue as int)
+	def hsv = colorUtil.hexToHsv(hex)
 	return [hue: hsv[0], saturation: hsv[1], value: hsv[2]]
 }
 
 def huesatToRGB(hue, sat) {
-	def color = ColorUtilities.hsvToHex(Math.round(hue) as int, Math.round(sat) as int)
-	return ColorUtilities.hexToRgb(color)
+	def color = colorUtil.hsvToHex(Math.round(hue) as int, Math.round(sat) as int)
+	return colorUtil.hexToRgb(color)
 }
