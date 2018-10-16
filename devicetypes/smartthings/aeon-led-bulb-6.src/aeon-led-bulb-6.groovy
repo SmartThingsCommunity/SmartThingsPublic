@@ -16,8 +16,6 @@
  *  Date: 2018-8-31
  */
 
-import physicalgraph.developer.ColorUtilities
-
 metadata {
 	definition (name: "Aeon LED Bulb 6 Multi-Color", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb") {
 		capability "Switch Level"
@@ -299,12 +297,12 @@ private commands(commands, delay=200) {
 }
 
 def rgbToHSV(red, green, blue) {
-	def hex = ColorUtilities.rgbToHex(red as int, green as int, blue as int)
-	def hsv = ColorUtilities.hexToHsv(hex)
+	def hex = colorUtil.rgbToHex(red as int, green as int, blue as int)
+	def hsv = colorUtil.hexToHsv(hex)
 	return [hue: hsv[0], saturation: hsv[1], value: hsv[2]]
 }
 
 def huesatToRGB(hue, sat) {
-	def color = ColorUtilities.hsvToHex(Math.round(hue) as int, Math.round(sat) as int)
-	return ColorUtilities.hexToRgb(color)
+	def color = colorUtil.hsvToHex(Math.round(hue) as int, Math.round(sat) as int)
+	return colorUtil.hexToRgb(color)
 }
