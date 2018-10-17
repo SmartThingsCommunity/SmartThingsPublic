@@ -19,15 +19,18 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Thermostat", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Thermostat") {
+	definition (name: "Zigbee Thermostat", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Battery_Thermostat") {
 		capability "Actuator"
 		capability "Temperature Measurement"
+		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Thermostat Fan Mode"
 		capability "Thermostat Cooling Setpoint"
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Operating State"
 		capability "Configuration"
+		capability "Battery"
+		capability "Power Source"
 		capability "Health Check"
 		capability "Refresh"
 		capability "Sensor"
@@ -100,9 +103,16 @@ metadata {
 		standardTile("refresh", "device.thermostatMode", width:2, height:1, inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+		valueTile("powerSource", "device.powerSource", width: 2, heigh: 1, inactiveLabel: true, decoration: "flat") {
+			state "powerSource", label: 'Power Source: ${currentValue}', backgroundColor: "#ffffff"
+		}
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
+		}
 		main "temperature"
 		details(["temperature", "lowerHeatingSetpoint", "heatingSetpoint", "raiseHeatingSetpoint", "lowerCoolSetpoint",
-				 "coolingSetpoint", "raiseCoolSetpoint", "thermostatMode", "thermostatFanMode", "thermostatOperatingState", "refresh"])
+				 "coolingSetpoint", "raiseCoolSetpoint", "thermostatMode", "thermostatFanMode", "thermostatOperatingState",
+				 "refresh", "battery", "powerSource"])
 	}
 }
 
@@ -112,7 +122,7 @@ def parse(String description) {
 	if(!map) {
 		result = parseAttrMessage(description)
 	} else {
-		log.warn "Some event is not parsed: ${map}"
+		log.warn "Unexpected event: ${map}"
 	}
 	log.debug "Description ${description} parsed to ${result}"
 	return result
@@ -162,6 +172,8 @@ private parseAttrMessage(description) {
 			log.debug "FAN MODE"
 			map.name = "thermostatFanMode"
 			map.value = FAN_MODE_MAP[it.value]
+		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_VOLTAGE) {
+			map = getBatteryPercentage(Integer.parseInt(it.value, 16))
 		}
 		if(map) {
 			result << createEvent(map)
@@ -180,7 +192,8 @@ def refresh() {
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_RUNNING_STATE) +
-			zigbee.readAttribute(FAN_CONTROL_CLUSTER, FAN_MODE)
+			zigbee.readAttribute(FAN_CONTROL_CLUSTER, FAN_MODE) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE)
 }
 
 def ping() {
@@ -189,12 +202,32 @@ def ping() {
 
 def configure() {
 	def binding = zigbee.addBinding(THERMOSTAT_CLUSTER) + zigbee.addBinding(FAN_CONTROL_CLUSTER)
-	def startValues = zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 0x0A28) +
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 0x07D0)
+	def startValues = zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 0x07D0) +
+			zigbee.writeAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 0x0A28)
 
-	return binding + startValues + refresh()
+	return binding + startValues + zigbee.batteryConfig() + refresh()
 }
 
+def getBatteryPercentage(rawValue) {
+	def result = [:]
+	result.name = "battery"
+	if(rawValue == 0) {
+		sendEvent(name: "powerSource", value: "dc", descriptionText: "${device.displayName} is connected to external supply")
+	} else {
+		sendEvent(name: "powerSource", value: "battery", descriptionText: "${device.displayName} is powered by batteries")
+	}
+	def volts = rawValue / 10
+	def minVolts = 5
+	def maxVolts = 6.5
+	def pct = (volts - minVolts) / (maxVolts - minVolts)
+	def roundedPct = Math.round(pct * 100)
+	if (roundedPct < 0) {
+		roundedPct = 0
+	}
+	result.value = Math.min(100, roundedPct)
+	result.descriptionText = "${device.displayName} battery has ${result.value}%"
+	return result
+}
 
 def getTemperature(value) {
 	if (value != null) {
@@ -335,3 +368,5 @@ private getFAN_MODE_MAP() { [
 		"04":"on",
 		"05":"auto"
 ]}
+
+private getBATTERY_VOLTAGE() { 0x0020 }
