@@ -85,8 +85,7 @@ def configure() {
 		commands << command(zwave.configurationV1.configurationSet(parameterNumber: 0x50, scaledConfigurationValue: 2, size: 1))
 	}
 	commands << command(zwave.basicV1.basicGet())
-	response(commands)
-	refresh()
+	response(commands + refresh())
 }
 
 def parse(String description) {
