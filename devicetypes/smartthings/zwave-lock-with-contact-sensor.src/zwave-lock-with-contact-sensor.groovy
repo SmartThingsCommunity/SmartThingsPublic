@@ -14,9 +14,10 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Lock Without Codes", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-lock-2") {
+	definition(name: "Z-Wave Lock With Contact Sensor", namespace: "smartthings", author: "SmartThings", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "Samsung", vid: "generic-lock-4", ocfDeviceType: "oic.d.smartlock") {
 		capability "Actuator"
 		capability "Lock"
+		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Battery"
@@ -32,6 +33,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "toggle", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.lock", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contfact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
 				attributeState "locked", label: 'locked', action: "lock.unlock", icon: "st.locks.lock.locked", backgroundColor: "#00A0DC", nextState: "unlocking"
 				attributeState "unlocked", label: 'unlocked', action: "lock.lock", icon: "st.locks.lock.unlocked", backgroundColor: "#ffffff", nextState: "locking"
 				attributeState "unlocked with timeout", label: 'unlocked', action: "lock.lock", icon: "st.locks.lock.unlocked", backgroundColor: "#ffffff", nextState: "locking"
@@ -46,6 +49,10 @@ metadata {
 		standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'unlock', action: "lock.unlock", icon: "st.locks.lock.unlocked", nextState: "unlocking"
 		}
+		standardTile("contact", "device.contact", width: 2, height: 2) {
+			state("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+			state("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
+		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
@@ -54,7 +61,7 @@ metadata {
 		}
 
 		main "toggle"
-		details(["toggle", "lock", "unlock", "battery", "refresh"])
+		details(["toggle", "lock", "unlock", "contact", "battery", "refresh"])
 	}
 }
 
@@ -64,21 +71,12 @@ import physicalgraph.zwave.commands.doorlockv1.*
  * Called on app installed
  */
 def installed() {
-
-	if (zwaveInfo.mfr == "033F") {
-		initialize()
-	} else {
-
-		// Device-Watch pings if no device events received for 1 hour (checkInterval)
-		sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-		scheduleInstalledCheck()
-	}
+	initialize()
+	scheduleInstalledCheck()
 }
 
+
 def initialize() {
-	if (!childDevices) {
-		addChild()
-	}
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	response(refresh())
 }
@@ -123,9 +121,7 @@ def uninstalled() {
  * @return hubAction: The commands to be executed
  */
 def updated() {
-	// Device-Watch pings if no device events received for 1 hour (checkInterval)
-	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-
+	initialize()
 	def hubAction = null
 	try {
 		def cmds = []
@@ -283,14 +279,12 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 		map.value = "unlocked"
 		map.descriptionText = "Unlocked"
 	}
-	//Sends an event to August Child
+	/***
+	 * Condition to identify August Lock. It is checking doorCondition and changing status to open/close.
+	 */
 	if (zwaveInfo.mfr == "033F") {
-		String childDni = "${device.deviceNetworkId}:2"
-		def child = childDevices.find { it.deviceNetworkId == childDni }
-
 		def value = cmd.doorCondition == 2 || cmd.doorCondition == 0 ? "open" : "closed"
-
-		child?.sendEvent(name: "contact", value: value)
+		sendEvent(name: "contact", value: value)
 	}
 	return result ? [createEvent(map), *result] : createEvent(map)
 }
@@ -438,9 +432,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.isStateChange = true
 	} else {
 		map.value = cmd.batteryLevel
-		if (zwaveInfo.mfr == "033F") {
-			updateChildBattery(cmd)
-		}
 	}
 	state.lastbatt = now()
 	if (cmd.batteryLevel == 0 && device.latestValue("battery") > 20) {
@@ -581,43 +572,4 @@ private Boolean secondsPast(timestamp, seconds) {
 		}
 	}
 	return (now() - timestamp) > (seconds * 1000)
-}
-
-/**
- * Add child device to August lock.
- * Send an information about battery.
- * checkInterval is set to 1h on child because parent is connecting via Z-wave Protocol.
- */
-
-def addChild() {
-	String childDni = "${device.deviceNetworkId}:2"
-	String componentLabel = "$device.displayName 2"
-	String ch = "2"
-
-	addChildDevice("Z-Wave Open Close For Lock Child",
-			childDni, device.hub.id,
-			[
-					completedSetup: true,
-					label         : "Open/Close Sensor August",
-					isComponent   : false,
-					componentName : ch,
-					componentLabel: componentLabel
-			])
-}
-
-def updateChildBattery(cmd) {
-	String childDni = "${device.deviceNetworkId}:2"
-	def child = childDevices.find { it.deviceNetworkId == childDni }
-
-	child?.sendEvent(name: "battery", value: cmd.batteryLevel, unit: "%")
-
-	child?.sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [
-			protocol       : "zwave",
-			hubHardwareId  : device.hub.hardwareID,
-			offlinePingable: "1"
-	])
-}
-
-def sendCommand(cmd) {
-	sendHubCommand(cmd)
 }
