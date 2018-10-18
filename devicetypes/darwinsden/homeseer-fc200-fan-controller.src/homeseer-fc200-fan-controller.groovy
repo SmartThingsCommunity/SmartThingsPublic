@@ -1,7 +1,7 @@
 /**
  *  HomeSeer HS-FC200+
  *
- *  Copyright 2018 @aruffell, DarwinsDen.com, HomeSeer, 
+ *  Copyright 2018 DarwinsDen.com, HomeSeer, @aruffell, 
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -12,7 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Author: @aruffell, Darwin@DarwinsDen.com, HomeSeer
+ *	Author: Darwin@DarwinsDen.com, HomeSeer, @aruffell, with fan control button code leveraged from @ChadCK
  *	Date: 2018-18-Oct
  *
  *	Changelog:
@@ -46,6 +46,10 @@ metadata {
         capability "Sensor"
         capability "Button"
         capability "Configuration"
+        
+        command "lowSpeed"
+		command "medSpeed"
+		command "highSpeed"
 
         command "tapUp2"
         command "tapDown2"
@@ -93,7 +97,12 @@ metadata {
         input "reverseSwitch", "bool", title: "Reverse Switch", defaultValue: false, displayDuringSetup: true, required: false
         input "bottomled", "bool", title: "Bottom LED On if Load is Off", defaultValue: false, displayDuringSetup: true, required: false
         input("color", "enum", title: "Default LED Color", options: ["White", "Red", "Green", "Blue", "Magenta", "Yellow", "Cyan"], description: "Select Color", required: false)
-    }
+		section("Fan Thresholds") {
+			input "lowThreshold", "number", title: "Low Threshold", range: "1..99"
+			input "medThreshold", "number", title: "Medium Threshold", range: "1..99"
+			input "highThreshold", "number", title: "High Threshold", range: "1..99"
+		}
+}
 
     tiles(scale: 2) {
         multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
@@ -123,6 +132,24 @@ metadata {
             state "level", label: '${currentValue} %', unit: "%", backgroundColor: "#ffffff"
         }
 
+	    standardTile("lowSpeed", "device.currentState", inactiveLabel: false, width: 2, height: 2) {
+			state "default", label: 'LOW', action: "lowSpeed", icon:"st.Home.home30", backgroundColor: "#ffffff"
+			state "LOW", label:'LOW', action: "lowSpeed", icon:"st.Home.home30", backgroundColor: "#79b821"
+			state "ADJUSTING.LOW", label:'LOW', action: "lowSpeed", icon:"st.Home.home30", backgroundColor: "#2179b8"
+  		}
+        
+		standardTile("medSpeed", "device.currentState", inactiveLabel: false, width: 2, height: 2) {
+			state "default", label: 'MED', action: "medSpeed", icon:"st.Home.home30", backgroundColor: "#ffffff"
+			state "MED", label: 'MED', action: "medSpeed", icon:"st.Home.home30", backgroundColor: "#79b821"
+			state "ADJUSTING.MED", label:'MED', action: "medSpeed", icon:"st.Home.home30", backgroundColor: "#2179b8"
+		}
+        
+		standardTile("highSpeed", "device.currentState", inactiveLabel: false, width: 2, height: 2) {
+			state "default", label: 'HIGH', action: "highSpeed", icon:"st.Home.home30", backgroundColor: "#ffffff"
+			state "HIGH", label: 'HIGH', action: "highSpeed", icon:"st.Home.home30", backgroundColor: "#79b821"
+			state "ADJUSTING.HIGH", label:'HIGH', action: "highSpeed", icon:"st.Home.home30", backgroundColor: "#2179b8"
+        }
+ 
         valueTile("tapUp2", "device.button", width: 1, height: 1, decoration: "flat") {
             state "default", label: "Button 1\nTap\n▲▲", backgroundColor: "#ffffff", action: "tapUp2"
         }
@@ -172,7 +199,7 @@ metadata {
 
         main(["switch"])
 
-        details(["switch", "tapUp2", "tapDown2", "tapUp3", "tapDown3", "holdUp", "holdDown", "tapUp1", "tapDown1", "tapUp4", "tapDown4", "tapUp5", "tapDown5", "level", "firmwareVersion", "refresh"])
+        details(["switch", "lowSpeed", "medSpeed", "highSpeed", "tapUp2", "tapDown2", "tapUp3", "tapDown3", "holdUp", "holdDown", "tapUp1", "tapDown1", "tapUp4", "tapDown4", "tapUp5", "tapDown5", "level", "firmwareVersion", "refresh"])
     }
 
 }
@@ -211,10 +238,17 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelS
 }
 
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
+	def lowThresholdvalue = (settings.lowThreshold != null && settings.lowThreshold != "") ? settings.lowThreshold.toInteger() : 33
+	def medThresholdvalue = (settings.medThreshold != null && settings.medThreshold != "") ? settings.medThreshold.toInteger() : 67
+	def highThresholdvalue = (settings.highThreshold != null && settings.highThreshold != "") ? settings.highThreshold.toInteger() : 99
+
     def value = (cmd.value ? "on" : "off")
     def result = [createEvent(name: "switch", value: value)]
     state.lastLevel = cmd.value
     if (cmd.value && cmd.value <= 100) {
+        if (cmd.value > 0 && cmd.value <= lowThresholdvalue) { sendEvent(name: "currentState", value: "LOW" as String) }
+        if (cmd.value >= lowThresholdvalue+1 && cmd.value <= medThresholdvalue) { sendEvent(name: "currentState", value: "MED" as String) }
+	    if (cmd.value >= medThresholdvalue+1) { sendEvent(name: "currentState", value: "HIGH" as String) }
         result << createEvent(name: "level", value: cmd.value, unit: "%")
     }
     return result
@@ -295,13 +329,28 @@ def off() {
 
 def setLevel(value) {
     log.debug "setLevel >> value: $value"
+    
+    def lowThresholdvalue = (settings.lowThreshold != null && settings.lowThreshold != "") ? settings.lowThreshold.toInteger() : 33
+	def medThresholdvalue = (settings.medThreshold != null && settings.medThreshold != "") ? settings.medThreshold.toInteger() : 67
+	def highThresholdvalue = (settings.highThreshold != null && settings.highThreshold != "") ? settings.highThreshold.toInteger() : 99
+	
+	if (value == "LOW") { value = lowThresholdvalue }
+	if (value == "MED") { value = medThresholdvalue }
+	if (value == "HIGH") { value = highThresholdvalue } 
+    
     def valueaux = value as Integer
     def level = Math.max(Math.min(valueaux, 99), 0)
-    if (level > 0) {
-        sendEvent(name: "switch", value: "on")
-    } else {
-        sendEvent(name: "switch", value: "off")
-    }
+
+ 	if (level > 0) {
+		sendEvent(name: "switch", value: "on")
+	} else {
+		sendEvent(name: "switch", value: "off")
+	}
+    
+    if (level <= lowThresholdvalue) { sendEvent(name: "currentState", value: "ADJUSTING.LOW" as String, displayed: false) }
+	if (level >= lowThresholdvalue+1 && level <= medThresholdvalue) { sendEvent(name: "currentState", value: "ADJUSTING.MED" as String, displayed: false) }
+	if (level >= medThresholdvalue+1) { sendEvent(name: "currentState", value: "ADJUSTING.HIGH" as String, displayed: false) }
+    
     sendEvent(name: "level", value: level, unit: "%")
     def result = []
 
@@ -311,6 +360,18 @@ def setLevel(value) {
     result += response("delay 5000")
     result += response(zwave.switchMultilevelV1.switchMultilevelGet())
 
+}
+
+def lowSpeed() {
+	setLevel("LOW")
+}
+
+def medSpeed() {
+	setLevel("MED")
+}
+
+def highSpeed() {
+	setLevel("HIGH")
 }
 
 /*
