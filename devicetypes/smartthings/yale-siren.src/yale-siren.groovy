@@ -4,23 +4,22 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *	http://www.apache.org/licenses/LICENSE-2.0
+ * 	http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  */
 metadata {
-	definition(name: "Yale Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Yale External Siren", namespace: "smartthings", mnmn: "SmartThings", vid: "generic-siren-3", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Alarm"
 		capability "Battery"
 		capability "Refresh"
 		capability "Switch"
 
-		command "test"
 		//zw:Fs type:1005 mfr:0129 prod:6F01 model:0001 ver:1.04 zwv:4.33 lib:03 cc:5E,80,5A,72,73,86,70,98 sec:59,2B,71,85,25,7A role:07 ff:8F00 ui:8F00
-		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale siren"
+		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale External Siren"
 	}
 
 	tiles(scale: 2) {
