@@ -1,7 +1,7 @@
 /**
  *  HomeSeer HS-FC200+
  *
- *  Copyright 2018 DarwinsDen.com, HomeSeer, @aruffell, 
+ *  Copyright 2018 DarwinsDen.com, HomeSeer, @aruffell 
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -239,7 +239,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelS
 
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def lowThresholdvalue = (settings.lowThreshold != null && settings.lowThreshold != "") ? settings.lowThreshold.toInteger() : 33
-	def medThresholdvalue = (settings.medThreshold != null && settings.medThreshold != "") ? settings.medThreshold.toInteger() : 67
+	def medThresholdvalue = (settings.medThreshold != null && settings.medThreshold != "") ? settings.medThreshold.toInteger() : 66
 	def highThresholdvalue = (settings.highThreshold != null && settings.highThreshold != "") ? settings.highThreshold.toInteger() : 99
 
     def value = (cmd.value ? "on" : "off")
@@ -331,7 +331,7 @@ def setLevel(value) {
     log.debug "setLevel >> value: $value"
     
     def lowThresholdvalue = (settings.lowThreshold != null && settings.lowThreshold != "") ? settings.lowThreshold.toInteger() : 33
-	def medThresholdvalue = (settings.medThreshold != null && settings.medThreshold != "") ? settings.medThreshold.toInteger() : 67
+	def medThresholdvalue = (settings.medThreshold != null && settings.medThreshold != "") ? settings.medThreshold.toInteger() : 66
 	def highThresholdvalue = (settings.highThreshold != null && settings.highThreshold != "") ? settings.highThreshold.toInteger() : 99
 	
 	if (value == "LOW") { value = lowThresholdvalue }
