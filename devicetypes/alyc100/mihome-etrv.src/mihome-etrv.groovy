@@ -63,13 +63,13 @@ metadata {
         command "emergencyHeat"						//used on the boost/stop boost button
         command "stopBoost"							//used on the boost/stop boost button
         command "summer"							//uesed to put in summer mode - (Stats open permainatly)
-
+command "test"
         attribute "lastCheckin", "String"
         attribute "boostLabel", "String"
         attribute "thermostatTemperatureSetpoint", "String"						//might need for google
         attribute "ThermostatSetpoint", "String"								//might be needed for google
         attribute "boostLength", "String"
-		//attribute "battery", "String"
+		attribute "batteryVoltage", "String"
     }
 
 	simulator {
@@ -469,6 +469,81 @@ def poll() {
 		log.error "POLL for  -'${device}' response -'${resp.status}' Unexpected Result" // end
 	}
     else {
+    def resppar = parent.state.data
+    //log.debug "full data = ${resppar}"
+// works    log.debug "drill data id = ${resppar.data?.id}"
+// works	log.debug "drill data last temp - ${resppar.data.last_temperature}"
+//works    log.debug "device id NOT from the response = ${device.deviceNetworkId}"
+//	log.debug " device id is - ${device.id}"
+ //   log.debug "drill key 0 - ${resppar.data[0].last_temperature} & ${resppar.data[0].id}"
+  //  log.debug "drill key 1 - ${resppar.data[1].last_temperature} & ${resppar.data[1].id}"
+    //log.debug "drill key 2 - ${resppar.data[2].last_temperature} & ${resppar.data[2].id}"
+    //log.debug "drill key 3 - ${resppar.data[3].last_temperature} & ${resppar.data[3].id}"
+
+//log.debug "list of map ${resppar.data.groupBy{ it.id }}"
+
+def respparid = resppar.data.groupBy{ it.id }
+
+log.debug "respparid ${respparid}"
+log.debug "by id idex fixed 122981 -${device.deviceNetworkId} - ${resppar.data[0].last_temperature} , ${resppar.data[0].label}"
+def deviceid = device.deviceNetworkId
+
+
+//null def lasttemp = respparid['$deviceid']
+// def lasttemp = respparid.'$deviceid'.last_temperature
+//null def lasttemp = respparid.'$deviceid'
+
+//def lasttemp = respparid.$deviceid
+//def lasttemp = respparid[deviceid]
+//def lasttemp = respparid[$deviceid]
+def lasttemp = respparid."$deviceid"
+
+log.debug "by id ${deviceid} -${device.deviceNetworkId} - ${lasttemp}"
+
+def dev1 = resppar.data.eachWithIndex { it, index ->
+    it.id = index }
+
+log.debug "dev1 - ${dev1}"
+//def dev2 = resppar.find {'$deviceid'}
+//log.debug "dev2 - ${dev2}"
+
+// error log.debug "by id 1 -${device.deviceNetworkId} - ${respparid["${device.deviceNetworkId}"].last_temperature}"
+// null log.debug "by id 1 -${device.deviceNetworkId} - ${respparid["${device.deviceNetworkId}"]}"
+// null log.debug "by id -${device.deviceNetworkId} - ${respparid["${device.deviceNetworkId}"]}"
+// error log.debug "by id 2 -${device.deviceNetworkId} - ${respparid['${device.deviceNetworkId}'].label}"	//
+// null log.debug "by id 3 -${device.deviceNetworkId} - ${respparid['${device.deviceNetworkId}']}"	//
+// comes back with null log.debug "by id v2  -${device.deviceNetworkId} - ${respparid[device.deviceNetworkId]}"
+// groovy.lang.MissingMethodException: No signature of method:  log.debug "by id v3  -${device.deviceNetworkId} - ${respparid[${device.deviceNetworkId}]}"
+// null log.debug "by id v4  -${device.deviceNetworkId} - ${respparid['device.deviceNetworkId']}"
+
+//resppar.data.map{
+//   if(id == device.deviceNetworkId){
+//     ltemp = last_temperature
+//}}
+//    log.debug "temp - ${ltemp}"
+    //log.debug "temp - ${resppar.data.id.['122977'].last_temperature}"  
+    
+    //log.debug "temp3 - ${resppar.data.id.last_temperature['122977']}"
+    //log.debug "temp4 - ${resppar.data.${device.deviceNetworkId}.last_temperature}"
+    
+    //def dev = resppar.data.id.find(122977)// find a single entry
+    //log.debug "dev - 122977 ${dev}"
+    
+    //def dev1 = resppar.data.id.findIndexOf('122981')  // find a single entry
+    //log.debug "dev - 122981 ${dev1}"
+    
+    //log.debug "json pri ${JsonOutput.prettyPrint(resppar.id)}"
+    
+    //def bob = resppar.data.findIndexOf { it == '127535' } // find a single entry
+    //log.debug "bob $bob"
+    //def ageOfBob = bob.value.last_temperature
+    //log.debug "abge of bob = $ageOfBob"
+    
+    //def devtemp = dev.value.target_temperature // find temp for single entry
+    //log.debug "temp5 ${devtemp}"
+    //log.debug "temp4 - ${resppar.data.id."122977".value.last_temperature}"
+    //log.debug "Identified: device ${resppar.data.id}: ${resppar.data.device_type}: ${resppar.data.label}" //: ${target_temperature}: ${last_temperature}: ${voltage}"
+    
     state.temperature = resp.data.data.last_temperature
     state.heatingSetpoint = resp.data.data.target_temperature
     state.batteryVoltage = resp.data.data.voltage
@@ -495,8 +570,9 @@ def checkin() {
 	if (state.batteryVoltage == null){
     	state.batteryVoltage = '0'
     }
+//log.debug "bat V '${state.batteryVoltage}"
     state.battery = Math.round(((state.batteryVoltage-2.5)/0.7)*100)		// 0.7 is used to calculete %, ie diferance between max-min volts (3.2-2.5)
-    state.batteryVoltage = 	Math.round(state.batteryVoltage * 100)/100 		// *100)/100 to round to 2 decimal places
+    state.batteryVoltage = 	Math.round(state.batteryVoltage * 1000)/1000 		// *1000)/1000 to round to 3 decimal places
 
 	sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true) 				//mode & off icon
     sendEvent(name: "boostSwitch", value: state.boostSwitch, displayed: false)						// boost button
