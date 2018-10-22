@@ -174,6 +174,8 @@ private parseAttrMessage(description) {
 			map.value = FAN_MODE_MAP[it.value]
 		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_VOLTAGE) {
 			map = getBatteryPercentage(Integer.parseInt(it.value, 16))
+		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_ALARM_STATE) {
+			map = getPowerSource(it.value)
 		}
 		if(map) {
 			result << createEvent(map)
@@ -193,7 +195,8 @@ def refresh() {
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_RUNNING_STATE) +
 			zigbee.readAttribute(FAN_CONTROL_CLUSTER, FAN_MODE) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_ALARM_STATE)
 }
 
 def ping() {
@@ -212,20 +215,21 @@ def getBatteryPercentage(rawValue) {
 	def result = [:]
 	result.name = "battery"
 	if(rawValue == 0) {
-		sendEvent(name: "powerSource", value: "dc", descriptionText: "${device.displayName} is connected to external supply")
+		sendEvent(name: "powerSource", value: "mains", descriptionText: "${device.displayName} is connected to mains")
+		result.value = 100
+		result.descriptionText = "${device.displayName} is powered by external source."
 	} else {
-		sendEvent(name: "powerSource", value: "battery", descriptionText: "${device.displayName} is powered by batteries")
+		def volts = rawValue / 10
+		def minVolts = 5
+		def maxVolts = 6.5
+		def pct = (volts - minVolts) / (maxVolts - minVolts)
+		def roundedPct = Math.round(pct * 100)
+		if (roundedPct < 0) {
+			roundedPct = 0
+		}
+		result.value = Math.min(100, roundedPct)
+		result.descriptionText = "${device.displayName} battery has ${result.value}%"
 	}
-	def volts = rawValue / 10
-	def minVolts = 5
-	def maxVolts = 6.5
-	def pct = (volts - minVolts) / (maxVolts - minVolts)
-	def roundedPct = Math.round(pct * 100)
-	if (roundedPct < 0) {
-		roundedPct = 0
-	}
-	result.value = Math.min(100, roundedPct)
-	result.descriptionText = "${device.displayName} battery has ${result.value}%"
 	return result
 }
 
@@ -238,6 +242,21 @@ def getTemperature(value) {
 			return Math.round(celsiusToFahrenheit(celsius))
 		}
 	}
+}
+
+def getPowerSource(value) {
+	def result = [name: "powerSource"]
+	switch(value) {
+		case "40000000":
+			result.value = "battery"
+			result.descriptionText = "${device.displayName} is powered by batteries"
+			break
+		default:
+			result.value = "mains"
+			result.descriptionText = "${device.displayName} is connected to mains"
+			break
+	}
+	return result
 }
 
 def setThermostatMode(value) {
@@ -370,3 +389,4 @@ private getFAN_MODE_MAP() { [
 ]}
 
 private getBATTERY_VOLTAGE() { 0x0020 }
+private getBATTERY_ALARM_STATE() { 0x003E }
