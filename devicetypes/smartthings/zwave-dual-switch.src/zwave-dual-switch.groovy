@@ -65,7 +65,7 @@ def installed() {
 	} catch (e) {
 		log.warn "Failed to add endpoint 2 ($desc) as Z-Wave Binary Switch Endpoint - $e"
 	}
-	response(configure())
+	configure()
 }
 
 def updated() {
@@ -172,11 +172,7 @@ def ping() {
 
 def refresh() {
 	// parent DTH controls endpoint 1
-	def endpointNumber = 1
-	def cmdmap = [] 
-	cmdmap << encap(1, zwave.switchBinaryV1.switchBinaryGet())
-	cmdmap << encap(2, zwave.switchBinaryV1.switchBinaryGet())
-	cmdmap
+	[encap(1, zwave.switchBinaryV1.switchBinaryGet()), encap(2, zwave.switchBinaryV1.switchBinaryGet())]
 }
 
 // sendCommand is called by endpoint 2 child device handler
