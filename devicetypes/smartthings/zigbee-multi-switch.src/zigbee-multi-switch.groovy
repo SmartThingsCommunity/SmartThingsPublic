@@ -96,8 +96,7 @@ def parse(String description) {
 private void createChildDevices() {
 	def i = 2
 	addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
-			[completedSetup: true, label: "${device.displayName.split("1")[-1]}${i}",
-			 isComponent   : false, componentName: "ch$i", componentLabel: "Channel $i"])
+			[completedSetup: true, label: "${device.displayName.split("1")[-1]}${i}", isComponent : false])
 }
 
 private getChildEndpoint(String dni) {
