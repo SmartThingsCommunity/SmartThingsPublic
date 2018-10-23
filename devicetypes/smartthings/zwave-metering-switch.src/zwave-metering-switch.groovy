@@ -94,16 +94,16 @@ metadata {
 def installed() {
 	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	if (zwaveInfo?.mfr?.equals("0063")) { // These old GE devices have to be polled
+    initialize()
+	if (zwaveInfo?.mfr?.equals("0063") || zwaveInfo?.mfr?.equals("014F")) { // These old GE devices have to be polled. GoControl Plug refresh status every 15 min.
 		runEvery15Minutes("poll", [forceForLocallyExecuting: true])
 	}
 }
 
 def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	if (zwaveInfo?.mfr?.equals("0063")) { // These old GE devices have to be polled
+    initialize()
+	if (zwaveInfo?.mfr?.equals("0063") || zwaveInfo?.mfr?.equals("014F")) { // These old GE devices have to be polled. GoControl Plug refresh status every 15 min.
 		unschedule("poll", [forceForLocallyExecuting: true])
 		runEvery15Minutes("poll", [forceForLocallyExecuting: true])
 	}
@@ -114,6 +114,10 @@ def updated() {
 	} catch (e) {
 		log.debug e
 	}
+}
+
+def initialize() {
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def getCommandClassVersions() {
