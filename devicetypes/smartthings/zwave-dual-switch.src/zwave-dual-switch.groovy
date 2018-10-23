@@ -172,7 +172,7 @@ def ping() {
 
 def refresh() {
 	// parent DTH controls endpoint 1
-	[encap(2, zwave.switchBinaryV1.switchBinaryGet()), encap(2, zwave.switchBinaryV1.switchBinaryGet())]
+	[encap(1, zwave.switchBinaryV1.switchBinaryGet()), encap(2, zwave.switchBinaryV1.switchBinaryGet())]
 }
 
 // sendCommand is called by endpoint 2 child device handler
