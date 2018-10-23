@@ -192,11 +192,8 @@ def configure() {
 private configureEcolink() {
 	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
-	def createPollingBinding = ["zdo bind 0x${device.deviceNetworkId} 1 1 0x0020 {${device.zigbeeId}} {}", "delay 1500",
-								"send 0x${device.deviceNetworkId} 1 1", "delay 1500"]
-
 	def enrollCmds = zigbee.writeAttribute(0x0020, 0x0000, 0x23, 0x00001C20) + zigbee.command(0x0020, 0x03, "0200") +
 			zigbee.writeAttribute(0x0020, 0x0003, 0x21, 0x0028) + zigbee.command(0x0020, 0x02, "B1040000")
 
-	return createPollingBinding + refresh() + enrollCmds
+	return zigbee.addBinding(0x0020) + refresh() + enrollCmds
 }
