@@ -94,7 +94,7 @@ metadata {
 def installed() {
 	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-    initialize()
+	initialize()
 	if (zwaveInfo?.mfr?.equals("0063") || zwaveInfo?.mfr?.equals("014F")) { // These old GE devices have to be polled. GoControl Plug refresh status every 15 min.
 		runEvery15Minutes("poll", [forceForLocallyExecuting: true])
 	}
@@ -102,7 +102,7 @@ def installed() {
 
 def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-    initialize()
+	initialize()
 	if (zwaveInfo?.mfr?.equals("0063") || zwaveInfo?.mfr?.equals("014F")) { // These old GE devices have to be polled. GoControl Plug refresh status every 15 min.
 		unschedule("poll", [forceForLocallyExecuting: true])
 		runEvery15Minutes("poll", [forceForLocallyExecuting: true])
@@ -247,6 +247,8 @@ def configure() {
 	} else if (zwaveInfo.mfr == "010F" && zwaveInfo.prod == "1801" && zwaveInfo.model == "1000") { // Fibaro Wall Plug UK
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 11, size: 1, scaledConfigurationValue: 2))) // 2% power change results in report
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 5*60))) // report every 5 minutes
+	} else if (zwaveInfo.mfr == "014F" && zwaveInfo.prod == "5053" && zwaveInfo.model == "3531") {
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 15))) //report kWH every 15 min
 	}
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))
