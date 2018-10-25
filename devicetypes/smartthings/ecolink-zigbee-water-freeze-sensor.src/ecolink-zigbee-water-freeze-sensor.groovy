@@ -70,8 +70,8 @@ private getTEMPERATURE_MEASURE_VALUE() { 0x0000 }
 private getSET_LONG_POLL_INTERVAL_CMD() { 0x02 }
 private getSET_SHORT_POLL_INTERVAL_CMD() { 0x03 }
 private getCHECK_IN_INTERVAL_CMD() { 0x00 }
-private getDEVICE_CHECK_IN_INTERVAL_VAL_HEX() { 0x0E10 }
-private getDEVICE_CHECK_IN_INTERVAL_VAL_INT() { 15 * 60 }
+private getDEVICE_CHECK_IN_INTERVAL_VAL_HEX() { 0x1C20 }
+private getDEVICE_CHECK_IN_INTERVAL_VAL_INT() { 30 * 60 }
 
 def installed() {
 	sendEvent(name: "water", value: "dry", displayed: false)
@@ -188,11 +188,14 @@ def refresh() {
 def configure() {
 	sendCheckIntervalEvent()
 
-	def enrollCmds = (zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B0040000") + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
-			zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) +
-			zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, DEVICE_CHECK_IN_INTERVAL_VAL_HEX))
+	def createBinding = zigbee.addBinding(POLL_CONTROL_CLUSTER)
 
-	return refresh() + zigbee.enrollResponse() + zigbee.batteryConfig(60, 30 * 60) +
-			zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) +
-			zigbee.temperatureConfig(DEVICE_CHECK_IN_INTERVAL_VAL_INT, DEVICE_CHECK_IN_INTERVAL_VAL_INT + 1) + refresh() + enrollCmds
+	def enrollCmds = zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, DEVICE_CHECK_IN_INTERVAL_VAL_HEX) +
+			zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
+			zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) +
+			zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B1040000")
+
+	return zigbee.enrollResponse() + createBinding + zigbee.batteryConfig() +
+			zigbee.temperatureConfig(DEVICE_CHECK_IN_INTERVAL_VAL_INT, DEVICE_CHECK_IN_INTERVAL_VAL_INT + 1) +
+			refresh() + enrollCmds
 }
