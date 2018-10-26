@@ -1,0 +1,32 @@
+definition(
+    name: "sendPushNotificationwhenswitchchanges",
+    namespace: "test apps",
+    author: "github-0822",
+    description: "send push Notification when switch changes",
+    category: "My Apps")
+
+preferences {
+    input "switch2", "capability.switch", required: true, title: "Control which siwtch?"
+}
+
+def installed() {
+	initialize()
+}
+
+
+
+def initialize() {
+    subscribe(switch2, "switch", theswitchHandler) 
+}
+
+
+def theswitchHandler(evt) {
+    if(evt.value == "on"){
+		sendPush("sendPushwhenS2changes: $evt.value, $evt.descriptionText")
+	}
+		
+    if(evt.value == "off"){
+		sendPush("sendPushwhenS2changes: $evt.value, $evt.descriptionText")
+	}
+    
+}
