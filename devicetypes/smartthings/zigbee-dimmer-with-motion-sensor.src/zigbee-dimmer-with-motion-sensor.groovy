@@ -21,6 +21,7 @@ metadata {
 		capability "Light"
 		capability "Switch"
 		capability "Switch Level"
+		capability "Power Meter"
 		capability "Motion Sensor"
 		capability "Health Check"
 
@@ -37,6 +38,9 @@ metadata {
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel"
+			}
+			tileAttribute ("power", key: "SECONDARY_CONTROL") {
+				attributeState "power", label:'${currentValue} W'
 			}
 		}
 		standardTile("motion", "device.motion", decoration: "flat", width: 2, height: 2) {
@@ -91,6 +95,9 @@ def parse(String description) {
 		}
 	} else if (map.name == "level" && map.value == 0) {
 		map = [:]
+	} else if (map.name == "power") {
+		// TODO: Consider configuring divisor value in 0x0702 cluster if supported by the device
+		map.value = (map.value as Integer) / 10
 	}
 
 	log.debug "Parse returned $map"
@@ -139,7 +146,7 @@ def ping() {
 }
 
 def refresh() {
-	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def setupHealthCheck() {
@@ -157,5 +164,5 @@ def configure() {
 	setupHealthCheck()
 
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
-	zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + refresh()
+	zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + refresh()
 }
