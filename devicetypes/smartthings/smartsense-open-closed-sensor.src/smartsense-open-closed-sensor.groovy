@@ -180,8 +180,20 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
-
+	def cmds = refresh() + zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 30)
+	if(getDataValue("manufacturer") == "Ecolink") {
+		cmds += configureEcolink()
+	}
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return refresh() + zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 30) // send refresh cmds as part of config
+	return cmds
+}
+
+private configureEcolink() {
+	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
+	def enrollCmds = zigbee.writeAttribute(0x0020, 0x0000, 0x23, 0x00001C20) + zigbee.command(0x0020, 0x03, "0200") +
+			zigbee.writeAttribute(0x0020, 0x0003, 0x21, 0x0028) + zigbee.command(0x0020, 0x02, "B1040000")
+
+	return zigbee.addBinding(0x0020) + refresh() + enrollCmds
 }
