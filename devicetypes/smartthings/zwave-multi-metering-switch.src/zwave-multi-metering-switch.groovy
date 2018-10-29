@@ -26,7 +26,7 @@ metadata {
 
 		fingerprint mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
 		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
-		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x7A,0x5A", deviceJoinName: "Aeotec Nano Switch 1"
+		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Nano Switch 1"
 	}
 
 	tiles(scale: 2){
@@ -230,6 +230,10 @@ private resetAll() {
 def installed() {
 	log.debug "Installed ${device.displayName}"
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+def updated() {
+	sendHubCommand secure(zwave.multiChannelV3.multiChannelEndPointGet())
 }
 
 def configure() {

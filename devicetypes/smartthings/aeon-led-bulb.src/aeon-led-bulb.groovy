@@ -52,7 +52,7 @@ metadata {
 		state "level", action:"switch level.setLevel"
 	}
 	controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
-		state "color", action:"setColor"
+		state "color", action:"color control.setColor"
 	}
 	valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
 		state "level", label: 'Level ${currentValue}%'
@@ -216,39 +216,12 @@ private commands(commands, delay=200) {
 }
 
 def rgbToHSV(red, green, blue) {
-	float r = red / 255f
-	float g = green / 255f
-	float b = blue / 255f
-	float max = [r, g, b].max()
-	float delta = max - [r, g, b].min()
-	def hue = 13
-	def saturation = 0
-	if (max && delta) {
-		saturation = 100 * delta / max
-		if (r == max) {
-			hue = ((g - b) / delta) * 100 / 6
-		} else if (g == max) {
-			hue = (2 + (b - r) / delta) * 100 / 6
-		} else {
-			hue = (4 + (r - g) / delta) * 100 / 6
-		}
-	}
-	[hue: hue, saturation: saturation, value: max * 100]
+	def hex = colorUtil.rgbToHex(red as int, green as int, blue as int)
+	def hsv = colorUtil.hexToHsv(hex)
+	return [hue: hsv[0], saturation: hsv[1], value: hsv[2]]
 }
 
-def huesatToRGB(float hue, float sat) {
-	while(hue >= 100) hue -= 100
-	int h = (int)(hue / 100 * 6)
-	float f = hue / 100 * 6 - h
-	int p = Math.round(255 * (1 - (sat / 100)))
-	int q = Math.round(255 * (1 - (sat / 100) * f))
-	int t = Math.round(255 * (1 - (sat / 100) * (1 - f)))
-	switch (h) {
-		case 0: return [255, t, p]
-		case 1: return [q, 255, p]
-		case 2: return [p, 255, t]
-		case 3: return [p, q, 255]
-		case 4: return [t, p, 255]
-		case 5: return [255, p, q]
-	}
+def huesatToRGB(hue, sat) {
+	def color = colorUtil.hsvToHex(Math.round(hue) as int, Math.round(sat) as int)
+	return colorUtil.hexToRgb(color)
 }
