@@ -28,7 +28,12 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B05", outClusters: "0003, 000A, 0019", manufacturer: "Jasco Products", model: "45853", deviceJoinName: "GE ZigBee Plug-In Switch"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B05", outClusters: "000A, 0019", manufacturer: "Jasco Products", model: "45856", deviceJoinName: "GE ZigBee In-Wall Switch"
     }
-
+    
+	preferences {
+		input title: "Power Correction", description: "Some sensors display the power value as a multiple of ten to get around a decimal place.  If you device does this you can add a divisor to offset the value.  A value of 1 makes no correction, a value of 10 will divide the sensors value by ten, etc.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		input "powerDivisor", "number", title: "Divisor", description: "Divide power value by this number", range: "1..100", displayDuringSetup: false
+    }
+    
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
@@ -56,7 +61,11 @@ def parse(String description) {
     if (event) {
         if (event.name == "power") {
             def powerValue
-            powerValue = (event.value as Integer)/10            //TODO: The divisor value needs to be set as part of configuration
+            if (powerDivisor) {
+			    powerValue = (event.value as Integer) / (int) powerDivisor
+            } else {
+                powerValue = (event.value as Integer)
+            }
             sendEvent(name: "power", value: powerValue)
         }
         else {
