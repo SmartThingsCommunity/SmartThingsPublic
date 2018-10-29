@@ -137,6 +137,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		} else if (cmd.event == 0x03) {
 			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName covering was removed", isStateChange: true)
 			result << response(zwave.batteryV1.batteryGet())
+			unschedule(clearTamper, [forceForLocallyExecuting: true])
+			runIn(10, clearTamper, [forceForLocallyExecuting: true])
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
 		}
@@ -148,6 +150,10 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, isStateChange: true, displayed: false)
 	}
 	result
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
