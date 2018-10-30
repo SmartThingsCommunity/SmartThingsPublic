@@ -81,6 +81,8 @@ def parse(String description) {
             else if(event.value == "off") {
                 event.value = "closed"
             }
+        } else if (event.name == "powerSource") {
+            event.value = event.value.toLowerCase()
         }
         sendEvent(event)
         //handle valve attribute
