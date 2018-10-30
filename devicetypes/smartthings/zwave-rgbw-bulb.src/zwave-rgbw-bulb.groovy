@@ -189,7 +189,9 @@ def setColor(value) {
 		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
 		result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
 	} else {
-    def rgb = huesatToRGB(value.hue, value.saturation)
+		def hue = (value.hue == null) ? device.currentValue("hue") : value.hue
+		def saturation = (value.saturation == null) ? device.currentValue("saturation") : value.saturation
+		def rgb = huesatToRGB(hue, saturation)
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:0, coldWhite:0)
 	}
 
