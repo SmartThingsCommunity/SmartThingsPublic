@@ -122,13 +122,13 @@ def initialize() {
 			cmds << secure(zwave.basicV1.basicGet())
 			cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
 		} else {
-			cmds << zwave.basicV1.basicGet().format()
+			cmds << secure(zwave.basicV1.basicGet())
 			cmds << "delay 5"
 		}
 	}
 	if (!device.currentState("battery")) {
 		if (zwaveInfo?.cc?.contains("80")) {
-			cmds << zwave.batteryV1.batteryGet().format()
+			cmds << secure(zwave.batteryV1.batteryGet())
 		} else {
 			// Right now this DTH assumes all devices are battery powered, in the event a device is wall powered we should populate something
 			sendEvent(name: "battery", value: 100, unit: "%")
@@ -153,13 +153,13 @@ def getConfigurationCommands() {
 	def cmds = []
 	if (isZipato()) {
 		// Set alarm volume to 3 (loud)
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [3]).format()
+		cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [3]))
 		cmds << "delay 500"
 		// Set alarm duration to 60s (default)
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
+		cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]))
 		cmds << "delay 500"
 		// Set alarm sound to no.10
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [10]).format()
+		cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [10]))
 	} else if (isYale()) {
 		if (!state.alarmLength) state.alarmLength = 10 // default value
 		if (!state.alarmLEDflash) state.alarmLEDflash = 1 // default value
@@ -180,20 +180,21 @@ def getConfigurationCommands() {
 			state.comfortLED = comfortLED
 			state.tamper = tamper
 
-			cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [alarmLength]).format()
-			cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [alarmLEDflash ? 1 : 0]).format()
-			cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [comfortLED]).format()
-			cmds << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [tamper ? 1 : 0]).format()
+			cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [alarmLength]))
+			cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [alarmLEDflash ? 1 : 0]))
+			cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [comfortLED]))
+			cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [tamper ? 1 : 0]))
 			cmds << "delay 1000"
 			cmds << secure(zwave.basicV1.basicSet(value: 0x00))
 		}
 	}
+	cmds
 }
 
 
 def poll() {
 	if (secondsPast(state.lastbatt, 36 * 60 * 60)) {
-		return zwave.batteryV1.batteryGet().format()
+		return secure(zwave.batteryV1.batteryGet())
 	} else {
 		return null
 	}
@@ -201,45 +202,33 @@ def poll() {
 
 def on() {
 	log.debug "sending on"
+	def cmds = []
+	cmds << secure(zwave.basicV1.basicSet(value: 0xFF))
+	cmds << secure(zwave.basicV1.basicGet())
+
 	// ICP-5323: Zipato siren sometimes fails to make sound for full duration
 	// Those alarms do not end with Siren Notification Report.
 	// For those cases we add additional state check after alarm duration to
 	// synchronize cloud state with actual device state.
 	if (isZipato()) {
-		[
-			zwave.basicV1.basicSet(value: 0xFF).format(),
-			zwave.basicV1.basicGet().format(),
-			"delay 63000",
-			zwave.basicV1.basicGet().format()
-		]
+		cmds << "delay 63000"
+		cmds << secure(zwave.basicV1.basicGet())
 	} else if (isYale()) {
-		[
-			secure(zwave.basicV1.basicSet(value: 0xFF)),
-			secure(zwave.basicV1.basicGet()),
-			secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
-		]
-	} else {
-		[
-			zwave.basicV1.basicSet(value: 0xFF).format(),
-			zwave.basicV1.basicGet().format()
-		]
+		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
 	}
+	return cmds
 }
 
 def off() {
 	log.debug "sending off"
+	def cmds = []
+	cmds << secure(zwave.basicV1.basicSet(value: 0x00))
+	cmds << secure(zwave.basicV1.basicGet())
+
 	if (isYale()) {
-		[
-			secure(zwave.basicV1.basicSet(value: 0x00)),
-			secure(zwave.basicV1.basicGet()),
-			secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
-		]
-	} else {
-		[
-			zwave.basicV1.basicSet(value: 0x00).format(),
-			zwave.basicV1.basicGet().format()
-		]
+		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
 	}
+	return cmds
 }
 
 def strobe() {
@@ -260,18 +249,13 @@ def ping() {
 
 def refresh() {
 	log.debug "sending battery refresh command"
+	def cmds = []
+	cmds << secure(zwave.basicV1.basicGet())
+	cmds << secure(zwave.batteryV1.batteryGet())
 	if (isYale()) {
-		return delayBetween([
-			secure(zwave.basicV1.basicGet()),
-			secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07)),
-			zwave.batteryV1.batteryGet().format()
-		], 2000)
-	} else {
-		return delayBetween([
-			zwave.basicV1.basicGet().format(),
-			zwave.batteryV1.batteryGet().format()
-		], 2000)
+		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
 	}
+	return delayBetween(cmds, 2000)
 }
 
 def parse(String description) {
@@ -301,7 +285,11 @@ def parse(String description) {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
