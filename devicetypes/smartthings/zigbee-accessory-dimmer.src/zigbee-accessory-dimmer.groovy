@@ -91,7 +91,7 @@ def parse(String description) {
 			}
 		} else if (descMap && descMap.clusterInt == 0x0005) {
 			if (descMap.commandInt == 0x05) {
-				sendEvent(name: "button", value: "pressed", isStateChange: true)
+				sendEvent(name: "button", value: "pushed", isStateChange: true)
 			} else if (descMap.commandInt == 0x04) {
 				sendEvent(name: "button", value: "held", isStateChange: true)
 			}
@@ -122,11 +122,11 @@ def setLevel(value) {
 def installed() {
 	sendEvent(name: "switch", value: "on", isStateChange: false, displayed: false)
 	sendEvent(name: "level", value: 100, isStateChange: false, displayed: false)
-	sendEvent(name: "button", value: "pressed", isStateChange: false, displayed: false)
+	sendEvent(name: "button", value: "pushed", isStateChange: false, displayed: false)
 	sendEvent(name: "numberOfButtons", value: 1, displayed: false)
 }
 
 def configure() {
-	//these are necessary to have the device report when its buttons are pressed
+	//these are necessary to have the device report when its buttons are pushed
 	zigbee.addBinding(zigbee.ONOFF_CLUSTER) + zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) + zigbee.addBinding(0x0005)
 }
