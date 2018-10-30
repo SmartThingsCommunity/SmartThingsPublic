@@ -106,7 +106,7 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
-	result << createEvent(name: "fanSpeed", value: cmd.value/33)
+	result << createEvent(name: "fanSpeed", value: Math.round(cmd.value/33))
 	return result
 }
 

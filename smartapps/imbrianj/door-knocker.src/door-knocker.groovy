@@ -93,7 +93,7 @@ private send(kSensor) {
   String code = 'SmartApps_DoorKnocker_V_0001'
   List params = [
     [
-      'name': 'knockSensor.label',
+      'n': '${knockSensor.name}',
       'value': kSensor
     ]
   ]
