@@ -13,7 +13,7 @@
  */
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Virtual Contact Sensor", namespace: "smartthings/ericyew", author: "ericyew") {
+	definition (name: "Virtual Contact Sensor", namespace: "ericyew", author: "Eric Yew") {
 		capability "Contact Sensor"
 
 		command "open"
