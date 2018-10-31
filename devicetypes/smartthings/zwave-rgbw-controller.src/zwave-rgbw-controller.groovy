@@ -24,13 +24,13 @@ metadata {
 		capability "Refresh"
 		capability "Actuator"
 		capability "Sensor"
-    capability "Health Check"
-    capability "Light"
+    		capability "Health Check"
+    		capability "Light"
 
 		command "setWhiteLevel"
 		command "reset"
     
-    attribute "whiteLevel", "number"
+    		attribute "whiteLevel", "number"
 
 		fingerprint mfr: "0330 ", prod: "0201", model: "D002", deviceJoinName: "RGBgenie RGBW Controller ZW-1002"
 	}
@@ -65,7 +65,7 @@ metadata {
 	}
 
 	main(["switch"])
-	details(["switch", "whiteSliderControl", "reset", "refresh"])
+	details(["switch", "levelSliderControl", "rgbSelector", "whiteSliderControl", "reset", "refresh"])
 }
 
 def updated() {
