@@ -25,13 +25,13 @@ metadata {
 		capability "Refresh"
 		capability "Actuator"
 		capability "Sensor"
-    capability "Health Check"
-    capability "Light"
+    		capability "Health Check"
+    		capability "Light"
 
 		command "reset"
 
 		fingerprint inClusters: "0x33"
-    fingerprint inClusters: "0x26,0x33"
+    		fingerprint inClusters: "0x26,0x33"
 		fingerprint inClusters: "0x26,0x33,0x98"
 		fingerprint deviceId: "0x11", inClusters: "0x98,0x33"
 		fingerprint deviceId: "0x1102", inClusters: "0x98"		
@@ -69,7 +69,7 @@ metadata {
 	}
 
 	main(["switch"])
-	details(["switch", "colorTempSliderControl", "reset", "refresh"])
+	details(["switch", "levelSliderControl", "rgbSelector", "colorTempSliderControl", "reset", "refresh"])
 }
 
 def updated() {
@@ -189,7 +189,7 @@ def setColor(value) {
 		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
 		result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
 	} else {
-    def rgb = huesatToRGB(value.hue, value.saturation)
+    		def rgb = huesatToRGB(value.hue, value.saturation)
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:0, coldWhite:0)
 	}
 
@@ -201,16 +201,27 @@ def setColor(value) {
 	commands(result)
 }
 
-def setColorTemperature(percent) {
-	if(percent > 99) percent = 99
-	int warmValue = percent * 255 / 99
-	command(zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite:warmValue, coldWhite:(255 - warmValue)))
+private getCOLOR_TEMP_MAX() { 6500 }
+private getCOLOR_TEMP_MIN() { 2700 }
+private getCOLOR_TEMP_DIFF() { COLOR_TEMP_MAX - COLOR_TEMP_MIN }
+
+def setColorTemperature(temp) {
+	if(temp > COLOR_TEMP_MAX)
+		temp = COLOR_TEMP_MAX
+	else if(temp < COLOR_TEMP_MIN)
+		temp = COLOR_TEMP_MIN
+	log.debug "setColorTemperature($temp)"
+	def warmValue = ((COLOR_TEMP_MAX - temp) / COLOR_TEMP_DIFF * 255) as Integer
+	def coldValue = 255 - warmValue
+	def cmds = [zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)]
+	cmds += queryAllColors()
+	commands(cmds)
 }
 
 def reset() {
 	log.debug "reset()"
 	sendEvent(name: "color", value: "#ffffff")
-	setColorTemperature(99)
+	setColorTemperature(COLOR_TEMP_MAX)
 }
 
 private command(physicalgraph.zwave.Command cmd) {
