@@ -161,6 +161,7 @@ def uninstalled() {
 def updated() {
 	// Device-Watch pings if no device events received for 1 hour (checkInterval)
 	sendEvent(name: "checkInterval", value: 1 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	initializeManufacturerData()
 
 	def hubAction = null
 	try {
@@ -1738,6 +1739,15 @@ private isSamsungLock() {
 		return true
 	}
 	return false
+}
+
+/**
+ * Sets the manufacuter device data value so it can be used by LEE
+ *
+ */
+private initializeManufacturerData() {
+	// These utility functions init the data value if it hasn't been already
+	isSchlageLock() || isYaleLock() || isKwiksetLock() || isSamsungLock()
 }
 
 /**
