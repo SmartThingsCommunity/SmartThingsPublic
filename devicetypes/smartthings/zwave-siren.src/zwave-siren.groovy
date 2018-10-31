@@ -118,12 +118,9 @@ def initialize() {
 	}
 
 	if (!device.currentState("alarm")) {
+		cmds << secure(zwave.basicV1.basicGet())
 		if (isYale()) {
-			cmds << secure(zwave.basicV1.basicGet())
 			cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
-		} else {
-			cmds << secure(zwave.basicV1.basicGet())
-			cmds << "delay 5"
 		}
 	}
 	if (!device.currentState("battery")) {
@@ -285,7 +282,7 @@ def parse(String description) {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
+	if (zwaveInfo?.zw?.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
