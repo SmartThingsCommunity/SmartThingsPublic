@@ -96,14 +96,17 @@ def scheduleMove(timeString) {
 
     //calculate the offset
     def offsetedTime = new Date(timeinput.time + (offset * 60 * 1000))
-    def timeparam = toDateTime(time, null)
-	if (type=="At sunset not later than time" && offsetedTime>timeparam) {
-	    log.debug "$offsetedTime is later than $timeparam"
-        offsetedTime=timeparam
-    }
-	else if (type=="At sunrise not earlier than time" && offsetedTime<timeparam) {
-	    log.debug "$offsetedTime is earlier than $timeparam"
-        offsetedTime=timeparam
+    if (time!=null)
+    {
+        def timeparam = toDateTime(time, null)
+        if (type=="At sunset not later than time" && offsetedTime>timeparam) {
+            log.debug "$offsetedTime is later than $timeparam"
+            offsetedTime=timeparam
+        }
+        else if (type=="At sunrise not earlier than time" && offsetedTime<timeparam) {
+            log.debug "$offsetedTime is earlier than $timeparam"
+            offsetedTime=timeparam
+        }
     }
     log.debug "Scheduling for: $offsetedTime"
 
@@ -122,7 +125,7 @@ def moveToLevel() {
     df.setTimeZone(location.timeZone)
     def day = df.format(new Date())	
 
-    log.debug "moving shades to level: $level (day is {$day} - for debug and later feature)"
+    log.debug "moving shades to level: $level (day is $day - for debug and later feature)"
     def i=0
     shades.each { shade ->
         moveShade(i, level, 5)
