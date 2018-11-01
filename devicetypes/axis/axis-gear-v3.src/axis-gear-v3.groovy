@@ -1,5 +1,5 @@
 metadata {
-    definition (name: "AXIS Gear TEST", namespace: "axis", author: "AXIS Labs") {  
+    definition (name: "AXIS Gear-V3", namespace: "axis", author: "AXIS Labs") {  
         capability "Actuator"
         capability "Configuration"
         capability "Switch"
