@@ -139,7 +139,7 @@ def ping() {
 }
 
 def refresh() {
-	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
 }
 
 def setupHealthCheck() {
