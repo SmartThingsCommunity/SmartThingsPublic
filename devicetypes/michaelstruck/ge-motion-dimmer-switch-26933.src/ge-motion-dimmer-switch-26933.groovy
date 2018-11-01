@@ -6,8 +6,9 @@
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.3 8/21/18 
+ *  Version 1.0.4 10/15/18 
  *
+ *  Version 1.0.4 (10/15/18) - Changed to triple push for options for switches to activate special functions.
  *  Version 1.0.3 (8/21/18) - Changed the setLevel mode to boolean
  *  Version 1.0.2 (8/2/18) - Updated some of the text, added/updated options on the Settings page
  *  Version 1.0.1 (7/15/18) - Format and syntax updates. Thanks to @Darwin for the motion sensitivity/timeout minutes idea!
@@ -86,8 +87,8 @@ metadata {
                 ],
                 required: false
             )
-            input (name: "timeoutdurationPress", title: "Double Press Timeout (Occupancy/Vacancy)",
-                description: "Physically press 'on' twice within 10 seconds to override timeout. Resets when light goes off",
+            input (name: "timeoutdurationPress", title: "Triple Press Timeout (Occupancy/Vacancy)",
+                description: "Physically press 'on' three times within 10 seconds to override timeout. Resets when light goes off",
                 type: "enum",
                 options: [
                     "0" : "5 seconds",
@@ -98,8 +99,8 @@ metadata {
                 ],
                 required: false
             )
-            input (name: "modeOverride", title: "Double Press Operating Mode Override",
-            	description: "Physically press 'off' twice within 10 seconds to override the current operating mode",
+            input (name: "modeOverride", title: "Triple Press Operating Mode Override",
+            	description: "Physically press 'off' three times within 10 seconds to override the current operating mode",
                 type: "enum",
                 options: [
                     "1" : "Manual (no auto-on/no auto-off)",
@@ -245,26 +246,34 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	def result = []
     if (cmd.value == 255) {
     	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "On/Up on (button 1) $device.displayName was pushed", isStateChange: true, type: "physical"])
-    	if (timeoutdurationPress && state.Timer && (now()-state.Timer)<10000) {
-        	log.debug "Double press in less than 10 seconds-Overriding timeout"
-        	def cmds=[]
-            cmds << zwave.configurationV1.configurationSet(configurationValue: [timeoutdurationPress.toInteger()], parameterNumber: 1, size: 1)
-       		cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
-            sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
-            showDashboard(timeoutdurationPress.toInteger(), "", "", "", "")
-    	}
-        state.Timer=now()
+    	if (timeoutdurationPress){
+        	if (!state.onCounter || state.onCounter>3) state.onCounter=0
+            state.onCounter = state.onCounter + 1
+            if (state.onCounter==1) state.Timer=now() 
+        	if (state.onCounter==3 && (now()-state.Timer)<10000) {
+                log.info "Triple press in less than 10 seconds-Overriding timeout"
+                def cmds=[]
+                cmds << zwave.configurationV1.configurationSet(configurationValue: [timeoutdurationPress.toInteger()], parameterNumber: 1, size: 1)
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
+                sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
+                showDashboard(timeoutdurationPress.toInteger(), "", "", "", "")
+            }
+        }
     }
 	else if (cmd.value == 0) {
     	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
-    	if (modeOverride && state.timerOff && (now()-state.timerOff)<10000) {
-        	log.debug "Double press in less than 10 seconds-Overriding mode"
-        	def cmds=[]
-            cmds << zwave.configurationV1.configurationSet(configurationValue: [modeOverride.toInteger()], parameterNumber: 3, size: 1)
-       		cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
-            sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
-    	}
-        state.timerOff=now()
+    	if (modeOverride) {
+        	if (!state.offCounter || state.offCounter>3) state.offCounter=0
+            state.offCounter = state.offCounter + 1
+            if (state.offCounter==1) state.timerOff=now()
+            if (state.offCounter==3 && (now()-state.timerOff)<10000) {
+                log.info "Triple press in less than 10 seconds-Overriding mode"
+                def cmds=[]
+                cmds << zwave.configurationV1.configurationSet(configurationValue: [modeOverride.toInteger()], parameterNumber: 3, size: 1)
+                cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
+                sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
+            }
+        }
     }
     return result
 }
@@ -388,7 +397,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
     def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmd.value==0 && timeoutdurationPress){
-    	log.debug "Resetting timeout duration"
+    	log.info "Resetting timeout duration"
         def cmds=[],timeoutValue = timeoutduration ? timeoutduration.toInteger() : 5
         cmds << zwave.configurationV1.configurationSet(configurationValue: [timeoutValue], parameterNumber: 1, size: 1)
        	cmds << zwave.configurationV1.configurationGet(parameterNumber: 1)
@@ -749,4 +758,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.3 (08/21/18)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.4 (10/15/18)") }
