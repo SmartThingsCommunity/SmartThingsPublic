@@ -54,13 +54,13 @@ def updated() {
 
 def initialize() {
 	if (type=="At sunset" || type=="At sunset not later than time") {
-    	subscribe(location, "sunsetTime", timeHandler)
+    	subscribe(location, "sunsetTime", suntimeHandler)
      	log.debug "Subscribed on sunset time"        
         //schedule it to run today too
         scheduleMove(location.currentValue("sunsetTime"))
     }
     else if (type=="At sunrise" || type=="At sunrise not earlier than time") {
-    	subscribe(location, "sunriseTime", timeHandler)
+    	subscribe(location, "sunriseTime", suntimeHandler)
     	log.debug "Subscribed on sunrise time"        
         //schedule it to run today too
         scheduleMove(location.currentValue("sunriseTime"))
@@ -80,6 +80,10 @@ def initialize() {
 def timeHandler(evt) {
  	log.debug "It's time to move"        
     moveToLevel()
+}
+
+def suntimeHandler(evt) {
+ 	scheduleMove(evt.value)
 }
 
 def lightHandler(evt) {
