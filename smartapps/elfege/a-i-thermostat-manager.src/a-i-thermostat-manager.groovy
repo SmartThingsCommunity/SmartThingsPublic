@@ -516,7 +516,7 @@ def setCSPs(){
         learn()
         recorded = state.CSPMode.find{it.key == "$CurrMode"}?.value
     }
-    log.debug "recorded for $CurrMode mode = $extract"
+    log.debug "recorded for $CurrMode mode = $recorded"
 
     for(s != 0; i < s; i++){
         thisTherm = Thermostats[i]
