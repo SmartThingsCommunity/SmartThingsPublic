@@ -13,22 +13,28 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Heat Controller", namespace: "smartthings", author: "Samsung", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Battery_Thermostat", ocfDeviceType: "oic.d.thermostat") {
+	definition (name: "Fibaro Heat Controller With Sensor", namespace: "smartthings", author: "Samsung", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Battery_Thermostat", ocfDeviceType: "oic.d.thermostat") {
 		capability "Thermostat Mode"
 		capability "Refresh"
 		capability "Battery"
+		capability "Thermostat Heating Setpoint"
 		capability "Health Check"
 		capability "Thermostat"
 
+		command "setThermostatSetpointUp"
+		command "setThermostatSetpointDown"
 		command "switchMode"
-
-		fingerprint mfr: "010F", prod: "1301", model: "1000", deviceJoinName: "Fibaro Heat Controller"
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"thermostat", type:"general", width:6, height:4, canChangeIcon: false)  {
+			tileAttribute("device.heatingSetpoint", key: "VALUE_CONTROL") {
+				attributeState("VALUE_UP", action: "setThermostatSetpointUp")
+				attributeState("VALUE_DOWN", action: "setThermostatSetpointDown")
+			}
 			tileAttribute("device.thermostatMode", key: "PRIMARY_CONTROL") {
 				attributeState("off", action:"switchMode", nextState:"...", icon: "st.thermostat.heating-cooling-off", label: '${currentValue}')
+				attributeState("auto", action:"switchMode", nextState:"...", icon: "st.thermostat.auto", label: '${currentValue}')
 				attributeState("heat", action:"switchMode", nextState:"...", icon: "st.thermostat.heat", label: '${currentValue}')
 			}
 		}
@@ -54,7 +60,10 @@ def updated() {
 }
 
 def initialize() {
-	def supportedModes = ["off", "heat"]
+	if(!childDevices) {
+		addChild()
+	}
+	def supportedModes = ["off", "heat", "auto"]
 	state.supportedModes = supportedModes
 	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
 
@@ -111,9 +120,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 			createEvent(map)
 			break
 		case 2:
-			if(cmd.batteryLevel > 0) {
-				changeDeviceType()
-			}
+			sendEventToChild(map)
 			break
 		default:
 			break
@@ -123,6 +130,9 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd, sourceEndPoint = null) {
 	def mode
 	switch (cmd.mode) {
+		case 1:
+			mode = "auto"
+			break
 		case 31:
 			mode = "heat"
 			break
@@ -134,10 +144,13 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 	createEvent(name: "thermostatMode", value: mode)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-	if(cmd.parameterNumber == 3 && cmd.scaledConfigurationValue == 1) {
-		changeDeviceType()
-	}
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, sourceEndPoint = null) {
+	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, 'C', cmd.precision), unit: temperatureScale)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, sourceEndPoint = null) {
+	def map = [name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, 'C', cmd.precision), unit: temperatureScale]
+	sendEventToChild(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy cmd) {
@@ -153,6 +166,9 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def setThermostatMode(String mode) {
 	def modeValue = 0
 	switch (mode) {
+		case "auto":
+			modeValue = 1
+			break
 		case "heat":
 			modeValue = 31
 			break
@@ -168,6 +184,10 @@ def setThermostatMode(String mode) {
 	]
 }
 
+def auto() {
+	setThermostatMode("auto")
+}
+
 def off() {
 	setThermostatMode("off")
 }
@@ -176,12 +196,38 @@ def heat() {
 	setThermostatMode("heat")
 }
 
+def setHeatingSetpoint(setpoint) {
+	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
+	[
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: 1, size: 2]), 1),
+			"delay 2000",
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1), 1)
+	]
+}
+
+def setThermostatSetpointUp() {
+	def setpoint = device.latestValue("heatingSetpoint")
+	if (setpoint < maxHeatingSetpointTemperature) {
+		setpoint = setpoint + (temperatureScale == 'C' ? 0.5 : 1)
+	}
+	setHeatingSetpoint(setpoint)
+}
+
+def setThermostatSetpointDown() {
+	def setpoint = device.latestValue("heatingSetpoint")
+	if (setpoint > minHeatingSetpointTemperature) {
+		setpoint = setpoint - (temperatureScale == 'C' ? 0.5 : 1)
+	}
+	setHeatingSetpoint(setpoint)
+}
+
 def refresh() {
 	def cmds = [
 			secureEncap(zwave.batteryV1.batteryGet(), 1),
 			secureEncap(zwave.batteryV1.batteryGet(), 2),
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1), 1),
 			secureEncap(zwave.thermostatModeV2.thermostatModeGet(),1),
-			secureEncap(zwave.configurationV1.configurationGet(parameterNumber: 3), 1)
+			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet(), 2),
 	]
 
 	delayBetween(cmds, 2500)
@@ -223,10 +269,36 @@ def switchMode() {
 	}
 }
 
+def sendEventToChild(event) {
+	String childDni = "${device.deviceNetworkId}:2"
+	def child = childDevices.find { it.deviceNetworkId == childDni }
+	child?.sendEvent(event)
+}
+
+private refreshChild() {
+	def cmds = [
+			secureEncap(zwave.batteryV1.batteryGet(), 2),
+			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet(), 2)
+	]
+	sendHubCommand(cmds, 2000)
+}
+
 private delayedRefresh() {
 	sendHubCommand(refresh())
 }
 
-private changeDeviceType() {
-	setDeviceType("Fibaro Heat Controller With Sensor")
+def addChild() {
+	String childDni = "${device.deviceNetworkId}:2"
+	String componentLabel =	 "Fibaro Temperature Sensor"
+	String ch = "ch2"
+
+	addChildDevice("Child Temperature Sensor", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false, componentName: ch, componentLabel: componentLabel])
+}
+
+private getMaxHeatingSetpointTemperature() {
+	temperatureScale == 'C' ? 30 : 86
+}
+
+private getMinHeatingSetpointTemperature() {
+	temperatureScale == 'C' ? 10 : 50
 }
