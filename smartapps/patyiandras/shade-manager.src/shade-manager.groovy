@@ -128,7 +128,7 @@ def moveToLevel() {
     // Ensure the new date object is set to local time zone
     df.setTimeZone(location.timeZone)
     def day = df.format(new Date())	
-    def dayCheck = thesedays.contains(day)
+    def dayCheck = thesedays==null || thesedays.contains(day)
 	if (dayCheck)
     {
         log.debug "moving shades to level: $level (day is $day in $thesedays)"
