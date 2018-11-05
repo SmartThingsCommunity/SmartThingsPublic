@@ -351,6 +351,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			case 3:
 				map.descriptionText = "Covering removed"
 				isActive = true
+				unschedule(clearTamper, [forceForLocallyExecuting: true])
+				runIn(10, clearTamper, [forceForLocallyExecuting: true])
 				break
 			default:
 				isActive = true
@@ -388,6 +390,10 @@ private Boolean secondsPast(timestamp, seconds) {
 		}
 	}
 	return (new Date().time - timestamp) > (seconds * 1000)
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
 }
 
 def isYale() {
