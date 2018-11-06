@@ -20,6 +20,7 @@ metadata {
 		capability "Thermostat Heating Setpoint"
 		capability "Health Check"
 		capability "Thermostat"
+		capability "Temperature Measurement"
 
 		command "setThermostatSetpointUp"
 		command "setThermostatSetpointDown"
@@ -36,6 +37,28 @@ metadata {
 				attributeState("off", action:"switchMode", nextState:"...", icon: "st.thermostat.heating-cooling-off", label: '${currentValue}')
 				attributeState("auto", action:"switchMode", nextState:"...", icon: "st.thermostat.auto", label: '${currentValue}')
 				attributeState("heat", action:"switchMode", nextState:"...", icon: "st.thermostat.heat", label: '${currentValue}')
+			}
+			tileAttribute("device.temperature", key: "SECONDARY_CONTROL") {
+				attributeState("temperature", label:'${currentValue}°', icon: "st.alarm.temperature.normal",
+						backgroundColors:[
+								// Celsius
+								[value: 0, color: "#153591"],
+								[value: 7, color: "#1e9cbb"],
+								[value: 15, color: "#90d2a7"],
+								[value: 23, color: "#44b621"],
+								[value: 28, color: "#f1d801"],
+								[value: 35, color: "#d04e00"],
+								[value: 37, color: "#bc2323"],
+								// Fahrenheit
+								[value: 40, color: "#153591"],
+								[value: 44, color: "#1e9cbb"],
+								[value: 59, color: "#90d2a7"],
+								[value: 74, color: "#44b621"],
+								[value: 84, color: "#f1d801"],
+								[value: 95, color: "#d04e00"],
+								[value: 96, color: "#bc2323"]
+						]
+				)
 			}
 		}
 
@@ -69,7 +92,7 @@ def initialize() {
 
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	sendHubCommand(setThermostatMode("off"))
-	delayedRefresh()
+	runIn(20, "delayedRefresh", [overwrite: true])
 	refresh()
 }
 
@@ -122,8 +145,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 		case 2:
 			sendEventToChild(map)
 			break
-		default:
-			break
 	}
 }
 
@@ -151,6 +172,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, sourceEndPoint = null) {
 	def map = [name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, 'C', cmd.precision), unit: temperatureScale]
 	sendEventToChild(map)
+	createEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy cmd) {

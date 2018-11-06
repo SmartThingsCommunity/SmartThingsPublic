@@ -60,7 +60,7 @@ def initialize() {
 
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	sendHubCommand(setThermostatMode("off"))
-	delayedRefresh()
+	runIn(20, "delayedRefresh", [overwrite: true])
 	refresh()
 }
 
@@ -114,8 +114,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 			if(cmd.batteryLevel > 0) {
 				changeDeviceType()
 			}
-			break
-		default:
 			break
 	}
 }
