@@ -112,10 +112,18 @@ def on() {
     }
 }
 
+def open() {
+    on()
+}
+
 def off() {
     if (!isObstructed()) {
         zigbee.off()
     }
+}
+
+def close() {
+    off()
 }
 
 def clearObstruction() {
