@@ -74,7 +74,7 @@ def updated() {
 
 def configure() {
 	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
-	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	def commands = []
 	if (zwaveInfo.mfr.equals("0258")) {
 		commands << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [0]).format()
@@ -85,7 +85,7 @@ def configure() {
 		commands << command(zwave.configurationV1.configurationSet(parameterNumber: 0x50, scaledConfigurationValue: 2, size: 1))
 	}
 	commands << command(zwave.basicV1.basicGet())
-	response(commands)
+	response(commands + refresh())
 }
 
 def parse(String description) {
@@ -172,8 +172,7 @@ def ping() {
 
 def refresh() {
 	// parent DTH controls endpoint 1
-	def endpointNumber = 1
-	encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
+	[encap(1, zwave.switchBinaryV1.switchBinaryGet()), encap(2, zwave.switchBinaryV1.switchBinaryGet())]
 }
 
 // sendCommand is called by endpoint 2 child device handler

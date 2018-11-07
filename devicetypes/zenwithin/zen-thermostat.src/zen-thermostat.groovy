@@ -15,6 +15,11 @@ metadata {
         capability "Sensor"
         capability "Temperature Measurement"
         capability "Thermostat"
+        capability "Thermostat Heating Setpoint"
+        capability "Thermostat Cooling Setpoint"
+        capability "Thermostat Operating State"
+        capability "Thermostat Mode"
+        capability "Thermostat Fan Mode"
 
         command "setpointUp"
         command "setpointDown"
@@ -561,7 +566,7 @@ def alterSetpoint(raise, targetValue = null, setpoint = null) {
                 unit: locationScale, eventType: "ENTITY_UPDATE")//, displayed: false)
         def data = [targetHeatingSetpoint:heatingSetpoint, targetCoolingSetpoint:coolingSetpoint]
         // Use runIn to reduce chances UI is toggling the value
-        runIn(5, "updateSetpoints", [data: data, overwrite: true])
+        runIn(3, "updateSetpoints", [data: data, overwrite: true])
     }
 }
 
@@ -617,10 +622,12 @@ def updateSetpoints() {
 def updateSetpoints(data) {
     def cmds = []
     if (data.targetHeatingSetpoint) {
+        sendEvent(name: "heatingSetpoint", value: getTempInLocalScale(data.targetHeatingSetpoint, "C"), unit: getTemperatureScale())
         cmds += zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_OCCUPIED_HEATING_SETPOINT, typeINT16,
                 hexString(Math.round(data.targetHeatingSetpoint*100.0), 4))
     }
     if (data.targetCoolingSetpoint) {
+        sendEvent(name: "coolingSetpoint", value: getTempInLocalScale(data.targetCoolingSetpoint, "C"), unit: getTemperatureScale())
         cmds += zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_OCCUPIED_COOLING_SETPOINT, typeINT16,
                 hexString(Math.round(data.targetCoolingSetpoint*100.0), 4))
     }
