@@ -34,7 +34,6 @@ metadata {
 		fingerprint inClusters: "0x33"
 		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
 		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
-		fingerprint mfr: "0330 ", prod: "0201", model: "D002", deviceJoinName: "RGBgenie RGBW Controller ZW-1002"
 	}
 
 	simulator {
