@@ -30,7 +30,7 @@ metadata {
     }
     
 	preferences {
-		input title: "Power Correction", description: "Some sensors display the power value as a multiple of ten to get around a decimal place.  If you device does this you can add a divisor to offset the value.  A value of 1 makes no correction, a value of 10 will divide the sensors value by ten, etc.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		input title: "Power Correction", description: "Some sensors report the power value as a multiple of ten.  If your device does this you can add a divisor to offset the value.  A value of 1 makes no correction, a value of 10 will divide the sensors value by ten, etc.  If not entered the device will default to 10.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		input "powerDivisor", "number", title: "Divisor", description: "Divide power value by this number", range: "1..100", displayDuringSetup: false
     }
     
@@ -64,7 +64,7 @@ def parse(String description) {
             if (powerDivisor) {
                 powerValue = (event.value as Integer) / (int) powerDivisor
             } else {
-                powerValue = (event.value as Integer)
+                powerValue = (event.value as Integer) / 10
             }
             sendEvent(name: "power", value: powerValue)
         }
