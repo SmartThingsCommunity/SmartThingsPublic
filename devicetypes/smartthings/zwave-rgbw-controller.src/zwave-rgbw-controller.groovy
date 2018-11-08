@@ -214,7 +214,7 @@ def reset() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec != 0) {
+	if (zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
