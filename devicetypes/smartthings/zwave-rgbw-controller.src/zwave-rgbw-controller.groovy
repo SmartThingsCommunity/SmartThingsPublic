@@ -181,7 +181,7 @@ def setColor(value) {
 	def result = []
 	log.debug "setColor: ${value}"
 	if (value.hex) {
-		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
+		def c = colorUtil.hexToRgb(value.hex)
 		result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
 	} else {
 		def rgb = huesatToRGB(value.hue, value.saturation)
