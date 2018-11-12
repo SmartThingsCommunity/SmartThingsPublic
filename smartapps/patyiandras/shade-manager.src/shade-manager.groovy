@@ -87,9 +87,10 @@ def suntimeHandler(evt) {
 }
 
 def lightHandler(evt) {
- 	log.debug "Light level changed to {$evt.value}"        
-    if ((orientation=="Close" && evt.value<=lightlevel)
-    	|| (orientation=="Open" && evt.value>=lightlevel)) {
+ 	log.debug "Light level changed to $evt.value"
+    def lightvalue = evt.value.toInteger()
+    if ((orientation=="Close" && lightvalue<=lightlevel)
+    	|| (orientation=="Open" && lightvalue>=lightlevel)) {
     	moveToLevel()
     }
 }
