@@ -77,9 +77,17 @@ def pageSetup() {
                 }
             }
         }
+        section("motion"){
+            input "motionSensors", "capability.motionSensor", title: "Turn this lights on with motion", despcription: "pick a motion sensor", required:false, multiple:true
+
+
+        }
         section("override"){
             input "OVRD", "bool", default: false, title: "Allow manual input to override this application"
             paragraph "NB: this will apply until you turn the lights off and on."
+            if(motionsensor){
+                paragraph "You have picked motion sensor and overrides"
+            }
         }
         section([mobileOnly:true]) {
             label title: "Assign a name", required: false
@@ -103,6 +111,7 @@ def updated() {
 
 def initialize() {
 
+    subscribe(motionSensors, "motion", motionHandler)
     subscribe(dimmers, "level", dimmersHandler)
     subscribe(dimmers, "switch", switchHandler)
     subscribe(LSen, "illuminance", illuminanceHandler)
@@ -114,18 +123,18 @@ def initialize() {
 
 def switchHandler(evt){
     log.debug "$evt.device is now set to $evt.value"
-    
+
     if(atomicState.override){
-    log.debug "END OF OVERRIDE"
-    atomicState.override = false
+        log.debug "END OF OVERRIDE"
+        atomicState.override = false
     }
-    
+
     if(evt.value == "off"){  // prevent currently running loop from turning it back on
-    def device = evt.device
-    device.setLevel(0)
+        def device = evt.device
+        device.setLevel(0)
     }
-    
-    
+
+
 }
 
 def dimmersHandler(evt){
@@ -149,6 +158,12 @@ def dimmersHandler(evt){
 def illuminanceHandler(evt){
     log.debug "$evt.device is $evt.value"
     evaluate()
+}
+
+def motionHandler(){
+log.debug "motion $evt.value at $evt.device "
+
+
 }
 
 def evaluate(){
@@ -230,7 +245,7 @@ def setDimmers(val){
             val = valMode
         }
     }
-  
+
     atomicState.dimVal = val
 
     if(!atomicState.override){
