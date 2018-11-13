@@ -249,11 +249,7 @@ def setColor(value) {
 		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
 		result << zwave.switchColorV3.switchColorSet(red: c[0], green: c[1], blue: c[2], warmWhite: 0, coldWhite: 0)
 	} else {
-		def hue = value.hue ?: device.currentValue("hue")
-		def saturation = value.saturation ?: device.currentValue("saturation")
-		if(hue == null) hue = 13
-		if(saturation == null) saturation = 13
-		def rgb = huesatToRGB(hue, saturation)
+		def rgb = huesatToRGB(value.hue, value.saturation)
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:0, coldWhite:0)
 	}
 	commands(result) + "delay 7000" + commands(queryAllColors(), 1000)
