@@ -31,6 +31,8 @@ preferences {
         input "level", "number", title: "Level"
         input "type", "enum", title: "Type", options: [ "At time":"At time", "At sunrise":"At sunrise", "At sunset":"At sunset", "Light level":"Light level", "At sunrise not earlier than time":"At sunrise not earlier than time", "At sunset not later than time":"At sunset not later than time" ], required: false, defaultValue: "At sunset"
         input "time", "time", title: "Time", required: false
+        input "fromTime", "time", title: "From time", required: false
+        input "toTime", "time", title: "To time", required: false
         input "offset", "number", title: "Time offset", required: false, defaultValue: 0
         input "light", "capability.Illuminance Measurement", title: "Light sensor", required: false
         input "lightlevel", "number", title: "Light level", required: false
@@ -77,6 +79,7 @@ def initialize() {
     }
 }
 
+
 def timeHandler(evt) {
  	log.debug "It's time to move"        
     moveToLevel()
@@ -89,8 +92,12 @@ def suntimeHandler(evt) {
 def lightHandler(evt) {
  	log.debug "Light level changed to $evt.value"
     def lightvalue = evt.value.toInteger()
-    if ((orientation=="Close" && lightvalue<=lightlevel)
-    	|| (orientation=="Open" && lightvalue>=lightlevel)) {
+    def between = fromTime==null || toTime==null || timeOfDayIsBetween(fromTime, toTime, new Date(), location.timeZone)
+    if (!between) {
+    	log.debug "Current time isn't between $fromTime and $toTime"
+    }
+    if (between && ((orientation=="Close" && lightvalue<=lightlevel)
+    	|| (orientation=="Open" && lightvalue>=lightlevel))) {
     	moveToLevel()
     }
 }
