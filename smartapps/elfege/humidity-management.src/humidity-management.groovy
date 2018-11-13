@@ -66,22 +66,25 @@ def settings(){
 
 def installed() {
     subscribeToEvents()
-    log.debug "eval checking schedule to run every minute"
-    schedule("0 0/1 * * * ?", eval)
+
 }
 
 def updated() {
     unsubscribe()
     subscribeToEvents()
     unschedule()
-    log.debug "eval checking schedule to run every minute"
-    schedule("0 0/1 * * * ?", eval)
+
 }
 
 def subscribeToEvents() {
+    if(altswt){
+        subscribe(altswt, "switch", switchHandler)
+    }
     subscribe(dimmer, "level", dimmersHandler)
     subscribe(sensor, "humidity", humidityHandler)
-    eval()
+
+    log.debug "eval checking schedule to run every minute"
+    schedule("0 0/1 * * * ?", eval)
 }
 
 def dimmersHandler(evt) {
@@ -92,48 +95,53 @@ def dimmersHandler(evt) {
 
 def switchHandler(evt){
     log.debug "$evt.device turned $evt.value"
-
-    if(evt.value == "on"){
-        dimmer.setLevel(tempLevel)
-    }
-    else {
-        eval()
-    }
+    eval()
 }
 
 def humidityHandler(evt){
     log.debug "$evt.device returns ${evt.value}% humidity"
-    dimmer.setLevel(evt.value)
+    //dimmer.setLevel(evt.value)
 }
 
 def eval(){
     // set dimmer to the same level as humidity
     def val = sensor.currentValue("humidity")
+    def valRec = val
 
-    if(val <= 70){
-        if(altswt && "on" in altswt?.currentValue("switch")){
-            log.debug "$altswt is on, so now dimmer setting is $tempLevel"
-            val = tempLevel
-        }
-        else if(Modes){
-            if(location.currentMode in Modes){
-                log.debug "Home is in one the specified modes"
-                int i = 0
-                while("${location.currentMode}" != "${Modes[i]}")
-                {
-                    i++
-                        }
-                def foundMode = Modes[i]
-                def ModeLv = "ModeLevel${i}"
-                ModeLv = settings.find{it.key == ModeLv}.value
-                log.debug "Dimmer value for this mode is $ModeLv"
-                val = ModeLv
-            }
+
+    if(altswt && "on" in altswt?.currentValue("switch")){
+        log.debug "$altswt is on, so now dimmer setting is $tempLevel"
+        val = tempLevel
+    }
+    else if(Modes){
+        if(location.currentMode in Modes){
+            log.debug "Home is in one the specified modes: ${location.currentMode}"
+            int i = 0
+            while("${location.currentMode}" != "${Modes[i]}")
+            {
+                i++
+                    }
+            def foundMode = Modes[i]
+            def ModeLv = "ModeLevel${i}"
+            ModeLv = settings.find{it.key == ModeLv}.value
+            log.debug "Dimmer value for ${Modes[i]} is $ModeLv"
+            val = ModeLv
         }
     }
-    else {
-        log.debug "Humidity is too high, not dealing with modes nor switch exceptions"
-        val = 100
+    /// exception to the exceptions... 
+    if(valRec >= 70 && ((Modes && location.currentMode in Modes) || (altswt && "on" in altswt?.currentValue("switch")))){
+        log.debug "Humidity is too high, adding speed despite modes or switch exceptions"
+        val += 20;
+        if(altswt && "on" in altswt?.currentValue("switch")){
+            if(valRec >= 75){
+                val = valRec // .
+                log.debug "someone's inside probably taking a shower... "
+            } 
+            else {
+                val -= 20 // 
+                log.debug "someone's inside, probably without taking a shower"
+            }
+        }
     }
 
     log.debug "humidity = ${sensor.currentValue("humidity")} | $dimmer set to $val"
