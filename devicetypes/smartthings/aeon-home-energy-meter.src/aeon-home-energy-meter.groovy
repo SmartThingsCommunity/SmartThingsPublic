@@ -188,7 +188,7 @@ private encap(physicalgraph.zwave.Command cmd) {
 	} else if (zwaveInfo.cc.contains("56")){
 		crcEncap(cmd)
 	} else {
-		response(cmd.format())
+		cmd.format()
 	}
 }
 
