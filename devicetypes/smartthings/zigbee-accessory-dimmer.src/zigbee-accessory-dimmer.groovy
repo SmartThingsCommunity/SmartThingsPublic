@@ -91,9 +91,9 @@ def parse(String description) {
 			}
 		} else if (descMap && descMap.clusterInt == 0x0005) {
 			if (descMap.commandInt == 0x05) {
-				sendEvent(name: "button", value: "pushed", isStateChange: true)
+				sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], isStateChange: true)
 			} else if (descMap.commandInt == 0x04) {
-				sendEvent(name: "button", value: "held", isStateChange: true)
+				sendEvent(name: "button", value: "held", data: [buttonNumber: 1], isStateChange: true)
 			}
 		} else {
 			log.warn "DID NOT PARSE MESSAGE for description : $description"
@@ -122,7 +122,7 @@ def setLevel(value) {
 def installed() {
 	sendEvent(name: "switch", value: "on", isStateChange: false, displayed: false)
 	sendEvent(name: "level", value: 100, isStateChange: false, displayed: false)
-	sendEvent(name: "button", value: "pushed", isStateChange: false, displayed: false)
+	sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], isStateChange: false, displayed: false)
 	sendEvent(name: "numberOfButtons", value: 1, displayed: false)
 }
 
