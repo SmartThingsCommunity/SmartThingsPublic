@@ -53,6 +53,20 @@ preferences {
   }
 }
 
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	log.debug "initialize"
+	unschedule()
+	runEvery1Minute("poll")
+}
+
 def poll() {
 	log.debug "poll: Running"
     hubGet()
