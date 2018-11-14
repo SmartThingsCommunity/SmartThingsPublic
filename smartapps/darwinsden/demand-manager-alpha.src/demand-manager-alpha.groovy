@@ -50,6 +50,7 @@ preferences {
     page(name: "pagePeakSchedule")
     page(name: "pagePeakSchedule1")
     page(name: "pagePeakSchedule2")
+    page(name: "pagePeakSchedule3")
     page(name: "pageNotifications")
     page(name: "pageAdvancedSettings")
     page(name: "pagePeakDayHolidays")
@@ -131,7 +132,9 @@ def pagePeakSchedule() {
                 image: "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
             href "pagePeakSchedule2", title: "Enter your Utility Peak Hour Schedule 2...", description: "", required: false,
                 image: "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
-        }
+            href "pagePeakSchedule3", title: "Enter your Utility Peak Hour Schedule 3...", description: "", required: false,
+                image: "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
+}
 
         section("Utility Peak Day Holidays (Future Capability)") {
             href "pagePeakDayHolidays", title: "Enter holidays from peak utility periods here...", description: "", required: false,
@@ -176,6 +179,23 @@ def pagePeakSchedule2() {
     }
 }
 
+def pagePeakSchedule3() {
+    dynamicPage(name: "pagePeakSchedule3", title: "Enter Your Utility Schedule 3 Peak Hours and Months.", install: false, uninstall: false) {
+        section() {
+            input "schedule3IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
+        }
+        section("") {
+            input "schedule3StartTime", "time", required: false, title: "Start Time (schedule 3)"
+            input "schedule3StopTime", "time", required: false, title: "End Time (schedule 3)"
+        }
+        section("On Which Months") {
+            input "monthsSchedule3", "enum", title: "Select which months the schedule applies", required: false, multiple: true,
+                options: ["January": "January", "February": "February", "March": "March", "April": "April", "May": "May", "June": "June", "July": "July",
+                    "August": "August", "September": "September", "October": "October", "November": "November", "December": "December"
+                ]
+        }
+    }
+}
 
 def pageDisplayIndicators() {
     dynamicPage(name: "pageDisplayIndicators", title: "Choose display indicator devices (optional)", install: false, uninstall: false) {
@@ -430,6 +450,26 @@ def schedulePeakTimes() {
             sendNotificationMessage(message, "anomaly")
         }
     }
+    if (schedule2IsActive && schedule2IsActive.toBoolean() == true) {
+        if (schedule2StartTime && schedule2StopTime) {
+            schedule(schedule2StartTime.toString(), startPeak2Schedule)
+            schedule(schedule2StopTime.toString(), stopPeak2Schedule)
+        } else {
+            message = "Schedule 2 enabled in preferences, but start and/or stop time was not specified. Peak schedule 2 could not be set."
+            log.warn message
+            sendNotificationMessage(message, "anomaly")
+        }
+    }
+    if (schedule3IsActive && schedule3IsActive.toBoolean() == true) {
+        if (schedule3StartTime && schedule3StopTime) {
+            schedule(schedule3StartTime.toString(), startPeak3Schedule)
+            schedule(schedule3StopTime.toString(), stopPeak3Schedule)
+        } else {
+            message = "Schedule 2 enabled in preferences, but start and/or stop time was not specified. Peak schedule 3 could not be set."
+            log.warn message
+            sendNotificationMessage(message, "anomaly")
+        }
+    }    
 }
 
 def schedulePrecooling() {
@@ -553,6 +593,42 @@ def stopPeak1Schedule() {
     def month = getTheMonth()
     if (!monthsSchedule1 || monthsSchedule1.contains(month)) {
         atomicState.peak1ScheduleActive = false
+        turnOffPeakPeriod()
+        immediateEvent()
+    }
+}
+
+def startPeak2Schedule() {
+    def month = getTheMonth()
+    if (!weekend() && (!monthsSchedule2 || monthsSchedule2.contains(month))) {
+        atomicState.peak2ScheduleActive = true
+        turnOnPeakPeriod()
+        immediateEvent()
+    }
+}
+
+def stopPeak2Schedule() {
+    def month = getTheMonth()
+    if (!monthsSchedule2 || monthsSchedule2.contains(month)) {
+        atomicState.peak2ScheduleActive = false
+        turnOffPeakPeriod()
+        immediateEvent()
+    }
+}
+
+def startPeak3Schedule() {
+    def month = getTheMonth()
+    if (!weekend() && (!monthsSchedule3 || monthsSchedule3.contains(month))) {
+        atomicState.peak3ScheduleActive = true
+        turnOnPeakPeriod()
+        immediateEvent()
+    }
+}
+
+def stopPeak3Schedule() {
+    def month = getTheMonth()
+    if (!monthsSchedule3 || monthsSchedule3.contains(month)) {
+        atomicState.peak3ScheduleActive = false
         turnOffPeakPeriod()
         immediateEvent()
     }
