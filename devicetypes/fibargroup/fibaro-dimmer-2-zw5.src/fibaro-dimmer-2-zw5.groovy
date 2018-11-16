@@ -103,8 +103,14 @@ def off() { encap(zwave.basicV1.basicSet(value: 0)) }
 
 def setLevel(level, rate = null ) {
 	logging("${device.displayName} - Executing setLevel( $level, $rate )","info")
+	level = Math.max(Math.min(level, 99), 0)
+	if (level == 0) {
+		sendEvent(name: "switch", value: "off")
+	} else {
+		sendEvent(name: "switch", value: "on")
+	}
 	if (rate == null) {
-		encap(zwave.basicV1.basicSet(value: (level > 0) ? level-1 : 0))
+		encap(zwave.basicV1.basicSet(value: level))
 	} else {
 		encap(zwave.switchMultilevelV3.switchMultilevelSet(value: (level > 0) ? level-1 : 0, dimmingDuration: rate))
 	}
@@ -254,7 +260,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
 	logging("${device.displayName} - SwitchMultilevelReport received, value: ${cmd.value}","info")
 	sendEvent(name: "switch", value: (cmd.value > 0) ? "on" : "off")
-	sendEvent(name: "level", value: (cmd.value > 0) ? cmd.value+1 : 0)
+	sendEvent(name: "level", value: (cmd.value == 99) ? 100 : cmd.value)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {

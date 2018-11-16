@@ -48,7 +48,9 @@ metadata {
 		fingerprint mfr: "014A", prod: "0004", model: "0002", deviceJoinName: "Ecolink Door/Window Sensor"
 		//zw:Ss type:0701 mfr:0086 prod:0002 model:0059 ver:1.14 zwv:3.92 lib:03 cc:5E,86,72,98,5A ccOut:82 sec:30,80,84,70,85,59,71,7A,73 role:06 ff:8C00 ui:8C00
 		fingerprint mfr: "0086", prod: "0002", model: "0059", deviceJoinName: "Aeon Recessed Door Sensor"
-
+		//zw:S type:0701 mfr:0214 prod:0002 model:0001 ver:6.38 zwv:4.38 lib:06 cc:5E,30,84,80,86,72,71,70,85,59,73,5A role:06 ff:8C06 ui:8C06
+		fingerprint mfr: "0214", prod: "0002", model: "0001", deviceJoinName: "BeSense Door/Window Detector"
+		fingerprint mfr: "0086", prod: "0002", model: "0078", deviceJoinName: "Aeotec Door/Window Sensor Gen5" //EU
 	}
 
 	// simulator metadata

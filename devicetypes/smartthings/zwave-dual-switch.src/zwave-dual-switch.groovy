@@ -24,6 +24,8 @@ metadata {
 		// Child device (isComponent : false) representing endpoint 2 will substitute 1 with 2 for easier identification.
 		fingerprint mfr: "0086", prod: "0103", model: "008C", deviceJoinName: "Aeotec Dual Nano Switch 1" //US
 		fingerprint mfr: "0086", prod: "0003", model: "008C", deviceJoinName: "Aeotec Dual Nano Switch 1" //EU
+		// sometimes the aeotec nano dual switch does not update its NIF when adding securely
+		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut: "0x82", ui: "0x8700", deviceJoinName: "Aeotec Dual Nano Switch 1"
 		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Light Switch 1"
 		fingerprint mfr: "0258", prod: "0003", model: "108B", deviceJoinName: "NEO coolcam Light Switch 1"
 	}
@@ -72,7 +74,7 @@ def updated() {
 
 def configure() {
 	// Device-Watch simply pings if no device events received for checkInterval duration of 32min = 2 * 15min + 2min lag time
-	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	def commands = []
 	if (zwaveInfo.mfr.equals("0258")) {
 		commands << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [0]).format()
@@ -83,7 +85,7 @@ def configure() {
 		commands << command(zwave.configurationV1.configurationSet(parameterNumber: 0x50, scaledConfigurationValue: 2, size: 1))
 	}
 	commands << command(zwave.basicV1.basicGet())
-	response(commands)
+	response(commands + refresh())
 }
 
 def parse(String description) {
@@ -170,8 +172,7 @@ def ping() {
 
 def refresh() {
 	// parent DTH controls endpoint 1
-	def endpointNumber = 1
-	encap(endpointNumber, zwave.switchBinaryV1.switchBinaryGet())
+	[encap(1, zwave.switchBinaryV1.switchBinaryGet()), encap(2, zwave.switchBinaryV1.switchBinaryGet())]
 }
 
 // sendCommand is called by endpoint 2 child device handler

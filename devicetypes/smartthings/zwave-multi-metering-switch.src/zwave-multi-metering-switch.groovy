@@ -26,6 +26,7 @@ metadata {
 
 		fingerprint mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
 		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
+		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Nano Switch 1"
 	}
 
 	tiles(scale: 2){
@@ -67,13 +68,24 @@ def parse(String description) {
 	result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep) {
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd, ep = null) {
+	log.debug "Security Message Encap ${cmd}"
+	def encapsulatedCommand = cmd.encapsulatedCommand()
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand, null)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep = null) {
 	log.debug "Multichannel command ${cmd}" + (ep ? " from endpoint $ep" : "")
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep) {
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
 	def value = cmd.value ? "on" : "off"
 	ep ? changeSwitch(ep, value) : []
@@ -103,7 +115,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
 	} else {
 		result += zwaveEvent(cmd)
 	}
-	result += response(encap(zwave.meterV3.meterGet(scale: 2), ep))
+	result += response(secureEncap(zwave.meterV3.meterGet(scale: 2), ep))
 	result
 }
 
@@ -128,10 +140,22 @@ private createMeterEventMap(cmd) {
 	eventMap
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep) {
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
 	if(!childDevices) {
 		addChildSwitches(cmd.endPoints)
 	}
+	response([
+			resetAll(),
+			refreshAll()
+	])
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, ep = null) {
+	def mfr = Integer.toHexString(cmd.manufacturerId)
+	def model = Integer.toHexString(cmd.productId)
+	updateDataValue("mfr", mfr)
+	updateDataValue("model", model)
+	lateConfigure()
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
@@ -140,17 +164,18 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, ep) {
 
 private onOffCmd(value, endpoint = 1) {
 	delayBetween([
-			encap(zwave.basicV1.basicSet(value: value), endpoint),
-			encap(zwave.basicV1.basicGet(), endpoint),
+			secureEncap(zwave.basicV1.basicSet(value: value), endpoint),
+			secureEncap(zwave.basicV1.basicGet(), endpoint),
 			"delay 3000",
-			encap(zwave.meterV3.meterGet(scale: 2), endpoint)
+			secureEncap(zwave.meterV3.meterGet(scale: 2), endpoint)
 	])
 }
 
 def refresh(endpoint = 1) {
 	delayBetween([
-			encap(zwave.basicV1.basicGet(), endpoint),
-			encap(zwave.meterV3.meterGet(scale: 0), endpoint),
+			secureEncap(zwave.basicV1.basicGet(), endpoint),
+			secureEncap(zwave.meterV3.meterGet(scale: 0), endpoint),
+			secureEncap(zwave.meterV3.meterGet(scale: 2), endpoint),
 			"delay 500"
 	], 500)
 }
@@ -170,8 +195,8 @@ def ping() {
 def reset(endpoint = 1) {
 	log.debug "Resetting endpoint: ${endpoint}"
 	delayBetween([
-			encap(zwave.meterV3.meterReset(), endpoint),
-			encap(zwave.meterV3.meterGet(scale: 0), endpoint),
+			secureEncap(zwave.meterV3.meterReset(), endpoint),
+			secureEncap(zwave.meterV3.meterGet(scale: 0), endpoint),
 			"delay 500"
 	], 500)
 }
@@ -205,46 +230,86 @@ private resetAll() {
 def installed() {
 	log.debug "Installed ${device.displayName}"
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	response(zwave.multiChannelV3.multiChannelEndPointGet().format())
+}
+
+def updated() {
+	sendHubCommand secure(zwave.multiChannelV3.multiChannelEndPointGet())
 }
 
 def configure() {
-	def cmds
-	if(zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) {
-		cmds = [
-				encap(zwave.configurationV2.configurationSet(parameterNumber: 255, size: 1, configurationValue: [0])),    // resets configuration
-				encap(zwave.configurationV2.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1])),    // enables overheat protection
-				encap(zwave.configurationV2.configurationSet(parameterNumber: 80, size: 1, configurationValue: [2])),    // send BasicReport CC
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2048)),    // enabling kWh energy reports on ep 1
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 600)),    //... every 10 minutes
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 4096)),    // enabling kWh energy reports on ep 2
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 600)),    //... every 10 minutes
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1)),    //enables reporting based on wattage change
-				encap(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 20))    //report any 20W change
-		]
-	}
-	delayBetween(cmds) + "delay 1000" + resetAll() + refreshAll()
+	log.debug "Configure..."
+	response([
+			secure(zwave.multiChannelV3.multiChannelEndPointGet()),
+			secure(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+	])
 }
 
-private encap(cmd, endpoint = null) {
-	if (endpoint) {
-		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd).format()
+private secure(cmd) {
+	if(zwaveInfo.zw.endsWith("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
 	}
 }
 
+private encap(cmd, endpoint = null) {
+	if (endpoint) {
+		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
+	} else {
+		cmd
+	}
+}
+
+private secureEncap(cmd, endpoint = null) {
+	secure(encap(cmd, endpoint))
+}
+
 private addChildSwitches(numberOfSwitches) {
 	for(def endpoint : 2..numberOfSwitches) {
-		String childDni = "${device.deviceNetworkId}:$endpoint"
-		def componentLabel = device.displayName[0..-2] + "${endpoint}"
-		addChildDevice("Child Metering Switch", childDni, null, [
-				completedSetup: true,
-				label         : componentLabel,
-				isComponent   : false,
-				hubId         : device.getHub().getId(),
-				componentName : "switch$endpoint",
-				componentLabel: "Switch $endpoint"
-		])
+		try {
+			String childDni = "${device.deviceNetworkId}:$endpoint"
+			def componentLabel = device.displayName[0..-2] + "${endpoint}"
+			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
+					completedSetup: true,
+					label         : componentLabel,
+					isComponent   : false,
+					componentName : "switch$endpoint",
+					componentLabel: "Switch $endpoint"
+			])
+		} catch(Exception e) {
+			log.debug "Exception: ${e}"
+		}
+	}
+}
+
+private lateConfigure() {
+	def cmds = []
+	log.debug "Late configuration..."
+	switch(getDeviceModel()) {
+		case "ZW132":
+			cmds = [
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, configurationValue: [0])),    // resets configuration
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1])),    // enables overheat protection
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [2])),    // send BasicReport CC
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2048)),    // enabling kWh energy reports on ep 1
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 600)),    //... every 10 minutes
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 4096)),    // enabling kWh energy reports on ep 2
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 600)),    //... every 10 minutes
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1) ),    //enables reporting based on wattage change
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 20))    //report any 20W change
+			]
+			break
+		default:
+			cmds = [secure(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, scaledConfigurationValue: 0))]
+			break
+	}
+	sendHubCommand cmds
+}
+
+private getDeviceModel() {
+	if((zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) || (getDataValue("mfr") == "86") && (getDataValue("model") == "84")) {
+		"ZW132"
+	} else {
+		""
 	}
 }

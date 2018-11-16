@@ -168,8 +168,8 @@ def configure() {
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)), // ...every 5 min
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 2)), // report energy in kWh...
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300)), // ...every 5 min
-				zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1), // enabling automatic reports...
-				zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 10) // ...every 10W change
+				zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1).format(), // enabling automatic reports...
+				zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 10).format() // ...every 10W change
 		], 500)
 	else
 		delayBetween([
@@ -188,7 +188,7 @@ private encap(physicalgraph.zwave.Command cmd) {
 	} else if (zwaveInfo.cc.contains("56")){
 		crcEncap(cmd)
 	} else {
-		response(cmd.format())
+		cmd.format()
 	}
 }
 

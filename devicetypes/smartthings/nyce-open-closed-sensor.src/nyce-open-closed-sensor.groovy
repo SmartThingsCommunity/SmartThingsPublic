@@ -221,9 +221,11 @@ private Map parseReportAttributeMessage(String description) {
 
 	switch(descMap.cluster) {
 		case "0001":
-			log.debug 'Battery'
-			resultMap.name = 'battery'
-			resultMap.value = getBatteryPercentage(convertHexToInt(descMap.value))
+			if(descMap.attrId == "0020") {
+				log.debug 'Battery'
+				resultMap.name = 'battery'
+				resultMap.value = getBatteryPercentage(convertHexToInt(descMap.value))
+			}
 			break
 		default:
 			log.info descMap.cluster

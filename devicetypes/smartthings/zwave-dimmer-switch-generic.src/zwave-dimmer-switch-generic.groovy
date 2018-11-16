@@ -40,6 +40,9 @@ metadata {
 		fingerprint mfr: "001A", prod: "4449", model: "0003", deviceJoinName: "Eaton RF Dimming Plug-In Module"
 		fingerprint mfr: "014F", prod: "5744", model: "3530", deviceJoinName: "GoControl In-Wall Dimmer"
 		fingerprint mfr: "0307", prod: "4447", model: "3034", deviceJoinName: "Satco In-Wall Dimmer"
+		//zw:L type:1101 mfr:0184 prod:4744 model:3032 ver:5.07 zwv:3.95 lib:03 cc:5E,86,72,5A,85,59,73,26,27,70,7A role:05 ff:8600 ui:8600
+		fingerprint mfr: "0184", prod: "4744", model: "3032", deviceJoinName: "Satco Plug-In Dimmer"
+		fingerprint mfr: "0330", prod: "0201", model: "D002", deviceJoinName: "RGBgenie ZW-1001 Z-Wave Dimmer"
 	}
 
 	simulator {

@@ -22,6 +22,7 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
+		capability "Tamper Alert"
 
 		fingerprint mfr: "011F", prod: "0001", model: "0001", deviceJoinName: "Schlage Motion Sensor"  // Schlage motion
 		fingerprint mfr: "014A", prod: "0001", model: "0001", deviceJoinName: "Ecolink Motion Sensor"  // Ecolink motion
@@ -30,6 +31,7 @@ metadata {
 		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor"  // Everspring HSP02
 		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor"  // Enerwave ZWN-BPC
 		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Portable Smart Motion Sensor"
+		fingerprint mfr: "0214", prod: "0003", model: "0002", deviceJoinName: "BeSense Motion Detector"
 	}
 
 	simulator {
@@ -47,15 +49,20 @@ metadata {
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state("battery", label:'${currentValue}% battery', unit:"")
 		}
+		valueTile("tamper", "device.tamper", height: 2, width: 2, decoration: "flat") {
+			state "clear", label: 'tamper clear', backgroundColor: "#ffffff"
+			state "detected", label: 'tampered', backgroundColor: "#ff0000"
+		}
 
 		main "motion"
-		details(["motion", "battery"])
+		details(["motion", "battery", "tamper"])
 	}
 }
 
 def installed() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "tamper", value: "clear", displayed: false)
 	response(initialPoll())
 }
 
@@ -87,6 +94,7 @@ def sensorValueEvent(value) {
 	if (value) {
 		createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
 	} else {
+		createEvent(name: "tamper", value: "clear")
 		createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
 	}
 }
@@ -129,6 +137,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		} else if (cmd.event == 0x03) {
 			result << createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName covering was removed", isStateChange: true)
 			result << response(zwave.batteryV1.batteryGet())
+			unschedule(clearTamper, [forceForLocallyExecuting: true])
+			runIn(10, clearTamper, [forceForLocallyExecuting: true])
 		} else if (cmd.event == 0x05 || cmd.event == 0x06) {
 			result << createEvent(descriptionText: "$device.displayName detected glass breakage", isStateChange: true)
 		}
@@ -140,6 +150,10 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, isStateChange: true, displayed: false)
 	}
 	result
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)

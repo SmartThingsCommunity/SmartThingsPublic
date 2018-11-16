@@ -26,6 +26,7 @@ metadata {
 		capability "Sensor"
 		capability "Switch"
 		capability "Health Check"
+		capability "Tamper Alert"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
 		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "NEO Coolcam Siren Alarm"
@@ -35,6 +36,8 @@ metadata {
 		fingerprint mfr: "0131", prod: "0003", model: "1083", deviceJoinName: "Zipato Siren Alarm"
 		//zw:F type:1005 mfr:0258 prod:0003 model:1088 ver:2.94 zwv:4.38 lib:06 cc:5E,86,72,5A,73,70,85,59,25,71,87,80 role:07 ff:8F00 ui:8F00 (EU)
 		fingerprint mfr: "0258", prod: "0003", model: "1088", deviceJoinName: "NEO Coolcam Siren Alarm"
+		//zw:Fs type:1005 mfr:0129 prod:6F01 model:0001 ver:1.04 zwv:4.33 lib:03 cc:5E,80,5A,72,73,86,70,98 sec:59,2B,71,85,25,7A role:07 ff:8F00 ui:8F00
+		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale External Siren"
 	}
 
 	simulator {
@@ -60,26 +63,48 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
+		valueTile("tamper", "device.tamper", decoration: "flat") {
+			state "clear", label: 'tamper clear', backgroundColor: "#ffffff"
+			state "detected", label: 'tampered', backgroundColor: "#ff0000"
+		}
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
+			state "configure", label: '', action: "configuration.configure", icon: "st.secondary.configure"
+		}
+
+		// Yale siren only
+		preferences {
+			input name: "alarmLength", type: "number", title: "Alarm length (1-10 min)", range: "1..10"
+			// defaultValue: 10
+			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash"
+			// defaultValue: false
+			input name: "comfortLED", type: "number", title: "Comfort LED (0-25 x 10 sec.)", range: "0..25"
+			// defaultValue: 0
+			input name: "tamper", type: "bool", title: "Tamper alert"
+			// defaultValue: true
+		}
 
 		main "alarm"
-		details(["alarm", "off", "battery", "refresh"])
+		details(["alarm", "off", "refresh", "tamper", "battery", "configure"])
 	}
 }
 
 def installed() {
+	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "tamper", value: "clear", displayed: false)
 	initialize()
 }
 
 def updated() {
+	log.debug "updated()"
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
 	runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
 }
 
 def initialize() {
+	log.debug "initialize()"
 	def cmds = []
 
 	// Set a limit to the number of times that we run so that we don't run forever and ever
@@ -93,21 +118,22 @@ def initialize() {
 	}
 
 	if (!device.currentState("alarm")) {
-		cmds << zwave.basicV1.basicGet().format()
-		cmds << "delay 5"
+		cmds << secure(zwave.basicV1.basicGet())
+		if (isYale()) {
+			cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
+		}
 	}
 	if (!device.currentState("battery")) {
 		if (zwaveInfo?.cc?.contains("80")) {
-			cmds << zwave.batteryV1.batteryGet().format()
+			cmds << secure(zwave.batteryV1.batteryGet())
 		} else {
 			// Right now this DTH assumes all devices are battery powered, in the event a device is wall powered we should populate something
 			sendEvent(name: "battery", value: 100, unit: "%")
 		}
 	}
-
+	cmds << getConfigurationCommands()
 	if (cmds.size()) {
 		sendHubCommand(cmds)
-
 		runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
 	} else {
 		state.initializeCount = 0
@@ -116,23 +142,56 @@ def initialize() {
 
 def configure() {
 	log.debug "config"
+	response(getConfigurationCommands())
+}
+
+def getConfigurationCommands() {
+	log.debug "getConfigurationCommands"
 	def cmds = []
-	if (zwaveInfo.mfr == "0131" && zwaveInfo.model == "1083") {
+	if (isZipato()) {
 		// Set alarm volume to 3 (loud)
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [3]).format()
+		cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [3]))
 		cmds << "delay 500"
 		// Set alarm duration to 60s (default)
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
+		cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]))
 		cmds << "delay 500"
 		// Set alarm sound to no.10
-		cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [10]).format()
+		cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [10]))
+	} else if (isYale()) {
+		if (!state.alarmLength) state.alarmLength = 10 // default value
+		if (!state.alarmLEDflash) state.alarmLEDflash = 1 // default value
+		if (!state.comfortLED) state.comfortLED = 0 // default value
+		if (!state.tamper) state.tamper = 1 // default value
+
+		log.debug "settings: ${settings.inspect()}"
+		log.debug "state: ${state.inspect()}"
+
+		Short alarmLength = (settings.alarmLength as Short) ?: 10
+		Boolean alarmLEDflash = (settings.alarmLEDflash as Boolean) == null ? true : settings.alarmLEDflash
+		Short comfortLED = (settings.comfortLED as Short) ?: 0
+		Boolean tamper = (settings.tamper as Boolean) == null ? true : settings.tamper
+
+		if (alarmLength != state.alarmLength || alarmLEDflash != state.alarmLEDflash || comfortLED != state.comfortLED || tamper != state.tamper) {
+			state.alarmLength = alarmLength
+			state.alarmLEDflash = alarmLEDflash
+			state.comfortLED = comfortLED
+			state.tamper = tamper
+
+			cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [alarmLength]))
+			cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [alarmLEDflash ? 1 : 0]))
+			cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [comfortLED]))
+			cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [tamper ? 1 : 0]))
+			cmds << "delay 1000"
+			cmds << secure(zwave.basicV1.basicSet(value: 0x00))
+		}
 	}
-	response(cmds)
+	cmds
 }
+
 
 def poll() {
 	if (secondsPast(state.lastbatt, 36 * 60 * 60)) {
-		return zwave.batteryV1.batteryGet().format()
+		return secure(zwave.batteryV1.batteryGet())
 	} else {
 		return null
 	}
@@ -140,39 +199,37 @@ def poll() {
 
 def on() {
 	log.debug "sending on"
+	def cmds = []
+	cmds << secure(zwave.basicV1.basicSet(value: 0xFF))
+	cmds << secure(zwave.basicV1.basicGet())
+
 	// ICP-5323: Zipato siren sometimes fails to make sound for full duration
 	// Those alarms do not end with Siren Notification Report.
 	// For those cases we add additional state check after alarm duration to
 	// synchronize cloud state with actual device state.
-	if (zwaveInfo.mfr == "0131" && zwaveInfo.model == "1083") {
-		[
-			zwave.basicV1.basicSet(value: 0xFF).format(),
-			zwave.basicV1.basicGet().format(),
-			"delay 63000",
-			zwave.basicV1.basicGet().format()
-		]
-	} else {
-		[
-			zwave.basicV1.basicSet(value: 0xFF).format(),
-			zwave.basicV1.basicGet().format()
-		]
+	if (isZipato()) {
+		cmds << "delay 63000"
+		cmds << secure(zwave.basicV1.basicGet())
+	} else if (isYale()) {
+		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
 	}
+	return cmds
 }
 
 def off() {
 	log.debug "sending off"
-	[
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.basicV1.basicGet().format()
-	]
+	def cmds = []
+	cmds << secure(zwave.basicV1.basicSet(value: 0x00))
+	cmds << secure(zwave.basicV1.basicGet())
+
+	if (isYale()) {
+		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
+	}
+	return cmds
 }
 
 def strobe() {
-	log.debug "sending stobe/on command"
-	[
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.basicV1.basicGet().format()
-	]
+	on()
 }
 
 def both() {
@@ -189,21 +246,58 @@ def ping() {
 
 def refresh() {
 	log.debug "sending battery refresh command"
-	delayBetween([
-		zwave.basicV1.basicGet().format(),
-		zwave.batteryV1.batteryGet().format()
-	], 2000)
+	def cmds = []
+	cmds << secure(zwave.basicV1.basicGet())
+	cmds << secure(zwave.batteryV1.batteryGet())
+	if (isYale()) {
+		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
+	}
+	return delayBetween(cmds, 2000)
 }
 
 def parse(String description) {
 	log.debug "parse($description)"
 	def result = null
-	def cmd = zwave.parse(description, [0x20: 1])
-	if (cmd) {
-		result = zwaveEvent(cmd)
+
+	if (description.startsWith("Err")) {
+		if (state.sec) {
+			result = createEvent(descriptionText: description, displayed: false)
+		} else {
+			result = createEvent(
+				descriptionText: "This device failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
+				eventType: "ALERT",
+				name: "secureInclusion",
+				value: "failed",
+				displayed: true,
+			)
+		}
+	} else {
+		def cmd = zwave.parse(description, [0x20: 1])
+		if (cmd) {
+			result = zwaveEvent(cmd)
+		}
 	}
 	log.debug "Parse returned ${result?.descriptionText}"
 	return result
+}
+
+private secure(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo?.zw?.contains("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand
+	if (isYale()) {
+		encapsulatedCommand = cmd.encapsulatedCommand([0x59: 1, 0x2B: 1, 0x71: 3, 0x85: 2, 0x25: 2, 0x7A: 1])
+	}
+	log.debug "encapsulated: $encapsulatedCommand"
+	if (encapsulatedCommand) {
+		zwaveEvent(encapsulatedCommand)
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -238,7 +332,34 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def isActive = false
-	if (cmd.notificationType == 0x0E) { //Siren notification
+	def result = []
+
+	if (cmd.notificationType == 0x07) { // Burglar notification
+		def map = [name: "tamper", value: "detected"]
+		map.data = [sirenName: deviceName]
+		switch (cmd.event) {
+			case 0:
+				map.value = "clear"
+				map.descriptionText = "Tamper alert cleared"
+				isActive = false
+				break
+			case 1:
+			case 2:
+				map.descriptionText = "Intrusion attempt detected"
+				isActive = true
+				break
+			case 3:
+				map.descriptionText = "Covering removed"
+				isActive = true
+				unschedule(clearTamper, [forceForLocallyExecuting: true])
+				runIn(10, clearTamper, [forceForLocallyExecuting: true])
+				break
+			default:
+				isActive = true
+				map.descriptionText = "Invalid code"
+		}
+		result << createEvent(map)
+	} else if (cmd.notificationType == 0x0E) { //Siren notification
 		switch (cmd.event) {
 			case 0x00: // idle
 				isActive = false
@@ -248,10 +369,10 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 		}
 	}
-	[
-		createEvent([name: "switch", value: isActive ? "on" : "off", displayed: false]),
-		createEvent([name: "alarm", value: isActive ? "both" : "off"])
-	]
+
+	result << createEvent([name: "switch", value: isActive ? "on" : "off", displayed: false])
+	result << createEvent([name: "alarm", value: isActive ? "both" : "off"])
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -269,4 +390,16 @@ private Boolean secondsPast(timestamp, seconds) {
 		}
 	}
 	return (new Date().time - timestamp) > (seconds * 1000)
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
+}
+
+def isYale() {
+	(zwaveInfo?.mfr == "0129" && zwaveInfo?.prod == "6F01" && zwaveInfo?.model == "0001")
+}
+
+def isZipato() {
+	(zwaveInfo?.mfr == "0131" && zwaveInfo?.prod == "0003" && zwaveInfo?.model == "1083")
 }
