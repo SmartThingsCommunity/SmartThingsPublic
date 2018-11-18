@@ -882,6 +882,12 @@ def adjust(){
                 }
             }
         }
+        else {
+            log.debug "outside of power appliance adjustments modes or some contacts are open (contactsOpen:$contactsOpen, ModeOk:$ModeOk"
+        }
+    }
+    else {
+        log.debug "in power saving mode, not changing power meter appliances set points"
     }
 }
 
@@ -964,8 +970,22 @@ def setThermostats(){
 
         def CurrMode = location.currentMode
 
+
         def recordedHSP = state.HSPMode.find{it.key == "$CurrMode"}?.value // extract the map of HSPs' for this mode
         def recordedCSP = state.CSPMode.find{it.key == "$CurrMode"}?.value // extract the map of CSPs' for this mode
+
+        if(recordedHSP == null || recordedCSP == null){ 
+            resetSPreq()
+            for(s != 0; i < s; i++){
+                thisTherm = Thermostats[i]
+                learn(thisTherm, thisTherm.currentValue("heatingSetpoint"), "heatingSetpoint")   
+                learn(thisTherm, thisTherm.currentValue("coolingSetpoint"), "coolingSetpoint")
+            }
+            i = 0
+            recordedHSP = state.HSPMode.find{it.key == "$CurrMode"}?.value // extract the map of HSPs' for this mode
+            recordedCSP = state.CSPMode.find{it.key == "$CurrMode"}?.value // extract the map of CSPs' for this mode
+        }
+
 
         log.debug """
 recordedHSP for $CurrMode mode = $recordedHSP
@@ -1015,7 +1035,9 @@ recordedCSP for $CurrMode mode = $recordedCSP
 
             if(!Active){ // check if motion is inactive 
                 // if so, set a lower HSP so when keepOff is called you get a turn off command if need be
+                log.debug "NO MOTION FOR $thisTherm -- changing set points accordingly (-${HeatNoMotion}, +${CoolNoMotion}"
                 thisHSP = thisHSP.toInteger() - HeatNoMotion
+                thisHSP = thisCSP.toInteger() + CoolNoMotion
             }
 
             // check that this is not an appliance managed throuhg its power consumption criteria
@@ -1222,7 +1244,7 @@ def setHSPs(){
             // one managed by power measurement feature, which also adds / retracts values to the HSP
             def alreadyManaged = ApplianceWithPwMeter.find{it.toString().contains("$thisTherm")} as Boolean
 
-            if(useAltSensor && !alreadyManaged){
+            if(useAltSensor && !alreadyManaged && Active){
                 log.debug "Altsensor HSP management......................................."
                 def StringSensor = state.AltSensorMap.find{it.key == "$thisTherm"}.value
                 // this is a string, so go get the device object from settings
