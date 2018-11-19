@@ -17,7 +17,7 @@
 metadata {
 	definition (name: "Mobile Presence Occupancy", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.mobile.presence") {
 		capability "Presence Sensor"
-        capability "Occupancy Sensor"
+		capability "Occupancy Sensor"
 		capability "Sensor"
 	}
 
@@ -33,12 +33,12 @@ metadata {
 			state("present", labelIcon:"st.presence.tile.mobile-present", backgroundColor:"#00A0DC")
 			state("not present", labelIcon:"st.presence.tile.mobile-not-present", backgroundColor:"#ffffff")
 		}
-        standardTile("occupancy", "device.occupancy", width: 2, height: 2, canChangeBackground: true) {
+		standardTile("occupancy", "device.occupancy", width: 2, height: 2, canChangeBackground: true) {
 			state ("occupied", labelIcon: "st.presence.tile.mobile-present", backgroundColor: "#00A0DC")
 			state ("unoccupied", labelIcon: "st.presence.tile.mobile-not-present", backgroundColor:"#ffffff")
 		}
 		main "presence"
-        details(["presence", "occupancy"])
+		details(["presence", "occupancy"])
 	}
 }
 
@@ -67,13 +67,13 @@ def parse(String description) {
 
 private String parseName(String description) {
 	log.debug "parseName $description"
-    switch(description) {
+	switch(description) {
 		case "presence: 0": 
 		case "presence: 1": 
  			return "presence"
-        case "occupancy: 0": 
-        case "occupancy: 1": 
-        	return "occupancy"
+        	case "occupancy: 0": 
+	        case "occupancy: 1": 
+	        	return "occupancy"
 	}
 	null
 }
@@ -81,14 +81,10 @@ private String parseName(String description) {
 private String parseValue(String description) {
 	log.debug "parseValue $description"
 	switch(description) {
-		case "presence: 0": 
-        	return "not present"
-		case "presence: 1": 
-        	return "present"
-        case "occupancy: 0": 
-        	return "unoccupied"
-        case "occupancy: 1": 
-        	return "occupied"
+		case "presence: 0": return "not present"
+		case "presence: 1": return "present"
+		case "occupancy: 0": return "unoccupied"
+		case "occupancy: 1": return "occupied"
 		default: return description
 	}
 }
@@ -109,7 +105,7 @@ private getState(String value) {
 	switch(value) {
 		case "not present": return "left"
 		case "present": return "arrived"
-        case "unoccupied": return "unoccupied"
+		case "unoccupied": return "unoccupied"
 		case "occupied": return "occupied"
 		default: return value
 	}
