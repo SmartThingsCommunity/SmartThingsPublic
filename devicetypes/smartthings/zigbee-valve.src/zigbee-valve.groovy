@@ -147,5 +147,5 @@ def installed() {
 }
 
 def ping() {
-    refresh()
+    zigbee.onOffRefresh()
 }
