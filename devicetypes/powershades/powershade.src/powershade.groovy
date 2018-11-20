@@ -1,5 +1,5 @@
 /**
- *  Powershades Controller
+ *  Powershades Motorized Shade Device Handler for SmartThings Classic
  *
  *  Copyright 2018 Powershades Developer
  *
@@ -15,7 +15,7 @@
  */
  
  
-// Initial Version - JAC 11/19/2018
+// VERSION 1.0 Initial Version - JAC 11/19/2018
  
 include 'asynchttp_v1'
  
