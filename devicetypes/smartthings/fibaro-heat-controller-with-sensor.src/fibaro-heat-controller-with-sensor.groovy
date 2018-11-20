@@ -35,8 +35,8 @@ metadata {
 			}
 			tileAttribute("device.thermostatMode", key: "PRIMARY_CONTROL") {
 				attributeState("off", action:"switchMode", nextState:"...", icon: "st.thermostat.heating-cooling-off", label: '${currentValue}')
-				attributeState("auto", action:"switchMode", nextState:"...", icon: "st.thermostat.auto", label: '${currentValue}')
 				attributeState("heat", action:"switchMode", nextState:"...", icon: "st.thermostat.heat", label: '${currentValue}')
+				attributeState("emergency heat", action:"switchMode", nextState:"...", icon: "st.thermostat.emergency-heat", label: '${currentValue}')
 			}
 			tileAttribute("device.temperature", key: "SECONDARY_CONTROL") {
 				attributeState("temperature", label:'${currentValue}°', icon: "st.alarm.temperature.normal",
@@ -86,14 +86,14 @@ def initialize() {
 	if(!childDevices) {
 		addChild()
 	}
-	def supportedModes = ["off", "heat", "auto"]
+	def supportedModes = ["off", "emergency heat", "heat"]
 	state.supportedModes = supportedModes
 	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
-
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	sendHubCommand(setThermostatMode("off"))
-	runIn(20, "delayedRefresh", [overwrite: true])
-	refresh()
+	response([
+			refresh(),
+			setThermostatMode("off")
+	])
 }
 
 def parse(String description) {
@@ -152,10 +152,10 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 	def mode
 	switch (cmd.mode) {
 		case 1:
-			mode = "auto"
+			mode = "heat"
 			break
 		case 31:
-			mode = "heat"
+			mode = "emergency heat"
 			break
 		case 0:
 			mode = "off"
@@ -188,10 +188,10 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def setThermostatMode(String mode) {
 	def modeValue = 0
 	switch (mode) {
-		case "auto":
+		case "heat":
 			modeValue = 1
 			break
-		case "heat":
+		case "emergency heat":
 			modeValue = 31
 			break
 		case "off":
@@ -206,16 +206,16 @@ def setThermostatMode(String mode) {
 	]
 }
 
-def auto() {
-	setThermostatMode("auto")
+def heat() {
+	setThermostatMode("heat")
 }
 
 def off() {
 	setThermostatMode("off")
 }
 
-def heat() {
-	setThermostatMode("heat")
+def emergencyHeat() {
+	setThermostatMode("emergency heat")
 }
 
 def setHeatingSetpoint(setpoint) {

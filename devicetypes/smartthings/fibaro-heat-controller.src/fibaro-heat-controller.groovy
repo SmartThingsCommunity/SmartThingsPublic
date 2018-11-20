@@ -19,7 +19,10 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 		capability "Thermostat"
+		capability "Thermostat Heating Setpoint"
 
+		command "setThermostatSetpointUp"
+		command "setThermostatSetpointDown"
 		command "switchMode"
 
 		fingerprint mfr: "010F", prod: "1301", model: "1000", deviceJoinName: "Fibaro Heat Controller"
@@ -27,9 +30,14 @@ metadata {
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"thermostat", type:"general", width:6, height:4, canChangeIcon: false)  {
+			tileAttribute("device.heatingSetpoint", key: "VALUE_CONTROL") {
+				attributeState("VALUE_UP", action: "setThermostatSetpointUp")
+				attributeState("VALUE_DOWN", action: "setThermostatSetpointDown")
+			}
 			tileAttribute("device.thermostatMode", key: "PRIMARY_CONTROL") {
 				attributeState("off", action:"switchMode", nextState:"...", icon: "st.thermostat.heating-cooling-off", label: '${currentValue}')
 				attributeState("heat", action:"switchMode", nextState:"...", icon: "st.thermostat.heat", label: '${currentValue}')
+				attributeState("emergency heat", action:"switchMode", nextState:"...", icon: "st.thermostat.emergency-heat", label: '${currentValue}')
 			}
 		}
 
@@ -54,14 +62,14 @@ def updated() {
 }
 
 def initialize() {
-	def supportedModes = ["off", "heat"]
+	def supportedModes = ["off", "emergency heat", "heat"]
 	state.supportedModes = supportedModes
 	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
-
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	sendHubCommand(setThermostatMode("off"))
-	runIn(20, "delayedRefresh", [overwrite: true])
-	refresh()
+	response([
+			refresh(),
+			setThermostatMode("off")
+	])
 }
 
 def parse(String description) {
@@ -121,8 +129,11 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd, sourceEndPoint = null) {
 	def mode
 	switch (cmd.mode) {
-		case 31:
+		case 1:
 			mode = "heat"
+			break
+		case 31:
+			mode = "emergency heat"
 			break
 		case 0:
 			mode = "off"
@@ -130,6 +141,10 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 	}
 
 	createEvent(name: "thermostatMode", value: mode)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, sourceEndPoint = null) {
+	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, 'C', cmd.precision), unit: temperatureScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
@@ -152,6 +167,9 @@ def setThermostatMode(String mode) {
 	def modeValue = 0
 	switch (mode) {
 		case "heat":
+			modeValue = 1
+			break
+		case "emergency heat":
 			modeValue = 31
 			break
 		case "off":
@@ -166,18 +184,48 @@ def setThermostatMode(String mode) {
 	]
 }
 
+def heat() {
+	setThermostatMode("heat")
+}
+
 def off() {
 	setThermostatMode("off")
 }
 
-def heat() {
-	setThermostatMode("heat")
+def emergencyHeat() {
+	setThermostatMode("emergency heat")
+}
+
+def setHeatingSetpoint(setpoint) {
+	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
+	[
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: 1, size: 2]), 1),
+			"delay 2000",
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1), 1)
+	]
+}
+
+def setThermostatSetpointUp() {
+	def setpoint = device.latestValue("heatingSetpoint")
+	if (setpoint < maxHeatingSetpointTemperature) {
+		setpoint = setpoint + (temperatureScale == 'C' ? 0.5 : 1)
+	}
+	setHeatingSetpoint(setpoint)
+}
+
+def setThermostatSetpointDown() {
+	def setpoint = device.latestValue("heatingSetpoint")
+	if (setpoint > minHeatingSetpointTemperature) {
+		setpoint = setpoint - (temperatureScale == 'C' ? 0.5 : 1)
+	}
+	setHeatingSetpoint(setpoint)
 }
 
 def refresh() {
 	def cmds = [
 			secureEncap(zwave.batteryV1.batteryGet(), 1),
 			secureEncap(zwave.batteryV1.batteryGet(), 2),
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1), 1),
 			secureEncap(zwave.thermostatModeV2.thermostatModeGet(),1),
 			secureEncap(zwave.configurationV1.configurationGet(parameterNumber: 3), 1)
 	]
@@ -190,7 +238,7 @@ def ping() {
 }
 
 private secureEncap(cmd, endpoint = null) {
-	response(secure(encap(cmd, endpoint)))
+	secure(encap(cmd, endpoint))
 }
 
 private secure(cmd) {
@@ -227,4 +275,12 @@ private delayedRefresh() {
 
 private changeDeviceType() {
 	setDeviceType("Fibaro Heat Controller With Sensor")
+}
+
+private getMaxHeatingSetpointTemperature() {
+	temperatureScale == 'C' ? 30 : 86
+}
+
+private getMinHeatingSetpointTemperature() {
+	temperatureScale == 'C' ? 10 : 50
 }
