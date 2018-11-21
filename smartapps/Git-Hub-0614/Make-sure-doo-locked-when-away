@@ -1,0 +1,56 @@
+/**
+ *  Door Lock Code Distress Message
+ *
+ *  Copyright 2018 GitHub-0614
+ *
+ */
+definition(
+    name: "Make sure door locked when away",
+    namespace: "GitHub-0614",
+    author: "GitHub-0614",
+    description: "Minitor the state of a door and presence sensor, if the dorr is unlocked and presence sensor is not present, lock the door",
+    category: "Safety & Security",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
+
+
+preferences {
+	section("Choose Locks") {
+		input "doorlock", "capability.lock"
+        input "presenceSensor", "capability.presenceSensor"
+	}
+}
+
+def installed() {
+    subscribe(doorlock, "lock.unlocked", doorUnlockedHandler)
+    subscribe(presenceSensor,"presence",presenceHandler)
+    state.notPresence = true
+}
+
+def updated() {
+    unsubscribe()
+    subscribe(doorlock, "lock.unlocked", doorUnlockedHandler)
+    subscribe(presenceSensor,"presence",presenceHandler)
+    state.notPresence = true
+}
+
+def presenceHandler(evt) {
+    if(evt.value == "present"){
+        log.debug "present"
+        state.notPresence = false
+    }
+    else{
+        log.debug "not present"
+        state.notPresence = true
+    }
+}
+
+def doorUnlockedHandler(evt) {
+    if(state.notPresence){
+        log.debug "Door unlocked when not present, lock it!"
+        doorlock.lock()
+    }
+    else{
+        log.debug "Door unlocked when present, do nothing"
+    }
+}
