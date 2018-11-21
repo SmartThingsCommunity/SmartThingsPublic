@@ -88,6 +88,7 @@ def updated() {
 
 def configure() {
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	response(secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 2, scaledConfigurationValue: 30)))
 }
 
 def parse(String description) {
