@@ -94,8 +94,6 @@ private parseDescriptionText(String linkText, String value, String description) 
 	switch(value) {
 		case "not present": return "{{ linkText }} has left"
 		case "present": return "{{ linkText }} has arrived"
-		case "unoccupied": return "{{ linkText }} has unoccupied"
-		case "occupied": return "{{ linkText }} has occupied"
 		default: return value
 	}
 }
