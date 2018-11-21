@@ -36,16 +36,18 @@ def initialize() {
     if (!overrideLabel) {
         app.updateLabel(defaultLabel())
     }
-    def addNodes = settings."d${settings.dCapability}".deviceNetworkId - (state.previousNodes? state.previousNodes : [])
-    def delNodes = (state.previousNodes? state.previousNodes : []) - settings."d${settings.dCapability}".deviceNetworkId
+
+    def addNodes = ((settings."d${settings.dCapability}"?.deviceNetworkId)?:[]) - (state.previousNodes? state.previousNodes : [])
+    def delNodes = (state.previousNodes? state.previousNodes : []) - ((settings."d${settings.dCapability}"?.deviceNetworkId)?:[])
     if (addNodes)
-        settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [], 1, settings.endpoint)
+        settings."s${settings.sCapability}".setAssociationGroup(groupNumber, addNodes, 1, settings.endpoint)
     if (delNodes)
-        settings."s${settings.sCapability}".setAssociationGroup(groupNumber, settings."d${settings.dCapability}"? settings."d${settings.dCapability}".deviceNetworkId : [], 0, settings.endpoint)
+        settings."s${settings.sCapability}".setAssociationGroup(groupNumber, delNodes, 0, settings.endpoint)
     settings."s${settings.sCapability}".configure()
         
-    state.previousNodes = settings."d${settings.dCapability}".deviceNetworkId
+    state.previousNodes = (settings."d${settings.dCapability}"?.deviceNetworkId)?:[]
 }
+
 
 def mainPage() {
     dynamicPage(name: "mainPage") {
