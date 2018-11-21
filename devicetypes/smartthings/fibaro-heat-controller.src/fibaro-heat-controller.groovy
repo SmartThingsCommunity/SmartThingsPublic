@@ -17,9 +17,10 @@ metadata {
 		capability "Thermostat Mode"
 		capability "Refresh"
 		capability "Battery"
+		capability "Thermostat Heating Setpoint"
 		capability "Health Check"
 		capability "Thermostat"
-		capability "Thermostat Heating Setpoint"
+		capability "Temperature Measurement"
 
 		command "setThermostatSetpointUp"
 		command "setThermostatSetpointDown"
@@ -35,9 +36,31 @@ metadata {
 				attributeState("VALUE_DOWN", action: "setThermostatSetpointDown")
 			}
 			tileAttribute("device.thermostatMode", key: "PRIMARY_CONTROL") {
-				attributeState("off", action:"switchMode", nextState:"...", icon: "st.thermostat.heating-cooling-off", label: '${currentValue}')
-				attributeState("heat", action:"switchMode", nextState:"...", icon: "st.thermostat.heat", label: '${currentValue}')
-				attributeState("emergency heat", action:"switchMode", nextState:"...", icon: "st.thermostat.emergency-heat", label: '${currentValue}')
+				attributeState("off", action:"switchMode", nextState:"...", icon: "st.thermostat.heating-cooling-off")
+				attributeState("heat", action:"switchMode", nextState:"...", icon: "st.thermostat.heat")
+				attributeState("emergency heat", action:"switchMode", nextState:"...", icon: "st.thermostat.emergency-heat")
+			}
+			tileAttribute("device.temperature", key: "SECONDARY_CONTROL") {
+				attributeState("temperature", label:'${currentValue}°', icon: "st.alarm.temperature.normal",
+						backgroundColors:[
+								// Celsius
+								[value: 0, color: "#153591"],
+								[value: 7, color: "#1e9cbb"],
+								[value: 15, color: "#90d2a7"],
+								[value: 23, color: "#44b621"],
+								[value: 28, color: "#f1d801"],
+								[value: 35, color: "#d04e00"],
+								[value: 37, color: "#bc2323"],
+								// Fahrenheit
+								[value: 40, color: "#153591"],
+								[value: 44, color: "#1e9cbb"],
+								[value: 59, color: "#90d2a7"],
+								[value: 74, color: "#44b621"],
+								[value: 84, color: "#f1d801"],
+								[value: 95, color: "#d04e00"],
+								[value: 96, color: "#bc2323"]
+						]
+				)
 			}
 		}
 
@@ -64,12 +87,10 @@ def updated() {
 def initialize() {
 	def supportedModes = ["off", "emergency heat", "heat"]
 	state.supportedModes = supportedModes
+	sendEvent(name: "temperature", value: 0)
 	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	response([
-			refresh(),
-			setThermostatMode("off")
-	])
+	response(refresh())
 }
 
 def parse(String description) {
@@ -119,8 +140,11 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 			createEvent(map)
 			break
 		case 2:
-			if(cmd.batteryLevel > 0) {
-				changeDeviceType()
+			if(value > 0) {
+				if(!childDevices) {
+					addChild()
+				}
+				sendEventToChild(map)
 			}
 			break
 	}
@@ -147,9 +171,17 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, 'C', cmd.precision), unit: temperatureScale)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, sourceEndPoint = null) {
+	def map = [name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, 'C', cmd.precision), unit: temperatureScale]
+	sendEventToChild(map)
+	createEvent(map)
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
 	if(cmd.parameterNumber == 3 && cmd.scaledConfigurationValue == 1) {
-		changeDeviceType()
+		if(!childDevices) {
+			addChild()
+		}
 	}
 }
 
@@ -227,6 +259,7 @@ def refresh() {
 			secureEncap(zwave.batteryV1.batteryGet(), 2),
 			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1), 1),
 			secureEncap(zwave.thermostatModeV2.thermostatModeGet(),1),
+			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet(), 2),
 			secureEncap(zwave.configurationV1.configurationGet(parameterNumber: 3), 1)
 	]
 
@@ -238,7 +271,7 @@ def ping() {
 }
 
 private secureEncap(cmd, endpoint = null) {
-	secure(encap(cmd, endpoint))
+	response(secure(encap(cmd, endpoint)))
 }
 
 private secure(cmd) {
@@ -269,12 +302,30 @@ def switchMode() {
 	}
 }
 
+def sendEventToChild(event) {
+	String childDni = "${device.deviceNetworkId}:2"
+	def child = childDevices.find { it.deviceNetworkId == childDni }
+	child?.sendEvent(event)
+}
+
+private refreshChild() {
+	def cmds = [
+			secureEncap(zwave.batteryV1.batteryGet(), 2),
+			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet(), 2)
+	]
+	sendHubCommand(cmds, 2000)
+}
+
 private delayedRefresh() {
 	sendHubCommand(refresh())
 }
 
-private changeDeviceType() {
-	setDeviceType("Fibaro Heat Controller With Sensor")
+def addChild() {
+	String childDni = "${device.deviceNetworkId}:2"
+	String componentLabel =	 "Fibaro Temperature Sensor"
+	String ch = "ch2"
+
+	addChildDevice("Child Temperature Sensor", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false, componentName: ch, componentLabel: componentLabel])
 }
 
 private getMaxHeatingSetpointTemperature() {
