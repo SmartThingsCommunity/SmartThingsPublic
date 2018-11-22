@@ -4,9 +4,9 @@
  *  Copyright © 2018 Michael Struck
  *  Original Author: Matt Lebaugh (@mlebaugh)
  *
- *  Version 1.0.4 10/18/18 
+ *  Version 1.0.4a 10/18/18 
  *
- *  Version 1.0.4 (10/18/18) - Skipped 1.0.4 to maintain consistency with dimmer code version. Changed to triple push for special options
+ *  Version 1.0.4a (10/18/18) - Skipped 1.0.4 to maintain consistency with dimmer code version. Changed to triple push for special options
  *  Version 1.0.2 (8/2/18) - Updated some of the text/options on the Settings page
  *  Version 1.0.1 (7/15/18) - Format and syntax updates. Thanks to @Darwin for the motion sensitivity/timeout minutes idea!
  *  Version 1.0.0 (3/17/17)- Original release by Matt Lebaugh. Great Work!
@@ -141,8 +141,7 @@ metadata {
             )
             input (
             type: "paragraph", element: "paragraph", title: "",
-            description: "**Configure Association Groups**\nDevices in association group 2 will receive Basic Set commands directly from the switch when it is turned on or off. Use this to control another device as if it was connected to this switch.\n\n" +
-                         "Devices in association group 3 will receive Basic Set commands directly from the switch when it is double tapped up or down.\n\n" +
+            description: "**Configure Association Groups**\nDevices in association groups 2 & 3 will receive Basic Set commands directly from the switch when it is turned on or off. Use this to control another device as if it was connected to this switch.\n\n" +
                          "Devices are entered as a comma delimited list of the Device Network IDs in hexadecimal format."
         	)
         	input (name: "requestedGroup2", title: "Association Group 2 Members (Max of 5):", description: "Use the 'Device Network ID' for each device", type: "text", required: false )
@@ -591,4 +590,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor) {
 	result +="\n${timeSync} Timeout Duration: " + timeDelayTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.4 (10/18/18)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.4a (10/18/18)") }

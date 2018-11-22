@@ -6,9 +6,9 @@
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.4 10/15/18 
+ *  Version 1.0.4a 10/15/18 
  *
- *  Version 1.0.4 (10/15/18) - Changed to triple push for options for switches to activate special functions.
+ *  Version 1.0.4a (10/15/18) - Changed to triple push for options for switches to activate special functions.
  *  Version 1.0.3 (8/21/18) - Changed the setLevel mode to boolean
  *  Version 1.0.2 (8/2/18) - Updated some of the text, added/updated options on the Settings page
  *  Version 1.0.1 (7/15/18) - Format and syntax updates. Thanks to @Darwin for the motion sensitivity/timeout minutes idea!
@@ -159,8 +159,7 @@ metadata {
             input "switchmode", "bool", title: "Enable Switch Mode", defaultValue:false                             
             //association groups
         	input ( type: "paragraph", element: "paragraph",
-            title: "", description: "**Configure Association Groups**\nDevices in association group 2 will receive Basic Set commands directly from the switch when it is turned on or off. Use this to control another device as if it was connected to this switch.\n\n" +
-                         "Devices in association group 3 Same as Group 2 for this device\n\n" +
+            title: "", description: "**Configure Association Groups**\nDevices in association groups 2 & 3 will receive Basic Set commands directly from the switch when it is turned on or off. Use this to control another device as if it was connected to this switch.\n\n" +
                          "Devices are entered as a comma delimited list of the Device Network IDs in hexadecimal format."
         	)			           
         	input ( name: "requestedGroup2", title: "Association Group 2 Members (Max of 5):", description: "Use the 'Device Network ID' for each device", type: "text", required: false )
@@ -758,4 +757,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.4 (10/15/18)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.4a (10/15/18)") }
