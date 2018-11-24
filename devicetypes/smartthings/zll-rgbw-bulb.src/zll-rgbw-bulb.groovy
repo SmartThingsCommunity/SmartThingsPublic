@@ -51,6 +51,7 @@ metadata {
         fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LST001", deviceJoinName: "Philips Hue Lightstrip"
         fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LST002", deviceJoinName: "Philips Hue Lightstrip"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 185 C", deviceJoinName: "innr Smart Bulb RGBW"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "FL 130 C", deviceJoinName: "innr Flex Light RGBW"
     }
 
     // UI tile definitions
@@ -142,11 +143,28 @@ def refresh() {
 }
 
 def poll() {
+    configureHealthCheck()
+
     refreshAttributes()
 }
 
 def ping() {
     refreshAttributes()
+}
+
+def healthPoll() {
+    log.debug "healthPoll()"
+    def cmds = refreshAttributes()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
+}
+
+def configureHealthCheck() {
+    if (!state.hasConfiguredHealthCheck) {
+        log.debug "Configuring Health Check, Reporting"
+        unschedule("healthPoll", [forceForLocallyExecuting: true])
+        runEvery5Minutes("healthPoll", [forceForLocallyExecuting: true])
+        state.hasConfiguredHealthCheck = true
+    }
 }
 
 def configure() {
@@ -169,10 +187,12 @@ def refreshAttributes() {
 
 def updated() {
     sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    configureHealthCheck()
 }
 
 def installed() {
     sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    configureHealthCheck()
 }
 
 def setColorTemperature(value) {

@@ -38,12 +38,12 @@ definition(
 )
 
 preferences {
-    page name:"pageSetup"
-    page name:"directorSettings"
-    page name:"ThermostatandDoors"
-    page name:"ThermostatBoost"
-    page name:"Settings"
-
+    page(name:"pageSetup")
+    page(name:"directorSettings")
+    page(name:"ThermostatandDoors")
+    page(name:"ThermostatBoost")
+    page(name:"Settings")
+    page(name: "timeIntervalInput")
 }
 
 // Show setup page
@@ -89,37 +89,37 @@ def directorSettings() {
         title:      "Low temp?",
         required:   true
     ]
-    
+
     def cold = [
         name:       "cold",
         type:       "enum",
         title:		"Mode?",
         metadata:   [values:["auto", "heat", "cool", "off"]]
     ]
-    
+
     def setHigh = [
         name:       "setHigh",
         type:       "decimal",
         title:      "High temp?",
         required:   true
     ]
-    
+
     def hot = [
         name:       "hot",
         type:       "enum",
         title:		"Mode?",
         metadata:   [values:["auto", "heat", "cool", "off"]]
     ]
-    
+
     def neutral = [
         name:       "neutral",
         type:       "enum",
         title:		"Mode?",
         metadata:   [values:["auto", "heat", "cool", "off"]]
     ]
-    
+
     def pageName = "Setup"
-    
+
     def pageProperties = [
         name:       "directorSettings",
         title:      "Setup",
@@ -146,7 +146,7 @@ def directorSettings() {
 			input neutral
 		}
     }
-    
+
 }
 
 def ThermostatandDoors() {
@@ -165,16 +165,16 @@ def ThermostatandDoors() {
         multiple:	true,
         required:   true
     ]
-    
+
     def turnOffDelay = [
         name:       "turnOffDelay",
         type:       "decimal",
         title:		"Number of minutes",
         required:	false
     ]
-    
+
     def pageName = "Thermostat and Doors"
-    
+
     def pageProperties = [
         name:       "ThermostatandDoors",
         title:      "Thermostat and Doors",
@@ -196,7 +196,7 @@ def ThermostatandDoors() {
 			input turnOffDelay
 		}
     }
-    
+
 }
 
 def ThermostatBoost() {
@@ -209,34 +209,34 @@ def ThermostatBoost() {
         required:   true
     ]
     def turnOnTherm = [
-        name: 		"turnOnTherm", 
-        type:		"enum", 
-        metadata: 	[values: ["cool", "heat"]], 
+        name: 		"turnOnTherm",
+        type:		"enum",
+        metadata: 	[values: ["cool", "heat"]],
         required: 	false
     ]
-    
+
     def modes1 = [
-        name:		"modes1", 
-        type:		"mode", 
-        title: 		"Put thermostat into boost mode when mode is...", 
-        multiple: 	true, 
+        name:		"modes1",
+        type:		"mode",
+        title: 		"Put thermostat into boost mode when mode is...",
+        multiple: 	true,
         required: 	false
     ]
-    
+
     def coolingTemp = [
         name:       "coolingTemp",
         type:       "decimal",
         title:		"Cooling Temp?",
         required:	false
     ]
-    
+
     def heatingTemp = [
         name:       "heatingTemp",
         type:       "decimal",
         title:		"Heating Temp?",
         required:	false
     ]
-    
+
     def turnOffDelay2 = [
         name:       "turnOffDelay2",
         type:       "decimal",
@@ -244,9 +244,9 @@ def ThermostatBoost() {
         required:	false,
         defaultValue:30
     ]
-    
+
     def pageName = "Thermostat Boost"
-    
+
     def pageProperties = [
         name:       "ThermostatBoost",
         title:      "Thermostat Boost",
@@ -256,8 +256,7 @@ def ThermostatBoost() {
     return dynamicPage(pageProperties) {
 
 		section(""){
-        	paragraph "Here you can setup the ability to 'boost' your thermostat.  In the event that your thermostat is 'off'" +
-            " and you need to heat or cool your your home for a little bit you can 'touch' the app in the 'My Apps' section to boost your thermostat."
+        	paragraph "Here you can setup the ability to 'boost' your thermostat. In the event that your thermostat is 'off' and you need to heat or cool your home for a little bit you can 'touch' the app in the 'My Apps' section to boost your thermostat."
         }
 		section("Choose a thermostats to boost") {
    			input thermostat1
@@ -276,7 +275,7 @@ def ThermostatBoost() {
    			input modes1
         }
     }
-    
+
 }
 
 // Show "Setup" page
@@ -284,20 +283,20 @@ def Settings() {
 
     def sendPushMessage = [
         name: 		"sendPushMessage",
-        type: 		"enum", 
-        title: 		"Send a push notification?", 
-        metadata:	[values:["Yes","No"]], 
-        required:	true, 
+        type: 		"enum",
+        title: 		"Send a push notification?",
+        metadata:	[values:["Yes","No"]],
+        required:	true,
         defaultValue: "Yes"
     ]
-    
+
     def phoneNumber = [
-        name: 		"phoneNumber", 
-        type:		"phone", 
-        title: 		"Send SMS notifications to?", 
+        name: 		"phoneNumber",
+        type:		"phone",
+        title: 		"Send SMS notifications to?",
         required: 	false
     ]
-    
+
     def days = [
         name:       "days",
         type:       "enum",
@@ -306,17 +305,17 @@ def Settings() {
         required:   false,
         options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     ]
-    
+
     def modes = [
-        name:		"modes", 
-        type:		"mode", 
-        title: 		"Only when mode is", 
-        multiple: 	true, 
+        name:		"modes",
+        type:		"mode",
+        title: 		"Only when mode is",
+        multiple: 	true,
         required: 	false
     ]
-    
+
     def pageName = "Settings"
-    
+
     def pageProperties = [
         name:       "Settings",
         title:      "Settings",
@@ -336,9 +335,9 @@ def Settings() {
 			href "timeIntervalInput", title: "Only during a certain time", description: getTimeLabel(starting, ending), state: greyedOutTime(starting, ending), refreshAfterSelection:true
 			input days
 			input modes
-		}    
+		}
     }
-    
+
 }
 
 def installed(){
@@ -419,16 +418,16 @@ if(thermostat1){
     state.currentCoolSetpoint1 = currentCoolSetpoint
     state.currentHeatSetpoint1 = currentHeatSetpoint
     state.currentMode1 = currentMode
-    
+
     	thermostat1."${mode}"()
     	thermostat1.setCoolingSetpoint(coolingTemp)
     	thermostat1.setHeatingSetpoint(heatingTemp)
-        
+
     thermoShutOffTrigger()
     //log.debug("current coolingsetpoint is ${state.currentCoolSetpoint1}")
     //log.debug("current heatingsetpoint is ${state.currentHeatSetpoint1}")
     //log.debug("current mode is ${state.currentMode1}")
-}    
+}
 }
 
 def modeBoostChange(evt) {
@@ -441,23 +440,23 @@ def modeBoostChange(evt) {
     	state.currentCoolSetpoint1 = currentCoolSetpoint
     	state.currentHeatSetpoint1 = currentHeatSetpoint
     	state.currentMode1 = currentMode
-    
+
     		thermostat1."${mode}"()
     		thermostat1.setCoolingSetpoint(coolingTemp)
     		thermostat1.setHeatingSetpoint(heatingTemp)
-        
+
     	log.debug("current coolingsetpoint is ${state.currentCoolSetpoint1}")
     	log.debug("current heatingsetpoint is ${state.currentHeatSetpoint1}")
     	log.debug("current mode is ${state.currentMode1}")
 	}
 	else{
 		thermoShutOff()
-    }    
+    }
 }
 
 def thermoShutOffTrigger() {
     //log.info("Starting timer to turn off thermostat")
-    def delay = (turnOffDelay2 != null && turnOffDelay2 != "") ? turnOffDelay2 * 60 : 60 
+    def delay = (turnOffDelay2 != null && turnOffDelay2 != "") ? turnOffDelay2 * 60 : 60
     state.turnOffTime = now()
 	log.debug ("Turn off delay is ${delay}")
     runIn(delay, "thermoShutOff")
@@ -471,7 +470,7 @@ def thermoShutOff(){
     	def coolSetpoint1 = coolSetpoint.replaceAll("\\]", "").replaceAll("\\[", "")
     	def heatSetpoint1 = heatSetpoint.replaceAll("\\]", "").replaceAll("\\[", "")
     	def mode1 = mode.replaceAll("\\]", "").replaceAll("\\[", "")
-    
+
 		state.lastStatus = null
 		//log.info("Returning thermostat back to normal")
 		thermostat1.setCoolingSetpoint("${coolSetpoint1}")
@@ -485,7 +484,7 @@ def doorCheck(evt){
 	if (!doorsOk){
 		log.debug("doors still open turning off ${thermostat}")
 		def msg = "I changed your thermostat mode to off because some doors are open"
-		
+
         if (state.lastStatus != "off"){
         	thermostat?.off()
 			sendMessage(msg)
@@ -551,14 +550,14 @@ private getTimeOk() {
 		def stop = timeToday(ending).time
 		result = start < stop ? currTime >= start && currTime <= stop : currTime <= stop || currTime >= start
 	}
-    
+
     else if (starting){
     	result = currTime >= start
     }
     else if (ending){
     	result = currTime <= stop
     }
-    
+
 	log.trace "timeOk = $result"
 	result
 }
@@ -566,7 +565,7 @@ private getTimeOk() {
 def getTimeLabel(starting, ending){
 
 	def timeLabel = "Tap to set"
-	
+
     if(starting && ending){
     	timeLabel = "Between" + " " + hhmm(starting) + " "  + "and" + " " +  hhmm(ending)
     }
@@ -589,7 +588,7 @@ private hhmm(time, fmt = "h:mm a")
 def greyedOut(){
 	def result = ""
     if (sensor) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -597,7 +596,7 @@ def greyedOut(){
 def greyedOutTherm(){
 	def result = ""
     if (thermostat) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -605,7 +604,7 @@ def greyedOutTherm(){
 def greyedOutTherm1(){
 	def result = ""
     if (thermostat1) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -613,7 +612,7 @@ def greyedOutTherm1(){
 def greyedOutSettings(){
 	def result = ""
     if (starting || ending || days || modes || sendPushMessage) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
@@ -621,11 +620,11 @@ def greyedOutSettings(){
 def greyedOutTime(starting, ending){
 	def result = ""
     if (starting || ending) {
-    	result = "complete"	
+    	result = "complete"
     }
     result
 }
-	
+
 private anyoneIsHome() {
   def result = false
 
@@ -637,10 +636,12 @@ private anyoneIsHome() {
 
   return result
 }
-	
-page(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
-		section {
-			input "starting", "time", title: "Starting (both are required)", required: false 
-			input "ending", "time", title: "Ending (both are required)", required: false 
+
+def timeIntervalInput() {
+    dynamicPage(name: "timeIntervalInput", title: "Only during a certain time", refreshAfterSelection:true) {
+        section("") {
+			input "starting", "time", title: "Starting", multiple: false, required: ending != null, submitOnChange: true
+			input "ending", "time", title: "Ending", multiple: false, required: starting != null, submitOnChange: true
 		}
-        }
+    }
+}

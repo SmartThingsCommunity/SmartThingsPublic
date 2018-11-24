@@ -43,7 +43,7 @@ import groovy.transform.Field
 ]
 
 metadata {
-    definition (name: "Simulated RGBW Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+    definition (name: "Simulated RGBW Bulb", namespace: "smartthings/testing", author: "SmartThings", ocfDeviceType: "oic.d.light") {
         capability "Health Check"
         capability "Actuator"
         capability "Sensor"
@@ -62,6 +62,9 @@ metadata {
         attribute  "bulbValue", "STRING"
         attribute  "colorIndicator", "NUMBER"
         command    "simulateBulbState"
+
+        command    "markDeviceOnline"
+        command    "markDeviceOffline"
     }
 
     // UI tile definitions
@@ -258,16 +261,23 @@ metadata {
             state "bulbValue", label: '${currentValue}'
         }
 
-        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label: "", action: "refresh", icon: "st.secondary.refresh"
         }
 
-        valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+        valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label: "Reset", action: "configure"
         }
 
+        standardTile("deviceHealthControl", "device.healthStatus", decoration: "flat", width: 2, height: 2, inactiveLabel: false) {
+            state "online",  label: "ONLINE", backgroundColor: "#00A0DC", action: "markDeviceOffline", icon: "st.Health & Wellness.health9", nextState: "goingOffline", defaultState: true
+            state "offline", label: "OFFLINE", backgroundColor: "#E86D13", action: "markDeviceOnline", icon: "st.Health & Wellness.health9", nextState: "goingOnline"
+            state "goingOnline", label: "Going ONLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+            state "goingOffline", label: "Going OFFLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+        }
+
         main(["switch"])
-        details(["switch", "colorTempControlLabel", "colorTempSliderControl", "bulbValue", "colorIndicator", "refresh"])
+        details(["switch", "colorTempControlLabel", "colorTempSliderControl", "bulbValue", "colorIndicator", "refresh", "deviceHealthControl", "reset"])
     }
 }
 
@@ -295,7 +305,7 @@ def parse(String description) {
 
 def installed() {
     log.trace "Executing 'installed'"
-    initialize()
+    configure()
 }
 
 def updated() {
@@ -306,11 +316,6 @@ def updated() {
 //
 // command methods
 //
-
-def ping() {
-    log.trace "Executing 'ping'"
-    refresh()
-}
 
 def refresh() {
     log.trace "Executing 'refresh'"
@@ -325,6 +330,11 @@ def refresh() {
 def configure() {
     log.trace "Executing 'configure'"
     // this would be for a physical device when it gets a handler assigned to it
+
+    // for HealthCheck
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    markDeviceOnline()
+
     initialize()
 }
 
@@ -427,11 +437,26 @@ def setColor(Map colorHSMap) {
     done()
 }
 
+def markDeviceOnline() {
+    setDeviceHealth("online")
+}
+
+def markDeviceOffline() {
+    setDeviceHealth("offline")
+}
+
+private setDeviceHealth(String healthState) {
+    log.debug("healthStatus: ${device.currentValue('healthStatus')}; DeviceWatch-DeviceStatus: ${device.currentValue('DeviceWatch-DeviceStatus')}")
+    // ensure healthState is valid
+    List validHealthStates = ["online", "offline"]
+    healthState = validHealthStates.contains(healthState) ? healthState : device.currentValue("healthStatus")
+    // set the healthState
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: healthState)
+    sendEvent(name: "healthStatus", value: healthState)
+}
+
 private initialize() {
     log.trace "Executing 'initialize'"
-
-    // for HealthCheck
-    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
 
     sendEvent(name: "colorTemperatureRange", value: COLOR_TEMP_RANGE)
     sendEvent(name: "colorTemperature", value: COLOR_TEMP_DEFAULT)

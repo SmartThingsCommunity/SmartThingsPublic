@@ -26,11 +26,16 @@ metadata {
         capability "Lock"
         capability "Battery"
         capability "Refresh"
+        capability "Configuration"
+
         command "jam"
         command "setBatteryLevel"
         command "setJamNextOperation"
         command "clearJamNextOperation"
         attribute "doesNextOperationJam", "enum", ["true", "false"]
+
+        command    "markDeviceOnline"
+        command    "markDeviceOffline"
     }
 
     // Simulated lock
@@ -40,48 +45,69 @@ metadata {
                 attributeState "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00A0DC", nextState:"unlocking"
                 attributeState "unlocked", label:'unlocked', action:"lock.lock", icon:"st.locks.lock.unlocked", backgroundColor:"#FFFFFF", nextState:"locking"
                 attributeState "unknown", label:'jammed', action:"lock.lock", icon:"st.secondary.activity", backgroundColor:"#E86D13"
-                attributeState "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#00A0DC"
-                attributeState "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#FFFFFF"
+                attributeState "locking", label:'locking', icon:"st.locks.lock.locked", backgroundColor:"#FFFFFF"
+                attributeState "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#00A0DC"
             }
             tileAttribute ("device.battery", key: "SECONDARY_CONTROL") {
                 attributeState "battery", label: 'battery ${currentValue}%', unit: "%"
             }
         }
 
-        standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
+        standardTile("lock", "device.lock", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
             state "default", label:'lock', action:"lock.lock", icon: "st.locks.lock.locked"
         }
-        standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
+
+        standardTile("unlock", "device.lock", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
             state "default", label:'unlock', action:"lock.unlock", icon: "st.locks.lock.unlocked"
         }
+
         valueTile("jamLabel", "device.id", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
-            state "default", label:"Tap button to simulate a jam now.\nUse Lock or Unlock to clear jam."
+            state "default", label:"Tap button to jam the lock now.\nUse main button to clear jam."
         }
+
         standardTile("jam", "device.lock", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label:'', action:"jam", nextState: "unknown", backgroundColor:"#CCCCCC", defaultState: true
-            state "unknown", label:'jammed', backgroundColor:"#E86D13"   
+            state "unknown", label:'jammed', backgroundColor:"#E86D13"
         }
+
         valueTile("jamToggleLabel", "device.doesNextOperationJam", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
-            state "default", label: "When button is active, lock will\nsimulate a jam on the next operation.", defaultState: true
+            state "default", label: "When button is active, lock will\njam on the next operation.", defaultState: true
         }
+
         standardTile("jamToggle", "device.doesNextOperationJam", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "false", label:'', action: "setJamNextOperation", backgroundColor:"#CCCCCC", defaultState: true
             state "true", label:'', action: "clearJamNextOperation", backgroundColor:"#E86D13"
         }
-        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-            state "battery", label:'battery ${currentValue}%', unit:"%"
+
+        valueTile("batterySliderLabel", "device.battery", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+            state "battery", label:'battery ${currentValue}%\nUse slider to set battery level', unit:"%"
         }
-        controlTile("batterySliderControl", "device.battery", "slider",
-                    height: 1, width: 4, range:"(1..100)") {
+
+        controlTile("batterySliderControl", "device.battery", "slider", width: 2, height: 1, range:"(1..100)") {
             state "battery", action:"setBatteryLevel"
+        }
+
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "default", label: "", action: "refresh", icon: "st.secondary.refresh"
+        }
+
+        valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "default", label: "Reset", action: "configure"
+        }
+
+        standardTile("deviceHealthControl", "device.healthStatus", decoration: "flat", width: 2, height: 2, inactiveLabel: false) {
+            state "online",  label: "ONLINE", backgroundColor: "#00A0DC", action: "markDeviceOffline", icon: "st.Health & Wellness.health9", nextState: "goingOffline", defaultState: true
+            state "offline", label: "OFFLINE", backgroundColor: "#E86D13", action: "markDeviceOnline", icon: "st.Health & Wellness.health9", nextState: "goingOnline"
+            state "goingOnline", label: "Going ONLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+            state "goingOffline", label: "Going OFFLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
         }
 
         main "toggle"
         details(["toggle",
-            "lock", "unlock", 
+            "deviceHealthControl", "refresh", "reset",
             "jamLabel", "jam",
             "jamToggleLabel", "jamToggle",
-            "battery", "batterySliderControl" ])
+            "batterySliderLabel", "batterySliderControl"])
     }
 }
 // parse events into attributes
@@ -103,9 +129,7 @@ def parse(String description) {
 
 def installed() {
     log.trace "installed()"
-    setBatteryLevel(94)
-    unlock()
-    initialize()
+    configure()
 }
 
 def updated() {
@@ -114,9 +138,26 @@ def updated() {
     initialize()
 }
 
-def initialize() {
+def markDeviceOnline() {
+    setDeviceHealth("online")
+}
+
+def markDeviceOffline() {
+    setDeviceHealth("offline")
+}
+
+private setDeviceHealth(String healthState) {
+    log.debug("healthStatus: ${device.currentValue('healthStatus')}; DeviceWatch-DeviceStatus: ${device.currentValue('DeviceWatch-DeviceStatus')}")
+    // ensure healthState is valid
+    List validHealthStates = ["online", "offline"]
+    healthState = validHealthStates.contains(healthState) ? healthState : device.currentValue("healthStatus")
+    // set the healthState
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: healthState)
+    sendEvent(name: "healthStatus", value: healthState)
+}
+
+private initialize() {
     log.trace "initialize()"
-    sendEvent(name: "checkInterval", value: 12 * 60, displayed: false, data: [protocol: "cloud", scheme: "untracked"])
     clearJamNextOperation()
 }
 
@@ -143,12 +184,21 @@ private processPreferences() {
 }
 
 def refresh() {
-    sendEvent(name: "lock", value: device.currentValue("lock"))
-    sendEvent(name: "battery", value: device.currentValue("battery"))
+    log.trace "refresh()"
+    sendEvent(name: "lock", value: device.currentValue("lock") ?: "locked")
+    sendEvent(name: "battery", value: device.currentValue("battery") ?: 94)
 }
 
-def ping() {
-    refresh()
+def configure() {
+    log.trace "configure()"
+    // this would be for a physical device when it gets a handler assigned to it
+
+    // for HealthCheck
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    initialize()
+    markDeviceOnline()
+    setBatteryLevel(94)
+    unlock()
 }
 
 def lock() {
@@ -191,4 +241,3 @@ def setBatteryLevel(Number lvl) {
     log.trace "setBatteryLevel(level)"
     sendEvent(name: "battery", value: lvl)
 }
-

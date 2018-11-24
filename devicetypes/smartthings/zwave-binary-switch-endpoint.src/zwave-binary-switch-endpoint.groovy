@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Binary Switch Endpoint", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid:"generic-switch") {
+	definition(name: "Z-Wave Binary Switch Endpoint", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Refresh"
@@ -51,7 +51,7 @@ def updated() {
 
 def configure() {
 	// Device-Watch simply pings if no device events received for checkInterval duration of 32min
-	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: parent.hubID, offlinePingable: "1"])
 	refresh()
 }
 

@@ -1,11 +1,12 @@
 /**
- * 	Color Coordinator 
- *  Version 1.1.1 - 11/9/16
+ * 	Color Coordinator
+ *  Version 1.1.2 - 4/27/18
  *  By Michael Struck
  *
  *  1.0.0 - Initial release
- *  1.1.0 - Fixed issue where master can be part of slaves. This causes a loop that impacts SmartThings. 
+ *  1.1.0 - Fixed issue where master can be part of slaves. This causes a loop that impacts SmartThings.
  *  1.1.1 - Fix NPE being thrown for slave/master inputs being empty.
+ *  1.1.2 - Fixed issue with slaves lights flashing but not syncing with master
  *
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -61,12 +62,10 @@ page(name: "pageAbout", title: "About ${textAppName()}", uninstall: true) {
 	section("Instructions") {
 		paragraph textHelp()
 	}
-    section("Tap button below to remove application"){
-    }
 }
 
-def installed() {   
-	init() 
+def installed() {
+	init()
 }
 
 def updated(){
@@ -90,7 +89,7 @@ def onOffHandler(evt){
 				else slaves?.on()
 		}
 		else {
-		    slaves?.off()  
+		    slaves?.off()
 		}
 		}
 	}
@@ -100,19 +99,11 @@ def colorHandler(evt) {
 	if (slaves && master) {
 		if (!slaves?.id?.find{it==master?.id} && master?.currentValue("switch") == "on"){
 			log.debug "Changing Slave units H,S,L"
-		def dimLevel = master?.currentValue("level")
-		def hueLevel = master?.currentValue("hue")
-		def saturationLevel = master.currentValue("saturation")
+			def dimLevel = master?.currentValue("level")
+			def hueLevel = master?.currentValue("hue")
+			def saturationLevel = master.currentValue("saturation")
 			def newValue = [hue: hueLevel, saturation: saturationLevel, level: dimLevel as Integer]
-		slaves?.setColor(newValue)
-		try {
-			log.debug "Changing Slave color temp"
-			def tempLevel = master?.currentValue("colorTemperature")
-			slaves?.setColorTemperature(tempLevel)
-		}
-			catch (e){
-			log.debug "Color temp for master --"
-		}
+			slaves?.setColor(newValue)
 		}
 	}
 }
@@ -125,7 +116,7 @@ def getRandomColorMaster(){
     log.debug hueLevel
     log.debug saturationLevel
     master.setColor(newValue)
-    slaves?.setColor(newValue)   
+    slaves?.setColor(newValue)
 }
 
 def tempHandler(evt){
@@ -144,14 +135,14 @@ def tempHandler(evt){
 
 private def textAppName() {
 	def text = "Color Coordinator"
-}	
+}
 
 private def textVersion() {
-    def text = "Version 1.1.1 (12/13/2016)"
+    def text = "Version 1.1.2 (4/27/2018)"
 }
 
 private def textCopyright() {
-    def text = "Copyright © 2016 Michael Struck"
+    def text = "Copyright © 2018 Michael Struck"
 }
 
 private def textLicense() {

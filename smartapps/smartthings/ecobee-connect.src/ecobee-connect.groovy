@@ -352,7 +352,7 @@ def getEcobeeDevices() {
 							thermostatList[dni].pollAttempts = 0
 							// compile all remote sensors conected to the thermostat
 							stat.remoteSensors.each { sensor ->
-								if (sensor.type != "thermostat") {
+								if (sensor.type == "ecobee3_remote_sensor") {
 									def rsDni = "ecobee_sensor-"+ sensor?.id + "-" + sensor?.code
 									remoteSensors[rsDni] = sensor
 									remoteSensors[rsDni] << [thermostatId: dni]
@@ -893,7 +893,7 @@ def updateSensorData(sensorData) {
 	def remoteSensors = state.remoteSensors2 ?: [:]
 	sensorData.each {
 		it.each {
-			if (it.type != "thermostat") {
+			if (it.type == "ecobee3_remote_sensor") {
 				def temperature = ""
 				def occupancy = ""
 				def dni = "ecobee_sensor-"+ it?.id + "-" + it?.code
@@ -907,7 +907,7 @@ def updateSensorData(sensorData) {
 						// is preserved and not changed to name from ecobee cloud as this is the first name change is allowed
 						child.setDisplayName(it.name)
 					}
-					if (!remoteSensors[dni] || remoteSensors[dni].deviceAlive) {
+					if (remoteSensors[dni] && remoteSensors[dni].deviceAlive) {
 						it.capability.each {
 							if (it.type == "temperature") {
 								if (it.value == "unknown") {
@@ -930,7 +930,11 @@ def updateSensorData(sensorData) {
 						child.sendEvent(name:"motion", value: occupancy)
 						child.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false)
 					} else {
-						remoteSensors[dni] << it
+						if (remoteSensors[dni]) {
+							remoteSensors[dni] << it
+						} else if (!child.getDataValue("DeviceIssue")) {
+							child.updateDataValue("DeviceIssue", "Please remove and re-add sensor")
+						}
 						child.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
 					}
 				}
@@ -1196,7 +1200,7 @@ def setSensorName(name, deviceId) {
  *
  * @return true if the command was accepted by Ecobee without error, false otherwise.
  */
-private boolean sendCommandToEcobee(Map bodyParams) {
+boolean sendCommandToEcobee(Map bodyParams) {
 	// no need to try sending a command if authToken is null
 	if (!state.authToken) {
 		log.warn "sendCommandToEcobee failed due to authToken=null"
@@ -1255,7 +1259,7 @@ def getCallbackUrl()         { return "${serverUrl}/oauth/callback" }
 def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
 def getApiEndpoint()         { return "https://api.ecobee.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
-private getVendorIcon() 	 { return "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png" }
+def getVendorIcon() 	 { return "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png" }
 
 //send both push notification and mobile activity feeds
 def sendPushAndFeeds(notificationMessage) {
@@ -1298,7 +1302,7 @@ def getThermostatData(data) {
  * Stores data about the thermostats in atomicState.
  * @param thermostats - a list of thermostats as returned from the Ecobee API
  */
-private void storeThermostatData(thermostatData) {
+void storeThermostatData(thermostatData) {
 	def data
 	def remoteSensors = state.remoteSensors2 ?: [:]
 	def thermostatList = state.thermostats ?: [:]
@@ -1330,7 +1334,7 @@ private void storeThermostatData(thermostatData) {
 		}
 		// Make sure any remote senors connected to the thermostat are marked offline too
 		stat.remoteSensors.each { sensor ->
-			if (sensor.type != "thermostat") {
+			if (sensor.type == "ecobee3_remote_sensor") {
 				def rsDni = "ecobee_sensor-"+ sensor?.id + "-" + sensor?.code
 				if (ecobeesensors?.contains(rsDni)) {
 					remoteSensors[rsDni] = remoteSensors[rsDni] ?

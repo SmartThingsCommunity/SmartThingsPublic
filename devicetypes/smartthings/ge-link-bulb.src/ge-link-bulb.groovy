@@ -42,7 +42,7 @@
  */
 
 metadata {
-    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-dimmer") {
 
         capability "Actuator"
         capability "Configuration"
@@ -51,6 +51,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         capability "Polling"
+        capability "Light"
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE_Appliances", model: "ZLL Light", deviceJoinName: "GE Link Bulb"
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE", model: "SoftWhite", deviceJoinName: "GE Link Soft White Bulb"
