@@ -130,7 +130,7 @@ command "test"
 			state ("battery", label:'${currentValue}V',  icon:"st.samsung.da.RC_ic_charge",defaultState: true, backgroundColors:[
                					[value: 3.2, color: "#44b621"],
 								[value: 2.85, color: "#f1d801"],
-								[value: 2.5, color: "#bc2323"],
+								[value: 2.5, color: "#bc2323"]
          		           ]
                            )
         }
@@ -138,7 +138,7 @@ command "test"
 			state ("battery", label:'${currentValue}%', icon:"st.samsung.da.RC_ic_charge", defaultState: true, backgroundColors:[
                					[value: 100, color: "#44b621"],
 								[value: 50, color: "#f1d801"],
-								[value: 0, color: "#bc2323"],
+								[value: 0, color: "#bc2323"]
          		           ]
                            )
         }
@@ -178,26 +178,8 @@ command "test"
 
 	preferences {
 //setting how often to refesh with miHome
-  		input (name: "refreshRate", title: "Refresh Rate", type: "enum",
-            options: [
-            	"5":"Refresh every 5 minutes (eTRVs)",
-                "10":"Refresh every 10 minutes (power monitors)",
-                "15":"Refresh every 15 minutes (sockets)",
-                "30":"Refresh every 30 minutes",
-                "No":"Manual Refresh - Default (Sockets)"
-			], defaultValue: "No", required: false) 			
-//setting for diplay format for last comunication/refresh
-		input (name: "checkinInfo", title: "Show last Check-in info", type: "enum",
-            options: [
-            	"Hide", 
-                "MM/dd/yyyy h:mma", 
-                "h:mma dd/mm/yyyy", 
-                "dd/MM/yyyy h:mm", 
-                "dd-MM-yyyy HH:mm", 
-                "h:mma dd/MM/yy"
-                ], defaultValue: "h:mma dd/MM/yy", required: false)		
-//setting default boost to temp for device
-        input (name: "emergencyheattemp", title: "Temp to boost to - 13 to 30", type: "number", range: "13..30", required: false) // description: "Boost aka cool to temp", required: false)
+  		input (name: "checkinInfo", title: "Show last Check-in info", type: "enum", options: ["Hide", "Show"], required: false)		//setting for diplay format for last comunication/refresh
+        input (name: "emergencyheattemp", title: "Temp to boost to - 13 to 30", type: "number", range: "13..30", required: false) // //setting default boost to temp for device
 //help descriptions
         input description: "Summer mode ---  \nOpens the valve fully & prevents any other change to state without press the auto putton", title: "Summer Button", displayDuringSetup: false, type: "paragraph", element: "paragraph"
        	input description: "---Turn On---  \n'OK google set **device name/room** termostat(s) to heat/cool' \nheat=Resume \ncool=boost \n---Turn Off--- \n'Ok google turn off **device name/room** thermostat(s)' \nSaves the last settings and turns off (aka 12deg) \n---Set Temprature--- \n'Ok google set **device name/room** thermostat(s)/temprature to **number** \n---Quiry Temprature--- \n'Ok google what is the temprature in the **device name/room/house**' \nResponse current temp and setpoint \n---Boost--- \n'Ok google set **device name/room** thermostat(s) to COOL \naka boost to temp & time set above", title: "Google Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
@@ -209,10 +191,7 @@ def installed() { //	===== Update when installed or setting changed =====
 }
 def updated() {
 	log.info "updated running"
-	unschedule(refreshRate)
-    unschedule(setHeatingSetpoint)
-    unschedule(setThermostatMode)
-    unschedule(errordelay)
+	unschedule()
     state.counter = state.counter
     state.counter = 0
     state.boostLength = 60
@@ -220,27 +199,9 @@ def updated() {
 }
 def update() {
 	log.info "update running"
-	switch(refreshRate) {
-		case "5":
-			runEvery5Minutes(refresh)
-			log.info "Refresh Scheduled for every 5 minutes"
-			break
-		case "10":
-			runEvery10Minutes(refresh)
-			log.info "Refresh Scheduled for every 10 minutes"
-			break
-		case "15":
-			runEvery15Minutes(refresh)
-			log.info "Refresh Scheduled for every 15 minutes"
-			break
-        case "30":
-			runEvery30Minutes(refresh)
-			log.info "Refresh Scheduled for every 30 minutes"
-			break
-		default:
-			log.info "Manual Refresh - No Schedule"
-	}
+	runEvery5Minutes(poll, [overwrite: true])
 }
+
 def uninstalled() {
     unschedule()
 }
@@ -270,6 +231,7 @@ def setCoolingSetpoint(temp){
 	setHeatingSetpoint(temp)
 }
 def setHeatingSetpoint(temp) {
+	unschedule(poll)
 	unschedule(errordelay)
     if (temp < 12) {
 		temp = 12
@@ -319,14 +281,20 @@ def setHeatingSetpoint(temp) {
         	state.thermostatMode = state.summer == 'summer'  ? 'summer' : 'heat'
         	state.thermostatOperatingState  = 'heating'
         }
+        
         state.counter = 0
         state.heatingSetpoint = resp.data.data.target_temperature
         state.batteryVoltage = resp.data.data.voltage
+        state.updatedat = resp.data.data.updated_at
+       // state.temperature = resp.data.data.last_temperature
         state.boostSwitch = 'stby'
         log.info "setHeatingSetpoint complete for '${device}' status-'${resp.status}' - with temp of '${temp}' and mode '${state.thermostatMode}', going to .... checkin ...."
+        log. debug "response data updated at $resp.data.data.updated_at"
+        //runEvery5Minutes(poll, [overwrite: true])
         checkin()
     	}
 	}
+    runIn(5*60, refresh)
 } 
 // =============== end set temp =================
 
@@ -462,93 +430,34 @@ def setThermostatMode(mode) { 	//requested mode NOT actualy in it yet - -google 
 	log.info "MODE Change complete - '${mode}' mode with temp of '${temp}' going to .. setHeatingSetpoint .."    
 }	//end mode setting
 
+def refresh() {
+//	log.debug "refresh triggerd for ${device}"
+	unschedule(refresh)
+	runEvery5Minutes(poll, [overwrite: true])
+	poll()
+}
+
 def poll() {
-    def resp = parent.apiGET("subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder([id: device.deviceNetworkId.toInteger()]).toString()))
-    if (resp.status != 200) {
-    	sendEvent(name: "refresh", value: '', descriptionText: "BAD Poll", isStateChange: true)
-		log.error "POLL for  -'${device}' response -'${resp.status}' Unexpected Result" // end
-	}
-    else {
-    def resppar = parent.state.data
-    //log.debug "full data = ${resppar}"
-// works    log.debug "drill data id = ${resppar.data?.id}"
-// works	log.debug "drill data last temp - ${resppar.data.last_temperature}"
-//works    log.debug "device id NOT from the response = ${device.deviceNetworkId}"
-//	log.debug " device id is - ${device.id}"
- //   log.debug "drill key 0 - ${resppar.data[0].last_temperature} & ${resppar.data[0].id}"
-  //  log.debug "drill key 1 - ${resppar.data[1].last_temperature} & ${resppar.data[1].id}"
-    //log.debug "drill key 2 - ${resppar.data[2].last_temperature} & ${resppar.data[2].id}"
-    //log.debug "drill key 3 - ${resppar.data[3].last_temperature} & ${resppar.data[3].id}"
+//	unschedule(refresh)
+	def resppar = parent.state.data //this is to get the data from the app insted so the app ONLY as to quiry every 5 min
+	if (resppar != null){
+		def dvid = device.deviceNetworkId.toInteger()
+		def dvkey1 = resppar.data.id.findIndexOf { it == (dvid) }
 
-//log.debug "list of map ${resppar.data.groupBy{ it.id }}"
-
-def respparid = resppar.data.groupBy{ it.id }
-
-log.debug "respparid ${respparid}"
-log.debug "by id idex fixed 122981 -${device.deviceNetworkId} - ${resppar.data[0].last_temperature} , ${resppar.data[0].label}"
-def deviceid = device.deviceNetworkId
-
-
-//null def lasttemp = respparid['$deviceid']
-// def lasttemp = respparid.'$deviceid'.last_temperature
-//null def lasttemp = respparid.'$deviceid'
-
-//def lasttemp = respparid.$deviceid
-//def lasttemp = respparid[deviceid]
-//def lasttemp = respparid[$deviceid]
-def lasttemp = respparid."$deviceid"
-
-log.debug "by id ${deviceid} -${device.deviceNetworkId} - ${lasttemp}"
-
-def dev1 = resppar.data.eachWithIndex { it, index ->
-    it.id = index }
-
-log.debug "dev1 - ${dev1}"
-//def dev2 = resppar.find {'$deviceid'}
-//log.debug "dev2 - ${dev2}"
-
-// error log.debug "by id 1 -${device.deviceNetworkId} - ${respparid["${device.deviceNetworkId}"].last_temperature}"
-// null log.debug "by id 1 -${device.deviceNetworkId} - ${respparid["${device.deviceNetworkId}"]}"
-// null log.debug "by id -${device.deviceNetworkId} - ${respparid["${device.deviceNetworkId}"]}"
-// error log.debug "by id 2 -${device.deviceNetworkId} - ${respparid['${device.deviceNetworkId}'].label}"	//
-// null log.debug "by id 3 -${device.deviceNetworkId} - ${respparid['${device.deviceNetworkId}']}"	//
-// comes back with null log.debug "by id v2  -${device.deviceNetworkId} - ${respparid[device.deviceNetworkId]}"
-// groovy.lang.MissingMethodException: No signature of method:  log.debug "by id v3  -${device.deviceNetworkId} - ${respparid[${device.deviceNetworkId}]}"
-// null log.debug "by id v4  -${device.deviceNetworkId} - ${respparid['device.deviceNetworkId']}"
-
-//resppar.data.map{
-//   if(id == device.deviceNetworkId){
-//     ltemp = last_temperature
-//}}
-//    log.debug "temp - ${ltemp}"
-    //log.debug "temp - ${resppar.data.id.['122977'].last_temperature}"  
-    
-    //log.debug "temp3 - ${resppar.data.id.last_temperature['122977']}"
-    //log.debug "temp4 - ${resppar.data.${device.deviceNetworkId}.last_temperature}"
-    
-    //def dev = resppar.data.id.find(122977)// find a single entry
-    //log.debug "dev - 122977 ${dev}"
-    
-    //def dev1 = resppar.data.id.findIndexOf('122981')  // find a single entry
-    //log.debug "dev - 122981 ${dev1}"
-    
-    //log.debug "json pri ${JsonOutput.prettyPrint(resppar.id)}"
-    
-    //def bob = resppar.data.findIndexOf { it == '127535' } // find a single entry
-    //log.debug "bob $bob"
-    //def ageOfBob = bob.value.last_temperature
-    //log.debug "abge of bob = $ageOfBob"
-    
-    //def devtemp = dev.value.target_temperature // find temp for single entry
-    //log.debug "temp5 ${devtemp}"
-    //log.debug "temp4 - ${resppar.data.id."122977".value.last_temperature}"
-    //log.debug "Identified: device ${resppar.data.id}: ${resppar.data.device_type}: ${resppar.data.label}" //: ${target_temperature}: ${last_temperature}: ${voltage}"
-    
-    state.temperature = resp.data.data.last_temperature
-    state.heatingSetpoint = resp.data.data.target_temperature
-    state.batteryVoltage = resp.data.data.voltage
-    checkin()
+		//log.debug "key only data = ${resppar.data[(dvkey1)]}"
+             
+    	state.temperature = resppar.data[(dvkey1)].last_temperature
+    	state.heatingSetpoint = resppar.data[(dvkey1)].target_temperature
+    	state.batteryVoltage = resppar.data[(dvkey1)].voltage
+    	state.updatedat = resppar.data[(dvkey1)].parent_device_last_seen_at // .updated_at not used as this only updates hourly for some reason
     }
+
+	else {
+    sendEvent(name: "refresh", value: " ", descriptionText: "The device failed POLL")
+    log.warn "POLL - ${device} failed POLL"
+    }
+    
+    checkin()
 }
     
 def checkin() {
@@ -564,8 +473,6 @@ def checkin() {
 	sendEvent(name: "ThermostatSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)
 	sendEvent(name: "thermostatTemperatureSetpoint", value: state.heatingSetpoint, unit: "C", displayed: false)
 	sendEvent(name: "thermostatTemperatureAmbient", value: state.temperature, unit: "C", displayed: false)
-
-
 //main display stuff
 	if (state.batteryVoltage == null){
     	state.batteryVoltage = '0'
@@ -573,7 +480,6 @@ def checkin() {
 //log.debug "bat V '${state.batteryVoltage}"
     state.battery = Math.round(((state.batteryVoltage-2.5)/0.7)*100)		// 0.7 is used to calculete %, ie diferance between max-min volts (3.2-2.5)
     state.batteryVoltage = 	Math.round(state.batteryVoltage * 1000)/1000 		// *1000)/1000 to round to 3 decimal places
-
 	sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true) 				//mode & off icon
     sendEvent(name: "boostSwitch", value: state.boostSwitch, displayed: false)						// boost button
     sendEvent(name: "boostLabel", value: state.boostLabel, displayed: false) 						//change label back to boost time from start time        
@@ -583,22 +489,12 @@ def checkin() {
     sendEvent(name: "batteryVoltage", value: state.batteryVoltage, unit: "V") 
 	sendEvent(name: "battery", value: state.battery, unit: "%") 
 
-def setmode = state.thermostatMode // for log info below
+	def setmode = state.thermostatMode // for log info below
     if (state.thermostatMode == 'cool'){
-    setmode = state.thermostatMode + ' (aka boost)'
+    	setmode = state.thermostatMode + ' (aka boost)'
     }
-    
-    def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
-    def now = ''
     if (checkinInfoFormat != 'Hide') {
-        try {
-            now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}", location.timeZone)
-        } catch (all) { }
-    sendEvent(name: "lastCheckin", value: now, displayed: false)    
+ 	   sendEvent(name: "lastCheckin", value: state.updatedat, displayed: false)    //value: now, 
     }
-	log.info "CHECKIN-${device}', MODE='${setmode}', TTemp='${state.heatingSetpoint}', ATemp='${state.temperature}', BOOST='${state.boostLabel}', BAT='${state.battery}%', @'${settings.refreshRate}' min refresh rate"
-}
-
-def refresh() {
-	poll()
+	log.info "CHECKIN-${device}', MODE='${setmode}', TTemp='${state.heatingSetpoint}', ATemp='${state.temperature}', BOOST='${state.boostLabel}', BAT='${state.battery}%'" 
 }

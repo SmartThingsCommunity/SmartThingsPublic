@@ -65,19 +65,10 @@ metadata {
         main "switch"
         details(["switch", "onButton", "offButton", "refreshTile"])
 	}
-    def rates = [:]
-	rates << ["5" : "Refresh every 5 minutes (eTRVs)"]
-	rates << ["10" : "Refresh every 10 minutes (Power Monitors)"]	
-	rates << ["15" : "Refresh every 15 minutes (Sockets switched by other systems)"]
-	rates << ["30" : "Refresh every 30 minutes - (Sockets)"]
-    rates << ["60" : "Refresh every 60 minutes - (Sockets)"]
-    rates << ["3" : "Refresh every 3h - (Sockets)"]
-	rates << ["No" : "Manual Refresh - Default (Sockets)"]
-
+   
 	preferences {
-        input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
-		input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "MM/dd/yyyy h:mma", "h:mma dd/mm/yyyy", "dd/MM/yyyy h:mm", "dd-MM-yyyy HH:mm" , "h:mma dd/MM/yy"], description: "Show last check-in info.", required: false
-        }
+        input "checkinInfo", "enum", title: "Show last Check-in info", options: ["Hide", "Show"], description: "Show last info.", required: false
+    }
 }
 // parse events into attributes
 def parse(String description) {
@@ -99,77 +90,47 @@ def initialize() {
 	log.info "initialize"
 	state.counter = state.counter
     state.counter = 0
-	switch(refreshRate) {
-		case "5":
-			runEvery5Minutes(refresh)
-			log.info "Refresh Scheduled for every 5 minutes"
-			break
-		case "10":
-			runEvery10Minutes(refresh)
-			log.info "Refresh Scheduled for every 10 minutes"
-			break
-		case "15":
-			runEvery15Minutes(refresh)
-			log.info "Refresh Scheduled for every 15 minutes"
-			break
-        case "30":
-			runEvery30Minutes(refresh)
-			log.info "Refresh Scheduled for every 30 minutes"
-			break
-        case "60":
-			runEvery1Hour(refresh)
-			log.info "Refresh Scheduled for every 60 minutes"
-			break
-		case "3":
-			runEvery3Hours(refresh)
-			log.info "Refresh Scheduled for every 3 hours"
-			break
-		default:
-			log.info "Manual Refresh - No Schedule"
-	}
+	runEvery5Minutes(poll, [overwrite: true])
 }
+
 def uninstalled() {
     unschedule()
     // to look at deleting child devices?
 }
 //	===== Update when installed or setting updated =====
 def refresh() {
-//log.debug "REFRESH -'$device' @ '$settings.refreshRate' min refresh rate"
-	poll()
+	//log.debug "refresh triggerd ${device}"
+	unschedule(refresh)
+	runEvery5Minutes(poll, [overwrite: true])
+    poll()
 }
 def poll() {
-	def body = []
-    if (device.deviceNetworkId.contains("/")) {
-    	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
-    }
-    else {
-    	body = [id: device.deviceNetworkId.toInteger()]
-    }
-    def resp = parent.apiGET("subdevices/show?params=" + URLEncoder.encode(new groovy.json.JsonBuilder(body).toString()))
-//log.debug "poll status- ${resp.status} data- ${resp.data}" 
-    if (resp.status != 200) {
-		log.error "POLL for - ${device} - ${resp.status} Unexpected result"
-        sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
+    def resppar = parent.state.data 		//pull data from parent app
+    if (resppar != null){
+							// 	log.debug "full data = ${resppar}"
+  		def dvid = device.deviceNetworkId.toInteger()
+		def dvkey1 = resppar.data.id.findIndexOf { it == (dvid) }
+							//	log.debug "ALL $dvid id '$dvkey1' - ${resppar.data[(dvkey1)]}"
+    	state.Switch = resppar.data[(dvkey1)].power_state == 1 ? "on" : "off"//resp.data.data.power_state == 1 ? "on" : "off"
+    	state.updatedat = resppar.data[(dvkey1)].parent_device_last_seen_at
 	}
     else {
-    state.Switch = resp.data.data.power_state == 1 ? "on" : "off"
-	checkin()
+    	sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
+        log.warn " POLL - ${device} failed POLL"
     }
+    checkin()
 }
+
 def checkin() {
 	sendEvent(name: "switch", value: state.Switch)
-	def checkinInfoFormat = (settings.checkinInfo ?: 'dd/MM/yyyy h:mm')
-    def now = ''
-    if (checkinInfoFormat != 'Hide') {
-        try {
-            now = 'Last Check-in: ' + new Date().format("${checkinInfoFormat}", location.timeZone)
-        } catch (all) { }
-    sendEvent(name: "lastCheckin", value: now, displayed: false)
-    }
-    log.info "CHECKIN complete-'${device}', '${state.Switch}' @ '${settings.refreshRate}' min refresh rate"
+	if (checkinInfoFormat != 'Hide') {
+   		sendEvent(name: "lastCheckin", value: state.updatedat, displayed: false)
+	}
+    log.info "CHECKIN complete-'${device}', '${state.Switch}' parent device updated at ${state.updatedat}"
 }
 
 def on() {
+	unschedule(poll)
 	def body = []
     if (device.deviceNetworkId.contains("/")) {
     	body = [id: (device.deviceNetworkId.tokenize("/")[0].toInteger()), socket: (device.deviceNetworkId.tokenize("/")[1].toInteger())]
@@ -204,9 +165,11 @@ def on() {
         log.info "ON - '${device}' '${state.Switch}' all good '${resp.status}'"
     	checkin()
     }
+    runIn(5*60, refresh)
 }
 
 def off() {
+	unschedule(poll)
 	//log.debug "Executing off"
     def body = []
     if (device.deviceNetworkId.contains("/")) {
@@ -242,4 +205,5 @@ def off() {
         log.info "Off - '${device}' '${state.Switch}' all good '${resp.status}'"
     	checkin()
     }
+    runIn(5*60, refresh)
 }
