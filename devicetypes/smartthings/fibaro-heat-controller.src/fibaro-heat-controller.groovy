@@ -77,7 +77,7 @@ metadata {
 }
 
 def installed() {
-	initialize()
+	runIn(2, "initialize")
 }
 
 def updated() {
@@ -140,10 +140,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 			createEvent(map)
 			break
 		case 2:
-			if(value > 0) {
-				if(!childDevices) {
-					addChild()
-				}
+			if(childDevices) {
 				sendEventToChild(map)
 			}
 			break
@@ -187,7 +184,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy cmd) {
 	log.warn "Device is busy, delaying refresh"
-	runIn(15, "delayedRefresh", [overwrite: true])
+	runIn(15, "forcedRefresh", [overwrite: true])
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -257,10 +254,10 @@ def refresh() {
 	def cmds = [
 			secureEncap(zwave.batteryV1.batteryGet(), 1),
 			secureEncap(zwave.batteryV1.batteryGet(), 2),
-			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1), 1),
-			secureEncap(zwave.thermostatModeV2.thermostatModeGet(),1),
-			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet(), 2),
-			secureEncap(zwave.configurationV1.configurationGet(parameterNumber: 3), 1)
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)),
+			secureEncap(zwave.thermostatModeV2.thermostatModeGet()),
+			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet()),
+			secureEncap(zwave.configurationV1.configurationGet(parameterNumber: 3))
 	]
 
 	delayBetween(cmds, 2500)
@@ -271,7 +268,7 @@ def ping() {
 }
 
 private secureEncap(cmd, endpoint = null) {
-	response(secure(encap(cmd, endpoint)))
+	secure(encap(cmd, endpoint))
 }
 
 private secure(cmd) {
@@ -316,7 +313,7 @@ private refreshChild() {
 	sendHubCommand(cmds, 2000)
 }
 
-private delayedRefresh() {
+private forcedRefresh() {
 	sendHubCommand(refresh())
 }
 
