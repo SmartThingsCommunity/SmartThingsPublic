@@ -259,6 +259,10 @@ def getModuleDevices(moduleId){
             devices[parentId + '-Light'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Light", options : [powerChannel : 1]]
             devices[parentId + '-Fan'] = [namespace : "BrettSheleski", type: "Tasmota-Fan", label : "${thisLabel} Fan Speed", options : []]
             break;
+	    
+	case 45: // Blitzwolf SHP2
+            devices[parentId + '-Power'] = [namespace : "BrettSheleski", type: "Tasmota-Power", label : "${thisLabel} Switch", options : [powerChannel : 1]];
+            break;
 
         case 14: // Motor C/AC
         case 15: // ElectroDragon
