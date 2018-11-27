@@ -194,18 +194,9 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 }
 
 private getVersions() {
-	if (zwaveInfo.model.equals("005F"))
-		[
-				0x32: 1,  // Meter
-				0x70: 1,  // Configuration
-				0x72: 1,  // ManufacturerSpecific
-		]
-	else
-		[
-				0x20: 1,  // Basic
-				0x32: 3,  // Meter
-				0x56: 1,  // Crc16Encap
-				0x70: 1,  // Configuration
-				0x72: 1,  // ManufacturerSpecific
-		]
+	[
+			0x32: 1,  // Meter
+			0x70: 1,  // Configuration
+			0x72: 1,  // ManufacturerSpecific
+	]
 }
