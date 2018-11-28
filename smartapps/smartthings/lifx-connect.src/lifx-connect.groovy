@@ -51,40 +51,40 @@ def getCallbackUrl()             { return "${getServerUrl()}/oauth/callback" }
 def apiURL(path = '/') 			 { return "https://api.lifx.com/v1${path}" }
 def getSecretKey()               { return appSettings.secretKey }
 def getClientId()                { return appSettings.clientId }
-private getVendorName() { "LIFX" }
+def getVendorName() { "LIFX" }
 
 def authPage() {
-	if (state.lifxAccessToken) {
-		def validateToken = locationOptions() ?: []
-	}
+    if (state.lifxAccessToken) {
+        def validateToken = locationOptions() ?: []
+    }
 
-	if (!state.lifxAccessToken) {
-		log.debug "no LIFX access token"
-		// This is the SmartThings access token
-		if (!state.accessToken) {
-			log.debug "no access token, create access token"
-			state.accessToken = createAccessToken() // predefined method
-		}
-		def description = "Tap to enter LIFX credentials"
-		def redirectUrl = "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" // this triggers oauthInit() below
-		return dynamicPage(name: "Credentials", title: "Connect to LIFX", nextPage: null, uninstall: true, install:true) {
-			section {
-				href(url:redirectUrl, required:true, title:"Connect to LIFX", description:"Tap here to connect your LIFX account")
-			}
-		}
-	} else {
-		log.debug "have LIFX access token"
+    if (!state.lifxAccessToken) {
+        log.debug "no LIFX access token"
+        // This is the SmartThings access token
+        if (!state.accessToken) {
+            log.debug "no access token, create access token"
+            state.accessToken = createAccessToken() // predefined method
+        }
+        def description = "Tap to enter LIFX credentials"
+        def redirectUrl = "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" // this triggers oauthInit() below
+        return dynamicPage(name: "Credentials", title: "Connect to LIFX", nextPage: null, uninstall: true, install:true) {
+            section {
+                href(url:redirectUrl, required:true, title:"Connect to LIFX", description:"Tap here to connect your LIFX account")
+            }
+        }
+    } else {
+        log.debug "have LIFX access token"
 
-		def options = locationOptions() ?: []
-		def count = options.size().toString()
+        def options = locationOptions() ?: []
+        def count = options.size().toString()
 
-		return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
-			section("Select your location") {
-				input "selectedLocationId", "enum", required:true, title:"Select location ({{count}} found)", messageArgs: [count: count], multiple:false, options:options, submitOnChange: true
-				paragraph "Devices will be added automatically from your LIFX account. To add or delete devices please use the Official LIFX App."
-			}
-		}
-	}
+        return dynamicPage(name:"Credentials", title:"", nextPage:"", install:true, uninstall: true) {
+            section("Select your location") {
+                input "selectedLocationId", "enum", required:true, title:"Select location ({{count}} found)", messageArgs: [count: count], multiple:false, options:options, submitOnChange: true
+                paragraph "Devices will be added automatically from your LIFX account. To add or delete devices please use the Official LIFX App."
+            }
+        }
+    }
 }
 
 // OAuth
@@ -294,7 +294,7 @@ def initialize() {
 }
 
 // Misc
-private setupDeviceWatch() {
+def setupDeviceWatch() {
     def hub = location.hubs[0]
     // Make sure that all child devices are enrolled in device watch
     getChildDevices().each {
@@ -311,7 +311,6 @@ Map apiRequestHeaders() {
 }
 
 // Requests
-
 def logResponse(response) {
     log.debug("Status: ${response.status}")
     log.debug("Body: ${response.data}")
@@ -320,66 +319,77 @@ def logResponse(response) {
 // API Requests
 // logObject is because log doesn't work if this method is being called from a Device
 def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
-	try {
-		return c()
-	} catch (groovyx.net.http.HttpResponseException e) {
-		options.logObject.error("got error: ${e}, body: ${e.getResponse().getData()}")
-		if (e.statusCode == 401) { // token is expired
-			state.lifxAccessToken = null
-			options.logObject.warn "Access token is not valid"
-		}
-		return options.errorReturn
-	} catch (java.net.SocketTimeoutException e) {
-		options.logObject.warn "Connection timed out, not much we can do here"
-		return options.errorReturn
-	}
+    try {
+        return c()
+    } catch (groovyx.net.http.HttpResponseException e) {
+        options.logObject.error("got error: ${e}, body: ${e.getResponse().getData()}")
+        if (e.statusCode == 401) { // token is expired
+            state.lifxAccessToken = null
+            options.logObject.warn "Access token is not valid"
+        }
+        return options.errorReturn
+    } catch (java.net.SocketTimeoutException e) {
+        options.logObject.warn "Connection timed out, not much we can do here"
+        return options.errorReturn
+    }
 }
 
 def apiGET(path) {
-	try {
-		httpGet(uri: apiURL(path), headers: apiRequestHeaders()) {response ->
-			if (response.status == 401) { // token is expired
-				log.warn "Access token is not valid"
-				state.lifxAccessToken = null
-			}
-			logResponse(response)
-			return response
-		}
-	} catch (groovyx.net.http.HttpResponseException e) {
-		logResponse(e.response)
-		return e.response
-	}
+    try {
+        httpGet(uri: apiURL(path), headers: apiRequestHeaders()) {response ->
+            if (response.status == 401) { // token is expired
+                log.warn "Access token is not valid"
+                state.lifxAccessToken = null
+            }
+            logResponse(response)
+            return response
+        }
+    } catch (groovyx.net.http.HttpResponseException e) {
+        logResponse(e.response)
+        return e.response
+    }
 }
 
 def apiPUT(path, body = [:]) {
-	try {
-		log.debug("Beginning API PUT: ${path}, ${body}")
-		httpPutJson(uri: apiURL(path), body: new groovy.json.JsonBuilder(body).toString(), headers: apiRequestHeaders(), ) {response ->
-			if (response.status == 401) { // token is expired
-				log.warn "Access token is not valid"
-				state.lifxAccessToken = null
-			}
-			logResponse(response)
-			return response
-		}
-	} catch (groovyx.net.http.HttpResponseException e) {
-		logResponse(e.response)
-		return e.response
-	}}
+    try {
+        log.debug("Beginning API PUT: ${path}, ${body}")
+        httpPutJson(uri: apiURL(path), body: new groovy.json.JsonBuilder(body).toString(), headers: apiRequestHeaders(), ) {response ->
+            if (response.status == 401) { // token is expired
+                log.warn "Access token is not valid"
+                state.lifxAccessToken = null
+            }
+            logResponse(response)
+            return response
+        }
+    } catch (groovyx.net.http.HttpResponseException e) {
+        logResponse(e.response)
+        return e.response
+    }
+}
 
 def devicesList(selector = '') {
-	logErrors([]) {
-		def resp = apiGET("/lights/${selector}")
-		if (resp.status == 200) {
-			return resp.data
-		} else if (resp.status == 401) {
-			log.warn "Access token is not valid"
-			state.lifxAccessToken = null
-		} else {
-			log.debug("No response from device list call. ${resp.status} ${resp.data}")
-			return []
-		}
-	}
+    logErrors([]) {
+        def resp = apiGET("/lights/${selector}")
+        if (resp.status == 200) {
+            return resp.data
+        } else if (resp.status == 401) {
+            log.warn "Access token is not valid"
+            state.lifxAccessToken = null
+        } else if (resp.status == 404 && resp.data?.error.startsWith('Could not find location_id') && selector != '') {
+            log.warn "Location is not valid"
+            def devices = devicesList()
+            devices.each { device ->
+                if (device.location.id != settings.selectedLocationId && getChildDevice(device.id)) {
+                    settings.selectedLocationId = device.location.id
+                    app.updateSetting("selectedLocationId", device.location.id)
+                }
+            }
+        } else {
+            String errMsg = "No response from device list call. ${resp.status} ${resp.data}"
+            log.debug(errMsg)
+            throw new java.lang.RuntimeException(errMsg)
+        }
+    }
 }
 
 Map locationOptions() {
@@ -403,8 +413,7 @@ def webhookCallback() {
     if (data) {
         updateDevicesFromResponse(data)
         [status: "ok", source: "smartApp"]
-    }
-    else {
+    } else {
         [status: "operation not defined", source: "smartApp"]
     }
 }
@@ -431,7 +440,7 @@ void updateDevicesFromResponse(devices) {
 
     children.findAll { !deviceIds.contains(it.deviceNetworkId) }.each {
         log.trace "deleting child device $it.label"
-        deleteChildDevice(it.deviceNetworkId, true)
+        deleteChildDevice(it.deviceNetworkId)
         changed = true
     }
 

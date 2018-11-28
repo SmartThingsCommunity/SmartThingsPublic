@@ -14,7 +14,8 @@
  *
  */
 metadata {
-    definition (name: "Simulated Dimmer Switch", namespace: "smartthings/testing", author: "SmartThings", runLocally: false) {
+    definition (name: "Simulated Dimmer Switch", namespace: "smartthings/testing", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: false, mnmn: "SmartThings", vid: "generic-dimmer") {
+        capability "Health Check"
         capability "Actuator"
         capability "Sensor"
 
@@ -26,6 +27,9 @@ metadata {
         command    "onPhysical"
         command    "offPhysical"
         command    "setLevelPhysical"
+
+        command    "markDeviceOnline"
+        command    "markDeviceOffline"
     }
 
     preferences {
@@ -36,8 +40,8 @@ metadata {
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#FFFFFF", nextState:"turningOn", defaultState: true
-                attributeState "turningOn", label:'Turning On', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#00A0DC", nextState:"turningOn"
-                attributeState "turningOff", label:'Turning Off', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#FFFFFF", nextState:"turningOff"
+                attributeState "turningOn", label:'Turning On', action:"switch.off", icon:"st.Home.home30", backgroundColor:"#FFFFFF", nextState:"turningOn"
+                attributeState "turningOff", label:'Turning Off', action:"switch.on", icon:"st.Home.home30", backgroundColor:"#00A0DC", nextState:"turningOff"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", action: "setLevel"
@@ -65,16 +69,22 @@ metadata {
             state "physicalLevel", action: "setLevelPhysical"
         }
 
-        standardTile("refresh", "device.switch", width: 1, height: 1, inactiveLabel: false, decoration: "flat") {
+        standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
             state "default", label: "",  action:"refresh.refresh", icon:"st.secondary.refresh"
         }
-        valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+        valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label: "Reset", action: "configure"
         }
 
-        main(["switch"])
-        details(["switch", "physicalLabel", "physicalOn", "physicalOff", "physicalLevelLabel", "physicalLevelSlider", "refresh", "reset"])
+        standardTile("deviceHealthControl", "device.healthStatus", decoration: "flat", width: 2, height: 2, inactiveLabel: false) {
+            state "online",  label: "ONLINE", backgroundColor: "#00A0DC", action: "markDeviceOffline", icon: "st.Health & Wellness.health9", nextState: "goingOffline", defaultState: true
+            state "offline", label: "OFFLINE", backgroundColor: "#E86D13", action: "markDeviceOnline", icon: "st.Health & Wellness.health9", nextState: "goingOnline"
+            state "goingOnline", label: "Going ONLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+            state "goingOffline", label: "Going OFFLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+        }
 
+        main(["switch"])
+        details(["switch", "physicalLabel", "physicalOn", "physicalOff", "physicalLevelLabel", "physicalLevelSlider", "deviceHealthControl", "refresh", "reset"])
     }
 }
 
@@ -97,7 +107,7 @@ def parse(String description) {
 
 def installed() {
     log.trace "Executing 'installed'"
-    initialize()
+    configure()
 }
 
 def updated() {
@@ -115,6 +125,12 @@ def refresh() {
 
 def configure() {
     log.trace "Executing 'configure'"
+    // this would be for a physical device when it gets a handler assigned to it
+
+    // for HealthCheck
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme: "untracked"].encodeAsJson(), displayed: false)
+    markDeviceOnline()
+
     initialize()
 }
 
@@ -143,6 +159,24 @@ def setLevel(value) {
 def setLevel(value, duration) {
     log.trace "Executing setLevel $value (ignoring duration)"
     setLevel(value)
+}
+
+def markDeviceOnline() {
+    setDeviceHealth("online")
+}
+
+def markDeviceOffline() {
+    setDeviceHealth("offline")
+}
+
+private setDeviceHealth(String healthState) {
+    log.debug("healthStatus: ${device.currentValue('healthStatus')}; DeviceWatch-DeviceStatus: ${device.currentValue('DeviceWatch-DeviceStatus')}")
+    // ensure healthState is valid
+    List validHealthStates = ["online", "offline"]
+    healthState = validHealthStates.contains(healthState) ? healthState : device.currentValue("healthStatus")
+    // set the healthState
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: healthState)
+    sendEvent(name: "healthStatus", value: healthState)
 }
 
 private initialize() {
@@ -181,7 +215,7 @@ private turnOff() {
     sendEvent(name: "switch", value: "off")
 }
 
-// Generate pretend physical events 
+// Generate pretend physical events
 private onPhysical() {
     log.trace "Executing 'onPhysical'"
     sendEvent(name: "switch", value: "on", type: "physical")
