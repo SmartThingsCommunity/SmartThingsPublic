@@ -17,8 +17,7 @@ metadata {
 	definition (name: "Griddy Wholesale Energy Price", namespace: "trentfoley", author: "Trent Foley") {
 		capability "Polling"
 		capability "Refresh"
-
-		attribute "price", "number"
+        capability "Energy Meter"
 	}
 
 
@@ -27,8 +26,8 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-    	valueTile("price", "device.price", canChangeIcon: true, icon: "st.Home.home1") {
-            state("price", label:'${currentValue}', unit:"¢",
+    	valueTile("energy", "device.energy", canChangeIcon: true, icon: "st.Home.home1") {
+            state("energy", label:'${currentValue}', unit:"¢",
                 backgroundColors:[
                     [value: 0, color: "#153591"],
                     [value: 1, color: "#1e9cbb"],
@@ -40,9 +39,9 @@ metadata {
                 ]
             )
         }
-        multiAttributeTile(name:"priceMulti", type:"generic", width:6, height:4) {
-            tileAttribute("device.price", key: "PRIMARY_CONTROL") {
-                attributeState "price", label:'${currentValue}¢', defaultState: true, backgroundColors:[
+        multiAttributeTile(name:"energyMulti", type:"generic", width:6, height:4) {
+            tileAttribute("device.energy", key: "PRIMARY_CONTROL") {
+                attributeState "energy", label:'${currentValue}¢', defaultState: true, backgroundColors:[
                     [value: 0, color: "#153591"],
                     [value: 1, color: "#1e9cbb"],
                     [value: 2, color: "#90d2a7"],
@@ -53,12 +52,12 @@ metadata {
                 ]
             }
         }
-        standardTile("refresh", "device.price", height: 3, width: 3, decoration: "flat") {
+        standardTile("refresh", "device.energy", height: 3, width: 3, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
-        main "price"
-        details(["priceMulti", "refresh"])
+        main "energy"
+        details(["energyMulti", "refresh"])
 	}
 }
 
@@ -73,7 +72,7 @@ def poll() {
 	
     def data = parent.pollChild(this)
 	if(data) {
-    	sendEvent(name: "price", value: data.price, unit: "¢")
+    	sendEvent(name: "energy", value: data.price, unit: "¢")
 	} else {
     	log.error "ERROR: Device connection removed? No data found for ${device.deviceNetworkId} after polling"
     }
