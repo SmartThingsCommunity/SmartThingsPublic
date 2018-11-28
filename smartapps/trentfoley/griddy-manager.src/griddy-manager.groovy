@@ -21,10 +21,8 @@ definition(
     category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png") {
-    appSetting "email"
-    appSetting "password"
-}
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
+)
 
 preferences {
     section("Griddy Auth") {
@@ -87,11 +85,24 @@ private def addDevice(dni) {
 
 // Poll Child is invoked from the Child Device itself as part of the Poll Capability
 def pollChild(child) {
+    def accessToken = ""
     def data = [:]
+    
+    httpPostJson([
+        uri: "${serverUrl}/api/v1/users/signin",
+        body: [
+            email: email,
+            password: password
+        ]
+    ]) { resp -> accessToken = resp.data.access_token }
 
-    data = [
-    	price: 9.5
-    ]
+    httpPostJson([
+    	uri: "${serverUrl}/api/v1/insights/getnow",
+        headers: [ authorization: "Bearer ${accessToken}" ],
+        body: [
+            settlement_point: "LZ_NORTH"
+        ]
+    ]) { resp -> data = [ price: Double.parseDouble(resp.data.now.price_ckwh) ] }
     
     return data
 }
