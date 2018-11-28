@@ -27,9 +27,22 @@ metadata {
 	}
 
 	tiles(scale: 2) {
+    	valueTile("price", "device.price", canChangeIcon: true, icon: "st.Home.home1") {
+            state("price", label:'${currentValue}', unit:"¢",
+                backgroundColors:[
+                    [value: 0, color: "#153591"],
+                    [value: 1, color: "#1e9cbb"],
+                    [value: 2, color: "#90d2a7"],
+                    [value: 3, color: "#44b621"],
+                    [value: 5, color: "#f1d801"],
+                    [value: 8, color: "#d04e00"],
+                    [value: 13, color: "#bc2323"]
+                ]
+            )
+        }
         multiAttributeTile(name:"priceMulti", type:"generic", width:6, height:4) {
             tileAttribute("device.price", key: "PRIMARY_CONTROL") {
-                attributeState "price", label:'${currentValue}', defaultState: true, backgroundColors:[
+                attributeState "price", label:'${currentValue}¢', defaultState: true, backgroundColors:[
                     [value: 0, color: "#153591"],
                     [value: 1, color: "#1e9cbb"],
                     [value: 2, color: "#90d2a7"],
@@ -43,6 +56,9 @@ metadata {
         standardTile("refresh", "device.price", height: 3, width: 3, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+        
+        main "price"
+        details(["priceMulti", "refresh"])
 	}
 }
 
@@ -57,7 +73,7 @@ def poll() {
 	
     def data = parent.pollChild(this)
 	if(data) {
-    	sendEvent(name: "price", value: data.price, unit: "c")
+    	sendEvent(name: "price", value: data.price, unit: "¢")
 	} else {
     	log.error "ERROR: Device connection removed? No data found for ${device.deviceNetworkId} after polling"
     }
