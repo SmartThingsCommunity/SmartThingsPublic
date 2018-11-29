@@ -68,8 +68,7 @@ def updated() {
 
 def initialize() {
 	def device = addDevice("griddy")
-	device.refresh()
-	// TODO: subscribe to attributes, devices, locations, etc.
+	device.initialize()
 }
 
 private def addDevice(dni) {
