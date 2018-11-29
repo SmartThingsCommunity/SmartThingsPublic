@@ -15,11 +15,9 @@
  */
 metadata {
 	definition (name: "Griddy Wholesale Energy Price", namespace: "trentfoley", author: "Trent Foley") {
-		capability "Polling"
 		capability "Refresh"
         capability "Energy Meter"
 	}
-
 
 	simulator {
 		// TODO: define status and reply messages here
@@ -61,24 +59,23 @@ metadata {
 	}
 }
 
+def initialize() {
+	log.debug "Executing 'initialize'"
+    runEvery5Minutes(refresh)
+}
+
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
 
-// handle commands
-def poll() {
-	log.debug "Executing 'poll'"
-	
+def refresh() {
+	log.debug "Executing 'refresh'"
+	    
     def data = parent.pollChild(this)
 	if(data) {
     	sendEvent(name: "energy", value: data.price, unit: "¢")
 	} else {
-    	log.error "ERROR: Device connection removed? No data found for ${device.deviceNetworkId} after polling"
+    	log.error "ERROR: Device connection removed? No data found for ${device.deviceNetworkId}"
     }
-}
-
-def refresh() {
-	log.debug "Executing 'refresh'"
-	poll()
 }
