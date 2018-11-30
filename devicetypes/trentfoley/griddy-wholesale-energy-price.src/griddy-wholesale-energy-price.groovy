@@ -72,7 +72,7 @@ def parse(String description) {
 def refresh() {
 	log.debug "Executing 'refresh'"
 	    
-    def data = parent.pollChild(this)
+    def data = parent.refreshChild(this)
 	if(data) {
     	sendEvent(name: "energy", value: data.price, unit: "¢")
 	} else {
