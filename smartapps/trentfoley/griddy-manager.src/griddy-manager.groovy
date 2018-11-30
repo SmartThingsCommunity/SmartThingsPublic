@@ -18,7 +18,7 @@ definition(
     namespace: "trentfoley",
     author: "Trent Foley",
     description: "Provisions a Griddy device handler and facilitates Web API communication with Griddy",
-    category: "My Apps",
+    category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
     iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png"
@@ -82,8 +82,7 @@ private def addDevice(dni) {
     return device
 }
 
-// Poll Child is invoked from the Child Device itself as part of the Poll Capability
-def pollChild(child) {
+def refreshChild(child) {
     def accessToken = ""
     def data = [:]
     
