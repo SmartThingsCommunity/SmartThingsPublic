@@ -1,5 +1,5 @@
 /**
- *  Zigbee Siren
+ *  Ozom Smart Siren
  *
  *  Copyright 2018 Samsung SRBR
  *
@@ -68,11 +68,7 @@ def parse(String description) {
 
 	Map map = zigbee.getEvent(description)
 	if (!map) {
-		if (description?.startsWith('zone status')) {
-			map = parseIasMessage(zigbee.parseZoneStatus(description))
-		} else if (description?.startsWith('zone report')){
-			map = parseIasMessage(parseZoneReport(description))
-		} else if (description?.startsWith('enroll request')) {
+		if (description?.startsWith('enroll request')) {
 			List cmds = zigbee.enrollResponse()
 			log.debug "enroll response: ${cmds}"
 			return cmds
@@ -106,25 +102,6 @@ def parse(String description) {
 	return results
 }
 
-private Map parseIasMessage(ZoneStatus zoneStatus) {
-	Map resultMap = [name: 'DeviceWatch-DeviceStatus']
-
-	if(zoneStatus.isAcSet()) {
-		turnOffAlarmTile()
-		resultMap << [value: 'offline', description: 'Lost power']
-	} else {
-		resultMap << [value: 'online', description: 'Power restored']
-	}
-	return resultMap
-}
-
-private ZoneStatus parseZoneReport(String description) {
-	def segments = description.split(" ")
-	String zoneReportValueAsString = segments[-1]
-	Integer zoneReportValue = Integer.parseInt(zoneReportValueAsString, 16)
-	return new ZoneStatus(zoneReportValue)
-}
-
 private sendCheckIntervalEvent() {
 	sendEvent(name: "checkInterval", value: 30 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
@@ -146,15 +123,15 @@ def configure() {
 
 def siren() {	
 	log.debug "sending siren on"
-	
+
 	state.alarmOn = true
 	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
-	
+
 	state.lastDuration = warningDuration
-	
+
 	// start warning, burglar mode, no strobe, siren very high
 	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "13", DataType.pack(warningDuration, DataType.UINT16), "00", "00")
-	
+
 }
 
 def off() {
