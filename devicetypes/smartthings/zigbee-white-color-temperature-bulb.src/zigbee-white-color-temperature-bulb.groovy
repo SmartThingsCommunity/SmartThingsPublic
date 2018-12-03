@@ -26,7 +26,7 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
-        capability "Light"
+		capability "Light"
 
         attribute "colorName", "string"
 
