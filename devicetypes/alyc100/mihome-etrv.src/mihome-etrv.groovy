@@ -145,6 +145,7 @@ command "test"
 //refresh
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
 			state ("refresh", label:'refresh', action:"refresh", icon:"st.secondary.refresh-icon", defaultState: true)
+            state ("bad", label:'bad refresh', action:"refresh", icon:"st.secondary.refresh-icon", backgroundColor: "#bc2323")
 		}
 //set boost time
         controlTile("boostSliderControl", "device.boostLength", "slider", height: 2, width: 2, inactiveLabel: false, range:"(30..120)") {
@@ -445,16 +446,17 @@ def poll() {
 		def dvkey1 = resppar.data.id.findIndexOf { it == (dvid) }
 
 		//log.debug "key only data = ${resppar.data[(dvkey1)]}"
-             
+        log.debug "mihome index - '$dvkey1', name - ${resppar.data[(dvkey1)].label}"
     	state.temperature = resppar.data[(dvkey1)].last_temperature
     	state.heatingSetpoint = resppar.data[(dvkey1)].target_temperature
     	state.batteryVoltage = resppar.data[(dvkey1)].voltage
     	state.updatedat = resppar.data[(dvkey1)].parent_device_last_seen_at // .updated_at not used as this only updates hourly for some reason
+        sendEvent(name: "refresh", value: "refresh", displayed: false)
     }
 
 	else {
-    sendEvent(name: "refresh", value: " ", descriptionText: "The device failed POLL")
-    log.warn "POLL - ${device} failed POLL"
+    	sendEvent(name: "refresh", value: "bad", descriptionText: "The device failed POLL", isStateChange: true)
+    	log.warn "POLL - ${device} failed POLL"
     }
     
     checkin()

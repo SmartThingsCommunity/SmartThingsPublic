@@ -52,18 +52,19 @@ metadata {
                	attributeState ("default", label:'${currentValue}')
            	}
         }
-        standardTile("refreshTile", "capability.refresh", width: 2, height: 2) {
-        	state ("default", label:'Refresh', action:"refresh", icon:"st.secondary.refresh")
+        standardTile("refresh", "device.refresh", width: 2, height: 2) {
+        	state ("default", label:'Refresh', action:"refresh", icon:"st.secondary.refresh", defaultState: true)
+            state ("bad", label:'bad Refresh', action:"refresh", icon:"st.secondary.refresh", backgroundColor:"#e86d13")
     	}
-        standardTile("onButton", "command.switch", width: 2, height: 2) { //was capability.Switch
+        standardTile("onButton", "capability.switch", width: 2, height: 2) { //was capability.Switch
 			state ("default", label: 'On', action:"on", icon:"st.Home.home30")
         }
-        standardTile("offButton", "command.switch", width: 2, height: 2) { //was capability.Switch
+        standardTile("offButton", "capability.switch", width: 2, height: 2) { //was capability.Switch
 			state ("default", label: 'Off', action:"off", icon:"st.Home.home30")
         }
         
         main "switch"
-        details(["switch", "onButton", "offButton", "refreshTile"])
+        details(["switch", "onButton", "offButton", "refresh"])
 	}
    
 	preferences {
@@ -111,11 +112,13 @@ def poll() {
   		def dvid = device.deviceNetworkId.toInteger()
 		def dvkey1 = resppar.data.id.findIndexOf { it == (dvid) }
 							//	log.debug "ALL $dvid id '$dvkey1' - ${resppar.data[(dvkey1)]}"
+        log.debug "mihome index - '$dvkey1', name - ${resppar.data[(dvkey1)].label}"
     	state.Switch = resppar.data[(dvkey1)].power_state == 1 ? "on" : "off"//resp.data.data.power_state == 1 ? "on" : "off"
     	state.updatedat = resppar.data[(dvkey1)].parent_device_last_seen_at
+        sendEvent(name: "refresh", value: "default", displayed: false)
 	}
     else {
-    	sendEvent(name: "refreshTile", value: " ", descriptionText: "The device failed POLL")
+    	sendEvent(name: "refresh", value: "bad", descriptionText: "The device failed POLL", isStateChange:true)
         log.warn " POLL - ${device} failed POLL"
     }
     checkin()

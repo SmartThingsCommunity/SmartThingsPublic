@@ -32,6 +32,7 @@ metadata {
 			tileAttribute ("device.motion", key: "PRIMARY_CONTROL") {
 				attributeState "active", label:'Motion/Open', backgroundColor: "#e86d13", icon: "st.motion.motion.inactive" 
 				attributeState "inactive", label:'Still/Closed', backgroundColor:"#ffffff", icon: "st.motion.motion.inactive"
+                attributeState "offline", label:'${name}', icon:"st.switches.switch.off", backgroundColor:"#e86d13"
 			}
             tileAttribute("device.lastCheckin", key: "SECONDARY_CONTROL") {
                	attributeState("default", label:'${currentValue}')
@@ -39,6 +40,7 @@ metadata {
     	}
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+            state "bad", label:'bad Refresh', action:"refresh", icon:"st.secondary.refresh", backgroundColor:"#e86d13"
         }
          main "motion"
         details(["motion", "refresh"])
@@ -94,7 +96,7 @@ def poll() {
     state.updatedat = resppar.data[(dvkey1)].parent_device_last_seen_at
 	}
     else {
-   	sendEvent(name: "refresh", value: " ", descriptionText: "The device failed POLL")
+   	sendEvent(name: "refresh", value: "bad", descriptionText: "The device failed POLL", isStateChange: true)
         log.warn " POLL - ${device} failed POLL"
     }
     checkin()
