@@ -26,7 +26,6 @@ metadata {
 		capability "Sensor"
 		capability "Switch"
 		capability "Health Check"
-		capability "Tamper Alert"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
 		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "NEO Coolcam Siren Alarm"
@@ -51,7 +50,7 @@ metadata {
 
 	tiles {
 		standardTile("alarm", "device.alarm", width: 2, height: 2) {
-			state "off", label: 'off', action: 'alarm.strobe', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
+			state "off", label: 'off', action: 'alarm.both', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
 			state "both", label: 'alarm!', action: 'alarm.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#e86d13"
 		}
 		standardTile("off", "device.alarm", inactiveLabel: false, decoration: "flat") {
@@ -62,10 +61,6 @@ metadata {
 		}
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
-		}
-		valueTile("tamper", "device.tamper", decoration: "flat") {
-			state "clear", label: 'tamper clear', backgroundColor: "#ffffff"
-			state "detected", label: 'tampered', backgroundColor: "#ff0000"
 		}
 		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
 			state "configure", label: '', action: "configuration.configure", icon: "st.secondary.configure"
@@ -80,26 +75,26 @@ metadata {
 			input name: "comfortLED", type: "number", title: "Comfort LED (0-25 x 10 sec.)", range: "0..25"
 			// defaultValue: 0
 			input name: "tamper", type: "bool", title: "Tamper alert"
-			// defaultValue: true
+			// defaultValue: false
 		}
 
 		main "alarm"
-		details(["alarm", "off", "refresh", "tamper", "battery", "configure"])
+		details(["alarm", "off", "refresh", "battery", "configure"])
 	}
 }
 
 def installed() {
 	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	sendEvent(name: "tamper", value: "clear", displayed: false)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	initialize()
 }
 
 def updated() {
 	log.debug "updated()"
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	//sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
 }
 
@@ -120,7 +115,7 @@ def initialize() {
 	if (!device.currentState("alarm")) {
 		cmds << secure(zwave.basicV1.basicGet())
 		if (isYale()) {
-			cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
+			cmds << secure(zwave.switchBinaryV1.switchBinaryGet())
 		}
 	}
 	if (!device.currentState("battery")) {
@@ -159,9 +154,9 @@ def getConfigurationCommands() {
 		cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [10]))
 	} else if (isYale()) {
 		if (!state.alarmLength) state.alarmLength = 10 // default value
-		if (!state.alarmLEDflash) state.alarmLEDflash = 1 // default value
+		if (!state.alarmLEDflash) state.alarmLEDflash = true // default value
 		if (!state.comfortLED) state.comfortLED = 0 // default value
-		if (!state.tamper) state.tamper = 1 // default value
+		if (!state.tamper) state.tamper = false // default value
 
 		log.debug "settings: ${settings.inspect()}"
 		log.debug "state: ${state.inspect()}"
@@ -169,7 +164,7 @@ def getConfigurationCommands() {
 		Short alarmLength = (settings.alarmLength as Short) ?: 10
 		Boolean alarmLEDflash = (settings.alarmLEDflash as Boolean) == null ? true : settings.alarmLEDflash
 		Short comfortLED = (settings.comfortLED as Short) ?: 0
-		Boolean tamper = (settings.tamper as Boolean) == null ? true : settings.tamper
+		Boolean tamper = (settings.tamper as Boolean) == null ? false : settings.tamper
 
 		if (alarmLength != state.alarmLength || alarmLEDflash != state.alarmLEDflash || comfortLED != state.comfortLED || tamper != state.tamper) {
 			state.alarmLength = alarmLength
@@ -201,6 +196,7 @@ def on() {
 	log.debug "sending on"
 	def cmds = []
 	cmds << secure(zwave.basicV1.basicSet(value: 0xFF))
+	cmds << "delay 3000"
 	cmds << secure(zwave.basicV1.basicGet())
 
 	// ICP-5323: Zipato siren sometimes fails to make sound for full duration
@@ -211,7 +207,7 @@ def on() {
 		cmds << "delay 63000"
 		cmds << secure(zwave.basicV1.basicGet())
 	} else if (isYale()) {
-		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
+		cmds << secure(zwave.switchBinaryV1.switchBinaryGet())
 	}
 	return cmds
 }
@@ -220,12 +216,17 @@ def off() {
 	log.debug "sending off"
 	def cmds = []
 	cmds << secure(zwave.basicV1.basicSet(value: 0x00))
+	cmds << "delay 3000"
 	cmds << secure(zwave.basicV1.basicGet())
 
 	if (isYale()) {
-		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
+		cmds << secure(zwave.switchBinaryV1.switchBinaryGet())
 	}
 	return cmds
+}
+
+def siren() {
+	on()
 }
 
 def strobe() {
@@ -250,7 +251,7 @@ def refresh() {
 	cmds << secure(zwave.basicV1.basicGet())
 	cmds << secure(zwave.batteryV1.batteryGet())
 	if (isYale()) {
-		cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
+		cmds << secure(zwave.switchBinaryV1.switchBinaryGet())
 	}
 	return delayBetween(cmds, 2000)
 }
@@ -292,7 +293,7 @@ private secure(physicalgraph.zwave.Command cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	def encapsulatedCommand
 	if (isYale()) {
-		encapsulatedCommand = cmd.encapsulatedCommand([0x59: 1, 0x2B: 1, 0x71: 3, 0x85: 2, 0x25: 2, 0x7A: 1])
+		encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1])
 	}
 	log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
@@ -301,22 +302,31 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	def switchValue = cmd.value ? "on" : "off"
+	handleSwitchValue(cmd.value)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
+	handleSwitchValue(cmd.value)
+}
+
+def handleSwitchValue(value) {
+	def result = []
+	def switchValue = value ? "on" : "off"
 	def alarmValue
-	if (cmd.value == 0) {
+	if (value == 0) {
 		alarmValue = "off"
-	} else if (cmd.value <= 33) {
+	} else if (value <= 33) {
 		alarmValue = "strobe"
-	} else if (cmd.value <= 66) {
+	} else if (value <= 66) {
 		alarmValue = "siren"
 	} else {
 		alarmValue = "both"
 	}
-	[
-		createEvent([name: "switch", value: switchValue, type: "digital", displayed: false]),
-		createEvent([name: "alarm", value: alarmValue, type: "digital"])
-	]
+	result << createEvent([name: "switch", value: switchValue, displayed: true])
+	result << createEvent([name: "alarm", value: alarmValue, displayed: true])
+	result
 }
+
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [name: "battery", unit: "%"]
@@ -333,33 +343,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def isActive = false
 	def result = []
-
-	if (cmd.notificationType == 0x07) { // Burglar notification
-		def map = [name: "tamper", value: "detected"]
-		map.data = [sirenName: deviceName]
-		switch (cmd.event) {
-			case 0:
-				map.value = "clear"
-				map.descriptionText = "Tamper alert cleared"
-				isActive = false
-				break
-			case 1:
-			case 2:
-				map.descriptionText = "Intrusion attempt detected"
-				isActive = true
-				break
-			case 3:
-				map.descriptionText = "Covering removed"
-				isActive = true
-				unschedule(clearTamper, [forceForLocallyExecuting: true])
-				runIn(10, clearTamper, [forceForLocallyExecuting: true])
-				break
-			default:
-				isActive = true
-				map.descriptionText = "Invalid code"
-		}
-		result << createEvent(map)
-	} else if (cmd.notificationType == 0x0E) { //Siren notification
+	if (cmd.notificationType == 0x0E) { //Siren notification
 		switch (cmd.event) {
 			case 0x00: // idle
 				isActive = false
@@ -368,10 +352,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				isActive = true
 				break
 		}
+		result << createEvent([name: "switch", value: isActive ? "on" : "off", displayed: true])
+		result << createEvent([name: "alarm", value: isActive ? "both" : "off", displayed: true])
 	}
-
-	result << createEvent([name: "switch", value: isActive ? "on" : "off", displayed: false])
-	result << createEvent([name: "alarm", value: isActive ? "both" : "off"])
 	result
 }
 
@@ -390,10 +373,6 @@ private Boolean secondsPast(timestamp, seconds) {
 		}
 	}
 	return (new Date().time - timestamp) > (seconds * 1000)
-}
-
-def clearTamper() {
-	sendEvent(name: "tamper", value: "clear")
 }
 
 def isYale() {
