@@ -26,7 +26,6 @@ metadata {
 		capability "Sensor"
 		capability "Switch"
 		capability "Health Check"
-		capability "Tamper Alert"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
 		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "NEO Coolcam Siren Alarm"
@@ -63,10 +62,6 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-		valueTile("tamper", "device.tamper", decoration: "flat") {
-			state "clear", label: 'tamper clear', backgroundColor: "#ffffff"
-			state "detected", label: 'tampered', backgroundColor: "#ff0000"
-		}
 		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
 			state "configure", label: '', action: "configuration.configure", icon: "st.secondary.configure"
 		}
@@ -80,11 +75,11 @@ metadata {
 			input name: "comfortLED", type: "number", title: "Comfort LED (0-25 x 10 sec.)", range: "0..25"
 			// defaultValue: 0
 			input name: "tamper", type: "bool", title: "Tamper alert"
-			// defaultValue: true
+			// defaultValue: false
 		}
 
 		main "alarm"
-		details(["alarm", "off", "refresh", "tamper", "battery", "configure"])
+		details(["alarm", "off", "refresh", "battery", "configure"])
 	}
 }
 
@@ -92,14 +87,14 @@ def installed() {
 	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	sendEvent(name: "tamper", value: "clear", displayed: false)
 	initialize()
 }
 
 def updated() {
 	log.debug "updated()"
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	//sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
 }
 
@@ -121,7 +116,6 @@ def initialize() {
 		cmds << secure(zwave.basicV1.basicGet())
 		if (isYale()) {
 			cmds << secure(zwave.switchBinaryV1.switchBinaryGet())
-			cmds << secure(zwave.alarmV2.alarmGet(zwaveAlarmType: 0x07))
 		}
 	}
 	if (!device.currentState("battery")) {
@@ -160,9 +154,9 @@ def getConfigurationCommands() {
 		cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [10]))
 	} else if (isYale()) {
 		if (!state.alarmLength) state.alarmLength = 10 // default value
-		if (!state.alarmLEDflash) state.alarmLEDflash = 1 // default value
+		if (!state.alarmLEDflash) state.alarmLEDflash = true // default value
 		if (!state.comfortLED) state.comfortLED = 0 // default value
-		if (!state.tamper) state.tamper = 0 // default value
+		if (!state.tamper) state.tamper = false // default value
 
 		log.debug "settings: ${settings.inspect()}"
 		log.debug "state: ${state.inspect()}"
