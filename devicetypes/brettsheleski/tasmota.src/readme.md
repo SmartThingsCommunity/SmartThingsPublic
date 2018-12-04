@@ -85,13 +85,13 @@ See the table below of devices this device handler should work with.
 | Sonoff SV   | Should Work (Untested)   | | |
 | Sonoff TH | | | |
 | Sonoff Dual | | | |
-| Sonoff 4CH | | | |
+| Sonoff 4CH | Working | [@Sym-Link](https://github.com/Sym-Link) | |
 | S20 Socket | | | |
 | Slampher | | | |
 | Sonoff Touch | | | |
 | Sonoff LED | | | |
 | Sonoff 1 Channel | | | |
-| 4CH | | | |
+| 4CH | Working | [@Sym-Link](https://github.com/Sym-Link) | |
 | Motor C/AC | | | |
 | ElectroDragon | | | |
 | EXS Relay | | | |
@@ -117,7 +117,7 @@ See the table below of devices this device handler should work with.
 | KMC 70011 | | | |
 | Arilux LC01 | | | |
 | Arilux LC11 | | | |
-| Sonoff Dual R2 | | | |
+| Sonoff Dual R2 | Working | [@Sym-Link](https://github.com/Sym-Link) | |
 | Arilux LC06 | | | |
 | Sonoff S31 | | | |
 | Sonoff iFan02 | Working | [@BrettSheleski](https://github.com/BrettSheleski)  | |
