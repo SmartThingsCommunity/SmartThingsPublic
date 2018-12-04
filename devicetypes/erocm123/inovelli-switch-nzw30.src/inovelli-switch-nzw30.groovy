@@ -271,6 +271,10 @@ void childSetLevel(String dni, value) {
 	sendHubCommand(cmds, 1000)
 }
 
+private channelNumber(String dni) {
+    dni.split("-ep")[-1] as Integer
+}
+
 void childOn(String dni) {
     log.debug "childOn($dni)"
     childSetLevel(dni, 99)
