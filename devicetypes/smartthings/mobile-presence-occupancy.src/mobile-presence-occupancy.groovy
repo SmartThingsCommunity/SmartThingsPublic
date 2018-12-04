@@ -71,11 +71,10 @@ private String parseName(String description) {
 		case "presence: 0": 
 		case "presence: 1": 
  			return "presence"
-        	case "occupancy: 0": 
-	        case "occupancy: 1": 
-	        	return "occupancy"
+		case "occupancy: 0": 
+		case "occupancy: 1": 
+ 			return "occupancy"
 	}
-	null
 }
 
 private String parseValue(String description) {
@@ -94,8 +93,8 @@ private parseDescriptionText(String linkText, String value, String description) 
 	switch(value) {
 		case "not present": return "{{ linkText }} has left"
 		case "present": return "{{ linkText }} has arrived"
-		case "unoccupied": return "{{ linkText }} has unoccupied"
-		case "occupied": return "{{ linkText }} has occupied"
+		case "unoccupied": return "{{ linkText }} is away"
+		case "occupied": return "{{ linkText }} is inside"
 		default: return value
 	}
 }
@@ -105,8 +104,8 @@ private getState(String value) {
 	switch(value) {
 		case "not present": return "left"
 		case "present": return "arrived"
-		case "unoccupied": return "unoccupied"
-		case "occupied": return "occupied"
+		case "unoccupied": return "away"
+		case "occupied": return "inside"
 		default: return value
 	}
 }

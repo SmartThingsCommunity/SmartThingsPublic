@@ -19,6 +19,7 @@ metadata {
         capability "Battery"
         capability "Configuration"
         capability "Power Source"
+        capability "Health Check"
         capability "Refresh"
         capability "Valve"
 
@@ -139,4 +140,12 @@ def refresh() {
 def configure() {
     log.debug "Configuring Reporting and Bindings."
     refresh()
+}
+
+def installed() {
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+def ping() {
+    zigbee.onOffRefresh()
 }
