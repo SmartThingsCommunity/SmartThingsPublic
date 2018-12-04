@@ -351,7 +351,10 @@ def zwaveEvent(DoorLockOperationReport cmd) {
 	// DoorLockOperationReport is called when trying to read the lock state or when the lock is locked/unlocked from the DTH or the smart app
 	def map = [ name: "lock" ]
 	map.data = [ lockName: device.displayName ]
-	if (cmd.doorLockMode == 0xFF) {
+	if (isKeyweLock()) {
+		map.value = cmd.doorCondition >> 1 ? "unlocked" : "locked"
+		map.descriptionText = cmd.doorCondition >> 1 ? "Unlocked" : "Locked"
+	} else if (cmd.doorLockMode == 0xFF) {
 		map.value = "locked"
 		map.descriptionText = "Locked"
 	} else if (cmd.doorLockMode >= 0x40) {
@@ -1739,6 +1742,21 @@ private isSamsungLock() {
 	if ("022E" == zwaveInfo.mfr) {
 		if ("Samsung" != getDataValue("manufacturer")) {
 			updateDataValue("manufacturer", "Samsung")
+		}
+		return true
+	}
+	return false
+}
+
+/**
+ * Utility function to check if the lock manufacturer is KeyWe
+ *
+ * @return true if the lock manufacturer is KeyWe, else false
+ */
+private isKeyweLock() {
+	if ("037B" == zwaveInfo.mfr) {
+		if ("Keywe" != getDataValue("manufacturer")) {
+			updateDataValue("manufacturer", "Keywe")
 		}
 		return true
 	}
