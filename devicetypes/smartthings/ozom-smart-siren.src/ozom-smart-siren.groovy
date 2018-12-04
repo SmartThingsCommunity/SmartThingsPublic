@@ -21,6 +21,7 @@ metadata {
 	definition(name: "Ozom Smart Siren", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-siren-2", ocfDeviceType: "x.com.st.d.siren") {
 		capability "Actuator"
 		capability "Alarm"
+		capability "Switch"
 		capability "Configuration"
 		capability "Health Check"
 
@@ -51,16 +52,18 @@ private getCOMMAND_DEFAULT_RESPONSE() { 0x0B }
 
 def turnOffAlarmTile(){
 	sendEvent(name: "alarm", value: "off")
+	sendEvent(name: "switch", value: "off")
 }
 
 def turnOnAlarmTile(){
 	sendEvent(name: "alarm", value: "siren")
+	sendEvent(name: "switch", value: "on")
 }
 
 def installed() {
 	sendCheckIntervalEvent()
 	state.maxDuration = DEFAULT_MAX_DURATION
-	turnOffAlarmTile()	
+	turnOffAlarmTile()
 }
 
 def parse(String description) {
@@ -121,21 +124,24 @@ def configure() {
 	return cmds	
 }
 
-def siren() {	
-	log.debug "sending siren on"
+def siren() {
+	log.debug "siren()"
+	on()
+}
+
+def on() {
+	log.debug "on()"
 
 	state.alarmOn = true
 	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
-
 	state.lastDuration = warningDuration
 
 	// start warning, burglar mode, no strobe, siren very high
 	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "13", DataType.pack(warningDuration, DataType.UINT16), "00", "00")
-
 }
 
 def off() {
-	log.debug "sending siren off"
+	log.debug "off()"
 
 	state.alarmOn = false
 	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "00", "0000", "00", "00")
