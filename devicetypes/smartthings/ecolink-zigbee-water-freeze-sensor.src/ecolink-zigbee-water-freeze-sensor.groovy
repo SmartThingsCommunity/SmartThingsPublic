@@ -75,6 +75,7 @@ private getDEVICE_CHECK_IN_INTERVAL_VAL_INT() { 30 * 60 }
 
 def installed() {
 	sendEvent(name: "water", value: "dry", displayed: false)
+	sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	refresh()
 }
 
