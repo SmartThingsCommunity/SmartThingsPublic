@@ -92,6 +92,8 @@ def initialize() {
     }
     
     requestStatus()
+    
+    runEvery1Minute(requestStatus)
 }
 
 def contactHandler(evt) {

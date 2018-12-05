@@ -131,8 +131,10 @@ def refreshAccessToken() {
     }
 }
 
-private authorizedHttpRequest(path, method, Closure closure, attempt = 0) {
-    log.debug "authorizedHttpRequest ${path} attempt ${attempt}"
+private authorizedHttpRequest(Map options = [:], String path, String method, Closure closure) {
+    def attempt = options.attempt ?: 0
+    
+    log.debug "authorizedHttpRequest ${method} ${path} attempt ${attempt}"
     try {
     	def requestParameters = [
             uri: serverUrl,
@@ -146,7 +148,13 @@ private authorizedHttpRequest(path, method, Closure closure, attempt = 0) {
     	if (method == "GET") {
             httpGet(requestParameters) { resp -> closure(resp) }
         } else if (method == "POST") {
-        	httpPost(requestParameters) { resp -> closure(resp) }
+        	if (options.body) {
+            	requestParameters["body"] = options.body
+                log.debug "authorizedHttpRequest body: ${options.body}"
+                httpPostJson(requestParameters) { resp -> closure(resp) }
+            } else {
+        		httpPost(requestParameters) { resp -> closure(resp) }
+            }
         } else {
         	log.error "Invalid method ${method}"
         }
@@ -154,10 +162,12 @@ private authorizedHttpRequest(path, method, Closure closure, attempt = 0) {
         if (e.response?.data?.status?.code == 14) {
         	if (attempt < 3) {
                 refreshAccessToken()
-                authorizedHttpRequest(path, mehod, closure, attempt++)
+                authorizedHttpRequest(path, mehod, closure, body: options.body, attempt: attempt++)
             } else {
             	log.error "Failed after 3 attempts to perform request: ${path}"
             }
+        } else {
+        	log.error "Request failed for path: ${path}.  ${e.response?.data}"
         }
     }
 }
@@ -229,9 +239,11 @@ private removeNoLongerSelectedChildDevices() {
 
 private transformVehicleResponse(resp) {
 	return [
-        vehicleState: resp.data.response.state,
-        motion: resp.data.response.in_service ? "active" : "inactive",
-        vin: resp.data.response.vin
+        state: resp.data.response.state,
+        motion: "inactive",
+        speed: 0,
+        vin: resp.data.response.vin,
+        thermostatMode: "off"
     ]
 }
 
@@ -239,13 +251,43 @@ def refresh(child) {
     def data = [:]
 	def id = child.device.deviceNetworkId
     authorizedHttpRequest("/api/1/vehicles/${id}", "GET", { resp ->
-    	data = transformVehicleResponse(resp)
+        data = transformVehicleResponse(resp)
     })
     
-    if (data.vehicleState == "online") {
+    if (data.state == "online") {
     	authorizedHttpRequest("/api/1/vehicles/${id}/vehicle_data", "GET", { resp ->
+            def driveState = resp.data.response.drive_state
+            def chargeState = resp.data.response.charge_state
+            def vehicleState = resp.data.response.vehicle_state
+            def climateState = resp.data.response.climate_state
+            
+            data.speed = driveState.speed ? driveState.speed : 0
+            data.motion = data.speed > 0 ? "active" : "inactive"            
+            data.thermostatMode = climateState.is_climate_on ? "auto" : "off"
+            
             data["chargeState"] = [
-                battery: resp.data.response.charge_state.battery_level
+                battery: chargeState.battery_level,
+                batteryRange: chargeState.battery_range,
+                chargingState: chargeState.charging_state
+            ]
+            
+            data["driveState"] = [
+            	latitude: driveState.latitude,
+                longitude: driveState.longitude,
+                method: driveState.native_type,
+                heading: driveState.heading,
+                lastUpdateTime: convertEpochSecondsToDate(driveState.gps_as_of)
+            ]
+            
+            data["vehicleState"] = [
+            	presence: vehicleState.homelink_nearby ? "present" : "not present",
+                lock: vehicleState.locked ? "locked" : "unlocked",
+                odometer: vehicleState.odometer
+            ]
+            
+            data["climateState"] = [
+            	temperature: celciusToFarenhiet(climateState.inside_temp),
+                thermostatSetpoint: celciusToFarenhiet(climateState.driver_temp_setting)
             ]
         })
     }
@@ -253,12 +295,60 @@ def refresh(child) {
     return data
 }
 
+private celciusToFarenhiet(dC) {
+	return dC * 9/5 + 32
+}
+
+private farenhietToCelcius(dF) {
+	return (dF - 32) * 5/9
+}
+
 def wake(child) {
-	def data = [:]
 	def id = child.device.deviceNetworkId
+    def data = [:]
     authorizedHttpRequest("/api/1/vehicles/${id}/wake_up", "POST", { resp ->
     	data = transformVehicleResponse(resp)
     })
-    
     return data
+}
+
+private executeApiCommand(Map options = [:], child, String command) {
+    def result = false
+    authorizedHttpRequest(options, "/api/1/vehicles/${child.device.deviceNetworkId}/command/${command}", "POST", { resp ->
+    	result = resp.data.result
+    })
+    return result
+}
+
+def lock(child) {
+	return executeApiCommand(child, "door_lock")
+}
+
+def unlock(child) {
+	return executeApiCommand(child, "door_unlock")
+}
+
+def climateAuto(child) {
+	return executeApiCommand(child, "auto_conditioning_start")
+}
+
+def climateOff(child) {
+	return executeApiCommand(child, "auto_conditioning_stop")
+}
+
+def setThermostatSetpoint(child, setpoint) {
+	def setpointCelcius = farenhietToCelcius(setpoint)
+    return executeApiCommand(child, "set_temps", body: [driver_temp: setpointCelcius, passenger_temp: setpointCelcius])
+}
+
+def startCharge(child) {
+	return executeApiCommand(child, "charge_start")
+}
+
+def stopCharge(child) {
+	return executeApiCommand(child, "charge_stop")
+}
+
+def openTrunk(child, whichTrunk) {
+	return executeApiCommand(child, "actuate_trunk", body: [which_trunk: whichTrunk])
 }
