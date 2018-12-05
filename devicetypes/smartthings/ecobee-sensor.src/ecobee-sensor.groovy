@@ -14,8 +14,10 @@
  *
  *	Author: SmartThings
  */
+import groovy.json.JsonOutput
 metadata {
 	definition (name: "Ecobee Sensor", namespace: "smartthings", author: "SmartThings") {
+		capability "Health Check"
 		capability "Sensor"
 		capability "Temperature Measurement"
 		capability "Motion Sensor"
@@ -25,7 +27,7 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
       			tileAttribute ("device.temperature", key: "PRIMARY_CONTROL") {
-			  	attributeState "temperature", label:'${currentValue}°',
+			  	attributeState "temperature", label:'${currentValue}°', icon: "st.alarm.temperature.normal",
 					backgroundColors:[
 						// Celsius
 						[value: 0, color: "#153591"],
@@ -61,13 +63,30 @@ metadata {
 	}
 }
 
-def refresh() {
-	log.debug "refresh called"
-	poll()
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+	updateDataValue("EnrolledUTDH", "true")
 }
 
-void poll() {
-	log.debug "Executing 'poll' using parent SmartApp"
-	parent.pollChild()
+void installed() {
+	initialize()
+}
 
+def updated() {
+	log.debug "updated()"
+	parent.setSensorName(device.label, device.deviceNetworkId)
+	initialize()
+}
+
+// Called when the DTH is uninstalled, is this true for cirrus/gadfly integrations?
+// Informs parent to purge its associated data
+def uninstalled() {
+	log.debug "uninstalled() parent.purgeChildDevice($device.deviceNetworkId)"
+	// purge DTH from parent
+	parent?.purgeChildDevice(this)
+}
+
+def refresh() {
+	log.debug "refresh, calling parent poll"
+	parent.poll()
 }

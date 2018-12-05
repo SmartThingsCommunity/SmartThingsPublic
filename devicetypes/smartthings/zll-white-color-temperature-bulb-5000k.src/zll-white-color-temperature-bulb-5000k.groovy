@@ -11,12 +11,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-import groovy.transform.Field
-
-@Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
-    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.023.00001', executeCommandsLocally: true) {
 
         capability "Actuator"
         capability "Color Temperature"
@@ -28,9 +25,18 @@ metadata {
         capability "Health Check"
 
         attribute "colorName", "string"
-        command "setGenericName"
 
         fingerprint profileId: "C05E", deviceId: "0220", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300", outClusters: "0019", manufacturer: "Eaton", model: "Halo_RL5601", deviceJoinName: "Halo RL56"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RS 128 T", deviceJoinName: "innr Smart Spot (Tunable White)"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 178 T", deviceJoinName: "innr Smart Bulb (Tunable White)"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 WS clear 950lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb GU10 WS 400lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E12 WS opal 400lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 WS opal 980lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS clear 950lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E14 WS opal 400lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS opal 980lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 148 T", deviceJoinName: "innr Smart Bulb (Tunable White)"
     }
 
     // UI tile definitions
@@ -78,6 +84,7 @@ def parse(String description) {
     if (event) {
         if (event.name == "colorTemperature") {
             event.unit = "K"
+            setGenericName(event.value)
         }
         sendEvent(event)
     }
@@ -123,19 +130,19 @@ def ping() {
 
 def healthPoll() {
     log.debug "healthPoll()"
-    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
+    def cmds = poll()
     cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
 }
 
 def configureHealthCheck() {
     Integer hcIntervalMinutes = 12
-    if (!hasConfiguredHealthCheck) {
+    if (!state.hasConfiguredHealthCheck) {
         log.debug "Configuring Health Check, Reporting"
-        unschedule("healthPoll")
-        runEvery5Minutes("healthPoll")
+        unschedule("healthPoll", [forceForLocallyExecuting: true])
+        runEvery5Minutes("healthPoll", [forceForLocallyExecuting: true])
         // Device-Watch allows 2 check-in misses from device
         sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-        hasConfiguredHealthCheck = true
+        state.hasConfiguredHealthCheck = true
     }
 }
 
@@ -152,9 +159,8 @@ def updated() {
 }
 
 def setColorTemperature(value) {
-    setGenericName(value)
     value = value as Integer
-    def tempInMired = (1000000 / value) as Integer
+    def tempInMired = Math.round(1000000 / value)
     def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
     zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +

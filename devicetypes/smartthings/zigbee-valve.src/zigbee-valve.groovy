@@ -14,11 +14,12 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZigBee Valve", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Valve", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
         capability "Actuator"
         capability "Battery"
         capability "Configuration"
         capability "Power Source"
+        capability "Health Check"
         capability "Refresh"
         capability "Valve"
 
@@ -81,6 +82,8 @@ def parse(String description) {
             else if(event.value == "off") {
                 event.value = "closed"
             }
+        } else if (event.name == "powerSource") {
+            event.value = event.value.toLowerCase()
         }
         sendEvent(event)
         //handle valve attribute
@@ -92,16 +95,16 @@ def parse(String description) {
         if (descMap.clusterInt == CLUSTER_BASIC && descMap.attrInt == BASIC_ATTR_POWER_SOURCE){
             def value = descMap.value
             if (value == "01" || value == "02") {
-                sendEvent(name: "powerSource", value: "Mains")
+                sendEvent(name: "powerSource", value: "mains")
             }
             else if (value == "03") {
-                sendEvent(name: "powerSource", value: "Battery")
+                sendEvent(name: "powerSource", value: "battery")
             }
             else if (value == "04") {
-                sendEvent(name: "powerSource", value: "DC")
+                sendEvent(name: "powerSource", value: "dc")
             }
             else {
-                sendEvent(name: "powerSource", value: "Unknown")
+                sendEvent(name: "powerSource", value: "unknown")
             }
         }
         else if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
@@ -137,4 +140,12 @@ def refresh() {
 def configure() {
     log.debug "Configuring Reporting and Bindings."
     refresh()
+}
+
+def installed() {
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+def ping() {
+    zigbee.onOffRefresh()
 }

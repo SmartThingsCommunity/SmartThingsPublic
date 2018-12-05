@@ -15,6 +15,7 @@
  *	Author: SmartThings
  *	Date: 2013-06-13
  */
+import groovy.json.JsonOutput
 metadata {
 	definition (name: "Ecobee Thermostat", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
@@ -124,6 +125,10 @@ metadata {
 		input "holdType", "enum", title: "Hold Type",
 				description: "When changing temperature, use Temporary (Until next transition) or Permanent hold (default)",
 				required: false, options:["Temporary", "Permanent"]
+		input "deadbandSetting", "number", title: "Minimum temperature difference between the desired Heat and Cool " +
+				"temperatures in Auto mode:\nNote! This must be the same as configured on the thermostat",
+				description: "temperature difference °F", defaultValue: 5,
+				required: false
 	}
 
 }
@@ -131,16 +136,29 @@ metadata {
 void installed() {
     // The device refreshes every 5 minutes by default so if we miss 2 refreshes we can consider it offline
     // Using 12 minutes because in testing, device health team found that there could be "jitter"
-    sendEvent(name: "checkInterval", value: 60 * 12, data: [protocol: "cloud"], displayed: false)
+	initialize()
+}
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+	updateDataValue("EnrolledUTDH", "true")
 }
 
-// Device Watch will ping the device to proactively determine if the device has gone offline
-// If the device was online the last time we refreshed, trigger another refresh as part of the ping.
+def updated() {
+	log.debug "updated()"
+	parent.setName(device.label, device.deviceNetworkId)
+	initialize()
+}
+
+// Called when the DTH is uninstalled, is this true for cirrus/gadfly integrations?
+// Informs parent to purge its associated data
+def uninstalled() {
+    log.debug "uninstalled() parent.purgeChildDevice($device.deviceNetworkId)"
+    // purge DTH from parent
+    parent?.purgeChildDevice(this)
+}
+
 def ping() {
-    def isAlive = device.currentValue("deviceAlive") == "true" ? true : false
-    if (isAlive) {
-        refresh()
-    }
+	log.debug "ping() NOP"
 }
 
 // parse events into attributes
@@ -149,13 +167,12 @@ def parse(String description) {
 }
 
 def refresh() {
-	log.debug "refresh"
-	poll()
+	log.debug "refresh, calling parent poll"
+	parent.poll()
 }
 
 void poll() {
-	log.debug "Executing 'poll' using parent SmartApp"
-	parent.pollChild()
+	log.debug "poll not implemented as it is done by parent SmartApp every 5 minutes"
 }
 
 def generateEvent(Map results) {
@@ -172,11 +189,11 @@ def generateEvent(Map results) {
 			if (name=="temperature" || name=="heatingSetpoint" || name=="coolingSetpoint" ) {
 				sendValue =  getTempInLocalScale(value, "F")  // API return temperature values in F
 				event << [value: sendValue, unit: locationScale]
-			}  else if (name=="maxCoolingSetpoint" || name=="minCoolingSetpoint" || name=="maxHeatingSetpoint" || name=="minHeatingSetpoint") {
+			} else if (name=="maxCoolingSetpoint" || name=="minCoolingSetpoint" || name=="maxHeatingSetpoint" || name=="minHeatingSetpoint") {
 				// Old attributes, keeping for backward compatibility
 				sendValue =  getTempInLocalScale(value, "F")  // API return temperature values in F
 				event << [value: sendValue, unit: locationScale, displayed: false]
-				// Store min/max setpoint in device unit to avoid conversion rounding error when updating setpoints 
+				// Store min/max setpoint in device unit to avoid conversion rounding error when updating setpoints
 				device.updateDataValue(name+"Fahrenheit", "${value}")
 			} else if (name=="heatMode" || name=="coolMode" || name=="autoMode" || name=="auxHeatMode"){
 				if (value == true) {
@@ -193,6 +210,8 @@ def generateEvent(Map results) {
 			} else if (name == "thermostatMode") {
 				thermostatMode = (value == "auxHeatOnly") ? "emergency heat" : value.toLowerCase()
 				return // as we don't want to send this event here, proceed to next name/value pair
+			} else if (name == "name") {
+				return // as we don't want to send this event, proceed to next name/value pair
 			} else {
 				event << [value: value.toString()]
 			}
@@ -213,7 +232,7 @@ def generateEvent(Map results) {
 }
 
 //return descriptionText to be shown on mobile activity feed
-private getThermostatDescriptionText(name, value, linkText) {
+def getThermostatDescriptionText(name, value, linkText) {
 	if(name == "temperature") {
 		return "temperature is ${value}°${location.temperatureScale}"
 
@@ -279,12 +298,17 @@ void resumeProgram() {
 	def deviceId = device.deviceNetworkId.split(/\./).last()
 	if (parent.resumeProgram(deviceId)) {
 		sendEvent("name":"thermostat", "value":"setpoint is updating", "description":statusText, displayed: false)
-		sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
 	} else {
-		sendEvent("name":"thermostat", "value":"failed resume click refresh", "description":statusText, displayed: false)
+		sendEvent("name":"thermostat", "value":"resume failed", "description":statusText, displayed: false)
 		log.error "Error resumeProgram() check parent.resumeProgram(deviceId)"
 	}
-	runIn(5, "refresh", [overwrite: true])
+	// Prevent double tap and spamming of resume command
+	runIn(5, "updateResume", [overwrite: true])
+}
+
+def updateResume() {
+	sendEvent("name":"resumeProgram", "value":"resume", descriptionText: "resumeProgram is done", displayed: false, isStateChange: true)
+	refresh()
 }
 
 def modes() {
@@ -315,9 +339,10 @@ def switchToMode(mode) {
 	if (!(parent.setMode(((mode == "emergency heat") ? "auxHeatOnly" : mode), deviceId))) {
 		log.warn "Error setting mode:$mode"
 		// Ensure the DTH tile is reset
-		generateModeEvent(device.currentValue("thermostatMode"))
+		mode = device.currentValue("thermostatMode")
 	}
-	runIn(5, "refresh", [overwrite: true])
+	generateModeEvent(mode)
+	generateStatusEvent()
 }
 
 def switchFanMode() {
@@ -337,9 +362,9 @@ def switchToFanMode(fanMode) {
 	if (!(parent.setFanMode(heatingSetpoint, coolingSetpoint, deviceId, sendHoldType, fanMode))) {
 		log.warn "Error setting fanMode:fanMode"
 		// Ensure the DTH tile is reset
-		generateFanModeEvent(device.currentValue("thermostatFanMode"))
+		fanMode = device.currentValue("thermostatFanMode")
 	}
-	runIn(5, "refresh", [overwrite: true])
+	generateFanModeEvent(fanMode)
 }
 
 def getDataByName(String name) {
@@ -377,12 +402,12 @@ def setThermostatFanMode(String mode) {
 }
 
 def generateModeEvent(mode) {
-	sendEvent(name: "thermostatMode", value: mode, data:[supportedThermostatModes: device.currentValue("supportedThermostatModes")],
+	sendEvent(name: "thermostatMode", value: mode, data:[supportedThermostatModes: modes()],
 			isStateChange: true, descriptionText: "$device.displayName is in ${mode} mode")
 }
 
 def generateFanModeEvent(fanMode) {
-	sendEvent(name: "thermostatFanMode", value: fanMode, data:[supportedThermostatFanModes: device.currentValue("supportedThermostatFanModes")],
+	sendEvent(name: "thermostatFanMode", value: fanMode, data:[supportedThermostatFanModes: fanModes()],
 			isStateChange: true, descriptionText: "$device.displayName fan is in ${fanMode} mode")
 }
 
@@ -437,7 +462,7 @@ def alterSetpoint(raise, setpoint) {
 		return
 	}
 	def locationScale = getTemperatureScale()
-	def deviceScale = "F" 
+	def deviceScale = "F"
 	def heatingSetpoint = getTempInLocalScale("heatingSetpoint")
 	def coolingSetpoint = getTempInLocalScale("coolingSetpoint")
 	def targetValue = (setpoint == "heatingSetpoint") ? heatingSetpoint : coolingSetpoint
@@ -449,23 +474,23 @@ def alterSetpoint(raise, setpoint) {
 	// update UI without waiting for the device to respond, this to give user a smoother UI experience
 	// also, as runIn's have to overwrite and user can change heating/cooling setpoint separately separate runIn's have to be used
 	if (data.targetHeatingSetpoint) {
-		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, deviceScale),
-				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, "F"),
+				unit: locationScale, eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	if (data.targetCoolingSetpoint) {
-		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, deviceScale),
-				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, "F"),
+				unit: locationScale, eventType: "ENTITY_UPDATE", displayed: false)
 	}
 	runIn(5, "updateSetpoint", [data: data, overwrite: true])
 }
 
 def enforceSetpointLimits(setpoint, data, raise = null) {
-	def locationScale = getTemperatureScale() 
+	def locationScale = getTemperatureScale()
 	def minSetpoint = (setpoint == "heatingSetpoint") ? device.getDataValue("minHeatingSetpointFahrenheit") : device.getDataValue("minCoolingSetpointFahrenheit")
 	def maxSetpoint = (setpoint == "heatingSetpoint") ? device.getDataValue("maxHeatingSetpointFahrenheit") : device.getDataValue("maxCoolingSetpointFahrenheit")
 	minSetpoint = minSetpoint ? Double.parseDouble(minSetpoint) : ((setpoint == "heatingSetpoint") ? 45 : 65)  // default 45 heat, 65 cool
 	maxSetpoint = maxSetpoint ? Double.parseDouble(maxSetpoint) : ((setpoint == "heatingSetpoint") ? 79 : 92)  // default 79 heat, 92 cool
-	def deadband = 5 // °F
+	def deadband = deadbandSetting ? deadbandSetting : 5 // °F
 	def delta = (locationScale == "F") ? 1 : 0.5
 	def targetValue = getTempInDeviceScale(data.targetValue, locationScale)
 	def heatingSetpoint = getTempInDeviceScale(data.heatingSetpoint, locationScale)
@@ -475,8 +500,8 @@ def enforceSetpointLimits(setpoint, data, raise = null) {
 		targetValue = maxSetpoint
 	} else if (targetValue < minSetpoint) {
 		targetValue = minSetpoint
-	} else if ((setpoint == "heatingSetpoint" && targetValue == heatingSetpoint) ||
-				(setpoint == "coolingSetpoint" && targetValue == coolingSetpoint)){
+	} else if ((raise != null) && ((setpoint == "heatingSetpoint" && targetValue == heatingSetpoint) ||
+				(setpoint == "coolingSetpoint" && targetValue == coolingSetpoint))) {
 		// Ensure targetValue differes from old. When location scale differs from device,
 		// converting between C -> F -> C may otherwise result in no change.
 		targetValue += raise ? delta : - delta
@@ -498,11 +523,16 @@ def updateSetpoint(data) {
 	def sendHoldType = holdType ? ((holdType=="Temporary") ? "nextTransition" : "indefinite") : "indefinite"
 
 	if (parent.setHold(data.targetHeatingSetpoint, data.targetCoolingSetpoint, deviceId, sendHoldType)) {
-		log.debug "alterSetpoint succeed to change setpoints:${data}"
+		log.debug "updateSetpoint succeed to change setpoints:${data}"
+		sendEvent("name": "heatingSetpoint", "value": getTempInLocalScale(data.targetHeatingSetpoint, "F"),
+				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		sendEvent("name": "coolingSetpoint", "value": getTempInLocalScale(data.targetCoolingSetpoint, "F"),
+				unit: getTemperatureScale(), eventType: "ENTITY_UPDATE", displayed: false)
+		generateStatusEvent()
 	} else {
-		log.error "Error alterSetpoint"
+		log.error "Error updateSetpoint"
+		runIn(5, "refresh", [overwrite: true])
 	}
-	runIn(5, "refresh", [overwrite: true])
 }
 
 def generateStatusEvent() {

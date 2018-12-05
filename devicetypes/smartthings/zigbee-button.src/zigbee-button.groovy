@@ -18,7 +18,7 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond") {
+    definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond", runLocally: true, minHubCoreVersion: "000.022.0002", executeCommandsLocally: false) {
         capability "Actuator"
         capability "Battery"
         capability "Button"
@@ -112,7 +112,7 @@ private Map getBatteryResult(rawValue) {
         def minVolts = 2.1
         def maxVolts = 3.0
         def pct = (volts - minVolts) / (maxVolts - minVolts)
-        result.value = Math.min(100, (int) pct * 100)
+        result.value = Math.min(100, (int)(pct * 100))
         def linkText = getLinkText(device)
         result.descriptionText = "${linkText} battery was ${result.value}%"
         return result
@@ -245,6 +245,11 @@ private Map getButtonResult(buttonState, buttonNumber = 1) {
 
 def installed() {
     initialize()
+
+    // Initialize default states
+    device.currentValue("numberOfButtons")?.times {
+        sendEvent(name: "button", value: "pushed", data: [buttonNumber: it+1], displayed: false)
+    }
 }
 
 def updated() {
@@ -255,25 +260,25 @@ def initialize() {
     // Arrival sensors only goes OFFLINE when Hub is off
     sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
     if ((device.getDataValue("manufacturer") == "OSRAM") && (device.getDataValue("model") == "LIGHTIFY Dimming Switch")) {
-        sendEvent(name: "numberOfButtons", value: 2)
+        sendEvent(name: "numberOfButtons", value: 2, displayed: false)
     }
     else if (device.getDataValue("manufacturer") == "CentraLite") {
         if (device.getDataValue("model") == "3130") {
-            sendEvent(name: "numberOfButtons", value: 2)
+            sendEvent(name: "numberOfButtons", value: 2, displayed: false)
         }
         else if ((device.getDataValue("model") == "3455-L") || (device.getDataValue("model") == "3460-L")) {
-            sendEvent(name: "numberOfButtons", value: 1)
+            sendEvent(name: "numberOfButtons", value: 1, displayed: false)
         }
         else if (device.getDataValue("model") == "3450-L") {
-            sendEvent(name: "numberOfButtons", value: 4)
+            sendEvent(name: "numberOfButtons", value: 4, displayed: false)
         }
         else {
-            sendEvent(name: "numberOfButtons", value: 4)    //default case. can be changed later.
+            sendEvent(name: "numberOfButtons", value: 4, displayed: false)    //default case. can be changed later.
         }
     }
     else {
         //default. can be changed
-        sendEvent(name: "numberOfButtons", value: 4)
+        sendEvent(name: "numberOfButtons", value: 4, displayed: false)
     }
 
 }
