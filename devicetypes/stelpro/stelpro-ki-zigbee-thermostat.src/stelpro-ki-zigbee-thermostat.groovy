@@ -52,7 +52,6 @@ metadata {
 
 	preferences {
 		input("lock", "enum", title: "Do you want to lock your thermostat's physical keypad?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: false)
-		input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
 	}
 
@@ -268,6 +267,7 @@ def parse(String description) {
 					log.debug "HEATING SETPOINT"
 					map.name = "heatingSetpoint"
 					map.value = getTemperature(descMap.value)
+					map.unit = getTemperatureScale()
 					map.data = [heatingSetpointRange: heatingSetpointRange]
 				}
 			} else if (descMap.attrInt == ATTRIBUTE_SYSTEM_MODE) {
@@ -314,10 +314,6 @@ def parse(String description) {
 					map.value = "idle"
 				} else {
 					map.value = "heating"
-				}
-
-				if (settings.heatdetails == "No") {
-					map.displayed = false
 				}
 			}
 		}
@@ -394,7 +390,7 @@ def getTemperature(value) {
 		if (getTemperatureScale() == "C") {
 			return celsius
 		} else {
-			return Math.round(celsiusToFahrenheit(celsius))
+			return Math.ceil(celsiusToFahrenheit(celsius))
 		}
 	}
 }
