@@ -206,6 +206,7 @@ def installed() {
 	log.debug "installed"
 	// Check for new devices and remove old ones every 3 hours
 	runEvery3Hours(updateDevices)
+    runEvery5Minutes(data)
     initialize()
 }
 
@@ -215,7 +216,9 @@ def updated() {
 	unschedule(updateDevices)
     unschedule(refreshDevices)
     runEvery3Hours(updateDevices)
-    log.info "Refresh Scheduled for every 3 Hours"
+    runEvery5Minutes(data)
+     // runEvery1Minute(data)
+    log.info "Updated updateDevices every 3 Hours, device data every minute"
     initialize()
 }
 
@@ -263,6 +266,12 @@ def initialize() {
     	log.debug "Refreshing device $it.name"
         it.refresh()
 	}
+}
+
+def data() {
+	devicesList()
+    //log.debug "data trigered for ${state.data.data.label}"
+	//return state.data
 }
 
 def updateDevices() {
@@ -596,13 +605,17 @@ def refreshDevices() {
 def devicesList() {
 	logErrors([]) {
 		def resp = apiGET("subdevices/list")
-log.debug "device list '$resp.data'"
+//log.debug "device list '$resp.data'"
 		if (resp.status == 200) {
+        	state.data = ' '
+            state.data = resp.data
+            //log.debug "device states '${state.data}'"
 			return resp.data.data
 		} 
         else {
-			log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
-			return []
+			log.error "Non-200 from device list call. ${resp.status}" // ${resp.data}"
+			state.data = null
+            return []
 		}
 	}
 }
@@ -620,7 +633,7 @@ log.debug "getting token"
 }
 
 def apiGET(path, body = [:]) {
-//log.debug "starting apiGET Path='$path', body='$body'"
+log.info "starting apiGET for Path='$path', device details ='$body'"
 	try {
     def cmdBody = [:]
     def paramsLogin = [
@@ -633,31 +646,15 @@ def apiGET(path, body = [:]) {
     httpPost(paramsLogin) {responseLogin ->  //as per mihome documetaion post is prefered details are not logged
 			logResponse(responseLogin)
 			return responseLogin
+            log.debug "$responseLogin"
 		}
 	} catch (groovyx.net.http.HttpResponseException e) {
 	logResponse(e.response)
-    log.debug "apiGET exception respones $e.response"
+    log.warn "apiGET exception respones - '${e.response}', '${e}'"//log.warn "apiGET exception respones - ${e.status}', '${e.response}', '${e}'"
 		return e.response
 	}
 }
 
-/*def apiPOST(path, body = [:]) {
-log.error "apiPOST used $path $body"
-	try {
-		log.debug("Beginning API POST: ${path}, ${body}")
-		httpPost(uri: apiURL(path),
-        		body: new groovy.json.JsonBuilder(body).toString(),
-                headers: apiRequestHeaders(),
-                tlsVersion: "TLSv1.1") {response ->
-			logResponse(response)
-			return response
-		}
-	} catch (groovyx.net.http.HttpResponseException e) {
-		logResponse(e.response)
-		return e.response
-	}
-}
-*/
 Map apiRequestHeaders() {
 	def userpassascii = "${username}:${password}"
     if (state.miHomeAccessToken != null && state.miHomeAccessToken != '') {
@@ -671,9 +668,8 @@ Map apiRequestHeaders() {
 
 def logResponse(response) {
 	if (response.status != 200) {
-    	log.error "Status: ${response.status}"
+    	log.error "Status: ${response.status}, ${response}"
     }
-    //log.info "All good: ${response.status}"
 }
 
 def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
