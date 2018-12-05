@@ -24,7 +24,7 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-    	valueTile("energy", "device.energy", canChangeIcon: true, icon: "st.Home.home1") {
+    	valueTile("energy", "device.energy", canChangeBackground: true) {
             state("energy", label:'${currentValue}', unit:"¢",
                 backgroundColors:[
                     [value: 0, color: "#153591"],

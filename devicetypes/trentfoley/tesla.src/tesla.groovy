@@ -24,11 +24,20 @@ metadata {
 		capability "Refresh"
 		capability "Temperature Measurement"
 		capability "Thermostat Mode"
+        capability "Thermostat Setpoint"
 
-		attribute "vehicleState", "string"
+		attribute "state", "string"
         attribute "vin", "string"
+        attribute "odometer", "number"
+        attribute "batteryRange", "number"
+        attribute "chargingState", "string"
 
 		command "wake"
+        command "setThermostatSetpoint"
+        command "startCharge"
+        command "stopCharge"
+        command "openFrontTrunk"
+        command "openRearTrunk"
 	}
 
 
@@ -37,8 +46,8 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		valueTile("battery", "device.battery", canChangeIcon: true, width: 2, height: 2, icon: "st.Transportation.transportation6") { // st.tesla.tesla-car
-            state("battery", label:'${currentValue}%',
+		valueTile("main", "device.battery", canChangeBackground: true) {
+            state("default", label:'${currentValue}%',
                 backgroundColors:[
                     [value: 75, color: "#153591"],
                     [value: 65, color: "#1e9cbb"],
@@ -50,63 +59,136 @@ metadata {
                 ]
             )
         }
-        
-        standardTile("motion", "device.motion") {
+        standardTile("state", "device.state", width: 2, height: 2) {
+            state "asleep", label: "Asleep", backgroundColor: "#eeeeee", action: "wake", icon: "st.Bedroom.bedroom2"
+            state "online", label: "Online", backgroundColor: "#00a0dc", icon: "st.tesla.tesla-front"
+        }
+        valueTile("help", "device.state", width: 4, height: 2) {
+            state "default", label: 'In order to use the various commands, your vehicle must first be awakened.'
+		}
+        standardTile("chargingState", "device.chargingState", width: 2, height: 2) {
+            state "default", label: '${currentValue}', icon: "st.Transportation.transportation6" //, backgroundColor: "#cccccc"
+            state "stopped", label: '${currentValue}', icon: "st.Transportation.transportation6", action: "startCharge", backgroundColor: "#ffffff"
+            state "charging", label: '${currentValue}', icon: "st.Transportation.transportation6", action: "stopCharge", backgroundColor: "#00a0dc"
+            state "complete", label: '${currentValue}', icon: "st.Transportation.transportation6", backgroundColor: "#44b621"
+        }
+        valueTile("battery", "device.battery", width: 2, height: 1) {
+            state("default", label:'${currentValue}% battery' /*
+                backgroundColors:[
+                    [value: 75, color: "#153591"],
+                    [value: 65, color: "#1e9cbb"],
+                    [value: 55, color: "#90d2a7"],
+                    [value: 45, color: "#44b621"],
+                    [value: 35, color: "#f1d801"],
+                    [value: 25, color: "#d04e00"],
+                    [value: 15, color: "#bc2323"]
+                ] */
+            )
+        }
+        valueTile("batteryRange", "device.batteryRange", width: 2, height: 1) {
+            state("default", label:'${currentValue} mi range')
+        }
+        standardTile("thermostatMode", "device.thermostatMode", width: 2, height: 2) {
+        	state "auto", label: "On", action: "off", icon: "st.tesla.tesla-hvac", backgroundColor: "#00a0dc"
+            state "off", label: "Off", action: "auto", icon: "st.tesla.tesla-hvac", backgroundColor: "#ffffff"
+        }
+        controlTile("thermostatSetpoint", "device.thermostatSetpoint", "slider", width: 2, height: 2, range:"(60..85)") {
+            state "default", action:"setThermostatSetpoint"
+        }
+        valueTile("temperature", "device.temperature", width: 2, height: 2) {
+            state("temperature", label: '${currentValue}°', unit:"dF",
+                backgroundColors:[
+                    [value: 31, color: "#153591"],
+                    [value: 44, color: "#1e9cbb"],
+                    [value: 59, color: "#90d2a7"],
+                    [value: 74, color: "#44b621"],
+                    [value: 84, color: "#f1d801"],
+                    [value: 95, color: "#d04e00"],
+                    [value: 96, color: "#bc2323"]
+                ]
+            )
+        }
+        standardTile("lock", "device.lock", width: 2, height: 2) {
+            state "locked", label: "Locked", action: "unlock", icon: "st.tesla.tesla-locked", backgroundColor: "#ffffff"
+            state "unlocked", label: "Unlocked", action: "lock", icon: "st.tesla.tesla-unlocked", backgroundColor: "#00a0dc"
+        }
+        valueTile("trunkLabel", "device.state", width: 2, height: 1) {
+			state "default", label: 'Open Trunk >'
+		}
+        standardTile("frontTrunk", "device.state") {
+            state "default", label: "Front", action: "openFrontTrunk"
+        }
+        standardTile("rearTrunk", "device.state") {
+        	state "default", label: "Rear", action: "openRearTrunk"
+        }
+		standardTile("motion", "device.motion", width: 2, height: 1) {
             state "inactive", label: "Parked", icon: "st.motion.acceleration.inactive", backgroundColor: "#ffffff"
             state "active", label: "Driving", icon: "st.motion.acceleration.active", backgroundColor: "#00a0dc"
         }
-        standardTile("vehicleState", "device.vehicleState") {
-            state "asleep", label: "Asleep", backgroundColor: "#eeeeee", action: "wake"
-            state "online", label: "Online", backgroundColor: "#00a0dc"
-        }
-		standardTile("refresh", "device.vehicleState", decoration: "flat") {
+        valueTile("speed", "device.speed", width: 2, height: 1) {
+			state "default", label: '${currentValue} mph'
+		}
+		standardTile("refresh", "device.state", decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-        valueTile("vin", "device.vin", width: 3, height: 1) {
-			state "vin", label: '${currentValue}'
+        valueTile("odometer", "device.odometer", width: 2, height: 1) {
+			state "default", label: 'ODO    ${currentValue}'
+		}
+        valueTile("vin", "device.vin", width: 4, height: 1) {
+			state "default", label: '${currentValue}'
 		}
         
-        
-        main("battery")
-        details("battery", "motion", "vehicleState", "refresh", "vin")
+        main("main")
+        details("state", "help", "chargingState", "battery", "motion", "batteryRange", "speed", "thermostatMode", "thermostatSetpoint", "temperature", "lock", "trunkLabel", "frontTrunk", "rearTrunk", "odometer", "refresh", "vin")
 	}
 }
 
 def initialize() {
 	log.debug "Executing 'initialize'"
-    runEvery5Minutes(refresh)
+    
+    sendEvent(name: "supportedThermostatModes", value: ["auto", "off"])
+    
+    runEvery1Minute(refresh)
 }
 
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-	// TODO: handle 'latitude' attribute
-	// TODO: handle 'longitude' attribute
-	// TODO: handle 'method' attribute
-	// TODO: handle 'accuracy' attribute
-	// TODO: handle 'altitudeAccuracy' attribute
-	// TODO: handle 'heading' attribute
-	// TODO: handle 'speed' attribute
-	// TODO: handle 'lastUpdateTime' attribute
-	// TODO: handle 'lock' attribute
-	// TODO: handle 'motion' attribute
-	// TODO: handle 'presence' attribute
-	// TODO: handle 'temperature' attribute
-	// TODO: handle 'thermostatMode' attribute
-	// TODO: handle 'supportedThermostatModes' attribute
-
 }
 
 private processData(data) {
 	if(data) {
     	log.debug "processData: ${data}"
         
-    	sendEvent(name: "vehicleState", value: data.vehicleState)
+    	sendEvent(name: "state", value: data.state)
         sendEvent(name: "motion", value: data.motion)
+        sendEvent(name: "speed", value: data.speed, unit: "mph")
         sendEvent(name: "vin", value: data.vin)
+        sendEvent(name: "thermostatMode", value: data.thermostatMode)
         
         if (data.chargeState) {
         	sendEvent(name: "battery", value: data.chargeState.battery)
+            sendEvent(name: "batteryRange", value: data.chargeState.batteryRange)
+            sendEvent(name: "chargingState", value: data.chargeState.chargingState)
+        }
+        
+        if (data.driveState) {
+        	sendEvent(name: "latitude", value: data.driveState.latitude)
+			sendEvent(name: "longitude", value: data.driveState.longitude)
+            sendEvent(name: "method", value: data.driveState.method)
+            sendEvent(name: "heading", value: data.driveState.heading)
+            sendEvent(name: "lastUpdateTime", value: data.driveState.lastUpdateTime)
+        }
+        
+        if (data.vehicleState) {
+        	sendEvent(name: "presence", value: data.vehicleState.presence)
+            sendEvent(name: "lock", value: data.vehicleState.lock)
+            sendEvent(name: "odometer", value: data.vehicleState.odometer)
+        }
+        
+        if (data.climateState) {
+        	sendEvent(name: "temperature", value: data.climateState.temperature)
+            sendEvent(name: "thermostatSetpoint", value: data.climateState.thermostatSetpoint)
         }
 	} else {
     	log.error "No data found for ${device.deviceNetworkId}"
@@ -115,7 +197,6 @@ private processData(data) {
 
 def refresh() {
 	log.debug "Executing 'refresh'"
-	
     def data = parent.refresh(this)
 	processData(data)
 }
@@ -124,44 +205,88 @@ def wake() {
 	log.debug "Executing 'wake'"
 	def data = parent.wake(this)
     processData(data)
+    runIn(30, refresh)
 }
 
 def lock() {
 	log.debug "Executing 'lock'"
-	// TODO: handle 'lock' command
+	def result = parent.lock(this)
+    if (result) { refresh() }
 }
 
 def unlock() {
 	log.debug "Executing 'unlock'"
-	// TODO: handle 'unlock' command
-}
-
-def heat() {
-	log.debug "Executing 'heat'"
-	// TODO: handle 'heat' command
-}
-
-def emergencyHeat() {
-	log.debug "Executing 'emergencyHeat'"
-	// TODO: handle 'emergencyHeat' command
-}
-
-def cool() {
-	log.debug "Executing 'cool'"
-	// TODO: handle 'cool' command
+	def result = parent.unlock(this)
+    if (result) { refresh() }
 }
 
 def auto() {
 	log.debug "Executing 'auto'"
-	// TODO: handle 'auto' command
+	def result = parent.climateAuto(this)
+    if (result) { refresh() }
 }
 
 def off() {
 	log.debug "Executing 'off'"
-	// TODO: handle 'heat' command
+	def result = parent.climateOff(this)
+    if (result) { refresh() }
 }
 
-def setThermostatMode() {
+def heat() {
+	log.debug "Executing 'heat'"
+	// Not supported
+}
+
+def emergencyHeat() {
+	log.debug "Executing 'emergencyHeat'"
+	// Not supported
+}
+
+def cool() {
+	log.debug "Executing 'cool'"
+	// Not supported
+}
+
+def setThermostatMode(mode) {
 	log.debug "Executing 'setThermostatMode'"
-	// TODO: handle 'setThermostatMode' command
+	switch (mode) {
+    	case "auto":
+        	auto()
+            break
+        case "off":
+        	off()
+            break
+        default:
+        	log.error "setThermostatMode: Only thermostat modes Auto and Off are supported"
+    }
+}
+
+def setThermostatSetpoint(setpoint) {
+	log.debug "Executing 'setThermostatSetpoint'"
+	def result = parent.setThermostatSetpoint(this, setpoint)
+    if (result) { refresh() }
+}
+
+def startCharge() {
+	log.debug "Executing 'startCharge'"
+    def result = parent.startCharge(this)
+    if (result) { refresh() }
+}
+
+def stopCharge() {
+	log.debug "Executing 'stopCharge'"
+    def result = parent.stopCharge(this)
+    if (result) { refresh() }
+}
+
+def openFrontTrunk() {
+	log.debug "Executing 'openFrontTrunk'"
+    def result = parent.openTrunk(this, "front")
+    // if (result) { refresh() }
+}
+
+def openRearTrunk() {
+	log.debug "Executing 'openRearTrunk'"
+    def result = parent.openTrunk(this, "rear")
+    // if (result) { refresh() }
 }
