@@ -313,13 +313,16 @@ def parse(String description) {
 				def intVal = Integer.parseInt(descMap.value, 16)
 				log.debug "HEAT DEMAND"
 				map.name = "thermostatOperatingState"
-				if (intVal < 10) {
+				if (intVal < 0x10) {
 					map.value = "idle"
 				} else {
 					map.value = "heating"
 				}
 
-				if (settings.heatdetails == "No") {
+				// If the user does not want to see the Idle and Heating events in the event history,
+				// don't show them. Otherwise, don't show them more frequently than 30 seconds.
+				if (settings.heatdetails == "No" ||
+					!secondsPast(device.currentState("thermostatOperatingState").getLastUpdated(), 30)) {
 					map.displayed = false
 				}
 			}
@@ -522,7 +525,7 @@ def configure() {
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, 1, 0, 50)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_SYSTEM_MODE, DataType.ENUM8, 1, 0, 1)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_MFR_SPEC_SETPOINT_MODE, DataType.ENUM8, 1, 0, 1)
-	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE, DataType.UINT8, 300, 900, 5)
+	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE, DataType.UINT8, 1, 900, 1)
 
 	// Configure Thermostat Ui Conf Cluster
 	requests += zigbee.configureReporting(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE, DataType.ENUM8, 1, 0, 1)
@@ -571,6 +574,28 @@ def auto() {
 
 def fanAuto() {
 	log.debug "${device.displayName} does not support fan auto"
+}
+
+/**
+ * Checks if the time elapsed from the provided timestamp is greater than the number of senconds provided
+ *
+ * @param timestamp: The timestamp
+ *
+ * @param seconds: The number of seconds
+ *
+ * @returns true if elapsed time is greater than number of seconds provided, else false
+ */
+private Boolean secondsPast(timestamp, seconds) {
+	if (!(timestamp instanceof Number)) {
+		if (timestamp instanceof Date) {
+			timestamp = timestamp.time
+		} else if ((timestamp instanceof String) && timestamp.isNumber()) {
+			timestamp = timestamp.toLong()
+		} else {
+			return true
+		}
+	}
+	return (now() - timestamp) > (seconds * 1000)
 }
 
 
