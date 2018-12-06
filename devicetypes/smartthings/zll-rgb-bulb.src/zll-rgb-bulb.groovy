@@ -96,10 +96,10 @@ def parse(String description) {
 				sendEvent(name: "saturation", value: saturationValue, displayed:false)
 			} else if(zigbeeMap.attrInt == ATTRIBUTE_X) { //X Attribute
 				state.currentRawX = zigbee.convertHexToInt(zigbeeMap.value)
-				log.debug "xValue = $state.currentRawX"
+				//log.debug "xValue = $state.currentRawX"
 			} else if(zigbeeMap.attrInt == ATTRIBUTE_Y) { //Y Attribute
 				state.currentRawY = zigbee.convertHexToInt(zigbeeMap.value)
-				log.debug "yValue = $state.currentRawY"
+				//log.debug "yValue = $state.currentRawY"
 			}
 
 			// If the device is sending us this in response to us sending a command to set these,
@@ -209,11 +209,11 @@ def setLevel(value) {
 	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh() //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
-private getScaledHue(value) {
+def getScaledHue(value) {
 	zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
 }
 
-private getScaledSaturation(value) {
+def getScaledSaturation(value) {
 	zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
 }
 
@@ -274,7 +274,7 @@ def setSaturation(value) {
  *  for the specific language governing permissions and limitations under the License.
  */
 
-private minOfSet(first, ... rest) {
+def minOfSet(first, ... rest) {
 	def minVal = first
 	for (next in rest) {
 		if (next < minVal) {
@@ -285,7 +285,7 @@ private minOfSet(first, ... rest) {
 	minVal
 }
 
-private maxOfSet(first, ... rest) {
+def maxOfSet(first, ... rest) {
 	def maxVal = first
 	for (next in rest) {
 		if (next > maxVal) {
@@ -296,22 +296,22 @@ private maxOfSet(first, ... rest) {
 	maxVal
 }
 
-private colorGammaAdjust(component) {
+def colorGammaAdjust(component) {
 	return (component > 0.04045) ? Math.pow((component + 0.055) / (1.0 + 0.055), 2.4) : (component / 12.92)
 }
 
-private colorGammaRevert(component) {
+def colorGammaRevert(component) {
 	return (component <= 0.0031308) ? 12.92 * component : (1.0 + 0.055) * Math.pow(component, (1.0 / 2.4)) - 0.055
 }
 
-private colorXy2Rgb(x, y) {
-	log.debug "colorXy2Rgb Color xy: ($x, $y)"
+def colorXy2Rgb(x, y) {
+	//log.debug "colorXy2Rgb Color xy: ($x, $y)"
 
 	def Y = 1
 	def X = (Y / y) * x
 	def Z = (Y / y) * (1.0 - x - y)
 
-	log.debug "colorXy2Rgb Color XYZ: ($X, $Y, $Z)"
+	//log.debug "colorXy2Rgb Color XYZ: ($X, $Y, $Z)"
 
 	// sRGB, Reference White D65
 	/*def M = [
@@ -334,13 +334,13 @@ private colorXy2Rgb(x, y) {
 	g = colorGammaRevert(g / maxRgb)
 	b = colorGammaRevert(b / maxRgb)
 
-	log.debug "colorXy2Rgb Color RGB: ($r, $g, $b)"
+	//log.debug "colorXy2Rgb Color RGB: ($r, $g, $b)"
 
 	[red: r, green: g, blue: b]
 }
 
-private colorRgb2Xy(r, g, b) {
-	log.debug "colorRgb2Xy Color RGB: ($r, $g, $b)"
+def colorRgb2Xy(r, g, b) {
+	//log.debug "colorRgb2Xy Color RGB: ($r, $g, $b)"
 
 	r = colorGammaAdjust(r)
 	g = colorGammaAdjust(g)
@@ -366,18 +366,18 @@ private colorRgb2Xy(r, g, b) {
 	def Y = r * M[1][0] + g * M[1][1] + b * M[1][2]
 	def Z = r * M[2][0] + g * M[2][1] + b * M[2][2]
 
-	log.debug "colorRgb2Xy Color XYZ: ($X, $Y, $Z)"
+	//log.debug "colorRgb2Xy Color XYZ: ($X, $Y, $Z)"
 
 	def x = X / (X + Y + Z)
 	def y = Y / (X + Y + Z)
 
-	log.debug "colorRgb2Xy Color xy: ($x, $y)"
+	//log.debug "colorRgb2Xy Color xy: ($x, $y)"
 
 	[x: x, y: y]
 }
 
-private colorHsv2Rgb(h, s) {
-	log.debug "colorHsv2Rgb Color HSV: ($h, $s, 1)"
+def colorHsv2Rgb(h, s) {
+	//log.debug "colorHsv2Rgb Color HSV: ($h, $s, 1)"
 
 	def r
 	def g
@@ -422,14 +422,14 @@ private colorHsv2Rgb(h, s) {
 		}
 	}
 
-	log.debug "colorHsv2Rgb Color RGB: ($r, $g, $b)"
+	//log.debug "colorHsv2Rgb Color RGB: ($r, $g, $b)"
 
 	[red: r, green: g, blue: b]
 }
 
-private colorRgb2Hsv(r, g, b)
+def colorRgb2Hsv(r, g, b)
 {
-	log.debug "colorRgb2Hsv Color RGB: ($r, $g, $b)"
+	//log.debug "colorRgb2Hsv Color RGB: ($r, $g, $b)"
 
 	def minRgb = minOfSet(r, g, b)
 	def maxRgb = maxOfSet(r, g, b)
@@ -458,7 +458,7 @@ private colorRgb2Hsv(r, g, b)
 		}
 	}
 
-	log.debug "colorRgb2Hsv Color HSV: ($h, $s, $v)"
+	//log.debug "colorRgb2Hsv Color HSV: ($h, $s, $v)"
 
 	return [hue: h, saturation: s, level: v]
 }
