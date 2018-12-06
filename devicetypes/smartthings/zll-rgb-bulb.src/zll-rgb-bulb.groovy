@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZLL RGB Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: false, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
+	definition (name: "ZLL RGB Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 
 		capability "Actuator"
 		capability "Color Control"
@@ -75,15 +75,6 @@ private shouldUseHueSaturation() {
 	return device.getDataValue("manufacturer") != "IKEA of Sweden"
 }
 
-/**
- * `state` object for devices using xyY color:
- *
- * currentX - current attribute x
- * currentY - current attribute y
- * 
- *  
- */
-
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description is $description"
@@ -92,44 +83,44 @@ def parse(String description) {
 	if (finalResult) {
 		log.debug finalResult
 		sendEvent(finalResult)
-	}
-	else {
+	} else {
 		def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 		log.trace "zigbeeMap : $zigbeeMap"
 
 		if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
-			if(zigbeeMap.attrInt == ATTRIBUTE_HUE && shouldUseHueSaturation()){  //Hue Attribute
+			if(zigbeeMap.attrInt == ATTRIBUTE_HUE && shouldUseHueSaturation()){ //Hue Attribute
 				def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "hue", value: hueValue, displayed:false)
-			}
-			else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION && shouldUseHueSaturation()) { //Saturation Attribute
+			} else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION && shouldUseHueSaturation()) { //Saturation Attribute
 				def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "saturation", value: saturationValue, displayed:false)
-			}
-			else if(zigbeeMap.attrInt == ATTRIBUTE_X) { //X Attribute
-				def xValue = zigbee.convertHexToInt(zigbeeMap.value)
-				log.debug "xValue = $xValue"
-
-				state.currentX = xValue
-			}
-			else if(zigbeeMap.attrInt == ATTRIBUTE_Y) { //Y Attribute
-				def yValue = zigbee.convertHexToInt(zigbeeMap.value)
-				log.debug "yValue = $yValue"
-
-				state.currentY = yValue
+			} else if(zigbeeMap.attrInt == ATTRIBUTE_X) { //X Attribute
+				state.currentRawX = zigbee.convertHexToInt(zigbeeMap.value)
+				log.debug "xValue = $state.currentRawX"
+			} else if(zigbeeMap.attrInt == ATTRIBUTE_Y) { //Y Attribute
+				state.currentRawY = zigbee.convertHexToInt(zigbeeMap.value)
+				log.debug "yValue = $state.currentRawY"
 			}
 
-			if (!shouldUseHueSaturation() && state.currentX && state.currentY) {
-				def hsv = safeColorXy2Hsv(state.currentX, state.currentY)
-                log.debug "x: ${state.currentX} y: ${state.currentY} hue: ${hsv.hue} saturation: ${hsv.saturation}"
-				sendEvent(name: "hue", value: hsv.hue, displayed:false)
-				sendEvent(name: "saturation", value: hsv.saturation, displayed:false)
+			// If the device is sending us this in response to us sending a command to set these,
+			// then we likely already have the corresponding hue and sat attribute values stored.
+			// However, in the event an external trigger gives us new values then we'll schedule
+			// something to collect them that doesn't assume both values changes and then generate
+			// the appropriate hue and sat (so we don't flood the event pipeline with garbage).
+			if (!shouldUseHueSaturation() && state.currentRawX && state.currentRawY) {
+				runIn(5, generateHsForXyData, [forceForLocallyExecuting: true])
 			}
-		}
-		else {
+		} else {
 			log.info "DID NOT PARSE MESSAGE for description : $description"
 		}
 	}
+}
+
+def generateHsForXyData() {
+	def hsv = safeColorXy2Hsv(state.currentRawX, state.currentRawY)
+	log.debug "x: ${state.currentRawX} y: ${state.currentRawY} hue: ${hsv.hue} saturation: ${hsv.saturation}"
+	sendEvent(name: "hue", value: hsv.hue, displayed:false)
+	sendEvent(name: "saturation", value: hsv.saturation, displayed:false)
 }
 
 def on() {
@@ -215,7 +206,7 @@ def installed() {
 }
 
 def setLevel(value) {
-	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()         //adding refresh because of ZLL bulb not conforming to send-me-a-report
+	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh() //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 private getScaledHue(value) {
@@ -283,68 +274,73 @@ def setSaturation(value) {
  *  for the specific language governing permissions and limitations under the License.
  */
 
-private min(first, ... rest) {
-	def min = first;
+private minOfSet(first, ... rest) {
+	def minVal = first
 	for (next in rest) {
-		if (next < min) {
-			min = next
+		if (next < minVal) {
+			minVal = next
 		}
 	}
 
-	min
+	minVal
 }
 
-private max(first, ... rest) {
-	def max = first;
+private maxOfSet(first, ... rest) {
+	def maxVal = first
 	for (next in rest) {
-		if (next > max) {
-			max = next
+		if (next > maxVal) {
+			maxVal = next
 		}
 	}
 
-	max
+	maxVal
 }
 
 private colorGammaAdjust(component) {
-  return (component > 0.04045) ? Math.pow((component + 0.055) / (1.0 + 0.055), 2.4) : (component / 12.92)
+	return (component > 0.04045) ? Math.pow((component + 0.055) / (1.0 + 0.055), 2.4) : (component / 12.92)
 }
 
 private colorGammaRevert(component) {
-  return (component <= 0.0031308) ? 12.92 * component : (1.0 + 0.055) * Math.pow(component, (1.0 / 2.4)) - 0.055
+	return (component <= 0.0031308) ? 12.92 * component : (1.0 + 0.055) * Math.pow(component, (1.0 / 2.4)) - 0.055
 }
 
 private colorXy2Rgb(x, y) {
-	log.debug "< Color xy: ($x, $y)"
+	log.debug "colorXy2Rgb Color xy: ($x, $y)"
 
 	def Y = 1
 	def X = (Y / y) * x
 	def Z = (Y / y) * (1.0 - x - y)
 
-	log.debug "< Color XYZ: ($X, $Y, $Z)"
+	log.debug "colorXy2Rgb Color XYZ: ($X, $Y, $Z)"
 
 	// sRGB, Reference White D65
-	def M = [
+	/*def M = [
 		[  3.2410032, -1.5373990, -0.4986159 ],
 		[ -0.9692243,  1.8759300,  0.0415542 ],
 		[  0.0556394, -0.2040112,  1.0571490 ]
+	]*/
+	def M = [
+		[  3.2404542, -1.5371385, -0.4985314 ],
+		[ -0.9692660,  1.8760108,  0.0415560 ],
+		[  0.0556434, -0.2040259,  1.0572252 ]
 	]
 
 	def r = X * M[0][0] + Y * M[0][1] + Z * M[0][2]
 	def g = X * M[1][0] + Y * M[1][1] + Z * M[1][2]
 	def b = X * M[2][0] + Y * M[2][1] + Z * M[2][2]
 
-	def max = max(r, g, b)
-	r = colorGammaRevert(r / max)
-	g = colorGammaRevert(g / max)
-	b = colorGammaRevert(b / max)
+	def maxRgb = maxOfSet(r, g, b)
+	r = colorGammaRevert(r / maxRgb)
+	g = colorGammaRevert(g / maxRgb)
+	b = colorGammaRevert(b / maxRgb)
 
-	log.debug "< Color RGB: ($r, $g, $b)"
+	log.debug "colorXy2Rgb Color RGB: ($r, $g, $b)"
 
 	[red: r, green: g, blue: b]
 }
 
 private colorRgb2Xy(r, g, b) {
-	log.debug "> Color RGB: ($r, $g, $b)"
+	log.debug "colorRgb2Xy Color RGB: ($r, $g, $b)"
 
 	r = colorGammaAdjust(r)
 	g = colorGammaAdjust(g)
@@ -355,28 +351,33 @@ private colorRgb2Xy(r, g, b) {
 	//  R	0.64000 0.33000
 	//  G	0.30000 0.60000
 	//  B	0.15000 0.06000
-	def M = [
+	/*def M = [
 		[  0.4123866,  0.3575915,  0.1804505 ],
 		[  0.2126368,  0.7151830,  0.0721802 ],
 		[  0.0193306,  0.1191972,  0.9503726 ]
+	]*/
+	def M = [
+		[  0.4124564,  0.3575761,  0.1804375 ],
+		[  0.2126729,  0.7151522,  0.0721750 ],
+		[  0.0193339,  0.1191920,  0.9503041 ]
 	]
 
 	def X = r * M[0][0] + g * M[0][1] + b * M[0][2]
 	def Y = r * M[1][0] + g * M[1][1] + b * M[1][2]
 	def Z = r * M[2][0] + g * M[2][1] + b * M[2][2]
 
-	log.debug "> Color XYZ: ($X, $Y, $Z)"
+	log.debug "colorRgb2Xy Color XYZ: ($X, $Y, $Z)"
 
 	def x = X / (X + Y + Z)
 	def y = Y / (X + Y + Z)
 
-	log.debug "> Color xy: ($x, $y)"
+	log.debug "colorRgb2Xy Color xy: ($x, $y)"
 
 	[x: x, y: y]
 }
 
 private colorHsv2Rgb(h, s) {
-	log.debug "< Color HSV: ($h, $s, 1)"
+	log.debug "colorHsv2Rgb Color HSV: ($h, $s, 1)"
 
 	def r
 	def g
@@ -421,43 +422,43 @@ private colorHsv2Rgb(h, s) {
 		}
 	}
 
-	log.debug "< Color RGB: ($r, $g, $b)"
+	log.debug "colorHsv2Rgb Color RGB: ($r, $g, $b)"
 
 	[red: r, green: g, blue: b]
 }
 
 private colorRgb2Hsv(r, g, b)
 {
-	log.debug "> Color RGB: ($r, $g, $b)"
+	log.debug "colorRgb2Hsv Color RGB: ($r, $g, $b)"
 
-	def min = min(r, g, b)
-	def max = max(r, g, b)
-	def delta = max - min
+	def minRgb = minOfSet(r, g, b)
+	def maxRgb = maxOfSet(r, g, b)
+	def delta = maxRgb - minRgb
 
 	def h
 	def s
-	def v = max
+	def v = maxRgb
 
 	if (delta == 0) {
 		h = 0
 		s = 0
 	} else {
-		s = delta / max
-		if (r == max) { // between yellow & magenta
-			h = ( g - b ) / delta
-		} else if (g == max) { // between cyan & yellow
-			h = 2 + ( b - r ) / delta
+		s = delta / maxRgb
+		if (r == maxRgb) { // between yellow & magenta
+			h = (g - b) / delta
+		} else if (g == maxRgb) { // between cyan & yellow
+			h = 2 + (b - r) / delta
 		} else { // between magenta & cyan
-			h = 4 + ( r - g ) / delta
+			h = 4 + (r - g) / delta
 		}
 		h /= 6
 
 		if (h < 0) {
 			h += 1
 		}
-    }
+	}
 
-	log.debug "> Color HSV: ($h, $s, $v)"
+	log.debug "colorRgb2Hsv Color HSV: ($h, $s, $v)"
 
 	return [hue: h, saturation: s, level: v]
 }
@@ -481,4 +482,3 @@ def safeColorXy2Hsv(x, y) {
 
 	return [hue: Math.round(hsv.hue * 100).intValue(), saturation: Math.round(hsv.saturation * 100).intValue()]
 }
-
