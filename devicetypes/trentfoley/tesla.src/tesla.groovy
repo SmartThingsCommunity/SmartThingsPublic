@@ -122,8 +122,8 @@ metadata {
         	state "default", label: "Rear", action: "openRearTrunk"
         }
 		standardTile("motion", "device.motion", width: 2, height: 1) {
-            state "inactive", label: "Parked", icon: "st.motion.acceleration.inactive", backgroundColor: "#ffffff"
-            state "active", label: "Driving", icon: "st.motion.acceleration.active", backgroundColor: "#00a0dc"
+            state "inactive", label: "Parked", icon: "st.motion.acceleration.inactive"
+            state "active", label: "Driving", icon: "st.motion.acceleration.active"
         }
         valueTile("speed", "device.speed", width: 2, height: 1) {
 			state "default", label: '${currentValue} mph'
