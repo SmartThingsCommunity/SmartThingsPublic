@@ -182,6 +182,7 @@ def setupHealthCheck() {
 
 def configureSupportedRanges() {
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
+	// These are part of the deprecated Thermostat capability. Remove these when that capability is removed.
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 }
@@ -255,17 +256,18 @@ def parse(String description) {
 				map.unit = getTemperatureScale()
 				map.value = getTemperature(descMap.value)
 
-				if (intVal == 0x7ffd) {		// 0x7FFD
+				if (intVal == 0x7ffd) {
 					map.name = "temperatureAlarm"
 					map.value = "freeze"
-					map.unit = ""
-				} else if (intVal == 0x7fff) {	// 0x7FFF
+					map.unit = null
+				} else if (intVal == 0x7fff) {
 					map.name = "temperatureAlarm"
 					map.value = "heat"
-					map.unit = ""
-				} else if (intVal == 0x8000) {	// 0x8000
+					map.unit = null
+				} else if (intVal == 0x8000) {
 					map.name = null
 					map.value = null
+					map.unit = null
 					map.descriptionText = "Received a temperature error"
 				} else if (intVal > 0x8000) {
 					map.value = -(Math.round(2*(655.36 - map.value))/2)
@@ -276,10 +278,11 @@ def parse(String description) {
 				}
 			} else if (descMap.attrInt == ATTRIBUTE_HEAT_SETPOINT) {
 				def intVal = Integer.parseInt(descMap.value, 16)
-				if (intVal != 0x8000) {		// 0x8000
+				if (intVal != 0x8000) {
 					log.debug "HEATING SETPOINT"
 					map.name = "heatingSetpoint"
 					map.value = getTemperature(descMap.value)
+					map.unit = getTemperatureScale()
 					map.data = [heatingSetpointRange: heatingSetpointRange]
 				}
 			} else if (descMap.attrInt == ATTRIBUTE_PI_HEATING_STATE) {
