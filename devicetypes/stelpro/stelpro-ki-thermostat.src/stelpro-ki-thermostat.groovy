@@ -141,6 +141,7 @@ def setupHealthCheck() {
 
 def configureSupportedRanges() {
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
+	// These are part of the deprecated Thermostat capability. Remove these when that capability is removed.
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 }
@@ -169,6 +170,10 @@ def parse(String description) {
 	// If the user installed with an old DTH version, update so that the new mobile client will work
 	if (!device.currentValue("supportedThermostatModes")) {
 		configureSupportedRanges()
+	}
+	// Existing installations need the temperatureAlarm state initialized
+	if (device.currentValue("temperatureAlarm") == null) {
+		sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	}
 
 	if (description == "updated") {
@@ -291,21 +296,26 @@ def zwaveEvent(sensormultilevelv3.SensorMultilevelReport cmd) {
 
 		temp = map.value
 		// The specific values checked below represent ambient temperature alarm indicators
-		if (temp == "32765") {			// 0x7FFD
+		if (temp == 0x7ffd) {
 			map.name = "temperatureAlarm"
 			map.value = "freeze"
-			map.unit = ""
-		} else if (temp == "32767") {		// 0x7FFF
+			map.unit = null
+		} else if (temp == 0x7fff) {
 			map.name = "temperatureAlarm"
 			map.value = "heat"
-			map.unit = ""
-		} else if (temp == "-32768"){		// 0x8000
-			map.name = "temperatureAlarm"
-			map.value = "cleared"
-			map.unit = ""
+			map.unit = null
+		} else if (temp == 0x8000){
+			map.name = null
+			map.value = null
+			map.unit = null
+			map.descriptionText = "Received a temperature error"
 		} else {
 			tempfloat = (Math.round(temp.toFloat() * 2)) / 2
 			map.value = tempfloat
+		}
+
+		if (device.currentValue("temperatureAlarm") != "cleared" && map.name == "temperature") {
+			sendEvent(name: "temperatureAlarm", value: "cleared")
 		}
 	} else if (cmd.sensorType == sensormultilevelv3.SensorMultilevelReport.SENSOR_TYPE_RELATIVE_HUMIDITY_VERSION_2) {
 		map.value = cmd.scaledSensorValue
