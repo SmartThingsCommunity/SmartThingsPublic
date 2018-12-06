@@ -6,8 +6,9 @@
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.4b 10/15/18 
+ *  Version 1.0.5 12/4/18 
  *
+ *  Version 1.0.5 (12/4/18) - Removed logging to reduce Zwave traffic; optimized button triple press  
  *  Version 1.0.4b (10/15/18) - Changed to triple push for options for switches to activate special functions.
  *  Version 1.0.3 (8/21/18) - Changed the setLevel mode to boolean
  *  Version 1.0.2 (8/2/18) - Updated some of the text, added/updated options on the Settings page
@@ -25,7 +26,7 @@
  *
  */
 metadata {
-	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck") {
+	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", vid: "generic-dimmer") {
 		capability "Motion Sensor"
         capability "Actuator"
  		capability "Switch"
@@ -214,14 +215,14 @@ simulator {
 def parse(String description) {
     def result = null
 	if (description != "updated") {
-		log.debug "parse() >> zwave.parse($description)"
+		//log.debug "parse() >> zwave.parse($description)"
 		def cmd = zwave.parse(description, [0x20: 1, 0x25: 1, 0x56: 1, 0x70: 2, 0x72: 2, 0x85: 2, 0x71: 3, 0x56: 1])
 		if (cmd) {
 			result = zwaveEvent(cmd)
         }
 	}
     if (!result) { log.warn "Parse returned ${result} for $description" }
-    else {log.debug "Parse returned ${result}"}
+    //else {log.debug "Parse returned ${result}"}
 	return result
 	if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
 		result = [result, response(zwave.basicV1.basicGet())]
@@ -246,9 +247,11 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
     if (cmd.value == 255) {
     	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "On/Up on (button 1) $device.displayName was pushed", isStateChange: true, type: "physical"])
     	if (timeoutdurationPress){
-        	if (!state.onCounter || state.onCounter>3) state.onCounter=0
+        	if (modeOverride) state.offCounter=0
+            if (!state.onCounter || state.onCounter > 2 || (now()-state.Timer) > 10000) state.onCounter=0
             state.onCounter = state.onCounter + 1
-            if (state.onCounter==1) state.Timer=now() 
+            if (state.onCounter==1) state.Timer=now()
+            log.debug "On button push:" + state.onCounter
         	if (state.onCounter==3 && (now()-state.Timer)<10000) {
                 log.info "Triple press in less than 10 seconds-Overriding timeout"
                 def cmds=[]
@@ -262,9 +265,11 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	else if (cmd.value == 0) {
     	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
     	if (modeOverride) {
-        	if (!state.offCounter || state.offCounter>3) state.offCounter=0
+        	if (timeoutdurationPress) state.onCounter=0
+            if (!state.offCounter || state.offCounter > 2 || (now()-state.timerOff)>10000) state.offCounter=0
             state.offCounter = state.offCounter + 1
             if (state.offCounter==1) state.timerOff=now()
+            log.debug "Off button push:" + state.offCounter
             if (state.offCounter==3 && (now()-state.timerOff)<10000) {
                 log.info "Triple press in less than 10 seconds-Overriding mode"
                 def cmds=[]
@@ -365,7 +370,7 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 	createEvent([name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false])
 }
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd){
-	log.debug "---NOTIFICATION REPORT V3--- ${device.displayName} sent ${cmd}"
+	//log.debug "---NOTIFICATION REPORT V3--- ${device.displayName} sent ${cmd}"
 	def result = []
     def cmds = []
 	if (cmd.notificationType == 0x07) {
@@ -381,7 +386,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     log.warn "${device.displayName} received unhandled command: ${cmd}"
 }
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd) {
-	log.debug "---SWITCH MULTILEVEL REPORT V3--- ${device.displayName} sent ${cmd}"
+	//log.debug "---SWITCH MULTILEVEL REPORT V3--- ${device.displayName} sent ${cmd}"
 	dimmerEvents(cmd)
 }
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd) {
@@ -757,4 +762,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.4b (10/15/18)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.5 (12/04/18)") }
