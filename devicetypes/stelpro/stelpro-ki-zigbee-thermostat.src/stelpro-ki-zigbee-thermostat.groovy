@@ -400,7 +400,8 @@ def getTemperature(value) {
 		if (getTemperatureScale() == "C") {
 			return celsius
 		} else {
-			return Math.round(celsiusToFahrenheit(celsius))
+			def rounded = new BigDecimal(celsiusToFahrenheit(celsius)).setScale(0, BigDecimal.ROUND_HALF_UP)
+			return rounded
 		}
 	}
 }
