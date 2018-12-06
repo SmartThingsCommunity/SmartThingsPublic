@@ -96,4 +96,5 @@ def ping() {
 def configure() {
 	log.debug "configure"
 	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	return refresh() + zigbee.enrollResponse()
 }
