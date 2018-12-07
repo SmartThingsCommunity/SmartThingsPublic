@@ -20,8 +20,10 @@ metadata {
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Configuration"
 
 		fingerprint mfr: "010F", prod: "0F01", model: "1000", deviceJoinName: "Fibaro Button"
+		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Panic Button"
 	}
 
 	tiles(scale: 2) {
@@ -45,8 +47,16 @@ def installed() {
 	response([
 			secure(zwave.batteryV1.batteryGet()),
 			"delay 2000",
-			secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
+			secure(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	])
+}
+
+def configure() {
+	if(zwaveInfo.mfr?.contains("0086"))
+		[
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 250, scaledConfigurationValue: 1)),
+			secure(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId:zwaveHubNodeId))
+		]
 }
 
 def parse(String description) {
@@ -54,7 +64,7 @@ def parse(String description) {
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText:description, isStateChange:true)
 	} else {
-		def cmd = zwave.parse(description)
+		def cmd = zwave.parse(description, commandClasses)
 		if (cmd) {
 			result += zwaveEvent(cmd)
 		}
@@ -64,7 +74,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand()
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClasses)
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	} else {
@@ -76,20 +86,25 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
 	def event = createEvent(name: "button", value: value, descriptionText: "Button was ${value}")
-	[event, response(secure(zwave.wakeUpV2.wakeUpNoMoreInformation()))]
+	[event, response(secure(zwave.wakeUpV1.wakeUpNoMoreInformation()))]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
+	def value = cmd.sceneId % 2 ? "pushed"  : "held"
+	createEvent(name: "button", value: value, descriptionText: "Button was ${value}")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def results = []
 	results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
 		results += response([
 				secure(zwave.batteryV1.batteryGet()),
 				"delay 2000",
-				secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
+				secure(zwave.wakeUpV1.wakeUpNoMoreInformation())
 		])
 	} else {
-		results += response(secure(zwave.wakeUpV2.wakeUpNoMoreInformation()))
+		results += response(secure(zwave.wakeUpV1.wakeUpNoMoreInformation()))
 	}
 	results
 }
@@ -126,4 +141,8 @@ private getEventsMap() {[
 		4: "pushed_3x",
 		5: "pushed_4x",
 		6: "pushed_5x"
+]}
+
+private getCommandClasses() {[
+		0x84: 1
 ]}
