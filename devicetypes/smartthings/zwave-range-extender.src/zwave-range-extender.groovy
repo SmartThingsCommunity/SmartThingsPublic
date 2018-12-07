@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Range Extender", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.networking") {
+	definition (name: "Z-Wave Range Extender", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.networking", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Health Check"
 
 		fingerprint mfr: "0086", prod: "0104", model: "0075", deviceJoinName: "Aeotec Range Extender 6" //US
