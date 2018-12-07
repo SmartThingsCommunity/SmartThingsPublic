@@ -23,6 +23,7 @@ metadata {
 		capability "Temperature Alarm"
 
 		fingerprint mfr:"010F", prod:"0C02", model:"1002"
+		fingerprint mfr:"010F", prod:"0C02", model:"3002"
 	}
 	simulator {
 		//battery
