@@ -56,7 +56,7 @@ def parse(String description) {
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
 		} else {
-			map = zigbee.parseDescriptionAsMap(description)
+			map = parseAttrMessage(description)
 		}
 	}
 	log.debug "Parse returned $map"
@@ -66,8 +66,20 @@ def parse(String description) {
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it)}
 	}
+
 	return result
 }
+
+def parseAttrMessage(String description){
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	def map = [:]
+	if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+		map = getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())
+	}
+	return map;
+}
+
 def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	return getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())
@@ -96,4 +108,5 @@ def ping() {
 def configure() {
 	log.debug "configure"
 	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	return refresh() + zigbee.enrollResponse()
 }
