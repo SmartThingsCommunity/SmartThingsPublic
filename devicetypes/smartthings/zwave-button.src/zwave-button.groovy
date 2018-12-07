@@ -17,6 +17,7 @@
 metadata {
 	definition (name: "Z-Wave Button", namespace: "smartthings", author: "SmartThings") {
 		capability "Button"
+		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
 
