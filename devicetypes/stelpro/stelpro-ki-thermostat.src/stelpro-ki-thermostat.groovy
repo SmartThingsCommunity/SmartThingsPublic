@@ -314,8 +314,15 @@ def zwaveEvent(sensormultilevelv3.SensorMultilevelReport cmd) {
 			map.value = tempfloat
 		}
 
-		if (device.currentValue("temperatureAlarm") != "cleared" && map.name == "temperature") {
-			sendEvent(name: "temperatureAlarm", value: "cleared")
+		// Handle cases where we need to update the temperature alarm state given certain temperatures
+		if (map.name == "temperature") {
+			if (map.value < (map.unit == "C" ? 0 : 32)) { // Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+				sendEvent(name: "temperatureAlarm", value: "freeze")
+			} else if (map.value >= (map.unit == "C" ? 50 : 122)) { // Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C
+				sendEvent(name: "temperatureAlarm", value: "heat")
+			} else if (device.currentValue("temperatureAlarm") != "cleared") {
+				sendEvent(name: "temperatureAlarm", value: "cleared")
+			}
 		}
 	} else if (cmd.sensorType == sensormultilevelv3.SensorMultilevelReport.SENSOR_TYPE_RELATIVE_HUMIDITY_VERSION_2) {
 		map.value = cmd.scaledSensorValue

@@ -239,31 +239,7 @@ def parse(String description) {
 		log.debug "Desc Map: $descMap"
 		if (descMap.clusterInt == THERMOSTAT_CLUSTER) {
 			if (descMap.attrInt == ATTRIBUTE_LOCAL_TEMP) {
-				def intVal = Integer.parseInt(descMap.value, 16)
-				map.name = "temperature"
-				map.unit = getTemperatureScale()
-				map.value = getTemperature(descMap.value)
-
-				if (intVal == 0x7ffd) {
-					map.name = "temperatureAlarm"
-					map.value = "freeze"
-					map.unit = null
-				} else if (intVal == 0x7fff) {
-					map.name = "temperatureAlarm"
-					map.value = "heat"
-					map.unit = null
-				} else if (intVal == 0x8000) {
-					map.name = null
-					map.value = null
-					map.unit = null
-					map.descriptionText = "Received a temperature error"
-				} else if (intVal > 0x8000) {
-					map.value = -(Math.round(2*(655.36 - map.value))/2)
-				}
-
-				if (device.currentValue("temperatureAlarm") != "cleared" && map.name == "temperature") {
-					sendEvent(name: "temperatureAlarm", value: "cleared")
-				}
+				map = handleTemperature(descMap)
 			} else if (descMap.attrInt == ATTRIBUTE_HEAT_SETPOINT) {
 				def intVal = Integer.parseInt(descMap.value, 16)
 				if (intVal != 0x8000) {
@@ -313,7 +289,7 @@ def parse(String description) {
 				def intVal = Integer.parseInt(descMap.value, 16)
 				log.debug "HEAT DEMAND"
 				map.name = "thermostatOperatingState"
-				if (intVal < 0x10) {
+				if (intVal < 10) {
 					map.value = "idle"
 				} else {
 					map.value = "heating"
@@ -335,6 +311,45 @@ def parse(String description) {
 	}
 	log.debug "Parse returned $map"
 	return result
+}
+
+def handleTemperature(descMap) {
+	def map = [:]
+	def intVal = Integer.parseInt(descMap.value, 16)
+	map.name = "temperature"
+	map.unit = getTemperatureScale()
+	map.value = getTemperature(descMap.value)
+
+	// Handle special temperature flags where we need to change the event type
+	if (intVal == 0x7ffd) {
+		map.name = "temperatureAlarm"
+		map.value = "freeze"
+		map.unit = null
+	} else if (intVal == 0x7fff) {
+		map.name = "temperatureAlarm"
+		map.value = "heat"
+		map.unit = null
+	} else if (intVal == 0x8000) {
+		map.name = null
+		map.value = null
+		map.unit = null
+		map.descriptionText = "Received a temperature error"
+	} else if (intVal > 0x8000) {
+		map.value = -(Math.round(2*(655.36 - map.value))/2)
+	}
+
+	// Handle cases where we need to update the temperature alarm state given certain temperatures
+	if (map.name == "temperature") {
+		if (intVal < 0) { // Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+			sendEvent(name: "temperatureAlarm", value: "freeze")
+		} else if ((intVal / 100) >= 50) { // Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C
+			sendEvent(name: "temperatureAlarm", value: "heat")
+		} else if (device.currentValue("temperatureAlarm") != "cleared") {
+			sendEvent(name: "temperatureAlarm", value: "cleared")
+		}
+	}
+
+	map
 }
 
 def updateWeather() {
