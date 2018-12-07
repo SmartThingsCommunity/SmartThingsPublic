@@ -27,7 +27,7 @@ metadata {
 		capability "Health Check"
 		capability "Refresh"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0004, 0005, 0009, 0101", outClusters: "0019", manufacturer: "SAMSUNG SDS", deviceJoinName: "SDS ÁªÍøĞÍÖÇÄÜËø"
+		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0004, 0005, 0009, 0101", outClusters: "0019", manufacturer: "SAMSUNG SDS", deviceJoinName: "SDS è”ç½‘å‹æ™ºèƒ½é”"
         
 	}
 
