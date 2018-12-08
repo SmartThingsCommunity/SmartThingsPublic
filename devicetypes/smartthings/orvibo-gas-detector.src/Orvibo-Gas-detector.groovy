@@ -73,7 +73,7 @@ def parse(String description) {
 def parseAttrMessage(String description){
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
-	if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+	if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
 		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 		map = getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())
 	}
