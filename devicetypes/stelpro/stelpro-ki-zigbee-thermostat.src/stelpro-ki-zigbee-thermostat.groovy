@@ -298,7 +298,7 @@ def parse(String description) {
 				// If the user does not want to see the Idle and Heating events in the event history,
 				// don't show them. Otherwise, don't show them more frequently than 30 seconds.
 				if (settings.heatdetails == "No" ||
-					!secondsPast(device.currentState("thermostatOperatingState").getLastUpdated(), 30)) {
+					!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 30)) {
 					map.displayed = false
 				}
 			}
