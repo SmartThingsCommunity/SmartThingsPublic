@@ -740,7 +740,6 @@ def motionSensorHandler(evt){
 //************************************************************************************************//
 /// LEARNING HANDLERS AND FUNCTIONS
 //************************************************************************************************//
-
 def setpointChangeHandler(evt){
 
     learn(evt.device, evt.value, evt.name)
@@ -1157,7 +1156,6 @@ def eval(){
 
     }
 }
-
 def setThermostats(){
     log.debug "thermosats setup"
     boolean inSavingMode = location.currentMode in saveModes
@@ -1430,106 +1428,6 @@ recordedCSP for $CurrMode mode = $recordedCSP
     log.debug "end of setThermostats()"
 
 }
-
-boolean useboth(boolean tooCold4Hpump, int outside, int ThisTemp, int HSP, boolean Active){
-
-    boolean result = false
-
-    if(!tooCold4Hpump && outside < 48 && extraAppliance && thisTemp < HSP && Active){
-        // use both devices when outside temperature is too low
-        result = true;
-    }
-
-    return result
-}
-
-boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside){
-
-    def thisTherm = Thermostats[i]
-
-    def result = false
-
-    if(outside <= lowTemp){
-        //if outside temperature makes it that we are in heating mode
-
-        if(thisTemp >= thisHSP){
-            // if desired temp has been reached, you may turn if off (or set to requested setting), providing this is requested later
-            result = true
-        }
-    }
-    else if(outside >= highTemp){
-        //if outside temperature makes it that we are in cooling mode
-
-        if(thisTemp <= thisCSP){
-            // if desired temp has been reached, you may turn if off, providing this is requested later
-            result = true
-        }
-    }  
-    /*  log.trace """ in keepOff boolean, parameters are:
-thisTherm = $thisTherm
-thisTemp = $thisTemp
-thisHSP = $thisHSP
-thisCSP = $thisCSP
-
-& returned result is: $result
-"""*/
-    return result
-}
-
-boolean managed(thisTherm){
-    boolean result = false
-
-    if(thisTherm.toString() in ApplianceWithPwMeter)
-    {
-        result = true
-    }
-    log.debug """
-    $thisTherm in ApplianceWithPwMeter: ${thisTherm.toString() in ApplianceWithPwMeter}
-    managed() returns $result
-    """
-    return result
-}
-boolean inComfortMode(){
-    boolean result = true // default for when user didn't pick this option
-    def CurrMode = location.currentMode
-
-    if(comfortMode){
-        if(CurrMode in comfortMode){
-            result = true
-        }
-        else {
-            result = false
-        }
-    }
-    log.debug "inComfortMode() returns $result"
-    return result
-}
-
-def getComfortH(){
-
-    log.debug "comfortLow = $comfortLow comfortHigh = $comfortHigh"
-    def outside = outsidetemp.currentValue("temperature").toInteger()
-
-    def xa = 34 // x1 reference value to be multiplied  
-    def x = outside // outside temperature is the variable
-    def y = null // value to be found
-    def b = 10 // b is the multiplier 
-    def c = 72 // c is a constant as the average comfort setting (y tends to c to infinity)
-
-    // y = bx / x² + c
-    float newComfortH = (b*xa) / (x*x) + c
-    float beforeRound = newComfortH
-
-    newComfortH = newComfortH.round().toInteger()
-
-    if(newComfortH > comfortHigh){
-        newComfortH = comfortHigh
-    }
-    log.debug "b = $b, outside = $outside, newComfortH = $newComfortH ($beforeRound)"
-
-    return newComfortH
-
-}
 def setHSPs(){
 
     def CurrMode = location.currentMode
@@ -1735,6 +1633,103 @@ thisCSP = $thisCSP
 state
 }
 
+boolean useboth(boolean tooCold4Hpump, int outside, int ThisTemp, int HSP, boolean Active){
+
+    boolean result = false
+
+    if(!tooCold4Hpump && outside < 48 && extraAppliance && thisTemp < HSP && Active){
+        // use both devices when outside temperature is too low
+        result = true;
+    }
+
+    return result
+}
+boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside){
+
+    def thisTherm = Thermostats[i]
+
+    def result = false
+
+    if(outside <= lowTemp){
+        //if outside temperature makes it that we are in heating mode
+
+        if(thisTemp >= thisHSP){
+            // if desired temp has been reached, you may turn if off (or set to requested setting), providing this is requested later
+            result = true
+        }
+    }
+    else if(outside >= highTemp){
+        //if outside temperature makes it that we are in cooling mode
+
+        if(thisTemp <= thisCSP){
+            // if desired temp has been reached, you may turn if off, providing this is requested later
+            result = true
+        }
+    }  
+    /*  log.trace """ in keepOff boolean, parameters are:
+thisTherm = $thisTherm
+thisTemp = $thisTemp
+thisHSP = $thisHSP
+thisCSP = $thisCSP
+
+& returned result is: $result
+"""*/
+    return result
+}
+boolean managed(thisTherm){
+    boolean result = false
+
+    if(thisTherm.toString() in ApplianceWithPwMeter)
+    {
+        result = true
+    }
+    log.debug """
+    $thisTherm in ApplianceWithPwMeter: ${thisTherm.toString() in ApplianceWithPwMeter}
+    managed() returns $result
+    """
+    return result
+}
+boolean inComfortMode(){
+    boolean result = true // default for when user didn't pick this option
+    def CurrMode = location.currentMode
+
+    if(comfortMode){
+        if(CurrMode in comfortMode){
+            result = true
+        }
+        else {
+            result = false
+        }
+    }
+    log.debug "inComfortMode() returns $result"
+    return result
+}
+
+def getComfortH(){
+
+    log.debug "comfortLow = $comfortLow comfortHigh = $comfortHigh"
+    def outside = outsidetemp.currentValue("temperature").toInteger()
+
+    def xa = 34 // x1 reference value to be multiplied  
+    def x = outside // outside temperature is the variable
+    def y = null // value to be found
+    def b = 10 // b is the multiplier 
+    def c = 72 // c is a constant as the average comfort setting (y tends to c to infinity)
+
+    // y = bx / x² + c
+    float newComfortH = (b*xa) / (x*x) + c
+    float beforeRound = newComfortH
+
+    newComfortH = newComfortH.round().toInteger()
+
+    if(newComfortH > comfortHigh){
+        newComfortH = comfortHigh
+    }
+    log.debug "b = $b, outside = $outside, newComfortH = $newComfortH ($beforeRound)"
+
+    return newComfortH
+
+}
 
 def poll(device){
 
