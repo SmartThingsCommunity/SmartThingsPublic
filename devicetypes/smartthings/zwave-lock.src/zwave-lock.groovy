@@ -626,6 +626,9 @@ private def handleBatteryAlarmReport(cmd) {
 	def deviceName = device.displayName
 	def map = null
 	switch(cmd.zwaveAlarmEvent) {
+		case 0x01: //power has been applied, check if the battery level updated
+			result << response(secure(zwave.batteryV1.batteryGet()))
+			break;
 		case 0x0A:
 			map = [ name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true, data: [ lockName: deviceName ] ]
 			break

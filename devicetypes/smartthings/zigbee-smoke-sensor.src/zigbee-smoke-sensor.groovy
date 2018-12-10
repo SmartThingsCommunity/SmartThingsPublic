@@ -29,6 +29,7 @@ metadata {
 		capability "Health Check"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "Orvibo Smoke Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "Orvibo Smoke Sensor"
 	}
 
 	tiles {
@@ -136,6 +137,6 @@ def configure() {
 	log.debug "configure"
 	sendEvent(name: "checkInterval", value:6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) + refresh()
+	return refresh() + zigbee.enrollResponse() + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10)
 }
 
