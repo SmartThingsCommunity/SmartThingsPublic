@@ -44,6 +44,7 @@ metadata {
 def installed() {
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "numberOfButtons", value: 1)
+	sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1])
 	response([
 			secure(zwave.batteryV1.batteryGet()),
 			"delay 2000",
@@ -54,8 +55,7 @@ def installed() {
 def configure() {
 	if(zwaveInfo.mfr?.contains("0086"))
 		[
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 250, scaledConfigurationValue: 1)),
-			secure(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId:zwaveHubNodeId))
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 250, scaledConfigurationValue: 1)),	//makes Aeotec Panic Button communicate with primary controller
 		]
 }
 
@@ -85,13 +85,12 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
-	def event = createEvent(name: "button", value: value, descriptionText: "Button was ${value}")
-	[event, response(secure(zwave.wakeUpV1.wakeUpNoMoreInformation()))]
+	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
 	def value = cmd.sceneId % 2 ? "pushed"  : "held"
-	createEvent(name: "button", value: value, descriptionText: "Button was ${value}")
+	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
@@ -135,7 +134,7 @@ private secure(cmd) {
 
 private getEventsMap() {[
 		0: "pushed",
-		1: "up_hold",
+		1: "held",
 		2: "down_hold",
 		3: "pushed_2x",
 		4: "pushed_3x",
