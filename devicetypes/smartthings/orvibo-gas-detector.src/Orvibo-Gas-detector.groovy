@@ -56,7 +56,7 @@ def parse(String description) {
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
 		} else {
-			map = zigbee.parseDescriptionAsMap(description)
+			map = parseAttrMessage(description)
 		}
 	}
 	log.debug "Parse returned $map"
@@ -66,8 +66,20 @@ def parse(String description) {
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it)}
 	}
+
 	return result
 }
+
+def parseAttrMessage(String description){
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	def map = [:]
+	if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
+		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+		map = getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())
+	}
+	return map;
+}
+
 def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	return getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())
