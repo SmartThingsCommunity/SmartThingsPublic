@@ -84,7 +84,7 @@ def refresh(YaleAlarmState) {
 		]
 	httpPost(getPanelMetaDataAndFullStatus) {	response -> 
     	YaleAlarmState = response.data.message
-//log.debug "'$device' REFRESH - response = '$response.data.message'"
+log.debug "'$device' REFRESH - response = '$response.data.message' & $response"
     }
 	if (YaleAlarmState.mode.contains("arm")) {
         state.mode = 'Armed-Away'
@@ -103,7 +103,8 @@ def refresh(YaleAlarmState) {
   	logout(token)
     log.info "'$device' REFRESH - Mode is '$state.mode', Response- '$YaleAlarmState' complete"
 	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Refresh - mode is '$state.mode', response '$YaleAlarmState'")
-  	runEvery3Hours(refresh)
+  	sendEvent(name: "refresh", value: YaleAlarmState, displayed: true, isStateChange:true)
+    runEvery3Hours(refresh)
     return YaleAlarmState
 }
 

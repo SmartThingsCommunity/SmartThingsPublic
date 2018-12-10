@@ -444,9 +444,8 @@ def poll() {
 	if (resppar != null){
 		def dvid = device.deviceNetworkId.toInteger()
 		def dvkey1 = resppar.data.id.findIndexOf { it == (dvid) }
-
-		//log.debug "key only data = ${resppar.data[(dvkey1)]}"
-        log.debug "mihome index - '$dvkey1', name - ${resppar.data[(dvkey1)].label}"
+				//log.debug "key only data = ${resppar.data[(dvkey1)]}"
+        		//log.debug "mihome index - '$dvkey1', name - ${resppar.data[(dvkey1)].label}"
     	state.temperature = resppar.data[(dvkey1)].last_temperature
     	state.heatingSetpoint = resppar.data[(dvkey1)].target_temperature
     	state.batteryVoltage = resppar.data[(dvkey1)].voltage

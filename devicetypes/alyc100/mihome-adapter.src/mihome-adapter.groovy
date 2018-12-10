@@ -112,7 +112,7 @@ def poll() {
   		def dvid = device.deviceNetworkId.toInteger()
 		def dvkey1 = resppar.data.id.findIndexOf { it == (dvid) }
 							//	log.debug "ALL $dvid id '$dvkey1' - ${resppar.data[(dvkey1)]}"
-        log.debug "mihome index - '$dvkey1', name - ${resppar.data[(dvkey1)].label}"
+        					//log.debug "mihome index - '$dvkey1', name - ${resppar.data[(dvkey1)].label}"
     	state.Switch = resppar.data[(dvkey1)].power_state == 1 ? "on" : "off"//resp.data.data.power_state == 1 ? "on" : "off"
     	state.updatedat = resppar.data[(dvkey1)].parent_device_last_seen_at
         sendEvent(name: "refresh", value: "default", displayed: false)
