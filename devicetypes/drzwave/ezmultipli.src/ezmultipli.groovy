@@ -58,25 +58,25 @@ metadata {
 			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-			state "temperature", label:'${currentValue}°', unit:"F", icon:"",
-			backgroundColors:[
-				// Celsius
-				[value: 0, color: "#153591"],
-				[value: 7, color: "#1e9cbb"],
-				[value: 15, color: "#90d2a7"],
-				[value: 23, color: "#44b621"],
-				[value: 28, color: "#f1d801"],
-				[value: 35, color: "#d04e00"],
-				[value: 37, color: "#bc2323"],
-				// Fahrenheit
-				[value: 40, color: "#153591"],
-				[value: 44, color: "#1e9cbb"],
-				[value: 59, color: "#90d2a7"],
-				[value: 74, color: "#44b621"],
-				[value: 84, color: "#f1d801"],
-				[value: 95, color: "#d04e00"],
-				[value: 96, color: "#bc2323"]
-			]
+			state "temperature", label:'${currentValue}°', icon:"",
+				backgroundColors:[
+					// Celsius
+					[value: 0, color: "#153591"],
+					[value: 7, color: "#1e9cbb"],
+					[value: 15, color: "#90d2a7"],
+					[value: 23, color: "#44b621"],
+					[value: 28, color: "#f1d801"],
+					[value: 35, color: "#d04e00"],
+					[value: 37, color: "#bc2323"],
+					// Fahrenheit
+					[value: 40, color: "#153591"],
+					[value: 44, color: "#1e9cbb"],
+					[value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
+				]
 		}
 
 		valueTile("illuminance", "device.illuminance", width: 2, height: 2, inactiveLabel: false) {
