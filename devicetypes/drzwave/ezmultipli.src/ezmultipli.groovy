@@ -124,8 +124,14 @@ private getBLUE() { "blue" }
 private getRGB_NAMES() { [RED, GREEN, BLUE] }
 
 def setupHealthCheck() {
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	def interval = 15 // default 15 minutes
+	def motionInterval = (OnTime != null ? OnTime : 2) as int
+	def luminanceInterval = (LiteMin != null ? LiteMin : 6) as int
+	def temperatureInterval = (TempMin != null ? TempMin : 6) as int
+
+	interval = Math.max(motionInterval, Math.max(luminanceInterval, temperatureInterval))
+	// Device-Watch simply pings if no device events received for twice the maximum configured reporting interval + 2 minutes
+	sendEvent(name: "checkInterval", value: 2 * interval * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def installed() {
