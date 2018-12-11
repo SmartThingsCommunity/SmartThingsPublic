@@ -102,7 +102,6 @@ metadata {
 		input "LiteMin", "number", title: "Luminance Report Frequency", description: "Luminance report sent every N minutes [0-127]", range: "0..127", defaultValue: 6, displayDuringSetup: true, required: false
 		input "TempMin", "number", title: "Temperature Report Frequency", description: "Temperature report sent every N minutes [0-127]", range: "0..127", defaultValue: 6, displayDuringSetup: true, required: false
 		input "TempAdj", "number", title: "Temperature Calibration", description: "Adjust temperature up/down N tenths of a degree F [(-127)-(+128)]", range: "-127..128", defaultValue: 0, displayDuringSetup: true, required: false
-		input("lum", "enum", title:"Illuminance Measurement", description: "Percent or Lux", defaultValue: 2 ,required: false, displayDuringSetup: true, options: [1:"Percent", 2:"Lux"])
 	}
 }
 
@@ -147,7 +146,7 @@ def parse(String description) {
 
 	def statusTextmsg = ""
 	if (device.currentState("temperature") != null && device.currentState("illuminance") != null) {
-		statusTextmsg = "${device.currentState("temperature").value}° - ${device.currentState("illuminance").value}${(lum == 1) ? "%" : "LUX"}"
+		statusTextmsg = "${device.currentState("temperature").value}° - ${device.currentState("illuminance").value} lux"
 		result << createEvent("name":"statusText", "value":statusTextmsg, displayed:false)
 	}
 	log.debug "Parse returned ${result}"
@@ -167,7 +166,7 @@ def zwaveEvent(sensormultilevelv5.SensorMultilevelReport cmd) {
 		log.debug "Temperature report"
 	} else if (cmd.sensorType == sensormultilevelv5.SensorMultilevelReport.SENSOR_TYPE_LUMINANCE_VERSION_1) {
 		map.value = cmd.scaledSensorValue.toInteger().toString()
-		map.unit = (lum == 1) ? "%" : "lux"
+		map.unit = "lux"
 		map.name = "illuminance"
 		log.debug "Luminance report"
 	}
