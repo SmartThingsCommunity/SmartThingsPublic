@@ -60,24 +60,28 @@ metadata {
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°', unit:"F", icon:"",
 			backgroundColors:[
-				[value: 0,  color: "#153591"], // blue=cold
-				[value: 65, color: "#44b621"], // green
-				[value: 70, color: "#44b621"], // green
-				[value: 75, color: "#f1d801"], // yellow
-				[value: 80, color: "#f1d801"], // yellow
-				[value: 85, color: "#f1d801"], // yellow
-				[value: 90, color: "#d04e00"], // red
-				[value: 95, color: "#bc2323"]  // red=hot
+				// Celsius
+				[value: 0, color: "#153591"],
+				[value: 7, color: "#1e9cbb"],
+				[value: 15, color: "#90d2a7"],
+				[value: 23, color: "#44b621"],
+				[value: 28, color: "#f1d801"],
+				[value: 35, color: "#d04e00"],
+				[value: 37, color: "#bc2323"],
+				// Fahrenheit
+				[value: 40, color: "#153591"],
+				[value: 44, color: "#1e9cbb"],
+				[value: 59, color: "#90d2a7"],
+				[value: 74, color: "#44b621"],
+				[value: 84, color: "#f1d801"],
+				[value: 95, color: "#d04e00"],
+				[value: 96, color: "#bc2323"]
 			]
 		}
 
 		valueTile("illuminance", "device.illuminance", width: 2, height: 2, inactiveLabel: false) {
 			state "luminosity", label:'${currentValue}', unit:'${currentValue}', icon:"",
 			backgroundColors:[
-				[value: 25, color: "#404040"],
-				[value: 50, color: "#808080"],
-				[value: 75, color: "#a0a0a0"],
-				[value: 90, color: "#e0e0e0"],
 				//lux measurement values
 				[value: 150, color: "#404040"],
 				[value: 300, color: "#808080"],
