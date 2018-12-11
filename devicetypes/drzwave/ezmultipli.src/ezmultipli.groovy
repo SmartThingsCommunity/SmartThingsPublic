@@ -130,7 +130,9 @@ def updated() {
 }
 
 // Parse incoming device messages from device to generate events
-def parse(String description) {
+def parse(description) {
+	def result = []
+
 	if (!device.currentValue("checkInterval")) {
 		setupHealthCheck()
 	}
@@ -138,16 +140,17 @@ def parse(String description) {
 		state.colorReceived = [red: null, green: null, blue: null]
 	}
 
-	def result = []
-	def cmd = zwave.parse(description, [0x31: 5]) // 0x31=SensorMultilevel which we force to be version 5
-	if (cmd) {
-		result = zwaveEvent(cmd)
-	}
+	if (description != "updated") {
+		def cmd = zwave.parse(description, [0x31: 5]) // 0x31=SensorMultilevel which we force to be version 5
+		if (cmd) {
+			result = zwaveEvent(cmd)
+		}
 
-	def statusTextmsg = ""
-	if (device.currentState("temperature") != null && device.currentState("illuminance") != null) {
-		statusTextmsg = "${device.currentState("temperature").value}° - ${device.currentState("illuminance").value} lux"
-		result << createEvent("name":"statusText", "value":statusTextmsg, displayed:false)
+		def statusTextmsg = ""
+		if (device.currentState("temperature") != null && device.currentState("illuminance") != null) {
+			statusTextmsg = "${device.currentState("temperature").value}° - ${device.currentState("illuminance").value} lux"
+			result << createEvent("name":"statusText", "value":statusTextmsg, displayed:false)
+		}
 	}
 	log.debug "Parse returned ${result}"
 
