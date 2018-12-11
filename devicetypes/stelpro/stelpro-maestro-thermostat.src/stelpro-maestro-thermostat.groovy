@@ -44,8 +44,8 @@ metadata {
 		command "updateWeather"
 
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "MaestroStat", deviceJoinName: "Stelpro Maestro Thermostat"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SORB", deviceJoinName: "Stelpro Maestro Thermostat"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SonomaStyle", deviceJoinName: "Stelpro Maestro Thermostat"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SORB", deviceJoinName: "Stelpro ORLÉANS Fan Heater"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SonomaStyle", deviceJoinName: "Stelpro Sonoma Style Fan Heater"
 	}
 
 	// simulator metadata
