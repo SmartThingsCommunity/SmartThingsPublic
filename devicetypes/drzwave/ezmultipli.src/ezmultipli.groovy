@@ -4,7 +4,7 @@
 // The EZMultiPli is also known as the HSM200 from HomeSeer.com
 
 metadata {
-	definition (name: "EZmultiPli", namespace: "DrZWave", author: "Eric Ryherd", oauth: true) {
+	definition (name: "EZmultiPli", namespace: "DrZWave", author: "Eric Ryherd", ocfDeviceType: "x.com.st.d.sensor.motion") {
 	capability "Actuator"
 	capability "Sensor"
 	capability "Motion Sensor"
@@ -14,6 +14,7 @@ metadata {
 	capability "Color Control"
 	capability "Configuration"
     capability "Refresh"
+    capability "Health Check"
 
 	fingerprint mfr: "001E", prod: "0004", model: "0001" // new format for Fingerprint which is unique for every certified Z-Wave product
 	} // end definition
@@ -110,6 +111,24 @@ metadata {
 
 } // end metadata
 
+def setupHealthCheck() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+def installed() {
+	setupHealthCheck()
+}
+
+def updated() {
+    log.debug "updated() is being called"
+    def cmds = configure()
+
+	setupHealthCheck()
+
+    if (cmds != []) response(cmds)
+}
+
 // Parse incoming device messages from device to generate events
 def parse(String description){
 	//log.debug "==> New Zwave Event: ${description}"
@@ -188,15 +207,6 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
     [name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
 }
 
-def updated()
-{
-    log.debug "updated() is being called"
-    
-    def cmds = configure()
-    
-    if (cmds != []) response(cmds)
-}
-
 def on() {
 	log.debug "Turning Light 'on'"
 	delayBetween([
@@ -213,6 +223,13 @@ def off() {
 	], 500)
 }
 
+def channelValue(channel) {
+	channel >= 128 ? 255 : 0
+}
+
+def buildColorControlV1StateSet(red, green, blue) {
+	"33050302${hex(red,2)}03${hex(green,2)}04${hex(blue,2)}"
+}
 
 def setColor(value) {
     log.debug "setColor() : ${value}"
@@ -222,45 +239,39 @@ def setColor(value) {
     def hexValue
     def cmds = []
 
-    if ( value.level == 1 && value.saturation > 20) {
-		def rgb = huesatToRGB(value.hue as Integer, 100)
-        myred = rgb[0] >=128 ? 255 : 0
-        mygreen = rgb[1] >=128 ? 255 : 0
-        myblue = rgb[2] >=128 ? 255 : 0
-    } 
-    else if ( value.level > 1 ) {
-		def rgb = huesatToRGB(value.hue as Integer, value.saturation as Integer)
-        myred = rgb[0] >=128 ? 255 : 0
-        mygreen = rgb[1] >=128 ? 255 : 0
-        myblue = rgb[2] >=128 ? 255 : 0
-    } 
-    else if (value.hex) {
+    // The EZMultiPli has just on/off for each of the 3 channels RGB so convert the 0-255 value into 0 or 255.
+    if (value.containsKey("hue") && value.containsKey("saturation")) {
+        def level = (value.containsKey("level")) ? value.level : 100
+
+        if (level == 1 && value.saturation > 20) {
+            def rgb = huesatToRGB(value.hue as Integer, 100)
+            myred = channelValue(rgb[0])
+            mygreen = channelValue(rgb[1])
+            myblue = channelValue(rgb[2])
+        } else if (level > 1) {
+            def rgb = huesatToRGB(value.hue as Integer, value.saturation as Integer)
+            myred = channelValue(rgb[0])
+            mygreen = channelValue(rgb[1])
+            myblue = channelValue(rgb[2])
+        }
+    } else if (value.hex) {
 		def rgb = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
-        myred = rgb[0] >=128 ? 255 : 0
-        mygreen = rgb[1] >=128 ? 255 : 0
-        myblue = rgb[2] >=128 ? 255 : 0
+        myred = channelValue(rgb[0])
+        mygreen = channelValue(rgb[1])
+        myblue = channelValue(rgb[2])
     }
-    else {
-        myred=value.red >=128 ? 255 : 0	// the EZMultiPli has just on/off for each of the 3 channels RGB so convert the 0-255 value into 0 or 255.
-        mygreen=value.green >=128 ? 255 : 0
-        myblue=value.blue>=128 ? 255 : 0
+    // red, green, blue is not part of the capability definition, but it was possibly used by old SmartApps.
+    // It should be safe to leave this in here for now.
+    else if (value.containsKey("red") && value.containsKey("green") && value.containsKey("blue")) {
+        myred = channelValue(value.red)
+        mygreen = channelValue(value.green)
+        myblue = channelValue(value.blue)
+    } else {
+        return
     }
     //log.debug "Red: ${myred} Green: ${mygreen} Blue: ${myblue}"
-  	//cmds << zwave.colorControlV1.stateSet(stateDataLength: 3, VariantGroup1: [0x02, myred], VariantGroup2:[ 0x03, mygreen], VariantGroup3:[0x04,myblue]).format() // ST support for this command as of 2015/02/23 does not support the color IDs so this command cannot be used.
-    // So instead we'll use these commands to hack around the lack of support of the above command
-	cmds << zwave.basicV1.basicSet(value: 0x00).format() // As of 2015/02/23 ST is not supporting stateSet properly but found this hack that works. 
-	if (myred!=0) {
-       	cmds << zwave.colorControlV1.startCapabilityLevelChange(capabilityId: 0x02, startState: myred, ignoreStartState: True, updown: True).format()
-		cmds << zwave.colorControlV1.stopStateChange(capabilityId: 0x02).format()
-    }
-    if (mygreen!=0) {
-	 	cmds << zwave.colorControlV1.startCapabilityLevelChange(capabilityId: 0x03, startState: mygreen, ignoreStartState: True, updown: True).format()
-	 	cmds << zwave.colorControlV1.stopStateChange(capabilityId: 0x03).format()
-    }
-    if (myblue!=0) {
-		cmds << zwave.colorControlV1.startCapabilityLevelChange(capabilityId: 0x04, startState: myblue, ignoreStartState: True, updown: True).format()
-		cmds << zwave.colorControlV1.stopStateChange(capabilityId: 0x04).format()
-    }
+
+	cmds << buildColorControlV1StateSet(myred, mygreen, myblue)
     cmds << zwave.basicV1.basicGet().format()
     hexValue = rgbToHex([r:myred, g:mygreen, b:myblue])
     if(hexValue) sendEvent(name: "color", value: hexValue, displayed: true)
@@ -352,6 +363,10 @@ def refresh() {
     cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1).format()
     cmd << zwave.basicV1.basicGet().format()
     delayBetween(cmd, 1000)
+}
+
+def pint() {
+	refresh()
 }
 
 def configure() {
