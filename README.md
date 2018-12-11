@@ -52,6 +52,7 @@ They also have a simpler MIMO with one signal in and one signal out.
 
 Cheap cams that you can do a lot with:
 https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=Foscam+Z-Wave&rh=i%3Aaps%2Ck%3AFoscam+Z-Wave
+
 [R Boy Apps](http://smartthings.rboyapps.com/) has great apps/drivers for Foscam.
 
 Also:
