@@ -283,77 +283,18 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[:]
 }
 
-// ensure we are passing acceptable param values for LiteMin & TempMin configs
-def checkLiteTempInput(value) {
+def validateSetting(value, minVal, maxVal, defaultVal) {
 	if (value == null) {
-    	value=6
+        value = defaultVal
     }
-    def liteTempVal = value.toInteger()
-    switch (liteTempVal) {
-      case { it < 0 }:
-        return 6			// bad value, set to default
-        break
-      case { it > 127 }:
-        return 127			// bad value, greater then MAX, set to MAX
-        break
-      default:
-        return liteTempVal	// acceptable value
+	def adjVal = value.toInteger()
+	if (adjVal < minVal) { // bad value, set to default
+        adjVal = defaultVal
+	} else if (adjVal > maxVal) { // bad value, greater then MAX, set to MAX
+        adjVal = maxVal
     }
-}
 
-// ensure we are passing acceptable param value for OnTime config
-def checkOnTimeInput(value) {
-	if (value == null) {
-    	value=2
-    }
-    def onTimeVal = value.toInteger()
-    switch (onTimeVal) {
-      case { it < 0 }:
-        return 2			// bad value set to default
-        break
-      case { it > 127 }:
-        return 127			// bad value, greater then MAX, set to MAX
-        break
-      default:
-        return onTimeVal	// acceptable value
-    }
-}
-
-// ensure we are passing acceptable param value for OnLevel config
-def checkOnLevelInput(value) {
-	if (value == null) {
-    	value=99
-    }  
-    def onLevelVal = value.toInteger()
-    switch (onLevelVal) {
-      case { it < -1 }:
-        return -1			// bad value set to default
-        break
-      case { it > 99 }:
-        return 99			// bad value, greater then MAX, set to MAX
-        break
-      default:
-        return onLevelVal	// acceptable value
-    }
-}
-
-
-// ensure we are passing an acceptable param value for TempAdj configs
-def checkTempAdjInput(value) {
-	if (value == null) {
-    	value=0
-    }
-	def tempAdjVal = value.toInteger()
-    switch (tempAdjVal) {
-      case { it < -127 }:
-        return 0			// bad value, set to default
-        break
-      case { it > 128 }:
-        return 128			// bad value, greater then MAX, set to MAX
-        break
-      default:
-        return tempAdjVal	// acceptable value
-    }
+	adjVal
 }
 
 def refresh() {
@@ -372,11 +313,11 @@ def pint() {
 def configure() {
 	log.debug "OnTime=${settings.OnTime} OnLevel=${settings.OnLevel} TempAdj=${settings.TempAdj}"
 	def cmd = delayBetween([
-		zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: checkOnTimeInput(settings.OnTime)).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: checkOnLevelInput(settings.OnLevel)).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: checkLiteTempInput(settings.LiteMin)).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: checkLiteTempInput(settings.TempMin)).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: checkTempAdjInput(settings.TempAdj)).format(),
+		zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: validateSetting(settings.OnTime, 0, 127, 2)).format(),
+		zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: validateSetting(settings.OnLevel, -1, 99, -1)).format(),
+		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: validateSetting(settings.LiteMin, 0, 127, 6)).format(),
+		zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: validateSetting(settings.TempMin, 0, 127, 6)).format(),
+		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: validateSetting(settings.TempAdj, -127, 128, 0)).format(),
 		zwave.configurationV1.configurationGet(parameterNumber: 1).format(),
 		zwave.configurationV1.configurationGet(parameterNumber: 2).format(),
 		zwave.configurationV1.configurationGet(parameterNumber: 3).format(),
