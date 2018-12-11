@@ -306,7 +306,8 @@ def refresh() {
     delayBetween(cmd, 1000)
 }
 
-def pint() {
+def ping() {
+	log.debug "ping()"
 	refresh()
 }
 
