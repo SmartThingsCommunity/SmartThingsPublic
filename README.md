@@ -48,9 +48,14 @@ https://www.amazon.com/Vision-Z-Wave-Micro-Switch-relay/dp/B00R883YKU/ref=sr_1_3
 
 Cool device used to make any appliance smart (used on my boiler and will be used on my sauna and will be used on my garage openers):
 https://www.fortrezz.com/shop/mimo2
-
 They also have a simpler MIMO with one signal in and one signal out.
 
+Cheap cams that you can do a lot with:
+https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=Foscam+Z-Wave&rh=i%3Aaps%2Ck%3AFoscam+Z-Wave
+[R Boy Apps](http://smartthings.rboyapps.com/) has great apps/drivers for Foscam.
+
+Also:
+https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=Wyze+Z-Wave&rh=i%3Aaps%2Ck%3AWyze+Z-Wave
 Home Energy Meter:
 https://www.amazon.com/gp/product/B00XD8WZX6/ref=oh_aui_search_detailpage?ie=UTF8&psc=1
 (Not full featured out of the box, but great data to be used how you wish.  I plan to graph it and compare to house activity, presence sensors, etc.  Using Kinesis Firehose, Kinesis Analytics, and S3 to store.)
