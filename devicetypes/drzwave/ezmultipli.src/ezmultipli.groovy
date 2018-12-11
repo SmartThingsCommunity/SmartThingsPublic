@@ -111,12 +111,18 @@ metadata {
 
 } // end metadata
 
+private getRED() { "red" }
+private getGREEN() { "green" }
+private getBLUE() { "blue" }
+private getRGB_NAMES() { [RED, GREEN, BLUE] }
+
 def setupHealthCheck() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def installed() {
+	state.colorReceived = [red: null, green: null, blue: null]
 	setupHealthCheck()
 }
 
@@ -130,22 +136,26 @@ def updated() {
 }
 
 // Parse incoming device messages from device to generate events
-def parse(String description){
+def parse(String description) {
+	if (!device.currentValue("checkInterval")) {
+		setupHealthCheck()
+	}
+	if (!state.colorReceived) {
+		state.colorReceived = [red: null, green: null, blue: null]
+	}
 	//log.debug "==> New Zwave Event: ${description}"
 	def result = []
 	def cmd = zwave.parse(description, [0x31: 5]) // 0x31=SensorMultilevel which we force to be version 5
 	if (cmd) {
-		def cmdData = zwaveEvent(cmd)
-		if (cmdData != [:])
-			result << createEvent(cmdData)
+		result = zwaveEvent(cmd)
 	}
     
     def statusTextmsg = ""
     if (device.currentState('temperature') != null && device.currentState('illuminance') != null) {
-		statusTextmsg = "${device.currentState('temperature').value} ° - ${device.currentState('illuminance').value} ${(lum == 1) ? "%" : "LUX"}"
-    	sendEvent("name":"statusText", "value":statusTextmsg, displayed:false)
+		statusTextmsg = "${device.currentState('temperature').value}° - ${device.currentState('illuminance').value}${(lum == 1) ? "%" : "LUX"}"
+        result << createEvent("name":"statusText", "value":statusTextmsg, displayed:false)
 	}
-    if (result != [null] && result != []) log.debug "Parse returned ${result}"
+    log.debug "Parse returned ${result}"
     
     
 	return result
@@ -171,55 +181,88 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			log.debug "Luminance report"
 			break;
 	}
-	return map
+	return [createEvent(map)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
     log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'"
+    []
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def map = [:]
 	if (cmd.notificationType==0x07) {	// NOTIFICATION_TYPE_BURGLAR
     		if (cmd.event==0x07 || cmd.event==0x08) {
-			map.name = "motion"
+				map.name = "motion"
             	map.value = "active"
-			map.descriptionText = "$device.displayName motion detected"
+				map.descriptionText = "$device.displayName motion detected"
             	log.debug "motion recognized"
 		} else if (cmd.event==0) {
-			map.name = "motion"
+				map.name = "motion"
             	map.value = "inactive"
-			map.descriptionText = "$device.displayName no motion detected"
+				map.descriptionText = "$device.displayName no motion detected"
             	log.debug "No motion recognized"
     		}
 	} 
 	if (map.name != "motion") {
     		log.debug "unmatched parameters for cmd: ${cmd.toString()}}"
 	}
-	return map
+	return [createEvent(map)]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+    def result = []
     // The EZMultiPli sets the color back to #ffffff on "off" or at init, so update the ST device to reflect this.
     if (device.latestState("color") == null || (cmd.value == 0 && device.latestState("color").value != "#ffffff")) {
-        sendEvent(name: "color", value: "#ffffff", displayed: true)
+        result << createEvent(name: "color", value: "#ffffff", displayed: true)
     }
-    [name: "switch", value: cmd.value ? "on" : "off", type: "digital"]
+    result << createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+
+    result
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.switchcolorv3.SwitchColorReport cmd) {
+	log.debug "got SwitchColorReport: $cmd"
+	state.colorReceived[cmd.colorComponent] = cmd.value
+
+	def result = []
+	// Check if we got all the RGB color components
+	if (RGB_NAMES.every { state.colorReceived[it] != null }) {
+		def colors = RGB_NAMES.collect { state.colorReceived[it] }
+		log.debug "colors: $colors"
+		// Send the color as hex format
+		def hexColor = "#" + colors.collect { Integer.toHexString(it).padLeft(2, "0") }.join("")
+		result << createEvent(name: "color", value: hexColor)
+		// Send the color as hue and saturation
+		def hsv = rgbToHSV(*colors)
+		result << createEvent(name: "hue", value: hsv.hue)
+		result << createEvent(name: "saturation", value: hsv.saturation)
+		// Reset the values
+		RGB_NAMES.collect { state.colorReceived[it] = null}
+	}
+
+	result
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled $cmd"
+	[]
 }
 
 def on() {
 	log.debug "Turning Light 'on'"
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.basicV1.basicGet().format()
+	commands([
+		zwave.basicV1.basicSet(value: 0xFF),
+		zwave.basicV1.basicGet()
 	], 500)
 }
 
 def off() {
 	log.debug "Turning Light 'off'"
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.basicV1.basicGet().format()
+	commands([
+		zwave.basicV1.basicSet(value: 0x00),
+		zwave.basicV1.basicGet()
 	], 500)
 }
 
@@ -227,12 +270,10 @@ def channelValue(channel) {
 	channel >= 128 ? 255 : 0
 }
 
-def buildColorControlV1StateSet(red, green, blue) {
-	"33050302${hex(red,2)}03${hex(green,2)}04${hex(blue,2)}"
-}
-
 def setColor(value) {
     log.debug "setColor() : ${value}"
+	def hue
+	def saturation
     def myred
     def mygreen
     def myblue
@@ -242,14 +283,15 @@ def setColor(value) {
     // The EZMultiPli has just on/off for each of the 3 channels RGB so convert the 0-255 value into 0 or 255.
     if (value.containsKey("hue") && value.containsKey("saturation")) {
         def level = (value.containsKey("level")) ? value.level : 100
+		hue = value.hue as Integer
+		saturation = value.saturation as Integer
 
-        if (level == 1 && value.saturation > 20) {
-            def rgb = huesatToRGB(value.hue as Integer, 100)
-            myred = channelValue(rgb[0])
-            mygreen = channelValue(rgb[1])
-            myblue = channelValue(rgb[2])
-        } else if (level > 1) {
-            def rgb = huesatToRGB(value.hue as Integer, value.saturation as Integer)
+        if (level == 1 && saturation > 20) {
+			saturation = 100
+        }
+
+        if (level >= 1) {
+            def rgb = huesatToRGB(hue, saturation)
             myred = channelValue(rgb[0])
             mygreen = channelValue(rgb[1])
             myblue = channelValue(rgb[2])
@@ -269,18 +311,23 @@ def setColor(value) {
     } else {
         return
     }
-    //log.debug "Red: ${myred} Green: ${mygreen} Blue: ${myblue}"
+    log.debug "Red: ${myred} Green: ${mygreen} Blue: ${myblue}"
 
-	cmds << buildColorControlV1StateSet(myred, mygreen, myblue)
-    cmds << zwave.basicV1.basicGet().format()
-    hexValue = rgbToHex([r:myred, g:mygreen, b:myblue])
-    if(hexValue) sendEvent(name: "color", value: hexValue, displayed: true)
-    delayBetween(cmds, 100)
+	cmds << zwave.switchColorV3.switchColorSet(red: myred, green: mygreen, blue: myblue)
+    cmds << zwave.basicV1.basicGet()
+
+    // TODO: Right now we will generate the events, in the future we should get them
+    /*hexValue = colorUtil.rgbToHex(myred, mygreen, myblue)
+	if (hexValue) sendEvent(name: "color", value: hexValue)
+	sendEvent(name: "hue", value: hue)
+	sendEvent(name: "saturation", value: saturation)*/
+
+    commands(cmds + queryAllColors(), 100)
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	// Handles all Z-Wave commands we aren't interested in
-	[:]
+private queryAllColors() {
+	def colors = RGB_NAMES
+	colors.collect { zwave.switchColorV3.switchColorGet(colorComponent: it) }
 }
 
 def validateSetting(value, minVal, maxVal, defaultVal) {
@@ -298,12 +345,11 @@ def validateSetting(value, minVal, maxVal, defaultVal) {
 }
 
 def refresh() {
-	def cmd = []
-    cmd << zwave.switchColorV3.switchColorGet().format()
-    cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1).format()
-    cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1).format()
-    cmd << zwave.basicV1.basicGet().format()
-    delayBetween(cmd, 1000)
+	def cmd = queryAllColors()
+    cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
+    cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
+    cmd << zwave.basicV1.basicGet()
+    commands(cmd, 1000)
 }
 
 def ping() {
@@ -313,50 +359,51 @@ def ping() {
 
 def configure() {
 	log.debug "OnTime=${settings.OnTime} OnLevel=${settings.OnLevel} TempAdj=${settings.TempAdj}"
-	def cmd = delayBetween([
-		zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: validateSetting(settings.OnTime, 0, 127, 2)).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: validateSetting(settings.OnLevel, -1, 99, -1)).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: validateSetting(settings.LiteMin, 0, 127, 6)).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: validateSetting(settings.TempMin, 0, 127, 6)).format(),
-		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: validateSetting(settings.TempAdj, -127, 128, 0)).format(),
-		zwave.configurationV1.configurationGet(parameterNumber: 1).format(),
-		zwave.configurationV1.configurationGet(parameterNumber: 2).format(),
-		zwave.configurationV1.configurationGet(parameterNumber: 3).format(),
-		zwave.configurationV1.configurationGet(parameterNumber: 4).format(),
-		zwave.configurationV1.configurationGet(parameterNumber: 5).format()
+	def cmd = commands([
+		zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: validateSetting(settings.OnTime, 0, 127, 2)),
+		zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: validateSetting(settings.OnLevel, -1, 99, -1)),
+		zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: validateSetting(settings.LiteMin, 0, 127, 6)),
+		zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: validateSetting(settings.TempMin, 0, 127, 6)),
+		zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: validateSetting(settings.TempAdj, -127, 128, 0)),
+		zwave.configurationV1.configurationGet(parameterNumber: 1),
+		zwave.configurationV1.configurationGet(parameterNumber: 2),
+		zwave.configurationV1.configurationGet(parameterNumber: 3),
+		zwave.configurationV1.configurationGet(parameterNumber: 4),
+		zwave.configurationV1.configurationGet(parameterNumber: 5)
 	], 100)
 	//log.debug cmd
 	cmd + refresh()
 }
 
-def huesatToRGB(float hue, float sat) {
-	while(hue >= 100) hue -= 100
-	int h = (int)(hue / 100 * 6)
-	float f = hue / 100 * 6 - h
-	int p = Math.round(255 * (1 - (sat / 100)))
-	int q = Math.round(255 * (1 - (sat / 100) * f))
-	int t = Math.round(255 * (1 - (sat / 100) * (1 - f)))
-	switch (h) {
-		case 0: return [255, t, p]
-		case 1: return [q, 255, p]
-		case 2: return [p, 255, t]
-		case 3: return [p, q, 255]
-		case 4: return [t, p, 255]
-		case 5: return [255, p, q]
+private secEncap(physicalgraph.zwave.Command cmd) {
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crcEncap(physicalgraph.zwave.Command cmd) {
+	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo.zw.contains("s")) {
+		secEncap(cmd)
+	} else if (zwaveInfo.cc.contains("56")){
+		crcEncap(cmd)
+	} else {
+		cmd.format()
 	}
 }
-def rgbToHex(rgb) {
-    def r = hex(rgb.r)
-    def g = hex(rgb.g)
-    def b = hex(rgb.b)
-    def hexColor = "#${r}${g}${b}"
-    
-    hexColor
+
+private commands(commands, delay=200) {
+	delayBetween(commands.collect{ command(it) }, delay)
 }
-private hex(value, width=2) {
-	def s = new BigInteger(Math.round(value).toString()).toString(16)
-	while (s.size() < width) {
-		s = "0" + s
-	}
-	s
+
+def rgbToHSV(red, green, blue) {
+	def hex = colorUtil.rgbToHex(red as int, green as int, blue as int)
+	def hsv = colorUtil.hexToHsv(hex)
+	return [hue: hsv[0], saturation: hsv[1], value: hsv[2]]
+}
+
+def huesatToRGB(hue, sat) {
+	def color = colorUtil.hsvToHex(Math.round(hue) as int, Math.round(sat) as int)
+	return colorUtil.hexToRgb(color)
 }
