@@ -738,7 +738,7 @@ def motionSensorHandler(evt){
 }
 
 //************************************************************************************************//
-/// LEARNING HANDLERS AND FUNCTIONS
+/// LEARNING EVT HANDLERS AND MAPPING FUNCTIONS
 //************************************************************************************************//
 def setpointChangeHandler(evt){
 
@@ -1161,6 +1161,8 @@ def setThermostats(){
     boolean inSavingMode = location.currentMode in saveModes
 
     log.debug "inSavingMode = $inSavingMode"
+    
+    def comfort = getComfortH().toInteger()
 
     if(!inSavingMode) // a saving mode is a priority mode such as night or away, it overrides A.I. 
     {
@@ -1256,7 +1258,7 @@ recordedCSP for $CurrMode mode = $recordedCSP
                 // check that this is not an appliance managed throuhg its power consumption criteria
                 def alreadyManaged = managed(thisTherm)
 
-                def keepOff = keepOff(i, thisTemp, thisHSP, thisCSP, outside)
+                def keepOff = keepOff(i, thisTemp, thisHSP, thisCSP, outside, comfort)
                 log.debug "keepOff $keepOff"
 
                 // Now, assess needs: do we currently need heat or cooling ? 
@@ -1314,10 +1316,14 @@ recordedCSP for $CurrMode mode = $recordedCSP
                             thisTherm.setThermostatMode("off")
                         }
                     }
+                    
+                    boolean thisIsTheExtraAppliance = ApplianceWithPwMeter.find{it.to == "$thisTherm"} 
+                    log.debug "- thisIsTheExtraAppliance = $thisIsTheExtraAppliance ( $extraAppliance works with $thisTherm )"
                     /// extra appliance management (virtual thermostat)
-                    if(extraAppliance && (tooCold4Hpump || useBoth)){
+                    if(extraAppliance && thisIsTheExtraAppliance && (tooCold4Hpump || useBoth)){
 
                         log.debug """thermostat values around $extraAppliance: 
+                        
                     - thisTherm = $thisTherm
                     - thisHSP = $thisHSP
                     - thisTemp = $thisTemp
@@ -1644,7 +1650,7 @@ boolean useboth(boolean tooCold4Hpump, int outside, int ThisTemp, int HSP, boole
 
     return result
 }
-boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside){
+boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside, int comfort){
 
     def thisTherm = Thermostats[i]
 
@@ -1653,7 +1659,7 @@ boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside){
     if(outside <= lowTemp){
         //if outside temperature makes it that we are in heating mode
 
-        if(thisTemp >= thisHSP){
+        if(thisTemp >= thisHSP && thisTemp > comfort){
             // if desired temp has been reached, you may turn if off (or set to requested setting), providing this is requested later
             result = true
         }
@@ -1666,14 +1672,18 @@ boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside){
             result = true
         }
     }  
-    /*  log.trace """ in keepOff boolean, parameters are:
+ log.trace """ in keepOff boolean, parameters are:
+ 
 thisTherm = $thisTherm
 thisTemp = $thisTemp
 thisHSP = $thisHSP
 thisCSP = $thisCSP
+highTemp = $highTemp
+lowTemp = $lowTemp
+outside = $outside
 
 & returned result is: $result
-"""*/
+"""
     return result
 }
 boolean managed(thisTherm){
