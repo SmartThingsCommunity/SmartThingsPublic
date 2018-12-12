@@ -1316,8 +1316,8 @@ recordedCSP for $CurrMode mode = $recordedCSP
                             thisTherm.setThermostatMode("off")
                         }
                     }
-                    
-                    boolean thisIsTheExtraAppliance = ApplianceWithPwMeter.find{it.to == "$thisTherm"} 
+                    log.debug "testttt"
+                    boolean thisIsTheExtraAppliance = ApplianceWithPwMeter.find{it.toString() == "$thisTherm"} 
                     log.debug "- thisIsTheExtraAppliance = $thisIsTheExtraAppliance ( $extraAppliance works with $thisTherm )"
                     /// extra appliance management (virtual thermostat)
                     if(extraAppliance && thisIsTheExtraAppliance && (tooCold4Hpump || useBoth)){
