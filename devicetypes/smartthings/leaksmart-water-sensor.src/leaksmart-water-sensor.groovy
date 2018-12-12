@@ -32,8 +32,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "water", type: "generic", width: 6, height: 4) {
 			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
-				attributeState("wet", label:'${name}', icon:"st.alarm.water.wet", backgroundColor:"#3277e5")
-				attributeState("dry", label:'${name}', icon:"st.alarm.water.dry", backgroundColor:"#edbd00")
+				attributeState("wet", label:'${name}', icon:"st.alarm.water.wet", backgroundColor:"#00A0DC")
+				attributeState("dry", label:'${name}', icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
 			}
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
