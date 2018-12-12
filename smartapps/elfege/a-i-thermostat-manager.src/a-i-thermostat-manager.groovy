@@ -1,5 +1,5 @@
 definition(
-    name: "A.I. Thermostat Manager",
+    name: "A.I. Thermostat Manager 2.0",
     namespace: "ELFEGE",
     author: "ELFEGE",
 
@@ -37,6 +37,7 @@ def MainPage(){
 
         section("Main Settings") {
             href "settings", title: "Thermostats and other devices", description: ""
+            href "alternativeSensors", title: "Third Party Temperature Sensors", description: ""
             href "comfortSettings", title: "Your Comfort Zone", description: ""
             href "AI", title: "A.I. settings", description: ""
             href "powerSaving", title: "Save Power When Away", description: ""
@@ -79,7 +80,7 @@ def comfortSettings(){
         title:      "Comfort zone",
         nextPage:   null,
         install: false,
-        uninstall: true
+        uninstall: false
     ]
 
     dynamicPage(pageProperties) {
@@ -102,9 +103,6 @@ def comfortSettings(){
             paragraph "Beware that this involves more energy consumption"          
         }
 
-        section(){
-            href "alternativeSensors", title: "Third Party Temperature Sensors", description: ""
-        }
     }
 
 }
@@ -113,9 +111,9 @@ def alternativeSensors(){
     def pageProperties = [
         name:       "alternativeSensors",
         title:      "Third Party Temperature Sensors",
-        nextPage:   "comfortSettings",
+        nextPage:   null,
         install: false,
-        uninstall: true
+        uninstall: false
     ]
 
     dynamicPage(pageProperties) {
@@ -151,7 +149,7 @@ def AI(){
         title:      "Smart Management",
         nextPage:   null,
         install: false,
-        uninstall: true
+        uninstall: false
     ]
     dynamicPage(pageProperties) {
         section("Artificial intelligence: define setpoints based on your lifestyle") { 
@@ -164,10 +162,10 @@ def AI(){
                     paragraph "all heuristics have now been deleted! You can now close this section"
                     // reset A.I. heuristics if requested by user
                     /*
-                    atomicState.learnedHSP = [:] 
-                    atomicState.learnedCSP = [:] 
-                    atomicState.HSPMode = [:] 
-                    atomicState.CSPMode = [:]
+                    state.learnedHSP = [:] 
+                    state.learnedCSP = [:] 
+                    state.HSPMode = [:] 
+                    state.CSPMode = [:]
                     */
                     log.debug "all heuristics have been reset. Starting to learn from here"
                 }
@@ -242,7 +240,7 @@ def powerSaving(){
         title:      "Save Power When You're Away",
         nextPage:   null,
         install: false,
-        uninstall: true
+        uninstall: false
     ]
     dynamicPage(pageProperties) {
 
@@ -262,7 +260,7 @@ def SavePowerMotion(){
         title:      "Save Power With Motion",
         nextPage:   null,
         install: false,
-        uninstall: true
+        uninstall: false
     ]
     dynamicPage(pageProperties) {
         if(Thermostats.size() != 0){
@@ -277,13 +275,13 @@ def SavePowerMotion(){
                     // //log.debug "motion management"
                     // list all modes minus $Away
                     def i = 0
-                    atomicState.modes = []
+                    state.modes = []
                     def allModes = location.modes
                     def amS = allModes.size()
                     //log.debug "allModes size: = ${amS}"
 
                     for(amS != 0; i < amS; i++){
-                        atomicState.modes << ["${allModes[i]}"]
+                        state.modes << ["${allModes[i]}"]
                     }
 
                     input(name: "HeatNoMotion", type: "number", title: "Substract this amount of degrees to heat setting", required: true, defaultValue: 2)
@@ -351,14 +349,14 @@ def installed() {
 
     // A.I. learning base maps, must not be reset anywhere else but at install 
 
-    atomicState.learnedHSP = [:] 
-    atomicState.learnedCSP = [:] 
-    atomicState.HSPMode = [:] 
-    atomicState.CSPMode = [:] 
+    state.learnedHSP = [:] 
+    state.learnedCSP = [:] 
+    state.HSPMode = [:] 
+    state.CSPMode = [:] 
 
     //dontLearnFromThis()
     /// run a first learning process if database is empty
-    if(atomicState.learnedHSP.size() == 0 || atomicState.HSPMode == 0){
+    if(state.learnedHSP.size() == 0 || state.HSPMode == 0){
 
         log.debug "BUILDING LEARNING MAPS............................................................................"
 
@@ -372,12 +370,12 @@ def installed() {
 
             thisTherm = Thermostats[i]
             thisHSP = thisTherm.currentValue("heatingSetpoint")
-            atomicState.learnedHSP << ["${Thermostats[i]}" : "${thisHSP}"] 
-            atomicState.HSPMode."${CurrMode}" = atomicState.learnedHSP 
+            state.learnedHSP << ["${Thermostats[i]}" : "${thisHSP}"] 
+            state.HSPMode."${CurrMode}" = state.learnedHSP 
 
             thisCSP = thisTherm.currentValue("coolingSetpoint")
-            atomicState.learnedCSP << ["${thisTherm}" : "${thisCSP}"] 
-            atomicState.CSPMode."${CurrMode}" = atomicState.learnedCSP 
+            state.learnedCSP << ["${thisTherm}" : "${thisCSP}"] 
+            state.CSPMode."${CurrMode}" = state.learnedCSP 
 
             learn(Thermostats[i], thisHSP, "heatingSetpoint")
             learn(Thermostats[i], thisCSP, "coolingSetpoint")
@@ -397,21 +395,21 @@ def updated() {
 def initialize() {
     // reset lists and maps
     // these lists will allow to have sets of thermostats working with sets of motion sensors
-    atomicState.thermMotionList = []              
-    atomicState.MotionModesList = []
-    atomicState.MotionSensorList = []
+    state.thermMotionList = []              
+    state.MotionModesList = []
+    state.MotionSensorList = []
 
     /// these lists are meant to record device events for cheduled learnings
-    atomicState.evtDevice = []
-    atomicState.evtValue = []
-    atomicState.evtName = []
+    state.evtDevice = []
+    state.evtValue = []
+    state.evtName = []
 
-    atomicState.inBoostMode = [:] // allows to manage boost modes without having A.I. recording these as new values
+    state.inBoostMode = [:] // allows to manage boost modes without having A.I. recording these as new values
 
     // these maps' purpose is only to verify that all settings were properly arranged together 
     // and may be used as a debug ressource
-    atomicState.MotionModesAndItsThermMap = [:]
-    atomicState.SensorThermMap = [:]
+    state.MotionModesAndItsThermMap = [:]
+    state.SensorThermMap = [:]
 
 
     // subscribe to events
@@ -425,7 +423,7 @@ def initialize() {
         def s = ThermSensor.size()
         def refSensor = null
         def refTherm = null
-        atomicState.AltSensorMap = [:]
+        state.AltSensorMap = [:]
 
         for(s > 0; i < s; i++){
             //refSensor = "Sensor${i.toString()}"
@@ -433,7 +431,7 @@ def initialize() {
             log.debug "refSensor is $refSensor"
             refTherm = ThermSensor[i]
             log.debug "refTherm is $refTherm"
-            atomicState.AltSensorMap."$refTherm" = "$refSensor" // map for corresponding thermostat
+            state.AltSensorMap."$refTherm" = "$refSensor" // map for corresponding thermostat
             subscribe(refSensor, "temperature", temperatureHandler)
             log.debug "Subscription for alternative Sensor ${refSensor} successful" 
         }
@@ -473,8 +471,8 @@ def MotionSub(){
 
     def loopV = 0
 
-    def MotionSensorList = atomicState.MotionSensorList
-    log.debug "MotionSensorList = $atomicState.MotionSensorList"
+    def MotionSensorList = state.MotionSensorList
+    log.debug "MotionSensorList = $state.MotionSensorList"
 
     def ms = MotionSensorList.size()
     for(ms > 0; loopV < ms; loopV++){  
@@ -526,11 +524,11 @@ refms = $refms
 
         if(reftm){
 
-            atomicState.thermMotionList << "$reftm"
-            atomicState.MotionModesList << "$refmmodes"
-            atomicState.MotionSensorList << "$refms"
-            atomicState.MotionModesAndItsThermMap << ["$reftm" : "$refmmodes"]
-            atomicState.SensorThermMap << ["$reftm" : "$refms"]
+            state.thermMotionList << "$reftm"
+            state.MotionModesList << "$refmmodes"
+            state.MotionSensorList << "$refms"
+            state.MotionModesAndItsThermMap << ["$reftm" : "$refmmodes"]
+            state.SensorThermMap << ["$reftm" : "$refms"]
         }
         else {
             log.debug "reftm returned 'null' ( $reftm )"
@@ -541,11 +539,11 @@ refms = $refms
 }
 def MotionTest(){
 
-    def thermMotionList = atomicState.thermMotionList
-    def MotionModesList = atomicState.MotionModesList
-    def MotionSensorList = atomicState.MotionSensorList
-    def MotionModesAndItsThermMap = atomicState.MotionModesAndItsThermMap
-    def SensorThermMap = atomicState.SensorThermMap
+    def thermMotionList = state.thermMotionList
+    def MotionModesList = state.MotionModesList
+    def MotionSensorList = state.MotionSensorList
+    def MotionModesAndItsThermMap = state.MotionModesAndItsThermMap
+    def SensorThermMap = state.SensorThermMap
 
     /*  log.info """
 thermMotionList = $thermMotionList
@@ -616,12 +614,12 @@ def ActiveTest(thermostat) {
 
     if(useMotion){
 
-        def thermMotionList = atomicState.thermMotionList
-        def MotionModesList = atomicState.MotionModesList
-        log.debug "atomicState.MotionModesList = $atomicState.MotionModesList"
-        def MotionSensorList = atomicState.MotionSensorList
-        def MotionModesAndItsThermMap = atomicState.MotionModesAndItsThermMap
-        def SensorThermMap = atomicState.SensorThermMap
+        def thermMotionList = state.thermMotionList
+        def MotionModesList = state.MotionModesList
+        log.debug "state.MotionModesList = $state.MotionModesList"
+        def MotionSensorList = state.MotionSensorList
+        def MotionModesAndItsThermMap = state.MotionModesAndItsThermMap
+        def SensorThermMap = state.SensorThermMap
 
         // since it is possible for users to deselect a motionThermostat 
         // check that the requested thermostat is one of the selected ones
@@ -629,7 +627,7 @@ def ActiveTest(thermostat) {
 
         def thisThermIsInTheList = thermMotionList.find{it.toString().contains("$thermostat")} != null
 
-        //log.debug "atomicState.thermMotionList = $atomicState.thermMotionList and current Thermostat = $thermostat && thisThermIsInTheList = $thisThermIsInTheList"
+        //log.debug "state.thermMotionList = $state.thermMotionList and current Thermostat = $thermostat && thisThermIsInTheList = $thisThermIsInTheList"
 
         if(thisThermIsInTheList){
 
@@ -740,9 +738,8 @@ def motionSensorHandler(evt){
 }
 
 //************************************************************************************************//
-/// LEARNING HANDLERS AND FUNCTIONS
+/// LEARNING EVT HANDLERS AND MAPPING FUNCTIONS
 //************************************************************************************************//
-
 def setpointChangeHandler(evt){
 
     learn(evt.device, evt.value, evt.name)
@@ -751,8 +748,8 @@ def setpointChangeHandler(evt){
 
 def learn(thisTherm, thisTemp, eventName){
 
-    boolean inBoostMode = atomicState.inBoostMode.find{it.key == "$thisTherm"}?.value == "true"  
-    //{it.contains("$thisTherm")} as Boolean //"$" in atomicState.inBoostMode //
+    boolean inBoostMode = state.inBoostMode.find{it.key == "$thisTherm"}?.value == "true"  
+    //{it.contains("$thisTherm")} as Boolean //"$" in state.inBoostMode //
 
 
     if(!inBoostMode){
@@ -763,10 +760,10 @@ def learn(thisTherm, thisTemp, eventName){
         def thisHSP = null
         def thisCSP = null
 
-        //atomicState.learnedHSP = [:] 
-        //atomicState.learnedCSP = [:] 
-        // atomicState.HSPMode = [:] 
-        // atomicState.CSPMode = [:] 
+        //state.learnedHSP = [:] 
+        //state.learnedCSP = [:] 
+        // state.HSPMode = [:] 
+        // state.CSPMode = [:] 
 
         def CurrMode = location.currentMode
 
@@ -775,26 +772,26 @@ def learn(thisTherm, thisTemp, eventName){
 
         if(eventName == "heatingSetpoint"){
             thisHSP = thisTherm.currentValue("heatingSetpoint")
-            atomicState.learnedHSP << ["${thisTherm}" : "${thisHSP}"] 
-            atomicState.HSPMode."${CurrMode}" = atomicState.learnedHSP 
+            state.learnedHSP << ["${thisTherm}" : "${thisHSP}"] 
+            state.HSPMode."${CurrMode}" = state.learnedHSP 
         }
         else if(eventName == "coolingSetpoint"){
             thisCSP = thisTherm.currentValue("coolingSetpoint")
-            atomicState.learnedCSP << ["${thisTherm}" : "${thisCSP}"] 
-            atomicState.CSPMode."${CurrMode}" = atomicState.learnedCSP 
+            state.learnedCSP << ["${thisTherm}" : "${thisCSP}"] 
+            state.CSPMode."${CurrMode}" = state.learnedCSP 
         }
     }
     else {
         log.debug "NOT LEARNING BECAUSE $thisTherm is in boost mode"
     }
 
-    log.trace """ ${if(inBoostMode){"LEARNING"}else {"NOT LEARNING"}}
+    log.trace """ ${if(!inBoostMode){"LEARNING"}else {"NOT LEARNING because $thisTherm is in BOOST MODE"}}
     $thisTherm
-    in boost mode? $inBoostMode ($atomicState.inBoostMode)
-    atomicState.learnedHSP = $atomicState.learnedHSP
-    atomicState.learnedCSP = $atomicState.learnedCSP
-    atomicState.HSPMode = $atomicState.HSPMode
-    atomicState.CSPMode = $atomicState.CSPMode
+    in boost mode? $inBoostMode ($state.inBoostMode)
+    state.learnedHSP = $state.learnedHSP
+    state.learnedCSP = $state.learnedCSP
+    state.HSPMode = $state.HSPMode
+    state.CSPMode = $state.CSPMode
 
     """
 
@@ -807,7 +804,7 @@ def learn(thisTherm, thisTemp, eventName){
 
 def contactHandler(evt){
     log.debug "$evt.device is $evt.value"
-    atomicState.value = evt.value
+    state.value = evt.value
     eval()
 }
 def adjustWithPw(evt){
@@ -856,8 +853,8 @@ def adjust() {
             boolean tooCold4Hpump = false
             boolean useBoth = false
 
-            def recordedHSP = atomicState.HSPMode.find{it.key == "$CurrMode"}?.value // extract the map of HSPs' for this mode
-            def recordedCSP = atomicState.CSPMode.find{it.key == "$CurrMode"}?.value // extract the map of CSPs' for this mode
+            def recordedHSP = state.HSPMode.find{it.key == "$CurrMode"}?.value // extract the map of HSPs' for this mode
+            def recordedCSP = state.CSPMode.find{it.key == "$CurrMode"}?.value // extract the map of CSPs' for this mode
 
 
             for (s > 0; i < s; i++) {
@@ -896,12 +893,12 @@ def adjust() {
 
 
                     // check if user selected a third party sensor
-                    def useAltSensor = atomicState.AltSensorMap.find{it.toString().contains("$thisAppliance")} as Boolean
-                    log.debug "$thisAppliance was found in this map: $atomicState.AltSensorMap ? >> $useAltSensor -"
+                    def useAltSensor = state.AltSensorMap.find{it.toString().contains("$thisAppliance")} as Boolean
+                    log.debug "$thisAppliance was found in this map: $state.AltSensorMap ? >> $useAltSensor -"
 
                     // get this thermostat's or its related third party sensor's current temperature
                     if (useAltSensor) {
-                        def StringSensor = atomicState.AltSensorMap.find{it.key == "$thisAppliance"} .value
+                        def StringSensor = state.AltSensorMap.find{it.key == "$thisAppliance"} .value
                         // this is a string, so go get the device object from settings
                         def theAltSensor = settings.find{it.toString().contains(StringSensor)} .value
                         poll(theAltSensor)
@@ -963,17 +960,17 @@ def adjust() {
                                     {
                                         thisAppliance.setHeatingSetpoint(80)
                                         // make sure to not learn this value by implementing this list:
-                                        atomicState.inBoostMode = ["$thisAppliance" : "true"] 
-                                        log.debug "boost mode for $thisAppliance and atomicState.inBoostMode updated : $atomicState.inBoostMode"
+                                        state.inBoostMode = ["$thisAppliance" : "true"] 
+                                        log.debug "boost mode for $thisAppliance and state.inBoostMode updated : $state.inBoostMode"
                                     }
                                     else {
                                         log.debug "$thisAppliance already set to maximum heat (thisHSP = $thisHSP < 80 ?)"
                                     }
                                 }
                                 else {
-                                    // remove the device from atomicState.inBoostMode
-                                    atomicState.inBoostMode = ["$thisAppliance" : "false"]  
-                                    log.debug "$thisAppliance removed from atomicState.inBoostMode"
+                                    // remove the device from state.inBoostMode
+                                    state.inBoostMode = ["$thisAppliance" : "false"]  
+                                    log.debug "$thisAppliance removed from state.inBoostMode"
 
                                     // once temp is ok, if it got raised to 80 earlier, then..
                                     if (thisHSP >= comfortHigh.toInteger() + 6){
@@ -1076,7 +1073,7 @@ def adjust() {
         log.debug "in power saving mode, not changing power meter appliances set points"
     }
 
-    log.debug "atomicState.inBoostMode = ${atomicState.inBoostMode}"
+    log.debug "state.inBoostMode = ${state.inBoostMode}"
 }
 
 boolean tooColdForHeatPump(device){
@@ -1107,13 +1104,13 @@ def eval(){
 
     log.info """
     ////////////////////////////////////////////////////////////////////
-    atomicState.learnedHSP = $atomicState.learnedHS
-    atomicState.learnedCSP = $atomicState.learnedCSP
-    atomicState.HSPMode = $atomicState.HSPMode
-    atomicState.CSPMode = $atomicState.CSPMode
+    state.learnedHSP = $state.learnedHS
+    state.learnedCSP = $state.learnedCSP
+    state.HSPMode = $state.HSPMode
+    state.CSPMode = $state.CSPMode
     """
-   // atomicState.inBoostMode = [:]
-    //log.debug "atomicState.inBoostMode map created"
+   // state.inBoostMode = [:]
+    //log.debug "state.inBoostMode map created"
 
 
     boolean contactsOpen = "open" in contacts?.currentValue("contact") 
@@ -1159,12 +1156,13 @@ def eval(){
 
     }
 }
-
 def setThermostats(){
     log.debug "thermosats setup"
     boolean inSavingMode = location.currentMode in saveModes
 
     log.debug "inSavingMode = $inSavingMode"
+    
+    def comfort = getComfortH().toInteger()
 
     if(!inSavingMode) // a saving mode is a priority mode such as night or away, it overrides A.I. 
     {
@@ -1181,8 +1179,8 @@ def setThermostats(){
         def CurrMode = location.currentMode
 
 
-        def recordedHSP = atomicState.HSPMode.find{it.key == "$CurrMode"}?.value // extract the map of HSPs' for this mode
-        def recordedCSP = atomicState.CSPMode.find{it.key == "$CurrMode"}?.value // extract the map of CSPs' for this mode
+        def recordedHSP = state.HSPMode.find{it.key == "$CurrMode"}?.value // extract the map of HSPs' for this mode
+        def recordedCSP = state.CSPMode.find{it.key == "$CurrMode"}?.value // extract the map of CSPs' for this mode
 
         /// if values are null then learn from current settings
         if(recordedHSP == null || recordedCSP == null){     
@@ -1202,8 +1200,8 @@ NULL recordedCSP for $CurrMode mode = $recordedCSP
                 }
             }
             i = 0
-            recordedHSP = atomicState.HSPMode.find{it.key == "$CurrMode"}?.value // extract the map of HSPs' for this mode
-            recordedCSP = atomicState.CSPMode.find{it.key == "$CurrMode"}?.value // extract the map of CSPs' for this mode
+            recordedHSP = state.HSPMode.find{it.key == "$CurrMode"}?.value // extract the map of HSPs' for this mode
+            recordedCSP = state.CSPMode.find{it.key == "$CurrMode"}?.value // extract the map of CSPs' for this mode
         }
 
 
@@ -1225,12 +1223,12 @@ recordedCSP for $CurrMode mode = $recordedCSP
 
                 // check if user selected a third party sensor
                 def theAltSensor = null
-                def useAltSensor = atomicState.AltSensorMap.find{it.toString().contains("$thisTherm")} as Boolean
-                //log.debug "$thisTherm was found in this map: $atomicState.AltSensorMap ? >> $useAltSensor -"
+                def useAltSensor = state.AltSensorMap.find{it.toString().contains("$thisTherm")} as Boolean
+                //log.debug "$thisTherm was found in this map: $state.AltSensorMap ? >> $useAltSensor -"
 
                 // get this thermostat's or its related third party sensor's current temperature
                 if(useAltSensor){
-                    def StringSensor = atomicState.AltSensorMap.find{it.key == "$thisTherm"}.value
+                    def StringSensor = state.AltSensorMap.find{it.key == "$thisTherm"}.value
                     //log.debug "StringSensor is $StringSensor " //||||||||||||| settings = $settings"
                     // this is a string, so go get the device object from settings
 
@@ -1241,7 +1239,7 @@ recordedCSP for $CurrMode mode = $recordedCSP
                 }
                 else {
                     thisTemp = thisTherm.currentValue("temperature")
-                    //log.debug "$thisTherm returns a temperature of $thisTemp"
+                    log.debug "$thisTherm returns a temperature of $thisTemp"
                 }
 
                 // value is a map of [therm:temp] for current mode 
@@ -1254,13 +1252,13 @@ recordedCSP for $CurrMode mode = $recordedCSP
         """
                 thisHSP = thisHSP.toInteger()
                 thisCSP = thisCSP.toInteger()
-                thisTemp = thisTemp.toDouble() // these values are only for the keepOff() requests and extraAppliance (virtual thermostat) option
+                thisTemp = thisTemp.toDouble() // these values are only for the keepOff() requests and extraAppliance (virtual thermostat) options
                 // therefore, there's no real need for motion test here
 
                 // check that this is not an appliance managed throuhg its power consumption criteria
                 def alreadyManaged = managed(thisTherm)
 
-                def keepOff = keepOff(i, thisTemp, thisHSP, thisCSP, outside)
+                def keepOff = keepOff(i, thisTemp, thisHSP, thisCSP, outside, comfort)
                 log.debug "keepOff $keepOff"
 
                 // Now, assess needs: do we currently need heat or cooling ? 
@@ -1318,10 +1316,14 @@ recordedCSP for $CurrMode mode = $recordedCSP
                             thisTherm.setThermostatMode("off")
                         }
                     }
+                    log.debug "testttt"
+                    boolean thisIsTheExtraAppliance = ApplianceWithPwMeter.find{it.toString() == "$thisTherm"} 
+                    log.debug "- thisIsTheExtraAppliance = $thisIsTheExtraAppliance ( $extraAppliance works with $thisTherm )"
                     /// extra appliance management (virtual thermostat)
-                    if(extraAppliance && (tooCold4Hpump || useBoth)){
+                    if(extraAppliance && thisIsTheExtraAppliance && (tooCold4Hpump || useBoth)){
 
                         log.debug """thermostat values around $extraAppliance: 
+                        
                     - thisTherm = $thisTherm
                     - thisHSP = $thisHSP
                     - thisTemp = $thisTemp
@@ -1432,6 +1434,210 @@ recordedCSP for $CurrMode mode = $recordedCSP
     log.debug "end of setThermostats()"
 
 }
+def setHSPs(){
+
+    def CurrMode = location.currentMode
+    boolean inSavingMode = CurrMode in saveModes
+    def comfort = getComfortH().toInteger() 
+    log.debug "setting HSPs... inSavingMode: $inSavingMode... comfort = ${comfort}"
+
+
+    if(!inSavingMode){
+        int i = 0
+        int s = Thermostats.size()
+        def thisTherm = null
+        def HSP = null
+        def thisHSP = null
+        def thisTemp = null
+        def recorded = state.HSPMode.find{it.key == "$CurrMode"}?.value
+        boolean Active = true
+        def thermMode
+
+
+        log.debug "recorded for $CurrMode mode = $recorded"
+
+        for(s != 0; i < s; i++){
+            thisTherm = Thermostats[i]
+            thermMode = thisTherm.currentValue("thermostatMode")
+            thisTemp = thisTherm.currentValue("temperature")
+
+            boolean currentlyHeating = thisTherm.currentValue("thermostatMode") == "heat" //// OVERRIDE BOOLEAN 
+            // HERE ANY OTHER MODE THAN HEAT IS AN OVERRIDE
+
+            if(currentlyHeating){
+
+                thisHSP = thisTherm.currentValue("heatingSetpoint").toInteger()
+                // thisTemp = thisTherm.currentValue("temperature")  // set up lower after checking for alt sensor      
+                HSP = recorded.find{it.key == "${thisTherm}"}?.value?.toInteger() // value is a map of [therm:temp] for current mode
+
+                // check if user selected a third party sensor
+                def useAltSensor = state.AltSensorMap.find{it.toString().contains("$thisTherm")} as Boolean
+                // also make sure to avoid redundency by checking if the related appliance is not
+                // one managed by power measurement feature, which also adds / retracts values to the HSP
+                def alreadyManaged = managed(thisTherm) 
+
+
+                def GetMotionData = ActiveTest(thisTherm)
+                Active = GetMotionData[0] 
+
+                log.trace """SETHSPs
++++++++++++++++++++++
+recorded HSP for $thisTherm = $HSP ($thisHSP = $HSP)
+useAltSensor = $useAltSensor
+$thisTherm alreadyManaged = $alreadyManaged --
+GetMotionData = $GetMotionData
+Active = $Active
+thisTherm = $thisTherm
+thisHSP = $thisHSP
+thisTemp = $thisTemp
+HSP = $HSP
++++++++++++++++++++++
+"""
+
+
+                if(useAltSensor && !alreadyManaged && inComfortMode()){
+                    log.debug "Altsensor HSP management......................................."
+                    def StringSensor = state.AltSensorMap.find{it.key == "$thisTherm"}.value
+                    // this is a string, so go get the device object from settings
+                    def theAltSensor = settings.find{it.toString().contains(StringSensor)}.value
+                    poll(theAltSensor)
+                    thisTemp = theAltSensor.currentValue("temperature").toInteger()
+                    log.debug "third party sensor $theAltSensor returns a temperature of ${thisTemp}°"
+
+                    // there's an alternate sensor controlling this device, so increase HSP if temperature is still below requirement
+                    // if current temperature is below current HSP (thisHSP), bring HSP back to comfort value
+
+                    if(thisTemp < comfort || thisTemp < HSP && Active){
+                        if(thisHSP != comfort + 4){  
+                            // note that comfort can't be the HSP here because thermostat might return a value equals or superior to comfort
+                            // and so it won't heat while the alternate sensor returns a lower value thand desired
+                            state.inBoostMode = ["$thisTherm" : "true"] 
+                            thisTherm.setHeatingSetpoint(comfort + 4)
+                            log.debug """
+                            $thisTherm HSP adjusted to fit its alternate sensor values (using comfort linear equation)
+                            state.inBoostMode updated with $thisTherm id : $state.inBoostMode
+                            """
+                        }
+                        else {
+                            log.debug "${thisTherm}'s HSP already set to $HSP (altsensor)"
+                        }
+                    }
+                    else if(!Active){
+                        state.inBoostMode = ["$thisTherm" : "false"] 
+                        log.debug "$thisTherm removed from state.inBoostMode"
+                        HSP = comfort - HeatNoMotion
+                        //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
+                        thisTherm.setHeatingSetpoint(HSP)
+                        log.debug "${thisTherm} HSP brought down to $HSP because there's no motion"
+                    }                    
+                    else if(thisTemp > comfort || thisTemp > HSP){
+                        state.inBoostMode = ["$thisTherm" : "false"] 
+                        log.debug "$thisTherm removed from state.inBoostMode"
+                        if(thisTemp > comfort && thisHSP != comfort){
+                            //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
+                            thisTherm.setHeatingSetpoint(comfort)
+                            log.debug "$thisTherm HSP brought back to comfort value: ${comfort} "
+                        }
+                        else if(thisTemp > HSP && thisHSP != HSP){
+                            //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
+                            thisTherm.setHeatingSetpoint(HSP)
+                            log.debug "$thisTherm HSP brought back to A.I. value: ${HSP} "
+                        }
+                        else {
+                            log.debug "${thisTherm}'s HSP already set too low"
+                        }
+                    }
+                    else {
+                        log.debug "ERROR.............."
+                    }
+                }
+
+                else {
+                    //dontLearnFromThis() //state.dontLearnFromThis set to TRUE so there's no learning from coming changes
+
+                    poll(thisTherm)
+                    thisTemp = thisTherm.currentValue("temperature")?.toInteger() // might be an otherwise managed appliance without temp sensor 
+
+                    if(!Active){
+                        HSP = HSP.toInteger() - HeatNoMotion
+                        log.debug "HSP for $thisTherm lowered because there's no motion in its vicinity"
+                    }
+                    else if(thisHSP < comfort && inComfortMode()){
+                        HSP = comfort
+                        log.debug "${thisTherm}'s HSP adjusted to comfort setting"
+                    }
+                    if(thisHSP != HSP && !alreadyManaged){
+                        if(HSP < comfort && Active){
+                            HSP = 68 // bring back to minimum safety 
+                        }
+                        //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
+                        thisTherm.setHeatingSetpoint(HSP) 
+                        log.debug "$thisTherm set to $HSP"
+                    }
+                    else {
+                        log.debug "${thisTherm}'s HSP already set to $HSP -"
+                    }
+                }
+            }
+            else {
+                log.debug "$thisTherm is not currently HEATING, skipping (setHSPs)"
+            }
+
+        }
+
+    }
+    else {
+        log.debug "saving power mode"
+        //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
+        Thermostats.setHeatingSetpoint(saveModeHSP)
+    }
+}
+def setCSPs(){
+
+    int i = 0
+    int s = Thermostats.size()
+    def thisTherm = null
+    def CSP = null
+    def thisCSP = null
+
+    def CurrMode = location.currentMode
+
+    def recorded = state.CSPMode.find{it.key == "$CurrMode"}?.value // value is a map of [therm:temp] for current mode
+
+    // log.debug "recorded for $CurrMode mode = $recorded"
+
+    for(s != 0; i < s; i++){
+        thisTherm = Thermostats[i]
+        def thermMode = thisTherm.currentValue("thermostatMode")
+        boolean currentlyCooling = thisTherm.currentValue("thermostatMode") == "cool" //// OVERRIDE BOOLEAN 
+        // HERE ANY OTHER MODE THAN HEAT IS AN OVERRIDE
+
+        if(currentlyHeating){
+
+            thisCSP = thisTherm.currentValue("coolingSetpoint")
+            log.debug """
+thisTherm = $thisTherm 
+thisCSP = $thisCSP
+"""
+
+            CSP = recorded.find{it.key == "${thisTherm}"}?.value
+            // log.debug "recorded CSP for $thisTherm = $CSP ------- ($thisCSP = $CSP)"
+            if("$thisCSP" != "$CSP"){
+                //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
+                thisTherm.setCoolingSetpoint(CSP) 
+            }
+            else {
+                // log.debug "${thisTherm}'s CSP already set to $CSP"
+            }
+        }
+        else {
+            log.debug "$thisTherm is not currently COOLING, skipping (setCSPs)"
+        }
+
+    }
+
+state
+}
 
 boolean useboth(boolean tooCold4Hpump, int outside, int ThisTemp, int HSP, boolean Active){
 
@@ -1444,8 +1650,7 @@ boolean useboth(boolean tooCold4Hpump, int outside, int ThisTemp, int HSP, boole
 
     return result
 }
-
-boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside){
+boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside, int comfort){
 
     def thisTherm = Thermostats[i]
 
@@ -1454,7 +1659,7 @@ boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside){
     if(outside <= lowTemp){
         //if outside temperature makes it that we are in heating mode
 
-        if(thisTemp >= thisHSP){
+        if(thisTemp >= thisHSP && thisTemp > comfort){
             // if desired temp has been reached, you may turn if off (or set to requested setting), providing this is requested later
             result = true
         }
@@ -1467,17 +1672,20 @@ boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside){
             result = true
         }
     }  
-    /*  log.trace """ in keepOff boolean, parameters are:
+ log.trace """ in keepOff boolean, parameters are:
+ 
 thisTherm = $thisTherm
 thisTemp = $thisTemp
 thisHSP = $thisHSP
 thisCSP = $thisCSP
+highTemp = $highTemp
+lowTemp = $lowTemp
+outside = $outside
 
 & returned result is: $result
-"""*/
+"""
     return result
 }
-
 boolean managed(thisTherm){
     boolean result = false
 
@@ -1532,211 +1740,6 @@ def getComfortH(){
     return newComfortH
 
 }
-def setHSPs(){
-
-    def CurrMode = location.currentMode
-    boolean inSavingMode = CurrMode in saveModes
-    def comfort = getComfortH().toInteger() 
-    log.debug "setting HSPs... inSavingMode: $inSavingMode... comfort = ${comfort}"
-
-
-    if(!inSavingMode){
-        int i = 0
-        int s = Thermostats.size()
-        def thisTherm = null
-        def HSP = null
-        def thisHSP = null
-        def thisTemp = null
-        def recorded = atomicState.HSPMode.find{it.key == "$CurrMode"}?.value
-        boolean Active = true
-        def thermMode
-
-
-        log.debug "recorded for $CurrMode mode = $recorded"
-
-        for(s != 0; i < s; i++){
-            thisTherm = Thermostats[i]
-            thermMode = thisTherm.currentValue("thermostatMode")
-            thisTemp = thisTherm.currentValue("temperature")
-
-            boolean currentlyHeating = thisTherm.currentValue("thermostatMode") == "heat" //// OVERRIDE BOOLEAN 
-            // HERE ANY OTHER MODE THAN HEAT IS AN OVERRIDE
-
-            if(currentlyHeating){
-
-                thisHSP = thisTherm.currentValue("heatingSetpoint").toInteger()
-                // thisTemp = thisTherm.currentValue("temperature")  // set up lower after checking for alt sensor      
-                HSP = recorded.find{it.key == "${thisTherm}"}?.value?.toInteger() // value is a map of [therm:temp] for current mode
-
-                // check if user selected a third party sensor
-                def useAltSensor = atomicState.AltSensorMap.find{it.toString().contains("$thisTherm")} as Boolean
-                // also make sure to avoid redundency by checking if the related appliance is not
-                // one managed by power measurement feature, which also adds / retracts values to the HSP
-                def alreadyManaged = managed(thisTherm) 
-
-
-                def GetMotionData = ActiveTest(thisTherm)
-                Active = GetMotionData[0] 
-
-                log.trace """SETHSPs
-+++++++++++++++++++++
-recorded HSP for $thisTherm = $HSP ($thisHSP = $HSP)
-useAltSensor = $useAltSensor
-$thisTherm alreadyManaged = $alreadyManaged --
-GetMotionData = $GetMotionData
-Active = $Active
-thisTherm = $thisTherm
-thisHSP = $thisHSP
-thisTemp = $thisTemp
-HSP = $HSP
-+++++++++++++++++++++
-"""
-
-
-                if(useAltSensor && !alreadyManaged && inComfortMode()){
-                    log.debug "Altsensor HSP management......................................."
-                    def StringSensor = atomicState.AltSensorMap.find{it.key == "$thisTherm"}.value
-                    // this is a string, so go get the device object from settings
-                    def theAltSensor = settings.find{it.toString().contains(StringSensor)}.value
-                    poll(theAltSensor)
-                    thisTemp = theAltSensor.currentValue("temperature").toInteger()
-                    log.debug "third party sensor $theAltSensor returns a temperature of ${thisTemp}°"
-
-                    // there's an alternate sensor controlling this device, so increase HSP if temperature is still below requirement
-                    // if current temperature is below current HSP (thisHSP), bring HSP back to comfort value
-
-                    if(thisTemp < comfort || thisTemp < HSP && Active){
-                        if(thisHSP != comfort + 4){  
-                            // note that comfort can't be the HSP here because thermostat might return a value equals or superior to comfort
-                            // and so it won't heat while the alternate sensor returns a lower value thand desired
-                            atomicState.inBoostMode = ["$thisTherm" : "true"] 
-                            thisTherm.setHeatingSetpoint(comfort + 4)
-                            log.debug """
-                            $thisTherm HSP adjusted to fit its alternate sensor values (using comfort linear equation)
-                            atomicState.inBoostMode updated with $thisTherm id : $atomicState.inBoostMode
-                            """
-                        }
-                        else {
-                            log.debug "${thisTherm}'s HSP already set to $HSP (altsensor)"
-                        }
-                    }
-                    else if(!Active){
-                        atomicState.inBoostMode = ["$thisTherm" : "false"] 
-                        log.debug "$thisTherm removed from atomicState.inBoostMode"
-                        HSP = comfort - HeatNoMotion
-                        //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
-                        thisTherm.setHeatingSetpoint(HSP)
-                        log.debug "${thisTherm} HSP brought down to $HSP because there's no motion"
-                    }                    
-                    else if(thisTemp > comfort || thisTemp > HSP){
-                        atomicState.inBoostMode = ["$thisTherm" : "false"] 
-                        log.debug "$thisTherm removed from atomicState.inBoostMode"
-                        if(thisTemp > comfort && thisHSP != comfort){
-                            //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
-                            thisTherm.setHeatingSetpoint(comfort)
-                            log.debug "$thisTherm HSP brought back to comfort value: ${comfort} "
-                        }
-                        else if(thisTemp > HSP && thisHSP != HSP){
-                            //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
-                            thisTherm.setHeatingSetpoint(HSP)
-                            log.debug "$thisTherm HSP brought back to A.I. value: ${HSP} "
-                        }
-                        else {
-                            log.debug "${thisTherm}'s HSP already set too low"
-                        }
-                    }
-                    else {
-                        log.debug "ERROR.............."
-                    }
-                }
-
-                else {
-                    //dontLearnFromThis() //atomicState.dontLearnFromThis set to TRUE so there's no learning from coming changes
-
-                    poll(thisTherm)
-                    thisTemp = thisTherm.currentValue("temperature")?.toInteger() // might be an otherwise managed appliance without temp sensor 
-
-                    if(!Active){
-                        HSP = HSP.toInteger() - HeatNoMotion
-                        log.debug "HSP for $thisTherm lowered because there's no motion in its vicinity"
-                    }
-                    else if(thisHSP < comfort && inComfortMode()){
-                        HSP = comfort
-                        log.debug "${thisTherm}'s HSP adjusted to comfort setting"
-                    }
-                    if(thisHSP != HSP && !alreadyManaged){
-                        if(HSP < comfort && Active){
-                            HSP = 68 // bring back to minimum safety 
-                        }
-                        //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
-                        thisTherm.setHeatingSetpoint(HSP) 
-                        log.debug "$thisTherm set to $HSP"
-                    }
-                    else {
-                        log.debug "${thisTherm}'s HSP already set to $HSP -"
-                    }
-                }
-            }
-            else {
-                log.debug "$thisTherm is not currently HEATING, skipping (setHSPs)"
-            }
-
-        }
-
-    }
-    else {
-        log.debug "saving power mode"
-        //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
-        Thermostats.setHeatingSetpoint(saveModeHSP)
-    }
-}
-def setCSPs(){
-
-    int i = 0
-    int s = Thermostats.size()
-    def thisTherm = null
-    def CSP = null
-    def thisCSP = null
-
-    def CurrMode = location.currentMode
-
-    def recorded = atomicState.CSPMode.find{it.key == "$CurrMode"}?.value // value is a map of [therm:temp] for current mode
-
-    // log.debug "recorded for $CurrMode mode = $recorded"
-
-    for(s != 0; i < s; i++){
-        thisTherm = Thermostats[i]
-        def thermMode = thisTherm.currentValue("thermostatMode")
-        boolean currentlyCooling = thisTherm.currentValue("thermostatMode") == "cool" //// OVERRIDE BOOLEAN 
-        // HERE ANY OTHER MODE THAN HEAT IS AN OVERRIDE
-
-        if(currentlyHeating){
-
-            thisCSP = thisTherm.currentValue("coolingSetpoint")
-            log.debug """
-thisTherm = $thisTherm 
-thisCSP = $thisCSP
-"""
-
-            CSP = recorded.find{it.key == "${thisTherm}"}?.value
-            // log.debug "recorded CSP for $thisTherm = $CSP ------- ($thisCSP = $CSP)"
-            if("$thisCSP" != "$CSP"){
-                //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
-                thisTherm.setCoolingSetpoint(CSP) 
-            }
-            else {
-                // log.debug "${thisTherm}'s CSP already set to $CSP"
-            }
-        }
-        else {
-            log.debug "$thisTherm is not currently COOLING, skipping (setCSPs)"
-        }
-
-    }
-
-state
-}
-
 
 def poll(device){
 
