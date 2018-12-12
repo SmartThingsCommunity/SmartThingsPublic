@@ -17,7 +17,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Leaksmart Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", mnmn: "SmartThings", vid: "generic-leak-3") {
+	definition(name: "Leaksmart Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", mnmn: "SmartThings", vid: "generic-leak") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
