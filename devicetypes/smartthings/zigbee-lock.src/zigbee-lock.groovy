@@ -652,7 +652,7 @@ private def parseCommandResponse(String description) {
 		switch (eventCode) {
 			case 1: // MasterCodeChanged
 				codeName = "Master Code"
-				responseMap.value = "0 set"
+//				responseMap.value = "0 set"
 				responseMap.descriptionText = "${getStatusForDescription('set')} \"Master Code\""
 				responseMap.data = [ codeName: codeName, notify: true, notificationText: "${getStatusForDescription('set')} \"$codeName\" in $deviceName at ${location.name}" ]
 				break
