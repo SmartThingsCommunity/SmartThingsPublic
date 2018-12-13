@@ -249,6 +249,13 @@ def parse(String description) {
 					map.value = getTemperature(descMap.value)
 					map.unit = getTemperatureScale()
 					map.data = [heatingSetpointRange: heatingSetpointRange]
+
+					// Sometimes we don't get an updated operating state when going from heating -> idle with a setpoint just below ambient;
+					// so ask for the operating state.
+					def ambientTemp = device.currentValue("temperature")
+					if (ambientTemp != null && map.value < ambientTemp) {
+						sendHubCommand(zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE))
+					}
 				}
 			} else if (descMap.attrInt == ATTRIBUTE_SYSTEM_MODE) {
 				log.debug "MODE - ${descMap.value}"
@@ -262,6 +269,8 @@ def parse(String description) {
 					map.data = [supportedThermostatModes: supportedThermostatModes]
 				} else {
 					state.storedSystemMode = value
+					// Sometimes we don't get the final decision, so ask for it just in case
+					sendHubCommand(zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_MFR_SPEC_SETPOINT_MODE, ["mfgCode": "0x1185"]))
 				}
 				// Right now this doesn't seem to happen -- regardless of the size field the value seems to be two bytes
 				/*if (descMap.size == "08") {
