@@ -254,6 +254,7 @@ def parse(String description) {
 				map = handleTemperature(descMap)
 			} else if (descMap.attrInt == ATTRIBUTE_HEAT_SETPOINT) {
 				def intVal = Integer.parseInt(descMap.value, 16)
+				// We receive 0x8000 when the thermostat is off
 				if (intVal != 0x8000) {
 					log.debug "HEATING SETPOINT"
 					map.name = "heatingSetpoint"
@@ -307,13 +308,13 @@ def handleTemperature(descMap) {
 	def intVal = Integer.parseInt(descMap.value, 16)
 
 	// Handle special temperature flags where we need to change the event type
-	if (intVal == 0x7ffd) {
+	if (intVal == 0x7ffd) { // Freeze Alarm
 		map.name = "temperatureAlarm"
 		map.value = "freeze"
-	} else if (intVal == 0x7fff) {
+	} else if (intVal == 0x7fff) { // Overheat Alarm
 		map.name = "temperatureAlarm"
 		map.value = "heat"
-	} else if (intVal == 0x8000) {
+	} else if (intVal == 0x8000) { // Temperature Sensor Error
 		map.descriptionText = "Received a temperature error"
 	} else {
 		if (intVal > 0x8000) { // Handle negative C (< 32F) readings

@@ -293,13 +293,13 @@ def zwaveEvent(sensormultilevelv3.SensorMultilevelReport cmd) {
 		temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
 
 		// The specific values checked below represent ambient temperature alarm indicators
-		if (temp == 0x7ffd) {
+		if (temp == 0x7ffd) { // Freeze Alarm
 			map.name = "temperatureAlarm"
 			map.value = "freeze"
-		} else if (temp == 0x7fff) {
+		} else if (temp == 0x7fff) { // Overheat Alarm
 			map.name = "temperatureAlarm"
 			map.value = "heat"
-		} else if (temp == 0x8000) {
+		} else if (temp == 0x8000) { // Temperature Sensor Error
 			map.descriptionText = "Received a temperature error"
 		} else {
 			map.name = "temperature"
