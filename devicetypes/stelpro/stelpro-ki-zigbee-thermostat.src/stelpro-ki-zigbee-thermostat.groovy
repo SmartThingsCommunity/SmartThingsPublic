@@ -316,33 +316,30 @@ def parse(String description) {
 def handleTemperature(descMap) {
 	def map = [:]
 	def intVal = Integer.parseInt(descMap.value, 16)
-	map.name = "temperature"
-	map.unit = getTemperatureScale()
-	map.value = getTemperature(descMap.value)
 
 	// Handle special temperature flags where we need to change the event type
 	if (intVal == 0x7ffd) {
 		map.name = "temperatureAlarm"
 		map.value = "freeze"
-		map.unit = null
 	} else if (intVal == 0x7fff) {
 		map.name = "temperatureAlarm"
 		map.value = "heat"
-		map.unit = null
 	} else if (intVal == 0x8000) {
-		map.name = null
-		map.value = null
-		map.unit = null
 		map.descriptionText = "Received a temperature error"
-	} else if (intVal > 0x8000) {
-		map.value = -(Math.round(2*(655.36 - map.value))/2)
+	} else {
+		if (intVal > 0x8000) { // Handle negative C (< 32F) readings
+			intVal = -(Math.round(2 * (65536 - intVal)) / 2)
+		}
+		map.name = "temperature"
+		map.value = getTemperature(intVal)
+		map.unit = getTemperatureScale()
 	}
 
 	// Handle cases where we need to update the temperature alarm state given certain temperatures
 	if (map.name == "temperature") {
-		if (intVal < 0) { // Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+		if (map.value < (map.unit == "C" ? 0 : 32)) { // Account for a f/w bug where the freeze alarm doesn't trigger at 0C
 			sendEvent(name: "temperatureAlarm", value: "freeze")
-		} else if ((intVal / 100) >= 50) { // Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C
+		} else if (map.value >= (map.unit == "C" ? 50 : 122)) { // Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C
 			sendEvent(name: "temperatureAlarm", value: "heat")
 		} else if (device.currentValue("temperatureAlarm") != "cleared") {
 			sendEvent(name: "temperatureAlarm", value: "cleared")
@@ -408,10 +405,19 @@ def poll() {
 	requests
 }
 
+/**
+ * Given a raw temperature reading in Celsius return a converted temperature.
+ *
+ * @param value The temperature in Celsius, treated based on the following:
+ *                 If value instanceof String, treat as a raw hex string and divide by 100
+ *                 Otherwise treat value as a number and divide by 100
+ *
+ * @return A Celsius or Farenheit value
+ */
 def getTemperature(value) {
 	if (value != null) {
 		log.debug("value $value")
-		def celsius = Integer.parseInt(value, 16) / 100
+		def celsius = (value instanceof String ? Integer.parseInt(value, 16) : value) / 100
 		if (getTemperatureScale() == "C") {
 			return celsius
 		} else {

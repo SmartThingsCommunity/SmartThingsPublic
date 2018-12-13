@@ -290,28 +290,21 @@ def zwaveEvent(sensormultilevelv3.SensorMultilevelReport cmd) {
 	def map = [:]
 
 	if (cmd.sensorType == sensormultilevelv3.SensorMultilevelReport.SENSOR_TYPE_TEMPERATURE_VERSION_1) {
-		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
-		map.unit = getTemperatureScale()
-		map.name = "temperature"
+		temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
 
-		temp = map.value
 		// The specific values checked below represent ambient temperature alarm indicators
 		if (temp == 0x7ffd) {
 			map.name = "temperatureAlarm"
 			map.value = "freeze"
-			map.unit = null
 		} else if (temp == 0x7fff) {
 			map.name = "temperatureAlarm"
 			map.value = "heat"
-			map.unit = null
-		} else if (temp == 0x8000){
-			map.name = null
-			map.value = null
-			map.unit = null
+		} else if (temp == 0x8000) {
 			map.descriptionText = "Received a temperature error"
 		} else {
-			tempfloat = (Math.round(temp.toFloat() * 2)) / 2
-			map.value = tempfloat
+			map.name = "temperature"
+			map.value = (Math.round(temp.toFloat() * 2)) / 2
+			map.unit = getTemperatureScale()
 		}
 
 		// Handle cases where we need to update the temperature alarm state given certain temperatures
