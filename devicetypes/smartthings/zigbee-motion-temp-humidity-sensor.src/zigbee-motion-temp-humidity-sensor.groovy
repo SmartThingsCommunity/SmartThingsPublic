@@ -49,8 +49,8 @@ metadata {
 			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter '-5'. If 3 degrees too cold, enter '+3'.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 			input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 		}
-        section {
-        	input title: "Humidity Offset", description: "This feature allows you to correct any humidity variations by selecting an offset. Ex: If your sensor consistently reports a humidity that's 6% higher then a similiar calibrated sensor, you'd enter \"-6\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+        	section {
+        		input title: "Humidity Offset", description: "This feature allows you to correct any humidity variations by selecting an offset. Ex: If your sensor consistently reports a humidity that's 6% higher then a similiar calibrated sensor, you'd enter \"-6\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 			input "humidityOffset", "number", title: "Humidity Offset in Percent", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
 		}
     }
@@ -75,7 +75,7 @@ metadata {
 					]
 			)
 		}
-        valueTile("humidity", "device.humidity", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+        	valueTile("humidity", "device.humidity", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "humidity", label: '${currentValue}% humidity', unit: ""
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
@@ -84,7 +84,7 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        	standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
         }
 
@@ -273,12 +273,12 @@ def configure() {
 	configCmds += zigbee.enrollResponse()
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-    // humidity minReportTime 30 seconds, maxReportTime 60 min
+    	// humidity minReportTime 30 seconds, maxReportTime 60 min
 	configCmds += zigbee.batteryConfig()
 	configCmds += zigbee.temperatureConfig(30, 300)
 	configCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
-    configCmds += zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
+    	configCmds += zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
 
 	return configCmds
 }
