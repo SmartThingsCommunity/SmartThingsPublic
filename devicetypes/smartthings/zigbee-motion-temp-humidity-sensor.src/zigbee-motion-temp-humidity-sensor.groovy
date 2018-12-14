@@ -29,12 +29,6 @@ metadata {
 
 		command "enrollResponse"
 		
-        //Device join data
-		//application: 00
-		//endpointId: 01
-		//manufacturer: iMagic by GreatStar
-		//model: 1117-S
-        //Raw 01 0104 0402 00 0A 0000 0001 0003 0020 0402 0405 0500 0B05 FC01 FC02 02 0003 0019
         fingerprint inClusters: "0000,0001,0003,0020,0402,0405,0500,0B05,FC01,FC02", outClusters: "0019,0003", manufacturer: "iMagic by GreatStar", model: "1117-S", deviceJoinName: "Iris IL071 Motion Sensor"	
 	}
 
@@ -192,9 +186,8 @@ private Map getBatteryResult(rawValue) {
 		result.name = 'battery'
 		result.translatable = true
 		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-			def useOldBatt = shouldUseOldBatteryReporting()
-			def minVolts = useOldBatt ? 2.1 : 2.4
-			def maxVolts = useOldBatt ? 3.0 : 2.7
+			def minVolts =  2.4
+			def maxVolts =  2.7
 			// Get the current battery percentage as a multiplier 0 - 1
 			def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
 			// Find the corresponding voltage from our range
@@ -205,8 +198,7 @@ private Map getBatteryResult(rawValue) {
 			// OR we have received the same reading twice in a row
 			// OR we don't currently have a battery reading
 			// OR the value we just received is at least 2 steps off from the last reported value
-			// OR the device's firmware is older than 1.15.7
-			if (useOldBatt || state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+			if (state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
 				def pct = (volts - minVolts) / (maxVolts - minVolts)
 				def roundedPct = Math.round(pct * 100)
 				if (roundedPct <= 0)
@@ -275,9 +267,8 @@ def configure() {
 
 	log.debug "Configuring Reporting"
 	def configCmds = [zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)]
-	def batteryAttr = device.getDataValue("manufacturer") == "Samjin" ? 0x0021 : 0x0020
 
-	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr)
+	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
 
 	configCmds += zigbee.enrollResponse()
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
@@ -286,27 +277,8 @@ def configure() {
 	configCmds += zigbee.batteryConfig()
 	configCmds += zigbee.temperatureConfig(30, 300)
 	configCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr)
+	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
     configCmds += zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
 
 	return configCmds
-}
-
-private shouldUseOldBatteryReporting() {
-	def isFwVersionLess = true // By default use the old battery reporting
-	def deviceFwVer = "${device.getFirmwareVersion()}"
-	def deviceVersion = deviceFwVer.tokenize('.')  // We expect the format ###.###.### where ### is some integer
-
-	if (deviceVersion.size() == 3) {
-		def targetVersion = [1, 15, 7] // Centralite Firmware 1.15.7 contains battery smoothing fixes, so versions before that should NOT be smoothed
-		def devMajor = deviceVersion[0] as int
-		def devMinor = deviceVersion[1] as int
-		def devBuild = deviceVersion[2] as int
-
-		isFwVersionLess = ((devMajor < targetVersion[0]) ||
-			(devMajor == targetVersion[0] && devMinor < targetVersion[1]) ||
-			(devMajor == targetVersion[0] && devMinor == targetVersion[1] && devBuild < targetVersion[2]))
-	}
-
-	return isFwVersionLess // If f/w version is less than 1.15.7 then do NOT smooth battery reports and use the old reporting
 }
