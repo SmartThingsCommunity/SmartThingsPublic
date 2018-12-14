@@ -305,15 +305,20 @@ def zwaveEvent(sensormultilevelv3.SensorMultilevelReport cmd) {
 			map.name = "temperature"
 			map.value = (Math.round(temp.toFloat() * 2)) / 2
 			map.unit = getTemperatureScale()
-		}
 
-		// Handle cases where we need to update the temperature alarm state given certain temperatures
-		if (map.name == "temperature") {
-			if (map.value < (map.unit == "C" ? 0 : 32)) { // Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+
+			// Handle cases where we need to update the temperature alarm state given certain temperatures
+			// Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+			if (map.value < (map.unit == "C" ? 0 : 32)) {
+				log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
 				sendEvent(name: "temperatureAlarm", value: "freeze")
-			} else if (map.value >= (map.unit == "C" ? 50 : 122)) { // Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C
+			}
+			// Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C to match thermostat display
+			else if (map.value >= (map.unit == "C" ? 50 : 122)) {
+				log.debug "EARLY HEAT ALARM @  $map.value $map.unit (raw $intVal)"
 				sendEvent(name: "temperatureAlarm", value: "heat")
 			} else if (device.currentValue("temperatureAlarm") != "cleared") {
+				log.debug "CLEAR ALARM @ $map.value $map.unit (raw $intVal)"
 				sendEvent(name: "temperatureAlarm", value: "cleared")
 			}
 		}

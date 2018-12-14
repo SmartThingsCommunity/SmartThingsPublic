@@ -163,6 +163,10 @@ def getModeMap() {[
 	"05":"eco"
 ]}
 
+def getDutyCyclePeriod() {
+	15 // seconds
+}
+
 def setupHealthCheck() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
@@ -251,10 +255,10 @@ def parse(String description) {
 					map.data = [heatingSetpointRange: heatingSetpointRange]
 
 					// Sometimes we don't get an updated operating state when going from heating -> idle with a setpoint just below ambient;
-					// so ask for the operating state.
+					// so ask for the operating state, but wait 1.5 times the duty cycle period.
 					def ambientTemp = device.currentValue("temperature")
 					if (ambientTemp != null && map.value < ambientTemp) {
-						sendHubCommand(zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE))
+						runIn((dutyCyclePeriod * 3) / 2 as int, updateOperatingState, [overwrite: true])
 					}
 				}
 			} else if (descMap.attrInt == ATTRIBUTE_SYSTEM_MODE) {
@@ -343,15 +347,19 @@ def handleTemperature(descMap) {
 		map.name = "temperature"
 		map.value = getTemperature(intVal)
 		map.unit = getTemperatureScale()
-	}
 
-	// Handle cases where we need to update the temperature alarm state given certain temperatures
-	if (map.name == "temperature") {
-		if (map.value < (map.unit == "C" ? 0 : 32)) { // Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+		// Handle cases where we need to update the temperature alarm state given certain temperatures
+		// Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+		if (map.value < (map.unit == "C" ? 0 : 32)) {
+			log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
 			sendEvent(name: "temperatureAlarm", value: "freeze")
-		} else if (map.value >= (map.unit == "C" ? 50 : 122)) { // Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C
+		}
+		// Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C to match thermostat display
+		else if (map.value >= (map.unit == "C" ? 50 : 122)) {
+			log.debug "EARLY HEAT ALARM @  $map.value $map.unit (raw $intVal)"
 			sendEvent(name: "temperatureAlarm", value: "heat")
 		} else if (device.currentValue("temperatureAlarm") != "cleared") {
+			log.debug "CLEAR ALARM @ $map.value $map.unit (raw $intVal)"
 			sendEvent(name: "temperatureAlarm", value: "cleared")
 		}
 	}
@@ -389,6 +397,10 @@ def scheduledUpdateWeather() {
 	if (actions) {
 		sendHubCommand(actions)
 	}
+}
+
+def updateOperatingState() {
+	sendHubCommand(zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE))
 }
 
 /**
