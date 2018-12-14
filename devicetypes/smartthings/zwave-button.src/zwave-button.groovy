@@ -23,7 +23,6 @@ metadata {
 		capability "Configuration"
 
 		fingerprint mfr: "010F", prod: "0F01", model: "1000", deviceJoinName: "Fibaro Button"
-		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Panic Button"
 	}
 
 	tiles(scale: 2) {
