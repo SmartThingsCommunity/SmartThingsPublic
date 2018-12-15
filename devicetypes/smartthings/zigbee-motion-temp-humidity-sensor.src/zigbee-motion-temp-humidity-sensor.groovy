@@ -144,12 +144,13 @@ def parse(String description) {
 		if (tempOffset) {
 			map.value = (int) map.value + (int) tempOffset
 		}
-		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
+		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} termperature was ${map.value}°C" : "${device.displayName} temperature was ${map.value}°F"
 		map.translatable = true
 	} else if (map.name == "humidity") {
 		if (humidityOffset) {
 			map.value = (int) map.value + (int) humidityOffset
 		}
+        map.descriptionText = "${device.displayName} humidity was ${map.value}%"
     }
 
 	log.debug "Parse returned $map"
@@ -185,30 +186,30 @@ private Map getBatteryResult(rawValue) {
 	if (!(rawValue == 0 || rawValue == 255)) {
 		result.name = 'battery'
 		result.translatable = true
-		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-			def minVolts =  2.4
-			def maxVolts =  2.7
-			// Get the current battery percentage as a multiplier 0 - 1
-			def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
-			// Find the corresponding voltage from our range
-			curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
-			// Round to the nearest 10th of a volt
-			curValVolts = Math.round(10 * curValVolts) / 10.0
-			// Only update the battery reading if we don't have a last reading,
-			// OR we have received the same reading twice in a row
-			// OR we don't currently have a battery reading
-			// OR the value we just received is at least 2 steps off from the last reported value
-			if (state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
-				def pct = (volts - minVolts) / (maxVolts - minVolts)
-				def roundedPct = Math.round(pct * 100)
-				if (roundedPct <= 0)
-					roundedPct = 1
-				result.value = Math.min(100, roundedPct)
-			} else {
-				// Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
-				result.value = device.currentState("battery").value
-			}
-			state.lastVolts = volts
+		def minVolts =  2.4
+		def maxVolts =  2.7
+		// Get the current battery percentage as a multiplier 0 - 1
+		def curValVolts = Integer.parseInt(device.currentState("battery")?.value ?: "100") / 100.0
+		// Find the corresponding voltage from our range
+		curValVolts = curValVolts * (maxVolts - minVolts) + minVolts
+		// Round to the nearest 10th of a volt
+		curValVolts = Math.round(10 * curValVolts) / 10.0
+		// Only update the battery reading if we don't have a last reading,
+		// OR we have received the same reading twice in a row
+		// OR we don't currently have a battery reading
+		// OR the value we just received is at least 2 steps off from the last reported value
+		if (state?.lastVolts == null || state?.lastVolts == volts || device.currentState("battery")?.value == null || Math.abs(curValVolts - volts) > 0.1) {
+			def pct = (volts - minVolts) / (maxVolts - minVolts)
+			def roundedPct = Math.round(pct * 100)
+			if (roundedPct <= 0)
+				roundedPct = 1
+			result.value = Math.min(100, roundedPct)
+		} else {
+			// Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
+			result.value = device.currentState("battery").value
+		}
+        result.descriptionText = "${device.displayName} battery was ${result.value}%"
+		state.lastVolts = volts
 	}
 
 	return result
@@ -221,8 +222,8 @@ private Map getBatteryPercentageResult(rawValue) {
 	if (0 <= rawValue && rawValue <= 200) {
 		result.name = 'battery'
 		result.translatable = true
-		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
 		result.value = Math.round(rawValue / 2)
+        result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
 
 	return result
@@ -230,7 +231,7 @@ private Map getBatteryPercentageResult(rawValue) {
 
 private Map getMotionResult(value) {
 	log.debug 'motion'
-	String descriptionText = value == 'active' ? "{{ device.displayName }} detected motion" : "{{ device.displayName }} motion has stopped"
+	String descriptionText = value == 'active' ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
 	return [
 			name           : 'motion',
 			value          : value,
@@ -253,7 +254,7 @@ def refresh() {
 
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 		zigbee.readAttribute(0x0405, 0x0000)+
-        	zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+       	zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
 		zigbee.enrollResponse()
 
@@ -266,19 +267,13 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
-	def configCmds = [zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000)]
-
-	//configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)//
-
-	configCmds += zigbee.enrollResponse()
+	
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-    	// humidity minReportTime 30 seconds, maxReportTime 60 min
-	configCmds += zigbee.batteryConfig()
-	configCmds += zigbee.temperatureConfig(30, 300)
-	configCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
-    	configCmds += zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
+    // humidity minReportTime 30 seconds, maxReportTime 60 min
+	def configCmds = zigbee.batteryConfig() +
+                    zigbee.temperatureConfig(30, 300) +
+                    zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
 
-	return configCmds
+	return configCmds + refresh()
 }
