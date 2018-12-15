@@ -80,7 +80,13 @@ def on() {
 
 def refresh() {
     Integer reportIntervalMinutes = 5
-    zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig(0,reportIntervalMinutes * 60) + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
+    def cmds = zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
+    if (device.getDataValue("manufacturer") == "Jasco Products") {
+        // Some versions of hub firmware will incorrectly remove this binding causing manual control of switch to stop working
+        // This needs to be the first binding table entry because the device will automatically write this entry each time it restarts
+        cmds += ["zdo bind 0x${device.deviceNetworkId} 2 1 0x0006 {${device.zigbeeId}} {${device.zigbeeId}}", "delay 2000"]
+    }
+    cmds + zigbee.onOffConfig(0, reportIntervalMinutes * 60) + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
 }
 
 def configure() {
