@@ -40,9 +40,9 @@ metadata {
 	preferences {
 		section {
 			image(name: 'educationalcontent', multiple: true, images: [
-					"http://cdn.device-gse.smartthings.com/Motion/Motion1.jpg",
-					"http://cdn.device-gse.smartthings.com/Motion/Motion2.jpg",
-					"http://cdn.device-gse.smartthings.com/Motion/Motion3.jpg"
+				"http://cdn.device-gse.smartthings.com/Motion/Motion1.jpg",
+				"http://cdn.device-gse.smartthings.com/Motion/Motion2.jpg",
+				"http://cdn.device-gse.smartthings.com/Motion/Motion3.jpg"
 			])
 		}
 		section {
@@ -144,7 +144,7 @@ def parse(String description) {
 		if (tempOffset) {
 			map.value = (int) map.value + (int) tempOffset
 		}
-		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} termperature was ${map.value}°C" : "${device.displayName} temperature was ${map.value}°F"
+		map.descriptionText = temperatureScale == 'C' ? "${device.displayName} temperature was ${map.value}°C" : "${device.displayName} temperature was ${map.value}°F"
 		map.translatable = true
 	} else if (map.name == "humidity") {
 		if (humidityOffset) {
@@ -223,7 +223,7 @@ private Map getBatteryPercentageResult(rawValue) {
 		result.name = 'battery'
 		result.translatable = true
 		result.value = Math.round(rawValue / 2)
-        result.descriptionText = "${device.displayName} battery was ${result.value}%"
+        	result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
 
 	return result
@@ -233,10 +233,10 @@ private Map getMotionResult(value) {
 	log.debug 'motion'
 	String descriptionText = value == 'active' ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
 	return [
-			name           : 'motion',
-			value          : value,
-			descriptionText: descriptionText,
-			translatable   : true
+		name           : 'motion',
+		value          : value,
+		descriptionText: descriptionText,
+		translatable   : true
 	]
 }
 
@@ -254,7 +254,7 @@ def refresh() {
 
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 		zigbee.readAttribute(0x0405, 0x0000)+
-       	zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+       		zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
 		zigbee.enrollResponse()
 
@@ -272,8 +272,8 @@ def configure() {
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
     // humidity minReportTime 30 seconds, maxReportTime 60 min
 	def configCmds = zigbee.batteryConfig() +
-                    zigbee.temperatureConfig(30, 300) +
-                    zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
+                   	zigbee.temperatureConfig(30, 300) +
+			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
 
 	return configCmds + refresh()
 }
