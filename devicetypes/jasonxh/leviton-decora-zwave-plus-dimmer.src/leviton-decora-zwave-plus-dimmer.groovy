@@ -15,7 +15,7 @@ metadata {
     definition (name: "Leviton Decora Z-Wave Plus Dimmer", namespace: "jasonxh", author: "Jason Xia", ocfDeviceType: "oic.d.light") {
         capability "Actuator"
         capability "Configuration"
-        //capability "Health Check"
+        capability "Health Check"
         capability "Indicator"
         capability "Light"
         capability "Polling"
@@ -31,6 +31,7 @@ metadata {
         attribute "fadeOnTime", "number"
         attribute "fadeOffTime", "number"
         attribute "levelIndicatorTimeout", "number"
+        attribute "firmwareVersion", "string"
 
         command "low"
         command "medium"
@@ -89,12 +90,12 @@ metadata {
             state "default", label: 'HIGH', action: "high", icon: "st.Lighting.light11"
         }
 
-        valueTile("level", "device.level", width: 4, height: 2, inactiveLabel: false, decoration: "flat") {
-            state "level", label: 'Current level is ${currentValue}${unit}', unit: "%", backgroundColor: "#ffffff"
-        }
-
         standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
             state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
+        }
+
+        valueTile("firmwareVersion", "device.firmwareVersion", width: 4, height: 2, decoration: "flat") {
+            state "firmwareVersion", label: 'Firmware Version\n${currentValue}'
         }
 
         valueTile("loadType", "device.loadType", width: 3, height: 1, decoration: "flat") {
@@ -132,7 +133,7 @@ metadata {
         main("switch")
         details(["switch",
                  "low", "medium", "high",
-                 "level", "refresh",
+                 "refresh", "firmwareVersion",
                  "loadType", "indicatorStatus",
                  "minLevel", "maxLevel",
                  "fadeOnTime", "fadeOffTime",
@@ -155,8 +156,10 @@ metadata {
                 options: ["When switch is off (default)", "When switch is on", "Never"],
                 displayDuringSetup: false, required: false
         input name: "presetLevel", type: "number", title: "Light turns on to level",
-                description: "0 = last dim level (default)\n1 - 100 = fixed level", range: "0..100",
+                description: "0 to 100 (default 0)", range: "0..100",
                 displayDuringSetup: false, required: false
+        input type: "paragraph", element: "paragraph", title: "",
+                description: "0 = last dim level (default)\n1 - 100 = fixed level"
         input name: "minLevel", type: "number", title: "Minimum light level",
                 description: "0 to 100 (default 10)", range: "0..100",
                 displayDuringSetup: false, required: false
@@ -164,14 +167,20 @@ metadata {
                 description: "0 to 100 (default 100)", range: "0..100",
                 displayDuringSetup: false, required: false
         input name: "fadeOnTime", type: "number", title: "Fade-on time",
-                description: "0 = instant on\n1 - 127 = 1 - 127 seconds (default 2)\n128 - 253 = 1 - 126 minutes", range: "0..253",
+                description: "0 to 253 (default 2)", range: "0..253",
                 displayDuringSetup: false, required: false
+        input type: "paragraph", element: "paragraph", title: "",
+                description: "0 = instant on\n1 - 127 = 1 - 127 seconds (default 2)\n128 - 253 = 1 - 126 minutes"
         input name: "fadeOffTime", type: "number", title: "Fade-off time",
-                description: "0 = instant off\n1 - 127 = 1 - 127 seconds (default 2)\n128 - 253 = 1 - 126 minutes", range: "0..253",
+                description: "0 to 253 (default 2)", range: "0..253",
                 displayDuringSetup: false, required: false
+        input type: "paragraph", element: "paragraph", title: "",
+                description: "0 = instant off\n1 - 127 = 1 - 127 seconds (default 2)\n128 - 253 = 1 - 126 minutes"
         input name: "levelIndicatorTimeout", type: "number", title: "Dim level indicator timeout",
-                description: "0 = dim level indicator off\n1 - 254 = timeout in seconds (default 3)\n255 = dim level indicator always on", range: "0..255",
+                description: "0 to 255 (default 3)", range: "0..255",
                 displayDuringSetup: false, required: false
+        input type: "paragraph", element: "paragraph", title: "",
+                description: "0 = dim level indicator off\n1 - 254 = timeout in seconds (default 3)\n255 = dim level indicator always on"
     }
 }
 
@@ -280,6 +289,8 @@ def ping() {
 
 def refresh() {
     def commands = statusCommands
+    commands << zwave.versionV1.versionGet().format()
+
     if (getDataValue("MSR") == null) {
         commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
     }
@@ -331,7 +342,7 @@ private static int getDefaultLevelIncrement() { 10 }
 
 private initialize() {
     // Device-Watch simply pings if no device events received for 32min(checkInterval)
-    //sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 private zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
@@ -414,6 +425,10 @@ private zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
     createEvent(name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false)
 }
 
+private zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+    createEvent(name: "firmwareVersion", value: "${cmd.applicationVersion}.${cmd.applicationSubVersion}", displayed: false)
+}
+
 private zwaveEvent(physicalgraph.zwave.Command cmd) {
     log.warn "Unhandled zwave command $cmd"
 }
@@ -423,10 +438,12 @@ private dimmerEvent(short level) {
     if (level == 0) {
         result = [createEvent(name: "level", value: 0, unit: "%"), switchEvent(false)]
     } else if (level >= 1 && level <= 100) {
-        result = createEvent(name: "level", value: toDisplayLevel(level), unit: "%")
-        if (device.currentValue("switch") != "on") {
+        result = [createEvent(name: "level", value: toDisplayLevel(level), unit: "%")]
+        if (!isNewFirmware && device.currentValue("switch") != "on") {
             // Don't blindly trust level. Explicitly request on/off status.
-            result = [result, response(zwave.switchBinaryV1.switchBinaryGet().format())]
+            result << response(zwave.switchBinaryV1.switchBinaryGet().format())
+        } else {
+            result << switchEvent(true)
         }
     } else {
         log.debug "Bad dimming level $level"
@@ -439,12 +456,14 @@ private switchEvent(boolean on) {
 }
 
 private getStatusCommands() {
-    [
-            // Even though SwitchBinary is not advertised by this device, it seems to be the only way to assess its true
-            // on/off status.
-            zwave.switchBinaryV1.switchBinaryGet().format(),
-            zwave.switchMultilevelV1.switchMultilevelGet().format()
-    ]
+    def cmds = []
+    if (!isNewFirmware) {
+        // Even though SwitchBinary is not advertised by this device, it seems to be the only way to assess its true
+        // on/off status.
+        cmds << zwave.switchBinaryV1.switchBinaryGet().format()
+    }
+    cmds << zwave.switchMultilevelV1.switchMultilevelGet().format()
+    cmds
 }
 
 private short toDisplayLevel(short level) {
@@ -540,3 +559,5 @@ private setIndicatorStatus(String status) {
         case "Never":                           return indicatorNever()
     }
 }
+
+private boolean getIsNewFirmware() { device.currentValue("firmwareVersion") ==~ /1\.2\d/ }
