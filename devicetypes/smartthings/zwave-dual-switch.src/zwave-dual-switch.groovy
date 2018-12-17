@@ -189,7 +189,7 @@ def sendCommand(endpointDevice, commands) {
 
 def encap(endpointNumber, cmd) {
 	if (cmd instanceof physicalgraph.zwave.Command) {
-		command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd))
+		command(zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpointNumber).encapsulate(cmd)).format()
 	} else if (cmd.startsWith("delay")) {
 		cmd
 	} else {
