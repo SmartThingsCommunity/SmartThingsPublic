@@ -21,7 +21,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Zigbee Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn:"SmartThings", vid:"generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
+	definition(name: "Zigbee Contact Sensor", namespace: "smartthings", author: "f.mei@samsung.com", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn:"SmartThings", vid:"generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
@@ -64,95 +64,144 @@ metadata {
 }
 
 def parse(String description) {
-	log.debug "description: $description"
+	Map map = [:]
 
-	def result = [:]
-	Map map = zigbee.getEvent(description)
-	if (!map) {
-		if (description?.startsWith('zone status')) {
-			ZoneStatus zs = zigbee.parseZoneStatus(description)
-			map = zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
-			result = createEvent(map)
-		} else if (description?.startsWith('enroll request')) {
-			List cmds = zigbee.enrollResponse()
-			log.debug "enroll response: ${cmds}"
-			result = cmds?.collect { new physicalgraph.device.HubAction(it) }
-		} else {
-			Map descMap = zigbee.parseDescriptionAsMap(description)
-			if (descMap?.clusterInt == 0x0500 && descMap?.attrInt == 0x0002) {
-                            if (device.getDataValue("manufacturer") == "LUMI") {
-                	       sendBatteryResult(description)
-                            }
-			    def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
-			    map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
-			    result = createEvent(map)
+	List listMap = []
+	List listResult = []
+
+	log.debug "parse: Parse message: ${description}"
+
+	if (description?.startsWith("enroll request")) {
+		List cmds = zigbee.enrollResponse()
+
+		log.debug "parse: enrollResponse() ${cmds}"
+		listResult = cmds?.collect { new physicalgraph.device.HubAction(it) }
+	}
+	else {
+		if (description?.startsWith("zone status")) {
+			listMap = parseIasMessage(description)
+		}
+		else if (description?.startsWith("catchall:")) {
+			map = parseCatchAllMessage(description)
+		}
+
+		// Create events from map or list of maps, whichever was returned
+		if (listMap) {
+			for (msg in listMap) {
+				listResult << createEvent(msg)
 			}
 		}
-	} else {
-            if (description?.startsWith('zone status')) {
-                if (device.getDataValue("manufacturer") == "LUMI") {
-                   sendBatteryResult(description)
-                }
-	    }
-	    result = createEvent(map)
+		else if (map) {
+			listResult << createEvent(map)
+		}
 	}
-	log.debug "Parse returned $result"
 
-	result
+	log.debug "parse: listResult ${listResult}"
+	return listResult
 }
 
-def installed(){
-	log.debug "call installed()"
-	sendEvent(name: "checkInterval", value:30 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	refresh()
+private Map parseCatchAllMessage(String description) {
+	Map resultMap = [:]
+	def cluster = zigbee.parse(description)
+
+	if (shouldProcessMessage(cluster)) {
+		def msgStatus = cluster.data[2]
+
+		log.debug "parseCatchAllMessage: msgStatus: ${msgStatus}"
+		if (msgStatus == 0) {
+			switch(cluster.clusterId) {
+				case 0x0500:
+                	Map descMap = zigbee.parseDescriptionAsMap(description)
+					if (descMap?.attrInt == 0x0002) {
+						resultMap.name = "contact"
+						def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+						resultMap.value = zs.isAlarm1Set() ? "open" : "closed"
+					}
+					break
+				default:
+					break
+			}
+		}
+		else {
+			log.debug "parseCatchAllMessage: Message error code: Error code: ${msgStatus}    ClusterID: ${cluster.clusterId}    Command: ${cluster.command}"
+		}
+	}
+
+	return resultMap
 }
-/**
- * PING is used by Device-Watch in attempt to reach the Device
- * */
+
+private boolean shouldProcessMessage(cluster) {
+	// 0x0B is default response indicating message got through
+	// 0x07 is bind message
+	boolean ignoredMessage = cluster.profileId != 0x0104 ||
+			cluster.command == 0x0B ||
+			cluster.command == 0x07 ||
+			(cluster.data.size() > 0 && cluster.data.first() == 0x3e)
+
+	return !ignoredMessage
+}
+
+private List parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	log.debug "parseIasMessage: $description"
+
+	List resultListMap = []
+	Map resultMap_battery = [:]
+	Map resultMap_sensor = [:]
+
+	resultMap_sensor.name = "contact"
+	resultMap_sensor.value = zs.isAlarm1Set() ? "open" : "closed"
+
+	// Check each relevant bit, create map for it, and add to list
+	log.debug "parseIasMessage: Battery Status ${zs.battery}"
+	log.debug "parseIasMessage: Trouble Status ${zs.trouble}"
+	log.debug "parseIasMessage: Sensor Status ${zs.alarm1}"
+
+	//LUMI IAS sensor report battery ok or low instead of battery percentage. 
+	if(device.getDataValue("manufacturer") == "LUMI") {
+	    	 if (zs.isTroubleSet()) {
+	    		 resultMap_battery.name = "battery"
+	    		 resultMap_battery.value = 50
+	    	 }
+	    	 else {
+	    		 if (zs.isBatterySet()) {
+	    			 // to generate low battery notification by the platform
+	    			 resultMap_battery.name = "battery"
+	    			 resultMap_battery.value = 5
+	    		 }
+	    		 else {
+	    			 resultMap_battery.name = "battery"
+	    			 resultMap_battery.value = 50
+	    		 }
+	    	 }
+
+	    	 resultListMap << resultMap_battery
+        }
+	resultListMap << resultMap_sensor
+
+	return resultListMap
+}
+
 def ping() {
-	log.debug "ping is called"
-	refresh()
+    refresh()
 }
 
 def refresh() {
-	log.debug "Refreshing  Battery and ZONE Status"
-	def refreshCmds = zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-		
-	refreshCmds
+    log.debug "Refreshing Values"
+    def refreshCmds = []
+    refreshCmds += readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+
+    return refreshCmds
+}
+
+def installed(){
+    log.debug "call installed()"
+    sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value:30 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-               
-        return zigbee.enrollResponse() + zigbee.iasZoneConfig(30, 60 * 30)
+    sendEvent(name: "checkInterval", value: 20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+                    
+    return zigbee.enrollResponse() + zigbee.iasZoneConfig(30, 60 * 30)
 }
 
-def getContactResult(value) {
-	log.debug 'Contact Status'
-	def linkText = getLinkText(device)
-	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
-	[
-		name           : 'contact',
-		value          : value,
-		descriptionText: descriptionText
-	]
-}
-
-/*
- * LUMI IAS sensors use cluster 0x0500, attr 0x0002, the third bit to report battery normal or low.
- * To adjust it,dicuessed with UI metadata developer, send battery 50% to indicate battery normal, 5% to indicate battery low.
- */
-
-def sendBatteryResult(description) {
-    def result = [:]
-    ZoneStatus zs = zigbee.parseZoneStatus(description)
-    def value = zs.isBatterySet()?5:50
-    
-    result.name = 'battery'
-    result.value = value
-    result.descriptionText = "${device.displayName} battery value is ${value}"
-    result.translatable = true
-    
-    sendEvent(result)
-    log.debug "send battery event"
-}
