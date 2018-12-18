@@ -29,7 +29,7 @@ metadata {
 
 		command "enrollResponse"
 		
-        fingerprint inClusters: "0000,0001,0003,0020,0402,0405,0500,0B05,FC01,FC02", outClusters: "0019,0003", manufacturer: "iMagic by GreatStar", model: "1117-S", deviceJoinName: "Iris IL071 Motion Sensor"	
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0405,0500,0B05,FC01,FC02", outClusters: "0019,0003", manufacturer: "iMagic by GreatStar", model: "1117-S", deviceJoinName: "Iris IL071 Motion Sensor"	
 	}
 
 	simulator {
@@ -49,11 +49,11 @@ metadata {
 			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter '-5'. If 3 degrees too cold, enter '+3'.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 			input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 		}
-        	section {
-        		input title: "Humidity Offset", description: "This feature allows you to correct any humidity variations by selecting an offset. Ex: If your sensor consistently reports a humidity that's 6% higher then a similiar calibrated sensor, you'd enter \"-6\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+		section {
+			input title: "Humidity Offset", description: "This feature allows you to correct any humidity variations by selecting an offset. Ex: If your sensor consistently reports a humidity that's 6% higher then a similiar calibrated sensor, you'd enter \"-6\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 			input "humidityOffset", "number", title: "Humidity Offset in Percent", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
 		}
-    }
+	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "motion", type: "generic", width: 6, height: 4) {
@@ -75,7 +75,7 @@ metadata {
 					]
 			)
 		}
-        	valueTile("humidity", "device.humidity", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
+		valueTile("humidity", "device.humidity", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "humidity", label: '${currentValue}% humidity', unit: ""
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
@@ -84,9 +84,9 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-        	standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
-        }
+		}
 
 		main(["motion", "temperature"])
 		details(["motion", "temperature", "humidity", "battery", "refresh", "configure"])
@@ -150,8 +150,8 @@ def parse(String description) {
 		if (humidityOffset) {
 			map.value = (int) map.value + (int) humidityOffset
 		}
-        map.descriptionText = "${device.displayName} humidity was ${map.value}%"
-    }
+		map.descriptionText = "${device.displayName} humidity was ${map.value}%"
+	}
 
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : [:]
@@ -208,7 +208,7 @@ private Map getBatteryResult(rawValue) {
 			// Don't update as we want to smooth the battery values, but do report the last battery state for record keeping purposes
 			result.value = device.currentState("battery").value
 		}
-        result.descriptionText = "${device.displayName} battery was ${result.value}%"
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
 		state.lastVolts = volts
 	}
 
@@ -223,7 +223,7 @@ private Map getBatteryPercentageResult(rawValue) {
 		result.name = 'battery'
 		result.translatable = true
 		result.value = Math.round(rawValue / 2)
-        	result.descriptionText = "${device.displayName} battery was ${result.value}%"
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
 	}
 
 	return result
@@ -251,10 +251,9 @@ def refresh() {
 	log.debug "Refreshing Values"
 	def refreshCmds = []
 
-
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-		zigbee.readAttribute(0x0405, 0x0000)+
-       		zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
+		zigbee.readAttribute(0x0405, 0x0000) +
+		zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
 		zigbee.enrollResponse()
 
@@ -270,10 +269,12 @@ def configure() {
 	
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-    // humidity minReportTime 30 seconds, maxReportTime 60 min
-	def configCmds = zigbee.batteryConfig() +
-                   	zigbee.temperatureConfig(30, 300) +
-			zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
+	// humidity minReportTime 30 seconds, maxReportTime 60 min
+	def configCmds = []
+
+	configCmds += zigbee.batteryConfig() +
+		zigbee.temperatureConfig(30, 300) +
+		zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
 
 	return configCmds + refresh()
 }
