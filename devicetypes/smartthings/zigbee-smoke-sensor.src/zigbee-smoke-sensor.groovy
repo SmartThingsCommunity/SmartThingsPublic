@@ -60,7 +60,7 @@ def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
 	if (!map) {
-		if (description?.startsWith('zone status')||description?.startsWith('zone report')) {
+		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
 		} else {
 			map = parseAttrMessage(description)
