@@ -22,7 +22,7 @@ metadata {
 	definition (name: "Zigbee Thermostat", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-thermostat-1") {
 		capability "Actuator"
 		capability "Temperature Measurement"
-		capability "Thermostat"
+//		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Thermostat Fan Mode"
 		capability "Thermostat Cooling Setpoint"
