@@ -163,10 +163,6 @@ def getModeMap() {[
 	"05":"eco"
 ]}
 
-def getDutyCyclePeriod() {
-	15 // seconds
-}
-
 def setupHealthCheck() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
@@ -254,12 +250,7 @@ def parse(String description) {
 					map.unit = getTemperatureScale()
 					map.data = [heatingSetpointRange: heatingSetpointRange]
 
-					// Sometimes we don't get an updated operating state when going from heating -> idle with a setpoint just below ambient;
-					// so ask for the operating state, but wait 1.5 times the duty cycle period.
-					def ambientTemp = device.currentValue("temperature")
-					if (ambientTemp != null && map.value < ambientTemp) {
-						runIn((dutyCyclePeriod * 3) / 2 as int, updateOperatingState, [overwrite: true])
-					}
+					handleOperatingStateBugfix(map.value, null)
 				}
 			} else if (descMap.attrInt == ATTRIBUTE_SYSTEM_MODE) {
 				log.debug "MODE - ${descMap.value}"
@@ -362,9 +353,30 @@ def handleTemperature(descMap) {
 			log.debug "CLEAR ALARM @ $map.value $map.unit (raw $intVal)"
 			sendEvent(name: "temperatureAlarm", value: "cleared")
 		}
+
+		handleOperatingStateBugfix(null, map.value)
 	}
 
 	map
+}
+
+// Due to a bug in this model's firmware, sometimes we don't get
+// an updated operating state; so we will force it.
+// TODO: Add firmware version check when change versions are known
+def handleOperatingStateBugfix(setpoint, temp) {
+	def currSetpoint = (setpoint != null) ? setpoint : device.currentValue("heatingSetpoint")
+	def ambientTemp = (temp != null) ? temp : device.currentValue("temperature")
+	def currOpState = device.currentValue("thermostatOperatingState")
+
+	if (currSetpoint != null && ambientTemp != null) {
+		if (currSetpoint <= ambientTemp) {
+			if (currOpState != "idle")
+				sendEvent(name: "thermostatOperatingState", value: "idle")
+		} else {
+			if (currOpState != "heating")
+				sendEvent(name: "thermostatOperatingState", value: "heating")
+		}
+	}
 }
 
 def updateWeather() {
@@ -397,10 +409,6 @@ def scheduledUpdateWeather() {
 	if (actions) {
 		sendHubCommand(actions)
 	}
-}
-
-def updateOperatingState() {
-	sendHubCommand(zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE))
 }
 
 /**
