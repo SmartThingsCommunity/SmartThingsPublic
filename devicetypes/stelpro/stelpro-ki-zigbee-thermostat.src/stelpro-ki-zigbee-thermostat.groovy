@@ -244,13 +244,14 @@ def parse(String description) {
 				def intVal = Integer.parseInt(descMap.value, 16)
 				// We receive 0x8000 when the thermostat is off
 				if (intVal != 0x8000) {
+					state.rawSetpoint = intVal
 					log.debug "HEATING SETPOINT"
 					map.name = "heatingSetpoint"
 					map.value = getTemperature(descMap.value)
 					map.unit = getTemperatureScale()
 					map.data = [heatingSetpointRange: heatingSetpointRange]
 
-					handleOperatingStateBugfix(map.value, null)
+					handleOperatingStateBugfix()
 				}
 			} else if (descMap.attrInt == ATTRIBUTE_SYSTEM_MODE) {
 				log.debug "MODE - ${descMap.value}"
@@ -306,6 +307,11 @@ def parse(String description) {
 					!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 30)) {
 					map.displayed = false
 				}
+				map = validateOperatingStateBugfix(map)
+				// Check to see if this was changed, if so make sure we have the correct heating setpoint
+				if (map.data?.correctedValue) {
+					sendHubCommand(zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT))
+				}
 			}
 		}
 	}
@@ -335,6 +341,7 @@ def handleTemperature(descMap) {
 		if (intVal > 0x8000) { // Handle negative C (< 32F) readings
 			intVal = -(Math.round(2 * (65536 - intVal)) / 2)
 		}
+		state.rawTemp = intVal
 		map.name = "temperature"
 		map.value = getTemperature(intVal)
 		map.unit = getTemperatureScale()
@@ -354,29 +361,69 @@ def handleTemperature(descMap) {
 			sendEvent(name: "temperatureAlarm", value: "cleared")
 		}
 
-		handleOperatingStateBugfix(null, map.value)
+		handleOperatingStateBugfix()
 	}
 
 	map
 }
 
 // Due to a bug in this model's firmware, sometimes we don't get
-// an updated operating state; so we will force it.
+// an updated operating state; so we need some special logic to verify the accuracy.
 // TODO: Add firmware version check when change versions are known
-def handleOperatingStateBugfix(setpoint, temp) {
-	def currSetpoint = (setpoint != null) ? setpoint : device.currentValue("heatingSetpoint")
-	def ambientTemp = (temp != null) ? temp : device.currentValue("temperature")
+// The logic between these two functions works as follows:
+//   In temperature and heatingSetpoint events check to see if we might need to request
+//   the current operating state and request it with handleOperatingStateBugfix.
+//
+//   In operatingState events validate the data we received from the thermostat with
+//   the current environment, adjust as needed. If we had to make an adjustment, then ask
+//   for the setpoint again just to make sure we didn't miss data somewhere.
+//
+// There is a risk of false positives where we receive a new valid operating state before the
+// new setpoint, so we basically toss it. When we come to receiving the setpoint or temperature
+// (temperature roughly every minute) then we should catch the problem and request an update.
+// I think this is a little easier than outright managing the operating state ourselves.
+// All comparisons are made using the raw integer from the thermostat (unrounded Celsius decimal * 100)
+// that is stored in temperature and setpoint events.
+
+/**
+ * Check if we should request the operating state, and request it if so
+ */
+def handleOperatingStateBugfix() {
 	def currOpState = device.currentValue("thermostatOperatingState")
 
-	if (currSetpoint != null && ambientTemp != null) {
-		if (currSetpoint <= ambientTemp) {
+	if (state.rawSetpoint != null && state.rawTemp != null) {
+		if (state.rawSetpoint <= state.rawTemp) {
 			if (currOpState != "idle")
-				sendEvent(name: "thermostatOperatingState", value: "idle")
+				sendHubCommand(zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE))
 		} else {
 			if (currOpState != "heating")
-				sendEvent(name: "thermostatOperatingState", value: "heating")
+				sendHubCommand(zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE))
 		}
 	}
+}
+/**
+ * Given an operating state event, check its validity against the current environment
+ * @param map An operating state to validate
+ * @return The passed map if valid, or a corrected map and a new param data.correctedValue if invalid
+ */
+def validateOperatingStateBugfix(map) {
+	// If we don't have historical data, we will take the value we get,
+	// otherwise validate if the difference is > 1
+	if (state.rawSetpoint != null && state.rawTemp != null) {
+		def oldVal = map.value
+
+		if (state.rawSetpoint <= state.rawTemp) {
+			map.value = "idle"
+		} else {
+			map.value = "heating"
+		}
+
+		// Indicate that we have made a change
+		if (map.value != oldVal) {
+			map.data = [correctedValue: true]
+		}
+	}
+	map
 }
 
 def updateWeather() {
@@ -574,10 +621,10 @@ def configure() {
 	requests += zigbee.addBinding(THERMOSTAT_CLUSTER)
 	// Configure Thermostat Cluster
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP, DataType.INT16, 10, 60, 50)
-	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, 1, 0, 50)
+	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, 1, 600, 50)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_SYSTEM_MODE, DataType.ENUM8, 1, 0, 1)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_MFR_SPEC_SETPOINT_MODE, DataType.ENUM8, 1, 0, 1)
-	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE, DataType.UINT8, 1, 900, 1)
+	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE, DataType.UINT8, 1, 600, 1)
 
 	// Configure Thermostat Ui Conf Cluster
 	requests += zigbee.configureReporting(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE, DataType.ENUM8, 1, 0, 1)
