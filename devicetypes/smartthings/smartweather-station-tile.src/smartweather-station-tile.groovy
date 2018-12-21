@@ -51,8 +51,8 @@ metadata {
         input "zipCode", "text", title: "Zip Code (optional)", required: false
     }
 
-    tiles {
-        valueTile("temperature", "device.temperature") {
+    tiles(scale: 2) {
+        valueTile("temperature", "device.temperature", height: 2, width: 2) {
             state "default", label:'${currentValue}°',
                     backgroundColors:[
                             [value: 31, color: "#153591"],
@@ -65,11 +65,11 @@ metadata {
                     ]
         }
 
-        valueTile("humidity", "device.humidity", decoration: "flat") {
-            state "default", label:'${currentValue}% humidity'
+        valueTile("feelsLike", "device.feelsLike", decoration: "flat", height: 1, width: 2) {
+            state "default", label:'Feels like ${currentValue}°'
         }
 
-        standardTile("weatherIcon", "device.weatherIcon", decoration: "flat") {
+        standardTile("weatherIcon", "device.weatherIcon", decoration: "flat", height: 2, width: 2) {
             state "00", icon:"https://smartthings-twc-icons.s3.amazonaws.com/00.png", label: ""
             state "01", icon:"https://smartthings-twc-icons.s3.amazonaws.com/01.png", label: ""
             state "02", icon:"https://smartthings-twc-icons.s3.amazonaws.com/02.png", label: ""
@@ -121,70 +121,73 @@ metadata {
             state "na", icon:"https://smartthings-twc-icons.s3.amazonaws.com/na.png", label: ""
         }
 
-        valueTile("feelsLike", "device.feelsLike", decoration: "flat") {
-            state "default", label:'feels like ${currentValue}°'
+        valueTile("humidity", "device.humidity", decoration: "flat", height: 1, width: 2) {
+            state "default", label:'${currentValue}% humidity'
         }
 
-        valueTile("wind", "device.windVector", decoration: "flat") {
-            state "default", label:'wind ${currentValue}'
+        valueTile("wind", "device.windVector", decoration: "flat", height: 1, width: 2) {
+            state "default", label:'Wind\n${currentValue}'
         }
 
-        valueTile("weather", "device.weather", decoration: "flat") {
+        valueTile("weather", "device.weather", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}'
         }
 
-        valueTile("city", "device.city", decoration: "flat") {
+        valueTile("city", "device.city", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}'
         }
 
-        valueTile("percentPrecip", "device.percentPrecip", decoration: "flat") {
+        valueTile("percentPrecip", "device.percentPrecip", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}% precip'
         }
 
-        valueTile("ultravioletIndex", "device.uvDescription", decoration: "flat") {
+        valueTile("ultravioletIndex", "device.uvDescription", decoration: "flat", height: 1, width: 2) {
             state "default", label:'UV ${currentValue}'
         }
 
-        valueTile("alert", "device.alert", width: 2, height: 1, decoration: "flat") {
+        valueTile("alert", "device.alert", decoration: "flat", height: 2, width: 6) {
             state "default", label:'${currentValue}'
         }
 
-        standardTile("refresh", "device.weather", decoration: "flat") {
+        standardTile("refresh", "device.weather", decoration: "flat", height: 1, width: 2) {
             state "default", label: "", action: "refresh", icon:"st.secondary.refresh"
         }
 
-        valueTile("rise", "device.localSunrise", decoration: "flat") {
+        valueTile("rise", "device.localSunrise", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Sunrise ${currentValue}'
         }
 
-        valueTile("set", "device.localSunset", decoration: "flat") {
+        valueTile("set", "device.localSunset", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Sunset ${currentValue}'
         }
 
-        valueTile("light", "device.illuminance", decoration: "flat") {
+        valueTile("light", "device.illuminance", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue} lux'
         }
 
-        valueTile("city", "device.forecastToday", decoration: "flat") {
-            state "default", label:'Today: ${currentValue}'
+        valueTile("today", "device.forecastToday", decoration: "flat", height: 1, width: 3) {
+            state "default", label:'Today:\n${currentValue}'
         }
 
-        valueTile("city", "device.forecastTonight", decoration: "flat") {
-            state "default", label:'Tonight: ${currentValue}'
+        valueTile("tonight", "device.forecastTonight", decoration: "flat", height: 1, width: 3) {
+            state "default", label:'Tonight:\n${currentValue}'
         }
 
-        valueTile("city", "device.forecastTomorrow", decoration: "flat") {
-            state "default", label:'Tomorrow: ${currentValue}'
+        valueTile("tomorrow", "device.forecastTomorrow", decoration: "flat", height: 1, width: 3) {
+            state "default", label:'Tomorrow:\n${currentValue}'
         }
 
-        valueTile("lastUpdate", "device.lastUpdate", width: 3, height: 1, decoration: "flat") {
+        valueTile("lastUpdate", "device.lastUpdate", decoration: "flat", height: 1, width: 3) {
             state "default", label:'Last update:\n${currentValue}'
         }
 
         main(["temperature", "weatherIcon","feelsLike"])
-        details(["temperature", "humidity", "weatherIcon", "feelsLike", "wind",
-                 "weather", "city", "percentPrecip", "ultravioletIndex", "alert",
-                 "refresh", "rise", "set", "light", "lastUpdate"])}
+        details(["temperature", "feelsLike", "weatherIcon", "humidity", "wind",
+                 "weather", "city", "percentPrecip", "ultravioletIndex", "light",
+                 "rise", "set",
+                 "refresh",
+                 "today", "tonight", "tomorrow", "lastUpdate",
+                 "alert"])}
 }
 
 // parse events into attributes
@@ -211,6 +214,7 @@ def poll() {
 
     // Current conditions
     def tempUnits = getTemperatureScale()
+    def windUnits = tempUnits == "C" ? "KPH" : "MPH"
     def obs = getTwcConditions(zipCode)
     if (obs) {
         // TODO def weatherIcon = obs.icon_url.split("/")[-1].split("\\.")[0]
@@ -221,8 +225,8 @@ def poll() {
         send(name: "humidity", value: obs.relativeHumidity, unit: "%")
         send(name: "weather", value: obs.wxPhraseShort)
         send(name: "weatherIcon", value: obs.iconCode as String, displayed: false)
-        send(name: "wind", value: obs.windSpeed as String, unit: tempUnits == "C" ? "KPH" : "MPH") // as String because of bug in determining state change of 0 numbers
-        send(name: "windVector", value: "${obs.windDirectionCardinal}@${obs.windSpeed}", unit: tempUnits == "C" ? "KPH" : "MPH")
+        send(name: "wind", value: obs.windSpeed as String, unit: windUnits) // as String because of bug in determining state change of 0 numbers
+        send(name: "windVector", value: "${obs.windDirectionCardinal} ${obs.windSpeed} ${windUnits}")
         log.trace "Getting location info"
         def loc = getTwcLocation(zipCode).location
         def cityValue = "${loc.city}, ${loc.adminDistrictCode} ${loc.countryCode}"
