@@ -26,8 +26,6 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
-
-		command "enrollResponse"
 		
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0405,0500,0B05,FC01,FC02", outClusters: "0019,0003", manufacturer: "iMagic by GreatStar", model: "1117-S", deviceJoinName: "Iris IL071 Motion Sensor"	
 	}
@@ -84,12 +82,9 @@ metadata {
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
-		}
 
 		main(["motion", "temperature"])
-		details(["motion", "temperature", "humidity", "battery", "refresh", "configure"])
+		details(["motion", "temperature", "humidity", "battery", "refresh"])
 	}
 }
 
@@ -132,10 +127,6 @@ def parse(String description) {
 				} else {
 					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
-			} else if (descMap.clusterInt == 0x0406 && descMap.attrInt == 0x0000) {
-				def value = descMap.value.endsWith("01") ? "active" : "inactive"
-				log.debug "Doing a read attr motion event"
-				map = getMotionResult(value)
 			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS && descMap?.value) {
 				map = translateZoneStatus(new ZoneStatus(zigbee.convertToInt(descMap?.value)))
 			}
@@ -215,20 +206,6 @@ private Map getBatteryResult(rawValue) {
 	return result
 }
 
-private Map getBatteryPercentageResult(rawValue) {
-	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
-	def result = [:]
-
-	if (0 <= rawValue && rawValue <= 200) {
-		result.name = 'battery'
-		result.translatable = true
-		result.value = Math.round(rawValue / 2)
-		result.descriptionText = "${device.displayName} battery was ${result.value}%"
-	}
-
-	return result
-}
-
 private Map getMotionResult(value) {
 	log.debug 'motion'
 	String descriptionText = value == 'active' ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
@@ -252,7 +229,7 @@ def refresh() {
 	def refreshCmds = []
 
 	refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
-		zigbee.readAttribute(0x0405, 0x0000) +
+		zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000) +
 		zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
 		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) +
 		zigbee.enrollResponse()
@@ -274,7 +251,7 @@ def configure() {
 
 	configCmds += zigbee.batteryConfig() +
 		zigbee.temperatureConfig(30, 300) +
-		zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600,100)
+		zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, 0x0000, DataType.UINT16, 30, 3600, 100)
 
-	return configCmds + refresh()
+	return refresh() + configCmds
 }
