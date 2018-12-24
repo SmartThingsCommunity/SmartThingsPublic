@@ -1116,7 +1116,7 @@ private getWeatherReport(scenario, weatherReport, humidity, includeTemp, localTe
         def sb = new StringBuilder()
 
         if (includeTemp){
-            def current = = getTwcConditions(zipCode)
+            def current = getTwcConditions(zipCode)
             sb << "The current temperature is ${Math.round(current.temperature)} degrees. "
         }
 
