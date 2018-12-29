@@ -1,5 +1,5 @@
 /**
- *  FIBARO CO Sensor
+ *  FIBARO Door Window Sensor 2
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -12,8 +12,8 @@
  *
  */
 metadata {
-    definition (name: "Fibaro CO Sensor ZW5", namespace: "FibarGroup", author: "Fibar Group") {
-        capability "Carbon Monoxide Detector"
+    definition (name: "Fibaro Door/Window Sensor 2 ZW5", namespace: "FibarGroup", author: "Fibar Group") {
+        capability "Contact Sensor"
         capability "Tamper Alert"
         capability "Temperature Measurement"
         capability "Configuration"
@@ -22,27 +22,26 @@ metadata {
         capability "Health Check"
 
         attribute "temperatureAlarm", "string"
-        attribute "coLevel", "number"
 
-        fingerprint mfr: "010F", prod: "1201"
-        fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x73,0x80,0x22,0x56,0x31,0x98,0x7A,0x5A,0x85,0x84,0x71,0x70,0x8E,0x9C,0x86,0x72"
-        fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x73,0x80,0x22,0x56,0x31,0x7A,0x5A,0x85,0x84,0x71,0x70,0x8E,0x9C,0x86,0x72"
+        fingerprint mfr: "010F", prod: "0702"
+        fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x22,0x80,0x56,0x7A,0x73,0x98,0x31,0x85,0x70,0x5A,0x72,0x8E,0x71,0x86,0x84"
+        fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x22,0x80,0x56,0x7A,0x73,0x31,0x85,0x70,0x5A,0x72,0x8E,0x71,0x86,0x84"
     }
 
     tiles (scale: 2) {
         multiAttributeTile(name:"FGDW", type:"lighting", width:6, height:4) {
-            tileAttribute("device.carbonMonoxide", key:"PRIMARY_CONTROL") {
-                attributeState("clear", label:"clear", icon:"https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/device_co_1.png", backgroundColor:"#ffffff")
-                attributeState("detected", label:"detected", icon:"https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/device_co_3.png", backgroundColor:"#e86d13")
-                attributeState("tested", label:"tested", icon:"https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/device_co_2.png", backgroundColor:"#e86d13")
+            tileAttribute("device.contact", key:"PRIMARY_CONTROL") {
+                attributeState("open", label:"open", icon:"https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dw2/doors_open.png", backgroundColor:"#e86d13")
+                attributeState("closed", label:"closed", icon:"https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dw2/doors_close.png", backgroundColor:"#00a0dc")
             }
             tileAttribute("device.multiStatus", key:"SECONDARY_CONTROL") {
                 attributeState("multiStatus", label:'${currentValue}')
             }
         }
 
-        valueTile("coLevel", "device.coLevel", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
-            state "coLevel", label:'${currentValue}\nppm', unit:"ppm"
+        standardTile("tamper", "device.tamper", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+            state "clear", label:'', icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dw2/tamper_detector0.png"
+            state "detected", label:'', icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dw2/tamper_detector100.png"
         }
 
         valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
@@ -62,28 +61,24 @@ metadata {
             state "battery", label:'${currentValue}%\n battery', unit:"%"
         }
 
-        standardTile("temperatureAlarm", "device.temperatureAlarm", inactiveLabel: false, width: 3, height: 2, decoration: "flat") {
+        standardTile("temperatureAlarm", "device.temperatureAlarm", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
             state "default", label: "No temp. alarm", backgroundColor:"#ffffff"
-            state "clear", label:'', backgroundColor:"#ffffff" , icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/heat_detector0.png"
-            state "overheat", label:'Overheat', backgroundColor:"#d04e00", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/heat_detector1.png"
-        }
-
-        standardTile("tamper", "device.tamper", inactiveLabel: false, width: 3, height: 2, decoration: "flat") {
-            state "clear", label:'', icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/tamper_detector0.png"
-            state "detected", label:'', icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/coSensor/tamper_detector100.png"
+            state "clear", label:'', backgroundColor:"#ffffff", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dw2/heat_detector0.png"
+            state "underheat", label:'underheat', backgroundColor:"#1e9cbb", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dw2/heat_detector1.png"
+            state "overheat", label:'overheat', backgroundColor:"#d04e00", icon: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/dw2/heat_detector1.png"
         }
 
         main "FGDW"
-        details(["FGDW","coLevel","temperature","battery","temperatureAlarm","tamper"])
+        details(["FGDW","tamper","temperature","battery","temperatureAlarm"])
     }
 
     preferences {
 
         input (
-                title: "Fibaro CO Sensor ZW5 manual",
+                title: "Fibaro Door/Window Sensor 2 ZW5 manual",
                 description: "Tap to view the manual.",
-                image: "http://manuals.fibaro.com/wp-content/uploads/2017/07/co_icon.png",
-                url: "http://manuals.fibaro.com/content/manuals/en/FGCD-001/FGCD-001-EN-T-v1.1.pdf",
+                image: "http://manuals.fibaro.com/wp-content/uploads/2017/05/dws2.jpg",
+                url: "http://manuals.fibaro.com/content/manuals/en/FGDW-002/FGDW-002-EN-T-v1.0.pdf",
                 type: "href",
                 element: "href"
         )
@@ -116,13 +111,10 @@ def updated() {
     if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
     logging("${device.displayName} - Executing updated()","info")
 
-    sendEvent(name: "checkInterval", value: 86520, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
-    if ( (settings.zwaveNotifications as Integer) >= 2 ) {
-        sendEvent(name: "temperatureAlarm", value: "clear", displayed: false)
-
-    } else {
+    if ( settings.temperatureHigh as Integer == 0 && settings.temperatureLow as Integer == 0 ) {
         sendEvent(name: "temperatureAlarm", value: null, displayed: false)
+    } else if ( settings.temperatureHigh != null || settings.temperatureHigh != null ) {
+        sendEvent(name: "temperatureAlarm", value: "clear", displayed: false)
     }
 
     syncStart()
@@ -131,20 +123,27 @@ def updated() {
 
 def configure() {
     def cmds = []
-    sendEvent(name: "coLevel", unit: "ppm", value: 0, displayed: true)
     cmds << zwave.batteryV1.batteryGet()
     cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
-    cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
+    cmds << zwave.wakeUpV2.wakeUpIntervalSet(seconds: 21600, nodeid: zwaveHubNodeId)
     encapSequence(cmds,1000)
 }
 
 private syncStart() {
     boolean syncNeeded = false
+    Integer settingValue = null
     parameterMap().each {
         if(settings."$it.key" != null || it.num == 54) {
             if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] }
-            if (state."$it.key".value != (settings."$it.key" as Integer) || state."$it.key".state != "synced" ) {
-                state."$it.key".value = (settings."$it.key" as Integer)
+            if ( (it.num as Integer) == 54 ) {
+                settingValue = (((settings."temperatureHigh" as Integer) == 0) ? 0 : 1) + (((settings."temperatureLow" as Integer) == 0) ? 0 : 2)
+            } else if ( (it.num as Integer) in [55,56] ) {
+                settingValue = (((settings."$it.key" as Integer) == 0) ? state."$it.key".value : settings."$it.key") as Integer
+            } else {
+                settingValue = settings."$it.key" as Integer
+            }
+            if (state."$it.key".value != settingValue || state."$it.key".state != "synced" ) {
+                state."$it.key".value = settingValue
                 state."$it.key".state = "notSynced"
                 syncNeeded = true
             }
@@ -153,7 +152,7 @@ private syncStart() {
 
     if ( syncNeeded ) {
         logging("${device.displayName} - sync needed.", "info")
-        multiStatusEvent("Sync pending. Please wake up the device by pressing the Test button.", true)
+        multiStatusEvent("Sync pending. Please wake up the device by pressing the tamper button.", true)
     }
 }
 
@@ -214,9 +213,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     logging("${device.displayName} woke up", "info")
     def cmds = []
     sendEvent(descriptionText: "$device.displayName woke up", isStateChange: true)
-
     cmds << zwave.batteryV1.batteryGet()
-    cmds << zwave.sensorMultilevelV5.sensorMultilevelGet()
+    cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
     runIn(1,"syncNext")
     [response(encapSequence(cmds,1000))]
 }
@@ -242,26 +240,9 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
     logging("${device.displayName} - AlarmReport received, zwaveAlarmType: ${cmd.zwaveAlarmType}, zwaveAlarmEvent: ${cmd.zwaveAlarmEvent}", "info")
     def lastTime = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
     switch (cmd.zwaveAlarmType) {
-        case 2:
-            switch (cmd.zwaveAlarmEvent) {
-                case 0:
-                    sendEvent(name: "carbonMonoxide", value: "clear");
-                    multiStatusEvent("CO Clear - $lastTime");
-                    break;
-                case 2:
-                    sendEvent(name: "carbonMonoxide", value: "detected");
-                    multiStatusEvent("CO Detected - $lastTime");
-                    break;
-                case 3:
-                    if ( cmd.numberOfEventParameters == 0 ) {
-                        sendEvent(name: "carbonMonoxide", value: "tested");
-                        multiStatusEvent("CO Tested - $lastTime");
-                    } else if (cmd.numberOfEventParameters == 1 && cmd.eventParameter == [1]) {
-                        sendEvent(name: "carbonMonoxide", value: "clear");
-                        multiStatusEvent("CO Test OK - $lastTime");
-                    }
-                    break;
-            }
+        case 6:
+            sendEvent(name: "contact", value: (cmd.zwaveAlarmEvent == 22)? "open":"closed");
+            if (cmd.zwaveAlarmEvent == 22) { multiStatusEvent("Contact Open - $lastTime") }
             break;
         case 7:
             sendEvent(name: "tamper", value: (cmd.zwaveAlarmEvent == 3)? "detected":"clear");
@@ -272,6 +253,7 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
                 switch (cmd.zwaveAlarmEvent) {
                     case 0: sendEvent(name: "temperatureAlarm", value: "clear"); break;
                     case 2: sendEvent(name: "temperatureAlarm", value: "overheat"); break;
+                    case 6: sendEvent(name: "temperatureAlarm", value: "underheat"); break;
                 };
             };
             break;
@@ -285,9 +267,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
         case 1:
             def cmdScale = cmd.scale == 1 ? "F" : "C"
             sendEvent(name: "temperature", unit: getTemperatureScale(), value: convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision), displayed: true)
-            break
-        case 40:
-            sendEvent(name: "coLevel", unit: "ppm", value: cmd.scaledSensorValue, displayed: true)
             break
         default:
             logging("${device.displayName} - Unknown sensorType: ${cmd.sensorType}","warn")
@@ -385,28 +364,69 @@ private List intToParam(Long value, Integer size = 1) {
 }
 
 private Map cmdVersions() {
-    [0x5E: 2, 0x59: 1, 0x73: 1, 0x80: 1, 0x22: 1, 0x56: 1, 0x31: 5, 0x98: 1, 0x7A: 3, 0x5A: 1, 0x85: 2, 0x84: 2, 0x71: 2, 0x70: 2, 0x8E: 2, 0x9C: 1, 0x86: 1, 0x72: 2]
+    [0x5E: 2, 0x59: 1, 0x22: 1, 0x80: 1, 0x56: 1, 0x7A: 3, 0x73: 1, 0x98: 1, 0x31: 5, 0x85: 2, 0x70: 2, 0x5A: 1, 0x72: 2, 0x8E: 2, 0x71: 2, 0x86: 1, 0x84: 2]
 }
 
 private parameterMap() {[
-        [key: "zwaveNotifications", num: 2, size: 1, type: "enum", options: [
-                0: "Both actions disabled",
-                1: "Tampering (opened casing)",
-                2: "Exceeding the temperature",
-                3: "Both actions enabled"
+        [key: "doorState", num: 1, size: 1, type: "enum", options: [0: "Closed when magnet near", 1: "Opened when magnet near"], def: "0", title: "Door/window state",
+         descr: "Defines the state of door/window depending on the magnet position."],
+        [key: "ledIndications", num: 2, size: 1, type: "enum", options: [
+                1: "Indication of opening/closing",
+                2: "Indication of wake up",
+                4: "Indication of device tampering",
+                6: "Indication of wake up & tampering",
         ],
-         def: "0", title: "Z-Wave notifications",
-         descr: "This parameter allows to set actions which result in sending notifications to the HUB"],
-        [key: "highTempTreshold", num: 22, size: 1, type: "enum", options: [
-                50: "120 °F / 50°C",
-                55: "130 °F / 55°C",
-                60: "140 °F / 60 °C",
-                65: "150 °F / 65 °C",
-                71: "160 °F / 71 °C",
-                77: "170 °F / 77 °C",
-                80: "176 °F / 80 °C"
-        ],
-         def: "55", title: "Threshold of exceeding the temperature",
-         descr: "This parameter defines the temperature level, which exceeding will result in sending actions set in paramater 2."]
+         def: "6", title: "Visual LED indications",
+         descr: "Defines events indicated by the visual LED indicator. Disabling events might extend battery life."],
+        [key: "tamperDelay", num: 30, size: 2, type: "number", def: 5, min: 0, max: 32400, title: "Tamper - alarm cancellation delay",
+         descr: "Time period after which a tamper alarm will be cancelled.\n0-32400 - time in seconds"],
+        [key: "tamperCancelation", num: 31, size: 1, type: "enum", options: [0: "Do not send tamper cancellation report", 1: "Send tamper cancellation report"], def: "1", title: "Tamper – reporting alarm cancellation",
+         descr: "Reporting cancellation of tamper alarm to the controller."],
+        [key: "temperatureMeasurement", num: 50, size: 2, type: "number", def: 300, min: 0, max: 32400, title: "Interval of temperature measurements",
+         descr: "This parameter defines how often the temperature will be measured (specific time).\n0 - temperature measurements disabled\n5-32400 - time in seconds"],
+        [key: "temperatureThreshold", num: 51, size: 2, type: "enum", options: [
+                0: "disabled",
+                3: "0.5°F/0.3°C",
+                6: "1°F/0.6°C",
+                11: "2°F/1.1°C",
+                17: "3°F/1.7°C",
+                22: "4°F/2.2°C",
+                28: "5°F/2.8°C"],
+         def: 11, title: "Temperature reports threshold",
+         descr: "Change of temperature resulting in temperature report being sent to the HUB."],
+        [key: "temperatureAlarm", num: 54, size: 1, type: "enum", options: [
+                0: "Temperature alarms disabled",
+                1: "High temperature alarm",
+                2: "Low temperature alarm",
+                3: "High and low temperature alarms"],
+         def: "0", title: "Temperature alarm reports",
+         descr: "Temperature alarms reported to the Z-Wave controller. Thresholds are set in parameters 55 and 56"],
+        [key: "temperatureHigh", num: 55, size: 2, type: "enum", options: [
+                0: "disabled",
+                200: "68°F/20°C",
+                250: "77°F/25°C",
+                300: "86°F/30°C",
+                350: "95°F/35°C",
+                400: "104°F/40°C",
+                450: "113°F/45°C",
+                500: "122°F/50°C",
+                550: "131°F/55°C",
+                600: "140°F/60°C"],
+         def: 350, title: "High temperature alarm threshold",
+         descr: "If temperature is higher than set value, overheat high temperature alarm will be triggered."],
+        [key: "temperatureLow", num: 56, size: 2, type: "enum", options: [
+                0: "disabled",
+                6: "33°F/0.6°C",
+                10: "34°F/1°C",
+                22: "36°F/2.2°C",
+                33: "38°F/3.3°C",
+                44: "40°F/4.4°C",
+                50: "41°F/5°C",
+                100: "50°F/10°C",
+                150: "59°F/15°C",
+                200: "68°F/20°C",
+                250: "77°F/25°C"],
+         def: 100, title: "Low temperature alarm threshold",
+         descr: "If temperature is lower than set value, low temperature alarm will be triggered."]
 ]
 }
