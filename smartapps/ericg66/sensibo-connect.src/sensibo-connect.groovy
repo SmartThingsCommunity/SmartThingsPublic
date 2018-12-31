@@ -40,7 +40,7 @@ def getServerUrl() { "https://home.sensibo.com" }
 def getapikey() { apiKey }
 //def version() { "SmartThingsv1.5" }
 
-public static String version() { return "SmartThingsv1.5" }
+public static String version() { return "SmartThingsv1.6" }
 
 def setAPIKey()
 {
@@ -177,6 +177,9 @@ def installed() {
         schedule("0 0 * * * ?", "hournotification")
 	}
     
+    log.debug "Configured health checkInterval when installed()"
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: true)
+    
     //subscribe(d,"temperatureUnit",eTempUnitHandler)
     
     if (sendPushNotif) { 
@@ -203,12 +206,44 @@ def updated() {
         schedule("0 0 * * * ?", "hournotification")
 	}
     
+    log.debug "Configured health checkInterval when installed()"
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: true)
+    
     //subscribe(d,"temperatureUnit",eTempUnitHandler)
     
     if (sendPushNotif) {
     	subscribe(d, "temperature", eTemperatureHandler)
         subscribe(d, "humidity", eHumidityHandler)
     }
+}
+
+def ping() {
+
+	log.trace "ping called"
+    
+    return true
+    
+    def deviceListParams = [
+    uri: "${getServerUrl()}",
+    path: "/api/v2/users/me/pods",
+    requestContentType: "application/json",
+    query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json",fields:"id,room" ]]
+	
+    try {
+      httpGet(deviceListParams) { resp ->
+    	if(resp.status == 200)
+			{
+				return true
+			}
+	  }
+    }
+    catch(Exception e)
+	{
+		log.debug "Exception Get Json: " + e
+		debugEvent ("Exception get JSON: " + e)
+	}
+    
+    return false
 }
 
 def hournotification() {
@@ -630,6 +665,88 @@ def pollChild( child )
 	return null
 }
 
+def configureClimateReact(child,String PodUid,String JsonString)
+{
+	log.trace "configureClimateReact() called for $PodUid with settings : $JsonString"  
+    
+    JsonString = '{"deviceUid": "ihJ4ajvb", "highTemperatureWebhook": null, "highTemperatureThreshold": null, "lowTemperatureWebhook": null, "type": "humidity", "lowTemperatureState": {"on": true, "fanLevel": "auto", "temperatureUnit": "C", "targetTemperature": 21, "mode": "heat"}, "enabled": true, "highTemperatureState": null, "lowTemperatureThreshold": 40.0}'
+
+    def result = sendPostJsonClimate(PodUid, JsonString)
+    
+    if (result) {  
+		def tData = state.sensibo[child.device.deviceNetworkId]      
+        
+        if (tData == null) {
+        	pollChildren(child.device.deviceNetworkId)
+            tData = state.sensibo[child.device.deviceNetworkId]
+        }
+        
+        //tData.data.Climate = ClimateState        
+        //tData.data.Error = "Success"
+    }
+    //else {
+    	//def tData = state.sensibo[child.device.deviceNetworkId]
+        //if (tData == null) return false
+    	
+        //tData.data.Error = "Failed"
+    //}
+
+    return(result)
+}
+
+def setClimateReact(child,String PodUid, ClimateState)
+{
+	log.trace "setClimateReact() called for $PodUid Climate React: $ClimateState"   
+    
+    def ClimateReact = getClimateReact(PodUid)
+    log.debug "DEBUG " + ClimateReact.Climate + " " + ClimateState
+    if (ClimateReact.Climate == "notdefined") {
+    	def tData = state.sensibo[child.device.deviceNetworkId]      
+        
+        if (tData == null) {
+        	pollChildren(child.device.deviceNetworkId)
+            tData = state.sensibo[child.device.deviceNetworkId]
+        }
+        
+        tData.data.Climate = ClimateReact.Climate        
+        tData.data.Error = "Success"
+        
+        return true
+    }
+    
+    def jsonRequestBody
+    if (ClimateState == "on") { 
+    	jsonRequestBody = '{"enabled": true}' 
+    }
+    else {
+    	jsonRequestBody = '{"enabled": false}' 
+    }
+    
+    log.debug "Mode Request Body = ${jsonRequestBody}"
+    
+    def result = sendPutJson(PodUid, jsonRequestBody)
+    
+    if (result) {  
+		def tData = state.sensibo[child.device.deviceNetworkId]      
+        
+        if (tData == null) {
+        	pollChildren(child.device.deviceNetworkId)
+            tData = state.sensibo[child.device.deviceNetworkId]
+        }
+        
+        tData.data.Climate = ClimateState        
+        tData.data.Error = "Success"
+    }
+    else {
+    	def tData = state.sensibo[child.device.deviceNetworkId]
+        if (tData == null) return false
+    	
+        tData.data.Error = "Failed"
+    }
+
+    return(result)
+}
+
 def setACStates(child,String PodUid, on, mode, targetTemperature, fanLevel, swingM, sUnit)
 {
 	log.trace "setACStates() called for $PodUid ON: $on - MODE: $mode - Temp : $targetTemperature - FAN : $fanLevel - SWING MODE : $swingM - UNIT : $sUnit"
@@ -863,6 +980,81 @@ def getCapabilities(PodUid, mode)
     }                  
 }
 
+
+// Get Climate React settings
+def getClimateReact(PodUid)
+{
+	log.trace "getClimateReact() called - ${version()}"
+	def data = [:]
+	def pollParams = [
+    	uri: "${getServerUrl()}",
+    	path: "/api/v2/pods/${PodUid}/smartmode",
+    	requestContentType: "application/json",
+    	query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json", fields:"*"]]
+        
+    try {
+    
+       httpGet(pollParams) { resp ->           
+			if (resp.data) {
+				debugEvent ("Response from Sensibo GET = ${resp.data}")
+				debugEvent ("Response Status = ${resp.status}")
+			}
+			
+            log.trace "Get ClimateReact " + resp.data.result
+			if(resp.status == 200) {
+                if (!resp.data.result) {
+                	data = [
+                 		Climate : "notdefined",
+                 		Error : "Success"]
+                    
+                 	log.debug "Returning Climate React (not configured)"
+                 	return data
+                }
+            	resp.data.result.any { stat ->                	
+                    log.trace "get ClimateReact Success"
+                    log.debug "PodUID : $PodUid : " + PodUid					
+                    
+                    def OnOff = "off"
+                    
+                    if (resp.data.result.enabled != null) {
+                    	OnOff = resp.data.result.enabled ? "on" : "off"
+                    }
+
+                    data = [
+                        Climate : OnOff.toString(),
+                        Error : "Success"
+                    ]
+
+                    log.debug "Climate: ${data.Climate}"
+                    log.trace "Returning Climate React"                        
+                    return data
+               }
+            }
+            else {
+           	     data = [
+                 	Climate : "notdefined",
+                 	Error : "Failed"]
+                    
+                 log.debug "get ClimateReact Failed"
+                 return data
+            }
+       }
+       return data
+    }
+    catch(Exception e)
+	{
+		log.debug "Exception Get Json: " + e
+		debugEvent ("Exception get JSON: " + e)
+		
+        data = [
+            Climate : "notdefined",            
+            Error : "Failed" 
+		]
+        log.debug "get ClimateReact Failed"
+        return data
+	}      
+}
+
 // Get the latest state from the Sensibo Pod
 def getACState(PodUid)
 {
@@ -1000,6 +1192,74 @@ def getACState(PodUid)
 	} 
 }
 
+def sendPutJson(String PodUid, String jsonBody)
+{
+ 	log.trace "sendPutJson() called - Request sent to Sensibo API(smartmode) for PODUid : $PodUid - ${version()} - $jsonBody"
+	def cmdParams = [
+		uri: "${getServerUrl()}",
+		path: "/api/v2/pods/${PodUid}/smartmode",
+		headers: ["Content-Type": "application/json"],
+        query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json"],
+		body: jsonBody]
+
+    try{
+       httpPut(cmdParams) { resp ->
+			if(resp.status == 200) {
+                log.debug "updated ${resp.data}"
+				debugEvent("updated ${resp.data}")
+                log.trace "Successful call to Sensibo API."
+				               
+                log.debug "Returning True"
+				return true
+            }
+           	else { 
+            	log.trace "Failed call to Sensibo API."
+                return false
+            }
+       }
+    }    
+    catch(Exception e)
+	{
+		log.debug "Exception Sending Json: " + e
+		debugEvent ("Exception Sending JSON: " + e)
+		return false
+	}
+}
+
+def sendPostJsonClimate(String PodUid, String jsonBody)
+{
+ 	log.trace "sendPostJsonClimate() called - Request sent to Sensibo API(smartmode) for PODUid : $PodUid - ${version()} - $jsonBody"
+	def cmdParams = [
+		uri: "${getServerUrl()}",
+		path: "/api/v2/pods/${PodUid}/smartmode",
+		headers: ["Content-Type": "application/json"],
+        query: [apiKey:"${getapikey()}", integration:"${version()}", type:"json"],
+		body: jsonBody]
+
+    try{
+       httpPost(cmdParams) { resp ->
+			if(resp.status == 200) {
+                log.debug "updated ${resp.data}"
+				debugEvent("updated ${resp.data}")
+                log.trace "Successful call to Sensibo API."
+				               
+                log.debug "Returning True"
+				return true
+            }
+           	else { 
+            	log.trace "Failed call to Sensibo API."
+                return false
+            }
+       }
+    }    
+    catch(Exception e)
+	{
+		log.debug "Exception Sending Json: " + e
+		debugEvent ("Exception Sending JSON: " + e)
+		return false
+	}
+}
+
 // Send state to the Sensibo Pod
 def sendJson(String PodUid, String jsonBody)
 {
@@ -1082,6 +1342,9 @@ def pollChildren(PodUid)
                 }
                 
                 def setTemp = getACState(thermostatIdsString)
+                
+                def ClimateReact = getClimateReact(thermostatIdsString)
+           
                 if (setTemp.Error != "Failed") {
                 
 				 state.sensibo = resp.data.result.inject([:]) { collector, stat ->
@@ -1090,8 +1353,8 @@ def pollChildren(PodUid)
 					
 					log.debug "updating dni $dni"
                     
-                    def stemp = stat.temperature.toDouble().round(1)
-                    def shumidify =  stat.humidity.toDouble().round()
+                    def stemp = stat.temperature ? stat.temperature.toDouble().round(1) : 0
+                    def shumidify = stat.humidity ? stat.humidity.toDouble().round() : 0
 
                     if (setTemp.temperatureUnit == "F") {
                         stemp = cToF(stemp).round(1)
@@ -1136,6 +1399,7 @@ def pollChildren(PodUid)
                         powerSource : setTemp.powerSource,
                         productModel : setTemp.productModel,
                         firmwareVersion : setTemp.firmwareVersion,
+                        Climate : ClimateReact.Climate,
                         Error: setTemp.Error
 					]
                     
