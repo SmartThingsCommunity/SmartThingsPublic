@@ -36,12 +36,14 @@ metadata {
         capability "Health Check"
         capability "Power Source"
         capability "Voltage Measurement"
+        capability "Air Conditioner Mode"
         
         attribute "swing", "String"
         attribute "temperatureUnit","String"
         attribute "productModel","String"
         attribute "firmwareVersion","String"
         
+        command "setAll"
         command "switchFanLevel"
         command "switchMode"
         command "raiseCoolSetpoint"
@@ -55,25 +57,21 @@ metadata {
         command "setThermostatMode"
         command "modeHeat"
         command "modeCool"
-        command "fullfan"
+        command "modeDry"
+        command "modeFan"
+        command "modeAuto"
+        command "lowfan"
+        command "mediumfan"
+        command "highfan"
+        command "quietfan"
+        command "strongfan"
         command "autofan"
         command "fullswing"
-      
+        command "setAirConditionerMode"
 	}
 
 	simulator {
-		// TODO: define status and reply messages here
-		
-        // status messages
-		status "on": "on/off: 1"
-		status "off": "on/off: 0"
-        status "temperature":"22"
-        status "targetTemperature":"22"
-        //status "humidity": "humidity"
-        
-        // reply messages
-		reply "zcl on-off on": "on/off: 1"
-		reply "zcl on-off off": "on/off: 0"
+
 	}
 
 	tiles(scale: 2) {
@@ -139,7 +137,7 @@ metadata {
 			)
 		}
            
-        valueTile("voltage", "device.voltage", width: 2, height: 2) {
+        valueTile("voltage", "device.voltage", width: 1, height: 1) {
 			state("voltage", label:'${currentValue}',
 				backgroundColors:[
 					[value: 2700, color: "#CC0000"],
@@ -178,7 +176,7 @@ metadata {
             state "strong", action:"switchFanLevel", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/eaLeUw/fan_strong2.png" , nextState:"low"
         }
         
-        standardTile("mode", "device.thermostatMode",  width: 2, height: 2) {
+        standardTile("currentmode", "device.thermostatMode",  width: 2, height: 2) {
             state "heat", action:"switchMode", backgroundColor:"#e86d13", icon:"https://image.ibb.co/c7Grh5/sun.png", nextState:"cool"
             state "cool", action:"switchMode", backgroundColor:"#00a0dc", icon:"https://image.ibb.co/bZ56FQ/cold.png", nextState:"fan"
             state "fan", action:"switchMode", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/n1dhpk/status_message_fan.png", nextState:"dry"
@@ -219,8 +217,14 @@ metadata {
         standardTile("heatmode", "device.thermostatMode",  width: 1, height: 1) {
        		state "heat", action:"modeHeat", backgroundColor:"#e86d13", icon:"https://image.ibb.co/c7Grh5/sun.png"
         }
-        standardTile("fullfan", "device.fanLevel",  width: 1, height: 1) {
-       		state "high", action:"fullfan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/fcfFaQ/fan_high_2.png"
+        standardTile("drymode", "device.thermostatMode",  width: 1, height: 1) {
+       		state "heat", action:"modeDry", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/k2ZNpk/dry_mode.png"
+        }
+        standardTile("fanmode", "device.thermostatMode",  width: 1, height: 1) {
+       		state "heat", action:"modeFan", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/n1dhpk/status_message_fan.png"
+        }        
+        standardTile("highfan", "device.fanLevel",  width: 1, height: 1) {
+       		state "high", action:"highfan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/fcfFaQ/fan_high_2.png"
         }
         standardTile("autofan", "device.fanLevel",  width: 1, height: 1) {
        		state "auto", action:"autofan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/m8oq9k/fan_auto_2.png"
@@ -230,29 +234,98 @@ metadata {
         }
         
 		main (["switch"])
-		details (["thermostatMulti","switch","fanLevel","mode","swing","voltage","refresh","coolmode","heatmode","fullfan","autofan","fullswing","powerSource","firmwareVersion","productModel"])    
+		details (["thermostatMulti","switch","fanLevel","currentmode","swing","refresh","coolmode","heatmode","fanmode","drymode","highfan","autofan","fullswing","firmwareVersion","productModel","powerSource","voltage"])    
 	}
 }
 
-def fullfan()
+def setAll(newMode,temp,fan)
 {
+	log.trace "setAll() called with " + newMode + "," + temp + "," + fan
+    
+    def Setpoint = temp.toInteger()
+    
+    def LevelBefore = fan
+    def capabilities = parent.getCapabilities(device.deviceNetworkId,newMode)
+    def Level = LevelBefore
+    if (capabilities.remoteCapabilities != null) {
+    	def fanLevels = capabilities.remoteCapabilities.fanLevels
+    	log.debug capabilities.remoteCapabilities.fanLevels
+        
+        Level = GetNextFanLevel(LevelBefore,capabilities.remoteCapabilities.fanLevels)
+        log.debug "Fan : " + Level
+   
+        def result = parent.setACStates(this, device.deviceNetworkId, "on", newMode, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+       
+        if (result) {
+        	if (LevelBefore != Level) {
+                generatefanLevelEvent(Level)
+            }
+            sendEvent(name: 'thermostatMode', value: newMode, displayed: false,isStateChange: true)
+            if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
+
+            generateModeEvent(newMode)
+            
+            generateStatusEvent()
+            refresh()
+        }
+        else {
+            generateErrorEvent()
+            
+            generateStatusEvent()
+        }              
+	}
+    else {       
+    }
+}
+
+def lowfan()
+{
+	log.trace "lowfan() called"
+	dfanLevel("low")
+}
+
+def mediumfan()
+{
+	log.trace "mediumfan() called"
+	dfanLevel("medium")
+}
+
+def highfan()
+{
+	log.trace "highfan() called"
 	dfanLevel("high")
+}
+
+def quietfan()
+{
+	log.trace "quietfan() called"
+	dfanLevel("quiet")
+}
+
+def strongfan()
+{
+	log.trace "strongfan() called"
+	dfanLevel("strong")
 }
 
 def autofan()
 {
+	log.trace "autofan() called"
 	dfanLevel("auto")
 }
 
 def fullswing()
-{
+{	
+	log.trace "fullswing() called"
 	modeSwing("rangeFull")
 }
 
 def temperatureDown(temp)
 {
+	log.trace "temperatureDown() called with "+ temp
+    
 	def sunit = device.currentValue("temperatureUnit")
-    def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
+    def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("currentmode").value)
     def values
        
     if (sunit == "F") {
@@ -285,8 +358,10 @@ def temperatureDown(temp)
 
 def temperatureUp(temp)
 {
+	log.trace "temperatureUp() called with "+ temp
+    
 	def sunit = device.currentValue("temperatureUnit")
-    def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
+    def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("currentmode").value)
     def values
     
     if (sunit == "F") {
@@ -317,7 +392,9 @@ def temperatureUp(temp)
 }
 
 void raiseTemperature() {
-	def operMode = device.currentState("mode").value
+	log.trace "raiseTemperature() called"	
+
+	def operMode = device.currentState("currentmode").value
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     def theTemp = device.currentValue("temperatureUnit")
@@ -353,7 +430,9 @@ void raiseTemperature() {
 }
 
 void lowerTemperature() {
-	def operMode = device.currentState("mode").value
+	log.trace "lowerTemperature() called"
+    
+	def operMode = device.currentState("currentmode").value
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     def theTemp = device.currentValue("temperatureUnit")
@@ -389,7 +468,7 @@ void lowerTemperature() {
 }
 
 void lowerCoolSetpoint() {
-   	log.debug "Lower SetPoint"
+   	log.trace "lowerCoolSetpoint() called"
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    	def theTemp = device.currentValue("temperatureUnit")
@@ -398,9 +477,11 @@ void lowerCoolSetpoint() {
 	
     Setpoint = temperatureDown(Setpoint)
 
-    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("currentmode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
 
     if (result) {
+    	log.info "Cooling temperature changed to " + Setpoint + " for " + device.deviceNetworkId
+        
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
         sendEvent(name: 'coolingSetpoint', value: Setpoint,  displayed: false)
@@ -408,21 +489,25 @@ void lowerCoolSetpoint() {
        
         generateSetTempEvent(Setpoint)
         
-    	log.debug "New target Temperature = ${Setpoint}"       
+    	log.debug "New target Temperature = ${Setpoint}"
+        
+        generateStatusEvent()
+    	refresh()
     }
 	else {
     	log.debug "error"
        	generateErrorEvent()
-    }
-	generateStatusEvent()
-    refresh()
+        
+        generateStatusEvent()
+    }	
 }
 
 
 void setThermostatMode(modes)
 { 
-	log.debug "setThermostatMode"
-  	//def currentMode = device.currentState("mode")?.value
+	log.trace "setThermostatMode() called"
+    
+  	def currentMode = device.currentState("currentmode").value
   
   	log.debug "switching AC mode from current mode: $currentMode"
 
@@ -448,8 +533,36 @@ void setThermostatMode(modes)
 	}
 }
 
+void setAirConditionerMode(modes)
+{ 
+	log.trace "setAirConditionerMode() called"
+    
+  	def currentMode = device.currentState("currentmode").value
+  
+  	log.debug "switching AC mode from current mode: $currentMode"
+
+  	switch (modes) {
+		case "cool":
+			modeCool()
+			break
+		case "fanOnly":
+        case "fan":
+			modeFan()
+			break		
+		case "dry":
+			modeDry()
+			break
+        case "auto":
+	        modeAuto()
+			break
+        case "heat":
+			modeHeat()
+			break
+	}
+}
+
 void raiseCoolSetpoint() {
-   	log.debug "Raise SetPoint"
+   	log.trace "raiseCoolSetpoint() called"
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     def theTemp = device.currentValue("temperatureUnit")
@@ -458,8 +571,10 @@ void raiseCoolSetpoint() {
 
 	Setpoint = temperatureUp(Setpoint)
 
-    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("currentmode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
+    	log.info "Cooling temperature changed to " + Setpoint + " for " + device.deviceNetworkId
+        
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
         sendEvent(name: 'coolingSetpoint', value: Setpoint, displayed: false)
@@ -467,17 +582,20 @@ void raiseCoolSetpoint() {
         
         generateSetTempEvent(Setpoint)
         
-    	log.debug "New target Temperature = ${Setpoint}"       
+    	log.debug "New target Temperature = ${Setpoint}"
+        
+        generateStatusEvent()
+    	refresh()
     }
 	else {
        	generateErrorEvent()
-    }
-	generateStatusEvent()
-    refresh()
+        
+        generateStatusEvent()
+    }	
 }
 
 void raiseHeatSetpoint() {
-   	log.debug "Raise SetPoint"
+	log.trace "raiseHeatSetpoint() called"
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     def theTemp = device.currentValue("temperatureUnit")
@@ -486,8 +604,10 @@ void raiseHeatSetpoint() {
 
 	Setpoint = temperatureUp(Setpoint)
 
-    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("currentmode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
+    	log.info "Heating temperature changed to " + Setpoint + " for " + device.deviceNetworkId
+        
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
         sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)
@@ -495,17 +615,21 @@ void raiseHeatSetpoint() {
         
         generateSetTempEvent(Setpoint)
         
-    	log.debug "New target Temperature = ${Setpoint}"       
+    	log.debug "New target Temperature = ${Setpoint}"
+        
+        generateStatusEvent()
+    	refresh()
     }
 	else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }
-	generateStatusEvent()
-    refresh()
+	
 }
 
 void lowerHeatSetpoint() {
-   	log.debug "Raise SetPoint"
+	log.trace "lowerHeatSetpoint() called"
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     def theTemp = device.currentValue("temperatureUnit")
@@ -514,8 +638,10 @@ void lowerHeatSetpoint() {
 
 	Setpoint = temperatureDown(Setpoint)
 
-    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+    def result = parent.setACStates(this, device.deviceNetworkId , "on", device.currentState("currentmode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     if (result) {
+    	log.info "Heating temperature changed to " + Setpoint + " for " + device.deviceNetworkId
+        
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
         
         sendEvent(name: 'heatingSetpoint', value: Setpoint, displayed: false)    
@@ -523,76 +649,95 @@ void lowerHeatSetpoint() {
         
         generateSetTempEvent(Setpoint)
         
-    	log.debug "New target Temperature = ${Setpoint}"       
+    	log.debug "New target Temperature = ${Setpoint}"
+        
+        generateStatusEvent()
+    	refresh()
     }
 	else {
        	generateErrorEvent()
-    }
-	generateStatusEvent()
-    refresh()
+        
+        generateStatusEvent()
+    }	
 }
 
 def refresh()
 {
-  log.debug "refresh called"
+  log.trace "refresh() called"
   poll()
    
-  log.debug "refresh ended"
+  log.trace "refresh() ended"
 }
 
 // Set Temperature
 def setFanSetpoint(temp) {
+	log.trace "setFanSetpoint() called"
+    
 	temp = temp.toInteger()
 	log.debug "setTemperature : " + temp   
     
     def result = parent.setACStates(this, device.deviceNetworkId , "on", "fan", temp, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     
-    if (result) {    
+    if (result) {
+    	log.info "Fan temperature changed to " + temp + " for " + device.deviceNetworkId
+        
     	if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
   		generateModeEvent("fan")
          
         sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
     }
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }
-    
-    generateStatusEvent()
-    refresh()
 }
 
 // Set Temperature
 def setDrySetpoint(temp) {
+	log.trace "setDrySetpoint() called"
+    
 	temp = temp.toInteger()
 	log.debug "setTemperature : " + temp   
     
     def result = parent.setACStates(this, device.deviceNetworkId , "on", "dry", temp, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     
-    if (result) {    
+    if (result) {
+    	log.info "Dry temperature changed to " + temp + " for " + device.deviceNetworkId
+        
     	if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
   		generateModeEvent("dry")
          
         sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
     }
     else {
        	generateErrorEvent()
-    }
-    
-    generateStatusEvent()
-    refresh()
+        
+        generateStatusEvent()
+    }   
 }
 
 
 // Set Temperature
 def setCoolingSetpoint(temp) {
+	log.trace "setCoolingSetpoint() called"
+
 	temp = temp.toInteger()
 	log.debug "setTemperature : " + temp   
     
     def result = parent.setACStates(this, device.deviceNetworkId , "on", "cool", temp, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
     
-    if (result) {    
+    if (result) {
+    	log.info "Cooling temperature changed to " + temp + " for " + device.deviceNetworkId
+        
     	if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
   		generateModeEvent("cool")
          
@@ -600,33 +745,42 @@ def setCoolingSetpoint(temp) {
         sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	//sendEvent(name: 'heatingSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
     }
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }
-    
-    generateStatusEvent()
-    refresh()
 }
 
 def setHeatingSetpoint(temp) {
+	log.trace "setHeatingSetpoint() called"
+
 	temp = temp.toInteger()
 	log.debug "setTemperature : " + temp
     
     def result = parent.setACStates(this, device.deviceNetworkId , "on", "heat", temp, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
-    if (result) { 
+    if (result) {
+    	log.info "Heating temperature changed to " + temp + " for " + device.deviceNetworkId
+        
         if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
     	generateModeEvent("heat")
     	//sendEvent(name: 'coolingSetpoint', value: temp, displayed: false)
     	sendEvent(name: 'heatingSetpoint', value: temp, displayed: false)
         sendEvent(name: 'thermostatSetpoint', value: temp, displayed: false)
     	generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
 	}	
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }    
-    generateStatusEvent()
-    refresh()
 }
 
 def generateSetTempEvent(temp) {
@@ -635,44 +789,54 @@ def generateSetTempEvent(temp) {
 
 // Turn off or Turn on the AC
 def on() {
-	log.debug "on called"
+	log.trace "on called"
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
     log.debug "Temp Unit : " + device.currentState("temperatureUnit").value
-    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
-    if (result) {   
-    	sendEvent(name: 'thermostatMode', value: device.currentState("mode").value, displayed: false,isStateChange: true)
+    def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("currentmode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+    log.debug "Result : " + result
+    if (result) {
+    	log.info "AC turned ON for " + device.deviceNetworkId
+    	sendEvent(name: 'thermostatMode', value: device.currentState("currentmode").value, displayed: false,isStateChange: true)
         //sendEvent(name: 'thermostatOperatingState', value: "idle",isStateChange: true)
     	
         generateSwitchEvent("on")
+        
+        generateStatusEvent() 
+    	refresh()
     }
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent() 
     }        
-    generateStatusEvent() 
-    refresh()
 }
 
 def off() {
-	log.debug "off called"
+	log.trace "off called"
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
 
     log.debug "Temp Unit : " + device.currentState("temperatureUnit").value
-    def result = parent.setACStates(this, device.deviceNetworkId, "off", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+    def result = parent.setACStates(this, device.deviceNetworkId, "off", device.currentState("currentmode").value, Setpoint, device.currentState("fanLevel").value, device.currentState("swing").value, device.currentState("temperatureUnit").value)
 
-    if (result) { 
+    if (result) {
+    	log.info "AC turned OFF for " + device.deviceNetworkId
+        
     	sendEvent(name: 'thermostatMode', value: "off", displayed: false,isStateChange: true)
         //sendEvent(name: 'thermostatOperatingState', value: "idle",isStateChange: true)
     	
         generateSwitchEvent("off")
+        
+        generateStatusEvent()
+    	refresh()
      }
     else {
        	generateErrorEvent()
+        
+        generateStatusEvent()
     }         
-    generateStatusEvent()
-    refresh()
 }
 
 def generateSwitchEvent(mode) {
@@ -683,21 +847,24 @@ def generateSwitchEvent(mode) {
 }
 
 def dfanLevel(String newLevel){
-	log.debug "fan " + newLevel
+	log.trace "dfanLevel called with fan = " + newLevel
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
-   
-    def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)      
+    
+    def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("currentmode").value)      
     def Level = LevelBefore
     if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.fanLevels
     	log.debug capabilities.remoteCapabilities.fanLevels
         
         Level = GetNextFanLevel(newLevel,capabilities.remoteCapabilities.fanLevels)
-        log.debug "Fan : " + Level
+        //log.debug "Fan : " + Level
         
-        def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("mode").value, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+        def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("currentmode").value, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+
         if (result) {
+        	log.info "Fan level changed to " + Level + " for " + device.deviceNetworkId
+            
             if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
             if (Level == "low") {
             	sendEvent(name: 'thermostatFanMode', value: "circulate", displayed: false)
@@ -706,12 +873,15 @@ def dfanLevel(String newLevel){
                 sendEvent(name: 'thermostatFanMode', value: "on", displayed: false)
             }
             generatefanLevelEvent(Level)
+            
+            generateStatusEvent()
+        	refresh()
         }
         else {
             generateErrorEvent()
-        }      
-        generateStatusEvent()
-        refresh()
+            
+            generateStatusEvent()
+        }             
 	}
     else {
     	//TODO when the mode do not exist
@@ -723,7 +893,8 @@ def generatefanLevelEvent(mode) {
 }
 
 def switchFanLevel() {
-	log.debug "switchFanLevel"
+	log.trace "switchFanLevel() called"
+    
 	def currentFanMode = device.currentState("fanLevel")?.value
 	log.debug "switching fan level from current mode: $currentFanMode"
 	def returnCommand
@@ -760,19 +931,40 @@ def switchFanLevel() {
 
 def modeHeat()
 {
+	log.trace "modeHeat() called"
 	modeMode("heat")
 }
 
 def modeCool()
 {
+	log.trace "modeCool() called"
 	modeMode("cool")
+}
+
+def modeDry()
+{
+	log.trace "modeDry() called"
+	modeMode("dry")
+}
+
+def modeFan()
+{
+	log.trace "modeFan() called"
+	modeMode("fan")
+}
+
+def modeAuto()
+{
+	log.trace "modeAuto() called"
+	modeMode("auto")
 }
 
 // To change the AC mode
 
 def switchMode() {
-	log.debug "switchMode"
-	def currentMode = device.currentState("mode")?.value
+	log.trace "switchMode() called"
+    
+	def currentMode = device.currentState("currentmode")?.value
 	log.debug "switching AC mode from current mode: $currentMode"
 	def returnCommand
 
@@ -798,7 +990,7 @@ def switchMode() {
 }
 
 def modeMode(String newMode){
-    log.debug "mode " + newMode
+    log.trace "modeMode() called with " + newMode
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
     
@@ -810,10 +1002,12 @@ def modeMode(String newMode){
     	log.debug capabilities.remoteCapabilities.fanLevels
         
         Level = GetNextFanLevel(LevelBefore,capabilities.remoteCapabilities.fanLevels)
-        log.debug "Fan : " + Level
+        //log.debug "Fan : " + Level
    
         def result = parent.setACStates(this, device.deviceNetworkId, "on", newMode, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
         if (result) {
+        	log.info "Mode changed to " + newMode + " for " + device.deviceNetworkId
+            
         	if (LevelBefore != Level) {
                 generatefanLevelEvent(Level)
             }
@@ -821,12 +1015,15 @@ def modeMode(String newMode){
             if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
 
             generateModeEvent(newMode)
+            
+            generateStatusEvent()
+        	refresh()
         }
         else {
             generateErrorEvent()
-        }      
-        generateStatusEvent()
-        refresh()
+            
+            generateStatusEvent()
+        }             
 	}
     else {
        def themodes = parent.getCapabilities(device.deviceNetworkId,"modes")
@@ -837,7 +1034,7 @@ def modeMode(String newMode){
 }
 
 def generateModeEvent(mode) {
-   sendEvent(name: "mode", value: mode, descriptionText: "$device.displayName Thermostat mode is now ${mode}", displayed: true, isStateChange: true)   
+   sendEvent(name: "thermostatMode", value: mode, descriptionText: "$device.displayName Thermostat mode is now ${mode}", displayed: true, isStateChange: true)   
 }
    
 def returnNext(liste1, liste2, val) throws Exception
@@ -861,22 +1058,32 @@ def returnNext(liste1, liste2, val) throws Exception
 
 def GetNextFanLevel(fanLevel, fanLevels)
 {
+	log.trace "GetNextFanLevel called with " + fanLevel
+    
 	def listFanLevel = ['low','medium','high','auto','quiet','medium_high','medium_low','strong']	
     def newFanLevel = returnNext(listFanLevel, fanLevels,fanLevel)
     
-	return newFanLevel
+    log.debug "Next fanLevel = " + newFanLevel
+	
+    return newFanLevel
 }
 
 def GetNextMode(mode, modes)
 {
+	log.trace "GetNextMode called with " + mode
+        
 	def listMode = ['heat','cool','fan','dry','auto']	
     def newMode = returnNext(listMode, modes,mode)
+    
+    log.debug "Next Mode = " + newMode
     
 	return newMode
 }
 
 def NextMode(sMode)
 {
+	log.trace "NextMode called()"
+    
 	if (sMode != null) {
     	switch (sMode)
         {
@@ -904,14 +1111,19 @@ def NextMode(sMode)
 }
 
 def GetNextSwingMode(swingMode, swingModes){
+	log.trace "GetNextSwingMode() called with " + swingMode
+	
 	def listSwingMode = ['stopped','fixedTop','fixedMiddleTop','fixedMiddle','fixedMiddleBottom','fixedBottom','rangeTop','rangeMiddle','rangeBottom','rangeFull','horizontal','both']	
     def newSwingMode = returnNext(listSwingMode, swingModes,swingMode)
+    
+    log.debug "Next Swing Mode = " + newSwingMode
     
 	return newSwingMode
 }
 
 def switchSwing() {
-	log.debug "switchSwing"
+	log.trace "switchSwing() called"
+    
 	def currentMode = device.currentState("swing")?.value
 	log.debug "switching Swing mode from current mode: $currentMode"
 	def returnCommand
@@ -958,32 +1170,37 @@ def switchSwing() {
 }
 def modeSwing(String newSwing)
 {
-    log.debug "modeSwing " + newSwing
+    log.trace "modeSwing() called with " + newSwing
     
     def Setpoint = device.currentValue("targetTemperature").toInteger()
    
     def SwingBefore = device.currentState("swing").value
-    def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("mode").value)
+    def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("currentmode").value)
     def Swing = SwingBefore
     if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.swing
     	log.debug capabilities.remoteCapabilities.swing
         
         Swing = GetNextSwingMode(newSwing,capabilities.remoteCapabilities.swing)
-        log.debug "Swing : " + Swing
+        //log.debug "Swing : " + Swing
         
-        def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("mode").value, Setpoint, device.currentState("fanLevel").value, Swing, device.currentState("temperatureUnit").value)
+        def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("currentmode").value, Setpoint, device.currentState("fanLevel").value, Swing, device.currentState("temperatureUnit").value)
         if (result) {
+        	log.info "Swing mode changed to " + Swing + " for " + device.deviceNetworkId
+            
             sendEvent(name: 'swing', value: Swing, displayed: false,isStateChange: true)
             if (device.currentState("on").value == "off") { generateSwitchEvent("on") }
 			sendEvent(name: 'thermostatFanMode', value: "on", displayed: false)
             generateSwingModeEvent(Swing)
+            
+            generateStatusEvent()
+        	refresh()
         }
         else {
             generateErrorEvent()
-        }      
-        generateStatusEvent()
-        refresh()
+            
+            generateStatusEvent()
+        }              
 	}
     else
     {
@@ -996,13 +1213,13 @@ def generateSwingModeEvent(mode) {
 }
 
 def generateErrorEvent() {
-   log.debug "Event Error"
+   log.debug "$device.displayName FAILED to set the AC State"
    sendEvent(name: "Error", value: "Error", descriptionText: "$device.displayName FAILED to set or get the AC State", displayed: true, isStateChange: true)  
 }
 
 
 void poll() {
-	log.debug "Executing 'poll' using parent SmartApp"
+	log.trace "Executing 'poll' using parent SmartApp"
 	
 	def results = parent.pollChild(this)
 	
@@ -1015,6 +1232,7 @@ void poll() {
 def parseTempUnitEventData(Map results)
 {
     log.debug "parsing data $results"
+    
 	if(results)
 	{
 		results.each { name, value ->
@@ -1040,6 +1258,7 @@ def parseTempUnitEventData(Map results)
 def parseEventData(Map results)
 {
 	log.debug "parsing Event data $results"
+    
 	if(results)
 	{
 		results.each { name, value -> 
@@ -1049,9 +1268,9 @@ def parseEventData(Map results)
             def isChange = false
             def isDisplayed = true
                              
-            if (name=="voltage") {            	                
-                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = true
+            if (name=="voltage") {
+                isChange = true //isTemperatureStateChange(device, name, value.toString())
+                isDisplayed = false
                   
 				sendEvent(
 					name: name,
@@ -1065,7 +1284,7 @@ def parseEventData(Map results)
             	}
             else if (name== "battery") {            	                
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = true
+                isDisplayed = false
                  
 				sendEvent(
 					name: name,
@@ -1079,7 +1298,7 @@ def parseEventData(Map results)
             	}
             else if (name== "powerSource") {            	                
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = true
+                isDisplayed = false
                   
 				sendEvent(
 					name: name,
@@ -1110,19 +1329,43 @@ def parseEventData(Map results)
                 isDisplayed = false
                  
 				if (value=="cool") {
-					sendEvent(name: 'thermostatOperatingState', value: "cooling", 
+                	sendEvent(name: 'airConditionerMode', value: "cool", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+					
+                    sendEvent(name: 'thermostatOperatingState', value: "cooling", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
 				} else if (value=="heat") {
-					sendEvent(name: 'thermostatOperatingState', value: "heating", 
+					sendEvent(name: 'airConditionerMode', value: "heat", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                    
+                    sendEvent(name: 'thermostatOperatingState', value: "heating", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
 				} else if (value=="fan") {
+             		sendEvent(name: 'airConditionerMode', value: "fanOnly", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                
 					sendEvent(name: 'thermostatOperatingState', value: "fan only", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
                 } else if (value=="dry") {
-					sendEvent(name: 'thermostatOperatingState', value: "Dry", 
+                    sendEvent(name: 'airConditionerMode', value: "dry", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                    
+					sendEvent(name: 'thermostatOperatingState', value: "dry", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                 } else if (value=="auto") {
+                    sendEvent(name: 'airConditionerMode', value: "auto", 
+					isStateChange: isChange,
+					displayed: isDisplayed)
+                    
+					sendEvent(name: 'thermostatOperatingState', value: "auto", 
 					isStateChange: isChange,
 					displayed: isDisplayed)
 				} else {
@@ -1155,7 +1398,7 @@ def parseEventData(Map results)
             	}
             else if (name=="temperatureUnit") { 
                 isChange = true
-                isDisplayed = true
+                isDisplayed = false
                    
 				sendEvent(
 					name: name,
@@ -1186,7 +1429,7 @@ def parseEventData(Map results)
  			else if (name=="swing") {
               	
                 isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = true
+                isDisplayed = false
                    
 				sendEvent(
 					name: name,
@@ -1199,7 +1442,7 @@ def parseEventData(Map results)
             	}
             else if (name=="temperature" || name== "lastTemperaturePush" || name== "lastHumidityPush") {
 				isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = isChange
+                isDisplayed = false
 				
 				sendEvent(
 					name: name,
@@ -1214,7 +1457,7 @@ def parseEventData(Map results)
             }
             else if (name=="humidity") {
 				isChange = true //isTemperatureStateChange(device, name, value.toString())
-                isDisplayed = isChange
+                isDisplayed = false
 				
 				sendEvent(
 					name: name,
@@ -1268,6 +1511,10 @@ private getThermostatDescriptionText(name, value, linkText)
 		return "latest switch was $value"
 	}
     else if (name == "mode")
+    {
+        return "thermostat mode was ${value}"
+    }
+    else if (name == "currentmode")
     {
         return "thermostat mode was ${value}"
     }
@@ -1353,10 +1600,10 @@ def parse(String description) {
         name = "fanLevel"
 		value = device.currentValue("fanLevel")
     }
-    else if (description?.startsWith("mode")) {
+    else if (description?.startsWith("currentmode")) {
     	log.debug "mode"
-        name = "mode"
-		value = device.currentValue("mode")
+        name = "currentmode"
+		value = device.currentValue("currentmode")
     }
     else if (description?.startsWith("on")) {
     	log.debug "on"
@@ -1404,7 +1651,7 @@ def generateStatusEvent() {
     def humidity = device.currentValue("humidity").toDouble() 
     def targetTemperature = device.currentValue("targetTemperature").split(' ')[0].toDouble()
     def fanLevel = device.currentValue("fanLevel")
-    def mode = device.currentValue("mode")
+    def mode = device.currentValue("currentmode")
     def on = device.currentValue("on")
     def swing = device.currentValue("swing")
 	def error = device.currentValue("Error")
