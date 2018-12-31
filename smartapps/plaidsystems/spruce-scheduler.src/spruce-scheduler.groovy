@@ -2200,8 +2200,8 @@ boolean isWeather(){
             //get daylight
 
              if (conditionsData.sunriseTimeLocal && conditionsData.sunsetTimeLocal) {
-                 DateFormat hours = new SimpleDateFormat("HH");
-                 DateFormat minutes = new SimpleDateFormat("mm");
+                 def hours = new java.text.SimpleDateFormat("HH");
+                 def minutes = new java.text.SimpleDateFormat("mm");
                  String nowAsISO = hours.format(new Date());
 
                 int getsunRH = hours.format(conditionsData.sunriseTimeLocal).toInteger()
