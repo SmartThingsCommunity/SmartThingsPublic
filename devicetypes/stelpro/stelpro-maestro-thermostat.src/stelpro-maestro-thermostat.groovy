@@ -60,7 +60,7 @@ metadata {
 		input("away_setpoint", "enum", title: "Away Setpoint", options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "5.5", "15.5", "16", "16.5", "17", "17.5", "18", "18.5", "19", "19.5", "20", "20.5", "21", "21.5", "22", "22.5", "23", "24", "24.5", "25", "25.5", "26", "26.5", "27", "27.5", "28", "28.5", "29", "29.5", "30"], defaultValue: "17", required: true)
 		input("vacation_setpoint", "enum", title: "Vacation Setpoint", options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "5.5", "15.5", "16", "16.5", "17", "17.5", "18", "18.5", "19", "19.5", "20", "20.5", "21", "21.5", "22", "22.5", "23", "24", "24.5", "25", "25.5", "26", "26.5", "27", "27.5", "28", "28.5", "29", "29.5", "30"], defaultValue: "13", required: true)
 		input("standby_setpoint", "enum", title: "Standby Setpoint", options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "5.5", "15.5", "16", "16.5", "17", "17.5", "18", "18.5", "19", "19.5", "20", "20.5", "21", "21.5", "22", "22.5", "23", "24", "24.5", "25", "25.5", "26", "26.5", "27", "27.5", "28", "28.5", "29", "29.5", "30"], defaultValue: "5", required: true)
-		*/			
+		*/
 	}
 
 	tiles(scale : 2) {
@@ -326,16 +326,16 @@ def updateWeather() {
 	// If there is a zipcode defined, weather forecast will be sent. Otherwise, no weather forecast.
 	if (settings.zipcode) {
 		log.debug "ZipCode: ${settings.zipcode}"
-		weather = getWeatherFeature("conditions", settings.zipcode)
+        weather = getTwcConditions(settings.zipcode)
 
 		// Check if the variable is populated, otherwise return.
 		if (!weather) {
 			log.debug("Something went wrong, no data found.")
 			return false
 		}
-		
+
 		def locationScale = getTemperatureScale()
-		def tempToSend = (locationScale == "C") ? weather.current_observation.temp_c : weather.current_observation.temp_f
+        def tempToSend = weather.temperature
 		log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
 		// Right now this can disrupt device health if the device is
 		// currently offline -- it would be erroneously marked online.
@@ -534,5 +534,3 @@ def auto() {
 def fanAuto() {
 	log.debug "${device.displayName} does not support fan auto"
 }
-
-
