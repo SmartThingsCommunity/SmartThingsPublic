@@ -925,6 +925,11 @@ def toogleClimateReact()
 
 // Toogle Climate React
 def setClimateReact(ClimateState) {
+
+    ///////////////////////////////////////////////
+    /// Parameter ClimateState : "on" or "off"
+    ///////////////////////////////////////////////
+    
 	log.trace "setClimateReact() called"
     
 	log.debug "Climate : " + ClimateState   
@@ -951,7 +956,7 @@ def configureClimateReact(lowThres, highThres,stype,lowState,highState, on_off)
 {
     ///////////////////////////////////////////////
     // lowThres and highThres - Integer parameters
-	// stype : possible values are temperature, humidity or feelsLike
+	// stype : possible values are "temperature", "humidity" or "feelsLike"
     // lowState and highState : 
     //    on, fanLevel, temperatureUnit, targetTemperature, mode      
     //
