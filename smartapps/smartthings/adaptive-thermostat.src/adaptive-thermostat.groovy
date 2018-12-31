@@ -34,6 +34,7 @@ preferences {
 }
 
 def installed() {
+	unschedule(climateCheckHandler)
 	state.mode = "idle"
 	subscribe(sensor, "temperature", temperatureHandler)
 	if (motion) {
@@ -43,6 +44,7 @@ def installed() {
 }
 
 def updated() {
+	unschedule(climateCheckHandler)
 	state.mode = "idle"
 	unsubscribe()
 	subscribe(sensor, "temperature", temperatureHandler)
@@ -74,7 +76,6 @@ def motionHandler(evt) {
 }
 
 def climateCheckHandler() {
-	log.debug "climateCheck ${state.mode}"
 	if (hasBeenRecentMotion()) {
     	def lastTemp = sensor.currentTemperature as Double
 		if (lastTemp != null) {
