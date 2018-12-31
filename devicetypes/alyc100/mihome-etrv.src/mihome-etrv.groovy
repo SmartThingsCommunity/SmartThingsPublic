@@ -63,7 +63,7 @@ metadata {
         command "emergencyHeat"						//used on the boost/stop boost button
         command "stopBoost"							//used on the boost/stop boost button
         command "summer"							//uesed to put in summer mode - (Stats open permainatly)
-command "test"
+
         attribute "lastCheckin", "String"
         attribute "boostLabel", "String"
         attribute "thermostatTemperatureSetpoint", "String"						//might need for google
