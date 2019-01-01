@@ -56,9 +56,18 @@ metadata {
             }
         }
 
-        standardTile("home", "device.level", width: 2, height: 2, decoration: "flat") {
-            state "default", label: "preset", action:"presetPosition", icon:"st.Home.home2"
+        standardTile("up", "device.level", width: 2, height: 2, decoration: "flat") {
+            state "default", label: "up", action:"open", icon:"st.secondary.up"
         }
+
+        standardTile("home", "device.level", width: 2, height: 2, decoration: "flat") {
+            state "default", label: "preset", action:"presetPosition", icon:"st.Home.home9" //st.Home.home9
+        }
+
+        standardTile("down", "device.level", width: 2, height: 2, decoration: "flat") {
+            state "default", label: "down", action:"close", icon:"st.Home.home2"
+        }
+
 
         standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
             state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh", nextState: "disabled"
@@ -75,7 +84,7 @@ metadata {
         }
 
         main(["windowShade"])
-        details(["windowShade", "home", "refresh"])
+        details(["windowShade", "up", "home", "down", "refresh"])
 	}
 }
 
@@ -203,31 +212,8 @@ private getShellyAddress() {
     def iphex = ip.tokenize( '.' ).collect { String.format( '%02x', it.toInteger() ) }.join().toUpperCase()
     def porthex = String.format('%04x', port.toInteger())
     def shellyAddress = iphex + ":" + porthex
+    device.deviceNetworkId = shellyAddress.toUpperCase()
     log.debug "Using IP " + ip + ", PORT 80 and HEX ADDRESS " + shellyAddress + " for device: ${device.id}"
-    return shellyAddress.toUpperCase()
+    return device.deviceNetworkId
 }
-
-
-/**
- *
- * From Patrick Powell GitHub patrickkpowell
- *
- */
-private String convertIPtoHex(ipAddress) {
-    String hex = ipAddress.tokenize( '.' ).collect { String.format( '%02x', it.toInteger() ) }.join().toUpperCase()
-    log.debug "IP address entered is $ipAddress and the converted hex code is $hex"
-    return hex
-}
-
-/**
- *
- * From Patrick Powell GitHub patrickkpowell
- *
- */
-private String convertPortToHex(port) {
-    String hexport = port.toString().format('%04x', port.toInteger()).toUpperCase()
-    log.debug hexport
-    return hexport
-}
-
 
