@@ -31,7 +31,7 @@ metadata {
         capability "Refresh" // refresh command
         capability "Health Check"
         capability "Switch Level" // attribute: level (integer, setter: setLevel), command setLevel(level)
-        capability "Switch"
+        //capability "Switch"
         capability "Window Shade" // windowShade.value ( closed, closing, open, opening, partially open, unknown ), methods: close(), open(), presetPosition()
     
         // @TODO: this IP or preferences IP?
@@ -92,16 +92,18 @@ metadata {
 def getCheckInterval() {
     // These are battery-powered devices, and it's not very critical
     // to know whether they're online or not – 12 hrs
-    log.debut "getCheckInterval"
+    log.debug "getCheckInterval"
     return 4 * 60 * 60
 }
 
 def installed() {
+    log.debug "Installed"
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
     refresh()
 }
 
 def updated() {
+    log.debug "Updated"
     if (device.latestValue("checkInterval") != checkInterval) {
         sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
     }
@@ -132,15 +134,19 @@ def parse(description) {
     
     def evt1 = createEvent(name: "level", value: data.current_pos, displayed: false)
     def evt2 = null
+    def evt3 = null
     if ( data.current_pos < closedif ) {
         log.debug "CreateEvent closed"
         evt2 = createEvent(name: "windowShade", value: "closed", displayed: false)
+        evt3 = createEvent(name: "switch", value: "off", displayed: false)
     } else  if ( data.current_pos > openif ) {
         log.debug "CreateEvent open"
         evt2 = createEvent(name: "windowShade", value: "on", displayed: false)
+        evt3 = createEvent(name: "switch", value: "on", displayed: false)
     } else {
         log.debug "CreateEvent Partially open"
         evt2 = createEvent(name: "windowShade", value: "partially open", displayed: false)
+        evt3 = createEvent(name: "switch", value: "on", displayed: false)
     }
 
     //log.debut "Parsed to ${evt1.inspect()} and ${evt2.inspect()}"
@@ -151,13 +157,25 @@ def parse(description) {
 
 
 def open() {
-    log.debug "Executing 'on'"
+    log.debug "Executing 'open'"
     sendRollerCommand "go=open"
 }
 
 def close() {
-    log.debug "Executing 'off'"
+    log.debug "Executing 'close'"
     sendRollerCommand "go=close"
+}
+
+//switch.on
+def on() {
+    log.debug "Executing switch.on"
+    close()
+}
+
+//switch.off
+def off() {
+    log.debug "Executing switch.off"
+    close()
 }
 
 def setLevel(value, duration = null) {
