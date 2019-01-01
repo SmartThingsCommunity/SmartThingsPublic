@@ -27,72 +27,72 @@ metadata {
 	definition (name: "Shelly 2 as Roller Shutter", namespace: "dgasparri", author: "Duccio Marco Gasparri") {
 		capability "Actuator"
 		capability "Sensor"
-        //capability "Door Control" //open close
         capability "Refresh" // refresh command
+        capability "Health Check"
         capability "Switch Level" // attribute: level (integer, setter: setLevel), command setLevel(level)
         capability "Switch"
-        // capability "Window Shade" // windowShade.value ( closed, closing, open, opening, partially open, unknown ), methods: close(), open(), presetPosition()
+        capability "Window Shade" // windowShade.value ( closed, closing, open, opening, partially open, unknown ), methods: close(), open(), presetPosition()
     
 	    attribute "IP", "string"
+        command "stop"
 	}
 
 
-	preferences {
-    	// @TODO: change to MAC address or other more stable addressing method
-        input("ip", "string", title:"IP", description:"Shelly IP Address", defaultValue:"" , required: false, displayDuringSetup: true)
-	}
 
 	tiles(scale: 2) {
-        // @TODO change tile to more appropriate form
-        // st.Home.home30 http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png
-        // http://scripts.3dgo.net/smartthings/icons/#Home
-        // https://community.smartthings.com/t/where-are-the-tile-icons/40086/26
-        // st.Home.home30
-		// st.Home.home9 -< questa è una tenda
-		// st.Transportation.transportation13 (su)
-		// st.Transportation.transportation14 (giù)
-		// st.doors.garage.garage-closed
-		// st.doors.garage.garage-closing
-		// st.doors.garage.garage-opening
-		// st.doors.garage.garage-open
-		// st.switches.switch.on
-		// st.switches.switch.off
+        multiAttributeTile(name:"windowShade", type: "generic", width: 6, height: 4){
+            tileAttribute ("device.windowShade", key: "PRIMARY_CONTROL") {
+                attributeState "open", label:'${name}', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
+                attributeState "closed", label:'${name}', action:"open", icon:"st.shades.shade-closed", backgroundColor:"#ffffff", nextState:"opening"
+                attributeState "partially open", label:'Open', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
+                attributeState "opening", label:'${name}', action:"stop", icon:"st.shades.shade-opening", backgroundColor:"#79b821", nextState:"partially open"
+                attributeState "closing", label:'${name}', action:"stop", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partially open"
+            }
+            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"setLevel"
+            }
+        }
 
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on",           label:'Open', action:"switch.off", icon:"st.doors.garage.garage-open",  backgroundColor:"#00a0dc" //, nextState:"closing"
-		    state "off",        label:'Closed', action:"switch.on", icon:"st.doors.garage.garage-closed",  backgroundColor:"#00a0dc" //, nextState:"closing"
-		}
+        standardTile("home", "device.level", width: 2, height: 2, decoration: "flat") {
+            state "default", label: "home", action:"presetPosition", icon:"st.Home.home2"
+        }
 
-/*
-		// windowshade not implemented
-		standardTile("widowshade", "device.windowShade.value", width: 2, height: 2, canChangeIcon: true) {
-			state "open",           label:'Open', action:"window shade.close", icon:"st.doors.garage.garage-open",  backgroundColor:"#00a0dc" //, nextState:"closing"
-			state "partially open", label:'${name}', action:"window shade.close", icon:"st.doors.garage.garage-open",  backgroundColor:"#00a0dc" //, nextState:"closing"
-		    state "unknown",        label:'Unknown', action:"window shade.close", icon:"st.doors.garage.garage-closed",  backgroundColor:"#00a0dc" //, nextState:"closing"
-            state "closing",        label:'${name}', action:"window shade.close", icon:"st.doors.garage.garage-closing",  backgroundColor:"#00a0dc" //, nextState:"opening"
-            state "closed",         label:'${name}', action:"window shade.open",  icon:"st.doors.garage.garage-closed", backgroundColor:"#ffffff" //, nextState:"opening"
-		    state "opening",        label:'${name}', action:"window shade.open",  icon:"st.doors.garage.garage-opening", backgroundColor:"#ffffff" //, nextState:"closing"
-		}
-*/
+        standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
+            state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh", nextState: "disabled"
+            state "disabled", label:'', action:"", icon:"st.secondary.refresh"
+        }
 
-        standardTile ("level", "device.level", width: 2, height: 1) {
-			state "level", action:"switch level.setLevel"
-		}
 
-		standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:'Refresh Position', action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+        preferences {
+            input("ip", "string", title:"IP", description:"Shelly IP Address", defaultValue:"" , required: false, displayDuringSetup: true)
+            input "preset", "number", title: "Posizione pre-definita (1-100)", defaultValue: 50, required: false, displayDuringSetup: false
+        }
 
-		main(["switch"])
-		details(["switch", "level", "refresh"])
+        main(["windowShade"])
+        details(["windowShade", "home", "refresh"])
 	}
+}
+
+
+def getCheckInterval() {
+    // These are battery-powered devices, and it's not very critical
+    // to know whether they're online or not – 12 hrs
+    log.debut "getCheckInterval"
+    return 4 * 60 * 60
 }
 
 def installed() {
-    // @TODO: not refreshing when application is opened
-	refresh()
-    //runEvery30Minutes(refresh)
+    sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+    refresh()
 }
+
+def updated() {
+    if (device.latestValue("checkInterval") != checkInterval) {
+        sendEvent(name: "checkInterval", value: checkInterval, displayed: false)
+    }
+    refresh()
+}
+
 
 def parse(description) {
     log.debug "Parsing result"
@@ -126,31 +126,41 @@ def parse(description) {
         evt2 = createEvent(name: "switch", value: "on", displayed: false)
     }
 
+    log.debut "Parsed to ${evt1.inspect()} and ${evt2.inspect()}"
     return [evt1, evt2]
 }
 
 
 
-def on() {
+
+def open() {
     log.debug "Executing 'on'"
-    runIn(25, refresh)
     sendRollerCommand "go=open"
-}
-  
-def off() {
-    log.debug "Executing 'off'"
     runIn(25, refresh)
+}
+
+def close() {
+    log.debug "Executing 'off'"
     sendRollerCommand "go=close"
+    runIn(25, refresh)
+}
+
+def setLevel(value, duration = null) {
+    log.debug "Executing setLevel value with $value"
+    sendRollerCommand "go=to_pos&roller_pos="+value
+    runIn(25, refresh)
 }
 
 def presetPosition() {
     log.debug "Executing 'presetPosition'"
 }
-  
-def setLevel(value) {
-    log.debug "Executing setLevel value with $value"
-    runIn(25, refresh)
-    sendRollerCommand "go=to_pos&roller_pos="+value
+
+def stop() {
+    log.debug "stop()"
+}
+
+def ping() {
+    log.debug "Ping"
 }
 
 def refresh() {
