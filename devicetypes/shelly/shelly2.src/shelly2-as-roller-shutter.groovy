@@ -18,13 +18,14 @@
  *   go=open
  *   go=close
  *   go=to_pos&roller_pos=[value 0-100]
+ *   go=stop
  *
  */
  
  
 
 metadata {
-	definition (name: "Shelly 2 as Roller Shutter", namespace: "dgasparri", author: "Duccio Marco Gasparri") {
+	definition (name: "Shelly 2 as Roller Shutter v.2.0", namespace: "dgasparri", author: "Duccio Marco Gasparri") {
 		capability "Actuator"
 		capability "Sensor"
         capability "Refresh" // refresh command
@@ -33,7 +34,8 @@ metadata {
         capability "Switch"
         capability "Window Shade" // windowShade.value ( closed, closing, open, opening, partially open, unknown ), methods: close(), open(), presetPosition()
     
-	    attribute "IP", "string"
+        // @TODO: this IP or preferences IP?
+	    // attribute "IP", "string"
         command "stop"
 	}
 
@@ -42,19 +44,20 @@ metadata {
 	tiles(scale: 2) {
         multiAttributeTile(name:"windowShade", type: "generic", width: 6, height: 4){
             tileAttribute ("device.windowShade", key: "PRIMARY_CONTROL") {
+                attributeState "unknown", label:'${name}', action:"close", icon:"st.shades.shade-closed", backgroundColor:"#ffffff", nextState:"closing"
                 attributeState "open", label:'${name}', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
                 attributeState "closed", label:'${name}', action:"open", icon:"st.shades.shade-closed", backgroundColor:"#ffffff", nextState:"opening"
-                attributeState "partially open", label:'Open', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
+                attributeState "partially open", label:'${name}', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
                 attributeState "opening", label:'${name}', action:"stop", icon:"st.shades.shade-opening", backgroundColor:"#79b821", nextState:"partially open"
                 attributeState "closing", label:'${name}', action:"stop", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partially open"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"setLevel"
+                attributeState "level", action:"setLevel", label:'${currentValue} %'
             }
         }
 
         standardTile("home", "device.level", width: 2, height: 2, decoration: "flat") {
-            state "default", label: "home", action:"presetPosition", icon:"st.Home.home2"
+            state "default", label: "preset", action:"presetPosition", icon:"st.Home.home2"
         }
 
         standardTile("refresh", "device.refresh", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
@@ -65,7 +68,10 @@ metadata {
 
         preferences {
             input("ip", "string", title:"IP", description:"Shelly IP Address", defaultValue:"" , required: false, displayDuringSetup: true)
-            input "preset", "number", title: "Posizione pre-definita (1-100)", defaultValue: 50, required: false, displayDuringSetup: false
+            input("preset", "number", title: "Pre-defined position (1-100)", defaultValue: 50, required: false, displayDuringSetup: true)
+            input("closedif", "number", title: "Closed if at most (1-100)", defaultvalue: 5, required: false, displayDuringSetup: false)
+            input("openif", "number", title: "Open if at least (1-100)", defaultvalue: 85, required: false, displayDuringSetup: false)
+
         }
 
         main(["windowShade"])
@@ -95,8 +101,7 @@ def updated() {
 
 
 def parse(description) {
-    log.debug "Parsing result"
-    log.debug "description: $description"
+    log.debug "Parsing result $description"
     
     def msg = parseLanMessage(description)
 
@@ -118,15 +123,18 @@ def parse(description) {
     
     def evt1 = createEvent(name: "level", value: data.current_pos, displayed: false)
     def evt2 = null
-    if ( data.current_pos <15 ) {
-        log.debug "CreateEvent off"
-        evt2 = createEvent(name: "switch", value: "off", displayed: false)
+    if ( data.current_pos < closedif ) {
+        log.debug "CreateEvent closed"
+        evt2 = createEvent(name: "windowShade", value: "closed", displayed: false)
+    } else  if ( data.current_pos > openif ) {
+        log.debug "CreateEvent open"
+        evt2 = createEvent(name: "windowShade", value: "on", displayed: false)
     } else {
-        log.debug "CreateEvent on"
-        evt2 = createEvent(name: "switch", value: "on", displayed: false)
+        log.debug "CreateEvent Partially open"
+        evt2 = createEvent(name: "windowShade", value: "partially open", displayed: false)
     }
 
-    log.debut "Parsed to ${evt1.inspect()} and ${evt2.inspect()}"
+    //log.debut "Parsed to ${evt1.inspect()} and ${evt2.inspect()}"
     return [evt1, evt2]
 }
 
@@ -136,31 +144,31 @@ def parse(description) {
 def open() {
     log.debug "Executing 'on'"
     sendRollerCommand "go=open"
-    runIn(25, refresh)
 }
 
 def close() {
     log.debug "Executing 'off'"
     sendRollerCommand "go=close"
-    runIn(25, refresh)
 }
 
 def setLevel(value, duration = null) {
     log.debug "Executing setLevel value with $value"
     sendRollerCommand "go=to_pos&roller_pos="+value
-    runIn(25, refresh)
 }
 
 def presetPosition() {
     log.debug "Executing 'presetPosition'"
+    setLevel(preset)
 }
 
 def stop() {
-    log.debug "stop()"
+    log.debug "Executing stop()"
+    sendRollerCommand "go=to_pos&roller_pos="+value
 }
 
 def ping() {
     log.debug "Ping"
+    refresh()
 }
 
 def refresh() {
@@ -169,7 +177,7 @@ def refresh() {
       method: "GET",
       path: "/roller/0",
       headers: [
-        HOST: getHostAddress(),
+        HOST: getShellyAddress(),
         "Content-Type": "application/x-www-form-urlencoded"
       ]
     ))
@@ -182,24 +190,23 @@ def sendRollerCommand(action) {
       path: "/roller/0",
       body: action,
       headers: [
-        HOST: getHostAddress(),
+        HOST: getShellyAddress(),
         "Content-Type": "application/x-www-form-urlencoded"
       ]
     ))
+    runIn(25, refresh)
 }
 
-/**
- *
- * From Patrick Powell GitHub patrickkpowell
- *
- */
-private getHostAddress() {
-    log.debug "Using IP: "+ip+" and PORT: 80 for device: {device.id}"
-    device.deviceNetworkId = convertIPtoHex(ip)+":"+convertPortToHex(80)
-    log.debug device.deviceNetworkId
-    //return ip+":80"
-    return device.deviceNetworkId
+
+private getShellyAddress() {
+    def port = 80
+    def iphex = ip.tokenize( '.' ).collect { String.format( '%02x', it.toInteger() ) }.join().toUpperCase()
+    def porthex = String.format('%04x', port.toInteger())
+    def shellyAddress = iphex + ":" + porthex
+    log.debug "Using IP " + ip + ", PORT 80 and HEX ADDRESS " + shellyAddress + " for device: ${device.id}"
+    return shellyAddress.toUpperCase()
 }
+
 
 /**
  *
