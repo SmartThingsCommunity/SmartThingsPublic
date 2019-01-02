@@ -25,7 +25,7 @@
  
 
 metadata {
-	definition (name: "Shelly 2 as Roller Shutter v.2.0", namespace: "dgasparri", author: "Duccio Marco Gasparri") {
+	definition (name: "Shelly 2 as Roller Shutter", namespace: "dgasparri", author: "Duccio Marco Gasparri") {
 		capability "Actuator"
 		capability "Sensor"
         capability "Refresh" // refresh command
@@ -57,7 +57,7 @@ metadata {
         }
 
         standardTile("up", "device.level", width: 2, height: 2, decoration: "flat") {
-            state "default", label: "up", action:"open", icon:"st.shades.shade-opening"
+            state "default", label: "open", action:"open", icon:"st.shades.shade-open"
         }
 
         standardTile("home", "device.level", width: 2, height: 2, decoration: "flat") {
@@ -65,7 +65,7 @@ metadata {
         }
 
         standardTile("down", "device.level", width: 2, height: 2, decoration: "flat") {
-            state "default", label: "down", action:"close", icon:"st.shades.shade-closing"
+            state "default", label: "close", action:"close", icon:"st.shades.shade-closed"
         }
 
 
@@ -169,7 +169,7 @@ def close() {
 //switch.on
 def on() {
     log.debug "Executing switch.on"
-    close()
+    open()
 }
 
 //switch.off
