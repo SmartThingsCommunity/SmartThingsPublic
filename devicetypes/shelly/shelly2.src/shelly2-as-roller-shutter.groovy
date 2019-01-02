@@ -31,7 +31,7 @@ metadata {
         capability "Refresh" // refresh command
         capability "Health Check"
         capability "Switch Level" // attribute: level (integer, setter: setLevel), command setLevel(level)
-        //capability "Switch"
+        capability "Switch"
         capability "Window Shade" // windowShade.value ( closed, closing, open, opening, partially open, unknown ), methods: close(), open(), presetPosition()
     
         // @TODO: this IP or preferences IP?
@@ -57,7 +57,7 @@ metadata {
         }
 
         standardTile("up", "device.level", width: 2, height: 2, decoration: "flat") {
-            state "default", label: "up", action:"open", icon:"st.secondary.up"
+            state "default", label: "up", action:"open", icon:"st.shades.shade-opening"
         }
 
         standardTile("home", "device.level", width: 2, height: 2, decoration: "flat") {
@@ -65,7 +65,7 @@ metadata {
         }
 
         standardTile("down", "device.level", width: 2, height: 2, decoration: "flat") {
-            state "default", label: "down", action:"close", icon:"st.Home.home2"
+            state "default", label: "down", action:"close", icon:"st.shades.shade-closing"
         }
 
 
@@ -150,7 +150,7 @@ def parse(description) {
     }
 
     //log.debut "Parsed to ${evt1.inspect()} and ${evt2.inspect()}"
-    return [evt1, evt2]
+    return [evt1, evt2, evt3]
 }
 
 
