@@ -136,7 +136,7 @@ def on() {
 //switch.off
 def off() {
     log.debug "Executing switch.off"
-    sendSwitchCommand "turn=0ff"
+    sendSwitchCommand "turn=off"
 }
 
 
