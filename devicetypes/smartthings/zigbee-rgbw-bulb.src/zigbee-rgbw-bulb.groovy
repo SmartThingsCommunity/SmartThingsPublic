@@ -166,6 +166,7 @@ def refresh() {
 			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) +
 			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
 			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) +
+			zigbee.addBinding(COLOR_CONTROL_CLUSTER) +
 			zigbee.onOffConfig(0, 300) +
 			zigbee.levelConfig()
 }

@@ -138,6 +138,7 @@ def configureAttributes() {
 def refreshAttributes() {
 	zigbee.onOffRefresh() +
 	zigbee.levelRefresh() +
+	zigbee.addBinding(COLOR_CONTROL_CLUSTER) +
 	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
 	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
