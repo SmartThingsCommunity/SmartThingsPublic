@@ -44,7 +44,7 @@ metadata {
 		command "updateWeather"
 
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "STZB402+", deviceJoinName: "Stelpro Ki ZigBee Thermostat"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "ST218", deviceJoinName: "Stelpro Orleans Convector"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204", outClusters: "0402", manufacturer: "Stelpro", model: "ST218", deviceJoinName: "Stelpro ORLÉANS Convector"
 	}
 
 	// simulator metadata
@@ -432,16 +432,16 @@ def updateWeather() {
 	// If there is a zipcode defined, weather forecast will be sent. Otherwise, no weather forecast.
 	if (settings.zipcode) {
 		log.debug "ZipCode: ${settings.zipcode}"
-		weather = getWeatherFeature("conditions", settings.zipcode)
+        weather = getTwcConditions(settings.zipcode)
 
 		// Check if the variable is populated, otherwise return.
 		if (!weather) {
 			log.debug("Something went wrong, no data found.")
 			return false
 		}
-		
+
 		def locationScale = getTemperatureScale()
-		def tempToSend = (locationScale == "C") ? weather.current_observation.temp_c : weather.current_observation.temp_f
+        def tempToSend = weather.temperature
 		log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
 		// Right now this can disrupt device health if the device is
 		// currently offline -- it would be erroneously marked online.
@@ -696,5 +696,3 @@ private Boolean secondsPast(timestamp, seconds) {
 	}
 	return (now() - timestamp) > (seconds * 1000)
 }
-
-

@@ -25,8 +25,8 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 		capability "Refresh"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "Heiman", model:"d0e857bfd54f4a12816295db3945a421"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "HEIMAN", model:"358e4e3e03c644709905034dae81433e"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "Heiman", model:"d0e857bfd54f4a12816295db3945a421", deviceJoinName: "欧瑞博 可燃气体报警器(SG21)"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0009", outClusters: "0019", manufacturer: "HEIMAN", model:"358e4e3e03c644709905034dae81433e", deviceJoinName: "欧瑞博 可燃气体报警器(SG21)"
 	}
 
 	simulator {
@@ -56,7 +56,7 @@ def parse(String description) {
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
 		} else {
-			map = zigbee.parseDescriptionAsMap(description)
+			map = parseAttrMessage(description)
 		}
 	}
 	log.debug "Parse returned $map"
@@ -66,8 +66,20 @@ def parse(String description) {
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it)}
 	}
+
 	return result
 }
+
+def parseAttrMessage(String description){
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	def map = [:]
+	if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
+		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+		map = getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())
+	}
+	return map;
+}
+
 def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	return getDetectedResult(zs.isAlarm1Set() || zs.isAlarm2Set())

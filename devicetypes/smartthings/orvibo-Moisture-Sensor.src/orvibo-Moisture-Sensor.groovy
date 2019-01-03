@@ -32,6 +32,7 @@ metadata {
 		capability "Battery"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,0009", outClusters: "0019", manufacturer: "Heiman", model: "2f077707a13f4120846e0775df7e2efe"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "da2edf1ded0d44e1815d06f45ce02029"
 	}
 
 	simulator {
