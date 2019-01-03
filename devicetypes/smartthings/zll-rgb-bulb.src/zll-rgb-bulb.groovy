@@ -314,11 +314,6 @@ def colorXy2Rgb(x, y) {
 	//log.debug "colorXy2Rgb Color XYZ: ($X, $Y, $Z)"
 
 	// sRGB, Reference White D65
-	/*def M = [
-		[  3.2410032, -1.5373990, -0.4986159 ],
-		[ -0.9692243,  1.8759300,  0.0415542 ],
-		[  0.0556394, -0.2040112,  1.0571490 ]
-	]*/
 	def M = [
 		[  3.2404542, -1.5371385, -0.4985314 ],
 		[ -0.9692660,  1.8760108,  0.0415560 ],
@@ -328,6 +323,15 @@ def colorXy2Rgb(x, y) {
 	def r = X * M[0][0] + Y * M[0][1] + Z * M[0][2]
 	def g = X * M[1][0] + Y * M[1][1] + Z * M[1][2]
 	def b = X * M[2][0] + Y * M[2][1] + Z * M[2][2]
+
+	// Make sure all values are within the necessary range.  Not all XY color values
+	// are representable in rgb
+	r = r < 0 ? 0 : r;
+	r = r > 1 ? 1 : r;
+	g = g < 0 ? 0 : g;
+	g = g > 1 ? 1 : g;
+	b = b < 0 ? 0 : b;
+	b = b > 1 ? 1 : b;
 
 	def maxRgb = maxOfSet(r, g, b)
 	r = colorGammaRevert(r / maxRgb)
@@ -347,15 +351,6 @@ def colorRgb2Xy(r, g, b) {
 	b = colorGammaAdjust(b)
 
 	// sRGB, Reference White D65
-	// D65	0.31271	0.32902
-	//  R	0.64000 0.33000
-	//  G	0.30000 0.60000
-	//  B	0.15000 0.06000
-	/*def M = [
-		[  0.4123866,  0.3575915,  0.1804505 ],
-		[  0.2126368,  0.7151830,  0.0721802 ],
-		[  0.0193306,  0.1191972,  0.9503726 ]
-	]*/
 	def M = [
 		[  0.4124564,  0.3575761,  0.1804375 ],
 		[  0.2126729,  0.7151522,  0.0721750 ],
@@ -383,7 +378,7 @@ def colorHsv2Rgb(h, s) {
 	def g
 	def b
 
-	if (s == 0) {
+	if (s <= 0) {
 		r = 1
 		g = 1
 		b = 1
@@ -439,14 +434,14 @@ def colorRgb2Hsv(r, g, b)
 	def s
 	def v = maxRgb
 
-	if (delta == 0) {
+	if (delta <= 0) {
 		h = 0
 		s = 0
 	} else {
 		s = delta / maxRgb
-		if (r == maxRgb) { // between yellow & magenta
+		if (r >= maxRgb) { // between yellow & magenta
 			h = (g - b) / delta
-		} else if (g == maxRgb) { // between cyan & yellow
+		} else if (g >= maxRgb) { // between cyan & yellow
 			h = 2 + (b - r) / delta
 		} else { // between magenta & cyan
 			h = 4 + (r - g) / delta
