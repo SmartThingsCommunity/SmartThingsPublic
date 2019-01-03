@@ -432,7 +432,7 @@ def updateWeather() {
 	// If there is a zipcode defined, weather forecast will be sent. Otherwise, no weather forecast.
 	if (settings.zipcode) {
 		log.debug "ZipCode: ${settings.zipcode}"
-        weather = getTwcConditions(settings.zipcode)
+		weather = getTwcConditions(settings.zipcode)
 
 		// Check if the variable is populated, otherwise return.
 		if (!weather) {
@@ -441,7 +441,7 @@ def updateWeather() {
 		}
 
 		def locationScale = getTemperatureScale()
-        def tempToSend = weather.temperature
+		def tempToSend = weather.temperature
 		log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
 		// Right now this can disrupt device health if the device is
 		// currently offline -- it would be erroneously marked online.
