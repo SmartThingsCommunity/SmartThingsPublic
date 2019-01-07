@@ -10,14 +10,17 @@ preferences {
 }
 
 metadata {
-	definition (name: "YALE ALARM SWITCH", namespace: "smartthings", author: "Tapion1ives") {
+	definition (name: "YALE ALARM SWITCH", namespace: "smartthings", author: "Tapion1ives",ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "generic-switch") {
 
 		capability "Refresh"
 		capability "Switch"
 		capability "lock"
 		capability "Polling"
-    	
-	}
+    	capability "Health Check"
+	
+    	attribute "status", "string"
+
+}
 	tiles {
 		standardTile("mode", "device.mode", inactiveLabel: false, width: 2, height: 2) {
 			state ("default", label:'${currentValue}', defaultState: true, action: "device.refresh", icon:"st.security.alarm.alarm", backgroundColor:"#e86d13")
@@ -75,6 +78,11 @@ def poll() {
 	refresh()
 }
 
+def ping() {
+	log.debug "ping"
+	refresh()
+}
+
 def refresh(YaleAlarmState) {
 	def token = login(token)
 	def getPanelMetaDataAndFullStatus = [
@@ -82,9 +90,14 @@ def refresh(YaleAlarmState) {
 		body: [id:settings.userName , password: settings.password],
 		headers: ['Cookie' : "${token}"]
 		]
-	httpPost(getPanelMetaDataAndFullStatus) {	response -> 
-    	YaleAlarmState = response.data.message
-log.debug "'$device' REFRESH - response = '$response.data.message' & $response"
+	try {
+    	httpPost(getPanelMetaDataAndFullStatus) {	response -> 
+    		YaleAlarmState = response.data.message
+		log.debug "'$device' REFRESH - response = '$response.data.message' & $response"
+        }
+    }
+    catch (e) {
+    	log.error " refersh response $e or $response"
     }
 	if (YaleAlarmState.mode.contains("arm")) {
         state.mode = 'Armed-Away'
@@ -97,13 +110,15 @@ log.debug "'$device' REFRESH - response = '$response.data.message' & $response"
   	}
   	else { //if (YaleAlarmState.mode.contains("system.permission_denied")) {
   		log.warn "system off line / Error, response= '$YaleAlarmState'"
-  		state.mode = YaleAlarmState
+  		sendEvent(name: "status", value: "offline", displayed: false)
+        state.mode = YaleAlarmState
         runIn(30,refresh)
  	}
   	logout(token)
     log.info "'$device' REFRESH - Mode is '$state.mode', Response- '$YaleAlarmState' complete"
 	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Refresh - mode is '$state.mode', response '$YaleAlarmState'")
   	sendEvent(name: "refresh", value: YaleAlarmState, displayed: true, isStateChange:true)
+    sendEvent(name: "status", value: "online", displayed: false)
     runEvery3Hours(refresh)
     return YaleAlarmState
 }
