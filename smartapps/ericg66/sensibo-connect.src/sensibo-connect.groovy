@@ -669,8 +669,6 @@ def configureClimateReact(child,String PodUid,String JsonString)
 {
 	log.trace "configureClimateReact() called for $PodUid with settings : $JsonString"  
     
-    JsonString = '{"deviceUid": "ihJ4ajvb", "highTemperatureWebhook": null, "highTemperatureThreshold": null, "lowTemperatureWebhook": null, "type": "humidity", "lowTemperatureState": {"on": true, "fanLevel": "auto", "temperatureUnit": "C", "targetTemperature": 21, "mode": "heat"}, "enabled": true, "highTemperatureState": null, "lowTemperatureThreshold": 40.0}'
-
     def result = sendPostJsonClimate(PodUid, JsonString)
     
     if (result) {  
@@ -680,16 +678,7 @@ def configureClimateReact(child,String PodUid,String JsonString)
         	pollChildren(child.device.deviceNetworkId)
             tData = state.sensibo[child.device.deviceNetworkId]
         }
-        
-        //tData.data.Climate = ClimateState        
-        //tData.data.Error = "Success"
     }
-    //else {
-    	//def tData = state.sensibo[child.device.deviceNetworkId]
-        //if (tData == null) return false
-    	
-        //tData.data.Error = "Failed"
-    //}
 
     return(result)
 }
