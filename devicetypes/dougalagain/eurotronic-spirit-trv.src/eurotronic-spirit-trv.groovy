@@ -344,7 +344,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
     	event << createEvent(name: "thermostatOperatingState", value: "off", displayed: true)
     }
     //254 - 0xFE = direct valve contol mode
-	log.info "Report recived basic mode is ${cmd.value}"
+	log.info "Report recived basic mode is ${cmd.value}, ${state.thermostatMode}, ${state.thermostatOperatingState}"
     event
 }
 
@@ -374,7 +374,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
     	event << createEvent(name: "thermostatMode", value: "off", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "off", displayed: true)
     }
-    log.info "Report recived mode is ${cmd.mode}"
+    log.info "Report recived mode is ${cmd.mode}, ${state.thermostatMode}, ${state.thermostatOperatingState}"
     event
 }
 
@@ -383,21 +383,20 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	state.scale = cmd.scale	// So we can respond with same format later, see setHeatingSetpoint()
 	state.precision = cmd.precision
     def radiatorSetPoint = cmd.scaledValue
-    log.debug " tell me opersting mode ${state.thermostatMode}"
-    log.debug " tell me opersting state ${ state.thermostatOperatingState}"
 //todo manage trv vrs app
     if(cmd.setpointType == 1 && state.thermostatOperatingState != "Eco") { //this is the standard heating setpoint
 		eventList << createEvent(name:"nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
        	eventList << createEvent(name:"thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
        	eventList << createEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
     //to add -- descriptionText:discText
+    log.info "Report recived $cmd NOT Eco"
     }
 	
     if(cmd.setpointType == 11 && state.thermostatOperatingState == "Eco" ) {
     	eventList << createEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
+    log.info "Report recived $cmd Eco MODE"
     }
-    
-    log.info "Report recived $cmd"
+    log.debug "Report recived $cmd.setpointType"
     eventList
 }
 
@@ -559,7 +558,7 @@ def poll() { // If you add the Polling capability to your device type, this comm
     cmds <<	zwave.sensorMultilevelV1.sensorMultilevelGet()		// cmds <<	zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1)		// get temp , scale:1
     cmds <<	zwave.thermostatModeV2.thermostatModeGet()								// get mpde
     cmds <<	zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)	// get setpoint 0x01
-    cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x0B) //dont use the eco setpoint
+    cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 11) //dont use the eco setpoint
     cmds << zwave.switchMultilevelV3.switchMultilevelGet()							// get valve position
     log.trace "POLL $cmds"
     secureSequence (cmds)
@@ -600,7 +599,7 @@ private secure(physicalgraph.zwave.Command cmd) {
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
-private secureSequence(commands, delay=2500) {
+private secureSequence(commands, delay=2000) {
 //log.debug "SeSeq $commands"
 	delayBetween(commands.collect{ secure(it) }, delay)
 }
