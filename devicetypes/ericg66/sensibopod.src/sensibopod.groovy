@@ -18,6 +18,7 @@ import groovyx.net.http.HTTPBuilder
 import groovyx.net.http.ContentType
 import groovyx.net.http.Method
 import groovyx.net.http.RESTClient
+import groovy.json.*
 
 preferences {
 }
@@ -998,18 +999,18 @@ def configureClimateReact(lowThres, highThres,stype,lowState,highState, on_off)
     
     def root = json {
     	deviceUid device.deviceNetworkId
-        lowTemperatureThreshold lowThres
-        highTemperatureThreshold highThres
-        type stype
-        lowTemperatureState lowStateJson
-        highTemperatureState highStateJson
-        enabled on_off
-        lowTemperatureWebhook null
         highTemperatureWebhook null
+        highTemperatureThreshold highThres        
+        lowTemperatureWebhook null
+        type stype        
+        lowTemperatureState lowStateJson
+        enabled on_off
+        highTemperatureState highStateJson
+        lowTemperatureThreshold lowThres             
     }
     
-    log.debug root.toString()
-    def result = parent.configureClimateReact(this, device.deviceNetworkId, root.toString())
+    log.debug "CLIMATE REACT STRING : " + JsonOutput.prettyPrint(json.toString())
+    def result = parent.configureClimateReact(this, device.deviceNetworkId, json.toString())
     
     if (result) {
     	log.info "Climate React settings changed for " + device.deviceNetworkId
