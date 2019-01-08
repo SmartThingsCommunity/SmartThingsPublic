@@ -210,7 +210,7 @@ metadata {
 		/*standardTile("configureAfterSecure", "command.configureAfterSecure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configureAfterSecure.configureAfterSecure", icon:"st.secondary.configure"
 		}*/
-        standardTile("configureAfterSecure", "command.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        standardTile("configureAfterSecure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configure", icon:"st.secondary.configure"
             state "configdue", label: "press me", action:"configure", icon:"st.secondary.configure", backgroundColor:"#bc2323"
 		}
@@ -318,20 +318,28 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
-def event = [ ]
+	def event = [ ]
 	if (cmd.value == 255) { //255 - 0xFF = normall mode
+    	state.thermostatMode = "heat"
+        state.thermostatOperatingState = "heating"
     	event << createEvent(name: "thermostatMode", value: "heat", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
     }
     if (cmd.value == 240){ //240 - 0xF0 = boost
+    	state.thermostatMode = "qheating"
+        state.thermostatOperatingState = "Boost"
     	event << createEvent(name: "thermostatMode", value: "qheating", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "Boost", displayed: true)
     }
     if (cmd.value == 0){ //0 - 0x00 = eco
+    	state.thermostatMode = "Eco"
+        state.thermostatOperatingState = "Eco"
     	event << createEvent(name: "thermostatMode", value: "Eco", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "Eco", displayed: true)
     }
     if (cmd.value == 15){ //15 - 0x0F = off
+    	state.thermostatMode = "off"
+        state.thermostatOperatingState = "off"
     	event << createEvent(name: "thermostatMode", value: "off", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "off", displayed: true)
     }
@@ -343,18 +351,26 @@ def event = [ ]
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd ) {
     def event = [ ]
     if (cmd.mode == 1){ //1 normall heat 0x01
+    	state.thermostatMode = "heat"
+        state.thermostatOperatingState = "heating"
     	event << createEvent(name: "thermostatMode", value: "heat", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
     }
     if (cmd.mode == 15){ //15 boost 0x0F
-    	event << createEvent(name: "thermostatMode", value: "qheating", displayed: true)
+    	state.thermostatMode = "qheating"
+        state.thermostatOperatingState = "Boost"
+        event << createEvent(name: "thermostatMode", value: "qheating", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "Boost", displayed: true)
     }
     if (cmd.mode == 11){ //11 eco 11 0x0B
+    	state.thermostatMode = "Eco"
+        state.thermostatOperatingState = "Eco"
     	event << createEvent(name: "thermostatMode", value: "Eco", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "Eco", displayed: true)
     }
     if (cmd.mode == 0){ // 0 off 0x00
+    	state.thermostatMode = "off"
+        state.thermostatOperatingState = "off"
     	event << createEvent(name: "thermostatMode", value: "off", displayed: true)
     	event << createEvent(name: "thermostatOperatingState", value: "off", displayed: true)
     }
@@ -363,15 +379,24 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) { //	Parsed ThermostatSetpointReport(precision: 2, reserved01: 0, scale: 0, scaledValue: 21.00, setpointType: 1, size: 2, value: [8, 52])
-def eventList = []
-	//todo manage trv vrs app
-    if(cmd.setpointType == 1) { //this is the standard heating setpoint
-		def radiatorSetPoint = cmd.scaledValue
-       	eventList << createEvent(name:"nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
+	def eventList = []
+	state.scale = cmd.scale	// So we can respond with same format later, see setHeatingSetpoint()
+	state.precision = cmd.precision
+    def radiatorSetPoint = cmd.scaledValue
+    log.debug " tell me opersting mode ${state.thermostatMode}"
+    log.debug " tell me opersting state ${ state.thermostatOperatingState}"
+//todo manage trv vrs app
+    if(cmd.setpointType == 1 && state.thermostatOperatingState != "Eco") { //this is the standard heating setpoint
+		eventList << createEvent(name:"nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
        	eventList << createEvent(name:"thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
        	eventList << createEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
     //to add -- descriptionText:discText
     }
+	
+    if(cmd.setpointType == 11 && state.thermostatOperatingState == "Eco" ) {
+    	eventList << createEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
+    }
+    
     log.info "Report recived $cmd"
     eventList
 }
@@ -383,24 +408,24 @@ def temperatureUp() {
 	if(nextTemp > 28) {		// It can't handle above 28, so don't allow it go above
 		nextTemp = 28
 	}
-   //sendEvent(name:"nextHeatingSetpoint", value: nextTemp, unit: getTemperatureScale(), descriptionText: "Next heating setpoint is ${nextTemp}")
-//   runIn (5, tempdelay,[data: [value: nextTemp]], overwrite: true)
-	setHeatingSetpoint(nextTemp)
+	sendEvent(name:"nextHeatingSetpoint", value: nextTemp, unit: getTemperatureScale(), displayed: true)	
+    //runIn (5, "buffSetpoint",[data: [value: nextTemp]]) //, overwrite: true
+    setHeatingSetpoint(nextTemp)
 }
 def temperatureDown() {
 	def nextTemp = device.currentValue("nextHeatingSetpoint").toBigDecimal() - 0.5
-	if(nextTemp < 8) {		// It can't go below 4, so don't allow it
+	if(nextTemp < 8) {		// It can't go below 8, so don't allow it
 		nextTemp = 8
 	}
-    //sendEvent(name:"nextHeatingSetpoint", value: nextTemp, unit: getTemperatureScale(), descriptionText: "Next heating setpoint is ${nextTemp}")
-//    runIn (5, tempdelay,[data: [value: nextTemp]], overwrite: true)
+	sendEvent(name:"nextHeatingSetpoint", value: nextTemp, unit: getTemperatureScale(), displayed: true)	
+   	//runIn (5, "buffSetpoint",[data: [value: nextTemp]]) //, overwrite: true
     setHeatingSetpoint(nextTemp)
 }
-
-def tempdelay(temp) { // delay sending of set temprature
+def buffSetpoint(data) {
+	log.debug "buff $data"
 	def key = "value"
-	def nextTemp = temp[key] ?: "12"
-    log.warn "delay sending setHeatingpoint values - '${temp}' Key-'${key}' Value-'${nextTemp}'"
+	def nextTemp = data[key]
+    log.debug " buff nextTemp is $nextTemp"
 	setHeatingSetpoint(nextTemp)
 }
 
@@ -408,14 +433,19 @@ def setCoolingSetpoint(temp){
 	log.trace "Set cooling setpoint temp of ${temp}, sending temp value to setHeatingSetpoint"
 	setHeatingSetpoint(temp)
 }
-def setHeatingSetpoint(degrees) {
+
+def setHeatingSetpoint(Double degrees) { //Double added
 	def eventList = []
-	
+    def precision = state.precision ?: 2
+    def deviceScale = state.scale ?: 0
+	log.debug "set heatingpoint start $degrees"
 	sendEvent(name:"nextHeatingSetpoint", value: degrees, unit: getTemperatureScale(), descriptionText: "Next heating setpoint is ${degrees}")
     def valueDegrees = degrees*10
-    eventList << zwave.thermostatSetpointV1.thermostatSetpointSet (precision: 1, scale: 0, scaledValue: degrees, setpointType: 1, size: 2, value: [0, valueDegrees.toInteger()])
-    eventList << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x01)
-    log.trace "Setting Temp to ${degrees}"
+//    eventList << zwave.thermostatSetpointV1.thermostatSetpointSet(precision: 1, scale: 0, scaledValue: degrees, setpointType: 1, size: 2, value: [0, valueDegrees.toInteger()])
+  eventList << zwave.thermostatSetpointV2.thermostatSetpointSet(precision: precision, scale: deviceScale, scaledValue: degrees.toBigDecimal(), setpointType: 1)
+    //eventList << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x01)
+    eventList << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)
+    log.trace "Setting Temp to ${degrees},  $eventList"
     secureSequence(eventList)
 }
 
@@ -488,15 +518,8 @@ def off() {
 }
 
 def refresh() {
-//log.debug "refesh start" 
-def cmds = []
-    cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)		// temp
-    cmds << zwave.thermostatModeV2.thermostatModeGet()								// mode
-    cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x01) 	//normall setpoint
-    //cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x0B) 	//eco setpoint
-    cmds << zwave.switchMultilevelV3.switchMultilevelGet() 							//valve open %
-    log.trace "refesh $cmds" 
-    secureSequence (cmds)
+	log.trace "refresh"
+	poll()
 }
 //input "ecoTemp", "number", title: "Eco Heat Temperature", description: "Temperature to heat to in Eco Mode (8 - 28°C)", range: "8..28", displayDuringSetup: false
             
@@ -505,23 +528,23 @@ def updated() {
         state.updatedLastRanAt = new Date().time
         unschedule(refresh)
         unschedule(poll)
-        log.trace "updated config state = $state.updatedLastRanAt"
+        log.trace "updated config state"
         sendEvent(name: "configure", value: "configdue", displayed: false)
-// to do send event configure red
      }
     else {
     	log.warn "update ran within the last 2 seconds"
     }
 }
 
-def poll() {
+def poll() { // If you add the Polling capability to your device type, this command will be called approximately every 5 minutes to check the device's state
+//log.debug "poll"
 	def cmds = []
-// If you add the Polling capability to your device type, this command will be called approximately every 5 minutes to check the device's state
-	//log.debug "poll"
+	
     if (!state.lastBatteryReportReceivedAt || (new Date().time) - state.lastBatteryReportReceivedAt > daysToTime(7)) {
 		log.trace "POLL - Asking for battery report as over 7 days since"
        	cmds << zwave.batteryV1.batteryGet()     
 	}
+    
 /*    if (!state.updatedLastRanAt || (new Date().time - state.updatedLastRanAt > daysToTime(7))){
     	log.trace " POLL - asking for config values since its been 7 days"
         state.updatedLastRanAt = new Date().time
@@ -532,10 +555,11 @@ def poll() {
     	cmds << zwave.configurationV1.configurationGet(parameterNumber:8)
 	}
 */
-    cmds <<	zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)		// get temp
+	
+    cmds <<	zwave.sensorMultilevelV1.sensorMultilevelGet()		// cmds <<	zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1)		// get temp , scale:1
     cmds <<	zwave.thermostatModeV2.thermostatModeGet()								// get mpde
-    cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x01)	// get setpoint
-    //cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x0B) //dont use the eco setpoint
+    cmds <<	zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)	// get setpoint 0x01
+    cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x0B) //dont use the eco setpoint
     cmds << zwave.switchMultilevelV3.switchMultilevelGet()							// get valve position
     log.trace "POLL $cmds"
     secureSequence (cmds)
@@ -566,17 +590,17 @@ def cmds = []
                 cmds << zwave.configurationV1.configurationGet(parameterNumber:8)//,
                 cmds << zwave.batteryV1.batteryGet()//,
         //])
-        
+    sendEvent(name: "configure", value: "configure", displayed: false)   
 	log.trace "config"
     secureSequence(cmds)
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-//log.debug "Seq"
+//log.debug "Seq - $cmd"
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
 
-private secureSequence(commands, delay=2800) {
-//log.debug "SeSeq"
+private secureSequence(commands, delay=2500) {
+//log.debug "SeSeq $commands"
 	delayBetween(commands.collect{ secure(it) }, delay)
 }
