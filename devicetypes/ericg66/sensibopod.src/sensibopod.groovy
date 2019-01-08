@@ -18,6 +18,7 @@ import groovyx.net.http.HTTPBuilder
 import groovyx.net.http.ContentType
 import groovyx.net.http.Method
 import groovyx.net.http.RESTClient
+import groovy.json.*
 
 preferences {
 }
@@ -42,6 +43,7 @@ metadata {
         attribute "temperatureUnit","String"
         attribute "productModel","String"
         attribute "firmwareVersion","String"
+        attribute "Climate","String"
         
         command "setAll"
         command "switchFanLevel"
@@ -68,6 +70,9 @@ metadata {
         command "autofan"
         command "fullswing"
         command "setAirConditionerMode"
+        command "toogleClimateReact"
+        command "setClimateReact"
+        command "configureClimateReact"
 	}
 
 	simulator {
@@ -207,6 +212,12 @@ metadata {
             state "both", action:"switchSwing", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/dLUOpw/range_Both2.png", nextState:"stopped"
         }
         
+        standardTile("Climate", "device.Climate", width: 2, height: 2) {
+			state "on", label:'${name}', action:"toogleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#00a0dc"
+			state "off", label:'${name}', action:"toogleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#ffffff"
+            state "notdefined", label:'N/A', action:"toogleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#e86d13"
+		}
+        
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"Refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
@@ -234,7 +245,7 @@ metadata {
         }
         
 		main (["switch"])
-		details (["thermostatMulti","switch","fanLevel","currentmode","swing","refresh","coolmode","heatmode","fanmode","drymode","highfan","autofan","fullswing","firmwareVersion","productModel","powerSource","voltage"])    
+		details (["thermostatMulti","switch","fanLevel","currentmode","swing","Climate","refresh","coolmode","heatmode","fanmode","drymode","highfan","autofan","fullswing","firmwareVersion","productModel","powerSource","voltage"])    
 	}
 }
 
@@ -892,6 +903,130 @@ def generatefanLevelEvent(mode) {
    sendEvent(name: "fanLevel", value: mode, descriptionText: "$device.displayName fan level is now ${mode}", displayed: true, isStateChange: true)
 }
 
+
+def toogleClimateReact()
+{
+  	log.trace "toogleClimateReact() called"
+    
+	def currentClimateMode = device.currentState("Climate")?.value
+    
+    def returnCommand
+    
+    switch (currentClimateMode) {
+    	case "off":
+        	returnCommand = setClimateReact("on")
+            break
+        case "on":
+        	returnCommand = setClimateReact("off")
+            break            
+    }
+    
+    if (!returnCommand) { returnCommand }
+}
+
+// Toogle Climate React
+def setClimateReact(ClimateState) {
+
+    ///////////////////////////////////////////////
+    /// Parameter ClimateState : "on" or "off"
+    ///////////////////////////////////////////////
+    
+	log.trace "setClimateReact() called"
+    
+	log.debug "Climate : " + ClimateState   
+   
+    def result = parent.setClimateReact(this, device.deviceNetworkId, ClimateState)
+    
+    if (result) {
+    	log.info "Climate React changed to " + ClimateState + " for " + device.deviceNetworkId
+              
+        sendEvent(name: 'Climate', value: ClimateState, displayed: false)
+    	//generateSetTempEvent(temp)
+        
+        generateStatusEvent()
+    	refresh()
+    }
+    else {
+       	generateErrorEvent()
+        
+        generateStatusEvent()
+    }
+}
+
+def configureClimateReact(lowThres, highThres,stype,lowState,highState, on_off)
+{
+    ///////////////////////////////////////////////
+    // lowThres and highThres - Integer parameters
+	// stype : possible values are "temperature", "humidity" or "feelsLike"
+    // lowState and highState : 
+    //    on, fanLevel, temperatureUnit, targetTemperature, mode      
+    //
+    //    like  "[true,'auto','C',21,'heat']"
+    // one_off : boolean value to enable/disable the Climate React
+    ///////////////////////////////////////////////
+    
+	log.trace "configureClimateReact() called"
+    
+    def json = new groovy.json.JsonBuilder()
+    
+    def lowStateMap = evaluate(lowState)
+    def highStateMap = evaluate(highState)
+        
+    def lowStateJson
+    def highStateJson
+    
+    if (lowStateMap) {
+        lowStateJson = json {
+            on lowStateMap[0]
+            fanLevel lowStateMap[1]
+            temperatureUnit lowStateMap[2]
+            targetTemperature lowStateMap[3]
+            mode lowStateMap[4]
+        }
+    }
+    else { lowStateJson = null }
+    
+    if (highStateMap) {
+        highStateJson = json {
+            on highStateMap[0]
+            fanLevel highStateMap[1]
+            temperatureUnit highStateMap[2]
+            targetTemperature highStateMap[3]
+            mode highStateMap[4]
+        }
+    }
+    else { highStateJson = null }
+    
+    def root = json {
+    	deviceUid device.deviceNetworkId
+        highTemperatureWebhook null
+        highTemperatureThreshold highThres        
+        lowTemperatureWebhook null
+        type stype        
+        lowTemperatureState lowStateJson
+        enabled on_off
+        highTemperatureState highStateJson
+        lowTemperatureThreshold lowThres             
+    }
+    
+    log.debug "CLIMATE REACT STRING : " + JsonOutput.prettyPrint(json.toString())
+    def result = parent.configureClimateReact(this, device.deviceNetworkId, json.toString())
+    
+    if (result) {
+    	log.info "Climate React settings changed for " + device.deviceNetworkId
+              
+        sendEvent(name: 'Climate', value: on_off, displayed: false)
+        
+        generateStatusEvent()
+    	refresh()
+    }
+    else {
+       	generateErrorEvent()
+        
+        generateStatusEvent()
+    }
+}
+
 def switchFanLevel() {
 	log.trace "switchFanLevel() called"
     
@@ -1309,6 +1444,19 @@ def parseEventData(Map results)
 					isStateChange: isChange,
 					displayed: isDisplayed)
                }
+            else if (name== "Climate") {            	                
+                isChange = true
+                isDisplayed = false
+                  
+				sendEvent(
+					name: name,
+					value: value,
+					linkText: linkText,
+					descriptionText: getThermostatDescriptionText(name, value, linkText),
+					handlerName: name,
+					isStateChange: isChange,
+					displayed: isDisplayed)
+               }
             else if (name=="on") {            	
                 isChange = true
                 isDisplayed = false
@@ -1522,6 +1670,10 @@ private getThermostatDescriptionText(name, value, linkText)
     {
         return "power source mode was ${value}"
     }
+    else if (name == "Climate")
+    {
+        return "Climate React was ${value}"
+    }
     else if (name == "thermostatMode")
     {
         return "thermostat mode was ${value}"
@@ -1654,6 +1806,8 @@ def generateStatusEvent() {
     def mode = device.currentValue("currentmode")
     def on = device.currentValue("on")
     def swing = device.currentValue("swing")
+    def ClimateReact = device.currentValue("Climate")
+    
 	def error = device.currentValue("Error")
                     
     def statusTextmsg = ""
