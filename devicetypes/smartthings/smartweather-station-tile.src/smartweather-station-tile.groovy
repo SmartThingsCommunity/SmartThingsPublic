@@ -17,7 +17,11 @@
  *  Date: 2013-04-30
  */
 metadata {
-    definition (name: "SmartWeather Station Tile", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "SmartWeather Station Tile", namespace: "smartthings", author: "SmartThings",
+            ocfDeviceType: "oic.d.thermostat",
+            mnmn: "SmartThings",
+            vid:"SmartThings-smartthings-SmartSense_Temp/Humidity_Sensor") {
+
         capability "Illuminance Measurement"
         capability "Temperature Measurement"
         capability "Relative Humidity Measurement"
