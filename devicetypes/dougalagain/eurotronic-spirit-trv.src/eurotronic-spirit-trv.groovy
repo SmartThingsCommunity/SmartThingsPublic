@@ -29,6 +29,8 @@ metadata {
         capability "Polling"
         capability "Thermostat Cooling Setpoint"	//attribute- coolingSetpoint	command - setCoolingSetpoint - having both alows extra settings in routines
         capability "Thermostat Heating Setpoint" 
+        capability "Thermostat Mode"
+        capability "Thermostat Operating State"
         capability "Switch"
 
         command "lock"
@@ -37,13 +39,16 @@ metadata {
         command "boostoff"
         command "ecoheat"
         command "ecooff"
-        command "heat"
-        command "off"
+//part of switch cap        command "heat"
+//part of switch cap        command "off"
 		command "temperatureUp"
 		command "temperatureDown"
 
 
-	  fingerprint type: "0806", mfr: "0148", prod: "0003", model: "0001", cc: "20,80,70,72,31,26,71,75,98,40,43,86,26"
+	command "summer" //summer mode to lock out temp changes in summer time
+	attribute "summer", "String" //for feed
+	
+    fingerprint type: "0806", mfr: "0148", prod: "0003", model: "0001", cc: "20,80,70,72,31,26,71,75,98,40,43,86,26"
      
         // 0x80 = Battery v1
 		// 0x70 = Configuration v1
@@ -207,16 +212,17 @@ metadata {
 			state "off", action:"heat", icon: "st.thermostat.heating-cooling-off", backgroundColor:"#1e9cbb"
 			state "default", action:"off", icon: "st.thermostat.heating-cooling-off"
 		}
-		/*standardTile("configureAfterSecure", "command.configureAfterSecure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "configure", label:'', action:"configureAfterSecure.configureAfterSecure", icon:"st.secondary.configure"
-		}*/
+		
         standardTile("configureAfterSecure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configure", icon:"st.secondary.configure"
             state "configdue", label: "press me", action:"configure", icon:"st.secondary.configure", backgroundColor:"#bc2323"
 		}
-		
+		standardTile("summer", "device.summer", height: 2, width: 2, decoration: "flat") {
+		state "off", 	label: "Press for \nSummer", 		action:"summer", 	icon: "st.thermostat.auto", backgroundColor:"#d3d3d3"
+		state "on", 	label: "Press to turn\n off summer", action:"summer", 	icon: "st.custom.wuk.clear"
+	}  
 		main "temperature"
-		details(["temperature", "boostMode", "ecoMode", "lockMode", "turnOff", "refresh", "battery", "heatingSetpoint", "temp", "configureAfterSecure"])
+		details(["temperature", "boostMode", "ecoMode", "lockMode", "turnOff", "refresh", "battery", "configureAfterSecure", "summer"])
 	}
  
 	preferences {
@@ -236,12 +242,12 @@ def parse(String description) {
     def cmd = zwave.parse(description)
     if (cmd) {
        	result = zwaveEvent(cmd)
-     	//log.debug "Parsed - ${result.inspect()}" //${cmd} to
+     	//log.debug "Parsed - ${cmd} to ${result.inspect()}" //${cmd} to
     }
     else {
-       	log.warn "Non-parsed event: ${description}"
+       	log.warn "Non-parsed event: ${device.displayName} - ${description} - ${cmd}"
     }
-    result
+    return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
@@ -289,22 +295,63 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
         result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-// Devices that support the Security command class can send messages in an encrypted form; they arrive wrapped in a SecurityMessageEncapsulation
-// command and must be unencapsulated
-        def encapsulatedCommand = cmd.encapsulatedCommand([0x98: 2, 0x20: 1, 0x80: 1, 0x70: 1, 0x72: 1, 0x31: 5, 0x26: 1, 0x71: 8,0x75: 1, 0x98: 2, 0x40: 2, 0x43: 2, 0x86: 1 ])
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) { // Devices that support the Security command class can send messages in an encrypted form; they arrive wrapped in a SecurityMessageEncapsulation command and must be unencapsulated
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x98: 2, 0x20: 1, 0x80: 1, 0x70: 1, 0x72: 1, 0x31: 5, 0x26: 1, 0x71: 8,0x75: 1, 0x98: 2, 0x40: 2, 0x43: 2, 0x86: 1 ])
         // can specify command class versions here like in zwave.parse
-        if (encapsulatedCommand) {
-                return zwaveEvent(encapsulatedCommand)
-        }
-        log.info "Report recived $cmd"
+    if (encapsulatedCommand) {
+        //log.debug "secEncap $encapsulatedCommand"
+    	return zwaveEvent(encapsulatedCommand)
+	}
+    log.warn "misc secure report recived ${device.displayName} - $cmd"
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-log.warn "mics zwave.Command - $cmd "
-//basic command not processed and sent hear
-//255 = normall mode
-        createEvent(descriptionText: "${device.displayName}: ${cmd}")
+	log.warn "mics zwave.Command - ${device.displayName} - $cmd"
+    createEvent(descriptionText: "${device.displayName}: ${cmd}")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSupportedReport cmd) {
+// pick out trues 
+	//createEvent(name: "availableThermostatModes" ,value: "off, heat")
+    def map = []
+    log.info "Report recived $cmd"
+    if (cmd.heat == true) { map << "heat"}
+    if (cmd.cool == true) { map << "cool"}
+    if (cmd.fanOnly == true) { map << "fanOnly"}
+    if (cmd.auxiliaryemergencyHeat == true) { map << "auxiliaryemergencyHeat"}
+    if (cmd.energySaveHeat == true) { map << "energySaveHeat"}
+    if (cmd.dryAir == true) { map << "dryAir"}
+    if (cmd.autoChangeover == true) { map << "autoChangeover"}
+    if (cmd.away == true) { map << "away"}
+    if (cmd.resume == true) { map << "resume"}
+    if (cmd.energySaveCool == true) { map << "energySaveCool"}
+    if (cmd.off == true) { map << "off"}
+    if (cmd.furnace == true) { map << "furnace"}
+    if (cmd.auto == true) { map << "auto"}
+    if (cmd.moistAir == true) { map << "moistAir"}
+/*    def keymode = cmd.entrySet() 
+    	entries.each { entry.value == true}
+    log.debug "key $keymode"
+    
+    //cmd.keySet( )
+    
+    def modes = cmd.every { it.value == "true" }
+    log.debug "modes $mode"
+    def modetrue = cmd.every { it.value == true }
+    def modekey = modetrue.collect { it.key}
+*/    
+    
+	updateDataValue("availableThermostatModes", map.toString())
+    log.info "Report recived $cmd, map is - $map"
+    cmd
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv1.ManufacturerSpecificReport cmd) {
+	if (cmd.manufacturerName) { updateDataValue("manufacturer", cmd.manufacturerName) }
+	if (cmd.productTypeId) { updateDataValue("productTypeId", cmd.productTypeId.toString()) }
+	if (cmd.productId) { updateDataValue("productId", cmd.productId.toString()) }
+    if (cmd.manufacturerId){ updateDataValue("manufacturerId", cmd.manufacturerId.toString()) }
+    log.info "Report recived $cmd"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd ) {
@@ -322,29 +369,23 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
 	if (cmd.value == 255) { //255 - 0xFF = normall mode
     	state.thermostatMode = "heat"
         state.thermostatOperatingState = "heating"
-    	event << createEvent(name: "thermostatMode", value: "heat", displayed: true)
-    	event << createEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
     }
     if (cmd.value == 240){ //240 - 0xF0 = boost
     	state.thermostatMode = "qheating"
         state.thermostatOperatingState = "Boost"
-    	event << createEvent(name: "thermostatMode", value: "qheating", displayed: true)
-    	event << createEvent(name: "thermostatOperatingState", value: "Boost", displayed: true)
     }
     if (cmd.value == 0){ //0 - 0x00 = eco
     	state.thermostatMode = "Eco"
         state.thermostatOperatingState = "Eco"
-    	event << createEvent(name: "thermostatMode", value: "Eco", displayed: true)
-    	event << createEvent(name: "thermostatOperatingState", value: "Eco", displayed: true)
     }
     if (cmd.value == 15){ //15 - 0x0F = off
     	state.thermostatMode = "off"
         state.thermostatOperatingState = "off"
-    	event << createEvent(name: "thermostatMode", value: "off", displayed: true)
-    	event << createEvent(name: "thermostatOperatingState", value: "off", displayed: true)
     }
     //254 - 0xFE = direct valve contol mode
-	log.info "Report recived basic mode is ${cmd.value}, ${state.thermostatMode}, ${state.thermostatOperatingState}"
+    event << createEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true)
+    event << createEvent(name: "thermostatOperatingState", value: state.thermostatOperatingState, displayed: true)
+	log.info "Report recived ${cmd}, ${state.thermostatMode}, ${state.thermostatOperatingState}"
     event
 }
 
@@ -353,28 +394,22 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
     if (cmd.mode == 1){ //1 normall heat 0x01
     	state.thermostatMode = "heat"
         state.thermostatOperatingState = "heating"
-    	event << createEvent(name: "thermostatMode", value: "heat", displayed: true)
-    	event << createEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
     }
     if (cmd.mode == 15){ //15 boost 0x0F
     	state.thermostatMode = "qheating"
         state.thermostatOperatingState = "Boost"
-        event << createEvent(name: "thermostatMode", value: "qheating", displayed: true)
-    	event << createEvent(name: "thermostatOperatingState", value: "Boost", displayed: true)
     }
     if (cmd.mode == 11){ //11 eco 11 0x0B
     	state.thermostatMode = "Eco"
         state.thermostatOperatingState = "Eco"
-    	event << createEvent(name: "thermostatMode", value: "Eco", displayed: true)
-    	event << createEvent(name: "thermostatOperatingState", value: "Eco", displayed: true)
     }
     if (cmd.mode == 0){ // 0 off 0x00
     	state.thermostatMode = "off"
         state.thermostatOperatingState = "off"
-    	event << createEvent(name: "thermostatMode", value: "off", displayed: true)
-    	event << createEvent(name: "thermostatOperatingState", value: "off", displayed: true)
     }
-    log.info "Report recived mode is ${cmd.mode}, ${state.thermostatMode}, ${state.thermostatOperatingState}"
+    event << createEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true)
+    event << createEvent(name: "thermostatOperatingState", value: state.thermostatOperatingState , displayed: true)
+    log.info "Report recived ${cmd}, ${state.thermostatMode}, ${state.thermostatOperatingState}"
     event
 }
 
@@ -383,20 +418,24 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	state.scale = cmd.scale	// So we can respond with same format later, see setHeatingSetpoint()
 	state.precision = cmd.precision
     def radiatorSetPoint = cmd.scaledValue
-//todo manage trv vrs app
-    if(cmd.setpointType == 1 && state.thermostatOperatingState != "Eco") { //this is the standard heating setpoint
-		eventList << createEvent(name:"nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
-       	eventList << createEvent(name:"thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+
+    if (cmd.setpointType == 1 && state.thermostatOperatingState != "Eco") { //this is the standard heating setpoint
+		eventList << createEvent(name: "nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
        	eventList << createEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
-    //to add -- descriptionText:discText
-    log.info "Report recived $cmd NOT Eco"
+        eventList << createEvent(name: "coolingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+		eventList << createEvent(name: "thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+		log.debug "${cmd.setpointType} NOT Eco"
     }
 	
-    if(cmd.setpointType == 11 && state.thermostatOperatingState == "Eco" ) {
-    	eventList << createEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
-    log.info "Report recived $cmd Eco MODE"
+    if (cmd.setpointType == 11 && state.thermostatOperatingState == "Eco" ) { //if in eco mode display
+    	eventList << createEvent(name: "nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
+       	eventList << createEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
+        eventList << createEvent(name: "coolingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+		eventList << createEvent(name: "thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+    	log.debug "${cmd.setpointType} Eco MODE"
     }
-    log.debug "Report recived $cmd.setpointType"
+    
+    log.info "Report recived ${cmd}"
     eventList
 }
 
@@ -434,21 +473,24 @@ def setCoolingSetpoint(temp){
 }
 
 def setHeatingSetpoint(Double degrees) { //Double added
-	def eventList = []
+	if (state.summer == "on" && degrees != 28){
+    	degrees = 28.0
+        log.warn "temp changed to ${degrees} as in summer mode"
+    }
+	def cmds = []
     def precision = state.precision ?: 2
     def deviceScale = state.scale ?: 0
-	log.debug "set heatingpoint start $degrees"
 	sendEvent(name:"nextHeatingSetpoint", value: degrees, unit: getTemperatureScale(), descriptionText: "Next heating setpoint is ${degrees}")
-    def valueDegrees = degrees*10
-//    eventList << zwave.thermostatSetpointV1.thermostatSetpointSet(precision: 1, scale: 0, scaledValue: degrees, setpointType: 1, size: 2, value: [0, valueDegrees.toInteger()])
-  eventList << zwave.thermostatSetpointV2.thermostatSetpointSet(precision: precision, scale: deviceScale, scaledValue: degrees.toBigDecimal(), setpointType: 1)
-    //eventList << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x01)
-    eventList << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)
-    log.trace "Setting Temp to ${degrees},  $eventList"
-    secureSequence(eventList)
+	
+    cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(precision: precision, scale: deviceScale, scaledValue: degrees.toBigDecimal(), setpointType: 1)
+    cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)
+
+	log.trace "Setting Temp to ${degrees},  $cmds"
+    secureSequence(cmds)
 }
 
 def lock() {
+	def cmds = []
 //log.trace("lock")    
     sendEvent(name: "protectionState", value: "locked", displayed: false)
     cmds << zwave.protectionV1.protectionSet(protectionState: 1)
@@ -456,8 +498,8 @@ def lock() {
 	log.trace "lock $cmds" 
     secureSequence (cmds)
 }
-
-def unlock() {  
+def unlock() {
+	def cmds = []
     sendEvent(name: "protectionState", value: "unlocked", displayed: false)
     cmds << zwave.protectionV1.protectionSet(protectionState: 0)
     cmds << zwave.protectionV1.protectionGet()
@@ -466,12 +508,12 @@ def unlock() {
 }
 
 def boost() {
+	def cmds = []
 	sendEvent(name: "thermostatMode", value: "qheating", displayed: false)
-	def eventList = []
-    eventList << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0F)
-    eventList << zwave.thermostatModeV2.thermostatModeGet()
-	log.trace "Boost On $eventList"
-    secureSequence(eventList)
+    cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0F)
+    cmds << zwave.thermostatModeV2.thermostatModeGet()
+	log.trace "Boost On $cmds"
+    secureSequence(cmds)
 }
 def boostoff() {
 	log.trace "Boost Off"
@@ -479,13 +521,13 @@ def boostoff() {
 }
 
 def ecoheat() {
+	def cmds = []
     sendEvent(name: "thermostatMode", value: "esheating", displayed: false)
     //sendEvent(name: "thermostatOperatingState", value: "Eco", displayed: false)
-    def eventList = []
-    eventList << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0B)
-    eventList << zwave.thermostatModeV2.thermostatModeGet()
-    log.trace "Eco Heat $eventList"
-    secureSequence(eventList)
+    cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0B)
+    cmds << zwave.thermostatModeV2.thermostatModeGet()
+    log.trace "Eco Heat $cmds"
+    secureSequence(cmds)
 }
 def ecooff() {
 log.trace "eco Off"
@@ -498,6 +540,7 @@ def on() {
 
 def heat() {
 //log.trace "Heat"  
+    def cmds = []
     sendEvent(name: "thermostatMode", value: "default", displayed: false)
         //sendEvent(name: "thermostatOperatingState", value: "Heating", displayed: false)
 	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
@@ -543,63 +586,79 @@ def poll() { // If you add the Polling capability to your device type, this comm
 		log.trace "POLL - Asking for battery report as over 7 days since"
        	cmds << zwave.batteryV1.batteryGet()     
 	}
-    
-/*    if (!state.updatedLastRanAt || (new Date().time - state.updatedLastRanAt > daysToTime(7))){
-    	log.trace " POLL - asking for config values since its been 7 days"
-        state.updatedLastRanAt = new Date().time
-       	cmds << zwave.configurationV1.configurationGet(parameterNumber:1)
-    	cmds << zwave.configurationV1.configurationGet(parameterNumber:2)
-    	cmds << zwave.configurationV1.configurationGet(parameterNumber:3)
-    	cmds << zwave.configurationV1.configurationGet(parameterNumber:7)
-    	cmds << zwave.configurationV1.configurationGet(parameterNumber:8)
-	}
-*/
 	
-    cmds <<	zwave.sensorMultilevelV1.sensorMultilevelGet()		// cmds <<	zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1)		// get temp , scale:1
-    cmds <<	zwave.thermostatModeV2.thermostatModeGet()								// get mpde
-    cmds <<	zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)	// get setpoint 0x01
-    cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 11) //dont use the eco setpoint
-    cmds << zwave.switchMultilevelV3.switchMultilevelGet()							// get valve position
+    cmds <<	zwave.sensorMultilevelV1.sensorMultilevelGet()						// get temp
+    cmds <<	zwave.thermostatModeV2.thermostatModeGet()							// get mpde
+    cmds <<	zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)	// get setpoint
+    cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 11) 	// eco setpoint
+    cmds << zwave.switchMultilevelV3.switchMultilevelGet()						// get valve position
+
     log.trace "POLL $cmds"
     secureSequence (cmds)
 }
 
-private daysToTime(days) {
+def daysToTime(days) {
 	days*24*60*60*1000
 }
 // If you add the Configuration capability to your device type, this command will be called right after the device joins to set device-specific configuration commands.
 def configure() {
-log.trace "config"
-def cmds = []
-	   //secureSequence([
-                cmds << zwave.configurationV1.configurationSet(configurationValue:  LCDinvert == "Yes" ? [0x01] : [0x00], parameterNumber:1, size:1, scaledConfigurationValue:  LCDinvert == "Yes" ? 0x01 : 0x00)//,
-                cmds << zwave.configurationV1.configurationSet(configurationValue: LCDtimeout == null ? [0] : [LCDtimeout], parameterNumber:2, size:1, scaledConfigurationValue: LCDtimeout == null ? 0 :  LCDtimeout)//,
-                cmds << zwave.configurationV1.configurationSet(configurationValue:  backlight == "Yes" ? [0x01] : [0x00], parameterNumber:3, size:1, scaledConfigurationValue:  backlight == "Yes" ? 0x01 : 0x00)//,
-                cmds << zwave.configurationV1.configurationSet(configurationValue:  windowOpen == "Low" ? [0x01] : windowOpen == "Medium" ? [0x02] : windowOpen == "High" ? [0x03] : [0x00], parameterNumber:7, size:1, scaledConfigurationValue:  windowOpen == "Low" ? 0x01 : windowOpen == "Disabled" ? 0x00 : windowOpen == "High" ? 0x03 : 0x02)//,
-                cmds << zwave.configurationV1.configurationSet(configurationValue: tempOffset == null ? [0] : [tempOffset*10], parameterNumber:8, size:1, scaledConfigurationValue: tempOffset == null ? 0 : tempOffset*10)//,
-                cmds << zwave.thermostatSetpointV1.thermostatSetpointSet(precision: 1, reserved01: 0, scale: 0, scaledValue: ecoTemp == null ? 8 : ecoTemp, setpointType: 11, size: 2, value: ecoTemp == null ? [0, 80] : [0, ecoTemp*10])//,
-                cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)//,  // get temp
-                cmds << zwave.thermostatModeV2.thermostatModeGet()//,
-                cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x01)//,
-                cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x0B)//,
-                cmds << zwave.configurationV1.configurationGet(parameterNumber:1)//,
-                cmds << zwave.configurationV1.configurationGet(parameterNumber:2)//,
-                cmds << zwave.configurationV1.configurationGet(parameterNumber:3)//,
-                cmds << zwave.configurationV1.configurationGet(parameterNumber:7)//,
-                cmds << zwave.configurationV1.configurationGet(parameterNumber:8)//,
-                cmds << zwave.batteryV1.batteryGet()//,
-        //])
+	def cmds = []
+	  
+	cmds << zwave.configurationV1.configurationSet(configurationValue:  LCDinvert == "Yes" ? [0x01] : [0x00], parameterNumber:1, size:1, scaledConfigurationValue:  LCDinvert == "Yes" ? 0x01 : 0x00)//,
+	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDtimeout == null ? [0] : [LCDtimeout], parameterNumber:2, size:1, scaledConfigurationValue: LCDtimeout == null ? 0 :  LCDtimeout)//,
+	cmds << zwave.configurationV1.configurationSet(configurationValue:  backlight == "Yes" ? [0x01] : [0x00], parameterNumber:3, size:1, scaledConfigurationValue:  backlight == "Yes" ? 0x01 : 0x00)//,
+	cmds << zwave.configurationV1.configurationSet(configurationValue:  windowOpen == "Low" ? [0x01] : windowOpen == "Medium" ? [0x02] : windowOpen == "High" ? [0x03] : [0x00], parameterNumber:7, size:1, scaledConfigurationValue:  windowOpen == "Low" ? 0x01 : windowOpen == "Disabled" ? 0x00 : windowOpen == "High" ? 0x03 : 0x02)//,
+	cmds << zwave.configurationV1.configurationSet(configurationValue: tempOffset == null ? [0] : [tempOffset*10], parameterNumber:8, size:1, scaledConfigurationValue: tempOffset == null ? 0 : tempOffset*10)//,
+	cmds << zwave.thermostatSetpointV1.thermostatSetpointSet(precision: 1, reserved01: 0, scale: 0, scaledValue: ecoTemp == null ? 8 : ecoTemp, setpointType: 11, size: 2, value: ecoTemp == null ? [0, 80] : [0, ecoTemp*10])//,
+	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)  // get temp
+	cmds << zwave.thermostatModeV2.thermostatModeGet()
+	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x01)
+	cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 0x0B)
+	cmds << zwave.configurationV1.configurationGet(parameterNumber:1)
+	cmds << zwave.configurationV1.configurationGet(parameterNumber:2)
+	cmds << zwave.configurationV1.configurationGet(parameterNumber:3)
+	cmds << zwave.configurationV1.configurationGet(parameterNumber:7)
+	cmds << zwave.configurationV1.configurationGet(parameterNumber:8)
+	cmds << zwave.batteryV1.batteryGet()
+	cmds << zwave.thermostatModeV2.thermostatModeSupportedGet()
+	cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet()
+
     sendEvent(name: "configure", value: "configure", displayed: false)   
 	log.trace "config"
     secureSequence(cmds)
 }
 
-private secure(physicalgraph.zwave.Command cmd) {
+def secure(physicalgraph.zwave.Command cmd) {
 //log.debug "Seq - $cmd"
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
-
-private secureSequence(commands, delay=2000) {
+def secureSequence(commands, delay=4000) {
 //log.debug "SeSeq $commands"
 	delayBetween(commands.collect{ secure(it) }, delay)
 }
+def summer() {
+	def discText = " "
+    def temp = 0
+	def cmds = []
+    if (state.summer == "on" || state.summer == null){
+    	log.info "summer is on so turn off"
+        temp = 20
+    	discText = "summer mode off, temp change commands will processed as normall"
+        state.summer = "off"
+    }
+    else if (state.summer == "off"){
+		log.info "summer is off, turning on"
+		temp = 28
+    	discText = "summer mode activated, all temp change commands will be blocked and the trv will stay fully open. Mannual adjustment will turn this off"
+    	state.summer = "on"
+    }
+    else {
+    	log.warn "shouldnt go here"
+        temp = 20
+        state.summer = "off"
+    	discText = "some thing went wroung in summer mode"
+    }
+    cmds << sendEvent(name: "summer", value: state.summer, descriptionText: discText)
+	cmds <<	setHeatingSetpoint(temp)
+    cmds
+}  
