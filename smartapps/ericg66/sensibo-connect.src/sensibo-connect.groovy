@@ -678,6 +678,15 @@ def configureClimateReact(child,String PodUid,String JsonString)
         	pollChildren(child.device.deviceNetworkId)
             tData = state.sensibo[child.device.deviceNetworkId]
         }
+        
+        //tData.data.Climate = ClimateState        
+        tData.data.Error = "Success"
+    }
+    else {
+    	def tData = state.sensibo[child.device.deviceNetworkId]
+        if (tData == null) return false
+    	
+        tData.data.Error = "Failed"
     }
 
     return(result)
