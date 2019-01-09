@@ -199,7 +199,8 @@ metadata {
 		}
 
 		standardTile("ecoMode", "device.thermostatMode", height: 2, width: 2, decoration: "flat") {
-			state "default", action:"ecoheat", label: "Eco", icon: "st.nest.nest-leaf"
+        	state "default", action:"ecoheat", label: "Eco", icon: "st.nest.nest-leaf"
+			state "eco", action:"ecoheat", label: "Eco", icon: "st.nest.nest-leaf"
 			state "esheating", action:"ecooff", label: "Eco", icon: "st.nest.nest-leaf", backgroundColor:"#44b621"
 		}
 
@@ -375,7 +376,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
         state.thermostatOperatingState = "Boost"
     }
     if (cmd.value == 0){ //0 - 0x00 = eco
-    	state.thermostatMode = "Eco"
+    	state.thermostatMode = "eco"
         state.thermostatOperatingState = "Eco"
     }
     if (cmd.value == 15){ //15 - 0x0F = off
@@ -400,7 +401,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
         state.thermostatOperatingState = "Boost"
     }
     if (cmd.mode == 11){ //11 eco 11 0x0B
-    	state.thermostatMode = "Eco"
+    	state.thermostatMode = "eco"
         state.thermostatOperatingState = "Eco"
     }
     if (cmd.mode == 0){ // 0 off 0x00
@@ -446,18 +447,18 @@ def temperatureUp() {
 	if(nextTemp > 28) {		// It can't handle above 28, so don't allow it go above
 		nextTemp = 28
 	}
-	sendEvent(name:"nextHeatingSetpoint", value: nextTemp, unit: getTemperatureScale(), displayed: true)	
-    //runIn (5, "buffSetpoint",[data: [value: nextTemp]]) //, overwrite: true
-    setHeatingSetpoint(nextTemp)
+	sendEvent(name:"nextHeatingSetpoint", value: nextTemp, unit: getTemperatureScale(), displayed: false)	
+    runIn (5, "buffSetpoint",[data: [value: nextTemp], overwrite: true]) //, overwrite: true
+    //setHeatingSetpoint(nextTemp)
 }
 def temperatureDown() {
 	def nextTemp = device.currentValue("nextHeatingSetpoint").toBigDecimal() - 0.5
 	if(nextTemp < 8) {		// It can't go below 8, so don't allow it
 		nextTemp = 8
 	}
-	sendEvent(name:"nextHeatingSetpoint", value: nextTemp, unit: getTemperatureScale(), displayed: true)	
-   	//runIn (5, "buffSetpoint",[data: [value: nextTemp]]) //, overwrite: true
-    setHeatingSetpoint(nextTemp)
+	sendEvent(name:"nextHeatingSetpoint", value: nextTemp, unit: getTemperatureScale(), displayed: false)	
+   	runIn (5, "buffSetpoint",[data: [value: nextTemp], overwrite: true]) //, overwrite: true
+    //setHeatingSetpoint(nextTemp)
 }
 def buffSetpoint(data) {
 	log.debug "buff $data"
@@ -496,7 +497,7 @@ def lock() {
     cmds << zwave.protectionV1.protectionSet(protectionState: 1)
     cmds << zwave.protectionV1.protectionGet()
 	log.trace "lock $cmds" 
-    secureSequence (cmds)
+    secureSequence(cmds)
 }
 def unlock() {
 	def cmds = []
@@ -522,7 +523,7 @@ def boostoff() {
 
 def ecoheat() {
 	def cmds = []
-    sendEvent(name: "thermostatMode", value: "esheating", displayed: false)
+    sendEvent(name: "thermostatMode", value: "eco", displayed: false)
     //sendEvent(name: "thermostatOperatingState", value: "Eco", displayed: false)
     cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0B)
     cmds << zwave.thermostatModeV2.thermostatModeGet()
@@ -541,9 +542,9 @@ def on() {
 def heat() {
 //log.trace "Heat"  
     def cmds = []
-    sendEvent(name: "thermostatMode", value: "default", displayed: false)
+    sendEvent(name: "thermostatMode", value: "heat", displayed: false)
         //sendEvent(name: "thermostatOperatingState", value: "Heating", displayed: false)
-	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
+	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 1)
     cmds << zwave.thermostatModeV2.thermostatModeGet()
 	log.trace "heat $cmds" 
     secureSequence (cmds)
@@ -553,12 +554,19 @@ def off() {
 	def cmds = []
     sendEvent(name: "thermostatMode", value: "off", displayed: false)
         //sendEvent(name: "thermostatOperatingState", value: "Off", displayed: false)
-	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x00)
+	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0)
     cmds << zwave.thermostatModeV2.thermostatModeGet()
 	log.trace "OFF $cmds" 
-    secureSequence (cmds)
+ 	secureSequence(cmds)
 }
 
+def setThermostatMode(mode){
+	if (mode == "on" || mode == "heat" || mode == "auto") { heat() }
+    if (mode == "off") { off()}
+    if (mode == "cool" || mode == "eco") { ecoheat() }
+	log.debug "set mode $mode" 
+	
+}
 def refresh() {
 	log.trace "refresh"
 	poll()
@@ -630,11 +638,12 @@ def configure() {
 
 def secure(physicalgraph.zwave.Command cmd) {
 //log.debug "Seq - $cmd"
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+    return 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 }
-def secureSequence(commands, delay=4000) {
+def secureSequence(commands, delay=3500) {
 //log.debug "SeSeq $commands"
-	delayBetween(commands.collect{ secure(it) }, delay)
+	//delayBetween(commands.collect{ secure(it) }, delay)
+    sendHubCommand(commands.collect{ response(secure(it)) }, delay)
 }
 def summer() {
 	def discText = " "
