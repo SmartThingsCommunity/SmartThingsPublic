@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Cooper RF9500", namespace: "smartthings", author: "juano23@gmail.com") {
+	definition (name: "Cooper RF9500", namespace: "smartthings", author: "juano23@gmail.com", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Button"

@@ -13,7 +13,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
@@ -23,7 +23,8 @@ metadata {
 		capability "Health Check"
 
 		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x80,0x84,0x85"
-		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeon Panic Button"
+		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec Key Fob"
+		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Panic Button"
 	}
 
 	simulator {
@@ -38,29 +39,25 @@ metadata {
 		status "wakeup":  "command: 8407, payload: "
 	}
 	tiles {
-		standardTile("button", "device.button", width: 2, height: 2) {
-			state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
-			state "button 1 pushed", label: "pushed #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
-			state "button 2 pushed", label: "pushed #2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
-			state "button 3 pushed", label: "pushed #3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
-			state "button 4 pushed", label: "pushed #4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#00A0DC"
-			state "button 1 held", label: "held #1", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
-			state "button 2 held", label: "held #2", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
-			state "button 3 held", label: "held #3", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
-			state "button 4 held", label: "held #4", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#e86d13"
+
+		multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.button", key: "PRIMARY_CONTROL") {
+				attributeState "default", label: ' ', action: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
+			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		standardTile("battery", "device.battery", inactiveLabel: false, width: 6, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		main "button"
-		details(["button", "battery"])
+		childDeviceTiles("outlets")
 	}
+
 }
+
 
 def parse(String description) {
 	def results = []
 	if (description.startsWith("Err")) {
-	    results = createEvent(descriptionText:description, displayed:true)
+		results = createEvent(descriptionText:description, displayed:true)
 	} else {
 		def cmd = zwave.parse(description, [0x2B: 1, 0x80: 1, 0x84: 1])
 		if(cmd) results += zwaveEvent(cmd)
@@ -84,9 +81,41 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 
 def buttonEvent(button, held) {
 	button = button as Integer
+	def child
+	Integer buttons
+
+	if (device.currentState("numberOfButtons")) {
+		buttons = (device.currentState("numberOfButtons").value).toBigInteger()
+	}
+	else {
+		def zwMap = getZwaveInfo()
+		buttons = 4 // Default for Key Fob
+
+		// Only one button for Aeon Panic Button
+		if (zwMap && zwMap.mfr == "0086" && zwMap.prod == "0001" && zwMap.model == "0026") {
+			buttons = 1
+		}
+		sendEvent(name: "numberOfButtons", value: buttons)
+	}
+
+	if(buttons > 1)
+	{
+		String childDni = "${device.deviceNetworkId}/${button}"
+		child = childDevices.find{it.deviceNetworkId == childDni}
+		if (!child) {
+			log.error "Child device $childDni not found"
+		}
+	}
+
 	if (held) {
+		if(buttons > 1) {
+			child?.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
+		}
 		createEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
+		if(buttons > 1) {
+			child?.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
+		}
 		createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
@@ -126,16 +155,34 @@ def configure() {
 
 def installed() {
 	initialize()
+	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
+	if(buttons > 1) {
+		createChildDevices()
+	}
 }
 
 def updated() {
 	initialize()
+	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
+	if(buttons > 1)
+	{
+		if (!childDevices) {
+			createChildDevices()
+		}
+		else if (device.label != state.oldLabel) {
+			childDevices.each {
+				def segs = it.deviceNetworkId.split("/")
+				def newLabel = "${device.displayName} button ${segs[-1]}"
+				it.setLabel(newLabel)
+			}
+			state.oldLabel = device.label
+		}
+	}
 }
 
 def initialize() {
 	// Device only goes OFFLINE when Hub is off
 	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
-
 	def zwMap = getZwaveInfo()
 	def buttons = 4 // Default for Key Fob
 
@@ -144,4 +191,14 @@ def initialize() {
 		buttons = 1
 	}
 	sendEvent(name: "numberOfButtons", value: buttons)
+}
+
+private void createChildDevices() {
+	state.oldLabel = device.label
+	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
+	for (i in 1..buttons) {
+		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
+				[completedSetup: true, label: "${device.displayName} button ${i}",
+				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+	}
 }

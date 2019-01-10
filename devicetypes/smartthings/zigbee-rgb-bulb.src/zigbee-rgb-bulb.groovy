@@ -18,12 +18,11 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZigBee RGB Bulb", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "ZigBee RGB Bulb", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, ocfDeviceType: "oic.d.light") {
 
 		capability "Actuator"
 		capability "Color Control"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Switch"
 		capability "Switch Level"
@@ -32,6 +31,7 @@ metadata {
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Gardenspot RGB", deviceJoinName: "SYLVANIA Smart Gardenspot mini RGB"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Gardenspot RGB", deviceJoinName: "SYLVANIA Smart Gardenspot mini RGB"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01", outClusters: "0019", manufacturer: "LEDVANCE", model: "Outdoor Accent RGB", deviceJoinName: "SYLVANIA Outdoor Accent RGB"
 	}
 
 	// UI tile definitions

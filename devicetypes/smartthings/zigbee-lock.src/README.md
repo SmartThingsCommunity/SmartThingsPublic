@@ -4,11 +4,15 @@ Cloud Execution
 
 Works with: 
 
-* [Yale Push Button Deadbolt (YRD210-HA)](https://www.smartthings.com/works-with-smartthings/door-locks/yale-push-button-deadbolt-yrd210)
-* [Yale Touchscreen Lever (YRL220-ZB)](https://www.smartthings.com/works-with-smartthings/door-locks/yale-touchscreen-lever-yrl220)
-* [Yale Touchscreen Deadbolt (YRD220-HA))](https://www.smartthings.com/works-with-smartthings/door-locks/yale-touchscreen-deadbolt-yrd220)
-* [Yale Key Free Touchscreen Deadbolt (YRD240-HA)](https://www.smartthings.com/works-with-smartthings/door-locks/yale-key-free-touchscreen-deadbolt-yrd240)
-* [Yale Push Button Lever Lock (YRL210-HA)](https://www.smartthings.com/works-with-smartthings/door-locks/yale-push-button-lever-lock-yrl210)
+* KwikSet SmartCode 910 Deadbolt Door Lock
+* KwikSet SmartCode 910 Contemporary Deadbolt Door Lock
+* KwikSet SmartCode 912 Lever Door Lock
+* KwikSet SmartCode 914 Deadbolt Door Lock
+* KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock
+* Yale Touch Screen Lever Lock
+* Yale Push Button Deadbolt Lock
+* Yale Touch Screen Deadbolt Lock
+* Yale Push Button Lever Lock
 
 ## Table of contents
 

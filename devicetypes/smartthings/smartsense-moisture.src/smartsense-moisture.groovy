@@ -12,16 +12,17 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Moisture", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Moisture", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-leak") {
 		capability "Water Sensor"
 		capability "Sensor"
 		capability "Battery"
-        capability "Temperature Measurement"
+		capability "Temperature Measurement"
 		capability "Health Check"
 
 		fingerprint deviceId: "0x2001", inClusters: "0x30,0x9C,0x9D,0x85,0x80,0x72,0x31,0x84,0x86"
 		fingerprint deviceId: "0x2101", inClusters: "0x71,0x70,0x85,0x80,0x72,0x31,0x84,0x86"
-		fingerprint mfr:"0084", prod:"0063", model:"010C", deviceJoinName: "FortrezZ Moisture Sensor"
+		fingerprint mfr:"0084", prod:"0063", model:"010C"
+		fingerprint mfr:"0084", prod:"0053", model:"0216", deviceJoinName: "FortrezZ Moisture Sensor"
 	}
 
 	simulator {
@@ -34,7 +35,7 @@ metadata {
 			status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(batteryLevel: i).incomingMessage()
 		}
 	}
-	
+
 	tiles(scale: 2) {
 		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
@@ -48,18 +49,18 @@ metadata {
 			state "overheated", icon:"st.alarm.temperature.overheat", backgroundColor:"#e86d13"
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {
-            state("temperature", label:'${currentValue}°',
-                backgroundColors:[
-                    [value: 31, color: "#153591"],
-                    [value: 44, color: "#1e9cbb"],
-                    [value: 59, color: "#90d2a7"],
-                    [value: 74, color: "#44b621"],
-                    [value: 84, color: "#f1d801"],
-                    [value: 95, color: "#d04e00"],
-                    [value: 96, color: "#bc2323"]
-                ]
-            )
-        }
+			state("temperature", label:'${currentValue}°',
+				backgroundColors:[
+					[value: 31, color: "#153591"],
+					[value: 44, color: "#1e9cbb"],
+					[value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
+				]
+			)
+		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
@@ -126,7 +127,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.name = "battery"
 		map.value = cmd.batteryLevel > 0 ? cmd.batteryLevel.toString() : 1
 		map.unit = "%"
-		map.displayed = false
 	}
 	map
 }
@@ -159,22 +159,31 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	def map = [:]
 	if(cmd.sensorType == 1) {
 		map.name = "temperature"
-        if(cmd.scale == 0) {
-        	map.value = getTemperature(cmd.scaledSensorValue)
-        } else {
-	        map.value = cmd.scaledSensorValue
-        }
-        map.unit = location.temperatureScale
+		if(cmd.scale == 0) {
+			map.value = getTemperature(cmd.scaledSensorValue)
+		} else {
+			map.value = cmd.scaledSensorValue
+		}
+		map.unit = location.temperatureScale
 	}
+	map
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd)
+{
+	def map = [:]
+	map.name = "water"
+	map.value = cmd.value ? "wet" : "dry"
+	map.descriptionText = "${device.displayName} is ${map.value}"
 	map
 }
 
 def getTemperature(value) {
 	if(location.temperatureScale == "C"){
 		return value
-    } else {
-        return Math.round(celsiusToFahrenheit(value))
-    }
+	} else {
+		return Math.round(celsiusToFahrenheit(value))
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd)

@@ -42,7 +42,7 @@
  */
 
 metadata {
-    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+    definition (name: "GE Link Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-dimmer") {
 
         capability "Actuator"
         capability "Configuration"
@@ -51,6 +51,7 @@ metadata {
         capability "Switch"
         capability "Switch Level"
         capability "Polling"
+        capability "Light"
 
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE_Appliances", model: "ZLL Light", deviceJoinName: "GE Link Bulb"
         fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,1000", outClusters: "0019", manufacturer: "GE", model: "SoftWhite", deviceJoinName: "GE Link Soft White Bulb"
@@ -98,11 +99,7 @@ def parse(String description) {
 }
 
 def poll() {
-    def refreshCmds = [
-        "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state?.dOnOff ?: '0000'}}", "delay 2000"
-    ]
-
-    return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh()
+	return zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def updated() {
@@ -182,9 +179,7 @@ def updated() {
     	state.dOnOff = "0000"
     }
 
-    "st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state.dOnOff}}"
-
-
+	sendHubCommand(new physicalgraph.device.HubAction("st wattr 0x${device.deviceNetworkId} 1 8 0x10 0x21 {${state.dOnOff}}"))
 }
 
 def on() {

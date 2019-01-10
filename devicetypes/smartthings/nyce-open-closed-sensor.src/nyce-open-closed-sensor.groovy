@@ -18,7 +18,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 
 metadata {
-	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE") {
+	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE", mnmn: "SmartThings", vid: "generic-contact-3") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
@@ -40,17 +40,19 @@ metadata {
 
 	}
 
-	tiles {
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			}
 		}
 
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
@@ -117,6 +119,15 @@ private Map parseCatchAllMessage(String description) {
 		log.debug "parseCatchAllMessage: msgStatus: ${msgStatus}"
 		if (msgStatus == 0) {
 			switch(cluster.clusterId) {
+				case 0x0500:
+                	Map descMap = zigbee.parseDescriptionAsMap(description)
+					// someone who understands Zigbee better than me should refactor this whole DTH to bring it up to date
+					if (descMap?.attrInt == 0x0002) {
+						resultMap.name = "contact"
+						def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+						resultMap.value = zs.isAlarm1Set() ? "open" : "closed"
+					}
+					break
 				case 0x0001:
 					log.debug 'Battery'
 					resultMap.name = 'battery'
@@ -185,7 +196,7 @@ private int getBatteryPercentage(int value) {
 	{
 		pct = 0.06
 	}
-	return (int) pct * 100
+	return (int)(pct * 100)
 }
 
 private boolean shouldProcessMessage(cluster) {
@@ -210,9 +221,11 @@ private Map parseReportAttributeMessage(String description) {
 
 	switch(descMap.cluster) {
 		case "0001":
-			log.debug 'Battery'
-			resultMap.name = 'battery'
-			resultMap.value = getBatteryPercentage(convertHexToInt(descMap.value))
+			if(descMap.attrId == "0020") {
+				log.debug 'Battery'
+				resultMap.name = 'battery'
+				resultMap.value = getBatteryPercentage(convertHexToInt(descMap.value))
+			}
 			break
 		default:
 			log.info descMap.cluster
@@ -279,12 +292,12 @@ private List parseIasMessage(String description) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def configure() {
 	// Device-Watch allows 2 check-in misses from device
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 

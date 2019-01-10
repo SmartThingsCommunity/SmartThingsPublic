@@ -43,28 +43,28 @@
 include 'asynchttp_v1'
 
 definition(
-    name: "Logitech Harmony (Connect)",
-    namespace: "smartthings",
-    author: "SmartThings",
-    description: "Allows you to integrate your Logitech Harmony account with SmartThings.",
-    category: "SmartThings Labs",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/harmony.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/harmony%402x.png",
-    oauth: [displayName: "Logitech Harmony", displayLink: "http://www.logitech.com/en-us/harmony-remotes"],
-    singleInstance: true
+	name: "Logitech Harmony (Connect)",
+	namespace: "smartthings",
+	author: "SmartThings",
+	description: "Allows you to integrate your Logitech Harmony account with SmartThings.",
+	category: "SmartThings Labs",
+	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/harmony.png",
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/harmony%402x.png",
+	oauth: [displayName: "Logitech Harmony", displayLink: "http://www.logitech.com/en-us/harmony-remotes"],
+	singleInstance: true
 ){
 	appSetting "clientId"
 	appSetting "clientSecret"
 }
 
 preferences(oauthPage: "deviceAuthorization") {
-  page(name: "Credentials", title: "Connect to your Logitech Harmony device", content: "authPage", install: false, nextPage: "deviceAuthorization")
+	page(name: "Credentials", title: "Connect to your Logitech Harmony device", content: "authPage", install: false, nextPage: "deviceAuthorization")
 	page(name: "deviceAuthorization", title: "Logitech Harmony device authorization", install: true) {
 		section("Allow Logitech Harmony to control these things...") {
 			input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
 			input "motionSensors", "capability.motionSensor", title: "Which Motion Sensors?", multiple: true, required: false
 			input "contactSensors", "capability.contactSensor", title: "Which Contact Sensors?", multiple: true, required: false
-      input "thermostats", "capability.thermostat", title: "Which Thermostats?", multiple: true, required: false
+			input "thermostats", "capability.thermostat", title: "Which Thermostats?", multiple: true, required: false
 			input "presenceSensors", "capability.presenceSensor", title: "Which Presence Sensors?", multiple: true, required: false
 			input "temperatureSensors", "capability.temperatureMeasurement", title: "Which Temperature Sensors?", multiple: true, required: false
 			input "accelerationSensors", "capability.accelerationSensor", title: "Which Vibration Sensors?", multiple: true, required: false
@@ -75,6 +75,7 @@ preferences(oauthPage: "deviceAuthorization") {
 			input "locks", "capability.lock", title: "Which Locks?", multiple: true, required: false
 		}
 	}
+	page(name: "revokeToken", title: "You have succesfully logged out of the account.", install: false, nextPage: null)
 }
 
 mappings {
@@ -101,19 +102,19 @@ def getServercallbackUrl() { "https://graph.api.smartthings.com/oauth/callback" 
 def getBuildRedirectUrl() { "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
 
 def authPage() {
-    def description = null
-    if (!state.HarmonyAccessToken) {
+	def description = null
+	if (!state.HarmonyAccessToken) {
 		if (!state.accessToken) {
 			log.debug "Harmony - About to create access token"
 			createAccessToken()
 		}
-        description = "Click to enter Harmony Credentials"
-        def redirectUrl = buildRedirectUrl
-        return dynamicPage(name: "Credentials", title: "Harmony", nextPage: null, uninstall: true, install:false) {
-            section { paragraph title: "Note:", "This device has not been officially tested and certified to “Work with SmartThings”. You can connect it to your SmartThings home but performance may vary and we will not be able to provide support or assistance." }
-            section { href url:redirectUrl, style:"embedded", required:true, title:"Harmony", description:description }
-        }
-    } else {
+		description = "Click to enter Harmony Credentials"
+		def redirectUrl = buildRedirectUrl
+		return dynamicPage(name: "Credentials", title: "Harmony", nextPage: null, uninstall: true, install:false) {
+			section { paragraph title: "Note:", "This device has not been officially tested and certified to “Work with SmartThings”. You can connect it to your SmartThings home but performance may vary and we will not be able to provide support or assistance." }
+			section { href url:redirectUrl, style:"embedded", required:true, title:"Harmony", description:description }
+		}
+	} else {
 		//device discovery request every 5 //25 seconds
 		int deviceRefreshCount = !state.deviceRefreshCount ? 0 : state.deviceRefreshCount as int
 		state.deviceRefreshCount = deviceRefreshCount + 1
@@ -123,7 +124,7 @@ def authPage() {
 		def actoptions = state.HarmonyActivities ?: []
 
 		def numFoundHub = huboptions.size() ?: 0
-    def numFoundAct = actoptions.size() ?: 0
+		def numFoundAct = actoptions.size() ?: 0
 
 		if((deviceRefreshCount % 5) == 0) {
 			discoverDevices()
@@ -133,15 +134,25 @@ def authPage() {
 			section("Please wait while we discover your Harmony Hubs and Activities. Discovery can take five minutes or more, so sit back and relax! Select your device below once discovered.") {
 				input "selectedhubs", "enum", required:false, title:"Select Harmony Hubs (${numFoundHub} found)", multiple:true, submitOnChange: true, options:huboptions
 			}
-      // Virtual activity flag
-      if (numFoundHub > 0 && numFoundAct > 0 && true)
+	  	// Virtual activity flag
+	  	if (numFoundHub > 0 && numFoundAct > 0 && true)
 			section("You can also add activities as virtual switches for other convenient integrations") {
 				input "selectedactivities", "enum", required:false, title:"Select Harmony Activities (${numFoundAct} found)", multiple:true, submitOnChange: true, options:actoptions
 			}
-    if (state.resethub)
+			section("") {
+				paragraph "If you have added another hub to your Logitech Harmony account you need to log out and reconnect to authorize access."
+				href "revokeToken", title: "Log out from account", description: "", state: "incomplete"
+			}
+		if (state.resethub)
 			section("Connection to the hub timed out. Please restart the hub and try again.") {}
 		}
-    }
+	}
+}
+
+def revokeToken() {
+	 return dynamicPage(name: "revokeToken", title: "You have succesfully logged out of the account.") {
+	 	deleteToken()
+	 }
 }
 
 def callback() {
@@ -175,6 +186,12 @@ def callback() {
 	}
 }
 
+def deleteToken() {
+	if (state?.HarmonyAccessToken) {
+		state.HarmonyAccessToken = null;
+	}
+}
+
 def init() {
 	log.debug "Harmony - Requesting Code"
 	def oauthParams = [client_id: "${appSettings.clientId}", scope: "remote", response_type: "code", redirect_uri: "${servercallbackUrl}" ]
@@ -183,19 +200,19 @@ def init() {
 
 def receiveToken(redirectUrl = null) {
 	log.debug "Harmony - receiveToken"
-    def oauthParams = [ client_id: "${appSettings.clientId}", client_secret: "${appSettings.clientSecret}", grant_type: "authorization_code", code: params.code ]
-    def params = [
-      uri: "https://home.myharmony.com/oauth2/token?${toQueryString(oauthParams)}",
-    ]
+	def oauthParams = [ client_id: "${appSettings.clientId}", client_secret: "${appSettings.clientSecret}", grant_type: "authorization_code", code: params.code ]
+	def params = [
+	  uri: "https://home.myharmony.com/oauth2/token?${toQueryString(oauthParams)}",
+	]
 	try {
-        httpPost(params) { response ->
-            state.HarmonyAccessToken = response.data.access_token
-        }
+		httpPost(params) { response ->
+			state.HarmonyAccessToken = response.data.access_token
+		}
 	} catch (java.util.concurrent.TimeoutException e) {
-    	fail(e)
+		fail(e)
 		log.warn "Harmony - Connection timed out, please try again later."
 	}
-    discovery()
+	discovery()
 	if (state.HarmonyAccessToken) {
 		success()
 	} else {
@@ -212,12 +229,12 @@ def success() {
 }
 
 def fail(msg) {
-    def message = """
-        <p>The connection could not be established!</p>
-        <p>$msg</p>
-        <p>Click 'Done' to return to the menu.</p>
-    """
-    connectionStatus(message)
+	def message = """
+		<p>The connection could not be established!</p>
+		<p>$msg</p>
+		<p>Click 'Done' to return to the menu.</p>
+	"""
+	connectionStatus(message)
 }
 
 def receivedToken() {
@@ -236,73 +253,73 @@ def connectionStatus(message, redirectUrl = null) {
 		"""
 	}
 
-    def html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta name="viewport" content="width=640">
-        <title>SmartThings Connection</title>
-        <style type="text/css">
-            @font-face {
-                font-family: 'Swiss 721 W01 Thin';
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot');
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot?#iefix') format('embedded-opentype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.woff') format('woff'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.ttf') format('truetype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.svg#swis721_th_btthin') format('svg');
-                font-weight: normal;
-                font-style: normal;
-            }
-            @font-face {
-                font-family: 'Swiss 721 W01 Light';
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot');
-                src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot?#iefix') format('embedded-opentype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.woff') format('woff'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.ttf') format('truetype'),
-                     url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.svg#swis721_lt_btlight') format('svg');
-                font-weight: normal;
-                font-style: normal;
-            }
-            .container {
-                width: 560px;
-                padding: 40px;
-                /*background: #eee;*/
-                text-align: center;
-            }
-            img {
-                vertical-align: middle;
-            }
-            img:nth-child(2) {
-                margin: 0 30px;
-            }
-            p {
-                font-size: 2.2em;
-                font-family: 'Swiss 721 W01 Thin';
-                text-align: center;
-                color: #666666;
-                padding: 0 40px;
-                margin-bottom: 0;
-            }
-        /*
-            p:last-child {
-                margin-top: 0px;
-            }
-        */
-            span {
-                font-family: 'Swiss 721 W01 Light';
-            }
-        </style>
+	def html = """
+		<!DOCTYPE html>
+		<html>
+		<head>
+		<meta name="viewport" content="width=640">
+		<title>SmartThings Connection</title>
+		<style type="text/css">
+			@font-face {
+				font-family: 'Swiss 721 W01 Thin';
+				src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot');
+				src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.eot?#iefix') format('embedded-opentype'),
+					 url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.woff') format('woff'),
+					 url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.ttf') format('truetype'),
+					 url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-thin-webfont.svg#swis721_th_btthin') format('svg');
+				font-weight: normal;
+				font-style: normal;
+			}
+			@font-face {
+				font-family: 'Swiss 721 W01 Light';
+				src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot');
+				src: url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.eot?#iefix') format('embedded-opentype'),
+					 url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.woff') format('woff'),
+					 url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.ttf') format('truetype'),
+					 url('https://s3.amazonaws.com/smartapp-icons/Partner/fonts/swiss-721-light-webfont.svg#swis721_lt_btlight') format('svg');
+				font-weight: normal;
+				font-style: normal;
+			}
+			.container {
+				width: 560px;
+				padding: 40px;
+				/*background: #eee;*/
+				text-align: center;
+			}
+			img {
+				vertical-align: middle;
+			}
+			img:nth-child(2) {
+				margin: 0 30px;
+			}
+			p {
+				font-size: 2.2em;
+				font-family: 'Swiss 721 W01 Thin';
+				text-align: center;
+				color: #666666;
+				padding: 0 40px;
+				margin-bottom: 0;
+			}
+		/*
+			p:last-child {
+				margin-top: 0px;
+			}
+		*/
+			span {
+				font-family: 'Swiss 721 W01 Light';
+			}
+		</style>
 		${redirectHtml}
-        </head>
-        <body>
-            <div class="container">
-                <img src="https://s3.amazonaws.com/smartapp-icons/Partner/harmony@2x.png" alt="Harmony icon" />
-                <img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected device icon" />
-                <img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings logo" />
-                ${message}
-            </div>
-        </body>
-        </html>
+		</head>
+		<body>
+			<div class="container">
+				<img src="https://s3.amazonaws.com/smartapp-icons/Partner/harmony@2x.png" alt="Harmony icon" />
+				<img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected device icon" />
+				<img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings logo" />
+				${message}
+			</div>
+		</body>
+		</html>
 	"""
 	render contentType: 'text/html', data: html
 }
@@ -312,7 +329,7 @@ String toQueryString(Map m) {
 }
 
 def buildRedirectUrl(page) {
-    return "${serverUrl}/api/token/${state.accessToken}/smartapps/installations/${app.id}/${page}"
+	return "${serverUrl}/api/token/${state.accessToken}/smartapps/installations/${app.id}/${page}"
 }
 
 def installed() {
@@ -336,8 +353,8 @@ def updated() {
 def uninstalled() {
 	if (state.HarmonyAccessToken) {
 		try {
-        	state.HarmonyAccessToken = ""
-        	log.debug "Harmony - Success disconnecting Harmony from SmartThings"
+			state.HarmonyAccessToken = ""
+			log.debug "Harmony - Success disconnecting Harmony from SmartThings"
 		} catch (groovyx.net.http.HttpResponseException e) {
 			log.error "Harmony - Error disconnecting Harmony from SmartThings: ${e.statusCode}"
 		}
@@ -348,8 +365,8 @@ def initialize() {
 	state.aux = 0
 	if (selectedhubs || selectedactivities) {
 		addDevice()
-    runEvery5Minutes("poll")
-    getActivityList()
+		runEvery5Minutes("poll")
+		log.trace getActivityList()
 	}
 }
 
@@ -358,293 +375,308 @@ def getHarmonydevices() {
 }
 
 Map discoverDevices() {
-    log.trace "Harmony - Discovering devices..."
-    discovery()
-    if (getHarmonydevices() != []) {
-        def devices = state.Harmonydevices.hubs
-        log.trace devices.toString()
-        def activities = [:]
-        def hubs = [:]
-        devices.each {
-        	def hubkey = it.key
-            def hubname = getHubName(it.key)
-            def hubvalue = "${hubname}"
-            hubs["harmony-${hubkey}"] = hubvalue
-        	  it.value.response.data.activities.each {
-                def value = "${it.value.name}"
-                def key = "harmony-${hubkey}-${it.key}"
-                activities["${key}"] = value
-           }
-        }
-        state.HarmonyHubs = hubs
-        state.HarmonyActivities = activities
-    }
+	log.trace "Harmony - Discovering devices..."
+	discovery()
+	if (getHarmonydevices() != []) {
+		def devices = state.Harmonydevices.hubs
+		log.trace devices.toString()
+		def activities = [:]
+		def hubs = [:]
+		devices.each {
+			if (it.value.response){
+				def hubkey = it.key
+				def hubname = getHubName(it.key)
+				def hubvalue = "${hubname}"
+				hubs["harmony-${hubkey}"] = hubvalue
+				it.value.response.data?.activities?.each {
+					def value = "${it.value.name}"
+					def key = "harmony-${hubkey}-${it.key}"
+					activities["${key}"] = value
+				}
+			} else {
+				log.trace "Harmony - Device $it.key is no longer available"
+			}
+		}
+		state.HarmonyHubs = hubs
+		state.HarmonyActivities = activities
+	}
 }
 
 //CHILD DEVICE METHODS
 def discovery() {
-    def Params = [auth: state.HarmonyAccessToken]
-    def url = "https://home.myharmony.com/cloudapi/activity/all?${toQueryString(Params)}"
-	try {
-		httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
-	    	if (response.status == 200) {
-            	log.debug "Harmony - valid Token"
-                state.Harmonydevices = response.data
-                state.resethub = false
-	        } else {
-            	log.debug "Harmony - Error: $response.status"
-            }
-	    }
-	} catch (groovyx.net.http.HttpResponseException e) {
-        if (e.statusCode == 401) { // token is expired
-            state.remove("HarmonyAccessToken")
-            log.warn "Harmony - Harmony Access token has expired"
-        }
-	} catch (java.net.SocketTimeoutException e) {
-		log.warn "Harmony - Connection to the hub timed out. Please restart the hub and try again."
-    state.resethub = true
- 	} catch (e) {
-    log.info "Harmony - Error: $e"
+	def tokenParam = [auth: state.HarmonyAccessToken]
+	def url = "https://home.myharmony.com/cloudapi/activity/all?${toQueryString(tokenParam)}"
+	def params = [
+		uri: url,
+		contentType: 'application/json'
+	]
+	asynchttp_v1.get('discoveryResponse', params)
+	log.trace "Harmony - Discovery Command Sent"
+}
+
+def discoveryResponse(response, data) {
+	if (response.hasError()) {
+		log.error "Harmony - response has error: $response.errorMessage"
+		if (response.status == 401) { // token is expired
+			state.remove("HarmonyAccessToken")
+			log.warn "Harmony - Access token has expired"
+		} else {
+			log.warn "Harmony - Connection to the hub timed out. Please restart the hub and try again."
+			state.resethub = true
+		}
+	} else {
+		if (response.status == 200) {
+			log.debug "Harmony - valid Token"
+			state.Harmonydevices = response.json
+			state.resethub = false
+		} else {
+			log.warn "Harmony - Error, response status: $response.status"
+		}
 	}
-    return null
 }
 
 def addDevice() {
-    log.trace "Harmony - Adding Hubs"
-    selectedhubs.each { dni ->
-        def d = getChildDevice(dni)
-        if(!d) {
-            def newAction = state.HarmonyHubs.find { it.key == dni }
-            d = addChildDevice("smartthings", "Logitech Harmony Hub C2C", dni, null, [label:"${newAction.value}"])
-            log.trace "Harmony - Created ${d.displayName} with id $dni"
-            poll()
-        } else {
-            log.trace "Harmony - Found ${d.displayName} with id $dni already exists"
-        }
-    }
-    log.trace "Harmony - Adding Activities"
-    selectedactivities.each { dni ->
-        def d = getChildDevice(dni)
-        if(!d) {
-            def newAction = state.HarmonyActivities.find { it.key == dni }
-            if (newAction) {
-	            d = addChildDevice("smartthings", "Harmony Activity", dni, null, [label:"${newAction.value} [Harmony Activity]"])
-	            log.trace "Harmony - Created ${d.displayName} with id $dni"
-	            poll()
-            }
-        } else {
-            log.trace "Harmony - Found ${d.displayName} with id $dni already exists"
-        }
-    }
+	log.trace "Harmony - Adding Hubs"
+	selectedhubs.each { dni ->
+		def d = getChildDevice(dni)
+		if(!d) {
+			def newAction = state.HarmonyHubs.find { it.key == dni }
+			d = addChildDevice("smartthings", "Logitech Harmony Hub C2C", dni, null, [label:"${newAction.value}"])
+			log.trace "Harmony - Created ${d.displayName} with id $dni"
+			poll()
+		} else {
+			log.trace "Harmony - Found ${d.displayName} with id $dni already exists"
+		}
+	}
+	log.trace "Harmony - Adding Activities"
+	selectedactivities.each { dni ->
+		def d = getChildDevice(dni)
+		if(!d) {
+			def newAction = state.HarmonyActivities.find { it.key == dni }
+			if (newAction) {
+				d = addChildDevice("smartthings", "Harmony Activity", dni, null, [label:"${newAction.value} [Harmony Activity]"])
+				log.trace "Harmony - Created ${d.displayName} with id $dni"
+				poll()
+			}
+		} else {
+			log.trace "Harmony - Found ${d.displayName} with id $dni already exists"
+		}
+	}
 }
 
 def activity(dni,mode) {
-    def tokenParam = [auth: state.HarmonyAccessToken]
-    def url
-    if (dni == "all") {
-        url = "https://home.myharmony.com/cloudapi/activity/off?${toQueryString(tokenParam)}"
-    } else {
-        def aux = dni.split('-')
-        def hubId = aux[1]
-        if (mode == "hub" || (aux.size() <= 2) || (aux[2] == "off")){
-        	url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/off?${toQueryString(tokenParam)}"
-        } else {
-          def activityId = aux[2]
-        	url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/${activityId}/${mode}?${toQueryString(tokenParam)}"
-        }
+	def tokenParam = [auth: state.HarmonyAccessToken]
+	def url
+	if (dni == "all") {
+		url = "https://home.myharmony.com/cloudapi/activity/off?${toQueryString(tokenParam)}"
+	} else {
+		def aux = dni.split('-')
+		def hubId = aux[1]
+		if (mode == "hub" || (aux.size() <= 2) || (aux[2] == "off")){
+			url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/off?${toQueryString(tokenParam)}"
+		} else {
+		  def activityId = aux[2]
+			url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/${activityId}/${mode}?${toQueryString(tokenParam)}"
+		}
 	}
-  def params = [
-      uri: url,
-      contentType: 'application/json'
-  ]
-  asynchttp_v1.post('activityResponse', params)
-  return "Command Sent"
+	def params = [
+		uri: url,
+		contentType: 'application/json'
+	]
+	asynchttp_v1.post('activityResponse', params)
+	log.trace "Harmony - Command Sent"
 }
 
 def activityResponse(response, data) {
-  if (response.hasError()) {
-    log.error "Harmony - response has error: $response.errorMessage"
-    if (response.status == 401) { // token is expired
-      state.remove("HarmonyAccessToken")
-      log.warn "Harmony - Access token has expired"
-    }
-  } else {
-    if (response.status == 200) {
-      log.trace "Harmony - Command sent succesfully"
-      poll()
-    } else {
-      log.trace "Harmony - Command failed. Error: $response.status"
-    }
-  }
+	if (response.hasError()) {
+		log.error "Harmony - response has error: $response.errorMessage"
+		if (response.status == 401) { // token is expired
+			state.remove("HarmonyAccessToken")
+			log.warn "Harmony - Access token has expired"
+		}
+	} else {
+		if (response.status == 200) {
+			log.trace "Harmony - Command sent succesfully"
+		} else {
+			log.trace "Harmony - Command failed. Error: $response.status"
+		}
+	}
 }
 
 def poll() {
 	// GET THE LIST OF ACTIVITIES
-    if (state.HarmonyAccessToken) {
-        def tokenParam = [auth: state.HarmonyAccessToken]
-        def params = [
-            uri: "https://home.myharmony.com/cloudapi/state?${toQueryString(tokenParam)}",
-            headers: ["Accept": "application/json"],
-            contentType: 'application/json'
-        ]
-        asynchttp_v1.get('pollResponse', params)
-      } else {
-        log.warn "Harmony - Access token has expired"
-      }
+	if (state.HarmonyAccessToken) {
+		def tokenParam = [auth: state.HarmonyAccessToken]
+		def params = [
+			uri: "https://home.myharmony.com/cloudapi/state?${toQueryString(tokenParam)}",
+			headers: ["Accept": "application/json"],
+			contentType: 'application/json'
+		]
+		asynchttp_v1.get('pollResponse', params)
+	  } else {
+		log.warn "Harmony - Access token has expired"
+	  }
 }
 
 def pollResponse(response, data) {
 	if (response.hasError()) {
-    log.error "Harmony - response has error: $response.errorMessage"
-    if (response.status == 401) { // token is expired
-      state.remove("HarmonyAccessToken")
-      log.warn "Harmony - Access token has expired"
-    }
+		log.error "Harmony - response has error: $response.errorMessage"
+		def activities = getChildDevices()
+		// Device-Watch relies on the Logitech Harmony Cloud to get the Device state.
+		activities.each { activity ->
+			activity.sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false, isStateChange: true)
+		}
+		if (response.status == 401) { // token is expired
+			state.remove("HarmonyAccessToken")
+			log.warn "Harmony - Access token has expired"
+		}
 	} else {
-			def ResponseValues
-			try {
-					// json response already parsed into JSONElement object
-					ResponseValues = response.json
-			} catch (e) {
-					log.error "Harmony - error parsing json from response: $e"
+		def ResponseValues
+		def currentActivities = []
+		try {
+			// json response already parsed into JSONElement object
+			ResponseValues = response.json
+		} catch (e) {
+			log.error "Harmony - error parsing json from response: $e"
+		}
+		if (ResponseValues) {
+			log.debug "Harmony - response body: $response.data"
+			def activities = getChildDevices()
+			ResponseValues.hubs.each {
+				// Device-Watch relies on the Logitech Harmony Cloud to get the Device state.
+				activities.each { activity ->
+					if ("${activity.deviceNetworkId}".contains("harmony-${it.key}")) {
+						activity.sendEvent(name: "DeviceWatch-DeviceStatus", value: "online", displayed: false, isStateChange: true)
+					}
+				}
+				if (it.value.message == "OK") {
+					def hub = getChildDevice("harmony-${it.key}")
+					if (hub) {
+						if (it.value.response.data.currentAvActivity == "-1") {
+							hub.sendEvent(name: "currentActivity", value: "--", descriptionText: "There isn't any activity running", displayed: false)
+						} else {
+							def currentActivity
+							def activityDTH = getChildDevice("harmony-${it.key}-${it.value.response.data.currentAvActivity}")
+							if (activityDTH)
+								currentActivity = activityDTH.device.displayName
+							else
+								currentActivity = getActivityName(it.value.response.data.currentAvActivity,it.key)
+							hub.sendEvent(name: "currentActivity", value: currentActivity, descriptionText: "Current activity is ${currentActivity}", displayed: false)
+						}
+						it.value.response.data.currentActivities.each {currentActivity ->
+							currentActivities.add("harmony-${it.key}-${currentActivity}")
+						}
+					}
+			  	} else {
+					log.trace "Harmony - error response: $it.value.message"
+			  	}
 			}
-			if (ResponseValues) {
-        def map = [:]
-        ResponseValues.hubs.each {
-        // Device-Watch relies on the Logitech Harmony Cloud to get the Device state.
-        def isAlive = it.value.status
-        def d = getChildDevice("harmony-${it.key}")
-        d?.sendEvent(name: "DeviceWatch-DeviceStatus", value: isAlive!=504? "online":"offline", displayed: false, isStateChange: true)
-        if (it.value.message == "OK") {
-              map["${it.key}"] = "${it.value.response.data.currentAvActivity},${it.value.response.data.activityStatus}"
-              def hub = getChildDevice("harmony-${it.key}")
-              if (hub) {
-                  if (it.value.response.data.currentAvActivity == "-1") {
-                      hub.sendEvent(name: "currentActivity", value: "--", descriptionText: "There isn't any activity running", displayed: false)
-                  } else {
-                      def currentActivity
-                      def activityDTH = getChildDevice("harmony-${it.key}-${it.value.response.data.currentAvActivity}")
-                      if (activityDTH)
-                        currentActivity = activityDTH.device.displayName
-                      else
-                        currentActivity = getActivityName(it.value.response.data.currentAvActivity,it.key)
-                      hub.sendEvent(name: "currentActivity", value: currentActivity, descriptionText: "Current activity is ${currentActivity}", displayed: false)
-                  }
-              }
-          } else {
-            log.trace "Harmony - error response: $it.value.message"
-          }
-        }
-        def activities = getChildDevices()
-        def activitynotrunning = true
-        activities.each { activity ->
-            def act = activity.deviceNetworkId.split('-')
-            if (act.size() > 2) {
-                def aux = map.find { it.key == act[1] }
-                if (aux) {
-                    def aux2 = aux.value.split(',')
-                    def childDevice = getChildDevice(activity.deviceNetworkId)
-                    if ((act[2] == aux2[0]) && (aux2[1] == "1" || aux2[1] == "2")) {
-                        childDevice?.sendEvent(name: "switch", value: "on")
-                        if (aux2[1] == "1")
-                            runIn(5, "poll", [overwrite: true])
-                    } else {
-                        childDevice?.sendEvent(name: "switch", value: "off")
-                        if (aux2[1] == "3")
-                            runIn(5, "poll", [overwrite: true])
-                    }
-                }
-            }
-        }
-			} else {
-					log.debug "Harmony - did not get json results from response body: $response.data"
+			def activitynotrunning = true
+			log.debug "Harmony - Current Activities: $currentActivities"
+			activities.each { activity ->
+				if (currentActivities.contains("$activity.deviceNetworkId")) {
+					activity.sendEvent(name: "switch", value: "on")
+				} else {
+					activity.sendEvent(name: "switch", value: "off")
+				}
 			}
+		} else {
+			log.debug "Harmony - did not get json results from response body: $response.data"
+		}
 	}
 }
 
 def getActivityList() {
-    if (state.HarmonyAccessToken) {
-        def Params = [auth: state.HarmonyAccessToken]
-        def url = "https://home.myharmony.com/cloudapi/activity/all?${toQueryString(Params)}"
-        try {
-            httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
-                response.data.hubs.each {
-                    def hub = getChildDevice("harmony-${it.key}")
-                    if (hub) {
-                    	def hubname = getHubName("${it.key}")
-                        def activities = []
-                        def aux = it.value.response.data.activities.size()
-                        if (aux >= 1) {
-                            activities = it.value.response.data.activities.collect {
-                                [id: it.key, name: it.value['name'], type: it.value['type']]
-                            }
-                            activities += [id: "off", name: "Activity OFF", type: "0"]
-                        }
-                        hub.sendEvent(name: "activities", value: new groovy.json.JsonBuilder(activities).toString(), descriptionText: "Activities are ${activities.collect { it.name }?.join(', ')}", displayed: false)
-					          }
-                }
-            }
-        } catch (groovyx.net.http.HttpResponseException e) {
-        	log.trace e
-        } catch (java.net.SocketTimeoutException e) {
-        	log.trace e
-		    } catch(Exception e) {
-        	log.trace e
-		    }
-    }
+	if (state.HarmonyAccessToken) {
+		def tokenParam = [auth: state.HarmonyAccessToken]
+		def url = "https://home.myharmony.com/cloudapi/activity/all?${toQueryString(tokenParam)}"
+		def params = [
+			uri: url,
+			contentType: 'application/json'
+		]
+		asynchttp_v1.get('getActivityListResponse', params)
+		log.trace "Harmony - Activity List Request Sent"
+	}
+}
+
+def getActivityListResponse(response, data) {
+	if (response.hasError()) {
+		log.error "Harmony - response has error: $response.errorMessage"
+		if (response.status == 401) { // token is expired
+			state.remove("HarmonyAccessToken")
+			log.warn "Harmony - Access token has expired"
+		}
+	} else {
+		log.trace "Harmony - Parsing Activity List Response"
+		response.json.hubs.each {
+			def hub = getChildDevice("harmony-${it.key}")
+			if (hub) {
+				def hubname = getHubName("${it.key}")
+				def activities = []
+				def aux = it.value.response.data.activities.size()
+				if (aux >= 1) {
+					activities = it.value.response.data.activities.collect {
+						[id: it.key, name: it.value['name'], type: it.value['type']]
+					}
+					activities += [id: "off", name: "Activity OFF", type: "0"]
+				}
+				hub.sendEvent(name: "activities", value: new groovy.json.JsonBuilder(activities).toString(), descriptionText: "Activities are ${activities.collect { it.name }?.join(', ')}", displayed: false)
+			}
+		}
+	}
 }
 
 def getActivityName(activity,hubId) {
 	// GET ACTIVITY'S NAME
-    def actname = activity
-    if (state.HarmonyAccessToken) {
-        def Params = [auth: state.HarmonyAccessToken]
-        def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/all?${toQueryString(Params)}"
-        try {
-            httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
-                actname = response.data.data.activities[activity].name
-            }
+	def actname = activity
+	if (state.HarmonyAccessToken) {
+		def Params = [auth: state.HarmonyAccessToken]
+		def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/all?${toQueryString(Params)}"
+		try {
+			httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
+				actname = response.data.data.activities[activity].name
+			}
 		} catch(Exception e) {
-        	log.trace e
+			log.trace e
 		}
-    }
+	}
 	return actname
 }
 
 def getActivityId(activity,hubId) {
 	// GET ACTIVITY'S NAME
-    def actid = activity
-    if (state.HarmonyAccessToken) {
-        def Params = [auth: state.HarmonyAccessToken]
-        def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/all?${toQueryString(Params)}"
-        try {
-            httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
-            	response.data.data.activities.each {
-                	if (it.value.name == activity)
-                		actid = it.key
-                }
-            }
+	def actid = activity
+	if (state.HarmonyAccessToken) {
+		def Params = [auth: state.HarmonyAccessToken]
+		def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/activity/all?${toQueryString(Params)}"
+		try {
+			httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
+				response.data.data.activities.each {
+					if (it.value.name == activity)
+						actid = it.key
+				}
+			}
 		} catch(Exception e) {
-        	log.trace e
+			log.trace "Harmony - getActivityId() response $e"
 		}
-    }
+	}
 	return actid
 }
 
 def getHubName(hubId) {
 	// GET HUB'S NAME
-    def hubname = hubId
-    if (state.HarmonyAccessToken) {
-        def Params = [auth: state.HarmonyAccessToken]
-        def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/discover?${toQueryString(Params)}"
-        try {
-            httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
-                hubname = response.data.data.name
-            }
+	def hubname = hubId
+	if (state.HarmonyAccessToken) {
+		def Params = [auth: state.HarmonyAccessToken]
+		def url = "https://home.myharmony.com/cloudapi/hub/${hubId}/discover?${toQueryString(Params)}"
+		try {
+			httpGet(uri: url, headers: ["Accept": "application/json"]) {response ->
+				hubname = response.data.data.name
+			}
 		} catch(Exception e) {
-        	log.trace e
+			log.trace "Harmony - getHubName() response $e"
 		}
-    }
+	}
 	return hubname
 }
 
@@ -653,10 +685,10 @@ def sendNotification(msg) {
 }
 
 def hookEventHandler() {
-    // log.debug "In hookEventHandler method."
-    log.debug "Harmony - request = ${request}"
+	// log.debug "In hookEventHandler method."
+	log.debug "Harmony - request = ${request}"
 
-    def json = request.JSON
+	def json = request.JSON
 
 	def html = """{"code":200,"message":"OK"}"""
 	render contentType: 'application/json', data: html
@@ -688,20 +720,20 @@ def updateDevice() {
 		render status: 400, data: '{"msg": "command is required"}'
 	} else {
 		def device = allDevices.find { it.id == params.id }
-    if (device) {
-        if (validateCommand(device, command)) {
-            if (arguments) {
-                device."$command"(*arguments)
-            } else {
-                device."$command"()
-            }
-            render status: 204, data: "{}"
-        } else {
-          render status: 403, data: '{"msg": "Access denied. This command is not supported by current capability."}'
-        }
-    } else {
-      render status: 404, data: '{"msg": "Device not found"}'
-    }
+	if (device) {
+		if (validateCommand(device, command)) {
+			if (arguments) {
+				device."$command"(*arguments)
+			} else {
+				device."$command"()
+			}
+			render status: 204, data: "{}"
+		} else {
+		  render status: 403, data: '{"msg": "Access denied. This command is not supported by current capability."}'
+		}
+	} else {
+	  render status: 404, data: '{"msg": "Device not found"}'
+	}
   }
 }
 
@@ -713,7 +745,7 @@ def validateCommand(device, command) {
 	def capabilityCommands = getDeviceCapabilityCommands(device.capabilities)
 	def currentDeviceCapability = getCapabilityName(device)
 	if (currentDeviceCapability != "" && capabilityCommands[currentDeviceCapability]) {
-    return (command in capabilityCommands[currentDeviceCapability] || (currentDeviceCapability == "Switch" && command == "setLevel" && device.hasCommand("setLevel"))) ? true : false
+	return (command in capabilityCommands[currentDeviceCapability] || (currentDeviceCapability == "Switch" && command == "setLevel" && device.hasCommand("setLevel"))) ? true : false
 	} else {
 		// Handling other device types here, which don't accept commands
 		httpError(400, "Bad request.")
@@ -726,14 +758,14 @@ def validateCommand(device, command) {
  * @return attribute name of the device type
  */
 def getCapabilityName(device) {
-    def capName = ""
-    if (switches.find{it.id == device.id})
+	def capName = ""
+	if (switches.find{it.id == device.id})
 			capName = "Switch"
 		else if (alarms.find{it.id == device.id})
 			capName = "Alarm"
 		else if (locks.find{it.id == device.id})
 			capName = "Lock"
-    log.trace "Device: $device - Capability Name: $capName"
+	log.trace "Device: $device - Capability Name: $capName"
 		return capName
 }
 
@@ -834,7 +866,7 @@ def deviceHandler(evt) {
 	def deviceInfo = state[evt.deviceId]
 	if (state.harmonyHubs) {
 		state.harmonyHubs.each { harmonyHub ->
-      log.trace "Harmony - Sending data to $harmonyHub.name"
+	  log.trace "Harmony - Sending data to $harmonyHub.name"
 			sendToHarmony(evt, harmonyHub.callbackUrl)
 		}
 	} else if (deviceInfo) {
@@ -863,18 +895,18 @@ def sendToHarmony(evt, String callbackUrl) {
   		body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]
   	))
   } else {
-    def params = [
-      uri: callbackUrl,
-      body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]
-    ]
-    try {
-        log.debug "Harmony - Sending data to Harmony Cloud: $params"
-        httpPostJson(params) { resp ->
-            log.debug "Harmony - Cloud Response: ${resp.status}"
-        }
-    } catch (e) {
-        log.error "Harmony - Cloud Something went wrong: $e"
-    }
+	def params = [
+	  uri: callbackUrl,
+	  body: [evt: [deviceId: evt.deviceId, name: evt.name, value: evt.value]]
+	]
+	try {
+		log.debug "Harmony - Sending data to Harmony Cloud: $params"
+		httpPostJson(params) { resp ->
+			log.debug "Harmony - Cloud Response: ${resp.status}"
+		}
+	} catch (e) {
+		log.error "Harmony - Cloud Something went wrong: $e"
+	}
   }
 }
 
@@ -946,11 +978,11 @@ def deleteHarmony() {
 	render status: 204, data: "{}"
 }
 
-private getAllDevices() {
+def getAllDevices() {
 	([] + switches + motionSensors + contactSensors + thermostats + presenceSensors + temperatureSensors + accelerationSensors + waterSensors + lightSensors + humiditySensors + alarms + locks)?.findAll()?.unique { it.id }
 }
 
-private deviceItem(device) {
+def deviceItem(device) {
 	[
 		id: device.id,
 		label: device.displayName,
@@ -974,7 +1006,7 @@ private deviceItem(device) {
 	]
 }
 
-private hubItem(hub) {
+def hubItem(hub) {
 	[
 		id: hub.id,
 		name: hub.name,
