@@ -78,10 +78,7 @@ def scheduleJob() {
 def checkForSevereWeather() {
     def alerts
     if(locationIsDefined()) {
-        if(!(zipcodeIsValid())) {
-            log.warn "Severe Weather Alert: Invalid zipcode entered, defaulting to location's zipcode"
-        }
-        alerts = getTwcAlerts(zipCode)
+        alerts = getTwcAlerts() // Will fallback to using location lat/long since we're not passing zipCode
     } else {
         log.warn "Severe Weather Alert: Location is not defined"
     }
