@@ -70,7 +70,7 @@ metadata {
         command "autofan"
         command "fullswing"
         command "setAirConditionerMode"
-        command "toogleClimateReact"
+        command "toggleClimateReact"
         command "setClimateReact"
         command "configureClimateReact"
 	}
@@ -213,9 +213,9 @@ metadata {
         }
         
         standardTile("Climate", "device.Climate", width: 2, height: 2) {
-			state "on", label:'${name}', action:"toogleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#00a0dc"
-			state "off", label:'${name}', action:"toogleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#ffffff"
-            state "notdefined", label:'N/A', action:"toogleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#e86d13"
+			state "on", label:'${name}', action:"toggleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#00a0dc"
+			state "off", label:'${name}', action:"toggleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#ffffff"
+            state "notdefined", label:'N/A', action:"toggleClimateReact", icon:"https://i.ibb.co/Z8ZzcHR/auto-fix-2.png", backgroundColor:"#e86d13"
 		}
         
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -903,10 +903,10 @@ def generatefanLevelEvent(mode) {
    sendEvent(name: "fanLevel", value: mode, descriptionText: "$device.displayName fan level is now ${mode}", displayed: true, isStateChange: true)
 }
 
-
-def toogleClimateReact()
+// toggle Climate React
+def toggleClimateReact()
 {
-  	log.trace "toogleClimateReact() called"
+  	log.trace "toggleClimateReact() called"
     
 	def currentClimateMode = device.currentState("Climate")?.value
     
@@ -924,7 +924,7 @@ def toogleClimateReact()
     if (!returnCommand) { returnCommand }
 }
 
-// Toogle Climate React
+// Set Climate React
 def setClimateReact(ClimateState) {
 
     ///////////////////////////////////////////////
@@ -953,7 +953,7 @@ def setClimateReact(ClimateState) {
     }
 }
 
-def configureClimateReact(lowThres, highThres,stype,lowState,highState, on_off)
+def configureClimateReact(lowThres, highThres,stype,lowState,highState, on_off, ThresUnit)
 {
     ///////////////////////////////////////////////
     // lowThres and highThres - Integer parameters
@@ -962,10 +962,28 @@ def configureClimateReact(lowThres, highThres,stype,lowState,highState, on_off)
     //    on, fanLevel, temperatureUnit, targetTemperature, mode      
     //
     //    like  "[true,'auto','C',21,'heat']"
+    //    to turn off AC,first parameters = false : "[false,'auto','C',21,'heat']"
     // one_off : boolean value to enable/disable the Climate React
+    // unit : Passing F for Farenheit or C for Celcius
+    // 
+    // Some examples: 
+    //  
+    // Range 19-24 Celcius, start to heat to 22 at auto fan if the temp is lower than 19 and stop the AC when higher than 24
+    // configureClimateReact(19, 24, ‘temperature’, ‘[true, ‘auto’, ‘C’, 22, ‘heat’]’, ‘[false, ‘auto’, ‘C’, 22, ‘heat’]’, true, ‘C’);
+    //
+    // Range 67-68 Farenheit, start to heat to 68 at auto fan if the temp is lower than 67 and stop the AC when higher than 68
+    // configureClimateReact(67, 68, ‘temperature’, ‘[true, ‘auto’, ‘F’, 68, ‘heat’]’, ‘[false, ‘auto’, ‘F’, 68, ‘heat’]’, true, ‘F’);
+    //
     ///////////////////////////////////////////////
     
 	log.trace "configureClimateReact() called"
+    
+    
+    if (ThresUnit.toUpperCase() == "F")
+    {
+    	lowThres = fToc(lowThres).round(1)
+    	highThres = fToc(highThres).round(1)
+    }
     
     def json = new groovy.json.JsonBuilder()
     
@@ -1816,4 +1834,8 @@ def generateStatusEvent() {
     statusTextmsg = "${humidity}%"
    
     sendEvent("name":"statusText", "value":statusTextmsg, "description":"", displayed: false, isStateChange: true)
+}
+
+def fToc(temp) {
+	return ((temp - 32) / 1.8).toDouble()
 }
