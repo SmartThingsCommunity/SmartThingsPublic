@@ -962,7 +962,18 @@ def configureClimateReact(lowThres, highThres,stype,lowState,highState, on_off, 
     //    on, fanLevel, temperatureUnit, targetTemperature, mode      
     //
     //    like  "[true,'auto','C',21,'heat']"
+    //    to turn off AC,first parameters = false : "[false,'auto','C',21,'heat']"
     // one_off : boolean value to enable/disable the Climate React
+    // unit : Passing F for Farenheit or C for Celcius
+    // 
+    // Some examples: 
+    //  
+    // Range 19-24 Celcius, start to heat to 22 at auto fan if the temp is lower than 19 and stop the AC when higher than 24
+    // configureClimateReact(19, 24, ‘temperature’, ‘[true, ‘auto’, ‘C’, 22, ‘heat’]’, ‘[false, ‘auto’, ‘C’, 22, ‘heat’]’, true, ‘C’);
+    //
+    // Range 67-68 Farenheit, start to heat to 68 at auto fan if the temp is lower than 67 and stop the AC when higher than 68
+    // configureClimateReact(67, 68, ‘temperature’, ‘[true, ‘auto’, ‘F’, 68, ‘heat’]’, ‘[false, ‘auto’, ‘F’, 68, ‘heat’]’, true, ‘F’);
+    //
     ///////////////////////////////////////////////
     
 	log.trace "configureClimateReact() called"
