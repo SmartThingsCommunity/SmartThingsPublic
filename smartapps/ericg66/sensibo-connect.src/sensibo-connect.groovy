@@ -511,8 +511,8 @@ def initialize() {
                 	"label" : "Pod ${name.value}",
                     "name" : "Pod ${name.value}"
                     ])
-                d.setIcon("on","on","https://image.ibb.co/bz9K25/on_color_large_on.png")
-                d.setIcon("off","on","https://image.ibb.co/k5S6h5/on_color_large.png")
+                d.setIcon("on","on","https://image.ibb.co/jgAMW8/sensibo-sky-off.png")
+                d.setIcon("off","on","https://image.ibb.co/jgAMW8/sensibo-sky-off.png")
                 d.save()              
                 
 				log.trace "created ${d.displayName} with id $dni"
