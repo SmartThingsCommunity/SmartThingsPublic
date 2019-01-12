@@ -404,7 +404,7 @@ def initialize() {
     state.evtValue = []
     state.evtName = []
 
-    state.inBoostMode = [:] // allows to manage boost modes without having A.I. recording these as new values
+    state.NoLearnMode = [:] // allows to manage boost modes without having A.I. recording these as new values
 
     // these maps' purpose is only to verify that all settings were properly arranged together 
     // and may be used as a debug ressource
@@ -452,9 +452,15 @@ def initialize() {
     if(learnSPMode){
         subscribe(location, "mode", ChangedModeHandler) 
         //subscribe(Thermostats, "thermostatSetpoint", setpointChangeHandler)
-        subscribe(Thermostats, "coolingSetpoint", setpointChangeHandler)
-        subscribe(Thermostats, "heatingSetpoint", setpointChangeHandler)
-        log.debug "all thermostats subscribed to setpointChangeHandler"
+        def i = 0
+        def s = Thermostats.size()
+        for(s != 0; i < s; i++){
+            def thisDev = Thermostats[i]
+            subscribe(thisDev, "coolingSetpoint", setpointChangeHandler)
+            subscribe(thisDev, "heatingSetpoint", setpointChangeHandler)
+            log.debug "${thisDev} subscribed to setpointChangeHandler"
+        }
+
     }
     if(useMotion){
         SetListsAndMaps()
@@ -588,8 +594,9 @@ SensorThermMap = $SensorThermMap
         for(SensorSize > 0; iteration < SensorSize; iteration++){
             def thisItSensor = TheSensor[iteration]
             def Evts4thisiteration = thisItSensor.eventsSince(new Date(now() - deltaMinutes)) 
+            motionEvents = Evts4thisiteration.findAll({it.value == "active"})
 
-            Active = Evts4thisiteration.size() > 0 
+            Active = motionEvents.size() > 0 
             //log.debug "${Evts4thisiteration.size()} motion Events for $thisItSensor = ${Evts4thisiteration} and Active is then set to $Active"
 
             result << ["${TheSensor}": "$Active"] // record value for the group to which this device belongs // 
@@ -650,7 +657,7 @@ def ActiveTest(thermostat) {
             // parse value for this specific sensor
             def ActiveMap = MotionTest() 
             def ActiveFind = ActiveMap.find{it.key == "${TheSensor}"}      
-            Active = ActiveFind?.value.toBoolean()
+            Active = ActiveFind?.value?.toBoolean() 
 
             log.trace """
 ------------------------
@@ -741,18 +748,22 @@ def motionSensorHandler(evt){
 /// LEARNING EVT HANDLERS AND MAPPING FUNCTIONS
 //************************************************************************************************//
 def setpointChangeHandler(evt){
-
+    log.debug "setpointChangeHandler..."
     learn(evt.device, evt.value, evt.name)
 
 }
 
 def learn(thisTherm, thisTemp, eventName){
 
-    boolean inBoostMode = state.inBoostMode.find{it.key == "$thisTherm"}?.value == "true"  
-    //{it.contains("$thisTherm")} as Boolean //"$" in state.inBoostMode //
+    log.debug "LEARNING $thisTemp for $thisTherm and event name $eventName"
 
+    thisTemp = thisTemp.toInteger()
 
-    if(!inBoostMode){
+    boolean NoLearnMode = state.NoLearnMode.find{it.key == "$thisTherm"}?.value == "true"  
+
+    def comfort = null
+
+    if(!NoLearnMode){
         int i = 0
         int s = Thermostats.size()
         //def thisTherm = null
@@ -771,23 +782,36 @@ def learn(thisTherm, thisTemp, eventName){
         //thisTemp = evt.value
 
         if(eventName == "heatingSetpoint"){
-            thisHSP = thisTherm.currentValue("heatingSetpoint")
-            state.learnedHSP << ["${thisTherm}" : "${thisHSP}"] 
-            state.HSPMode."${CurrMode}" = state.learnedHSP 
+            log.debug "learning heatingsetpoint for $thisTherm"
+            comfort = getComfortH().toInteger()
+            if(thisTemp >= comfort){
+                //thisHSP = thisTherm.currentValue("heatingSetpoint")
+                state.learnedHSP << ["${thisTherm}" : "${thisTemp}"] 
+                state.HSPMode."${CurrMode}" = state.learnedHSP 
+            }
+            else {
+                log.debug "This new value wasn't recorded because not within comfort values"
+            }
         }
         else if(eventName == "coolingSetpoint"){
-            thisCSP = thisTherm.currentValue("coolingSetpoint")
-            state.learnedCSP << ["${thisTherm}" : "${thisCSP}"] 
-            state.CSPMode."${CurrMode}" = state.learnedCSP 
+            comfort = getComfortC().toInteger() // TO DO: CREATE getComfortC()
+            if(thisTemp >= comfort - 3 && thisTemp <= comfort + 3){
+                //thisCSP = thisTherm.currentValue("coolingSetpoint")
+                state.learnedCSP << ["${thisTherm}" : "${thisTemp}"] 
+                state.CSPMode."${CurrMode}" = state.learnedCSP 
+            }
         }
     }
     else {
-        log.debug "NOT LEARNING BECAUSE $thisTherm is in boost mode"
+        log.debug "NOT LEARNING BECAUSE $thisTherm is in boost mode or no learn mode"
+        // reset boost mode for this device (so you can learn from another manual setpoint)
+        state.NoLearnMode = ["$thisTherm" : "false"] 
     }
 
-    log.trace """ ${if(!inBoostMode){"LEARNING"}else {"NOT LEARNING because $thisTherm is in BOOST MODE"}}
-    $thisTherm
-    in boost mode? $inBoostMode ($state.inBoostMode)
+    log.trace """ ${if(!NoLearnMode){"LEARNING"}else {"NOT LEARNING because $thisTherm is in BOOST or NO LEARN MODE"}}
+
+   $thisTherm
+    in No Learn mode? $NoLearnMode ($state.NoLearnMode)
     state.learnedHSP = $state.learnedHSP
     state.learnedCSP = $state.learnedCSP
     state.HSPMode = $state.HSPMode
@@ -943,40 +967,40 @@ def adjust() {
 
                     if ((!tooCold4Hpump || useBoth) && ModeOk) {
 
-//Active = true /// TEST ONLY
-//needAdjust = true
+                        //Active = true /// TEST ONLY
+                        //needAdjust = true
                         if (needAdjust && Active) {
                             log.debug "adjusting.. $thisAppliance (currently in $thermMode mode)"
                             if (thermMode == "heat") {
 
                                 // if current temperature is below heat comfort
                                 log.debug "thisTemp = $thisTemp, comfort = ${comfort}"
-                                if (thisTemp < comfort || thisTemp < HSP) {
+                                if (thisTemp < comfort + 4 || thisTemp < HSP) {
                                     // we're too far below comfort zone
                                     log.debug "adjusting ${thisAppliance}'s HSP "
                                     // increase the setpoint
 
-                                    if (thisHSP < 80) 
+                                    if (thisHSP < 85) 
                                     {
-                                        thisAppliance.setHeatingSetpoint(80)
-                                        // make sure to not learn this value by implementing this list:
-                                        state.inBoostMode = ["$thisAppliance" : "true"] 
-                                        log.debug "boost mode for $thisAppliance and state.inBoostMode updated : $state.inBoostMode"
+                                        // make sure to not learn this value by appending this list:
+                                        state.NoLearnMode = ["$thisAppliance" : "true"] 
+                                        log.debug "boost mode for $thisAppliance and state.NoLearnMode updated : $state.NoLearnMode"
+                                        thisAppliance.setHeatingSetpoint(85)
                                     }
                                     else {
                                         log.debug "$thisAppliance already set to maximum heat (thisHSP = $thisHSP < 80 ?)"
                                     }
                                 }
                                 else {
-                                    // remove the device from state.inBoostMode
-                                    state.inBoostMode = ["$thisAppliance" : "false"]  
-                                    log.debug "$thisAppliance removed from state.inBoostMode"
+                                    // remove the device from state.NoLearnMode
+                                    state.NoLearnMode = ["$thisAppliance" : "false"]  
+                                    log.debug "$thisAppliance removed from state.NoLearnMode"
 
                                     // once temp is ok, if it got raised to 80 earlier, then..
-                                    if (thisHSP >= comfortHigh.toInteger() + 6){
-                                        // resinstate calculated standard comfort value
-                                        HSP = comfort
-                                    }
+                                    //if (thisHSP >= comfortHigh.toInteger() + 6){
+                                    // resinstate calculated standard comfort value
+                                    //    HSP = comfort
+                                    //}
                                     // if not done already, update setpoint
                                     if(thisHSP != HSP){
                                         // may still return needAdjust but temp ok, so go back to normal setting
@@ -986,7 +1010,7 @@ def adjust() {
                                         log.debug "$thisAppliance set to $HSP"
                                     }
                                     else {
-                                        log.debug "$thisAppliance ALREADY set to $HSP"
+                                        log.debug "$thisAppliance ALREADY set to $HSP 548Eedac"
                                     }
                                 }
                             }
@@ -996,9 +1020,9 @@ def adjust() {
 
                                 // if current temperature is above cooling comfort
                                 if (thisTemp > comfort || thisTemp > CSP) {
-                                    if (thisCSP != comfort) {
-                                        //dontLearnFromThis() // make sure A.I. does not learn this temporary value
-                                        thisAppliance.setcoolingSetpoint(comfort)
+                                    if (thisCSP != HSP) {
+                                        state.NoLearnMode = ["$thisAppliance" : "true"] 
+                                        thisAppliance.setcoolingSetpoint(HSP)
                                     }
                                 }
                                 else {
@@ -1022,11 +1046,21 @@ def adjust() {
                                 // we're comfortable so get the HSP back to user's comfort zone or to no motion settings
                                 if (thisTemp > comfort || !Active){
                                     if(thisHSP != comfort) {
-                                        //dontLearnFromThis() // make sure A.I. does not learn this temporary value
-                                        thisAppliance.setHeatingSetpoint(comfort)
-                                        log.debug "$thisAppliance heat set to standard comfort temperature ($comfort)"
+
+                                        if(comfort > HSP){
+                                            state.NoLearnMode = ["$thisAppliance" : "true"] // make sure A.I. does not learn this temporary value
+                                            thisAppliance.setHeatingSetpoint(comfort)
+                                            log.debug "$thisAppliance heat set to standard comfort temperature ($comfort)"
+                                        }
+                                        else{
+                                            state.NoLearnMode = ["$thisAppliance" : "false"] 
+                                            thisAppliance.setHeatingSetpoint(HSP)
+                                            log.debug "$thisAppliance heat set to recorded HSP temperature ($HSP) because it's higher than auto evaluated comfort"
+                                        }
+
                                     }
                                     else {
+                                        state.NoLearnMode = ["$thisAppliance" : "false"] // allow A.I. to learn again from new inputs
                                         log.debug "$thisAppliance ALREADY set to standard comfort temperature ($comfort) (or no motion: $Active)"
                                     }
                                 }
@@ -1057,6 +1091,7 @@ def adjust() {
                         log.debug "outside tempearture is too low, turning off $thisAppliance"
                         if (thermMode != "off" && thermMode != "auto") {
                             thisAppliance.setThermostatMode("off")
+                            log.Debug "$thisAppliance turned off 78eef44"
                         }
                     }
                 }
@@ -1073,7 +1108,7 @@ def adjust() {
         log.debug "in power saving mode, not changing power meter appliances set points"
     }
 
-    log.debug "state.inBoostMode = ${state.inBoostMode}"
+    log.debug "state.NoLearnMode = ${state.NoLearnMode}"
 }
 
 boolean tooColdForHeatPump(device){
@@ -1090,7 +1125,7 @@ boolean tooColdForHeatPump(device){
         def ThisHeatPump = HeatPumps.find{it.toString().contains("$device")} as Boolean
         if(ThisHeatPump){
 
-            if(outside.toInteger() < criticalHeatPump.toInteger()){
+            if(outside < criticalHeatPump.toInteger()){
                 result = true
                 log.debug "$device is a Heat Pump and it is too cold outside."
             }
@@ -1104,13 +1139,13 @@ def eval(){
 
     log.info """
     ////////////////////////////////////////////////////////////////////
-    state.learnedHSP = $state.learnedHS
+    state.learnedHSP = $state.learnedHSP
     state.learnedCSP = $state.learnedCSP
     state.HSPMode = $state.HSPMode
     state.CSPMode = $state.CSPMode
     """
-   // state.inBoostMode = [:]
-    //log.debug "state.inBoostMode map created"
+    // state.NoLearnMode = [:]
+    //log.debug "state.NoLearnMode map created"
 
 
     boolean contactsOpen = "open" in contacts?.currentValue("contact") 
@@ -1161,7 +1196,7 @@ def setThermostats(){
     boolean inSavingMode = location.currentMode in saveModes
 
     log.debug "inSavingMode = $inSavingMode"
-    
+
     def comfort = getComfortH().toInteger()
 
     if(!inSavingMode) // a saving mode is a priority mode such as night or away, it overrides A.I. 
@@ -1269,9 +1304,9 @@ recordedCSP for $CurrMode mode = $recordedCSP
                 boolean Active = GetMotionData[0]
 
                 def tooCold4Hpump = tooColdForHeatPump(thisTherm)
-                boolean useBoth = useboth(tooCold4Hpump, outside, thisTemp.toInteger(), thisHSP, Active)
+                boolean useBoth = useboth(tooCold4Hpump, outside, thisTemp, thisHSP, Active)
 
-                log.debug "outside: $outside lowTemp = $lowTemp useBoth = $useBoth tooCold4Hpump = $tooCold4Hpump"
+                log.debug "outside: $outside thisTemp = $thisTemp lowTemp = $lowTemp useBoth = $useBoth tooCold4Hpump = $tooCold4Hpump"
 
 
                 if(keepOff){
@@ -1279,6 +1314,7 @@ recordedCSP for $CurrMode mode = $recordedCSP
 
                         if(thermMode != reqMode){
                             thisTherm.setThermostatMode(reqMode)
+                            log.debug "$thisTherm set to $reqMode 54fdef5"
                         }
                     }
 
@@ -1292,6 +1328,7 @@ recordedCSP for $CurrMode mode = $recordedCSP
 
                         if(thermMode != "off"){
                             thisTherm.setThermostatMode("off")
+                            log.debug "$thisTherm turned off 54fdee5"
                         }
 
                     }
@@ -1303,7 +1340,7 @@ recordedCSP for $CurrMode mode = $recordedCSP
                     if(!tooCold4Hpump || useBoth){
                         if(thermMode != "heat"){
                             thisTherm.setThermostatMode("heat")
-                            log.debug "$thisTherm set to heat"
+                            log.debug "$thisTherm set to heat fedf0054"
                         }
                         else {
                             log.debug "$thisTherm already set to heat or is override"
@@ -1312,42 +1349,44 @@ recordedCSP for $CurrMode mode = $recordedCSP
                     else {
                         log.debug "$thisTherm is a heatpump and it's too cold outside or cold enough to use both appliances"
                         if(thermMode != "off" && !useBoth){
-                            log.debug "turning off $thisTherm (heatpump low temp)"
+                            log.debug "turning off $thisTherm (heatpump low temp) 54fefee47"
                             thisTherm.setThermostatMode("off")
                         }
                     }
-                    log.debug "testttt"
+
+
+                    ////////////// extra appliance management (virtual thermostat)
                     boolean thisIsTheExtraAppliance = ApplianceWithPwMeter.find{it.toString() == "$thisTherm"} 
-                    log.debug "- thisIsTheExtraAppliance = $thisIsTheExtraAppliance ( $extraAppliance works with $thisTherm )"
-                    /// extra appliance management (virtual thermostat)
-                    if(extraAppliance && thisIsTheExtraAppliance && (tooCold4Hpump || useBoth)){
+                    boolean ExtraApplianceIsOn = "on" in extraAppliance.currentValue("switch")
+                    log.debug """
+                    - thisIsTheExtraAppliance = $thisIsTheExtraAppliance ( $extraAppliance / $thisTherm )
+                    ExtraApplianceIsOn = $ExtraApplianceIsOn
+                    """
+                    // if its on, we need to run this loop to make sure it can be turned back off 
+                    // when temperature criteria are no longer met
+                    if(extraAppliance && thisIsTheExtraAppliance && (ExtraApplianceIsOn || tooCold4Hpump || useBoth)){
 
                         log.debug """thermostat values around $extraAppliance: 
-                        
                     - thisTherm = $thisTherm
                     - thisHSP = $thisHSP
                     - thisTemp = $thisTemp
                     - Active = $Active
                     """
-                        if(thisTemp < thisHSP){
+                        if(thisTemp < thisHSP && Active){
 
-                            if(Active && "off" in extraAppliance.currentValue("switch")){
-                                extraAppliance.on()
+                            if("off" in extraAppliance.currentValue("switch")){
                                 log.debug "turning on $extraAppliance"
-                            }
-                            else if(!Active){
-                                log.debug "not turning on $extraAppliance because there's no motion"
-                                if("on" in extraAppliance.currentValue("switch")){
-                                    extraAppliance.off()  
-                                    log.debug "$extraAppliance turned off due to absence of motion"
-                                }
+                                extraAppliance.on()
                             }
                             else {
                                 log.debug "$extraAppliance already on"
                             }
                         }
                         else {
-                            if("on" in extraAppliance.currentValue("switch")){
+                            if(!Active){
+                                log.debug "not turning on $extraAppliance because there's no motion"
+                            }
+                            else if("on" in extraAppliance.currentValue("switch")){
                                 log.debug "turning off $extraAppliance because temperature is ok now"
                                 extraAppliance.off()           
                             }
@@ -1359,6 +1398,9 @@ recordedCSP for $CurrMode mode = $recordedCSP
 
                 }
                 else if(outside >= highTemp){ // if it's warm outside
+
+
+
                     log.debug "cooling system" 
                     // log.debug "$thisTherm temperature is: $thisTemp"
                     // cooling is needed
@@ -1375,16 +1417,6 @@ recordedCSP for $CurrMode mode = $recordedCSP
                     // setCSPs()
                 }
 
-                // in case it is no longer too cold outside and extraAppliance was turned on, turn it off
-                if(extraAppliance && (!useBoth || tooColdForHeatPump())){
-                    if("on" in extraAppliance.currentValue("switch")){
-                        log.debug "turning off $extraAppliance since outside temperature is no longer critical for heat pump"
-                        extraAppliance.off()
-                    }
-                    else {
-                        log.debug "$extraAppliance already off"
-                    }
-                }
 
                 //dontLearnFromThis() // do not allow the app to learn from its own cmds
                 runIn(2, setCSPs)
@@ -1511,11 +1543,11 @@ HSP = $HSP
                         if(thisHSP != comfort + 4){  
                             // note that comfort can't be the HSP here because thermostat might return a value equals or superior to comfort
                             // and so it won't heat while the alternate sensor returns a lower value thand desired
-                            state.inBoostMode = ["$thisTherm" : "true"] 
+                            state.NoLearnMode = ["$thisTherm" : "true"] 
                             thisTherm.setHeatingSetpoint(comfort + 4)
                             log.debug """
                             $thisTherm HSP adjusted to fit its alternate sensor values (using comfort linear equation)
-                            state.inBoostMode updated with $thisTherm id : $state.inBoostMode
+                            state.NoLearnMode updated with $thisTherm id : $state.NoLearnMode
                             """
                         }
                         else {
@@ -1523,25 +1555,25 @@ HSP = $HSP
                         }
                     }
                     else if(!Active){
-                        state.inBoostMode = ["$thisTherm" : "false"] 
-                        log.debug "$thisTherm removed from state.inBoostMode"
+                        state.NoLearnMode = ["$thisTherm" : "false"] 
+                        log.debug "$thisTherm removed from state.NoLearnMode"
                         HSP = comfort - HeatNoMotion
                         //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
                         thisTherm.setHeatingSetpoint(HSP)
                         log.debug "${thisTherm} HSP brought down to $HSP because there's no motion"
                     }                    
                     else if(thisTemp > comfort || thisTemp > HSP){
-                        state.inBoostMode = ["$thisTherm" : "false"] 
-                        log.debug "$thisTherm removed from state.inBoostMode"
+                        state.NoLearnMode = ["$thisTherm" : "false"] 
+                        log.debug "$thisTherm removed from state.NoLearnMode"
                         if(thisTemp > comfort && thisHSP != comfort){
                             //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
                             thisTherm.setHeatingSetpoint(comfort)
-                            log.debug "$thisTherm HSP brought back to comfort value: ${comfort} "
+                            log.debug "$thisTherm HSP brought back to comfort value: ${comfort}  58eedf"
                         }
                         else if(thisTemp > HSP && thisHSP != HSP){
                             //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
                             thisTherm.setHeatingSetpoint(HSP)
-                            log.debug "$thisTherm HSP brought back to A.I. value: ${HSP} "
+                            log.debug "$thisTherm HSP brought back to A.I. value: ${HSP}  578fddba"
                         }
                         else {
                             log.debug "${thisTherm}'s HSP already set too low"
@@ -1602,6 +1634,8 @@ def setCSPs(){
 
     def CurrMode = location.currentMode
 
+    def comfort = getComfortC().toInteger()
+
     def recorded = state.CSPMode.find{it.key == "$CurrMode"}?.value // value is a map of [therm:temp] for current mode
 
     // log.debug "recorded for $CurrMode mode = $recorded"
@@ -1614,16 +1648,19 @@ def setCSPs(){
 
         if(currentlyHeating){
 
-            thisCSP = thisTherm.currentValue("coolingSetpoint")
+            thisCSP = thisTherm.currentValue("coolingSetpoint")?.toInteger()
+            CSP = recorded.find{it.key == "${thisTherm}"}?.value?.toInteger()
+
             log.debug """
 thisTherm = $thisTherm 
 thisCSP = $thisCSP
+CSP = $CSP
 """
 
-            CSP = recorded.find{it.key == "${thisTherm}"}?.value
+
             // log.debug "recorded CSP for $thisTherm = $CSP ------- ($thisCSP = $CSP)"
-            if("$thisCSP" != "$CSP"){
-                //dontLearnFromThis() // make sure A.I. does not learn this temporary value   
+            if(thisCSP != CSP || thisCSP < CSP){
+
                 thisTherm.setCoolingSetpoint(CSP) 
             }
             else {
@@ -1636,17 +1673,28 @@ thisCSP = $thisCSP
 
     }
 
-state
+    state
 }
 
-boolean useboth(boolean tooCold4Hpump, int outside, int ThisTemp, int HSP, boolean Active){
+boolean useboth(boolean tooCold4Hpump, double outside, double thisTemp, int HSP, boolean Active){
+
 
     boolean result = false
 
-    if(!tooCold4Hpump && outside < 48 && extraAppliance && thisTemp < HSP && Active){
+    if(!tooCold4Hpump && (outside < 40 || thisTemp < HSP - 2) && extraAppliance && thisTemp < HSP && Active){
         // use both devices when outside temperature is too low
         result = true;
     }
+
+    log.trace """
+        						// USEBOTH TRACE
+        						extraAppliance = $extraAppliance
+                                outside = $outside
+                                thisTemp = $thisTemp
+                                HSP = $HSP
+                                Active = $Active
+                                result = $result
+        """
 
     return result
 }
@@ -1672,8 +1720,8 @@ boolean keepOff(int i, double thisTemp, int thisHSP, int thisCSP, int outside, i
             result = true
         }
     }  
- log.trace """ in keepOff boolean, parameters are:
- 
+    log.trace """ in keepOff boolean, parameters are:
+
 thisTherm = $thisTherm
 thisTemp = $thisTemp
 thisHSP = $thisHSP
@@ -1727,7 +1775,7 @@ def getComfortH(){
     def c = 72 // c is a constant as the average comfort setting (y tends to c to infinity)
 
     // y = bx / x² + c
-    float newComfortH = (b*xa) / (x*x) + c
+    float newComfortH = (b*xa) / (x*x) + c // reverse square function + constant 
     float beforeRound = newComfortH
 
     newComfortH = newComfortH.round().toInteger()
@@ -1735,9 +1783,43 @@ def getComfortH(){
     if(newComfortH > comfortHigh){
         newComfortH = comfortHigh
     }
-    log.debug "b = $b, outside = $outside, newComfortH = $newComfortH ($beforeRound)"
+
+
+    log.debug "b = $b, outside = $outside, newComfortH = $newComfortH (before Round = $beforeRound)"
 
     return newComfortH
+
+}
+
+def getComfortC(){
+
+    log.debug "comfortLow = $comfortLow comfortHigh = $comfortHigh"
+    def outside = outsidetemp.currentValue("temperature").toInteger()
+
+    def xa = 34 // x1 reference value to be multiplied  
+    def x = outside // outside temperature is the variable
+    def y = null // value to be found
+    def b = 10 // b is the multiplier 
+    def c = 72 // c is a constant as the average comfort setting (y tends to c to infinity)
+
+    // y = bx / x² + c
+    float newComfortC = b*(xa*xa) + c // square function + constant 
+    float beforeRound = newComfortC
+
+    newComfortC = newComfortC.round()
+
+    if(newComfortC > comfortHigh){
+        newComfortC = comfortHigh
+    }
+    else if(newComfortC < comfortLow){
+        newComfortC = comfortLow
+    }
+
+    newComfortC = newComfortC.toInteger()
+
+    log.debug "b = $b, outside = $outside, newComfortH = $newComfortC (before Round = $beforeRound)"
+
+    return newComfortC
 
 }
 
