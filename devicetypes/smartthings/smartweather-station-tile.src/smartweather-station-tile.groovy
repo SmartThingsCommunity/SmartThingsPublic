@@ -209,6 +209,7 @@ def poll() {
     log.info "WUSTATION: Executing 'poll', location: ${location.name}"
 
     // Last update time stamp
+    def timeZone = location.timeZone ?: timeZone(timeOfDay)
     def timeStamp = new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone)
     sendEvent(name: "lastUpdate", value: timeStamp)
 
