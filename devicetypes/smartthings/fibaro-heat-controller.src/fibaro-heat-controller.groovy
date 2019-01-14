@@ -13,7 +13,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Heat Controller", namespace: "smartthings", author: "Samsung", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Battery_Thermostat", ocfDeviceType: "oic.d.thermostat") {
+	definition (name: "Fibaro Heat Controller", namespace: "smartthings", author: "Samsung", ocfDeviceType: "oic.d.thermostat") {
 		capability "Thermostat Mode"
 		capability "Refresh"
 		capability "Battery"
@@ -161,7 +161,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 			break
 	}
 
-	createEvent(name: "thermostatMode", value: mode)
+	createEvent(name: "thermostatMode", value: mode, data: [supportedThermostatModes: state.supportedModes])
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, sourceEndPoint = null) {
@@ -290,7 +290,7 @@ private encap(cmd, endpoint = null) {
 def switchMode() {
 	def currentMode = device.currentValue("thermostatMode")
 	def supportedModes = state.supportedModes
-	if (supportedModes && supportedModes.size() && supportedModes[0].size() > 1) {
+	if (supportedModes && supportedModes.size()) {
 		def next = { supportedModes[supportedModes.indexOf(it) + 1] ?: supportedModes[0] }
 		def nextMode = next(currentMode)
 		setThermostatMode(nextMode)
