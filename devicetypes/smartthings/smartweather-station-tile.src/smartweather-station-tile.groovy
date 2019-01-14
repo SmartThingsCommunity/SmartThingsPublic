@@ -271,7 +271,7 @@ def poll() {
         }
 
         // Alerts
-        def alerts = getTwcAlerts(zipCode)
+        def alerts = getTwcAlerts("${loc.latitude},${loc.longitude}")
         if (alerts) {
             alerts.each {alert ->
                 def msg = alert.headlineText
