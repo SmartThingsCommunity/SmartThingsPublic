@@ -21,6 +21,7 @@ metadata {
 		capability "Health Check"
 		capability "Thermostat"
 		capability "Temperature Measurement"
+		capability "Power Source"
 
 		command "setThermostatSetpointUp"
 		command "setThermostatSetpointDown"
@@ -67,12 +68,14 @@ metadata {
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label: 'Battery:\n${currentValue}%', unit: "%"
 		}
-
+		valueTile("powerSource", "device.powerSource", width: 2, heigh: 1, inactiveLabel: true, decoration: "flat") {
+			state "powerSource", label: 'Power Source: ${currentValue}', backgroundColor: "#ffffff"
+		}
 		standardTile("refresh", "command.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "refresh", label: 'refresh', action: "refresh.refresh", icon: "st.secondary.refresh-icon"
 		}
 		main "thermostat"
-		details(["thermostat", "battery", "refresh"])
+		details(["thermostat", "battery", "refresh", "powerSource"])
 	}
 }
 
@@ -180,6 +183,15 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 			addChild()
 		}
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	def event = [name: "powerSource"]
+	if(cmd.notificationType == 0x08)
+		event.value = cmd.event ? "dc" : "battery"
+
+	event.descriptionText = "Device's power source is ${event.value}"
+	createEvent(event)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy cmd) {
