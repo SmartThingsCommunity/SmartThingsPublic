@@ -27,6 +27,7 @@ metadata {
 
 		fingerprint mfr: "010F", prod: "0801", model: "2001"
 		fingerprint mfr: "010F", prod: "0801", model: "1001"
+		fingerprint mfr: "010F", prod: "0801"
 
 	}
 
