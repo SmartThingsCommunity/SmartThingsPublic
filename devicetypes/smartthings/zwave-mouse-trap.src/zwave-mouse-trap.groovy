@@ -12,45 +12,41 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Mouse Trap", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact", runLocally: false, executeCommandsLocally: false) {
+	definition(name: "Z-Wave Mouse Trap", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-pestcontrol-1", runLocally: false, executeCommandsLocally: false) {
 		capability "Sensor"
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
-        capability "Refresh"
-        capability "Pest Control" //capability "pestControl", enum: idle, trapArmed, trapRearmRequired, pestDetected, pestExterminated
-        
-        //zw:S type:0701 mfr:021F prod:0003 model:0104 ver:3.49 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,71,30,85,59,84,70 role:06 ff:8C13 ui:8C13
+		capability "Refresh"
+		capability "Pest Control"
+		//capability "pestControl", enum: idle, trapArmed, trapRearmRequired, pestDetected, pestExterminated
+
+		//zw:S type:0701 mfr:021F prod:0003 model:0104 ver:3.49 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,71,30,85,59,84,70 role:06 ff:8C13 ui:8C13
 		fingerprint mfr: "021F", prod: "0003", model: "0104", deviceJoinName: "Dome Mouser"
 	}
-    
+
 	tiles(scale: 2) {
 		multiAttributeTile(name: "pestControl", type: "generic", width: 6, height: 4) {
-			tileAttribute("device.pestControl", key: "PRIMARY_CONTROL") {				                
-                attributeState("idle", label: 'IDLE', icon: "st.contact.contact.open", backgroundColor: "#00FF00")
-                attributeState("trapRearmRequired", label: 'TRAP RE-ARM REQUIRED', icon: "st.contact.contact.open", backgroundColor: "#00A0DC")
-                attributeState("trapArmed", label: 'TRAP ARMED', icon: "st.contact.contact.open", backgroundColor: "#FF6600")				
-				attributeState("pestDetected", label: 'PEST DETECTED', icon: "https://s3-us-west-2.amazonaws.com/dome-manuals/SmartThings/mouse.png", backgroundColor: "#FF6600")
-                attributeState("pestExterminated", label: 'PEST EXTERMINATED', icon: "https://s3-us-west-2.amazonaws.com/dome-manuals/SmartThings/mouse.png", backgroundColor: "#FF0000")
+			tileAttribute("device.pestControl", key: "PRIMARY_CONTROL") {
+				attributeState("idle", label: 'IDLE', icon: "st.contact.contact.open", backgroundColor: "#00FF00")
+				attributeState("trapRearmRequired", label: 'TRAP RE-ARM REQUIRED', icon: "st.contact.contact.open", backgroundColor: "#00A0DC")
+				attributeState("trapArmed", label: 'TRAP ARMED', icon: "st.contact.contact.open", backgroundColor: "#FF6600")
+				attributeState("pestDetected", label: 'PEST DETECTED', icon: "st.contact.contact.open", backgroundColor: "#FF6600")
+				attributeState("pestExterminated", label: 'PEST EXTERMINATED', icon: "st.contact.contact.closed", backgroundColor: "#FF0000")
 			}
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
-        standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label: '', action: "configuration.configure", icon: "st.secondary.configure"
 		}
 		main "pestControl"
-		details(["pestControl", "battery", "refresh","configure"])
+		details(["pestControl", "battery", "refresh", "configure"])
 	}
-}
-
-private getCommandClassVersions() {
-	[0x20: 1, 0x25: 1, 0x30: 1, 0x31: 5, 0x71: 3, 0x80: 1, 0x84: 1,  0x9C: 1]
-    //Dome Mouser's raw description: [0x5A:1, , 0x30:2, 0x59:1, 0x70:2, 0x71:2, 0x72:2, 0x73:1, 0x80:1, 0x84:2, 0x85:2, 0x86:1]
 }
 
 /**
@@ -63,17 +59,18 @@ def ping() {
 
 def refresh() {
 	log.debug "sending battery refresh command"
-	def cmds = []	
+	def cmds = []
 	cmds << zwave.batteryV1.batteryGet().format()
-	cmds << zwave.notificationV3.notificationGet(notificationType: 0x13).format()   
+	cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
+	cmds << zwave.notificationV3.notificationGet(notificationType: 0x13).format()
 	cmds << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_CO).format()
 	return delayBetween(cmds, 2000)
 }
 
 def parse(String description) {
 	def result = []
-    log.debug "desc: $description"
-	def cmd = zwave.parse(description, commandClassVersions)
+	log.debug "desc: $description"
+	def cmd = zwave.parse(description)
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
@@ -84,15 +81,15 @@ def parse(String description) {
 def installed() {
 	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 8h 6min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2*60 /*8 * 60 * 60 + 6 * 60*/, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-    initialize()
+	sendEvent(name: "checkInterval", value: 24 * 60 * 60 + 6 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	initialize()
 }
 
 def updated() {
 	log.debug "updated()"
 	// Device-Watch simply pings if no device events received for 8h 6min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2*60 /*8 * 60 * 60 + 6 * 60*/, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-    runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
+	sendEvent(name: "checkInterval", value: 24 * 60 * 60 + 6 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
 }
 
 def initialize() {
@@ -120,25 +117,22 @@ def initialize() {
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	// ignore, to prevent override of NotificationReport
-	// []
-    createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
+	[]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv1.SensorBinaryReport cmd) {
 	// ignore, to prevent override of SensorBinaryReport
-    // []
-    // tmp:
-    createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
+	[]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
-    log.debug "Event: ${cmd.event}, Notification type: ${cmd.notificationType}" 
-    def result = []
+	log.debug "Event: ${cmd.event}, Notification type: ${cmd.notificationType}"
+	def result = []
 	def value
 	def description
 	if (cmd.notificationType == 0x07) {
 		//notificationType == 0x07 (Home Security)
-        switch (cmd.event) {
+		switch (cmd.event) {
 			case 0x00:
 				value = "idle"
 				description = "Trap cleared"
@@ -153,7 +147,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		result = createEvent(name: "pestControl", value: value, descriptionText: description)
 	} else if (cmd.notificationType == 0x13) {
 		//notificationType == 0x13 (Pest Control)
-        switch (cmd.event) {
+		switch (cmd.event) {
 			case 0x00:
 				value = "idle"
 				description = "Trap cleared"
@@ -166,10 +160,10 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				value = "trapRearmRequired"
 				description = "Trap re-arm required"
 				break
-           case 0x06:
+			case 0x06:
 				value = "pestDetected"
 				description = "Pest detected"
-				break     
+				break
 			case 0x08:
 				value = "pestExterminated"
 				description = "Pest exterminated"
@@ -184,7 +178,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	log.debug "WakeUpNotification ${cmd}"
-    def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
+	def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
 	def cmds = []
 	if (!state.MSR) {
 		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
@@ -193,7 +187,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	if (device.currentValue("pestControl") == null) { // In case our initial request didn't make it
 		cmds << zwave.notificationV3.notificationGet(notificationType: 0x13).format()
 	}
-	if (!state.lastbat || now() - state.lastbat > 2*60 /*53 * 60 * 60 * 1000*/) {
+	if (!state.lastbat || now() - state.lastbat > (24 * 60 * 60 + 6 * 60) * 1000 /*milliseconds*/) {
 		cmds << zwave.batteryV1.batteryGet().format()
 	} else {
 		// If we check the battery state we will send NoMoreInfo in the handler for BatteryReport so that we definitely get the report
@@ -210,7 +204,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.isStateChange = true
 	} else {
 		log.debug "Battery report: $cmd"
-        map.value = cmd.batteryLevel
+		map.value = cmd.batteryLevel
 	}
 	state.lastbat = now()
 	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
@@ -232,33 +226,33 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	createEvent(descriptionText: "$device.displayName: $cmd", displayed: false)
+	createEvent(descriptionText: "$device.displayName: $cmd", displayed: true)
 }
 
 def configure() {
 	log.debug "config"
-    response(getConfigurationCommands())
+	response(getConfigurationCommands())
 }
 
 def getConfigurationCommands() {
 	log.debug "getConfigurationCommands"
 	def cmds = []
 	cmds << zwave.batteryV1.batteryGet().format()
-    cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
-    cmds << zwave.notificationV3.notificationGet(notificationType: 0x13).format()
-	cmds << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_CO).format()   
-	
-    // The wake-up interval is set in seconds, and is 43,200 seconds (12 hours) by default.
-    cmds << zwave.wakeUpV1.wakeUpIntervalSet(seconds: 6*60/* 12 * 3600 */, nodeid: zwaveHubNodeId).format()
-    // BASIC_SET Level, default: 255
-    cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [255]).format()
-    // Set Firing Mode, default: 2 (Burst fire)
-    cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
-    // 	This parameter defines how long the Mouser will fire continuously before it starts to burst-fire, default: 360 seconds
-    cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, configurationValue: [360]).format()
-    // Enable/Disable LED Alarm, default: 1 (enabled)
-    cmds << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1]).format()
-    // LED Alarm Duration, default: 0 hours
-    cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [0]).format()
-    cmds
+	cmds << zwave.notificationV3.notificationGet(notificationType: 0x13).format()
+	cmds << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_CO).format()
+
+	// The wake-up interval is set in seconds, and is 43,200 seconds (12 hours) by default.
+	cmds << zwave.wakeUpV2.wakeUpIntervalSet(seconds: 12 * 3600, nodeid: zwaveHubNodeId).format()
+
+	// BASIC_SET Level, default: 255
+	cmds << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, configurationValue: [255]).format()
+	// Set Firing Mode, default: 2 (Burst fire)
+	cmds << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]).format()
+	// 	This parameter defines how long the Mouser will fire continuously before it starts to burst-fire, default: 360 seconds
+	cmds << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, configurationValue: [360]).format()
+	// Enable/Disable LED Alarm, default: 1 (enabled)
+	cmds << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1]).format()
+	// LED Alarm Duration, default: 0 hours
+	cmds << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, configurationValue: [0]).format()
+	cmds
 }
