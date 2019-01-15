@@ -68,7 +68,10 @@ def updated() {
 }
 
 def configure() {
-	refresh()
+	def cmds = []
+	cmds << zwave.configurationV2.configurationSet(parameterNumber: 27, size: 1, scaledConfigurationValue: 1) //led on when power on
+	cmds << refresh()
+	cmds
 }
 
 
