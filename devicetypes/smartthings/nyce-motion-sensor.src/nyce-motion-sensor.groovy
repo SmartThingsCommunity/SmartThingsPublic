@@ -22,7 +22,7 @@ metadata {
 		capability "Battery"
 		capability "Refresh"
 		capability "Sensor"
-        capability "Health Check"
+		capability "Health Check"
 
 		command "enrollResponse"
 
