@@ -80,20 +80,21 @@ metadata {
 }
 
 def installed() {
-	runIn(2, "initialize")
+	log.debug "installed()"
+	state.supportedModes = ["off", "emergency heat", "heat"]
+
+	sendEvent(name: "temperature", value: 0, unit: "C", displayed: false)
+	sendEvent(name: "supportedThermostatModes", value: state.supportedModes, displayed: false)
+
+	runIn(2, "updated", [overwrite: true])
 }
 
 def updated() {
-	initialize()
-}
+	log.debug "updated()"
 
-def initialize() {
-	def supportedModes = ["off", "emergency heat", "heat"]
-	state.supportedModes = supportedModes
-	sendEvent(name: "temperature", value: 0)
-	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	response(refresh())
+
+	runIn(5, "forcedRefresh", [overwrite: true])
 }
 
 def parse(String description) {
@@ -108,13 +109,8 @@ def parse(String description) {
 	return result
 }
 
-private commandClasses() {
-	[0x70: 1]
-}
-
-
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand(commandClasses())
+	def encapsulatedCommand = cmd.encapsulatedCommand()
 	if (encapsulatedCommand) {
 		log.debug "SecurityMessageEncapsulation into: ${encapsulatedCommand}"
 		zwaveEvent(encapsulatedCommand)
@@ -125,7 +121,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand(commandClasses())
+	def encapsulatedCommand = cmd.encapsulatedCommand()
 	if (encapsulatedCommand) {
 		log.debug "MultiChannel Encapsulation: ${encapsulatedCommand}"
 		zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint)
@@ -137,17 +133,18 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceEndPoint = null) {
 	def value = cmd.batteryLevel == 255 ? 1 : cmd.batteryLevel
-	def map = [name: "battery", value: value]
-	switch(sourceEndPoint) {
-		case 1:
-			createEvent(map)
-			break
-		case 2:
-			if(childDevices) {
-				sendEventToChild(map)
-			}
-			break
+	def map = [name: "battery", value: value, unit: "%"]
+	def result = [:]
+
+	if (!sourceEndPoint || sourceEndPoint == 1) {
+		result = createEvent(map)
+	} else if (sourceEndPoint == 2) {
+		if (childDevices) {
+			sendEventToChild(map)
+		}
 	}
+
+	result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
@@ -177,8 +174,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	createEvent(map)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport cmd) {
-	if(cmd.parameterNumber == 3 && cmd.scaledConfigurationValue == 1) {
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	if (cmd.parameterNumber == 3 && cmd.scaledConfigurationValue == 1) {
 		if(!childDevices) {
 			addChild()
 		}
@@ -187,7 +184,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	def event = [name: "powerSource"]
-	if(cmd.notificationType == 0x08)
+	if (cmd.notificationType == 0x08)
 		event.value = cmd.event ? "dc" : "battery"
 
 	event.descriptionText = "Device's power source is ${event.value}"
@@ -219,9 +216,9 @@ def setThermostatMode(String mode) {
 	}
 
 	[
-			secureEncap(zwave.thermostatModeV2.thermostatModeSet(mode: modeValue), 1),
+			secureEncap(zwave.thermostatModeV2.thermostatModeSet(mode: modeValue)),
 			"delay 2000",
-			secureEncap(zwave.thermostatModeV2.thermostatModeGet(), 1)
+			secureEncap(zwave.thermostatModeV2.thermostatModeGet())
 	]
 }
 
@@ -240,9 +237,9 @@ def emergencyHeat() {
 def setHeatingSetpoint(setpoint) {
 	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
 	[
-			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: 1, size: 2]), 1),
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: 1, size: 2])),
 			"delay 2000",
-			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1), 1)
+			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1))
 	]
 }
 
@@ -264,12 +261,14 @@ def setThermostatSetpointDown() {
 
 def refresh() {
 	def cmds = [
+			secureEncap(zwave.configurationV2.configurationGet(parameterNumber: 3)),
 			secureEncap(zwave.batteryV1.batteryGet(), 1),
 			secureEncap(zwave.batteryV1.batteryGet(), 2),
 			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)),
 			secureEncap(zwave.thermostatModeV2.thermostatModeGet()),
 			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet()),
-			secureEncap(zwave.configurationV1.configurationGet(parameterNumber: 3))
+			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet(), 2),
+			secureEncap(zwave.notificationV3.notificationGet(notificationType: 0x08))
 	]
 
 	delayBetween(cmds, 2500)
@@ -284,7 +283,7 @@ private secureEncap(cmd, endpoint = null) {
 }
 
 private secure(cmd) {
-	if(zwaveInfo.zw.endsWith("s")) {
+	if (zwaveInfo.zw.endsWith("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
