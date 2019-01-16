@@ -28,6 +28,7 @@ preferences {
     section("Griddy Auth") {
         input "email", "text", title: "Username"
         input "password", "password", title: "Password"
+        input name: "loadZone", type: "enum", title: "Load Zone", options: ["LZ_HOUSTON", "LZ_NORTH", "LZ_SOUTH", "LZ_WEST"], required: true
     }
 }
 
@@ -98,7 +99,7 @@ def refreshChild(child) {
     	uri: "${serverUrl}/api/v1/insights/getnow",
         headers: [ authorization: "Bearer ${accessToken}" ],
         body: [
-            settlement_point: "LZ_NORTH"
+		settlement_point: loadZone
         ]
     ]) { resp -> data = [ price: Double.parseDouble(resp.data.now.price_ckwh) ] }
     
