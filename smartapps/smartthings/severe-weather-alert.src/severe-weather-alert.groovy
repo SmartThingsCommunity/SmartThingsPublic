@@ -81,7 +81,8 @@ def checkForSevereWeather() {
         if(!(zipcodeIsValid())) {
             log.warn "Severe Weather Alert: Invalid zipcode entered, defaulting to location's zipcode"
         }
-        alerts = getTwcAlerts(zipCode)
+        def zipToLocation = getTwcLocation("$zipCode").location
+        alerts = getTwcAlerts("${zipToLocation.latitude},${zipToLocation.longitude}")
     } else {
         log.warn "Severe Weather Alert: Location is not defined"
     }
@@ -116,7 +117,7 @@ def locationIsDefined() {
 }
 
 def zipcodeIsValid() {
-    zipcode && zipcode.isNumber() && zipcode.size() == 5
+    zipCode && zipCode.isNumber() && zipCode.size() == 5
 }
 
 private send(message) {
