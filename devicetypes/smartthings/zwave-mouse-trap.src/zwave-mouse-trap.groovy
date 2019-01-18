@@ -17,9 +17,7 @@ metadata {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
-		capability "Refresh"
-		capability "Pest Control"
-		//capability "pestControl", enum: idle, trapArmed, trapRearmRequired, pestDetected, pestExterminated
+		capability "Pest Control" //capability "pestControl", enum: idle, trapArmed, trapRearmRequired, pestDetected, pestExterminated
 
 		//zw:S type:0701 mfr:021F prod:0003 model:0104 ver:3.49 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,71,30,85,59,84,70 role:06 ff:8C13 ui:8C13
 		fingerprint mfr: "021F", prod: "0003", model: "0104", deviceJoinName: "Dome Mouser"
@@ -38,14 +36,11 @@ metadata {
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
-		}
 		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label: '', action: "configuration.configure", icon: "st.secondary.configure"
 		}
 		main "pestControl"
-		details(["pestControl", "battery", "refresh", "configure"])
+		details(["pestControl", "battery", "configure"])
 	}
 }
 
@@ -54,17 +49,6 @@ metadata {
  * */
 def ping() {
 	log.debug "ping() called"
-	refresh()
-}
-
-def refresh() {
-	log.debug "sending battery refresh command"
-	def cmds = []
-	cmds << zwave.batteryV1.batteryGet().format()
-	cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
-	cmds << zwave.notificationV3.notificationGet(notificationType: 0x13).format()
-	cmds << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_CO).format()
-	return delayBetween(cmds, 2000)
 }
 
 def parse(String description) {
@@ -80,39 +64,23 @@ def parse(String description) {
 
 def installed() {
 	log.debug "installed()"
-	// Device-Watch simply pings if no device events received for 8h 6min(checkInterval)
-	sendEvent(name: "checkInterval", value: 24 * 60 * 60 + 6 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch simply pings if no device events received for 12h 6min(checkInterval)
+	sendEvent(name: "checkInterval", value: 12 * 60 * 60 + 6 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	initialize()
 }
 
 def updated() {
 	log.debug "updated()"
-	// Device-Watch simply pings if no device events received for 8h 6min(checkInterval)
-	sendEvent(name: "checkInterval", value: 24 * 60 * 60 + 6 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
+	// Device-Watch simply pings if no device events received for 12h 6min(checkInterval)
+	sendEvent(name: "checkInterval", value: 12 * 60 * 60 + 6 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def initialize() {
 	log.debug "initialize()"
 	def cmds = []
-
-	// Set a limit to the number of times that we run so that we don't run forever and ever
-	if (!state.initializeCount) {
-		state.initializeCount = 1
-	} else if (state.initializeCount <= 10) { // Keep checking for ~2 mins (10 * 12 sec intervals)
-		state.initializeCount = state.initializeCount + 1
-	} else {
-		state.initializeCount = 0
-		return // TODO: This might be a good opportunity to mark the device unhealthy
-	}
-
-	cmds << getConfigurationCommands()
-	if (cmds.size()) {
-		sendHubCommand(cmds)
-		runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
-	} else {
-		state.initializeCount = 0
-	}
+    cmds << zwave.batteryV1.batteryGet().format()
+    cmds << getConfigurationCommands()
+   	sendHubCommand(cmds)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
@@ -141,8 +109,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				value = "pestExterminated"
 				description = "Pest exterminated"
 				break
-			default:
-				break
+            default:
+            	log.debug "Not handled event type: ${cmd.event}"
+                break
 		}
 		result = createEvent(name: "pestControl", value: value, descriptionText: description)
 	} else if (cmd.notificationType == 0x13) {
@@ -168,8 +137,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				value = "pestExterminated"
 				description = "Pest exterminated"
 				break
-			default:
-				break
+            default:
+            	log.debug "Not handled event type: ${cmd.event}"
+                break
 		}
 		result = createEvent(name: "pestControl", value: value, descriptionText: description)
 	}
@@ -180,14 +150,11 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	log.debug "WakeUpNotification ${cmd}"
 	def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
 	def cmds = []
-	if (!state.MSR) {
-		cmds << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
-		cmds << "delay 1200"
-	}
+    
 	if (device.currentValue("pestControl") == null) { // In case our initial request didn't make it
-		cmds << zwave.notificationV3.notificationGet(notificationType: 0x13).format()
+		cmds << getConfigurationCommands()
 	}
-	if (!state.lastbat || now() - state.lastbat > (24 * 60 * 60 + 6 * 60) * 1000 /*milliseconds*/) {
+	if (!state.lastbat || now() - state.lastbat > (12 * 60 * 60 + 6 * 60) * 1000 /*milliseconds*/) {
 		cmds << zwave.batteryV1.batteryGet().format()
 	} else {
 		// If we check the battery state we will send NoMoreInfo in the handler for BatteryReport so that we definitely get the report
@@ -210,21 +177,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	def result = []
-
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	log.debug "msr: $msr"
-	updateDataValue("MSR", msr)
-
-	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
-
-	if (!device.currentState("battery")) {
-		result << response(zwave.batteryV1.batteryGet())
-	}
-	result
-}
-
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: "$device.displayName: $cmd", displayed: true)
 }
@@ -237,10 +189,7 @@ def configure() {
 def getConfigurationCommands() {
 	log.debug "getConfigurationCommands"
 	def cmds = []
-	cmds << zwave.batteryV1.batteryGet().format()
 	cmds << zwave.notificationV3.notificationGet(notificationType: 0x13).format()
-	cmds << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_CO).format()
-
 	// The wake-up interval is set in seconds, and is 43,200 seconds (12 hours) by default.
 	cmds << zwave.wakeUpV2.wakeUpIntervalSet(seconds: 12 * 3600, nodeid: zwaveHubNodeId).format()
 
