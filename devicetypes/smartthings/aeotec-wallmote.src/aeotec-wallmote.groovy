@@ -93,7 +93,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
     def button = cmd.sceneNumber
     def value
     // 0 = pushed, 1 = held down, 2 = released
-    if (cmd.keyAttributes < 2) {
+    if (cmd.keyAttributes != 1) {
         value = cmd.keyAttributes == 2 ? "held" : "pushed"
     } else {
         // we can't do anything with the held down event yet
