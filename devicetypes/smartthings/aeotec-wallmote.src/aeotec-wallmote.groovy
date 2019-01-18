@@ -92,9 +92,9 @@ def parse(String description) {
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
     def button = cmd.sceneNumber
     def value
-    // 0 = pushed, 1 = held down, 2 = released
-    if (cmd.keyAttributes != 1) {
-        value = cmd.keyAttributes == 2 ? "held" : "pushed"
+    // 0 = pushed, 1 = released, 2 = held down
+    if (cmd.keyAttributes != 2) {
+        value = cmd.keyAttributes == 1 ? "held" : "pushed"
     } else {
         // we can't do anything with the held down event yet
         return []
