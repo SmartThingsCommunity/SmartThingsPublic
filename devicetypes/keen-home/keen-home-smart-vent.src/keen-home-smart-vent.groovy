@@ -5,7 +5,7 @@ import physicalgraph.zigbee.zcl.DataType
 // SmartThings Device Handler v1.0.0
 
 metadata {
-    definition (name: "Keen Home Smart Vent", namespace: "Keen Home", author: "Keen Home", ocfDeviceType: "x.com.st.d.vent") {
+    definition (name: "Keen Home Smart Vent", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.vent") {
         capability "Switch Level"
         capability "Switch"
         capability "Configuration"
@@ -14,13 +14,7 @@ metadata {
         capability "Temperature Measurement"
         capability "Battery"
         capability "Health Check"
-        capability "Valve"
 
-        command "getLevel"
-        command "getOnOff"
-        command "getPressure"
-        command "getBattery"
-        command "getTemperature"
         command "clearObstruction"
 
         fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0006,0008,0020,0402,0403,0B05,FC01,FC02", outClusters: "0019"
@@ -54,7 +48,16 @@ metadata {
         valueTile("temperature", "device.temperature", inactiveLabel: false) {
             state "temperature", label:'${currentValue}°',
             backgroundColors:[
-                [value: 31, color: "#153591"],
+                // Celsius
+                [value: 0, color: "#153591"],
+                [value: 7, color: "#1e9cbb"],
+                [value: 15, color: "#90d2a7"],
+                [value: 23, color: "#44b621"],
+                [value: 28, color: "#f1d801"],
+                [value: 35, color: "#d04e00"],
+                [value: 37, color: "#bc2323"],
+                // Fahrenheit
+                [value: 40, color: "#153591"],
                 [value: 44, color: "#1e9cbb"],
                 [value: 59, color: "#90d2a7"],
                 [value: 74, color: "#44b621"],
@@ -80,26 +83,25 @@ def parse(String description) {
         if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
             event = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
         }
-    } else if (event.name == "switch") {
-        sendEvent(event)
-        event.name = "valve"
-        event.value = event.value == "on" ? "open" : "closed"
     } else if (event.name == "level" && event.value > 100) {
         event.name = "switch"
         event.value = "obstructed"
-    }
+    } else if (even.name == "level" && event.value > 0 && device.currentValue("switch") == "off") {
+        sendEvent([name: "switch", value: "on"])
+
+    log.debug "parsed event: $event"
     createEvent(event)
 }
 
 private Map getBatteryPercentageResult(rawValue) {
-    log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
+    // reports raw percentage, not 2x
     def result = [:]
 
-    if (0 <= rawValue && rawValue <= 200) {
+    if (0 <= rawValue && rawValue <= 100) {
         result.name = 'battery'
         result.translatable = true
-        result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-        result.value = Math.round(rawValue / 2)
+        result.descriptionText = "$device.displayName battery was ${rawValue}%"
+        result.value = Math.round(rawValue)
     }
 
     return result
@@ -107,9 +109,12 @@ private Map getBatteryPercentageResult(rawValue) {
 
 /**** COMMAND METHODS ****/
 def on() {
-    if (!isObstructed()) {
-        zigbee.on()
+    def cmds = []
+    if (isObstructed()) {
+        cmds << clearObstruction()
+        cmds << "delay 2000"
     }
+    cmds << zigbee.on()
 }
 
 def open() {
@@ -117,9 +122,12 @@ def open() {
 }
 
 def off() {
-    if (!isObstructed()) {
-        zigbee.off()
+    def cmds = []
+    if (isObstructed()) {
+        cmds << clearObstruction()
+        cmds << "delay 2000"
     }
+    cmds << zigbee.off()
 }
 
 def close() {
@@ -147,10 +155,12 @@ def clearObstruction() {
 
 def setLevel(value) {
     log.debug "setting level: ${value}"
-
-    if (!isObstructed()) {
-        zigbee.setLevel(value)
+    def cmds = []
+    if (isObstructed()) {
+        cmds << clearObstruction()
+        cmds << "delay 2000"
     }
+    cmds << zigbee.setLevel(value) << "delay 1000" << zigbee.levelRefresh()
 }
 
 def refresh() {
@@ -176,10 +186,12 @@ def configure() {
 
     def cmds = [
             zigbee.addBinding(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER) +
+            zigbee.addBinding(zigbee.ONOFF_CLUSTER) +
+            zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) +
             zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 600, 21600, 0x01) // battery precentage
     ]
 
-    return delayBetween(cmds) + zigbee.onOffConfig() + zigbee.levelConfig() + refresh()
+    return delayBetween(cmds) + refresh()
 }
 
 
