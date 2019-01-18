@@ -88,6 +88,7 @@ def parse(String description) {
         event.value = "obstructed"
     } else if (even.name == "level" && event.value > 0 && device.currentValue("switch") == "off") {
         sendEvent([name: "switch", value: "on"])
+    }
 
     log.debug "parsed event: $event"
     createEvent(event)
@@ -160,7 +161,10 @@ def setLevel(value) {
         cmds << clearObstruction()
         cmds << "delay 2000"
     }
-    cmds << zigbee.setLevel(value) << "delay 1000" << zigbee.levelRefresh()
+    cmds << zigbee.setLevel(value)
+    cmds << "delay 1000"
+    cmds << zigbee.levelRefresh()
+    cmds
 }
 
 def refresh() {
