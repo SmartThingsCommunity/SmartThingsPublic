@@ -115,13 +115,11 @@ def initialize() {
                 dni = getDeviceNetworkId(stat.id)
                 device = addMultipleDevices(dni, stat.name)
             }
-            device.refresh()
+            device.initialize()
             return device
         }
 
         debugEvent("Discovered ${devices.size()} thermostats")
-        
-        //devices.each { it.refresh() }
     }
 }
 
@@ -139,14 +137,15 @@ private def addMultipleDevices(dni, statname) {
 
 private searchForClimate(httpNode) {
     if(httpNode != null && !(httpNode instanceof String)) {
-        if(httpNode.attributes()["href"] != null) {
-            if(httpNode.attributes()["href"].matches("(?i).*climate/index.*"))
+        def href = httpNode.attributes()["href"]
+        if(href != null) {
+            if(href.matches("/houses/(?i).*climate"))
             {
-                state.thermostatsPath = httpNode.attributes()["href"].replace("climate/index", "xxl_thermostats")
-                state.zonesPath = httpNode.attributes()["href"].replace("climate/index", "xxl_zones")
+                state.thermostatsPath = href.replace("/climate", "/xxl_thermostats")
+                state.zonesPath = href.replace("/climate", "/xxl_zones")
                 debugEvent("ThermostatsPath = ${state.thermostatsPath}")
             }
-            }
+        }
         if(httpNode.children() != null) {
             httpNode.children().each {
                 if(it!=null)
@@ -290,10 +289,10 @@ private requestThermostat(deviceNetworkId, Closure closure) {
     requestThermostats { resp ->
         def stat = resp.data.find { it -> getDeviceNetworkId(it.id) == deviceNetworkId }
         if (!stat) {
-                errorEvent("ERROR: Device connection removed? No data found for ${deviceNetworkId} after polling")
+            errorEvent("ERROR: Device connection removed? No data found for ${deviceNetworkId} after polling")
         } else {
-                debugEvent("Thermostat request succeeded: ${stat}")
-                closure(stat)
+            debugEvent("Thermostat request succeeded: ${stat}")
+            closure(stat)
         }
     }
 }
