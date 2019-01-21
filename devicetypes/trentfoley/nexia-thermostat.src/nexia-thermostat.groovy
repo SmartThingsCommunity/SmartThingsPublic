@@ -136,6 +136,13 @@ metadata {
     }
 }
 
+// called from parent when initially setup
+def initialize() {
+	log.debug "initialize()"
+    refresh()
+    runEvery1Hour(refresh)
+}
+
 // parse events into attributes
 def parse(String description) {
     log.debug "parse('${description}')"

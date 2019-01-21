@@ -148,7 +148,7 @@ def initialize() {
     
     sendEvent(name: "supportedThermostatModes", value: ["auto", "off"])
     
-    runEvery5Minutes(refresh)
+    runEvery15Minutes(refresh)
 }
 
 // parse events into attributes
