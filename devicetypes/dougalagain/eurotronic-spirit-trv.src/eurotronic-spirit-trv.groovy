@@ -109,6 +109,7 @@ metadata {
 				attributeState "default", label:'misc mode'
                 attributeState "emergency heat", label:'${currentValue}' //, icon: "st.thermostat.heat", backgroundColor:"#bc2323"
               	attributeState "eco", label:'${name}' //, icon: "st.nest.nest-leaf", backgroundColor:"#44b621"
+                attributeState "cool", label:'${name}' //, icon: "st.nest.nest-leaf", backgroundColor:"#44b621"
                 attributeState "off", label:'${name}' //, icon: "st.thermostat.heating-cooling-off", backgroundColor:"#1e9cbb"
                 attributeState "heat", label:'${name}' //, icon: "st.thermostat.heat"
 			}
@@ -208,7 +209,7 @@ metadata {
 		standardTile("ecoMode", "device.thermostatMode", height: 2, width: 2, decoration: "flat") {
         	state "default", action:"ecoheat", label: "Eco", icon: "st.nest.nest-leaf"
 			//state "eco", action:"ecoheat", label: "Eco", icon: "st.nest.nest-leaf"
-			state "eco", action:"ecooff", label: "Eco", icon: "st.nest.nest-leaf", backgroundColor:"#44b621"
+			state "cool", action:"ecooff", label: "Eco", icon: "st.nest.nest-leaf", backgroundColor:"#44b621"
 		}
 
 		standardTile("lockMode", "device.protectionState", height: 2, width: 2, decoration: "flat") {
@@ -246,6 +247,9 @@ metadata {
         input "backlight", "enum", title: "Enable backlight", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true
         input "windowOpen", "enum", title: "Window Open Detection",description: "Sensitivity of Open Window Detection", options: ["Disabled", "Low", "Medium", "High" ], defaultValue: "Medium", required: false, displayDuringSetup: false
         input "tempOffset", "number", title: "Temperature Offset", description: "Adjust the measured temperature (-5 to +5°C)", range: "-5..5", displayDuringSetup: false
+        input "tempMin", "number", title: "Min Temperature device Recognises", description: "default 4 (norm 4 to around 8°C)", range: "-5..10", displayDuringSetup: false
+        input "tempMax", "number", title: "Max Temperature device Recognises", description: "default 28 (norm 28 to around 35°C)", range: "25..40", displayDuringSetup: false
+
     }   
 }
 
@@ -337,19 +341,20 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSupportedReport cmd) {
-	def supportedModes = []
+	    
+    def supportedModes = []
 		if(cmd.off) { supportedModes << "off" }
 		if(cmd.heat) { supportedModes << "heat" }
 		if(cmd.cool) { supportedModes << "cool" }
 		if(cmd.auto) { supportedModes << "auto" }
 		if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" } //boost
     	if (cmd.energySaveHeat == true) { supportedModes << "eco"} //eco
-
-	state.supportedModes = supportedModes	
+	log.info "modes are ${state.supportedModes}"
+	state.supportedModes = supportedModes.toString()	
 	
     updateDataValue("availableThermostatModes", state.supportedModes.toString())
+    sendEvent(name: "supportedThermostatModes", value: state.supportedModes, displayed: false)
     log.info "RepRec $cmd, modes are $supportedModes"
-    sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
@@ -381,7 +386,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
         state.thermostatOperatingState = "emergency heat"
     }
     if (cmd.value == 0){ //0 - 0x00 = eco
-    	state.thermostatMode = "eco"
+    	state.thermostatMode = "cool"
         state.thermostatOperatingState = "pending heat"
     }
     if (cmd.value == 15){ //15 - 0x0F = off
@@ -408,7 +413,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
         state.thermostatOperatingState = "emergency heat"
     }
     if (cmd.mode == 11){ //11 eco 11 0x0B
-    	state.thermostatMode = "eco"
+    	state.thermostatMode = "cool"
         state.thermostatOperatingState = "pending heat"
     }
     if (cmd.mode == 0){ // 0 off 0x00
@@ -431,16 +436,19 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
     if (cmd.setpointType == 1 ) { //this is the standard heating setpoint
 		event << sendEvent(name: "nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
        	event << sendEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
-        event << sendEvent(name: "coolingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
 		event << sendEvent(name: "thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
 	}
+    if (cmd.setpointType == 11 ) {
+    	event << sendEvent(name: "coolingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+    }
     log.info "RepRec ${cmd}"
     return eventList
 }
 
 def setDeviceLimits() { // for google and amzon compatability
-	sendEvent(name:"minHeatingSetpoint", value: 8, unit: "°C", displayed: false)
-	sendEvent(name:"maxHeatingSetpoint", value: 28, unit: "°C", displayed: false)
+
+	sendEvent(name:"minHeatingSetpoint", value: settings.tempMin ?: 4, unit: "°C", displayed: false)
+	sendEvent(name:"maxHeatingSetpoint", value: settings.tempMax ?: 28, unit: "°C", displayed: false)
     log.trace "setDeviceLimits - device max/min set"
 }
 def temperatureUp() {
@@ -531,10 +539,10 @@ def cool(){
 }
 def ecoheat() {
 	def cmds = []
-    sendEvent(name: "thermostatMode", value: "eco", displayed: true)
+    sendEvent(name: "thermostatMode", value: "cool", displayed: true)
     cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 11)
     cmds << zwave.thermostatModeV2.thermostatModeGet()
-    log.trace "Eco Heat $cmds"
+    log.trace "Eco/Cool Heat $cmds"
     secureSequence(cmds)
 }
 def ecooff() {
@@ -610,14 +618,13 @@ def poll() { // If you add the Polling capability to your device type, this comm
 	
     if (!state.extra || (new Date().time) - state.extra > (30*60000)) {			// mimutes * millseconds these settings shouldnt be needs as device should send response at time of update
     	cmds <<	zwave.thermostatModeV2.thermostatModeGet()							// get mode
-    	cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 11) 	// get eco setpoint
-    	cmds <<	zwave.basicV1.basicGet()											// get mode (basic)
-        	
+    	cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 11) 	// get eco/cool setpoint
+    	cmds <<	zwave.basicV1.basicGet()											// get mode (basic)	
     	state.extra = new Date().time
     }
 	
     cmds <<	zwave.sensorMultilevelV1.sensorMultilevelGet()						// get temp
-    cmds <<	zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)	// get setpoint
+    cmds <<	zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)	// get heating setpoint
 	cmds << zwave.switchMultilevelV3.switchMultilevelGet()						// valve position
     
     log.trace "POLL $cmds"
@@ -629,6 +636,7 @@ def daysToTime(days) {
 }
 // If you add the Configuration capability to your device type, this command will be called right after the device joins to set device-specific configuration commands.
 def configure() {
+	state.supportedModes = [off,heat] // basic modes prior to detailes from device
 	setDeviceLimits()
 	def cmds = []
 	cmds << zwave.configurationV1.configurationSet(configurationValue:  LCDinvert == "Yes" ? [0x01] : [0x00], parameterNumber:1, size:1, scaledConfigurationValue:  LCDinvert == "Yes" ? 0x01 : 0x00)//,
