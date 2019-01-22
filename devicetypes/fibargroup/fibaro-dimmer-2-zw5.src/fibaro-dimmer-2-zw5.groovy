@@ -2,7 +2,7 @@
  *	Fibaro Dimmer 2
  */
 metadata {
-	definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
+	definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", runLocally: true, minHubCoreVersion: '000.025.0000', executeCommandsLocally: true, mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Energy Meter"
