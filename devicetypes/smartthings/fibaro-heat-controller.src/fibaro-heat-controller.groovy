@@ -21,7 +21,6 @@ metadata {
 		capability "Health Check"
 		capability "Thermostat"
 		capability "Temperature Measurement"
-		capability "Power Source"
 
 		command "setThermostatSetpointUp"
 		command "setThermostatSetpointDown"
@@ -68,14 +67,11 @@ metadata {
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label: 'Battery:\n${currentValue}%', unit: "%"
 		}
-		valueTile("powerSource", "device.powerSource", width: 2, heigh: 1, inactiveLabel: true, decoration: "flat") {
-			state "powerSource", label: 'Power Source: ${currentValue}', backgroundColor: "#ffffff"
-		}
 		standardTile("refresh", "command.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "refresh", label: 'refresh', action: "refresh.refresh", icon: "st.secondary.refresh-icon"
 		}
 		main "thermostat"
-		details(["thermostat", "battery", "refresh", "powerSource"])
+		details(["thermostat", "battery", "refresh"])
 	}
 }
 
@@ -182,15 +178,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
-	def event = [name: "powerSource"]
-	if (cmd.notificationType == 0x08)
-		event.value = cmd.event ? "dc" : "battery"
-
-	event.descriptionText = "Device's power source is ${event.value}"
-	createEvent(event)
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationBusy cmd) {
 	log.warn "Device is busy, delaying refresh"
 	runIn(15, "forcedRefresh", [overwrite: true])
@@ -267,8 +254,7 @@ def refresh() {
 			secureEncap(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)),
 			secureEncap(zwave.thermostatModeV2.thermostatModeGet()),
 			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet()),
-			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet(), 2),
-			secureEncap(zwave.notificationV3.notificationGet(notificationType: 0x08))
+			secureEncap(zwave.sensorMultilevelV5.sensorMultilevelGet(), 2)
 	]
 
 	delayBetween(cmds, 2500)
