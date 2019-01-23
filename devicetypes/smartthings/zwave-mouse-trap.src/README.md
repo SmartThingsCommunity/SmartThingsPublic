@@ -18,9 +18,9 @@ Local Execution
 ## Device Health
 
 Z-Wave Mouse Trap is a Z-Wave sleepy device and checks in every 12 hours.
-Device-Watch allows 2 check-in misses from device plus some lag time. So Check-in interval = (12 * 60 * 60 + 2 * 60)mins = 722 mins.
+Device-Watch allows 2 check-in misses from device plus some lag time. So Check-in interval = (2 * 12 * 60 * 60 + 2 * 60) sek. = 1442 mins.
 
-* __722min__ checkInterval
+* __1442min__ checkInterval
 
 ## Troubleshooting
 

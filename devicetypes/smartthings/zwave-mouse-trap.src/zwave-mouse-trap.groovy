@@ -1,14 +1,14 @@
 /**
- *  Copyright 2019 SmartThings
+ * 	Copyright 2019 SmartThings
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ * 	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * 	in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * 	http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ * 	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ * 	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ * 	for the specific language governing permissions and limitations under the License.
  *
  */
 metadata {
@@ -17,7 +17,8 @@ metadata {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
-		capability "Pest Control" //capability "pestControl", enum: idle, trapArmed, trapRearmRequired, pestDetected, pestExterminated
+		capability "Pest Control"
+		//capability "pestControl", enum: idle, trapArmed, trapRearmRequired, pestDetected, pestExterminated
 
 		//zw:S type:0701 mfr:021F prod:0003 model:0104 ver:3.49 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,71,30,85,59,84,70 role:06 ff:8C13 ui:8C13
 		fingerprint mfr: "021F", prod: "0003", model: "0104", deviceJoinName: "Dome Mouser"
@@ -64,23 +65,23 @@ def parse(String description) {
 
 def installed() {
 	log.debug "installed()"
-	// Device-Watch simply pings if no device events received for 12h 6min(checkInterval)
-	sendEvent(name: "checkInterval", value: 12 * 60 * 60 + 6 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch simply pings if no device events received for 24h 2min(checkInterval)
+	sendEvent(name: "checkInterval", value: 24 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	initialize()
 }
 
 def updated() {
 	log.debug "updated()"
-	// Device-Watch simply pings if no device events received for 12h 6min(checkInterval)
-	sendEvent(name: "checkInterval", value: 12 * 60 * 60 + 6 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device-Watch simply pings if no device events received for 24h 2min(checkInterval)
+	sendEvent(name: "checkInterval", value: 24 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def initialize() {
 	log.debug "initialize()"
 	def cmds = []
-    cmds << zwave.batteryV1.batteryGet().format()
-    cmds << getConfigurationCommands()
-   	sendHubCommand(cmds)
+	cmds << zwave.batteryV1.batteryGet().format()
+	cmds << getConfigurationCommands()
+	sendHubCommand(cmds)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
@@ -109,9 +110,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				value = "pestExterminated"
 				description = "Pest exterminated"
 				break
-            default:
-            	log.debug "Not handled event type: ${cmd.event}"
-                break
+			default:
+				log.debug "Not handled event type: ${cmd.event}"
+				break
 		}
 		result = createEvent(name: "pestControl", value: value, descriptionText: description)
 	} else if (cmd.notificationType == 0x13) {
@@ -137,9 +138,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				value = "pestExterminated"
 				description = "Pest exterminated"
 				break
-            default:
-            	log.debug "Not handled event type: ${cmd.event}"
-                break
+			default:
+				log.debug "Not handled event type: ${cmd.event}"
+				break
 		}
 		result = createEvent(name: "pestControl", value: value, descriptionText: description)
 	}
@@ -150,7 +151,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	log.debug "WakeUpNotification ${cmd}"
 	def event = createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
 	def cmds = []
-    
+
 	if (device.currentValue("pestControl") == null) { // In case our initial request didn't make it
 		cmds << getConfigurationCommands()
 	}
