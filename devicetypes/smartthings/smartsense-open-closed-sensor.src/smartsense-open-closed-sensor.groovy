@@ -171,7 +171,7 @@ def ping() {
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
 	return refreshCmds + zigbee.enrollResponse()
 }
