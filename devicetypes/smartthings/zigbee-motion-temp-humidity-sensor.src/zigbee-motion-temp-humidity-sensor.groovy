@@ -27,7 +27,7 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 		
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0405,0500,0B05,FC01,FC02", outClusters: "0019,0003", manufacturer: "iMagic by GreatStar", model: "1117-S", deviceJoinName: "Iris IL071 Motion Sensor"	
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0405,0500,0B05,FC01,FC02", outClusters: "0019,0003", manufacturer: "iMagic by GreatStar", model: "1117-S", deviceJoinName: "Iris Motion Sensor"	
 	}
 
 	simulator {
