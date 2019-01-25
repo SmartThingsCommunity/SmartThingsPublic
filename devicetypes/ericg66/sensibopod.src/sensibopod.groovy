@@ -80,7 +80,7 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-    	multiAttributeTile(name:"thermostatMulti", type:"thermostat",, width:6, height:4) {
+    	multiAttributeTile(name:"thermostatMulti", type:"thermostat",, width:6, height:4,canChangeIcon: false) {
    			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
             	attributeState ("default", label:'${currentValue}°')//, 
                 //backgroundColors:[
@@ -229,10 +229,10 @@ metadata {
        		state "heat", action:"modeHeat", backgroundColor:"#e86d13", icon:"https://image.ibb.co/c7Grh5/sun.png"
         }
         standardTile("drymode", "device.thermostatMode",  width: 1, height: 1) {
-       		state "heat", action:"modeDry", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/k2ZNpk/dry_mode.png"
+       		state "dry", action:"modeDry", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/k2ZNpk/dry_mode.png"
         }
         standardTile("fanmode", "device.thermostatMode",  width: 1, height: 1) {
-       		state "heat", action:"modeFan", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/n1dhpk/status_message_fan.png"
+       		state "fan", action:"modeFan", backgroundColor:"#e8e3d8", icon:"https://image.ibb.co/n1dhpk/status_message_fan.png"
         }        
         standardTile("highfan", "device.fanLevel",  width: 1, height: 1) {
        		state "high", action:"highfan", backgroundColor:"#8C8C8D", icon:"https://image.ibb.co/fcfFaQ/fan_high_2.png"
@@ -260,7 +260,8 @@ def setAll(newMode,temp,fan)
     def Level = LevelBefore
     if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.fanLevels
-    	log.debug capabilities.remoteCapabilities.fanLevels
+        
+    	log.debug "Fan levels capabilities : " + capabilities.remoteCapabilities.fanLevels
         
         Level = GetNextFanLevel(LevelBefore,capabilities.remoteCapabilities.fanLevels)
         log.debug "Fan : " + Level
@@ -866,7 +867,8 @@ def dfanLevel(String newLevel){
     def Level = LevelBefore
     if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.fanLevels
-    	log.debug capabilities.remoteCapabilities.fanLevels
+        
+    	log.debug "Fan levels capabilities : " + capabilities.remoteCapabilities.fanLevels
         
         Level = GetNextFanLevel(newLevel,capabilities.remoteCapabilities.fanLevels)
         //log.debug "Fan : " + Level
@@ -1152,9 +1154,11 @@ def modeMode(String newMode){
     def Level = LevelBefore
     if (capabilities.remoteCapabilities != null) {
     	def fanLevels = capabilities.remoteCapabilities.fanLevels
-    	log.debug capabilities.remoteCapabilities.fanLevels
+    	
+        log.debug "Fan levels capabilities : " + capabilities.remoteCapabilities.fanLevels
         
         Level = GetNextFanLevel(LevelBefore,capabilities.remoteCapabilities.fanLevels)
+        
         //log.debug "Fan : " + Level
    
         def result = parent.setACStates(this, device.deviceNetworkId, "on", newMode, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
@@ -1213,6 +1217,10 @@ def GetNextFanLevel(fanLevel, fanLevels)
 {
 	log.trace "GetNextFanLevel called with " + fanLevel
     
+    if (fanLevels == null || fanLevels == "null") {
+      return null
+    }
+    
 	def listFanLevel = ['low','medium','high','auto','quiet','medium_high','medium_low','strong']	
     def newFanLevel = returnNext(listFanLevel, fanLevels,fanLevel)
     
@@ -1266,6 +1274,10 @@ def NextMode(sMode)
 def GetNextSwingMode(swingMode, swingModes){
 	log.trace "GetNextSwingMode() called with " + swingMode
 	
+    if (swingModes == null || swingModes == "null") {
+    	return null
+    }
+    
 	def listSwingMode = ['stopped','fixedTop','fixedMiddleTop','fixedMiddle','fixedMiddleBottom','fixedBottom','rangeTop','rangeMiddle','rangeBottom','rangeFull','horizontal','both']	
     def newSwingMode = returnNext(listSwingMode, swingModes,swingMode)
     
@@ -1331,9 +1343,10 @@ def modeSwing(String newSwing)
     def capabilities = parent.getCapabilities(device.deviceNetworkId, device.currentState("currentmode").value)
     def Swing = SwingBefore
     if (capabilities.remoteCapabilities != null) {
-    	def fanLevels = capabilities.remoteCapabilities.swing
-    	log.debug capabilities.remoteCapabilities.swing
-        
+    	def Swings = capabilities.remoteCapabilities.swing
+
+        log.debug "Swing capabilities : " + capabilities.remoteCapabilities.swing
+
         Swing = GetNextSwingMode(newSwing,capabilities.remoteCapabilities.swing)
         //log.debug "Swing : " + Swing
         
