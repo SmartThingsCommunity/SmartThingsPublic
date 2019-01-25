@@ -93,8 +93,7 @@ def installed() {
 def updated() {
 	log.debug "updated()"
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
-	//sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	sendEvent(name: "checkInterval", value: 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
 }
 

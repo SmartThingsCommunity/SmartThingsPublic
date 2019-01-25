@@ -4,7 +4,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *	  http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -141,6 +141,7 @@ def setupHealthCheck() {
 
 def configureSupportedRanges() {
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
+	// These are part of the deprecated Thermostat capability. Remove these when that capability is removed.
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 }
@@ -169,6 +170,10 @@ def parse(String description) {
 	// If the user installed with an old DTH version, update so that the new mobile client will work
 	if (!device.currentValue("supportedThermostatModes")) {
 		configureSupportedRanges()
+	}
+	// Existing installations need the temperatureAlarm state initialized
+	if (device.currentValue("temperatureAlarm") == null) {
+		sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	}
 
 	if (description == "updated") {
@@ -203,7 +208,7 @@ def updateWeather() {
 	// If there is a zipcode defined, weather forecast will be sent. Otherwise, no weather forecast.
 	if (settings.zipcode) {
 		log.debug "ZipCode: ${settings.zipcode}"
-		weather = getWeatherFeature("conditions", settings.zipcode)
+		weather = getTwcConditions(settings.zipcode)
 
 		// Check if the variable is populated, otherwise return.
 		if (!weather) {
@@ -212,7 +217,7 @@ def updateWeather() {
 		}
 
 		def locationScale = getTemperatureScale()
-		def tempToSend = (locationScale == "C") ? weather.current_observation.temp_c : weather.current_observation.temp_f
+		def tempToSend = weather.temperature
 		log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
 		// Right now this can disrupt device health if the device is
 		// currently offline -- it would be erroneously marked online.
@@ -285,27 +290,37 @@ def zwaveEvent(sensormultilevelv3.SensorMultilevelReport cmd) {
 	def map = [:]
 
 	if (cmd.sensorType == sensormultilevelv3.SensorMultilevelReport.SENSOR_TYPE_TEMPERATURE_VERSION_1) {
-		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
-		map.unit = getTemperatureScale()
-		map.name = "temperature"
+		temp = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmd.scale == 1 ? "F" : "C", cmd.precision)
 
-		temp = map.value
 		// The specific values checked below represent ambient temperature alarm indicators
-		if (temp == "32765") {			// 0x7FFD
+		if (temp == 0x7ffd) { // Freeze Alarm
 			map.name = "temperatureAlarm"
 			map.value = "freeze"
-			map.unit = ""
-		} else if (temp == "32767") {		// 0x7FFF
+		} else if (temp == 0x7fff) { // Overheat Alarm
 			map.name = "temperatureAlarm"
 			map.value = "heat"
-			map.unit = ""
-		} else if (temp == "-32768"){		// 0x8000
-			map.name = "temperatureAlarm"
-			map.value = "cleared"
-			map.unit = ""
+		} else if (temp == 0x8000) { // Temperature Sensor Error
+			map.descriptionText = "Received a temperature error"
 		} else {
-			tempfloat = (Math.round(temp.toFloat() * 2)) / 2
-			map.value = tempfloat
+			map.name = "temperature"
+			map.value = (Math.round(temp.toFloat() * 2)) / 2
+			map.unit = getTemperatureScale()
+
+
+			// Handle cases where we need to update the temperature alarm state given certain temperatures
+			// Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+			if (map.value < (map.unit == "C" ? 0 : 32)) {
+				log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
+				sendEvent(name: "temperatureAlarm", value: "freeze")
+			}
+			// Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C to match thermostat display
+			else if (map.value >= (map.unit == "C" ? 50 : 122)) {
+				log.debug "EARLY HEAT ALARM @  $map.value $map.unit (raw $intVal)"
+				sendEvent(name: "temperatureAlarm", value: "heat")
+			} else if (device.currentValue("temperatureAlarm") != "cleared") {
+				log.debug "CLEAR ALARM @ $map.value $map.unit (raw $intVal)"
+				sendEvent(name: "temperatureAlarm", value: "cleared")
+			}
 		}
 	} else if (cmd.sensorType == sensormultilevelv3.SensorMultilevelReport.SENSOR_TYPE_RELATIVE_HUMIDITY_VERSION_2) {
 		map.value = cmd.scaledSensorValue
@@ -402,7 +417,7 @@ def setHeatingSetpoint(preciseDegrees) {
 			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointType).format()
 		], 1000)
 	} else {
-		log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"	
+		log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"
 	}
 }
 
