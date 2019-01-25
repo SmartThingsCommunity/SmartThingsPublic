@@ -163,9 +163,13 @@ metadata {
     standardTile("summer", "device.summer", height: 2, width: 2, decoration: "flat") {
 			state "off", 	label: "Press for \nSummer", 		action:"summer", 	icon: "st.thermostat.auto", backgroundColor:"#d3d3d3"
 			state "on", 	label: "Press to turn\n off summer", action:"summer", 	icon: "st.custom.wuk.clear"
-		}  
+		}
+        valueTile("lastseen", "device.lastseen", width: 6, height: 2, inactiveLabel: true) {
+		state ("default", label:'CheckIN - ${currentValue}', defaultState: true)
+	}
+        
         main "temperature"
-		details(["temperature", "battery", "switcher","summer", "thermostatMode"])
+		details(["temperature", "battery", "switcher","summer", "thermostatMode", "lastseen"])
 	}
 
 	preferences {
@@ -286,7 +290,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 		def reportedTemperatureUnit = cmd.scale == 1 ? "F" : "C"
 		def convertedTemperatureValue = convertTemperatureIfNeeded(reportedTemperatureValue, reportedTemperatureUnit, 2)
 		def descriptionText = "temperature was $convertedTemperatureValue °" + getTemperatureScale() + "." 
-
+		state.temperature = convertedTemperatureValue
 		events << createEvent(name: "temperature", value: convertedTemperatureValue, descriptionText: "$descriptionText")
 	}
 	return events
@@ -298,6 +302,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def event = createEvent(name: "wake up", value: "${new Date().time}", descriptionText: "${device.displayName} woke up", displayed: false)
   	def cmds = []
     def encap = []
+    sendEvent(name: "lastseen" , value: "${new Date().time} next due in ${settings.wakeUpIntervalInMins} min", displayed: false)
 //battery
 	if (!state.lastBatteryReportReceivedAt || (new Date().time) - state.lastBatteryReportReceivedAt > daysToTime(7)) {
 		log.trace "WakeUp - Asking for battery report as over 7 days since"
@@ -569,7 +574,13 @@ def cool() {
 def emergencyHeat() {
 	setHeatingSetpoint(fromCelsiusToLocal(10))
 }
-def setThermostatMode(mode) {
+def setThermostatMode(mode){
+	if (mode == "on" || mode == "heat" || mode == "auto") { heat() }
+    if (mode == "off") { off()}
+    //if (mode == "cool" || mode == "eco") { ecoheat() }
+    if (mode == "emergency heat") {emergencyHeat()}
+    //"rush hour" ??
+	log.debug "set mode $mode" 
 }
 def fanOn() {
 }
