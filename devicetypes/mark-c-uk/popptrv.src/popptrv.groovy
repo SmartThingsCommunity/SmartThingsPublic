@@ -165,11 +165,11 @@ metadata {
 			state "on", 	label: "Press to turn\n off summer", action:"summer", 	icon: "st.custom.wuk.clear"
 		}
         valueTile("lastseen", "device.lastseen", width: 6, height: 2, inactiveLabel: true) {
-		state ("default", label:'CheckIN - ${currentValue}', defaultState: true)
+		state ("default", label:'Last seen - ${currentValue}', defaultState: true)
 	}
         
         main "temperature"
-		details(["temperature", "battery", "switcher","summer", "thermostatMode", "lastseen"])
+		details(["temperature", "battery", "switcher","summer", "lastseen"]) //"thermostatMode"
 	}
 
 	preferences {
@@ -302,7 +302,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def event = createEvent(name: "wake up", value: "${new Date().time}", descriptionText: "${device.displayName} woke up", displayed: false)
   	def cmds = []
     def encap = []
-    sendEvent(name: "lastseen" , value: "${new Date().time} next due in ${settings.wakeUpIntervalInMins} min", displayed: false)
+    sendEvent(name: "lastseen" , value: "${new Date().format("dd-MM-yy HH:mm")} next due in ${settings.wakeUpIntervalInMins} min", displayed: false)
 //battery
 	if (!state.lastBatteryReportReceivedAt || (new Date().time) - state.lastBatteryReportReceivedAt > daysToTime(7)) {
 		log.trace "WakeUp - Asking for battery report as over 7 days since"
