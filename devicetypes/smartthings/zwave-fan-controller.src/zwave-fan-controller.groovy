@@ -102,6 +102,10 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelS
 	fanEvents(cmd)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
+	log.debug "received hail from device"
+}
+
 def fanEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
