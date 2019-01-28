@@ -122,7 +122,6 @@ def setLevel(value) {
 	log.debug "setLevel >> value: $value"
 	def level = value as Integer
 	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
-	sendEvent(name: "switch", value: level > 0 ? "on" : "off")
 	delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
