@@ -292,6 +292,8 @@ def poll() {
     else {
         log.warn "No response from TWC API"
     }
+    
+    return null
 }
 
 def parseAlertTime(s) {

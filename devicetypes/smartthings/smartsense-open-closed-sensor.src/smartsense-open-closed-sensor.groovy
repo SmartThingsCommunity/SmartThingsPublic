@@ -171,9 +171,9 @@ def ping() {
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
 
-	return refreshCmds + zigbee.enrollResponse()
+	return refreshCmds
 }
 
 def configure() {
@@ -182,7 +182,7 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
-	def cmds = refresh() + zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 30)
+	def cmds = refresh() + zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 30) + zigbee.enrollResponse()
 	if(getDataValue("manufacturer") == "Ecolink") {
 		cmds += configureEcolink()
 	}
