@@ -235,11 +235,18 @@ metadata {
         valueTile("valve", "device.valve", inactiveLabel: true, height: 2, width: 2, decoration: "flat") {
         	state "valve", label:'${currentValue}%', icon:"st.Outdoor.outdoor16", defaultState: true
         }
-        
+        controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 2, width: 2, inactiveLabel: false, range:"(4..28)") {
+			state ("heatingSetpoint", action:"setHeatingSetpoint")
+        }
 		main "temperature"
-		details(["temperature", "boostMode", "ecoMode", "lockMode", "turnOff", "refresh", "battery", "configureAfterSecure", "summer","valve"])
+		details(["temperature", "boostMode", "ecoMode", "lockMode", "turnOff", "refresh", "battery", "configureAfterSecure", "summer","valve", "heatSliderControl"])
 	}
- 
+	def rates = [:]
+		rates << ["1" : "Refresh every minutes (Not Recommended)"]
+		rates << ["5" : "Refresh every 5 minutes"]
+		rates << ["10" : "Refresh every 10 minutes"]
+		rates << ["15" : "Refresh every 15 minutes"]
+    
 	preferences {
         input "LCDinvert", "enum", title: "Invert LCD", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true
         input "LCDtimeout", "number", title: "LCD Timeout (in secs)", description: "LCD will switch off after this time (5 - 30secs)", range: "5..30", displayDuringSetup: true
@@ -249,7 +256,7 @@ metadata {
         input "tempOffset", "number", title: "Temperature Offset", description: "Adjust the measured temperature (-5 to +5°C)", range: "-5..5", displayDuringSetup: false
         input "tempMin", "number", title: "Min Temperature device Recognises", description: "default 4 (norm 4 to around 8°C)", range: "-5..10", displayDuringSetup: false
         input "tempMax", "number", title: "Max Temperature device Recognises", description: "default 28 (norm 28 to around 35°C)", range: "25..40", displayDuringSetup: false
-
+		input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
     }   
 }
 
@@ -280,6 +287,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
     	case 1:
         	map.name = "temperature"
             map.unit = cmd.scale == 1 ? "F" : "C"
+            state.temperature = cmd.scaledSensorValue.toString()
             break;
 		case 2:
         	map.name = "value"
@@ -599,8 +607,24 @@ def updated() {
         log.trace "updated config"
         setDeviceLimits()
         runIn (5, configure)
-		runEvery5Minutes(poll)
         sendEvent(name: "configure", value: "configdue", displayed: false)
+        switch(refreshRate) {
+		case "1":
+			runEvery1Minute(poll)
+			log.info "Refresh Scheduled for every minute"
+			break
+		case "15":
+			runEvery15Minutes(poll)
+			log.info "Refresh Scheduled for every 15 minutes"
+			break
+		case "10":
+			runEvery10Minutes(poll)
+			log.info "Refresh Scheduled for every 10 minutes"
+			break
+		default:
+        	runEvery5Minutes(poll)
+			log.info "Refresh Scheduled for every 5 minutes"	}
+        
 	}
     else {
     	log.warn "update ran within the last 2 seconds"
