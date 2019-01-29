@@ -114,6 +114,11 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
     }
 }
 
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+    def linkText = device.label ?: device.name
+    [linkText: linkText, descriptionText: "$linkText: $cmd", displayed: false]
+}
+
 /*
 The device supports multichannel
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep) {
