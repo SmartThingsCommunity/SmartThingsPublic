@@ -189,7 +189,7 @@ def configure() {
     sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     def cmds = [
-            zigbee.addBinding(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER) +
+            zigbee.temperatureConfig(30, 300) +
             zigbee.addBinding(zigbee.ONOFF_CLUSTER) +
             zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) +
             zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 600, 21600, 0x01) // battery precentage
