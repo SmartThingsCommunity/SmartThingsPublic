@@ -312,7 +312,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	} else if (isYale()) {
 		checkVal = state.alarmLength
 	}
-	if (checkVal) {
+	if (checkVal != null) {
 		state.configured = (checkVal == cmd.scaledConfigurationValue)
 	} else {
 		state.configured = true
