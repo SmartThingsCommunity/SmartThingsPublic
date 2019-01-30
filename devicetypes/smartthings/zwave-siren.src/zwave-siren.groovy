@@ -117,11 +117,11 @@ def initialize() {
 		}
 	}
 	if (!state.configured) {
-        // if this flag is not set, we have not successfully configured
+		// if this flag is not set, we have not successfully configured
 		cmds << getConfigurationCommands()
 	}
 
-    // if there's anything we need to send, send it now, and check again in 12s
+	// if there's anything we need to send, send it now, and check again in 12s
 	if (cmds.size > 0) {
 		sendHubCommands(cmds)
 		runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
@@ -178,8 +178,8 @@ def getConfigurationCommands() {
 		// if there's nothing to configure, we're configured
 		state.configured = true
 	}
-    if (cmds.size > 0) {
-        // send this last to confirm we were heard
+	if (cmds.size > 0) {
+		// send this last to confirm we were heard
 		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: 1))
 	}
 	cmds
