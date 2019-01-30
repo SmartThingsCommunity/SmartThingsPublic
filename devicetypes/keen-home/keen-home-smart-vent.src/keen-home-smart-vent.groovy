@@ -86,7 +86,7 @@ def parse(String description) {
     } else if (event.name == "level" && event.value > 100) {
         event.name = "switch"
         event.value = "obstructed"
-    } else if (even.name == "level" && event.value > 0 && device.currentValue("switch") == "off") {
+    } else if (event.name == "level" && event.value > 0 && device.currentValue("switch") == "off") {
         sendEvent([name: "switch", value: "on"])
     }
 
