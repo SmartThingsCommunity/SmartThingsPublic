@@ -123,7 +123,7 @@ def initialize() {
 
 	// if there's anything we need to send, send it now, and check again in 12s
 	if (cmds.size > 0) {
-		sendHubCommands(cmds)
+		sendHubCommand(cmds)
 		runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
@@ -317,6 +317,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	} else {
 		state.configured = true
 	}
+    return [:]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
