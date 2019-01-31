@@ -33,6 +33,8 @@ metadata {
 		fingerprint inClusters: "0x33"
 		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
 		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
+		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec LED Bulb" //EU
+		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec LED Bulb" //US
 	}
 
 	simulator {
@@ -234,11 +236,7 @@ def setColor(value) {
 		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
 		result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
 	} else {
-		def hue = value.hue ?: device.currentValue("hue")
-		def saturation = value.saturation ?: device.currentValue("saturation")
-		if(hue == null) hue = 13
-		if(saturation == null) saturation = 13
-		def rgb = huesatToRGB(hue, saturation)
+		def rgb = huesatToRGB(value.hue, value.saturation)
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:0, coldWhite:0)
 	}
 	result += queryAllColors()
@@ -296,39 +294,12 @@ private commands(commands, delay=200) {
 }
 
 def rgbToHSV(red, green, blue) {
-	float r = red / 255f
-	float g = green / 255f
-	float b = blue / 255f
-	float max = [r, g, b].max()
-	float delta = max - [r, g, b].min()
-	def hue = 13
-	def saturation = 0
-	if (max && delta) {
-		saturation = 100 * delta / max
-		if (r == max) {
-			hue = ((g - b) / delta) * 100 / 6
-		} else if (g == max) {
-			hue = (2 + (b - r) / delta) * 100 / 6
-		} else {
-			hue = (4 + (r - g) / delta) * 100 / 6
-		}
-	}
-	[hue: hue, saturation: saturation, value: max * 100]
+	def hex = colorUtil.rgbToHex(red as int, green as int, blue as int)
+	def hsv = colorUtil.hexToHsv(hex)
+	return [hue: hsv[0], saturation: hsv[1], value: hsv[2]]
 }
 
 def huesatToRGB(hue, sat) {
-	while(hue >= 100) hue -= 100
-	int h = (int)(hue / 100 * 6)
-	float f = hue / 100 * 6 - h
-	int p = Math.round(255 * (1 - (sat / 100)))
-	int q = Math.round(255 * (1 - (sat / 100) * f))
-	int t = Math.round(255 * (1 - (sat / 100) * (1 - f)))
-	switch (h) {
-		case 0: return [255, t, p]
-		case 1: return [q, 255, p]
-		case 2: return [p, 255, t]
-		case 3: return [p, q, 255]
-		case 4: return [t, p, 255]
-		case 5: return [255, p, q]
-	}
+	def color = colorUtil.hsvToHex(Math.round(hue) as int, Math.round(sat) as int)
+	return colorUtil.hexToRgb(color)
 }
