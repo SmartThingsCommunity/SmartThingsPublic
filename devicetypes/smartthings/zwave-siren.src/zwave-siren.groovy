@@ -133,31 +133,45 @@ def configure() {
 	response(getConfigurationCommands())
 }
 
+// configuration defaults indexed by parameter number
+def getZipatoDefaults() {
+	[1: 3,
+	 2: 2,
+	 5, 10]
+}
+
+def getYaleDefaults() {
+	[1: 10,
+	 2: true,
+	 3: 0,
+	 4: false]
+}
+
 def getConfigurationCommands() {
 	log.debug "getConfigurationCommands"
 	def cmds = []
 	if (isZipato()) {
 		// Set alarm volume to 3 (loud)
-		cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: 1, size: 1, configurationValue: [3]))
+		cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: zipatoDefaults[1]))
 		cmds << "delay 500"
 		// Set alarm duration to 60s (default)
-		cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: 2, size: 1, configurationValue: [2]))
+		cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: zipatoDefaults[2]))
 		cmds << "delay 500"
 		// Set alarm sound to no.10
-		cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: 5, size: 1, configurationValue: [10]))
+		cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: zipatoDefaults[5]))
 	} else if (isYale()) {
-		if (!state.alarmLength) state.alarmLength = 10 // default value
-		if (!state.alarmLEDflash) state.alarmLEDflash = true // default value
-		if (!state.comfortLED) state.comfortLED = 0 // default value
-		if (!state.tamper) state.tamper = false // default value
+		if (!state.alarmLength) state.alarmLength = yaleDefaults[1]
+		if (!state.alarmLEDflash) state.alarmLEDflash = yaleDefaults[2]
+		if (!state.comfortLED) state.comfortLED = yaleDefaults[3]
+		if (!state.tamper) state.tamper = yaleDefaults[4]
 
 		log.debug "settings: ${settings.inspect()}"
 		log.debug "state: ${state.inspect()}"
 
-		Short alarmLength = (settings.alarmLength as Short) ?: 10
-		Boolean alarmLEDflash = (settings.alarmLEDflash as Boolean) == null ? true : settings.alarmLEDflash
-		Short comfortLED = (settings.comfortLED as Short) ?: 0
-		Boolean tamper = (settings.tamper as Boolean) == null ? false : settings.tamper
+		Short alarmLength = (settings.alarmLength as Short) ?: yaleDefaults[1]
+		Boolean alarmLEDflash = (settings.alarmLEDflash as Boolean) == null ? yaleDefaults[2] : settings.alarmLEDflash
+		Short comfortLED = (settings.comfortLED as Short) ?: yaleDefaults[3]
+		Boolean tamper = (settings.tamper as Boolean) == null ? yaleDefaults[4] : settings.tamper
 
 		if (alarmLength != state.alarmLength || alarmLEDflash != state.alarmLEDflash || comfortLED != state.comfortLED || tamper != state.tamper) {
 			state.alarmLength = alarmLength
@@ -308,7 +322,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	// the last message sent by configure is a configuration get, so if we get a report, we succeeded in transmission
 	// and if the parameter 1 values match what we expect, then the configuration probably succeeded
 	if (isZipato()) {
-		checkVal = 3
+		checkVal = zipatoDefaults[1]
 	} else if (isYale()) {
 		checkVal = state.alarmLength
 	}
