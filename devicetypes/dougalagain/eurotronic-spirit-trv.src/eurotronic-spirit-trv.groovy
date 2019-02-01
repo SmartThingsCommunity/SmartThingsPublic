@@ -48,6 +48,8 @@ metadata {
 		attribute "minHeatingSetpoint", "number" //google alex compatability // shuld be part of heating setpoint to test without//	
 		attribute "maxHeatingSetpoint", "number" //google alex compatability // shuld be part of heating setpoint to test without//	
 		attribute "summer", "String" //for feed
+        
+        attribute "thermostatTemperatureSetpoint", "String"						//need for google
     
 	fingerprint inClusters: "0x55,0x98"
     fingerprint manufacturerId: "328"
@@ -445,6 +447,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 		event << sendEvent(name: "nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
        	event << sendEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
 		event << sendEvent(name: "thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+        event << sendEvent(name: "thermostatTemperatureSetpoint", value: radiatorSetPoint.toString(), unit: "C", displayed: false)
 	}
     if (cmd.setpointType == 11 ) {
     	event << sendEvent(name: "coolingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)

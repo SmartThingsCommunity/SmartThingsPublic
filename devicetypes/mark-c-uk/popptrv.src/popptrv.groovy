@@ -54,6 +54,9 @@ metadata {
 		attribute "maxHeatingSetpoint", "number" //google alex compatability // shuld be part of heating setpoint to test without//	
 		attribute "summer", "String" //for feed
         
+        attribute "thermostatTemperatureSetpoint", "String"						//need for google
+        
+        
     fingerprint type: "0804", mfr: "0002", prod: "0115", model: "A010", cc: "80,46,81,72,8F,75,31,43,86,84,40", ccOut:"46,81,8F,75,86,84,72,80,56,40 " //8f last
         
 		// 0x80 = Battery v1 //tets
@@ -108,7 +111,7 @@ metadata {
 				attributeState("heat", label:"heat",  icon:"st.thermostat.heat") //backgroundColor:"#ffa81e",
 				attributeState("off", label:"off",  icon:"st.thermostat.heating-cooling-off") //backgroundColor:"#1e9cbb",
 			}
-			tileAttribute("device.thermostatSetpoint", key: "HEATING_SETPOINT") { // //nextHeatingSetpoint //setpoint as last reported by device
+			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") { // //nextHeatingSetpoint //setpoint as last reported by device
 				attributeState("heatingSetpoint", label:'${currentValue}', unit:"°C", defaultState: true, backgroundColors:[
 				// Celsius 
 				[value: 0, color: "#b8c2de"],
@@ -165,7 +168,7 @@ metadata {
 			state "on", 	label: "Press to turn\n off summer", action:"summer", 	icon: "st.custom.wuk.clear"
 		}
         valueTile("lastseen", "device.lastseen", width: 6, height: 2, inactiveLabel: true) {
-		state ("default", label:'Last seen - ${currentValue}', defaultState: true)
+		state ("default", label:'Last seen ${currentValue}', defaultState: true)
 	}
         
         main "temperature"
@@ -269,11 +272,18 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	}
 
 	eventList << createEvent(name: "heatingSetpoint", value: radiatorTemperature, unit: getTemperatureScale(), displayed: false, descriptionText:discText)
-	eventList << createEvent(name: "thermostatSetpoint", value: radiatorTemperature, unit: getTemperatureScale(), descriptionText:discText)
+    eventList << createEvent(name: "coolingSetpoint", value: radiatorTemperature, unit: getTemperatureScale(), displayed: false, descriptionText:discText)
+	//eventList << createEvent(name: "thermostatSetpoint", value: radiatorTemperature, unit: getTemperatureScale(), descriptionText:discText)
 	def switchState = onOffEvent(radiatorTemperature).value
 	eventList << createEvent(name: "thermostatMode", value: (switchState == "on") ? "heat" : "off") //displayed: false
     eventList << createEvent(name: "thermostatOperatingState", value: (switchState == "on") ? "heating" : "idle")
+    //eventList << createEvent(name: "thermostatTemperatureSetpoint", value: radiatorTemperature, unit: "C", displayed: false)
 	
+    if (state.productId != "4") {
+    eventList << createEvent(name: "thermostatSetpoint", value: radiatorTemperature, unit: getTemperatureScale(), descriptionText:discText)
+    eventList << createEvent(name: "thermostatTemperatureSetpoint", value: radiatorTemperature, unit: "C", displayed: false)
+    }
+    
     if(nextTemperature == 0) { //	initialise the nextHeatingSetpoint, on the very first time we install and get the devices temp
 		buildNextState(radiatorTemperature).each { eventList << it }
 		state.lastSentTemperature = radiatorTemperature
@@ -298,11 +308,19 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 //log.debug "Wakey wakey zwaveEvent ${cmd}"
-	state.ComCount = 0
-	def event = createEvent(name: "wake up", value: "${new Date().time}", descriptionText: "${device.displayName} woke up", displayed: false)
-  	def cmds = []
+
+	def nowtime = now()
+    def nowtimeplus = nowtime + (settings.wakeUpIntervalInMins * 60 * 1000)
+    def nowtimeplusdate = new Date(nowtimeplus)
+//    log.debug "now = $nowtime, plus = $nowtimeplus, ${nowtimeplusdate.format('HH:mm')}" //,location.timeZone
+
+
+    state.ComCount = 0
+    def event = createEvent(name: "wake up", value: "${new Date().time}", descriptionText: "${device.displayName} woke up", displayed: false)
+	def cmds = []
     def encap = []
-    sendEvent(name: "lastseen" , value: "${new Date().format("dd-MM-yy HH:mm")} next due in ${settings.wakeUpIntervalInMins} min", displayed: false)
+    sendEvent(name: "lastseen" , value: "${new Date().format("dd-MM-yy HH:mm")} Next Expected ${nowtimeplusdate.format('HH:mm')}", displayed: false) //${settings.wakeUpIntervalInMins}
+
 //battery
 	if (!state.lastBatteryReportReceivedAt || (new Date().time) - state.lastBatteryReportReceivedAt > daysToTime(7)) {
 		log.trace "WakeUp - Asking for battery report as over 7 days since"
@@ -508,7 +526,9 @@ def configure() {
     log.debug "prodID - ${state.productId}"
 	if (state.productId == "4") {
 		//device.temperature = " "
-    	sendEvent(name: "temperature", value: null , descriptionText: "device does not report temparture")
+    	sendEvent(name: "temperature", value: null , unit: null, descriptionText: "device does not report temparture")
+        sendEvent(name: "thermostatSetpoint", value: null, unit: null, descriptionText:"device does not report temparture")
+    	sendEvent(name: "thermostatTemperatureSetpoint", value: null, unit: null, descriptionText:"device does not report temparture")
         log.trace "device dose not report temp"
 	}
     
