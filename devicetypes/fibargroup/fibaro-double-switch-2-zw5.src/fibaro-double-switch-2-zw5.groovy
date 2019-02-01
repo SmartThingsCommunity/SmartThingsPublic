@@ -145,7 +145,15 @@ def ping() {
 //Configuration and synchronization
 def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-	initialize()
+	def cmds = initialize()
+	if (device.label != state.oldLabel) {
+		childDevices.each {
+			def newLabel = "${device.displayName} - USB"
+			it.setLabel(newLabel)
+		}
+		state.oldLabel = device.label
+	}
+	return cmds
 }
 
 def initialize() {
@@ -250,6 +258,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 private createChildDevices() {
 	logging("${device.displayName} - executing createChildDevices()","info")
+	state.oldLabel = device.label
 	try {
 	log.debug "adding child device ....."
 		addChildDevice(
