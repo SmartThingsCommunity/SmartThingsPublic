@@ -36,10 +36,6 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0020,0500,0B05,FC02", outClusters: "", manufacturer: "sengled", model: "E1D-G73", deviceJoinName: "Sengled Element Door Sensor"
 	}
 
-	simulator {
-
-	}
-
 	tiles(scale: 2) {
 		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
 			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
@@ -128,9 +124,8 @@ private Map parseCatchAllMessage(String description) {
 						resultMap.value = zs.isAlarm1Set() ? "open" : "closed"
 					}
 					break
-				case 0x0001:
+				case 0x0001:	// power configuration cluster
 					resultMap.name = 'battery'
-					log.info "in parse catch all"
 					log.debug "battery value: ${cluster.data.last()}"
 					resultMap.value = getBatteryPercentage(cluster.data.last())
 					break
@@ -183,8 +178,7 @@ private int getBatteryPercentage(int value) {
 	def pct = (volts - minVolts) / (maxVolts - minVolts)
 
 	//for battery that may have a higher voltage than 3.1V
-	if( pct > 1 )
-	{
+	if( pct > 1 ) {
 		pct = 1
 	}
 
@@ -251,34 +245,6 @@ private List parseIasMessage(String description) {
 	log.debug "parseIasMessage: Battery Status ${zs.battery}"
 	log.debug "parseIasMessage: Trouble Status ${zs.trouble}"
 	log.debug "parseIasMessage: Sensor Status ${zs.alarm1}"
-
-	/*	Comment out this path to check the battery state to avoid overwriting the
-		battery value (Change log #2), but keep these conditions for later use
-	 resultMap_battery_state.name = "battery_state"
-	 if (zs.isTroubleSet()) {
-		 resultMap_battery_state.value = "failed"
-
-		 resultMap_battery.name = "battery"
-		 resultMap_battery.value = 0
-	 }
-	 else {
-		 if (zs.isBatterySet()) {
-			 resultMap_battery_state.value = "low"
-
-			 // to generate low battery notification by the platform
-			 resultMap_battery.name = "battery"
-			 resultMap_battery.value = 15
-		 }
-		 else {
-			 resultMap_battery_state.value = "ok"
-
-			 // to clear the low battery state stored in the platform
-			 // otherwise, there is no notification sent again
-			 resultMap_battery.name = "battery"
-			 resultMap_battery.value = 80
-		 }
-	 }
-	*/
 
 	resultListMap << resultMap_battery_state
 	resultListMap << resultMap_battery
