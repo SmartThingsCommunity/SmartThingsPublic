@@ -1,16 +1,16 @@
 /**
- *  NYCE Open/Close Sensor
+ *	NYCE Open/Close Sensor
  *
- *  Copyright 2015 NYCE Sensors Inc.
+ *	Copyright 2015 NYCE Sensors Inc.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *	in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ *	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *	for the specific language governing permissions and limitations under the License.
  *
  */
 
@@ -28,12 +28,12 @@ metadata {
 
 		command "enrollResponse"
 
-
 		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3010", deviceJoinName: "NYCE Door Hinge Sensor"
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
 		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
 		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0500,0B05,FC02", outClusters: "", manufacturer: "sengled", model: "E1D-G73", deviceJoinName: "Sengled Element Door Sensor"
 	}
 
 	simulator {
@@ -120,7 +120,7 @@ private Map parseCatchAllMessage(String description) {
 		if (msgStatus == 0) {
 			switch(cluster.clusterId) {
 				case 0x0500:
-                	Map descMap = zigbee.parseDescriptionAsMap(description)
+					Map descMap = zigbee.parseDescriptionAsMap(description)
 					// someone who understands Zigbee better than me should refactor this whole DTH to bring it up to date
 					if (descMap?.attrInt == 0x0002) {
 						resultMap.name = "contact"
@@ -129,13 +129,12 @@ private Map parseCatchAllMessage(String description) {
 					}
 					break
 				case 0x0001:
-					log.debug 'Battery'
 					resultMap.name = 'battery'
 					log.info "in parse catch all"
 					log.debug "battery value: ${cluster.data.last()}"
 					resultMap.value = getBatteryPercentage(cluster.data.last())
 					break
-				case 0x0402:    // temperature cluster
+				case 0x0402:	// temperature cluster
 					if (cluster.command == 0x01) {
 						if(cluster.data[3] == 0x29) {
 							def tempC = Integer.parseInt(cluster.data[-2..-1].reverse().collect{cluster.hex1(it)}.join(), 16) / 100
@@ -150,7 +149,7 @@ private Map parseCatchAllMessage(String description) {
 						log.debug "parseCatchAllMessage: Unhandled Temperature cluster command ${cluster.command}"
 					}
 					break
-				case 0x0405:    // humidity cluster
+				case 0x0405:	// humidity cluster
 					if (cluster.command == 0x01) {
 						if(cluster.data[3] == 0x21) {
 							def hum = Integer.parseInt(cluster.data[-2..-1].reverse().collect{cluster.hex1(it)}.join(), 16) / 100
@@ -170,7 +169,7 @@ private Map parseCatchAllMessage(String description) {
 			}
 		}
 		else {
-			log.debug "parseCatchAllMessage: Message error code: Error code: ${msgStatus}    ClusterID: ${cluster.clusterId}    Command: ${cluster.command}"
+			log.debug "parseCatchAllMessage: Message error code: Error code: ${msgStatus}	 ClusterID: ${cluster.clusterId}	Command: ${cluster.command}"
 		}
 	}
 
@@ -253,7 +252,7 @@ private List parseIasMessage(String description) {
 	log.debug "parseIasMessage: Trouble Status ${zs.trouble}"
 	log.debug "parseIasMessage: Sensor Status ${zs.alarm1}"
 
-	/* 	Comment out this path to check the battery state to avoid overwriting the
+	/*	Comment out this path to check the battery state to avoid overwriting the
 		battery value (Change log #2), but keep these conditions for later use
 	 resultMap_battery_state.name = "battery_state"
 	 if (zs.isTroubleSet()) {
@@ -299,17 +298,21 @@ def configure() {
 	// Device-Watch allows 2 check-in misses from device
 	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
+	if(device.getDataValue("manufacturer") == "sengled") {
+		return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(30, 300) + zigbee.enrollResponse()
+	} else {
+		String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 
-	def enrollCmds = [
-			// Writes CIE attribute on end device to direct reports to the hub's EUID
-			"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-	]
+		def enrollCmds = [
+				// Writes CIE attribute on end device to direct reports to the hub's EUID
+				"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
+				"send 0x${device.deviceNetworkId} 1 1", "delay 500",
+		]
 
-	log.debug "configure: Write IAS CIE"
-	// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
-	return enrollCmds + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
+		log.debug "configure: Write IAS CIE"
+		// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+		return enrollCmds + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
+	}
 }
 
 def enrollResponse() {
@@ -353,9 +356,8 @@ Integer convertHexToInt(hex) {
 }
 
 def refresh() {
-	log.debug "Refreshing Battery"
 	def refreshCmds = [
-			"st rattr 0x${device.deviceNetworkId} ${endpointId} 1 0x20", "delay 200"
+		"st rattr 0x${device.deviceNetworkId} ${endpointId} 1 0x20", "delay 200"
 	]
 	return refreshCmds + enrollResponse()
 }
