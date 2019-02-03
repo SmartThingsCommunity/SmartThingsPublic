@@ -8,7 +8,7 @@ definition(
     category: "Green Living",
     iconUrl: "https://www.philonyc.com/assets/penrose.jpg",
     iconX2Url: "https://www.philonyc.com/assets/penrose.jpg",
-    iconX3Url: "https://www.philonyc.com/assets/penrose.jpg",
+    iconX3Url: "https://www.philonyc.com/assets/penrose.jpg", 
     image: "https://www.philonyc.com/assets/penrose.jpg"
 )
 
@@ -752,7 +752,7 @@ def ActiveTest(thermostat) {
 
 
             if(thermostat in thermContactOrSwitch){
-            log.debug "thermContactOrSwitch eval"
+                log.debug "thermContactOrSwitch eval"
                 if(!BedSensorIsOpen()){
                     Active = true
                     log.debug "$BedSensor is closed, someone's in the room" 
@@ -763,7 +763,7 @@ def ActiveTest(thermostat) {
                 }
             }
             else {
-            log.debug "--- NO thermContactOrSwitch --"
+                log.debug "--- NO thermContactOrSwitch --"
             }
 
             if(!inMotionModes){
@@ -1072,6 +1072,7 @@ def adjust() {
             def CSP = null
             def thisCSP = null
             def thisTemp = null
+            def inMotionModes
             boolean tooCold4Hpump = false
             boolean useBoth = false
 
@@ -1093,6 +1094,7 @@ def adjust() {
 
                     log.debug "GetMotionData = Active: ${GetMotionData[0]}, in Motion Mode: ${GetMotionData[1]} sensor: ${GetMotionData[2].toString()}"
                     Active = GetMotionData[0]
+                    inMotionModes = GetMotionData[1]
                     log.debug "Motion for $thisAppliance returns $Active"
 
 
@@ -1241,51 +1243,53 @@ def adjust() {
                             state.NoLearnMode = ["$thisAppliance" : "false"] 
                             log.debug "bringing $thisAppliance HSP to base line value"
 
-
-
                             if (thermMode == "heat") { 
                                 // we're comfortable so get the HSP back to user's comfort zone or to no motion settings
-                                if (thisTemp < comfort || thisTemp < HSP){
-                                    if(Active){
-                                        // NO ADJUSTMENT NEEDED BUT THERE IS MOTION
-                                        if(comfort > HSP) {
+                                //if (thisTemp > comfort || thisTemp > HSP){
+                                if(Active){
+                                    log.debug "NO ADJUSTMENT NEEDED -BUT- THERE IS MOTION (or outside of motion modes: $inMotionModes)"
+                                    if(comfort > HSP) {
 
-                                            if(thisHSP != comfort){ // prefer a higher calculated comfort value if applicable
-                                                state.NoLearnMode = ["$thisAppliance" : "true"] // make sure A.I. does not learn this temporary value
-                                                // State is recorded into the ST database only at the end of the execution
-                                                // so we need to delay this command as to allow NoLearnMode to be updated by then
-                                                state.setheatingsetpoint = [:] // must always be empty so as to contain only one entry
-                                                state.setheatingsetpoint."${thisAppliance}" = comfort
-                                                runIn(1, setheatingsetpoint) 
-                                                //log.debug "$thisAppliance heat set to standard comfort temperature ($comfort)"
-                                            }
-                                        }
-                                        else { // just keeping track of identation here... 
-
-                                            if(thisTemp < HSP) {
-                                                state.NoLearnMode = ["$thisAppliance" : "false"] // allow A.I. to learn again from new inputs
-                                                thisAppliance.setHeatingSetpoint(HSP)
-                                                log.debug "$thisAppliance heat set to recorded HSP temperature ($HSP) because it's higher than auto evaluated comfort"                                            
-                                                log.debug "$thisAppliance ALREADY set to standard comfort temperature ($comfort) (or no motion: $Active)"
-                                            }
-                                        }
-                                    }
-                                    else { // NO ADJUSTMENT NEEDED AND INACTIVE MOTION 
-                                        if(thisHSP != HSP){
-                                            state.NoLearnMode = ["$thisAppliance" : "true"] // don't learn from a no motion temperature setting
-                                            log.debug "${thisAppliance} HSP brought down to $comfort because of INACTIVE MOTION ------------"
-                                            HSP = comfort - HeatNoMotion 
+                                        if(thisHSP != comfort){ // prefer a higher calculated comfort value if applicable
+                                            state.NoLearnMode = ["$thisAppliance" : "true"] // make sure A.I. does not learn this temporary value
                                             // State is recorded into the ST database only at the end of the execution
                                             // so we need to delay this command as to allow NoLearnMode to be updated by then
                                             state.setheatingsetpoint = [:] // must always be empty so as to contain only one entry
-                                            state.setheatingsetpoint."${thisAppliance}" = HSP
-                                            runIn(1, setheatingsetpoint)
+                                            state.setheatingsetpoint."${thisAppliance}" = comfort
+                                            runIn(1, setheatingsetpoint) 
+                                            log.debug "$thisAppliance heat is about to be set to standard comfort temperature ($comfort)"
                                         }
-                                        else {
-                                            log.debug "${thisAppliance} already set to $HSP 587dfec"
+                                    }
+                                    else { // just keeping track of identation here... 
+
+                                        if(thisHSP != HSP) {
+                                            state.NoLearnMode = ["$thisAppliance" : "false"] // allow A.I. to learn again from new inputs
+                                            thisAppliance.setHeatingSetpoint(HSP)
+                                            log.debug "$thisAppliance heat set to recorded HSP temperature ($HSP) because it's higher than auto evaluated comfort"                                              
                                         }
-                                    }  
+                                        else { 
+                                            log.debug "$thisAppliance ALREADY set to base line HSP ($HSP)"
+                                        }
+                                    }
                                 }
+                                else { //
+                                    log.debug "NO ADJUSTMENT NEEDED AND INACTIVE MOTION "
+                                    if(thisHSP != HSP){
+                                        state.NoLearnMode = ["$thisAppliance" : "true"] // don't learn from a no motion temperature setting
+
+                                        HSP = comfort - HeatNoMotion 
+                                        log.debug "${thisAppliance} HSP about to be brought down to $HSP because of INACTIVE MOTION ---($Active)---------"
+                                        // State is recorded into the ST database only at the end of the execution
+                                        // so we need to delay this command as to allow NoLearnMode to be updated by then
+                                        state.setheatingsetpoint = [:] // must always be empty so as to contain only one entry
+                                        state.setheatingsetpoint."${thisAppliance}" = HSP
+                                        runIn(1, setheatingsetpoint)
+                                    }
+                                    else {
+                                        log.debug "${thisAppliance} already set to $HSP 587dfec"
+                                    }
+                                }  
+                                //}
                             }
 
                             else if (therMode == "cool") {
@@ -1894,6 +1898,18 @@ HSP = $HSP
 
                 else {
 
+                    // ************DEBUG***************** 
+                    if(!useAltSensor){
+                        log.debug "*****************NO ALT SENSOR for $thisTherm"
+                    }
+                    if(!inComfortMode()){
+                        log.debug "*****************NOT in comfort mode for $thisTherm"
+                    }
+                    if(alreadyManaged){
+                        log.debug "*****************$thisTherm already managed by another instance"
+                    }
+                    // ************DEBUG****************** 
+
                     //poll(thisTherm)
                     thisTemp = thisTherm.currentValue("temperature")?.toDouble() // might be an otherwise managed appliance without temp sensor 
 
@@ -1910,6 +1926,9 @@ HSP = $HSP
                     if(thisHSP != HSP && !alreadyManaged){
                         thisTherm.setHeatingSetpoint(HSP) 
                         log.debug "$thisTherm set to $HSP"
+                    }
+                    else if(alreadyManaged){
+                        log.debug "${thisTherm}'s already managed"
                     }
                     else {
                         log.debug "${thisTherm}'s HSP already set to $HSP -"
