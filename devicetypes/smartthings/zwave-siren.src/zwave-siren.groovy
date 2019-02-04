@@ -137,7 +137,7 @@ def configure() {
 def getZipatoDefaults() {
 	[1: 3,
 	 2: 2,
-	 5, 10]
+	 5: 10]
 }
 
 def getYaleDefaults() {
