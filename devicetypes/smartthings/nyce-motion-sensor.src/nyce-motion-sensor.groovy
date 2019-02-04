@@ -52,7 +52,8 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	// device report interval is 0x3600 seconds (230.4 minutes/3.84 hours) so checkinterval is ~that * 2 + 2 minutes
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 * 4 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def parse(String description) {
