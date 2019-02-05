@@ -13,7 +13,7 @@
  *  SmartLife RGBW Light (Connect)
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2016-06-23
+ *  Date: 2019-02-04
  */
 
 definition(
@@ -58,8 +58,8 @@ preferences {
 def mainPage() {
 	dynamicPage(name: "mainPage", title: "Manage your RGBW devices", nextPage: null, uninstall: true, install: true) {
         section("Configure"){
-           href "deviceDiscovery", title:"Discover Devices", description:""//, params: [pbutton: i]
-           href "manuallyAdd", title:"Manually Add Device", description:""//, params: [pbutton: i]
+           href "deviceDiscovery", title:"Discover Devices", description:""
+           href "manuallyAdd", title:"Manually Add Device", description:""
         }
         section("Installed Devices"){
         getChildDevices().sort({ a, b -> a["deviceNetworkId"] <=> b["deviceNetworkId"] }).each {
@@ -109,36 +109,36 @@ def manuallyAddConfirm(){
 }
 
 def configurePDevice(params){
-   def currentDevice
-   
-   getChildDevices().each {
-               if(it.deviceNetworkId == params.did){
-                  state.currentDeviceId = it.deviceNetworkId
-                  state.currentDisplayName = it.displayName
-               }      
-   }
-   
+   if (params?.did || params?.params?.did) {
+      if (params.did) {
+         state.currentDeviceId = params.did
+         state.currentDisplayName = getChildDevice(params.did)?.displayName
+      } else {
+         state.currentDeviceId = params.params.did
+         state.currentDisplayName = getChildDevice(params.params.did)?.displayName
+      }
+   }  
    
    dynamicPage(name: "configurePDevice", title: "Configure RGBW Controllers created with this app", nextPage: null) {
         if ( state.currentDeviceId =~ /^([0-9A-F]{2}){6}$/) {
 		section {
             app.updateSetting("${state.currentDeviceId}_label", getChildDevice(state.currentDeviceId).label)
             input "${state.currentDeviceId}_label", "text", title:"Device Name", description: "", required: false
-            href "changeName", title:"Change Device Name", description: "Edit the name above and click here to change it", params: [did: state.currentDeviceId]
+            href "changeName", title:"Change Device Name", description: "Edit the name above and click here to change it"
         }
         section {
-            href "configureProgramMain", title:"Configure Programs", description:"Configure Programs", params: [did: state.currentDeviceId]
+            href "configureProgramMain", title:"Configure Programs", description:"Configure Programs"
 		}
         section("Virtual Switches"){
            input "${state.currentDeviceId}_prefix", "text", title: "Virtual Switch Prefix", description: "Prefix for virtual switch names", required: false, defaultValue: "RGBW"
            if(!isVirtualConfigured(state.currentDeviceId)){
-              href "createVirtual", title:"Create Virtual Devices", description:"Create virtual devices", params: [did: state.currentDeviceId]
+              href "createVirtual", title:"Create Virtual Devices", description:"Create virtual devices"
            }else{
-              href "removeVirtual", title:"Remove Virtual Devices", description:"Remove virtual devices", params: [did: state.currentDeviceId]
+              href "removeVirtual", title:"Remove Virtual Devices", description:"Remove virtual devices"
            }
         }
         section {
-              href "deletePDevice", title:"Delete $state.currentDisplayName", description: "", params: [did: state.currentDeviceId]
+              href "deletePDevice", title:"Delete $state.currentDisplayName", description: ""
         }
         } else {
             if (getChildDevice(state.currentDeviceId) != null) getChildDevice(state.currentDeviceId).configure()
@@ -146,14 +146,14 @@ def configurePDevice(params){
                 paragraph "Device has not been fully configured. Please make sure the device is powered on and has the correct ip address. When confirmed, please come back to this page."
             }
             section {
-              href "deletePDevice", title:"Delete $state.currentDisplayName", description: "", params: [did: state.currentDeviceId]
+              href "deletePDevice", title:"Delete $state.currentDisplayName", description: ""
         }
         }
            
 }
 }
 
-def deletePDevice(params){
+def deletePDevice(){
     def childFound = false
     getChildDevices().each {
         if(it.deviceNetworkId != null){
@@ -389,8 +389,15 @@ private getDeviceID(number) {
 }
 
 def configureProgram(params){
-   if (params.pnumber != null) state.currentProgram = params.pnumber.toInteger() //log.debug "$params.pbutton"
+   if (params?.pnumber || params?.params?.pnumber) {
+      if (params.pnumber) {
+         state.currentProgram = params.pnumber.toInteger()
+      } else {
+         state.currentProgram = params.params.pnumber?.toInteger()
+      }
+   }
    if (settings["importMe"] != "" && settings["importMe"] != null) {
+   try {
       def t = settings["importMe"].split("_")
       def numberOfActions = 0
       app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_name", t[0].split(",")[0])
@@ -415,6 +422,10 @@ def configureProgram(params){
             app.updateSetting("${state.currentDeviceId}_programs_${state.currentProgram}_${numberOfActions}_max_duration", it.split("\\.")[3].split("-")[1])
          }
       }
+   } catch (e) {
+       log.debug "Error importing program. Clearing import string."
+       app.updateSetting("importMe", "")
+   }
    app.updateSetting("importMe", "")
    }
    dynamicPage(name: "configureProgram", title: "Configure the actions you would like the program to perform.", nextPage: null, uninstall: configured(), install: false) {
@@ -496,7 +507,7 @@ def exportProgram(){
     }
 }
 
-def importProgram(params){
+def importProgram(){
    dynamicPage(name: "importProgram", title: "Import a program", nextPage: null) {
 		section {
 			paragraph "Paste the program string below and hit done"
@@ -506,7 +517,13 @@ def importProgram(params){
 }
 
 def configureAction(params) {
-    if (params.paction != null) state.currentAction = params.paction.toInteger() //log.debug "$params.pbutton"
+    if (params?.paction || params?.params?.paction) {
+      if (params.paction) {
+         state.currentAction = params.paction.toInteger()
+      } else {
+         state.currentAction = params.params.paction?.toInteger()
+      }
+    }
     dynamicPage(name: "configureAction", title: "Choose the actions for Program${state.currentAction}.",
 	uninstall: configured(), getActionSections(state.currentProgram, state.currentAction))
 }
@@ -608,10 +625,13 @@ def ssdpHandler(evt) {
             childIP = child.getDeviceDataByName("ip")
             childPort = child.getDeviceDataByName("port").toString()
             log.debug "Device data: ($childIP:$childPort) - reporting data: (${convertHexToIP(parsedEvent.networkAddress)}:${convertHexToInt(parsedEvent.deviceAddress)})."
-            if(childIP != convertHexToIP(parsedEvent.networkAddress) || childPort != convertHexToInt(parsedEvent.deviceAddress).toString()){
-            //if(child.getDeviceDataByName("ip") != convertHexToIP(parsedEvent.networkAddress) || child.getDeviceDataByName("port") != convertHexToInt(parsedEvent.deviceAddress)){
-               log.debug "Device data (${child.getDeviceDataByName("ip")}) does not match what it is reporting(${convertHexToIP(parsedEvent.networkAddress)}). Attempting to update."
-               child.sync(convertHexToIP(parsedEvent.networkAddress), convertHexToInt(parsedEvent.deviceAddress).toString())
+            if("${convertHexToIP(parsedEvent.networkAddress)}" != "0.0.0.0"){
+               if(childIP != convertHexToIP(parsedEvent.networkAddress) || childPort != convertHexToInt(parsedEvent.deviceAddress).toString()){
+                  log.debug "Device data (${child.getDeviceDataByName("ip")}) does not match what it is reporting(${convertHexToIP(parsedEvent.networkAddress)}). Attempting to update."
+                  child.sync(convertHexToIP(parsedEvent.networkAddress), convertHexToInt(parsedEvent.deviceAddress).toString())
+               }
+            } else {
+               log.debug "Device is reporting ip address of ${convertHexToIP(parsedEvent.networkAddress)}. Not updating." 
             }
         }
 
@@ -694,9 +714,9 @@ def addDevices() {
 }
     }
     
-def changeName(params){
+def changeName(){
     def thisDevice = getChildDevice(state.currentDeviceId)
-    thisDevice.label = settings["${state.currentDeviceId}_label"]
+    thisDevice.setLabel(settings["${state.currentDeviceId}_label"])
 
     dynamicPage(name: "changeName", title: "Change Name Summary", nextPage: "mainPage") {
 	    section {
@@ -801,23 +821,6 @@ def physicalHandler(evt) {
        }
     
 }
-}
-
-def huesatToRGB(float hue, float sat) {
-	while(hue >= 100) hue -= 100
-	int h = (int)(hue / 100 * 6)
-	float f = hue / 100 * 6 - h
-	int p = Math.round(255 * (1 - (sat / 100)))
-	int q = Math.round(255 * (1 - (sat / 100) * f))
-	int t = Math.round(255 * (1 - (sat / 100) * (1 - f)))
-	switch (h) {
-		case 0: return [255, t, p]
-		case 1: return [q, 255, p]
-		case 2: return [p, 255, t]
-		case 3: return [p, q, 255]
-		case 4: return [t, p, 255]
-		case 5: return [255, p, q]
-	}
 }
 def rgbToHex(rgb) {
     def r = hex(rgb.r)
