@@ -66,7 +66,7 @@ def parse(String description) {
 	log.debug "parse: Parse message: ${description}"
 
 	if (description?.startsWith("enroll request")) {
-		List cmds = enrollResponse()
+		List cmds = zigbee.enrollResponse()
 
 		log.debug "parse: enrollResponse() ${cmds}"
 		listResult = cmds?.collect { new physicalgraph.device.HubAction(it) }
@@ -185,8 +185,7 @@ private int getBatteryPercentage(int value) {
 	//the device actual shut off voltage is 2.25. When it drops to 2.3, there
 	//is actually still 0.05V, which is about 6% of juice left.
 	//setting the percentage to 6% so a battery low warning is issued
-	if( pct <= 0 )
-	{
+	if( pct <= 0 ) {
 		pct = 0.06
 	}
 	return (int)(pct * 100)
@@ -281,14 +280,6 @@ def configure() {
 	}
 }
 
-def enrollResponse() {
-	[
-			// Enrolling device into the IAS Zone
-			"raw 0x500 {01 23 00 00 00}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1"
-	]
-}
-
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
@@ -322,8 +313,5 @@ Integer convertHexToInt(hex) {
 }
 
 def refresh() {
-	def refreshCmds = [
-		"st rattr 0x${device.deviceNetworkId} ${endpointId} 1 0x20", "delay 200"
-	]
-	return refreshCmds + enrollResponse()
+	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.enrollResponse()
 }
