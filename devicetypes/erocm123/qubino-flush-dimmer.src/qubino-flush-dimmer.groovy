@@ -325,6 +325,16 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	result
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+    def encapsulatedCommand = cmd.encapsulatedCommand([0x98: 1, 0x20: 1, 0x70: 1, 0x25: 1])
+    if (encapsulatedCommand) {
+        state.sec = 1
+        zwaveEvent(encapsulatedCommand)
+    } else {
+        log.warn "Unable to extract encapsulated cmd from $cmd"
+    }
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	logging("$device.displayName: Unhandled: $cmd", 2)
 	[:]
@@ -620,7 +630,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv1.ConfigurationReport 
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec) {
+	if (state.sec || zwaveInfo?.zw?.contains("s") || ("0x98" in device.rawDescription?.split(" "))) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()

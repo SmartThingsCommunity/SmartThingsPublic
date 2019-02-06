@@ -209,6 +209,17 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
     updateDataValue("MSR", msr)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x32: 3, 0x25: 1, 0x98: 1, 0x70: 2, 0x85: 2, 0x9B: 1, 0x90: 1, 0x73: 1, 0x30: 1, 0x28: 1, 0x2B: 1])
+	if (encapsulatedCommand) {
+        state.sec = 1
+		return zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
+	}
+}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
     // This will capture any commands not handled by other instances of zwaveEvent
     // and is recommended for development so you can see every command the device sends
@@ -518,7 +529,7 @@ private encap(cmd, endpoint) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-    if (state.sec) {
+    if (state.sec || zwaveInfo?.zw?.contains("s") || ("0x98" in device.rawDescription?.split(" "))) {
         zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
     } else {
         cmd.format()
