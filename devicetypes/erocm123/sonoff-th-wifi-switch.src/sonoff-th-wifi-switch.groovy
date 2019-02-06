@@ -179,7 +179,7 @@ def parse(description) {
         }
     }
     if (result.containsKey("humidity")) {
-        if (result.temperature != "nan") {
+        if (result.humidity != "nan") {
             state.realHumidity = Math.round((result.humidity as Double) * 100) / 100
             events << createEvent(name: "humidity", value:"${getAdjustedHumidity(state.realHumidity)}", unit:"%")
         } else {
