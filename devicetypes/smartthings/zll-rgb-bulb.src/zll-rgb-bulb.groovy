@@ -54,7 +54,7 @@ metadata {
 	}
 }
 
-//Globals
+// Globals
 private getATTRIBUTE_HUE() { 0x0000 }
 private getATTRIBUTE_SATURATION() { 0x0001 }
 private getATTRIBUTE_X() { 0x0003 }
@@ -88,15 +88,15 @@ def parse(String description) {
 		log.trace "zigbeeMap : $zigbeeMap"
 
 		if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
-			if (zigbeeMap.attrInt == ATTRIBUTE_HUE && shouldUseHueSaturation()) { //Hue Attribute
+			if (zigbeeMap.attrInt == ATTRIBUTE_HUE && shouldUseHueSaturation()) { // Hue Attribute
 				def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "hue", value: hueValue, displayed:false)
-			} else if (zigbeeMap.attrInt == ATTRIBUTE_SATURATION && shouldUseHueSaturation()) { //Saturation Attribute
+			} else if (zigbeeMap.attrInt == ATTRIBUTE_SATURATION && shouldUseHueSaturation()) { // Saturation Attribute
 				def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "saturation", value: saturationValue, displayed:false)
-			} else if (zigbeeMap.attrInt == ATTRIBUTE_X) { //X Attribute
+			} else if (zigbeeMap.attrInt == ATTRIBUTE_X) { // X Attribute
 				state.currentRawX = zigbee.convertHexToInt(zigbeeMap.value)
-			} else if (zigbeeMap.attrInt == ATTRIBUTE_Y) { //Y Attribute
+			} else if (zigbeeMap.attrInt == ATTRIBUTE_Y) { // Y Attribute
 				state.currentRawY = zigbee.convertHexToInt(zigbeeMap.value)
 			}
 
@@ -204,7 +204,7 @@ def installed() {
 }
 
 def setLevel(value) {
-	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh() //adding refresh because of ZLL bulb not conforming to send-me-a-report
+	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh() // adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
 def getScaledHue(value) {
@@ -240,7 +240,7 @@ def setColor(value) {
 
 def setHue(value) {
 	if (shouldUseHueSaturation()) {
-		//payload-> hue value, direction (00-> shortest distance), transition time (1/10th second)
+		// payload-> hue value, direction (00-> shortest distance), transition time (1/10th second)
 		zigbee.command(COLOR_CONTROL_CLUSTER, HUE_COMMAND, getScaledHue(value), "00", "0000") +
 		zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE)
 	} else {
@@ -250,7 +250,7 @@ def setHue(value) {
 
 def setSaturation(value) {
 	if (shouldUseHueSaturation()) {
-		//payload-> sat value, transition time
+		// payload-> sat value, transition time
 		zigbee.command(COLOR_CONTROL_CLUSTER, SATURATION_COMMAND, getScaledSaturation(value), "0000") +
 		zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 	} else {
