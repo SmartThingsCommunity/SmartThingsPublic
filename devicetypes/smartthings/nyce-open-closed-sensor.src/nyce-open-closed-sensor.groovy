@@ -70,8 +70,7 @@ def parse(String description) {
 
 		log.debug "parse: enrollResponse() ${cmds}"
 		listResult = cmds?.collect { new physicalgraph.device.HubAction(it) }
-	}
-	else {
+	} else {
 		if (description?.startsWith("zone status")) {
 			listMap = parseIasMessage(description)
 		}
@@ -117,7 +116,7 @@ private Map parseCatchAllMessage(String description) {
 			switch(cluster.clusterId) {
 				case 0x0500:
 					Map descMap = zigbee.parseDescriptionAsMap(description)
-					// someone who understands Zigbee better than me should refactor this whole DTH to bring it up to date
+
 					if (descMap?.attrInt == 0x0002) {
 						resultMap.name = "contact"
 						def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
@@ -203,10 +202,7 @@ private boolean shouldProcessMessage(cluster) {
 }
 
 private Map parseReportAttributeMessage(String description) {
-	Map descMap = (description - "read attr - ").split(",").inject([:]) {
-		map, param -> def nameAndValue = param.split(":")
-			map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-	}
+	Map descMap = zigbee.parseReadAttrDescription(description)
 	Map resultMap = [:]
 
 	log.debug "parseReportAttributeMessage: descMap ${descMap}"
@@ -266,42 +262,13 @@ def configure() {
 	if(device.getDataValue("manufacturer") == "sengled") {
 		return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(30, 300) + zigbee.enrollResponse()
 	} else {
-		String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-
-		def enrollCmds = [
-				// Writes CIE attribute on end device to direct reports to the hub's EUID
-				"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-				"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-		]
-
-		log.debug "configure: Write IAS CIE"
 		// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
-		return enrollCmds + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
+		return zigbee.iasZoneConfig() + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
 	}
 }
 
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
-}
-
-private String swapEndianHex(String hex) {
-	reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-	int i = 0;
-	int j = array.length - 1;
-	byte tmp;
-
-	while (j > i) {
-		tmp = array[j];
-		array[j] = array[i];
-		array[i] = tmp;
-		j--;
-		i++;
-	}
-
-	return array
 }
 
 private getEndpointId() {
