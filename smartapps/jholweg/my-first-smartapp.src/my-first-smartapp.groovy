@@ -34,6 +34,9 @@ preferences {
     section("Turn on this light") {
         input "theswitch", "capability.switch", required: true
     }
+    section("New feature test - explode in") {
+        input "explodein", "number", required: true, title: "Minutes?"
+    }
 }
 
 def installed() {
