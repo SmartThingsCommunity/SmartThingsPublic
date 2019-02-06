@@ -1,5 +1,5 @@
 /**
- *  Copyright 2017-2019 SmartThings
+ *  Copyright 2017 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -261,7 +261,7 @@ def setSaturation(value) {
 }
 
 /**
- * Below code based on https://github.com/puzzle-star/SmartThings-IKEA-Tradfri-RGB/blob/master/ikea-tradfri-rgb.groovy
+ * Below code from https://github.com/puzzle-star/SmartThings-IKEA-Tradfri-RGB/blob/master/ikea-tradfri-rgb.groovy
  *  Copyright 2017 Pedro Garcia
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
