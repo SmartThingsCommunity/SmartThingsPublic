@@ -70,6 +70,7 @@ def motionHandler(evt) {
 }
 
 def checkMotion() {
+    // Log that we got here so far:
     log.debug "In checkMotion scheduled method"
 
     // get the current state object for the motion sensor
