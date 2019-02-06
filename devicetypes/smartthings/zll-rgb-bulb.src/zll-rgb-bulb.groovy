@@ -31,7 +31,7 @@ metadata {
 
 	// UI tile definitions
 	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
@@ -88,18 +88,16 @@ def parse(String description) {
 		log.trace "zigbeeMap : $zigbeeMap"
 
 		if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
-			if(zigbeeMap.attrInt == ATTRIBUTE_HUE && shouldUseHueSaturation()){ //Hue Attribute
+			if (zigbeeMap.attrInt == ATTRIBUTE_HUE && shouldUseHueSaturation()) { //Hue Attribute
 				def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "hue", value: hueValue, displayed:false)
-			} else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION && shouldUseHueSaturation()) { //Saturation Attribute
+			} else if (zigbeeMap.attrInt == ATTRIBUTE_SATURATION && shouldUseHueSaturation()) { //Saturation Attribute
 				def saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "saturation", value: saturationValue, displayed:false)
-			} else if(zigbeeMap.attrInt == ATTRIBUTE_X) { //X Attribute
+			} else if (zigbeeMap.attrInt == ATTRIBUTE_X) { //X Attribute
 				state.currentRawX = zigbee.convertHexToInt(zigbeeMap.value)
-				//log.debug "xValue = $state.currentRawX"
-			} else if(zigbeeMap.attrInt == ATTRIBUTE_Y) { //Y Attribute
+			} else if (zigbeeMap.attrInt == ATTRIBUTE_Y) { //Y Attribute
 				state.currentRawY = zigbee.convertHexToInt(zigbeeMap.value)
-				//log.debug "yValue = $state.currentRawY"
 			}
 
 			// If the device is sending us this in response to us sending a command to set these,
@@ -305,13 +303,9 @@ def colorGammaRevert(component) {
 }
 
 def colorXy2Rgb(x, y) {
-	//log.debug "colorXy2Rgb Color xy: ($x, $y)"
-
 	def Y = 1
 	def X = (Y / y) * x
 	def Z = (Y / y) * (1.0 - x - y)
-
-	//log.debug "colorXy2Rgb Color XYZ: ($X, $Y, $Z)"
 
 	// sRGB, Reference White D65
 	def M = [
@@ -338,14 +332,10 @@ def colorXy2Rgb(x, y) {
 	g = colorGammaRevert(g / maxRgb)
 	b = colorGammaRevert(b / maxRgb)
 
-	//log.debug "colorXy2Rgb Color RGB: ($r, $g, $b)"
-
 	[red: r, green: g, blue: b]
 }
 
 def colorRgb2Xy(r, g, b) {
-	//log.debug "colorRgb2Xy Color RGB: ($r, $g, $b)"
-
 	r = colorGammaAdjust(r)
 	g = colorGammaAdjust(g)
 	b = colorGammaAdjust(b)
@@ -361,19 +351,13 @@ def colorRgb2Xy(r, g, b) {
 	def Y = r * M[1][0] + g * M[1][1] + b * M[1][2]
 	def Z = r * M[2][0] + g * M[2][1] + b * M[2][2]
 
-	//log.debug "colorRgb2Xy Color XYZ: ($X, $Y, $Z)"
-
 	def x = X / (X + Y + Z)
 	def y = Y / (X + Y + Z)
-
-	//log.debug "colorRgb2Xy Color xy: ($x, $y)"
 
 	[x: x, y: y]
 }
 
 def colorHsv2Rgb(h, s) {
-	//log.debug "colorHsv2Rgb Color HSV: ($h, $s, 1)"
-
 	def r
 	def g
 	def b
@@ -417,15 +401,10 @@ def colorHsv2Rgb(h, s) {
 		}
 	}
 
-	//log.debug "colorHsv2Rgb Color RGB: ($r, $g, $b)"
-
 	[red: r, green: g, blue: b]
 }
 
-def colorRgb2Hsv(r, g, b)
-{
-	//log.debug "colorRgb2Hsv Color RGB: ($r, $g, $b)"
-
+def colorRgb2Hsv(r, g, b) {
 	def minRgb = minOfSet(r, g, b)
 	def maxRgb = maxOfSet(r, g, b)
 	def delta = maxRgb - minRgb
@@ -452,8 +431,6 @@ def colorRgb2Hsv(r, g, b)
 			h += 1
 		}
 	}
-
-	//log.debug "colorRgb2Hsv Color HSV: ($h, $s, $v)"
 
 	return [hue: h, saturation: s, level: v]
 }
