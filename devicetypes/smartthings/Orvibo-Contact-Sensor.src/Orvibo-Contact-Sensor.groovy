@@ -117,7 +117,7 @@ def refresh() {
 	log.debug "Refreshing  Battery and ZONE Status"
 	def manufacturer = getDataValue("manufacturer")
 	def refreshCmds =  zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-    if (manufacturer == "ORVIBO") {
+	if (manufacturer == "ORVIBO") {
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 	} else { // this is actually just supposed to be for Aurora, but we'll make it the default as it's more widely supported
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
@@ -127,7 +127,7 @@ def refresh() {
 
 def configure() {
 	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-    def cmds = []
+	def cmds = []
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	//The electricity attribute is reported without bind and reporting CFG. The TI plan reports the power once in about 10 minutes; the NXP plan reports the electricity once in 20 minutes
 	if (getDataValue("manufacturer") == "Aurora") {
