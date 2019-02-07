@@ -267,14 +267,6 @@ def configure() {
 	}
 }
 
-private hex(value) {
-	new BigInteger(Math.round(value).toString()).toString(16)
-}
-
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
-}
-
 Integer convertHexToInt(hex) {
 	Integer.parseInt(hex,16)
 }
