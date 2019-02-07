@@ -215,7 +215,9 @@ def configure() {
 private Map getButtonResult(buttonState, buttonNumber = 1) {
     if (buttonState == 'release') {
         log.debug "Button was value : $buttonState"
-        state.pressTime = now()
+        if(state.pressTime == null) {
+            return [:]
+        }
         def timeDiff = now() - state.pressTime
         log.info "timeDiff: $timeDiff"
         def holdPreference = holdTime ?: 1
