@@ -364,6 +364,7 @@ def ping() {
 
 def configure() {
 	log.debug "OnTime=${settings.OnTime} OnLevel=${settings.OnLevel} TempAdj=${settings.TempAdj}"
+	sendEvent(name: "motion", value: "inactive")
 	def cmds = commands([
 		zwave.configurationV1.configurationSet(parameterNumber: 1, size: 1, scaledConfigurationValue: validateSetting(settings.OnTime, 0, 127, 2)),
 		zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: validateSetting(settings.OnLevel, -1, 99, -1)),
