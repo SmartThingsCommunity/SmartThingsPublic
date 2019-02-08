@@ -173,7 +173,7 @@ private parseAttrMessage(description) {
 			log.debug "FAN MODE"
 			map.name = "thermostatFanMode"
 			map.value = FAN_MODE_MAP[it.value]
-			map.data = [supportedThermostatModes: state.supportedFanModes]
+			map.data = [supportedThermostatFanModes: state.supportedFanModes]
 		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_VOLTAGE) {
 			map = getBatteryPercentage(Integer.parseInt(it.value, 16))
 		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_ALARM_STATE) {
