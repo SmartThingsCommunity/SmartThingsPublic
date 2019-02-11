@@ -5,6 +5,7 @@
 #include <ESP8266SSDP.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266HTTPClient.h>
+#include <EEPROM.h>
 
 //Cjcharles added for ease of testing
 #include <ArduinoOTA.h>
@@ -17,18 +18,19 @@ s~ r flash
 g~ g fade
 h~ g flash
 b~ b fade
-c~ n fade
-d~ rgb fade
-f~ rgb flash
+c~ b flash
+f~ rgb fade
+d~ rgb flash
 w~ w1 fade
 x~ w1 flash
 y~ w2 fade
 z~ w2 flash
+n~ rrggbbw1w2 fade
+o~ rrggbbw1w2 flash
 */
 
-
 const char * projectName = "SmartLife RGBW Controller";
-String softwareVersion = "2.1.1";
+String softwareVersion = "2.1.5";
 
 const char compile_date[] = __DATE__ " " __TIME__;
 
@@ -89,6 +91,7 @@ int program_counter = 1;
 int program_wait = 0;
 int program_loop = false;
 String program_number = "0";
+String pre_program = "";
 unsigned long previousMillis = millis();
 unsigned long failureTimeout = millis();
 unsigned long timerwd;
@@ -99,6 +102,7 @@ long debounceDelay = 20;
 boolean fade = true;
 int repeat = 1;
 int repeat_count = 1;
+char previousColor[10] = "";
 
 //stores if the switch was high before at all
 int state = LOW;
@@ -132,6 +136,7 @@ String       s_Current_WIFIPW                     = "";
 #define DEFAULT_W2                     0
 #define DEFAULT_DISABLE_J3_RESET       false
 #define DEFAULT_TRANSITION_SPEED       1
+#define DEFAULT_TRANSITION_TYPE        1
 #define DEFAULT_AUTO_OFF               0
 #define DEFAULT_SWITCH_TYPE            0
 #define DEFAULT_CONTINUE_BOOT          false
@@ -419,6 +424,63 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       success = true;
       break;
     }
+  case 7: //RGBW channel
+    {
+      if (color == "xxxxxxxx") {
+        RED = rand_interval(0, 1023);
+        GREEN = rand_interval(0, 1023);
+        BLUE = rand_interval(0, 1023);
+        W1 = rand_interval(0, 1023);
+      } else {
+        RED = getScaledValue(color.substring(0, 2));
+        GREEN = getScaledValue(color.substring(2, 4));
+        BLUE = getScaledValue(color.substring(4, 6));
+        W1 = getScaledValue(color.substring(6, 8));
+      }
+      if (all == false) {
+        W2 = 0;
+      }
+
+      lastRED = RED;
+      lastGREEN = GREEN;
+      lastBLUE = BLUE;
+      lastW1 = W1;
+      lastW2 = W2;
+
+      ::fade = fade;
+
+      change_LED();
+      success = true;
+      break;
+    }
+  case 8: //RGBWW channel
+    {
+      if (color == "xxxxxxxxxx") {
+        RED = rand_interval(0, 1023);
+        GREEN = rand_interval(0, 1023);
+        BLUE = rand_interval(0, 1023);
+        W1 = rand_interval(0, 1023);
+        W2 = rand_interval(0, 1023);
+      } else {
+        RED = getScaledValue(color.substring(0, 2));
+        GREEN = getScaledValue(color.substring(2, 4));
+        BLUE = getScaledValue(color.substring(4, 6));
+        W1 = getScaledValue(color.substring(6, 8));
+        W2 = getScaledValue(color.substring(8, 10));
+      }
+
+      lastRED = RED;
+      lastGREEN = GREEN;
+      lastBLUE = BLUE;
+      lastW1 = W1;
+      lastW2 = W2;
+
+      ::fade = fade;
+
+      change_LED();
+      success = true;
+      break;
+    }
   case 99: // On
     {
       if (color == "0000000000") {
@@ -442,13 +504,11 @@ boolean changeColor(String color, int channel, boolean fade, boolean all = false
       success = true;
       break;
     }
+  }
 
-    //Attempt to change colour here, though if fading is enabled it will only have a small effect
-    LED_RED();
-    LED_GREEN();
-    LED_BLUE();
-    LED_W1();
-    LED_W2();
+  if (String(Settings.defaultColor) == "Previous" && run_program == false){
+    savePreviousColor();
+
   }
   return success;
 
@@ -485,11 +545,20 @@ void relayToggle() {
       state = HIGH;
       run_program = false;
       if (getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2) == "0000000000") {
-        handleOn();
+        String transition = Settings.defaultTransition == 2? "false" : "true";
+        run_program = false;
+        turnOn(transition);
+        //Check if we should forward the request to another device
+        check_if_forward_request();
+        needUpdate = true;
       } else {
-        handleOff();
+        String transition = Settings.defaultTransition == 2? "false" : "true";
+        run_program = false;
+        turnOff(transition);
+        //Check if we should forward the request to another device
+        check_if_forward_request();
+        needUpdate = true;
       }
-      needUpdate = true;
     }
     else if ((current_high - current_low) >= 10000 && (current_high - current_low) < 20000)
     {
@@ -768,11 +837,12 @@ boolean sendStatus(int number) {
   //url += event->idx;
 
   client.print(String("POST ") + url + " HTTP/1.1\r\n" +
-  "Host: " + host + ":" + Settings.haPort + "\r\n" + authHeader +
-  "Content-Type: application/json;charset=utf-8\r\n" +
-  "Server: " + projectName + "\r\n" +
-  "Connection: close\r\n\r\n" +
-  message + "\r\n");
+               "Host: " + host + ":" + Settings.haPort + "\r\n" + authHeader +
+               "Content-Type: application/json;charset=utf-8\r\n" +
+               "Content-Length: " + message.length() + "\r\n" +
+               "Server: " + projectName + "\r\n" +
+               "Connection: close\r\n\r\n" +
+               message + "\r\n");
 
   unsigned long timer = millis() + 200;
   while (!client.available() && millis() < timer)
@@ -935,7 +1005,24 @@ void LoadFromFlash(int index, byte* memAddress, int datasize)
   delete [] data;
 }
 
+/** Load previous color from EEPROM */
+void loadPreviousColor() {
+  EEPROM.begin(512);
+  EEPROM.get(0, previousColor);
+  EEPROM.end();
+  changeColor(String(previousColor), 8, (Settings.defaultTransition == 2? false : true));
+}
 
+/** Save previous color to EEPROM */
+void savePreviousColor() {
+  if (getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2) != "0000000000"){
+    strncpy(previousColor, (getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2)).c_str(), sizeof(previousColor));
+    EEPROM.begin(512);
+    EEPROM.put(0, previousColor);
+    EEPROM.commit();
+    EEPROM.end();
+  }
+}
 
 String uptime()
 {
@@ -1062,22 +1149,23 @@ void addMenu(String& str)
 
 void turnOn(String& transition)
 {
-  if (transition == "") {
-    transition = "false";
+  if (transition != "true" && transition != "false") {
+    transition = (Settings.defaultTransition == 2? "false" : "true");
   }
 
   String hexString = Settings.defaultColor;
   if (hexString == "") {
-    changeColor("0000000000", 99, (transition != "false"));
+    changeColor("0000000000", 99, (transition != "false" && transition != "2"));
   } else if (hexString == "Previous") {
-    changeColor("0000000000", 99, (transition != "false"));
+    //changeColor("0000000000", 99, (transition != "false" && transition != "2"));
+    loadPreviousColor();
   } else {
     if (hexString.startsWith("w~")) {
       String hex = hexString.substring(2, 4);
-      changeColor(hex, 4, (transition != "false"));
+      changeColor(hex, 4, (transition != "false" && transition != "2"));
     } else if (hexString.startsWith("x~")) {
       String hex = hexString.substring(2, 4);
-      changeColor(hex, 4, (transition != "false"));
+      changeColor(hex, 4, (transition != "false" && transition != "2"));
     } else if (hexString.startsWith("y~")) {
       String hex = hexString.substring(2, 4);
       changeColor(hex, 5, true);
@@ -1086,70 +1174,24 @@ void turnOn(String& transition)
       changeColor(hex, 5, false);
     } else if (hexString.startsWith("f~")) {
       String hex = hexString.substring(2, 8);
-      changeColor(hex, 6, (transition != "false"));
+      changeColor(hex, 6, (transition != "false" && transition != "2"));
+    } else if (hexString.startsWith("d~")) {
+      String hex = hexString.substring(2, 8);
+      changeColor(hex, 6, (transition != "false" && transition != "2"));
     } else {
       //Here we take the actual default across all channels
-      String hex = hexString.substring(2, 8);
-      changeColor(hexString, 99, (transition != "false"));
+      //String hex = hexString.substring(0, 10);
+      changeColor(hexString, 8, (transition != "false" && transition != "2"));
     }
   }
 }
 
 void turnOff(String& transition)
 {
-  if (transition == "") {
-    transition = "false";
+  if (transition != "true" && transition != "false") {
+    transition = (Settings.defaultTransition == 2? "false" : "true");
   }
-  changeColor("0", 0, (transition != "false"));
-}
-
-void handleOff()
-{
-  if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
-  {
-    if (!server->authenticate("admin", SecuritySettings.Password))
-    return server->requestAuthentication();
-  }
-  String transition = server->arg("transition");
-  run_program = false;
-
-  turnOff(transition);
-
-  //Check if we should forward the request to another device
-  check_if_forward_request();
-
-  //If we received this request from outside of ST, then lets update ST
-  byte current_add[4] = {server->client().remoteIP()};
-  if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
-    needUpdate = true;
-  }
-  
-  server->send(200, "application/json", getStatus());
-}
-
-void handleOn()
-{
-  if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
-  {
-    if (!server->authenticate("admin", SecuritySettings.Password))
-    return server->requestAuthentication();
-  }
-  String transition = server->arg("transition");
-  run_program = false;
-
-  turnOn(transition);
-
-  //Check if we should forward the request to another device
-  check_if_forward_request();
-
-  //If we received this request from outside of ST, then lets update ST
-  byte current_add[4] = {server->client().remoteIP()};
-  if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
-    needUpdate = true;
-  }
-
-
-  server->send(200, "application/json", getStatus());
+  changeColor("0", 0, (transition != "false" && transition != "2"));
 }
 
 void setup()
@@ -1317,6 +1359,12 @@ void setup()
     saveSettings = true;
   }
 
+  if (SecuritySettings.settingsVersion < 215) {
+    Settings.defaultTransition = DEFAULT_TRANSITION_TYPE;
+    SecuritySettings.settingsVersion = 215;
+    saveSettings = true;
+  }
+
   if (saveSettings == true) {
     SaveSettings();
   }
@@ -1445,6 +1493,8 @@ void setup()
     program_wait = 0;
     run_program = true;
 
+    pre_program = getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2);
+
     //Check if we should forward the request to another device
     check_if_forward_request();
 
@@ -1477,9 +1527,50 @@ void setup()
     server->send(200, "application/json", "{\"program\":\"" + program_number + "\", \"running\":\"false\"}");
   });
 
-  server->on("/off", handleOff);
+  server->on("/off", []() {
+    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+    {
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
+    }
+    String transition = server->arg("transition");
+    run_program = false;
 
-  server->on("/on", handleOn);
+    turnOff(transition);
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
+  
+    server->send(200, "application/json", getStatus());
+    
+  });
+
+  server->on("/on", []() {
+    if (SecuritySettings.Password[0] != 0 && Settings.usePasswordControl == true)
+    {
+      if (!server->authenticate("admin", SecuritySettings.Password))
+      return server->requestAuthentication();
+    }
+    String transition = server->arg("transition");
+    run_program = false;
+
+    turnOn(transition);
+
+    //Check if we should forward the request to another device
+    check_if_forward_request();
+
+    //If we received this request from outside of ST, then lets update ST
+    byte current_add[4] = {server->client().remoteIP()};
+    if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
+      needUpdate = true;
+    }
+  });
 
   server->on("/configGet", []() {
 
@@ -1510,6 +1601,9 @@ void setup()
     }
     if (configName == "transitionspeed") {
       reply += "{\"name\":\"transitionspeed\", \"value\":\"" + String(Settings.transitionSpeed) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "dtransition") {
+      reply += "{\"name\":\"dtransition\", \"value\":\"" + String(Settings.defaultTransition) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
     if (configName == "dcolor") {
       reply += "{\"name\":\"dcolor\", \"value\":\"" + String(Settings.defaultColor) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
@@ -1621,6 +1715,13 @@ void setup()
         Settings.transitionSpeed = configValue.toInt();
       }
       reply += "{\"name\":\"transitionspeed\", \"value\":\"" + String(Settings.transitionSpeed) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
+    }
+    if (configName == "dtransition") {
+      if (configValue.length() != 0)
+      {
+        Settings.defaultTransition = configValue.toInt();
+      }
+      reply += "{\"name\":\"dtransition\", \"value\":\"" + String(Settings.defaultTransition) + "\", \"success\":\"true\", \"type\":\"configuration\"}";
     }
     if (configName == "dcolor") {
       if (configValue.length() != 0)
@@ -1787,6 +1888,7 @@ void setup()
     String resettype = server->arg("resettype");
     String uReport = server->arg("ureport");
     String debounce = server->arg("debounce");
+    String defaultTransition = server->arg("dtransition");
     String dcolor = server->arg("dcolor");
     String redpin = server->arg("redpin");
     String greenpin = server->arg("greenpin");
@@ -1881,6 +1983,11 @@ void setup()
     if (autoOff.length() != 0)
     {
       Settings.autoOff = autoOff.toInt();
+    }
+
+    if (defaultTransition.length() != 0)
+    {
+      Settings.defaultTransition = defaultTransition.toInt();
     }
 
     if (dcolor.length() != 0)
@@ -2082,6 +2189,22 @@ void setup()
     //} else {
     //  reply += F("<option value='2'>Previous State</option>");
     //}
+    reply += F("</select>");
+
+    choice = Settings.defaultTransition;
+    reply += F("<TR><TD>Default Transition:<TD><select name='");
+    reply += "dtransition";
+    reply += "'>";
+    if (choice == 1) {
+      reply += F("<option value='1' selected>Fade</option>");
+    } else {
+      reply += F("<option value='1'>Fade</option>");
+    }
+    if (choice == 2) {
+      reply += F("<option value='2' selected>Flash</option>");
+    } else {
+      reply += F("<option value='2'>Flash</option>");
+    }
     reply += F("</select>");
 
     choice = Settings.transitionSpeed;
@@ -2330,10 +2453,10 @@ void setup()
     b = hexRGB.substring(4, 6);
 
     if (hexRGB.length() == 10) {
-      changeColor(hexRGB, 99, (transition != "false"), (channels != "true"));
+      changeColor(hexRGB, 99, (transition != "false" && transition != "2"), (channels != "true"));
     }
     else {
-      changeColor(hexRGB, 6, (transition != "false"), (channels != "true"));
+      changeColor(hexRGB, 6, (transition != "false" && transition != "2"), (channels != "true"));
     }
 
     //Check if we should forward the request to another device
@@ -2361,7 +2484,7 @@ void setup()
     String channels = server->arg("channels");
     String transition = server->arg("transition");
 
-    changeColor(hexW1, 4, (transition != "false"), (channels != "true"));
+    changeColor(hexW1, 4, (transition != "false" && transition != "2"), (channels != "true"));
 
     //Check if we should forward the request to another device
     check_if_forward_request();
@@ -2387,7 +2510,7 @@ void setup()
     String channels = server->arg("channels");
     String transition = server->arg("transition");
 
-    changeColor(hexW2, 5, (transition != "false"), (channels != "true"));
+    changeColor(hexW2, 5, (transition != "false" && transition != "2"), (channels != "true"));
 
     //Check if we should forward the request to another device
     check_if_forward_request();
@@ -2413,7 +2536,7 @@ void setup()
     String channels = server->arg("channels");
     String transition = server->arg("transition");
 
-    changeColor(r, 1, (transition != "false"), (channels != "true"));
+    changeColor(r, 1, (transition != "false" && transition != "2"), (channels != "true"));
 
     //Check if we should forward the request to another device
     check_if_forward_request();
@@ -2439,7 +2562,7 @@ void setup()
     String channels = server->arg("channels");
     String transition = server->arg("transition");
 
-    changeColor(g, 2, (transition != "false"), (channels != "true"));
+    changeColor(g, 2, (transition != "false" && transition != "2"), (channels != "true"));
 
     //Check if we should forward the request to another device
     check_if_forward_request();
@@ -2465,7 +2588,7 @@ void setup()
     String channels = server->arg("channels");
     String transition = server->arg("transition");
 
-    changeColor(b, 3, (transition != "false"), (channels != "true"));
+    changeColor(b, 3, (transition != "false" && transition != "2"), (channels != "true"));
 
     //Check if we should forward the request to another device
     check_if_forward_request();
@@ -2590,7 +2713,8 @@ void loop()
           program_wait = hexString.substring(9, hexString.length()).toInt();
         }
         changeColor(hexProgram, 6, true);
-      } else {
+        // || hexString.startsWith("g~") added for backwards compatibility with SmartApp bug
+      } else if (hexString.startsWith("d~") || hexString.startsWith("g~")) {
         String hexProgram = hexString.substring(2, 8);
         if (hexString.indexOf("-", 9) >= 0) {
           program_wait = rand_interval(hexString.substring(9, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
@@ -2598,7 +2722,23 @@ void loop()
           program_wait = hexString.substring(9, hexString.length()).toInt();
         }
         changeColor(hexProgram, 6, false);
-      }
+      } else if (hexString.startsWith("n~")) {
+        String hexProgram = hexString.substring(2, 12);
+        if (hexString.indexOf("-", 13) >= 0) {
+          program_wait = rand_interval(hexString.substring(13, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
+        } else {
+          program_wait = hexString.substring(13, hexString.length()).toInt();
+        }
+        changeColor(hexProgram, 8, true);
+      } else if (hexString.startsWith("o~")) {
+        String hexProgram = hexString.substring(2, 12);
+        if (hexString.indexOf("-", 13) >= 0) {
+          program_wait = rand_interval(hexString.substring(13, hexString.indexOf("-") - 1).toInt(), hexString.substring(hexString.indexOf("-") + 1, hexString.length()).toInt());
+        } else {
+          program_wait = hexString.substring(13, hexString.length()).toInt();
+        }
+        changeColor(hexProgram, 8, false);
+      } 
 
       previousMillis = millis();
       program_step = program_step + 1;
@@ -2613,7 +2753,9 @@ void loop()
         run_program = false;
         if (program_off == "true") {
           changeColor("0000000000", 99, false);
-        }
+        } else if (program_off == "previous") {
+          changeColor(pre_program != ""? pre_program : "xxxxxxxxxx", 8, false);
+        } 
         sendStatus();
       }
 
