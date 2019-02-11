@@ -333,7 +333,9 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) { // Devices that support the Security command class can send messages in an encrypted form; they arrive wrapped in a SecurityMessageEncapsulation command and must be unencapsulated
 	log.debug "raw secEncap $cmd"
     state.sec = 1
-    def encapsulatedCommand = cmd.encapsulatedCommand ([0x20: 1, 0x80: 1, 0x70: 1, 0x72: 1, 0x31: 5, 0x26: 1, 0x75: 1, 0x40: 2, 0x43: 2, 0x86: 1, 0x71: 3, 0x98: 2, 0x7A: 1 ]) //0x98: 2, 0x98: 2, 
+	def encapsulatedCommand = cmd.encapsulatedCommand ([0x20: 1, 0x80: 1, 0x70: 1, 0x72: 1, 0x31: 5, 0x26: 3, 0x75: 1, 0x40: 2, 0x43: 2, 0x86: 1, 0x71: 3, 0x98: 2, 0x7A: 1 ]) //0x98: 2, 0x98: 2, 
+
+//to test    def encapsulatedCommand = cmd.encapsulatedCommand
 //old def encapsulatedCommand = cmd.encapsulatedCommand ([0x20: 1, 0x80: 1, 0x70: 1, 0x72: 1, 0x31: 5, 0x26: 1, 0x71: 8,0x75: 1, 0x40: 2, 0x43: 2, 0x86: 1 ]) //0x98: 2, 0x98: 2, 
 																					// 72 changed to v2													71 added 7A added			
     if (encapsulatedCommand) {
@@ -351,16 +353,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSupportedReport cmd) {
-	    
+	    log.debug "$cmd"
     def supportedModes = []
 		if(cmd.off) { supportedModes << "off" }
 		if(cmd.heat) { supportedModes << "heat" }
 		if(cmd.cool) { supportedModes << "cool" }
 		if(cmd.auto) { supportedModes << "auto" }
 		if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" } //boost
-    	if (cmd.energySaveHeat == true) { supportedModes << "eco"} //eco
-	log.info "modes are ${state.supportedModes}"
-	state.supportedModes = supportedModes.toString()	
+    	if (cmd.energySaveHeat) { supportedModes << "eco"} //eco //removed 4/2/19 == true)
+	state.supportedModes = supportedModes.toString()
+    //log.info "modes are ${state.supportedModes}"
+	
 	
     updateDataValue("availableThermostatModes", state.supportedModes.toString())
     sendEvent(name: "supportedThermostatModes", value: state.supportedModes, displayed: false)
@@ -607,9 +610,8 @@ def updated() {
         state.updatedLastRanAt = new Date().time
         unschedule(refresh)
         unschedule(poll)
-        log.trace "updated config"
-        setDeviceLimits()
-        runIn (5, configure)
+        log.trace "updated"
+        runIn (05, configure)
         sendEvent(name: "configure", value: "configdue", displayed: false)
         switch(refreshRate) {
 		case "1":
