@@ -229,8 +229,6 @@ private List parseIasMessage(String description) {
 	log.debug "parseIasMessage: $description"
 
 	List resultListMap = []
-	Map resultMap_battery = [:]
-	Map resultMap_battery_state = [:]
 	Map resultMap_sensor = [:]
 
 	resultMap_sensor.name = "contact"
@@ -241,8 +239,6 @@ private List parseIasMessage(String description) {
 	log.debug "parseIasMessage: Trouble Status ${zs.trouble}"
 	log.debug "parseIasMessage: Sensor Status ${zs.alarm1}"
 
-	resultListMap << resultMap_battery_state
-	resultListMap << resultMap_battery
 	resultListMap << resultMap_sensor
 
 	return resultListMap
