@@ -21,7 +21,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Orvibo Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn:"SmartThings", vid:"generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
+	definition(name: "Orvibo Contact Sensor", namespace: "smartthings", author: "biaoyi.deng@samsung.com", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn:"SmartThings", vid:"generic-contact-3", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
@@ -30,6 +30,7 @@ metadata {
 		capability "Sensor"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99"
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "Aurora", model: "WindowSensor51AU", deviceJoinName: "Aurora Smart Door/Window Sensor"
 	}
 
 	simulator {
@@ -82,8 +83,10 @@ def parse(String description) {
 			if (descMap?.clusterInt == 0x0001 && descMap?.commandInt != 0x07 && descMap?.value) {
 				if(descMap?.attrInt==0x0021){
 					map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-					result = createEvent(map)
+				} else {
+					map = getBatteryResult(Integer.parseInt(descMap.value, 16))
 				}
+				result = createEvent(map)
 			} else if (descMap?.clusterInt == 0x0500 && descMap?.attrInt == 0x0002) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
@@ -101,28 +104,37 @@ def parse(String description) {
 def installed(){
 	log.debug "call installed()"
 	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	refresh()
 }
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
 	log.debug "ping is called"
-	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def refresh() {
 	log.debug "Refreshing  Battery and ZONE Status"
-	def refreshCmds = zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
-		zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	def manufacturer = getDataValue("manufacturer")
+	def refreshCmds =  zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+	if (manufacturer == "ORVIBO") {
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+	} else { // this is actually just supposed to be for Aurora, but we'll make it the default as it's more widely supported
+		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+	}
 	refreshCmds + zigbee.enrollResponse()
 }
 
 def configure() {
 	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	def cmds = []
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	//The electricity attribute is reported without bind and reporting CFG. The TI plan reports the power once in about 10 minutes; the NXP plan reports the electricity once in 20 minutes
-	refresh()
+	if (getDataValue("manufacturer") == "Aurora") {
+		cmds = zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig()
+	}
+	cmds += refresh()
+	cmds
 }
 
 def getBatteryPercentageResult(rawValue) {
@@ -137,6 +149,28 @@ def getBatteryPercentageResult(rawValue) {
 	}
 
 	result
+}
+
+private Map getBatteryResult(rawValue) {
+	log.debug 'Battery'
+	def linkText = getLinkText(device)
+
+	def result = [:]
+
+	def volts = rawValue / 10
+	if (!(rawValue == 0 || rawValue == 255)) {
+		def minVolts = 2.1
+		def maxVolts = 3.0
+		def pct = (volts - minVolts) / (maxVolts - minVolts)
+		def roundedPct = Math.round(pct * 100)
+		if (roundedPct <= 0)
+			roundedPct = 1
+		result.value = Math.min(100, roundedPct)
+		result.descriptionText = "${linkText} battery was ${result.value}%"
+		result.name = 'battery'
+	}
+
+	return result
 }
 
 def getContactResult(value) {
