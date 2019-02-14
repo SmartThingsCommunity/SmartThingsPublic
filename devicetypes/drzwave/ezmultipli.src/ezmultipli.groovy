@@ -352,8 +352,8 @@ def validateSetting(value, minVal, maxVal, defaultVal) {
 
 def refresh() {
 	def cmd = queryAllColors()
-	cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
-	cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
+	cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: sensormultilevelv5.SensorMultilevelReport.SENSOR_TYPE_TEMPERATURE_VERSION_1, scale: 1)
+	cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: sensormultilevelv5.SensorMultilevelReport.SENSOR_TYPE_LUMINANCE_VERSION_1, scale: 1)
 	cmd << zwave.basicV1.basicGet()
 	commands(cmd, 1000)
 }
