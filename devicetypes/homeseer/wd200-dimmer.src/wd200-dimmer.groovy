@@ -20,6 +20,7 @@
  *
  *	Changelog:
  *
+ *	1.0.dd.9  13-Feb-2019 Added dummy setLevel command with duration for compatibility with HA Bridge, others? (darwin@darwinsden.com)
  *	1.0.dd.8  28-Jul-2018 Additional protection against floating point default preference values
  *	1.0.dd.6  27-Jul-2018 Added call to set led flash rate and added protection against floating point default preference values
  *	1.0.dd.5  26-Mar-2018 Corrected issues: 1) Turning off all LEDs did not return switch to Normal mode,
@@ -323,6 +324,10 @@ def setLevel (value) {
     result += response(zwave.switchMultilevelV1.switchMultilevelGet())
 }
 
+// dummy setLevel command with duration for compatibility with Home Assistant Bridge (others?)
+def setLevel(value, duration) {
+	setLevel (value)
+}
 
 /*
  *  Set dimmer to status mode, then set the color of the individual LED
