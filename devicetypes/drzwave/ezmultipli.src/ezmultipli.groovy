@@ -280,7 +280,7 @@ def off() {
 }
 
 def channelValue(channel) {
-	channel >= 128 ? 255 : 0
+	channel >= 191 ? 255 : 0
 }
 
 def setColor(value) {
