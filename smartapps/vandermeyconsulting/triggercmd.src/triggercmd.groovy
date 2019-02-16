@@ -246,7 +246,10 @@ def deviceDiscovery() {
 		})
 	} else {
 		debugOut "Bulb Device Data: did:${devices?.did} room:${roomName} BulbName:${devices?.name}"
-		deviceList += ["name" : "${roomName} ${devices?.name}", "did" : "${devices?.did}", "type" : "bulb"]
+		// deviceList += ["name" : "${roomName} ${devices?.name}", "did" : "${devices?.did}", "type" : "bulb"]  <- this logic doesn't work when there's only 1 command
+		// Thanks to mthiel for finding this fix. 
+		deviceList += ["name" : "${roomName} ${devices[0].name}", "did" : "${devices[0].did}", "type" : "bulb"]
+		
 	}
 
 	devices = ["devices" : deviceList]
