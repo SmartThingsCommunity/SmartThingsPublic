@@ -277,6 +277,16 @@ def setThermostatMode(value) {
 	}
 }
 
+def setThermostatFanMode(value) {
+	switch(value) {
+		case "on":
+			fanOn()
+			break
+		default:
+			fanAuto()
+	}
+}
+
 def off() {
 	return zigbee.writeAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_OFF) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE)
