@@ -13,7 +13,7 @@
  *  SmartLife RGBW Light (Connect)
  *
  *  Author: Eric Maycock (erocm123)
- *  Date: 2019-02-04
+ *  Date: 2019-02-15
  */
 
 definition(
@@ -129,14 +129,14 @@ def configurePDevice(params){
         section {
             href "configureProgramMain", title:"Configure Programs", description:"Configure Programs"
 		}
-        section("Virtual Switches"){
-           input "${state.currentDeviceId}_prefix", "text", title: "Virtual Switch Prefix", description: "Prefix for virtual switch names", required: false, defaultValue: "RGBW"
-           if(!isVirtualConfigured(state.currentDeviceId)){
-              href "createVirtual", title:"Create Virtual Devices", description:"Create virtual devices"
-           }else{
-              href "removeVirtual", title:"Remove Virtual Devices", description:"Remove virtual devices"
-           }
-        }
+        //section("Virtual Switches"){
+        //   input "${state.currentDeviceId}_prefix", "text", title: "Virtual Switch Prefix", description: "Prefix for virtual switch names", required: false, defaultValue: "RGBW"
+        //   if(!isVirtualConfigured(state.currentDeviceId)){
+        //      href "createVirtual", title:"Create Virtual Devices", description:"Create virtual devices"
+        //   }else{
+        //      href "removeVirtual", title:"Remove Virtual Devices", description:"Remove virtual devices"
+        //   }
+        //}
         section {
               href "deletePDevice", title:"Delete $state.currentDisplayName", description: ""
         }
@@ -424,14 +424,13 @@ def configureProgram(params){
       }
    } catch (e) {
        log.debug "Error importing program. Clearing import string."
-       app.updateSetting("importMe", "")
    }
    app.updateSetting("importMe", "")
    }
    dynamicPage(name: "configureProgram", title: "Configure the actions you would like the program to perform.", nextPage: null, uninstall: configured(), install: false) {
         section{
            input "${state.currentDeviceId}_programs_${state.currentProgram}_name", "text", title:"Program Name", required: false
-           input "${state.currentDeviceId}_programs_${state.currentProgram}_off", "bool", title:"Power off when program is finished?", required: false, defaultValue: false
+           input "${state.currentDeviceId}_programs_${state.currentProgram}_off", "enum", title:"When program is finished?", required: false, options: [["true":"Power Off"],["previous":"Previous Color"],["false":"Last Color in Program"]], defaultValue: "continue"
         }
         section("Actions") {
                 input "${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions", "enum", title: "Number of Actions?", required: true, submitOnChange: true, options: [
@@ -440,14 +439,20 @@ def configureProgram(params){
                 for (int i = 1; i <= (settings["${state.currentDeviceId}_programs_${state.currentProgram}_numberOfActions"] as Integer); i++){
                    configDescription = ""
                    if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_transition"] != null) {
-                      configDescription = (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_transition"].toInteger() == 1 ? 'Fade' : 'Flash') + " to "
+                      //configDescription = (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_transition"].toInteger() == 1 ? 'Fade' : 'Flash') + " to "
                    }
                    if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_color"] != null) { 
                       configDescription = configDescription + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_color"]
                    }
-                   if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] != null) { 
-                      configDescription = configDescription + " (" + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] + "%) "
-                   }
+                   if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_color"] != "Custom") { 
+                       if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] != null) { 
+                           configDescription = configDescription + " (" + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_lightLevel"] + "%) "
+					   } 
+				   } else { 
+				       if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_custom"] != null) { 
+					       configDescription = configDescription + " (" + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_custom"] + ") "
+					   }
+				   }
                    if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_random_duration"]?.toBoolean()) { 
                        if (settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] != null && settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] != null){
                            configDescription = configDescription + "for a random time between " + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_min_duration"] + " & " + settings["${state.currentDeviceId}_programs_${state.currentProgram}_${i}_max_duration"] + " milliseconds"
@@ -464,7 +469,8 @@ def configureProgram(params){
                 }
         }
         section("Repeat"){
-           input "${state.currentDeviceId}_programs_${state.currentProgram}_repeat", "enum", title: "Number of times to repeat?", required: false, options: [["-1":"Forever"],[0:"0"],[1:"1"],[2:"2"],[3:"3"],[4:"4"],[5:"5"],[6:"6"],[7:"7"],[8:"8"],[9:"9"]]
+           //input "${state.currentDeviceId}_programs_${state.currentProgram}_repeat", "enum", title: "Number of times to repeat?", required: false, options: [["-1":"Forever"],[0:"0"],[1:"1"],[2:"2"],[3:"3"],[4:"4"],[5:"5"],[6:"6"],[7:"7"],[8:"8"],[9:"9"],[10:"10"],[20:"20"],[30:"30"],[40:"40"],[50:"50"],[60:"60"],[70:"70"],[80:"80"],[90:"90"],[100:"100"]]
+	       input "${state.currentDeviceId}_programs_${state.currentProgram}_repeat", "number", title: "Number of times to repeat? (-1 = forever)", required: false, defaultValue: -1, range: "-1..99999"
         }
         section("Import/Export"){
            href "exportProgram", title:"Export Program", description:"Export the program string"
@@ -538,7 +544,7 @@ def getActionSections(programNumber, actionNumber) {
 					["Warm White":"Warm White - Relax"],
 					"Red","Green","Blue","Yellow","Orange","Purple","Pink","Cyan","W1","W2","Random","Custom","Off"]
             if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_color"] == "Custom"){
-                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_custom", "text", title: "Custom Color in Hex (ie ffffff)", submitOnChange: false, required: false
+                input "${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_custom", "text", title: "Custom Color in 10 Digit Hex (ie rrggbbw1w2)", submitOnChange: false, required: false
             }
 		}
         if (settings["${state.currentDeviceId}_programs_${programNumber}_${actionNumber}_color"] != "Custom"){
@@ -574,7 +580,7 @@ def updated() {
 
 def initialize() {
     if(isConfigured()){
-    getChildDevices().each {
+    /*getChildDevices().each {
         if(it.typeName == "SmartLife RGBW Virtual Switch"){
             subscribeToCommand(it, "on", virtualHandler)
             subscribeToCommand(it, "off", virtualHandler)
@@ -583,7 +589,7 @@ def initialize() {
             subscribe(it, "switch${i}", physicalHandler)
         }}
         
-        }
+        }*/
     }
     
     configurePrograms()
@@ -769,11 +775,16 @@ def configurePrograms(){
              } else {
                 color = getHexColor(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"])
              }
-             if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Soft White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Warm White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "W1") {
+             if (settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Soft White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Warm White" || settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "W1") {
                 transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, "w1")
-             }else if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "W2") {
+             } else if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "W2") {
                 transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, "w2")
-             }else{
+             } else if(settings["${it.deviceNetworkId}_programs_${i}_${j}_color"] == "Custom") {
+				if (settings["${it.deviceNetworkId}_programs_${i}_${j}_custom"]?.length() == 6)
+                    transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, "rgb")
+				if (settings["${it.deviceNetworkId}_programs_${i}_${j}_custom"]?.length() == 10)
+                    transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, "rgbww")
+			 } else {
                 transition = getTransition(settings["${it.deviceNetworkId}_programs_${i}_${j}_transition"] as Integer, "rgb")
              }
              if (settings["${it.deviceNetworkId}_programs_${i}_${j}_random_duration"]?.toBoolean()) {
@@ -787,7 +798,7 @@ def configurePrograms(){
       }
       if(programString != ""){
          log.debug programString.substring(0, programString.length() - 1) + "&repeat=" + settings["${it.deviceNetworkId}_programs_${i}_repeat"] + "&off=" + settings["${it.deviceNetworkId}_programs_${i}_off"]
-         getChildDevice(it.deviceNetworkId).setProgram(programString.substring(0, programString.length() - 1) + "&repeat=" + settings["${it.deviceNetworkId}_programs_${i}_repeat"], i) + "&off=" + settings["${it.deviceNetworkId}_programs_${i}_off"]
+         getChildDevice(it.deviceNetworkId).setProgram(programString.substring(0, programString.length() - 1) + "&repeat=" + settings["${it.deviceNetworkId}_programs_${i}_repeat"] + "&off=" + settings["${it.deviceNetworkId}_programs_${i}_off"], i)
       } 
    }}
    }  
@@ -919,7 +930,16 @@ private getTransition(value, channel){
         transition = "f~"
         break;
         case 2:
-        transition = "g~"
+        transition = "d~"
+        break;
+      }
+	} else if(channel == "rgbww") {
+      switch(value){
+        case 1:
+        transition = "n~"
+        break;
+        case 2:
+        transition = "o~"
         break;
       }
     }
