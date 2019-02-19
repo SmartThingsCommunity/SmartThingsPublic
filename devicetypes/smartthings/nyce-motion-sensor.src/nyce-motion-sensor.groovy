@@ -192,7 +192,7 @@ def configure() {
 		"raw 0x500 {01 23 00 00 00}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 	]
-	return configCmds + enrollResponse() + refresh() + zigbee.batteryConfig(30, 300) // send refresh cmds as part of config
+	return configCmds + zigbee.enrollResponse() + refresh() + zigbee.iasZoneConfig(30, 300) + zigbee.enrollResponse() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
