@@ -1,4 +1,4 @@
-/**
+/*
  *  eZEX Temp & Humidity Sensor (AC Type)
  *
  *  Copyright 2019 SmartThings
@@ -22,7 +22,7 @@ metadata {
         capability "Relative Humidity Measurement"
         capability "Sensor"
         
-        fingerprint profileId: "0104", inClusters: "0000,0003,0402,0405,0500", outClusters: "0019", model: "E282-KR0B0Z1-HA", deviceJoinName: "eZEX Temperature & Humidity Sensor (AC Type)"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0402,0405,0500", outClusters: "0019", model: "E282-KR0B0Z1-HA", deviceJoinName: "Smart Temperature/Humidity Sensor (AC Type)"
     }
 
 
