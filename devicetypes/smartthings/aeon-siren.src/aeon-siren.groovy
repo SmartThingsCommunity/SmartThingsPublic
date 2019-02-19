@@ -68,9 +68,15 @@ def installed() {
 }
 
 def updated() {
+	log.debug "updated()"
 	def commands = []
-// Device-Watch simply pings if no device events received for 32min(checkInterval)
+
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	log.debug "Scheduling health check every 15 minutes"
+	unschedule("healthPoll", [forceForLocallyExecuting: true])
+	runEvery15Minutes("healthPoll", [forceForLocallyExecuting: true])
 
 	if(!state.sound) state.sound = 1
 	if(!state.volume) state.volume = 3
@@ -185,4 +191,9 @@ private secure(physicalgraph.zwave.Command cmd) {
  * */
 def ping() {
 	secure(zwave.basicV1.basicGet())
+}
+
+def healthPoll() {
+	log.debug "healthPoll()"
+	sendHubCommand(ping())
 }

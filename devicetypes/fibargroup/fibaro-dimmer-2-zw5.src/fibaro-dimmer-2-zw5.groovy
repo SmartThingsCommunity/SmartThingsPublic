@@ -2,7 +2,7 @@
  *	Fibaro Dimmer 2
  */
 metadata {
-	definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
+	definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", runLocally: true, minHubCoreVersion: '000.025.0000', executeCommandsLocally: true, mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Energy Meter"
@@ -18,6 +18,7 @@ metadata {
 
 		fingerprint mfr: "010F", prod: "0102", model: "2000"
 		fingerprint mfr: "010F", prod: "0102", model: "1000"
+		fingerprint mfr: "010F", prod: "0102", model: "3000"
 	}
 
 	tiles (scale: 2) {

@@ -108,6 +108,7 @@ private Map getBatteryPercentageResult(rawValue) {
     return result
 }
 
+
 /**** COMMAND METHODS ****/
 def on() {
     def cmds = []
