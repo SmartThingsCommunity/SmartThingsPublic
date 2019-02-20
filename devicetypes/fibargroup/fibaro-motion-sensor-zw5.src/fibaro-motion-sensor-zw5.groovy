@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition(name: "Fibaro Motion Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.", ocfDeviceType: "x.com.st.d.sensor.motion") {
+	definition(name: "Fibaro Motion Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.", runLocally: true, minHubCoreVersion: '000.025.0000', executeCommandsLocally: true, ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Illuminance Measurement"

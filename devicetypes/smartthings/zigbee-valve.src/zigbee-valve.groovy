@@ -82,12 +82,13 @@ def parse(String description) {
             else if(event.value == "off") {
                 event.value = "closed"
             }
+            sendEvent(event)
+            // we need a valve and a contact event every time
+            event.name = "valve"
         } else if (event.name == "powerSource") {
             event.value = event.value.toLowerCase()
         }
-        sendEvent(event)
-        //handle valve attribute
-        event.name = "valve"
+
         sendEvent(event)
     }
     else {

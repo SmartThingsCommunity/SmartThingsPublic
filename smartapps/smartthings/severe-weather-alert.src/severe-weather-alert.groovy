@@ -27,118 +27,108 @@ definition(
 )
 
 preferences {
-	page name: "mainPage", install: true, uninstall: true
+    page name: "mainPage", install: true, uninstall: true
 }
 
 def mainPage() {
-	dynamicPage(name: "mainPage") {
-		if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
-			section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
-		}
+    dynamicPage(name: "mainPage") {
+        if (!(location.zipCode || ( location.latitude && location.longitude )) && location.channelName == 'samsungtv') {
+            section { paragraph title: "Note:", "Location is required for this SmartApp. Go to 'Location Name' settings to setup your correct location." }
+        }
 
-		if (location.channelName != 'samsungtv') {
-			section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
-		}
+        if (location.channelName != 'samsungtv') {
+            section( "Set your location" ) { input "zipCode", "text", title: "Zip code" }
+        }
 
-		if (location.contactBookEnabled || phone1 || phone2 || phone3) {
-			section("In addition to push notifications, send text alerts to...") {
-				input("recipients", "contact", title: "Send notifications to") {
-					input "phone1", "phone", title: "Phone Number 1", required: false
-					input "phone2", "phone", title: "Phone Number 2", required: false
-					input "phone3", "phone", title: "Phone Number 3", required: false
-				}
-			}
-		}
+        if (location.contactBookEnabled || phone1 || phone2 || phone3) {
+            section("In addition to push notifications, send text alerts to...") {
+                input("recipients", "contact", title: "Send notifications to") {
+                    input "phone1", "phone", title: "Phone Number 1", required: false
+                    input "phone2", "phone", title: "Phone Number 2", required: false
+                    input "phone3", "phone", title: "Phone Number 3", required: false
+                }
+            }
+        }
 
-		section([mobileOnly:true]) {
-			label title: "Assign a name", required: false
-			mode title: "Set for specific mode(s)"
-		}
-	}
+        section([mobileOnly:true]) {
+            label title: "Assign a name", required: false
+            mode title: "Set for specific mode(s)"
+        }
+    }
 }
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
-	scheduleJob()
+    log.debug "Installed with settings: ${settings}"
+    scheduleJob()
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
+    log.debug "Updated with settings: ${settings}"
     unschedule()
-	scheduleJob()
+    scheduleJob()
 }
 
 def scheduleJob() {
-	def sec = Math.round(Math.floor(Math.random() * 60))
-	def min = Math.round(Math.floor(Math.random() * 60))
-	def cron = "$sec $min * * * ?"
-	schedule(cron, "checkForSevereWeather")
+    def sec = Math.round(Math.floor(Math.random() * 60))
+    def min = Math.round(Math.floor(Math.random() * 60))
+    def cron = "$sec $min * * * ?"
+    schedule(cron, "checkForSevereWeather")
 }
 
 def checkForSevereWeather() {
-	def alerts
-	if(locationIsDefined()) {
-		if(zipcodeIsValid()) {
-			alerts = getWeatherFeature("alerts", zipCode)?.alerts
-		} else {
-			log.warn "Severe Weather Alert: Invalid zipcode entered, defaulting to location's zipcode"
-			alerts = getWeatherFeature("alerts")?.alerts
-		}
-	} else {
-		log.warn "Severe Weather Alert: Location is not defined"
-	}
+    def alerts
+    if(locationIsDefined()) {
+        if(!(zipcodeIsValid())) {
+            log.warn "Severe Weather Alert: Invalid zipcode entered, defaulting to location's zipcode"
+        }
+        def zipToLocation = getTwcLocation("$zipCode").location
+        alerts = getTwcAlerts("${zipToLocation.latitude},${zipToLocation.longitude}")
+    } else {
+        log.warn "Severe Weather Alert: Location is not defined"
+    }
 
-	def newKeys = alerts?.collect{it.type + it.date_epoch} ?: []
-	log.debug "Severe Weather Alert: newKeys: $newKeys"
-
-	def oldKeys = state.alertKeys ?: []
-	log.debug "Severe Weather Alert: oldKeys: $oldKeys"
-
-	if (newKeys != oldKeys) {
-
-		state.alertKeys = newKeys
-
-		alerts.each {alert ->
-			if (!oldKeys.contains(alert.type + alert.date_epoch) && descriptionFilter(alert.description)) {
-				def msg = "Weather Alert! ${alert.description} from ${alert.date} until ${alert.expires}"
-				send(msg)
-			}
-		}
-	}
+    if (alerts) {
+        alerts.each {alert ->
+            def msg = alert.headlineText
+            if (alert.effectiveTimeLocal && !msg.contains(" from ")) {
+                msg += " from ${parseAlertTime(alert.effectiveTimeLocal).format("E hh:mm a", TimeZone.getTimeZone(alert.effectiveTimeLocalTimeZone))}"
+            }
+            if (alert.expireTimeLocal && !msg.contains(" until ")) {
+                msg += " until ${parseAlertTime(alert.expireTimeLocal).format("E hh:mm a", TimeZone.getTimeZone(alert.expireTimeLocalTimeZone))}"
+            }
+            send(msg)
+        }
+    } else {
+        log.info "No current alerts"
+    }
 }
 
 def descriptionFilter(String description) {
-	def filterList = ["special", "statement", "test"]
-	def passesFilter = true
-	filterList.each() { word ->
-		if(description.toLowerCase().contains(word)) { passesFilter = false }
-	}
-	passesFilter
+    def filterList = ["special", "statement", "test"]
+    def passesFilter = true
+    filterList.each() { word ->
+        if(description.toLowerCase().contains(word)) { passesFilter = false }
+    }
+    passesFilter
 }
 
 def locationIsDefined() {
-	zipcodeIsValid() || location.zipCode || ( location.latitude && location.longitude )
+    zipcodeIsValid() || location.zipCode || ( location.latitude && location.longitude )
 }
 
 def zipcodeIsValid() {
-	zipcode && zipcode.isNumber() && zipcode.size() == 5
+    zipCode && zipCode.isNumber() && zipCode.size() == 5
 }
 
 private send(message) {
-    if (location.contactBookEnabled) {
-        log.debug("sending notifications to: ${recipients?.size()}")
-        sendNotificationToContacts(msg, recipients)
+    sendPush message
+    if (settings.phone1) {
+        sendSms phone1, message
     }
-    else {
-        sendPush message
-        if (settings.phone1) {
-            sendSms phone1, message
-        }
-        if (settings.phone2) {
-            sendSms phone2, message
-        }
-        if (settings.phone3) {
-            sendSms phone3, message
-        }
+    if (settings.phone2) {
+        sendSms phone2, message
+    }
+    if (settings.phone3) {
+        sendSms phone3, message
     }
 }

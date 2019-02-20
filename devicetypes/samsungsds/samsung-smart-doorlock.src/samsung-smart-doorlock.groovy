@@ -19,7 +19,7 @@ import physicalgraph.zigbee.zcl.DataType
 
 
 metadata {
-	definition (name: "Samsung Smart Doorlock", namespace: "Samsung SDS", author: "kyun.park", mnmn: "SmartThings", vid: "generic-lock") {
+	definition (name: "Samsung Smart Doorlock", namespace: "Samsung SDS", author: "kyun.park", mnmn: "SmartThings", vid: "SmartThings-smartthings-Samsung_Smart_Doorlock") {
 		capability "Actuator"
 		capability "Lock"
 		capability "Battery"

@@ -134,6 +134,7 @@ def setupHealthCheck() {
 }
 
 def installed() {
+	sendEvent(name: "motion", value: "inactive", displayed: false)
 	state.colorReceived = [red: null, green: null, blue: null]
 	setupHealthCheck()
 }
