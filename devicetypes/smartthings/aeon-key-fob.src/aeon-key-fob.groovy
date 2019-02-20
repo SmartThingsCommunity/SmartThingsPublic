@@ -183,14 +183,16 @@ def updated() {
 def initialize() {
 	// Device only goes OFFLINE when Hub is off
 	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
-	def zwMap = getZwaveInfo()
 	def buttons = 4 // Default for Key Fob
+	def results = []
 
 	// Only one button for Aeon Panic Button
-	if (zwMap && zwMap.mfr == "0086" && zwMap.prod == "0001" && zwMap.model == "0026") {
+	if (zwaveInfo && zwaveInfo.mfr == "0086" && zwaveInfo.prod == "0001" && zwaveInfo.model == "0026") {
 		buttons = 1
+		results << response(zwave.batteryV1.batteryGet().format())
 	}
 	sendEvent(name: "numberOfButtons", value: buttons)
+	results
 }
 
 private void createChildDevices() {
