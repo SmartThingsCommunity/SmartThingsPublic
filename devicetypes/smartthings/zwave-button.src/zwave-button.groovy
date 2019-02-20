@@ -15,7 +15,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Button", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Button", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller" ,vid: "generic-button-4") {
 		capability "Button"
 		capability "Battery"
 		capability "Sensor"
@@ -23,6 +23,8 @@ metadata {
 		capability "Configuration"
 
 		fingerprint mfr: "010F", prod: "0F01", model: "1000", deviceJoinName: "Fibaro Button"
+		fingerprint mfr: "0371", prod: "0102", model: "0004", deviceJoinName: "Aeotec NanoMote One" //US
+		fingerprint mfr: "0371", prod: "0002", model: "0004", deviceJoinName: "Aeotec NanoMote One" //EU
 	}
 
 	tiles(scale: 2) {

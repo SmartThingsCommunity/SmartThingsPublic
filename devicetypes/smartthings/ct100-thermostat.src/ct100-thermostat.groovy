@@ -356,6 +356,9 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanMod
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	log.debug "Zwave BasicReport: $cmd"
+	if (cmd.value == 255) {
+		response(zwave.batteryV1.batteryGet().format())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
