@@ -12,78 +12,77 @@
  *
  */
 metadata {
-    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings") {
-        capability "Energy Meter"
-        capability "Power Meter"
-        capability "Refresh"
-        capability "Health Check"
-        capability "Sensor"
-        capability "Configuration"
+	definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings") {
+		capability "Energy Meter"
+		capability "Power Meter"
+		capability "Refresh"
+		capability "Health Check"
+		capability "Sensor"
+		capability "Configuration"
 
-        fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Smart Sub-meter(CT Type)"
-        
-    }
+		fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Smart Sub-meter (CT Type)"
+	}
 
-    // tile definitions
-    tiles(scale: 2) {
-        multiAttributeTile(name:"power", type: "generic", width: 6, height: 4){
-            tileAttribute("device.power", key: "PRIMARY_CONTROL") {
-                attributeState("default", label:'${currentValue} W')
-            }
-            tileAttribute("device.energy", key: "SECONDARY_CONTROL") {
-                attributeState("default", label:'${currentValue} kWh')
-            }
-        }
-        standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label:'reset kWh', action:"reset"
-        }
-        standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
+	// tile definitions
+	tiles(scale: 2) {
+		multiAttributeTile(name:"power", type: "generic", width: 6, height: 4){
+			tileAttribute("device.power", key: "PRIMARY_CONTROL") {
+				attributeState("default", label:'${currentValue} W')
+			}
+			tileAttribute("device.energy", key: "SECONDARY_CONTROL") {
+				attributeState("default", label:'${currentValue} kWh')
+			}
+		}
+		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:'reset kWh', action:"reset"
+		}
+		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
 
-        main (["power", "energy"])
-        details(["power", "energy", "reset", "refresh"])
-    }
+		main (["power", "energy"])
+		details(["power", "energy", "reset", "refresh"])
+	}
 }
 
 def getATTRIBUTE_READING_INFO_SET() { 0x0000 }
 def getATTRIBUTE_HISTORICAL_CONSUMPTION() { 0x0400 }
 
 def parse(String description) {
-    log.debug "description is $description"
-    def event = zigbee.getEvent(description)
-    if (event) {
-        log.info event
-        sendEvent(event)
-    } else {
-        List result = []
-        def descMap = zigbee.parseDescriptionAsMap(description)
-        log.debug "Desc Map: $descMap"
-                
-        List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value]]
-        descMap.additionalAttrs.each {
-            attrData << [clusterInt: descMap.clusterInt, attrInt: it.attrInt, value: it.value]
-        }
-        attrData.each {
-                def map = [:]
+	log.debug "description is $description"
+	def event = zigbee.getEvent(description)
+	if (event) {
+		log.info event
+		sendEvent(event)
+	} else {
+		List result = []
+		def descMap = zigbee.parseDescriptionAsMap(description)
+		log.debug "Desc Map: $descMap"
 
-                if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
-                        log.debug "meter"
-                        map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/1000
-                } else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
-                         log.debug "energy"
-                         map.name = "energy"
-                         map.value = zigbee.convertHexToInt(it.value)/1000000
-                }
-                
-                if (map) {
-                        result << createEvent(map)
-                }
-                log.debug "Parse returned $map"
-        }
-        return result      
-    }
+		List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value]]
+		descMap.additionalAttrs.each {
+			attrData << [clusterInt: descMap.clusterInt, attrInt: it.attrInt, value: it.value]
+		}
+		attrData.each {
+				def map = [:]
+
+				if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
+					log.debug "meter"
+					map.name = "power"
+					map.value = zigbee.convertHexToInt(it.value)/1000
+				} else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
+					log.debug "energy"
+					map.name = "energy"
+					map.value = zigbee.convertHexToInt(it.value)/1000000
+				}
+
+				if (map) {
+					result << createEvent(map)
+				}
+				log.debug "Parse returned $map"
+		}
+		return result
+	}
 }
 
 
@@ -91,23 +90,23 @@ def parse(String description) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-    return refresh()
+	return refresh()
 }
 
 def refresh() {
-    log.debug "refresh "
-    zigbee.electricMeasurementPowerRefresh() +
-           zigbee.simpleMeteringPowerRefresh()
+	log.debug "refresh "
+	zigbee.electricMeasurementPowerRefresh() +
+		zigbee.simpleMeteringPowerRefresh()
 }
 
 def configure() {
-    // this device will send instantaneous demand and current summation delivered every 1 minute
-    sendEvent(name: "checkInterval", value: 2 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	// this device will send instantaneous demand and current summation delivered every 1 minute
+	sendEvent(name: "checkInterval", value: 2 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
-    log.debug "Configuring Reporting"
-    return refresh() +
-           zigbee.simpleMeteringPowerConfig() +
-           zigbee.electricMeasurementPowerConfig()
+	log.debug "Configuring Reporting"
+	return refresh() +
+		   zigbee.simpleMeteringPowerConfig() +
+		   zigbee.electricMeasurementPowerConfig()
 }
 
 
