@@ -20,7 +20,7 @@
  */
 
 metadata {
-    definition (name: "Qubino Flush 2 Relays", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Qubino Flush 2 Relays", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
         capability "Actuator"
         capability "Sensor"
         capability "Switch"

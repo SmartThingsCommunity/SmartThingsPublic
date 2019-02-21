@@ -20,7 +20,7 @@
  */
  
 metadata {
-	definition (name: "Alarm.com Smart Thermostat", namespace: "erocm123", author: "Eric Maycock")
+	definition (name: "Alarm.com Smart Thermostat", namespace: "erocm123", author: "Eric Maycock", vid:"SmartThings-smartthings-Z-Wave_Thermostat")
     {
 		capability "Refresh"
 		capability "Actuator"
