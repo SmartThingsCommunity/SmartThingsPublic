@@ -57,7 +57,15 @@ def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
     if (event) {
-        log.info event
+        log.info "event enter:$event"
+        if (event.name== "power") {
+            event.value = event.value/1000
+            event.unit = "W"
+        } else if (event.name== "energy") {
+            event.value = event.value/1000000
+            event.unit = "kWh"
+        }
+        log.info "event outer:$event"
         sendEvent(event)
     } else {
         List result = []
@@ -74,11 +82,13 @@ def parse(String description) {
                         log.debug "power"
                         map.name = "power"
                         map.value = zigbee.convertHexToInt(it.value)/1000
+                        map.unit = "W"
                 }
-                if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
-                         log.debug "energy"
-                         map.name = "energy"
-                         map.value = zigbee.convertHexToInt(it.value)/1000000
+                else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
+                        log.debug "energy"
+                        map.name = "energy"
+                        map.value = zigbee.convertHexToInt(it.value)/1000000
+                        map.unit = "kWh"
                 }
 
                 if (map) {
@@ -121,4 +131,3 @@ def configure() {
            zigbee.simpleMeteringPowerConfig() +
            zigbee.electricMeasurementPowerConfig()
 }
-
