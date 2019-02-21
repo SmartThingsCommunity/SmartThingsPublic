@@ -13,7 +13,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"

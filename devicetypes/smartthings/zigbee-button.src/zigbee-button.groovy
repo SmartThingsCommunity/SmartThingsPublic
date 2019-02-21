@@ -18,7 +18,7 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond", runLocally: true, minHubCoreVersion: "000.022.0002", executeCommandsLocally: false) {
+    definition (name: "ZigBee Button", namespace: "smartthings", author: "Mitch Pond", runLocally: true, minHubCoreVersion: "000.022.0002", executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.remotecontroller") {
         capability "Actuator"
         capability "Battery"
         capability "Button"
@@ -32,7 +32,7 @@ metadata {
 
         fingerprint inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "OSRAM", model: "LIGHTIFY Dimming Switch", deviceJoinName: "OSRAM LIGHTIFY Dimming Switch"
         fingerprint inClusters: "0000, 0001, 0003, 0020, 0402, 0B05", outClusters: "0003, 0006, 0008, 0019", manufacturer: "CentraLite", model: "3130", deviceJoinName: "Centralite Zigbee Smart Switch"
-        //fingerprint inClusters: "0000, 0001, 0003, 0020, 0500", outClusters: "0003,0019", manufacturer: "CentraLite", model: "3455-L", deviceJoinName: "Iris Care Pendant"
+        fingerprint inClusters: "0000, 0001, 0003, 0020, 0500", outClusters: "0003,0019", manufacturer: "CentraLite", model: "3455-L", deviceJoinName: "Iris Care Pendant"
         fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0402, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model: "3460-L", deviceJoinName: "Iris Smart Button"
         fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob"
     }
@@ -215,6 +215,9 @@ def configure() {
 private Map getButtonResult(buttonState, buttonNumber = 1) {
     if (buttonState == 'release') {
         log.debug "Button was value : $buttonState"
+        if(state.pressTime == null) {
+            return [:]
+        }
         def timeDiff = now() - state.pressTime
         log.info "timeDiff: $timeDiff"
         def holdPreference = holdTime ?: 1

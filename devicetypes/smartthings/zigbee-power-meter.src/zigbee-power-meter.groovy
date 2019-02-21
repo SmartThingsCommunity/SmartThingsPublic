@@ -66,12 +66,12 @@ def parse(String description) {
         }
         attrData.each {
                 def map = [:]
+
                 if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
                         log.debug "meter"
                         map.name = "power"
                         map.value = zigbee.convertHexToInt(it.value)/1000
-                }
-                else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
+                } else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
                          log.debug "energy"
                          map.name = "energy"
                          map.value = zigbee.convertHexToInt(it.value)/1000000

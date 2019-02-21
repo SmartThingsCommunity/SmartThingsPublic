@@ -157,6 +157,7 @@ private parseAttrMessage(description) {
 			log.debug "MODE"
 			map.name = "thermostatMode"
 			map.value = THERMOSTAT_MODE_MAP[it.value]
+			map.data = [supportedThermostatModes: state.supportedModes]
 		} else if (it.cluster == THERMOSTAT_CLUSTER && it.attribute == THERMOSTAT_RUNNING_STATE) {
 			log.debug "RUNNING STATE"
 			def binValue = extendString(bin(hexToInt(it.value)), 16, '0').reverse()
@@ -172,6 +173,7 @@ private parseAttrMessage(description) {
 			log.debug "FAN MODE"
 			map.name = "thermostatFanMode"
 			map.value = FAN_MODE_MAP[it.value]
+			map.data = [supportedThermostatFanModes: state.supportedFanModes]
 		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_VOLTAGE) {
 			map = getBatteryPercentage(Integer.parseInt(it.value, 16))
 		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_ALARM_STATE) {
@@ -186,6 +188,8 @@ private parseAttrMessage(description) {
 
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	state.supportedModes = ["off", "heat", "cool"]
+	state.supportedFanModes = ["on", "auto"]
 	refresh()
 }
 
@@ -270,6 +274,16 @@ def setThermostatMode(value) {
 			break
 		default:
 			off()
+	}
+}
+
+def setThermostatFanMode(value) {
+	switch(value) {
+		case "on":
+			fanOn()
+			break
+		default:
+			fanAuto()
 	}
 }
 

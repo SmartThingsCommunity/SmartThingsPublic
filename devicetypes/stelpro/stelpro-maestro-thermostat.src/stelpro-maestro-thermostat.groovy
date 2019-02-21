@@ -60,7 +60,7 @@ metadata {
 		input("away_setpoint", "enum", title: "Away Setpoint", options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "5.5", "15.5", "16", "16.5", "17", "17.5", "18", "18.5", "19", "19.5", "20", "20.5", "21", "21.5", "22", "22.5", "23", "24", "24.5", "25", "25.5", "26", "26.5", "27", "27.5", "28", "28.5", "29", "29.5", "30"], defaultValue: "17", required: true)
 		input("vacation_setpoint", "enum", title: "Vacation Setpoint", options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "5.5", "15.5", "16", "16.5", "17", "17.5", "18", "18.5", "19", "19.5", "20", "20.5", "21", "21.5", "22", "22.5", "23", "24", "24.5", "25", "25.5", "26", "26.5", "27", "27.5", "28", "28.5", "29", "29.5", "30"], defaultValue: "13", required: true)
 		input("standby_setpoint", "enum", title: "Standby Setpoint", options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "5.5", "15.5", "16", "16.5", "17", "17.5", "18", "18.5", "19", "19.5", "20", "20.5", "21", "21.5", "22", "22.5", "23", "24", "24.5", "25", "25.5", "26", "26.5", "27", "27.5", "28", "28.5", "29", "29.5", "30"], defaultValue: "5", required: true)
-		*/			
+		*/
 	}
 
 	tiles(scale : 2) {
@@ -182,6 +182,7 @@ def setupHealthCheck() {
 
 def configureSupportedRanges() {
 	sendEvent(name: "supportedThermostatModes", value: supportedThermostatModes, displayed: false)
+	// These are part of the deprecated Thermostat capability. Remove these when that capability is removed.
 	sendEvent(name: "thermostatSetpointRange", value: thermostatSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 }
@@ -250,36 +251,15 @@ def parse(String description) {
 		log.debug "Desc Map: $descMap"
 		if (descMap.clusterInt == THERMOSTAT_CLUSTER) {
 			if (descMap.attrInt == ATTRIBUTE_LOCAL_TEMP) {
-				def intVal = Integer.parseInt(descMap.value, 16)
-				map.name = "temperature"
-				map.unit = getTemperatureScale()
-				map.value = getTemperature(descMap.value)
-
-				if (intVal == 0x7ffd) {		// 0x7FFD
-					map.name = "temperatureAlarm"
-					map.value = "freeze"
-					map.unit = ""
-				} else if (intVal == 0x7fff) {	// 0x7FFF
-					map.name = "temperatureAlarm"
-					map.value = "heat"
-					map.unit = ""
-				} else if (intVal == 0x8000) {	// 0x8000
-					map.name = null
-					map.value = null
-					map.descriptionText = "Received a temperature error"
-				} else if (intVal > 0x8000) {
-					map.value = -(Math.round(2*(655.36 - map.value))/2)
-				}
-
-				if (device.currentValue("temperatureAlarm") != "cleared" && map.name == "temperature") {
-					sendEvent(name: "temperatureAlarm", value: "cleared")
-				}
+				map = handleTemperature(descMap)
 			} else if (descMap.attrInt == ATTRIBUTE_HEAT_SETPOINT) {
 				def intVal = Integer.parseInt(descMap.value, 16)
-				if (intVal != 0x8000) {		// 0x8000
+				// We receive 0x8000 when the thermostat is off
+				if (intVal != 0x8000) {
 					log.debug "HEATING SETPOINT"
 					map.name = "heatingSetpoint"
 					map.value = getTemperature(descMap.value)
+					map.unit = getTemperatureScale()
 					map.data = [heatingSetpointRange: heatingSetpointRange]
 				}
 			} else if (descMap.attrInt == ATTRIBUTE_PI_HEATING_STATE) {
@@ -292,7 +272,10 @@ def parse(String description) {
 					map.value = "heating"
 				}
 
-				if (settings.heatdetails == "No") {
+				// If the user does not want to see the Idle and Heating events in the event history,
+				// don't show them. Otherwise, don't show them more frequently than 30 seconds.
+				if (settings.heatdetails == "No" ||
+					!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 30)) {
 					map.displayed = false
 				}
 			}
@@ -320,22 +303,62 @@ def parse(String description) {
 	return result
 }
 
+def handleTemperature(descMap) {
+	def map = [:]
+	def intVal = Integer.parseInt(descMap.value, 16)
+
+	// Handle special temperature flags where we need to change the event type
+	if (intVal == 0x7ffd) { // Freeze Alarm
+		map.name = "temperatureAlarm"
+		map.value = "freeze"
+	} else if (intVal == 0x7fff) { // Overheat Alarm
+		map.name = "temperatureAlarm"
+		map.value = "heat"
+	} else if (intVal == 0x8000) { // Temperature Sensor Error
+		map.descriptionText = "Received a temperature error"
+	} else {
+		if (intVal > 0x8000) { // Handle negative C (< 32F) readings
+			intVal = -(Math.round(2 * (65536 - intVal)) / 2)
+		}
+		map.name = "temperature"
+		map.value = getTemperature(intVal)
+		map.unit = getTemperatureScale()
+
+		// Handle cases where we need to update the temperature alarm state given certain temperatures
+		// Account for a f/w bug where the freeze alarm doesn't trigger at 0C
+		if (map.value < (map.unit == "C" ? 0 : 32)) {
+			log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
+			sendEvent(name: "temperatureAlarm", value: "freeze")
+		}
+		// Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C to match thermostat display
+		else if (map.value >= (map.unit == "C" ? 50 : 122)) {
+			log.debug "EARLY HEAT ALARM @  $map.value $map.unit (raw $intVal)"
+			sendEvent(name: "temperatureAlarm", value: "heat")
+		} else if (device.currentValue("temperatureAlarm") != "cleared") {
+			log.debug "CLEAR ALARM @ $map.value $map.unit (raw $intVal)"
+			sendEvent(name: "temperatureAlarm", value: "cleared")
+		}
+	}
+
+	map
+}
+
 def updateWeather() {
 	log.debug "updating weather"
 	def weather
 	// If there is a zipcode defined, weather forecast will be sent. Otherwise, no weather forecast.
 	if (settings.zipcode) {
 		log.debug "ZipCode: ${settings.zipcode}"
-		weather = getWeatherFeature("conditions", settings.zipcode)
+		weather = getTwcConditions(settings.zipcode)
 
 		// Check if the variable is populated, otherwise return.
 		if (!weather) {
 			log.debug("Something went wrong, no data found.")
 			return false
 		}
-		
+
 		def locationScale = getTemperatureScale()
-		def tempToSend = (locationScale == "C") ? weather.current_observation.temp_c : weather.current_observation.temp_f
+		def tempToSend = weather.temperature
 		log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
 		// Right now this can disrupt device health if the device is
 		// currently offline -- it would be erroneously marked online.
@@ -375,14 +398,24 @@ def poll() {
 	requests
 }
 
+/**
+ * Given a raw temperature reading in Celsius return a converted temperature.
+ *
+ * @param value The temperature in Celsius, treated based on the following:
+ *                 If value instanceof String, treat as a raw hex string and divide by 100
+ *                 Otherwise treat value as a number and divide by 100
+ *
+ * @return A Celsius or Farenheit value
+ */
 def getTemperature(value) {
 	if (value != null) {
 		log.debug("value $value")
-		def celsius = Integer.parseInt(value, 16) / 100
+		def celsius = (value instanceof String ? Integer.parseInt(value, 16) : value) / 100
 		if (getTemperatureScale() == "C") {
 			return celsius
 		} else {
-			return Math.round(celsiusToFahrenheit(celsius))
+			def rounded = new BigDecimal(celsiusToFahrenheit(celsius)).setScale(0, BigDecimal.ROUND_HALF_UP)
+			return rounded
 		}
 	}
 }
@@ -479,7 +512,7 @@ def configure() {
 	// Configure Thermostat Cluster
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP, DataType.INT16, 10, 60, 50)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, 1, 0, 50)
-	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE, DataType.UINT8, 300, 900, 5)
+	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE, DataType.UINT8, 1, 900, 1)
 
 	// Configure Thermostat Ui Conf Cluster
 	requests += zigbee.configureReporting(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE, DataType.ENUM8, 1, 0, 1)
@@ -535,4 +568,24 @@ def fanAuto() {
 	log.debug "${device.displayName} does not support fan auto"
 }
 
-
+/**
+ * Checks if the time elapsed from the provided timestamp is greater than the number of senconds provided
+ *
+ * @param timestamp: The timestamp
+ *
+ * @param seconds: The number of seconds
+ *
+ * @returns true if elapsed time is greater than number of seconds provided, else false
+ */
+private Boolean secondsPast(timestamp, seconds) {
+	if (!(timestamp instanceof Number)) {
+		if (timestamp instanceof Date) {
+			timestamp = timestamp.time
+		} else if ((timestamp instanceof String) && timestamp.isNumber()) {
+			timestamp = timestamp.toLong()
+		} else {
+			return true
+		}
+	}
+	return (now() - timestamp) > (seconds * 1000)
+}

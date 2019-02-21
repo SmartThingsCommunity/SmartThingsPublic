@@ -96,7 +96,7 @@ def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	Boolean motionActive = zs.isAlarm1Set() || zs.isAlarm2Set()
 	if (motionActive) {
-		def timeout = 3
+		def timeout = 20
 		log.debug "Stopping motion in ${timeout} seconds"
 		runIn(timeout, stopMotion)
 	}
