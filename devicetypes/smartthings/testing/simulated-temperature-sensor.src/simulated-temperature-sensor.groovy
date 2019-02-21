@@ -73,7 +73,7 @@ def initialize() {
     }
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     setTemperature(value)
 }
 

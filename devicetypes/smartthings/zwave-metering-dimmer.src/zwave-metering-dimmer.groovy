@@ -216,7 +216,7 @@ def refresh() {
 	], 1000)
 }
 
-def setLevel(level) {
+def setLevel(level, rate = null) {
 	if(level > 99) level = 99
 	encapSequence([
 		zwave.basicV1.basicSet(value: level),

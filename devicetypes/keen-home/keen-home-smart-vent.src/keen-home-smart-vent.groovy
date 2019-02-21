@@ -370,7 +370,7 @@ def clearObstruction() {
     ] + configure()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     log.debug "setting level: ${value}"
     def linkText = getLinkText(device)
 

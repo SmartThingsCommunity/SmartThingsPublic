@@ -122,7 +122,7 @@ def off() {
 	setLevel(0x00)
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.debug "setLevel >> value: $value"
 	def level = value as Integer
 	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)

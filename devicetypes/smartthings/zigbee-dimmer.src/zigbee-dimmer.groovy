@@ -127,7 +127,7 @@ def on() {
 	zigbee.on()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	def additionalCmds = []
 	if (device.getDataValue("model") == "iQBR30" && value.toInteger() > 0) { // Handle iQ bulb not following spec
 		additionalCmds = zigbee.on()
