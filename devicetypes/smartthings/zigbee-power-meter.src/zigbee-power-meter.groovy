@@ -18,6 +18,7 @@ metadata {
         capability "Refresh"
         capability "Health Check"
         capability "Sensor"
+        capability "Configuration"
 
         fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Smart Sub-meter(CT Type)"
         
@@ -45,6 +46,9 @@ metadata {
     }
 }
 
+def getATTRIBUTE_READING_INFO_SET() { 0x0000 }
+def getATTRIBUTE_HISTORICAL_CONSUMPTION() { 0x0400 }
+
 def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
@@ -62,12 +66,12 @@ def parse(String description) {
         }
         attrData.each {
                 def map = [:]
-                if (it.clusterInt == 0x0702 && it.attrInt == 0x0400) {
+                if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
                         log.debug "meter"
                         map.name = "power"
                         map.value = zigbee.convertHexToInt(it.value)/1000
                 }
-                if (it.clusterInt == 0x0702 && it.attrInt == 0x0000) {
+                else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
                          log.debug "energy"
                          map.name = "energy"
                          map.value = zigbee.convertHexToInt(it.value)/1000000
