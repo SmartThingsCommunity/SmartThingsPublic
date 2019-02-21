@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Metering Switch Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Metering Switch Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 		capability "Switch"
 		capability "Actuator"
 		capability "Sensor"
