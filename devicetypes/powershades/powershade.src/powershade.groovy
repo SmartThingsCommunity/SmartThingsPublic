@@ -15,7 +15,9 @@
  */
  
  
-// VERSION 1.0 Initial Version - JAC 11/19/2018
+ 
+// VERSION 1.0 JAC 11/19/2018 Initial Version
+// VERSION 2.0 JAC 02/18/2019 100% is now Open, 0% is now closed.
  
 include 'asynchttp_v1'
  
@@ -128,10 +130,12 @@ def open() {
 	log.debug "$ShadeName"
     def params = [
         uri: 'https://alexa.powershades.com',
-        path: '/api/shade/'+ShadeName+'/open/'+APItoken+'/',
+        //path: '/api/shade/'+ShadeName+'/open/'+APItoken+'/',
+        path: '/api/shade/'+ShadeName+'/'+ 100 +'/'+APItoken+'/',
     ]
     asynchttp_v1.get(processResponse, params)
-    sendEvent(name:"level", value:0)
+    sendEvent(name:"level", value:100)
+    
 }
 
 def close() {
@@ -139,10 +143,12 @@ def close() {
  	log.debug "$ShadeName"
     def params = [
         uri: 'https://alexa.powershades.com',
-        path: '/api/shade/'+ShadeName+'/close/'+APItoken+'/',
+        //path: '/api/shade/'+ShadeName+'/close/'+APItoken+'/',
+        path: '/api/shade/'+ShadeName+'/'+ 0 +'/'+APItoken+'/',
     ]
     asynchttp_v1.get(processResponse, params)
-    sendEvent(name:"level", value:100)
+    sendEvent(name:"level", value:0)
+    
 }
 
 def setLevel(lvl) {
