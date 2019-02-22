@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Multi Metering Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
+	definition (name: "Z-Wave Multi Metering Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy", genericHandler: "Z-Wave") {
 		capability "Switch"
 		capability "Power Meter"
 		capability "Energy Meter"
