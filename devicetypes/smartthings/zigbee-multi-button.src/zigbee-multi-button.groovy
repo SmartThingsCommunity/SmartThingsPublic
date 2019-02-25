@@ -132,7 +132,7 @@ def refresh() {
 
 def configure() {
 	def bindings = getModelBindings(device.getDataValue("model"))
-	return zigbee.onOffConfig() + zigbee.levelConfig() +
+	return zigbee.onOffConfig() +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, batteryVoltage, DataType.UINT8, 30, 21600, 0x01) +
 			zigbee.enrollResponse() +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryVoltage) + bindings
@@ -140,6 +140,7 @@ def configure() {
 
 def installed() {
 	initialize()
+	sendEvent(name: "button", value: "pushed", isStateChange: true)
 	if(childDevices) {
 		def event
 		for(def endpoint : 2..device.currentValue("numberOfButtons")) {
@@ -170,7 +171,7 @@ private addChildButtons(numberOfButtons) {
 			addChildDevice("Child Button", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : componentLabel,
-					isComponent   : false,
+					isComponent   : true,
 					componentName : "button$endpoint",
 					componentLabel: "Button $endpoint"
 			])
