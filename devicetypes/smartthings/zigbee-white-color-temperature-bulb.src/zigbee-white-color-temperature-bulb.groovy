@@ -32,7 +32,7 @@ metadata {
 
 
 		// Generic
-		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0006, 0008, 0300", outClusters: "0019" // deviceId 010C = "White color temperature light"
+		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0006, 0008, 0300"// deviceId 010C = "White color temperature light"
 
 		// OSRAM/SYLVANIA (LEDVANCE)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY BR Tunable White", deviceJoinName: "SYLVANIA Smart BR30 Tunable White"
