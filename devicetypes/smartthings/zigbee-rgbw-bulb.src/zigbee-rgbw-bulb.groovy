@@ -32,6 +32,9 @@ metadata {
 
 		attribute "colorName", "string"
 
+		//Generic fingerprint
+		fingerprint profileId: "0104", deviceId: "010D", inClusters: "0006, 0008, 0300"// deviceId 0x010D is "Extended Color Light"
+
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0702,0B05,FC03,FC04", outClusters: "0019", manufacturer: "sengled", model: "E11-N1EA", deviceJoinName: "Sengled Element Color Plus"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0702,0B05,FC03,FC04", outClusters: "0019", manufacturer: "sengled", model: "E12-N1E", deviceJoinName: "Sengled Element Color Plus"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Flex RGBW", deviceJoinName: "SYLVANIA Smart Flex RGBW"
