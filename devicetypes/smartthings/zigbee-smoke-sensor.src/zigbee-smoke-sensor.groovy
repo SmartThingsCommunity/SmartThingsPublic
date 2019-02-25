@@ -29,7 +29,7 @@ metadata {
 		capability "Health Check"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "欧瑞博 烟雾报警器(SF21)", mnmn: "SmartThings", vid: "generic-smoke-2"
 	}
 
 	tiles {
@@ -53,6 +53,11 @@ metadata {
 
 def installed(){
 	log.debug "installed"
+
+	if (isOzomCO()) {
+		sendEvent(name: "battery", value: 100, unit: "%", displayed: false)
+	}
+
 	refresh()
 }
 
@@ -110,6 +115,7 @@ private Map getBatteryPercentageResult(rawValue) {
 
 	return result
 }
+
 def getDetectedResult(value) {
 	def detected = value ? 'detected': 'clear'
 	String descriptionText = "${device.displayName} smoke ${detected}"
@@ -126,6 +132,7 @@ def refresh() {
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
 }
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -133,6 +140,7 @@ def ping() {
 	log.debug "ping "
 	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
+
 def configure() {
 	log.debug "configure"
 	sendEvent(name: "checkInterval", value:6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
@@ -143,3 +151,6 @@ def configure() {
 				zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, minReportTime, maxReportTime, reportableChange)
 }
 
+def isOzomCO() {
+	return "HEIMAN" == device.getDataValue("manufacturer") || "98293058552c49f38ad0748541ee96ba" == device.getDataValue("model")
+}
