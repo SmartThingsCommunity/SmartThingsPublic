@@ -29,6 +29,7 @@ metadata {
 		capability "Health Check"
 
 		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob 1"
+		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob 1"
 	}
 
 	tiles {
@@ -189,19 +190,31 @@ private getBatteryVoltage() { 0x0020 }
 private getHoldTime() { 1000 }
 private getButtonMap() {[
 		"3450-L" : [
-			"01" : 4,
-			"02" : 3,
-			"03" : 1,
-			"04" : 2
+				"01" : 4,
+				"02" : 3,
+				"03" : 1,
+				"04" : 2
+		],
+		"3450-L2" : [
+				"01" : 4,
+				"02" : 3,
+				"03" : 1,
+				"04" : 2
 		]
 ]}
 private getModelNumberOfButtons() {[
-		"3450-L" : 4
+		"3450-L" : 4,
+		"3450-L2" : 4
 ]}
 private getModelBindings(model) {
 	def bindings = []
 	switch(model) {
 		case "3450-L":
+			for(def endpoint : 1..modelNumberOfButtons[model]) {
+				bindings += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint" : endpoint])
+			}
+			break
+		case "3450-L2":
 			for(def endpoint : 1..modelNumberOfButtons[model]) {
 				bindings += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint" : endpoint])
 			}
