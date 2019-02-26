@@ -384,8 +384,12 @@ def ping() {
 }
 
 def poll() {
-	def requests = []
 	log.debug "poll()"
+}
+
+def refresh() {
+	def requests = []
+	log.debug "refresh()"
 
 	requests += updateWeather()
 	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP)
@@ -418,10 +422,6 @@ def getTemperature(value) {
 			return rounded
 		}
 	}
-}
-
-def refresh() {
-	poll()
 }
 
 def setHeatingSetpoint(preciseDegrees) {
@@ -522,12 +522,7 @@ def configure() {
 
 	// Read the configured variables
 	requests += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO)
-	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP)
-	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT)
-	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
-	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE)
-	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT)
-	requests += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO) // Re-request in case the first was "0%"
+	requests += refresh()
 
 	requests
 }
