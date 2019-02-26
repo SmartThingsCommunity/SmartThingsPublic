@@ -59,7 +59,7 @@ def installed(){
 		sendEvent(name: "battery", value: 100, unit: "%", displayed: false)
 	}
 
-	refresh()
+	response(refresh())
 }
 
 def parse(String description) {
