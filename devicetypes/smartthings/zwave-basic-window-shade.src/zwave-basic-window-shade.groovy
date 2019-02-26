@@ -28,15 +28,6 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-//		standardTile("open", "device.open", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-//			state "default", label:'Open', action:"statelessCurtainPowerButton.open"
-//		}
-//		standardTile("close", "device.close", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-//			state "default", label:'Close', action:"statelessCurtainPowerButton.close"
-//		}
-//		standardTile("close", "device.pause", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-//			state "default", label:'Pause', action:"statelessCurtainPowerButton.pause"
-//		}
  		standardTile("open", "device.open", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'Open', action:"open"
 		}
@@ -85,6 +76,20 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	createEvent(descriptionText: "An event came in")
 }
 
+def setButton(button) {
+	switch(button) {
+		case "open":
+			open()
+			break
+		case "close":
+			close()
+			break
+		default:
+			pause()
+			break
+	}
+}
+
 def open() {
 	state.shadeState = "opening"
 	secure(zwave.basicV1.basicSet(value: 0x00))
@@ -108,7 +113,8 @@ def ping() {
 
 def installed() {
 	log.debug "Installed ${device.displayName}"
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "availableCurtainPowerButtons", value: ["open", "close", "pause"])
 	state.shadeState = "paused"
 }
 
