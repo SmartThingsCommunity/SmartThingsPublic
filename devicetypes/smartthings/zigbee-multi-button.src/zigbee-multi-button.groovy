@@ -130,6 +130,10 @@ def refresh() {
 			zigbee.enrollResponse()
 }
 
+def ping() {
+	refresh()
+}
+
 def configure() {
 	def bindings = getModelBindings(device.getDataValue("model"))
 	return zigbee.onOffConfig() +
@@ -157,7 +161,7 @@ def updated() {
 def initialize() {
 	def numberOfButtons = modelNumberOfButtons[device.getDataValue("model")]
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
-	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 	if(!childDevices) {
 		addChildButtons(numberOfButtons)
 	}
