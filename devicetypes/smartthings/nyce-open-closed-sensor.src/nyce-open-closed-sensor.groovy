@@ -15,7 +15,7 @@
  */
 
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
-
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
 	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE", mnmn: "SmartThings", vid: "generic-contact-3") {
@@ -229,8 +229,6 @@ private List parseIasMessage(String description) {
 	log.debug "parseIasMessage: $description"
 
 	List resultListMap = []
-	Map resultMap_battery = [:]
-	Map resultMap_battery_state = [:]
 	Map resultMap_sensor = [:]
 
 	resultMap_sensor.name = "contact"
@@ -241,8 +239,6 @@ private List parseIasMessage(String description) {
 	log.debug "parseIasMessage: Trouble Status ${zs.trouble}"
 	log.debug "parseIasMessage: Sensor Status ${zs.alarm1}"
 
-	resultListMap << resultMap_battery_state
-	resultListMap << resultMap_battery
 	resultListMap << resultMap_sensor
 
 	return resultListMap
@@ -260,7 +256,9 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	if(device.getDataValue("manufacturer") == "sengled") {
-		return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.batteryConfig(30, 300) + zigbee.enrollResponse()
+		return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
+		zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 300, null) +
+		zigbee.batteryConfig(30, 300) + zigbee.enrollResponse()
 	} else {
 		// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 		return zigbee.iasZoneConfig() + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config

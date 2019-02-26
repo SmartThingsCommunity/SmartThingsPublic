@@ -134,6 +134,7 @@ def setupHealthCheck() {
 }
 
 def installed() {
+	sendEvent(name: "motion", value: "inactive", displayed: false)
 	state.colorReceived = [red: null, green: null, blue: null]
 	setupHealthCheck()
 }
@@ -279,7 +280,7 @@ def off() {
 }
 
 def channelValue(channel) {
-	channel >= 128 ? 255 : 0
+	channel >= 191 ? 255 : 0
 }
 
 def setColor(value) {
@@ -351,8 +352,8 @@ def validateSetting(value, minVal, maxVal, defaultVal) {
 
 def refresh() {
 	def cmd = queryAllColors()
-	cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:1, scale:1)
-	cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType:3, scale:1)
+	cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: sensormultilevelv5.SensorMultilevelReport.SENSOR_TYPE_TEMPERATURE_VERSION_1, scale: 1)
+	cmd << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: sensormultilevelv5.SensorMultilevelReport.SENSOR_TYPE_LUMINANCE_VERSION_1, scale: 1)
 	cmd << zwave.basicV1.basicGet()
 	commands(cmd, 1000)
 }
