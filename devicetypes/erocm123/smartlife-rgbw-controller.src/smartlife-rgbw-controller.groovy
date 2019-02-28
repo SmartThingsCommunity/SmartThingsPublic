@@ -19,7 +19,7 @@
 import groovy.json.JsonSlurper
 
 metadata {
-	definition (name: "SmartLife RGBW Controller", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "SmartLife RGBW Controller", namespace: "erocm123", author: "Eric Maycock", vid:"generic-rgbw-color-bulb") {
 		capability "Switch Level"
 		capability "Actuator"
         capability "Color Control"

@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Motion Sensor Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Motion Sensor Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-motion") {
 		capability "Motion Sensor"
 		capability "Sensor"
 	}

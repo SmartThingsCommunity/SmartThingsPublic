@@ -20,7 +20,7 @@
  */
  
 metadata {
-	definition (name: "zooZ Z-Wave Smart Plug", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "zooZ Z-Wave Smart Plug", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 		capability "Energy Meter"
         capability "Voltage Measurement"
 		capability "Actuator"

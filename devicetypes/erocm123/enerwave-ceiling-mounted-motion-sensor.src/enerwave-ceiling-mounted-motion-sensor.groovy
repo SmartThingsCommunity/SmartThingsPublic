@@ -16,7 +16,7 @@
  */
 
 metadata {
-	definition (name: "Enerwave Ceiling Mounted Motion Sensor", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "x.com.st.d.sensor.motion") {
+	definition (name: "Enerwave Ceiling Mounted Motion Sensor", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "x.com.st.d.sensor.motion", vid:"generic-motion") {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"

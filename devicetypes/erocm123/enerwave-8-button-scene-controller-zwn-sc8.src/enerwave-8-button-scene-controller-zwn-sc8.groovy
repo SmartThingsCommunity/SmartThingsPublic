@@ -14,7 +14,7 @@
  */
  
 metadata {
-	definition (name: "Enerwave 8-Button Scene Controller ZWN-SC8", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Enerwave 8-Button Scene Controller ZWN-SC8", namespace: "erocm123", author: "Eric Maycock", vid: "generic-button") {
 		capability "Actuator"
 		capability "Button"
 		capability "Configuration"

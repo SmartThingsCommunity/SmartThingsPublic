@@ -21,7 +21,7 @@
  *
  */
 metadata {
-	definition (name: "zooZ Power Strip", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "zooZ Power Strip", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch") {
 		capability "Switch"
 		capability "Refresh"
 		capability "Configuration"

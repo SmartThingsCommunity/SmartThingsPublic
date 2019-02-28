@@ -10,7 +10,7 @@
  */
  
 metadata {
-definition (name: "Enerwave RSM2 Dual Relay Switch", namespace: "erocm123", author: "Eric Maycock") {
+definition (name: "Enerwave RSM2 Dual Relay Switch", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch") {
 capability "Switch"
 capability "Polling"
 capability "Configuration"

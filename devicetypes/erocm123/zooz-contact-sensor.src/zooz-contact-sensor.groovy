@@ -19,7 +19,7 @@
  */
 
 metadata {
-	definition (name: "zooZ Contact Sensor", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "zooZ Contact Sensor", namespace: "erocm123", author: "Eric Maycock", vid:"generic-contact") {
 		capability "Contact Sensor"
 		capability "Sensor"
 		capability "Battery"

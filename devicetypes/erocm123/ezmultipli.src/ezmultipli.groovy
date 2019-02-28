@@ -21,7 +21,7 @@
 // v0.0.7 - jrs - 02/23/2015 - Jim Sulin
 
 metadata {
-	definition (name: "EZmultiPli", namespace: "erocm123", author: "Eric Maycock", oauth: true) {
+	definition (name: "EZmultiPli", namespace: "erocm123", author: "Eric Maycock", oauth: true, vid:"generic-rgb-color-bulb") {
 	capability "Motion Sensor"
 	capability "Temperature Measurement"
 	capability "Illuminance Measurement"

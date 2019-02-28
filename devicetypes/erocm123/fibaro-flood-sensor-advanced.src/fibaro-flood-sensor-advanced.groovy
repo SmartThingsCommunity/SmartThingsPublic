@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Flood Sensor (Advanced)", namespace: "erocm123", author: "Fibar Group S.A.") {
+	definition (name: "Fibaro Flood Sensor (Advanced)", namespace: "erocm123", author: "Fibar Group S.A.", vid:"generic-leak") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Sensor"

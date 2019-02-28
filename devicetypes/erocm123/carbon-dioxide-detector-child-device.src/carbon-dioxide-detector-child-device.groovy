@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Carbon Dioxide Detector Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Carbon Dioxide Detector Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-carbon-monoxide") {
 		capability "Carbon Dioxide Measurement"
 		capability "Sensor"
 	}

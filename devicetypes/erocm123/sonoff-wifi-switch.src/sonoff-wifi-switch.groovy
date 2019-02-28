@@ -20,7 +20,7 @@ import groovy.json.JsonSlurper
 import groovy.util.XmlSlurper
 
 metadata {
-	definition (name: "Sonoff Wifi Switch", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Sonoff Wifi Switch", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch") {
         capability "Actuator"
 		capability "Switch"
 		capability "Refresh"

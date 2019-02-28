@@ -16,7 +16,7 @@
  */
  
 metadata {
-definition (name: "Generic Dual Relay", namespace: "erocm123", author: "Eric Maycock") {
+definition (name: "Generic Dual Relay", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch") {
 capability "Switch"
 capability "Polling"
 capability "Configuration"

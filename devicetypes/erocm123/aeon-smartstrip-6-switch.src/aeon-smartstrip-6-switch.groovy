@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Aeon SmartStrip - 6 Switch", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Aeon SmartStrip - 6 Switch", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 		capability "Switch"
 		capability "Energy Meter"
 		capability "Power Meter"

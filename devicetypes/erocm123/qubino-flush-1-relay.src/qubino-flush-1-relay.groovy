@@ -21,7 +21,7 @@
  
 metadata {
 
-	definition (name: "Qubino Flush 1 Relay", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Qubino Flush 1 Relay", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Polling"

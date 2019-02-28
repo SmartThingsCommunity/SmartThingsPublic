@@ -21,7 +21,7 @@
  
 metadata {
 
-	definition (name: "Qubino Flush Dimmer", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Qubino Flush Dimmer", namespace: "erocm123", author: "Eric Maycock", vid:"generic-dimmer-power-energy") {
 		capability "Actuator"
 		capability "Switch"
         capability "Switch Level"

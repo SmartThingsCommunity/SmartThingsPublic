@@ -13,7 +13,7 @@
  */
 metadata {
 	
-    definition (name: "SmartLife RGBW Virtual Switch", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "SmartLife RGBW Virtual Switch", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch") {
 		capability "Switch"
         capability "Relay Switch"
         capability "Actuator"

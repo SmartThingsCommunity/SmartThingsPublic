@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Smoke Detector Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Smoke Detector Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-smoke") {
 		capability "Smoke Detector"
 		capability "Sensor"
 	}

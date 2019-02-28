@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Enerwave ZW15SM Metering Switch", namespace: "erocm123", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
+	definition (name: "Enerwave ZW15SM Metering Switch", namespace: "erocm123", author: "SmartThings", ocfDeviceType: "oic.d.switch", vid:"generic-switch-power-energy") {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"

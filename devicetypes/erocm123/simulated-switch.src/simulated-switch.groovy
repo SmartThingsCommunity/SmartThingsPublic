@@ -13,7 +13,7 @@
  */
 metadata {
 	
-    definition (name: "Simulated Switch", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Simulated Switch", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch") {
 		capability "Switch"
         capability "Relay Switch"
         capability "Actuator"

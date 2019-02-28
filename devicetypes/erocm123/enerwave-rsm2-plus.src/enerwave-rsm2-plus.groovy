@@ -21,7 +21,7 @@
  */
  
 metadata {
-   definition (name: "Enerwave RSM2-Plus", namespace: "erocm123", author: "Eric Maycock") {
+   definition (name: "Enerwave RSM2-Plus", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch") {
       capability "Actuator"
       capability "Sensor"
       capability "Switch"

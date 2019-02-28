@@ -12,7 +12,7 @@
  */
  
 metadata {
-definition (name: "Aeon DSC17103 Micro Double Switch", namespace: "erocm123", author: "Eric Maycock") {
+definition (name: "Aeon DSC17103 Micro Double Switch", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 capability "Switch"
 capability "Polling"
 capability "Configuration"

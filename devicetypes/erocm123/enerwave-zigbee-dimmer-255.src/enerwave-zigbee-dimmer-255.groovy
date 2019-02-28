@@ -1,6 +1,6 @@
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Enerwave Zigbee Dimmer 255", namespace: "erocm123", author: "SmartThings") {
+	definition (name: "Enerwave Zigbee Dimmer 255", namespace: "erocm123", author: "SmartThings", vid:"generic-dimmer") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"

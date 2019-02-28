@@ -14,7 +14,7 @@
  */
  
 metadata {
-	definition (name: "Ecolink Firefighter", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Ecolink Firefighter", namespace: "erocm123", author: "Eric Maycock", vid:"generic-smoke-co") {
 		capability "Smoke Detector"
 		capability "Carbon Monoxide Detector"
 		capability "Sensor"

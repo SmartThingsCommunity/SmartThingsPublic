@@ -14,7 +14,7 @@
  *
  */
 metadata {
-   definition (name: "Xiaomi Door/Window Sensor", namespace: "erocm123", author: "Eric Maycock") {
+   definition (name: "Xiaomi Door/Window Sensor", namespace: "erocm123", author: "Eric Maycock", vid:"generic-contact") {
    capability "Configuration"
    capability "Sensor"
    capability "Contact Sensor"

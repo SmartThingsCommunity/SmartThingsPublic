@@ -17,7 +17,7 @@
  */
  
 metadata {
-	definition (name: "Zipato RGBW Bulb 2 (Advanced)", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Zipato RGBW Bulb 2 (Advanced)", namespace: "erocm123", author: "Eric Maycock", vid:"generic-rgbw-color-bulb") {
 		capability "Switch Level"
 		capability "Color Control"
 		capability "Color Temperature"

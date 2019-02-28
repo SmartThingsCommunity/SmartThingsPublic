@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Lock Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Lock Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-lock") {
                 capability "Lock"
 		capability "Sensor"
 	}

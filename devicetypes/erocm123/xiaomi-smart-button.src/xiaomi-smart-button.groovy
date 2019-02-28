@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Xiaomi Smart Button", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Xiaomi Smart Button", namespace: "erocm123", author: "Eric Maycock", vid:"generic-button") {
 		capability "Button"
         capability "Configuration"
 		capability "Sensor"

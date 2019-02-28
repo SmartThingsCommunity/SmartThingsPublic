@@ -22,7 +22,7 @@
  */
  
 metadata {
-definition (name: "Philio PAN04 Dual Relay", namespace: "erocm123", author: "Eric Maycock") {
+definition (name: "Philio PAN04 Dual Relay", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 capability "Switch"
 capability "Polling"
 capability "Configuration"

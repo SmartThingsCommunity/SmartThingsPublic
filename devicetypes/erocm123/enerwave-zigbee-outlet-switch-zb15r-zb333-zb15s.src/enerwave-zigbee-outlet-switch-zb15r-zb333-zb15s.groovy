@@ -1,6 +1,6 @@
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Enerwave Zigbee Outlet/Switch ZB15R/ZB333/ZB15S", namespace: "erocm123", author: "Enerwave Home Automation") {
+	definition (name: "Enerwave Zigbee Outlet/Switch ZB15R/ZB333/ZB15S", namespace: "erocm123", author: "Enerwave Home Automation", vid:"generic-switch") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"

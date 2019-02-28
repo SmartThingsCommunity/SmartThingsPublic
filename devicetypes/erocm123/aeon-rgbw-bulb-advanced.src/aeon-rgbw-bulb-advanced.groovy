@@ -19,7 +19,7 @@
  */
  
 metadata {
-	definition (name: "Aeon RGBW Bulb (Advanced)", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Aeon RGBW Bulb (Advanced)", namespace: "erocm123", author: "Eric Maycock", vid:"generic-rgbw-color-bulb") {
 		capability "Switch Level"
 		capability "Color Control"
 		capability "Color Temperature"

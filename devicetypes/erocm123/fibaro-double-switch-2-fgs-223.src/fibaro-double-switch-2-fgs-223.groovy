@@ -22,7 +22,7 @@
  */
  
 metadata {
-definition (name: "Fibaro Double Switch 2 FGS-223", namespace: "erocm123", author: "Eric Maycock") {
+definition (name: "Fibaro Double Switch 2 FGS-223", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
     capability "Sensor"
     capability "Actuator"
     capability "Switch"

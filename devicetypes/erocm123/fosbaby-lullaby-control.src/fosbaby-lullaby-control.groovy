@@ -19,7 +19,7 @@
 import groovy.util.XmlSlurper
 
 metadata {
-	definition (name: "Fosbaby Lullaby Control", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Fosbaby Lullaby Control", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch") {
 		capability "Actuator"
         capability "Indicator"
         capability "Switch"

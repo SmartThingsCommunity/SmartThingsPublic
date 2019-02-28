@@ -20,7 +20,7 @@
  */
  
 metadata {
-	definition (name: "Fibaro Dimmer 2", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Fibaro Dimmer 2", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Switch Level"

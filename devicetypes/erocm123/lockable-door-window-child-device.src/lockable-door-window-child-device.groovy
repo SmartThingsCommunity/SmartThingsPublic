@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Lockable Door/Window Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Lockable Door/Window Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-lock") {
 		capability "Contact Sensor"
         capability "Lock"
 		capability "Sensor"

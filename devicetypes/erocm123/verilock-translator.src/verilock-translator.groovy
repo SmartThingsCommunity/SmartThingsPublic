@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Verilock Translator", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Verilock Translator", namespace: "erocm123", author: "Eric Maycock", vid:"generic-lock") {
 		capability "Refresh"
         capability "Lock"
         capability "Contact Sensor"

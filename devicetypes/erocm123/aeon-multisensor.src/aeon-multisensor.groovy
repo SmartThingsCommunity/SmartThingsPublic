@@ -17,7 +17,7 @@
  */
 
  metadata {
-	definition (name: "Aeon Multisensor", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Aeon Multisensor", namespace: "erocm123", author: "Eric Maycock", vid:"generic-motion-7") {
 		capability "Motion Sensor"
 		capability "Acceleration Sensor"
 		capability "Temperature Measurement"

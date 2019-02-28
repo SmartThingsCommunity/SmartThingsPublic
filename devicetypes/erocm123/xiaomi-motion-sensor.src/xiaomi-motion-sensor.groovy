@@ -15,7 +15,7 @@
  */
 
 metadata {
-	definition (name: "Xiaomi Motion Sensor", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Xiaomi Motion Sensor", namespace: "erocm123", author: "Eric Maycock", vid:"generic-motion") {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"

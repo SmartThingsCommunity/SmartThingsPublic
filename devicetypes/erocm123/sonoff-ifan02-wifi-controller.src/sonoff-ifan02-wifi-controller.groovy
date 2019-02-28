@@ -20,7 +20,7 @@ import groovy.json.JsonSlurper
 import groovy.util.XmlSlurper
 
 metadata {
-	definition (name: "Sonoff IFan02 Wifi Controller", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Sonoff IFan02 Wifi Controller", namespace: "erocm123", author: "Eric Maycock", vid: "generic-dimmer") {
         capability "Actuator"
 		capability "Switch"
         capability "Switch Level"

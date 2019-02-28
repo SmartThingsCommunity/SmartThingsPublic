@@ -13,7 +13,7 @@
  */
 metadata {
 	
-    definition (name: "Simulated Energy Switch", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Simulated Energy Switch", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 		capability "Switch"
         capability "Relay Switch"
         capability "Energy Meter"

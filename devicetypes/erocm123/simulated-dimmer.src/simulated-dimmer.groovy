@@ -17,7 +17,7 @@
  
 metadata {
 	
-    definition (name: "Simulated Dimmer", namespace: "erocm123", author: "Eric Maycock") {
+    definition (name: "Simulated Dimmer", namespace: "erocm123", author: "Eric Maycock", vid:"generic-dimmer") {
 		capability "Switch"
         capability "Relay Switch"
         capability "Switch Level"

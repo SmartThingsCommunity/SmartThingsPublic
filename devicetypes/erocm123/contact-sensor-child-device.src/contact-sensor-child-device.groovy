@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Contact Sensor Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Contact Sensor Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-contact") {
 		capability "Contact Sensor"
 		capability "Sensor"
 	}

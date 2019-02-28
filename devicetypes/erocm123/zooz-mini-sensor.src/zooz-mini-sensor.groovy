@@ -21,7 +21,7 @@
  */
 
  metadata {
-	definition (name: "zooZ Mini Sensor", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "zooZ Mini Sensor", namespace: "erocm123", author: "Eric Maycock", vid:"generic-motion-4") {
 		capability "Motion Sensor"
 		capability "Illuminance Measurement"
 		capability "Configuration"

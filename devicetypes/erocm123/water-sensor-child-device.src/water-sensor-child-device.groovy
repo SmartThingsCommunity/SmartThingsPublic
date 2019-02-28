@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Water Sensor Child Device", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "Water Sensor Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-leak") {
 		capability "Water Sensor"
 		capability "Sensor"
 	}

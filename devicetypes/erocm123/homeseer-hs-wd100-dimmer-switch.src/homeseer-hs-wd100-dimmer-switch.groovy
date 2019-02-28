@@ -13,7 +13,7 @@
  *
  */
 metadata {
-	definition (name: "HomeSeer HS-WD100+ Dimmer Switch", namespace: "erocm123", author: "Eric Maycock") {
+	definition (name: "HomeSeer HS-WD100+ Dimmer Switch", namespace: "erocm123", author: "Eric Maycock", vid:"generic-dimmer") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Indicator"

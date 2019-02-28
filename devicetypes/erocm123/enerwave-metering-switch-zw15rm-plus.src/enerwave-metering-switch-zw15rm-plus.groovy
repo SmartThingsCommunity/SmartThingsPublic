@@ -1,6 +1,6 @@
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Enerwave Metering Switch ZW15RM-Plus", namespace: "erocm123", author: "Enerwave") {
+	definition (name: "Enerwave Metering Switch ZW15RM-Plus", namespace: "erocm123", author: "Enerwave", vid:"generic-switch-power-energy") {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
