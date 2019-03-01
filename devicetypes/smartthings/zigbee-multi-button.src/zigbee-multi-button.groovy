@@ -53,6 +53,9 @@ metadata {
 def parse(String description) {
 	def map = zigbee.getEvent(description)
 	def result = map ? map : parseAttrMessage(description)
+	if(result.name == "switch") {
+		result = createEvent(descriptionText: "Wake up event came in", isStateChange: true)
+	}
 	log.debug "Description ${description} parsed to ${result}"
 	return result
 }
@@ -128,6 +131,7 @@ def getBatteryPercentageResult(rawValue) {
 
 def refresh() {
 	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryVoltage) +
+			zigbee.readAttribute(zigbee.ONOFF_CLUSTER, switchType)
 			zigbee.enrollResponse()
 }
 
@@ -144,19 +148,12 @@ def configure() {
 }
 
 def installed() {
-	initialize()
+	runIn(2, "initialize", [overwrite: true])
 	sendEvent(name: "button", value: "pushed", isStateChange: true)
-	if(childDevices) {
-		def event
-		for(def endpoint : 2..device.currentValue("numberOfButtons")) {
-			event = createEvent(name: "button", value: "pushed", isStateChange: true)
-			sendEventToChild(endpoint, event)
-		}
-	}
 }
 
 def updated() {
-	initialize()
+	runIn(2, "initialize", [overwrite: true])
 }
 
 def initialize() {
@@ -165,6 +162,13 @@ def initialize() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 	if(!childDevices) {
 		addChildButtons(numberOfButtons)
+	}
+	if(childDevices) {
+		def event
+		for(def endpoint : 2..device.currentValue("numberOfButtons")) {
+			event = createEvent(name: "button", value: "pushed", isStateChange: true)
+			sendEventToChild(endpoint, event)
+		}
 	}
 }
 
@@ -187,6 +191,7 @@ private addChildButtons(numberOfButtons) {
 }
 
 private getBatteryVoltage() { 0x0020 }
+private getSwitchType() { 0x0000 }
 private getHoldTime() { 1000 }
 private getButtonMap() {[
 		"3450-L" : [
@@ -208,19 +213,8 @@ private getModelNumberOfButtons() {[
 ]}
 private getModelBindings(model) {
 	def bindings = []
-	switch(model) {
-		case "3450-L":
-			for(def endpoint : 1..modelNumberOfButtons[model]) {
-				bindings += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint" : endpoint])
-			}
-			break
-		case "3450-L2":
-			for(def endpoint : 1..modelNumberOfButtons[model]) {
-				bindings += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint" : endpoint])
-			}
-			break
-		default:
-			break
+	for(def endpoint : 1..modelNumberOfButtons[model]) {
+		bindings += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint" : endpoint])
 	}
 	bindings
 }
