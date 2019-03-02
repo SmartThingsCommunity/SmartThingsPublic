@@ -16,7 +16,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZigBee Lock", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "ZigBee Lock", namespace: "smartthings", author: "SmartThings", genericHandler: "Zigbee") {
 		capability "Actuator"
 		capability "Lock"
 		capability "Polling"
