@@ -14,7 +14,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-    definition (name: "Aeotec Wallmote", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeon_Key_Fob_Components", ocfDeviceType: "x.com.st.d.remotecontroller") {
+    definition (name: "Aeotec Wallmote", namespace: "smartthings", author: "SmartThings", , ocfDeviceType: "x.com.st.d.remotecontroller") {
         capability "Actuator"
         capability "Button"
         capability "Battery"
@@ -23,8 +23,8 @@ metadata {
         capability "Sensor"
         capability "Health Check"
 
-        fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Wallmote Quad"
-        fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Wallmote"
+        fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Wallmote Quad", mnmn: "SmartThings", vid: "generic-4-button"
+        fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Wallmote", mnmn: "SmartThings", vid: "generic-2-button"
     }
 
     tiles(scale: 2) {
@@ -119,34 +119,20 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     [linkText: linkText, descriptionText: "$linkText: $cmd", displayed: false]
 }
 
-/*
-The device supports multichannel
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep) {
-    def encapsulatedCommand = cmd.encapsulatedCommand()
-    if (encapsulatedCommand) {
-        zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
-    }
-}
-*/
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     def results = []
     results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
-    if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-        results += response([
-                secure(zwave.batteryV1.batteryGet()),
-                "delay 2000",
-                secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
-        ])
-    } else {
-        results += response(secure(zwave.wakeUpV2.wakeUpNoMoreInformation()))
-    }
+    results += response([
+            secure(zwave.batteryV1.batteryGet()),
+            "delay 2000",
+            secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
+    ])
     results
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     def map = [ name: "battery", unit: "%", isStateChange: true ]
-    state.lastbatt = now()
     if (cmd.batteryLevel == 0xFF) {
         map.value = 1
         map.descriptionText = "$device.displayName battery is low!"
