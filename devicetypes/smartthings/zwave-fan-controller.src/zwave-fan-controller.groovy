@@ -116,6 +116,7 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 
 def on() {
 	setLevel(0xFF)
+	state.lastOnCommand = now()
 }
 
 def off() {
@@ -123,10 +124,16 @@ def off() {
 }
 
 def setLevel(value) {
+	def cmds = []
+	def timeNow = now()
+	if (state.lastOnCommand && timeNow - state.lastOnCommand < 2 * 1000 ) {
+		// because some devices cannot handle commands in quick succession, this will delay the setLevel command by a max of 2s
+		cmds << "delay ${2 * 1000 - (timeNow - state.lastOnCommand)}"
+	}
 	log.debug "setLevel >> value: $value"
 	def level = value as Integer
 	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
-	delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+	cmds << delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
 def setFanSpeed(speed) {
