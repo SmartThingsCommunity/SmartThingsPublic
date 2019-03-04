@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.023.00001', executeCommandsLocally: true) {
+    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.023.00001', executeCommandsLocally: true, genericHandler: "ZLL") {
 
         capability "Actuator"
         capability "Color Temperature"
