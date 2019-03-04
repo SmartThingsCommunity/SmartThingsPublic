@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Fan Controller", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.fan") {
+	definition(name: "Z-Wave Fan Controller", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.fan", genericHandler: "Z-Wave") {
 		capability "Switch Level"
 		capability "Switch"
 		capability "Fan Speed"

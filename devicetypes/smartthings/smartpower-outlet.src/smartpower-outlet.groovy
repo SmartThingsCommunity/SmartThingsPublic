@@ -15,7 +15,7 @@
  */
 metadata {
 	// Automatically generated. Make future change here.
-	definition(name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power", ocfDeviceType: "oic.d.smartplug", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power", ocfDeviceType: "oic.d.smartplug", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
 		capability "Actuator"
 		capability "Switch"
 		capability "Power Meter"

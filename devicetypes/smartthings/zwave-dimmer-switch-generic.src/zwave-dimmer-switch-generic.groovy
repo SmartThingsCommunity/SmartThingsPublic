@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
+	definition(name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, genericHandler: "Z-Wave") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Health Check"
@@ -44,6 +44,7 @@ metadata {
 		fingerprint mfr: "0184", prod: "4744", model: "3032", deviceJoinName: "Satco Plug-In Dimmer"
 		fingerprint mfr: "0330", prod: "0201", model: "D002", deviceJoinName: "RGBgenie ZW-1001 Z-Wave Dimmer"
 		fingerprint mfr: "027A", prod: "B112", model: "1F1C", deviceJoinName: "Zooz ZEN22 Dimmer"
+		fingerprint mfr: "027A", prod: "A000", model: "A002", deviceJoinName: "Zooz ZEN27 Dimmer"
 	}
 
 	simulator {
