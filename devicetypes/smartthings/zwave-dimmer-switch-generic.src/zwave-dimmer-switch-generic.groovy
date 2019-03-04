@@ -45,6 +45,7 @@ metadata {
 		fingerprint mfr: "0330", prod: "0201", model: "D002", deviceJoinName: "RGBgenie ZW-1001 Z-Wave Dimmer"
 		fingerprint mfr: "027A", prod: "B112", model: "1F1C", deviceJoinName: "Zooz ZEN22 Dimmer"
 		fingerprint mfr: "027A", prod: "A000", model: "A002", deviceJoinName: "Zooz ZEN27 Dimmer"
+		fingerprint mfr: "027A", prod: "B112", model: "261C", deviceJoinName: "Zooz ZEN24 Dimmer"
 	}
 
 	simulator {
