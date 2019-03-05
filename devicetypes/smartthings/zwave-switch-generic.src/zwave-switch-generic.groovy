@@ -50,6 +50,8 @@ metadata {
 		fingerprint mfr: "0307", prod: "4447", model: "3033", deviceJoinName: "Satco In-Wall Light Switch"
 		//zw:L type:1001 mfr:0307 prod:4447 model:3031 ver:5.06 zwv:4.05 lib:03 cc:5E,86,72,85,59,25,27,73,70,2C,2B,5A,7A role:05 ff:8700 ui:8700
 		fingerprint mfr: "0307", prod: "4447", model: "3031", deviceJoinName: "Satco Plug-In Module"
+		fingerprint mfr: "027A", prod: "B111", model: "1E1C", deviceJoinName: "Zooz Switch"
+		fingerprint mfr: "027A", prod: "B111", model: "251C", deviceJoinName: "Zooz Switch ZEN23"
 	}
 
 	// simulator metadata

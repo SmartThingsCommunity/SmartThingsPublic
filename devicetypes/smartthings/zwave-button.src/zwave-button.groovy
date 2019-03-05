@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import groovy.json.JsonOutput
 
 metadata {
 	definition (name: "Z-Wave Button", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller" ,vid: "generic-button-4") {
@@ -43,7 +44,11 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if(zwaveInfo.mfr?.contains("0371")) {
+		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
+	} else {
+		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	}
 	sendEvent(name: "numberOfButtons", value: 1)
 	sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1])
 	response([
