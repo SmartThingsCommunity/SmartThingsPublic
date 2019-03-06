@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZLL RGB Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.025.00000', executeCommandsLocally: true) {
+	definition (name: "ZLL RGB Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.025.00000', executeCommandsLocally: true, genericHandler: "ZLL") {
 
 		capability "Actuator"
 		capability "Color Control"

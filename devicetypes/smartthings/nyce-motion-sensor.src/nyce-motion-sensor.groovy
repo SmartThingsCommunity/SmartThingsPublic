@@ -53,7 +53,7 @@ metadata {
 
 def installed() {
 	// device report interval is 0x3600 seconds (230.4 minutes/3.84 hours) so checkinterval is ~that * 2 + 2 minutes
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 * 4 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	initialize()
 }
 
 def parse(String description) {
@@ -192,7 +192,7 @@ def configure() {
 		"raw 0x500 {01 23 00 00 00}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 	]
-	return configCmds + refresh() + enrollResponse() // send refresh cmds as part of config
+	return configCmds + zigbee.enrollResponse() + refresh() + zigbee.iasZoneConfig(30, 300) + zigbee.enrollResponse() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
@@ -205,6 +205,9 @@ def enrollResponse() {
 	]
 }
 
+def initialize(){
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 * 4 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
