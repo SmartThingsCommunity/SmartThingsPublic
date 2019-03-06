@@ -115,8 +115,8 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-	setLevel(0xFF)
 	state.lastOnCommand = now()
+	setLevel(0xFF)
 }
 
 def off() {
@@ -137,7 +137,13 @@ def setLevel(value) {
 }
 
 def setFanSpeed(speed) {
-	setLevel(speed * 33)
+	if (speed as Integer == 1) {
+		low()
+	} else if (speed as Integer == 2) {
+		medium()
+	} else if (speed as Integer == 3) {
+		high()
+	}
 }
 
 def raiseFanSpeed() {
@@ -149,15 +155,15 @@ def lowerFanSpeed() {
 }
 
 def low() {
-	setFanSpeed(1)
+	setLevel(32)
 }
 
 def medium() {
-	setFanSpeed(2)
+	setLevel(66)
 }
 
 def high() {
-	setFanSpeed(3)
+	setLevel(99)
 }
 
 def refresh() {
