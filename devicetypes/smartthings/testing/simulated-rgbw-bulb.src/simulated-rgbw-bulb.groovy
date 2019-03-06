@@ -352,7 +352,7 @@ def off() {
     done()
 }
 
-def setLevel(levelPercent) {
+def setLevel(levelPercent, rate = null) {
     Integer boundedPercent = boundInt(levelPercent, PERCENT_RANGE)
     log.trace "executing 'setLevel' ${boundedPercent}%"
     def effectiveMode = device.currentValue("bulbMode")

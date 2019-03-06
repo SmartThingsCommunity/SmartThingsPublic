@@ -82,7 +82,7 @@ def on() {
     zigbee.on()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()       //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 

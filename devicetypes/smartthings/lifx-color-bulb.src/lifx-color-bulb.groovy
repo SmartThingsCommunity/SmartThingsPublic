@@ -141,7 +141,7 @@ def setColor(Map color) {
     return []
 }
 
-def setLevel(percentage) {
+def setLevel(percentage, rate = null) {
     log.debug "setLevel ${percentage}"
     if (percentage < 1 && percentage > 0) {
         percentage = 1 // clamp to 1%

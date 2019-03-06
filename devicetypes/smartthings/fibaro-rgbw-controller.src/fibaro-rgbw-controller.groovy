@@ -319,7 +319,7 @@ def setColor(value) {
     sendRGB(value.rh, value.gh, value.bh)
 }
 
-def setLevel(level) {
+def setLevel(level, rate = null) {
 	log.debug "setLevel($level)"
 
 	if (level == 0) { off() }
