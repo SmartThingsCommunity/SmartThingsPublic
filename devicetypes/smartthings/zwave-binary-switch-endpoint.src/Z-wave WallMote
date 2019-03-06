@@ -1,0 +1,42 @@
+metadata {
+    definition(name: "Z-Wave Dimmer Switch WallMote", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", minHubCoreVersion: '000.019.00012') {
+        capability "Switch Level"
+        capability "Actuator"
+        capability "Health Check"
+        capability "Switch"
+        capability "Refresh"
+        capability "Sensor"
+
+        //capability "Light"
+
+        fingerprint mfr: "0086", prod: "0102", model: "0081", deviceJoinName: "Aeotec WallMote"
+
+    }
+
+
+
+
+
+
+
+
+
+
+}
+def parse(String description) {
+    def result = null
+    if (description != "updated") {
+        log.debug "parse() >> zwave.parse($description)"
+        def cmd = zwave.parse(description, commandClassVersions)
+        if (cmd) {
+            result = zwaveEvent(cmd)
+        }
+    }
+    if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
+        result = [result, response(zwave.basicV1.basicGet())]
+        log.debug "Was hailed: requesting state update"
+    } else {
+        log.debug "Parse returned ${result?.descriptionText}"
+    }
+    return result
+}
