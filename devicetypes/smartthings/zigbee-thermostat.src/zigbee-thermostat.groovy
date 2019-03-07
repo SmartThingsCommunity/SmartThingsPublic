@@ -70,8 +70,10 @@ metadata {
 		}
 		standardTile("thermostatMode", "device.thermostatMode", width:2, height:2, inactiveLabel: false, decoration: "flat") {
 			state "cool", action: "thermostatMode.off", icon: "st.thermostat.cool", nextState: "..."
-			state "off", action: "thermostatMode.heat", icon: "st.thermostat.heating-cooling-off", nextState: "..."
-			state "heat", action: "thermostatMode.cool", icon: "st.thermostat.heat", nextState: "..."
+			state "off", action: "thermostatMode.auto", icon: "st.thermostat.heating-cooling-off", nextState: "..."
+			state "auto", action: "thermostatMode.heat", icon: "st.thermostat.auto", nextState: "..."
+			state "heat", action: "thermostatMode.emergencyHeat", icon: "st.thermostat.heat", nextState: "..."
+			state "emergency heat", action:"thermostatMode.off", nextState: "updating", icon: "st.thermostat.emergency-heat", nextState: "..."
 			state "...", label: "Updating...", nextState:"..."
 		}
 		standardTile("thermostatFanMode", "device.thermostatFanMode", width:2, height:2, inactiveLabel: false, decoration: "flat") {
@@ -188,8 +190,12 @@ private parseAttrMessage(description) {
 
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	state.supportedModes = ["off", "heat", "cool"]
+
+	state.supportedModes = ["off", "auto", "heat", "cool", "emergency heat"]
 	state.supportedFanModes = ["on", "auto"]
+	sendEvent(name: "supportedThermostatModes", value: state.supportedModes, displayed: false)
+	sendEvent(name: "supportedThermostatFanModes", value: state.supportedFanModes, displayed: false)
+
 	refresh()
 }
 
@@ -272,6 +278,12 @@ def setThermostatMode(value) {
 		case "cool":
 			cool()
 			break
+		case "auto":
+			auto()
+			break
+		case "emergency heat":
+			emergencyHeat()
+			break
 		default:
 			off()
 	}
@@ -292,6 +304,11 @@ def off() {
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE)
 }
 
+def auto() {
+	return zigbee.writeAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_AUTO) +
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE)
+}
+
 def cool() {
 	return zigbee.writeAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_COOL) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE)
@@ -299,6 +316,11 @@ def cool() {
 
 def heat() {
 	return zigbee.writeAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_HEAT) +
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE)
+}
+
+def emergencyHeat() {
+	return zigbee.writeAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE, DataType.ENUM8, THERMOSTAT_MODE_EMERGENCY_HEAT) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE)
 }
 
@@ -384,12 +406,16 @@ private getHEATING_SETPOINT() { 0x0012 }
 private getTHERMOSTAT_RUNNING_MODE() { 0x001E }
 private getTHERMOSTAT_MODE() { 0x001C }
 private getTHERMOSTAT_MODE_OFF() { 0x00 }
+private getTHERMOSTAT_MODE_AUTO() { 0x01 }
 private getTHERMOSTAT_MODE_COOL() { 0x03 }
 private getTHERMOSTAT_MODE_HEAT() { 0x04 }
+private getTHERMOSTAT_MODE_EMERGENCY_HEAT() { 0x05 }
 private getTHERMOSTAT_MODE_MAP() { [
 		"00":"off",
+		"01":"auto",
 		"03":"cool",
 		"04":"heat",
+		"05":"emergency heat"
 ]}
 private getTHERMOSTAT_RUNNING_STATE() { 0x0029 }
 private getSETPOINT_RAISE_LOWER_CMD() { 0x00 }
