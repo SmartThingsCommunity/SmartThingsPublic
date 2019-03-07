@@ -271,31 +271,37 @@ def getPowerSource(value) {
 }
 
 def setThermostatMode(value) {
-	switch(value) {
-		case "heat":
-			heat()
-			break
-		case "cool":
-			cool()
-			break
-		case "auto":
-			auto()
-			break
-		case "emergency heat":
-			emergencyHeat()
-			break
-		default:
-			off()
+	if (state.supportedModes?.contains(value)) {
+		switch(value) {
+			case "heat":
+				heat()
+				break
+			case "cool":
+				cool()
+				break
+			case "auto":
+				auto()
+				break
+			case "emergency heat":
+				emergencyHeat()
+				break
+			case "off":
+				off()
+				break
+		}
 	}
 }
 
 def setThermostatFanMode(value) {
-	switch(value) {
-		case "on":
-			fanOn()
-			break
-		default:
-			fanAuto()
+	if (state.supportedFanModes?.contains(value)) {
+		switch(value) {
+			case "on":
+				fanOn()
+				break
+			case "auto":
+				fanAuto()
+				break
+		}
 	}
 }
 
