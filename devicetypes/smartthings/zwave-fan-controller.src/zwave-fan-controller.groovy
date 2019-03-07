@@ -116,24 +116,30 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 
 def on() {
 	state.lastOnCommand = now()
-	delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+	delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: 0xFF).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
 def off() {
-	delayBetween([zwave.basicV1.basicSet(value: 0x00).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+	delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 1000)
+}
+
+def getDelay() {
+    // the leviton is comparatively well-behaved, but the GE and Honeywell devices are not
+	zwaveInfo.mfr == "001D" ? 2000 : 5000
 }
 
 def setLevel(value) {
 	def cmds = []
 	def timeNow = now()
-	if (state.lastOnCommand && timeNow - state.lastOnCommand < 2 * 1000 ) {
+	if (state.lastOnCommand && timeNow - state.lastOnCommand < delay ) {
 		// because some devices cannot handle commands in quick succession, this will delay the setLevel command by a max of 2s
-		cmds << "delay ${2 * 1000 - (timeNow - state.lastOnCommand)}"
+		log.debug "command delay ${delay - (timeNow - state.lastOnCommand)}"
+		cmds << "delay ${delay - (timeNow - state.lastOnCommand)}"
 	}
 	def level = value as Integer
 	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
 	log.debug "setLevel >> value: $level"
-	cmds << delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+	cmds << delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
 def setFanSpeed(speed) {
