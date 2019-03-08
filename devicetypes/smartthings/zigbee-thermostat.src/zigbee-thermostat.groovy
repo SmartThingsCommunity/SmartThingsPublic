@@ -35,6 +35,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
+		command "switchMode"
 		command "lowerHeatingSetpoint"
 		command "raiseHeatingSetpoint"
 		command "lowerCoolSetpoint"
@@ -69,12 +70,12 @@ metadata {
 			}
 		}
 		standardTile("thermostatMode", "device.thermostatMode", width:2, height:2, inactiveLabel: false, decoration: "flat") {
-			state "cool", action: "thermostatMode.off", icon: "st.thermostat.cool", nextState: "..."
-			state "off", action: "thermostatMode.auto", icon: "st.thermostat.heating-cooling-off", nextState: "..."
-			state "auto", action: "thermostatMode.heat", icon: "st.thermostat.auto", nextState: "..."
-			state "heat", action: "thermostatMode.emergencyHeat", icon: "st.thermostat.heat", nextState: "..."
-			state "emergency heat", action:"thermostatMode.off", icon: "st.thermostat.emergency-heat", nextState: "..."
-			state "...", label: "Updating...", nextState:"..."
+			state "off", action:"switchMode", nextState: "updating", icon: "st.thermostat.heating-cooling-off"
+			state "heat", action:"switchMode",  nextState: "updating", icon: "st.thermostat.heat"
+			state "cool", action:"switchMode",  nextState: "updating", icon: "st.thermostat.cool"
+			state "auto", action:"switchMode",  nextState: "updating", icon: "st.thermostat.auto"
+			state "emergency heat", action:"switchMode", nextState: "updating", icon: "st.thermostat.emergency-heat"
+			state "updating", label:"Updating..."
 		}
 		standardTile("thermostatFanMode", "device.thermostatFanMode", width:2, height:2, inactiveLabel: false, decoration: "flat") {
 			state "auto", action:"thermostatFanMode.fanOn", nextState:"...", icon: "st.thermostat.fan-auto"
@@ -126,7 +127,7 @@ def parse(String description) {
 	} else {
 		log.warn "Unexpected event: ${map}"
 	}
-	log.debug "Description ${description} parsed to ${result}"
+	//log.debug "Description ${description} parsed to ${result}"
 	return result
 }
 
@@ -140,47 +141,79 @@ private parseAttrMessage(description) {
 	}
 	attrData.each {
 		def map = [:]
-		if (it.cluster == THERMOSTAT_CLUSTER && it.attribute == LOCAL_TEMPERATURE) {
-			log.debug "TEMP"
-			map.name = "temperature"
-			map.value = getTemperature(it.value)
-			map.unit = temperatureScale
-		} else if (it.cluster == THERMOSTAT_CLUSTER && it.attribute == COOLING_SETPOINT) {
-			log.debug "COOLING SETPOINT"
-			map.name = "coolingSetpoint"
-			map.value = getTemperature(it.value)
-			map.unit = temperatureScale
-		} else if (it.cluster == THERMOSTAT_CLUSTER && it.attribute == HEATING_SETPOINT) {
-			log.debug "HEATING SETPOINT"
-			map.name = "heatingSetpoint"
-			map.value = getTemperature(it.value)
-			map.unit = temperatureScale
-		} else if (it.cluster == THERMOSTAT_CLUSTER && (it.attribute == THERMOSTAT_MODE || it.attribute == THERMOSTAT_RUNNING_MODE)) {
-			log.debug "MODE"
-			map.name = "thermostatMode"
-			map.value = THERMOSTAT_MODE_MAP[it.value]
-			map.data = [supportedThermostatModes: state.supportedModes]
-		} else if (it.cluster == THERMOSTAT_CLUSTER && it.attribute == THERMOSTAT_RUNNING_STATE) {
-			log.debug "RUNNING STATE"
-			def binValue = extendString(bin(hexToInt(it.value)), 16, '0').reverse()
-			map.name = "thermostatOperatingState"
-			if(binValue[0] == "1") {
-				map.value = "heating"
-			} else if(binValue[1] == "1") {
-				map.value = "cooling"
-			} else {
-				map.value = binValue[2] == "1" ? "fan only" : "idle"
+		if (it.cluster == THERMOSTAT_CLUSTER) {
+			if (it.attribute == LOCAL_TEMPERATURE) {
+				log.debug "TEMP"
+				map.name = "temperature"
+				map.value = getTemperature(it.value)
+				map.unit = temperatureScale
+			} else if (it.attribute == COOLING_SETPOINT) {
+				log.debug "COOLING SETPOINT"
+				map.name = "coolingSetpoint"
+				map.value = getTemperature(it.value)
+				map.unit = temperatureScale
+			} else if (it.attribute == HEATING_SETPOINT) {
+				log.debug "HEATING SETPOINT"
+				map.name = "heatingSetpoint"
+				map.value = getTemperature(it.value)
+				map.unit = temperatureScale
+			} else if (it.attribute == THERMOSTAT_MODE || it.attribute == THERMOSTAT_RUNNING_MODE) {
+				log.debug "MODE"
+				map.name = "thermostatMode"
+				map.value = THERMOSTAT_MODE_MAP[it.value]
+				map.data = [supportedThermostatModes: state.supportedModes]
+			} else if (it.attribute == THERMOSTAT_RUNNING_STATE) {
+				log.debug "RUNNING STATE"
+				def binValue = extendString(bin(hexToInt(it.value)), 16, '0').reverse()
+				map.name = "thermostatOperatingState"
+				if (binValue[0] == "1") {
+					map.value = "heating"
+				} else if (binValue[1] == "1") {
+					map.value = "cooling"
+				} else {
+					map.value = binValue[2] == "1" ? "fan only" : "idle"
+				}
+			} else if (it.attribute == THERMOSTAT_SYSTEM_CONFIG) {
+				def binValue = extendString(bin(hexToInt(it.value)), 16, '0').reverse()
+				// Use reverse() below so that we match Table 6-12. HVAC System Type Configuration Values in the Zigbee Cluster Library spec
+				// The byte representation is RtL, but string indices are LtR...
+				def cooling = binValue[0..1].reverse()
+				def heating = binValue[2..3].reverse()
+				def heatingType = binValue[4]
+				def heatingFuel = binValue[5]
+				def supportedModes = ["off"]
+
+				if (cooling != "11") {
+					supportedModes << "cool"
+				}
+				if (heating != "11") {
+					supportedModes << "heat"
+				}
+				/*if (supportedModes.contains("cool") && supportedModes.contains("heat")) {
+					supportedModes << "auto"
+				}*/
+				if (heating == "01" && heatingType == "1") {
+					supportedModes << "emergency heat"
+				}
+				log.debug "supported modes: $supportedModes"
+				state.supportedThermostatModes = supportedModes
+				sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
 			}
-		} else if (it.cluster == FAN_CONTROL_CLUSTER && it.attribute == FAN_MODE) {
-			log.debug "FAN MODE"
-			map.name = "thermostatFanMode"
-			map.value = FAN_MODE_MAP[it.value]
-			map.data = [supportedThermostatFanModes: state.supportedFanModes]
-		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_VOLTAGE) {
-			map = getBatteryPercentage(Integer.parseInt(it.value, 16))
-		} else if(it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER && it.attribute == BATTERY_ALARM_STATE) {
-			map = getPowerSource(it.value)
+		} else if (it.cluster == FAN_CONTROL_CLUSTER) {
+			if (it.attribute == FAN_MODE) {
+				log.debug "FAN MODE"
+				map.name = "thermostatFanMode"
+				map.value = FAN_MODE_MAP[it.value]
+				map.data = [supportedThermostatFanModes: state.supportedFanModes]
+			}
+		} else if (it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER) {
+			if (it.attribute == BATTERY_VOLTAGE) {
+				map = getBatteryPercentage(Integer.parseInt(it.value, 16))
+			} else if (it.attribute == BATTERY_ALARM_STATE) {
+				map = getPowerSource(it.value)
+			}
 		}
+
 		if(map) {
 			result << createEvent(map)
 		}
@@ -191,7 +224,7 @@ private parseAttrMessage(description) {
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	state.supportedModes = ["off", "auto", "heat", "cool", "emergency heat"]
+	state.supportedModes = ["off", "heat", "cool", "emergency heat"]
 	state.supportedFanModes = ["on", "auto"]
 	sendEvent(name: "supportedThermostatModes", value: state.supportedModes, displayed: false)
 	sendEvent(name: "supportedThermostatFanModes", value: state.supportedFanModes, displayed: false)
@@ -200,7 +233,8 @@ def installed() {
 }
 
 def refresh() {
-	return zigbee.readAttribute(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE) +
+	return zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_SYSTEM_CONFIG) +
+			zigbee.readAttribute(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE) +
@@ -270,8 +304,23 @@ def getPowerSource(value) {
 	return result
 }
 
+def switchMode() {
+	def currentMode = device.currentValue("thermostatMode")
+	def modeOrder = state.supportedThermostatModes
+log.debug "switchMode() $currentMode $modeOrder"
+	if (modeOrder) {
+		def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
+		def nextMode = next(currentMode)
+log.debug "nextMode $nextMode"
+		setThermostatMode(nextMode)
+	} else {
+		log.warn "supportedThermostatModes not defined"
+	}
+}
+
 def setThermostatMode(value) {
-	if (state.supportedModes?.contains(value)) {
+	log.debug "set mode $value (supported ${state.supportedThermostatModes})"
+	if (state.supportedThermostatModes?.contains(value)) {
 		switch(value) {
 			case "heat":
 				heat()
@@ -407,6 +456,7 @@ private extendString(str, size, character) {
 
 private getTHERMOSTAT_CLUSTER() { 0x0201 }
 private getLOCAL_TEMPERATURE() { 0x0000 }
+private getTHERMOSTAT_SYSTEM_CONFIG() { 0x0009 }
 private getCOOLING_SETPOINT() { 0x0011 }
 private getHEATING_SETPOINT() { 0x0012 }
 private getTHERMOSTAT_RUNNING_MODE() { 0x001E }
