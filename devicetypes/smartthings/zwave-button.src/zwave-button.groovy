@@ -141,11 +141,11 @@ private secure(cmd) {
 private getEventsMap() {[
 		0: "pushed",
 		1: "held",
-		2: "down_hold",
-		3: "pushed_2x",
-		4: "pushed_3x",
-		5: "pushed_4x",
-		6: "pushed_5x"
+		//2: "down_hold",
+		3: "double",
+		//4: "pushed_3x",
+		//5: "pushed_4x",
+		//6: "pushed_5x"
 ]}
 
 private getCommandClasses() {[
