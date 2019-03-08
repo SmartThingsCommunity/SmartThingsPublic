@@ -73,7 +73,7 @@ metadata {
 			state "off", action: "thermostatMode.auto", icon: "st.thermostat.heating-cooling-off", nextState: "..."
 			state "auto", action: "thermostatMode.heat", icon: "st.thermostat.auto", nextState: "..."
 			state "heat", action: "thermostatMode.emergencyHeat", icon: "st.thermostat.heat", nextState: "..."
-			state "emergency heat", action:"thermostatMode.off", nextState: "updating", icon: "st.thermostat.emergency-heat", nextState: "..."
+			state "emergency heat", action:"thermostatMode.off", icon: "st.thermostat.emergency-heat", nextState: "..."
 			state "...", label: "Updating...", nextState:"..."
 		}
 		standardTile("thermostatFanMode", "device.thermostatFanMode", width:2, height:2, inactiveLabel: false, decoration: "flat") {
