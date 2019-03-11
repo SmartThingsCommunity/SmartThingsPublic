@@ -242,7 +242,7 @@ def getTemperature(value) {
 	if (value != null) {
 		def celsius = Integer.parseInt(value, 16) / 100
 		if (temperatureScale == "C") {
-			return celsius
+			return Math.round(celsius)
 		} else {
 			return Math.round(celsiusToFahrenheit(celsius))
 		}
