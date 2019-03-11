@@ -29,6 +29,7 @@ metadata {
 		capability "Health Check"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "CO_00.00.00.22TC", deviceJoinName: "Ozom Smart Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "CO_00.00.00.15TC", deviceJoinName: "Ozom Smart Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide"
 	}
 
 	tiles {
@@ -153,5 +154,5 @@ def configure() {
 }
 
 def isOzomCO() {
-	return "ClimaxTechnology" == device.getDataValue("manufacturer") || "CO_00.00.00.22TC" == device.getDataValue("model")
+	return "ClimaxTechnology" == device.getDataValue("manufacturer") && ("CO_00.00.00.22TC" == device.getDataValue("model") || "CO_00.00.00.15TC" == device.getDataValue("model"))
 }
