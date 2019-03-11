@@ -154,5 +154,5 @@ def configure() {
 }
 
 def isOzomCO() {
-	return "ClimaxTechnology" == device.getDataValue("manufacturer") || "CO_00.00.00.22TC" == device.getDataValue("model")
+	return "ClimaxTechnology" == device.getDataValue("manufacturer") && ("CO_00.00.00.22TC" == device.getDataValue("model") || "CO_00.00.00.15TC" == device.getDataValue("model"))
 }
