@@ -64,6 +64,11 @@ def initialize() {
 			sendEventToChild(endpoint, event)
 		}
 	}
+	response([
+			secure(zwave.batteryV1.batteryGet()),
+			"delay 2000",
+			secure(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	])
 }
 
 def configure() {
