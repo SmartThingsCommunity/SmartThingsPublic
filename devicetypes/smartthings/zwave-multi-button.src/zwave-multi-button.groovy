@@ -15,7 +15,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-6-button") {
 		capability "Button"
 		capability "Battery"
 		capability "Sensor"
@@ -125,15 +125,11 @@ def sendEventToChild(buttonNumber, event) {
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def results = []
 	results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
-	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results += response([
-				secure(zwave.batteryV1.batteryGet()),
-				"delay 2000",
-				secure(zwave.wakeUpV1.wakeUpNoMoreInformation())
-		])
-	} else {
-		results += response(secure(zwave.wakeUpV1.wakeUpNoMoreInformation()))
-	}
+	results += response([
+			secure(zwave.batteryV1.batteryGet()),
+			"delay 2000",
+			secure(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	])
 	results
 }
 
