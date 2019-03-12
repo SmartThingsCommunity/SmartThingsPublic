@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Switch Secure", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: false) {
+	definition(name: "Z-Wave Switch Secure", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Switch"
 		capability "Refresh"
 		capability "Polling"

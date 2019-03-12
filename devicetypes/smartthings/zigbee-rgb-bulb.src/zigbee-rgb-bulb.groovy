@@ -18,7 +18,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "ZigBee RGB Bulb", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, ocfDeviceType: "oic.d.light") {
+	definition (name: "ZigBee RGB Bulb", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, ocfDeviceType: "oic.d.light", genericHandler: "Zigbee") {
 
 		capability "Actuator"
 		capability "Color Control"
@@ -142,7 +142,7 @@ def configure() {
 	refresh()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	zigbee.setLevel(value)
 }
 

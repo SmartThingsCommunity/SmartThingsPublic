@@ -19,7 +19,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Thermostat", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-thermostat-1") {
+	definition (name: "Zigbee Thermostat", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-thermostat-1", genericHandler: "Zigbee") {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"

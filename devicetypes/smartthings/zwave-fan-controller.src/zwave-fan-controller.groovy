@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Fan Controller", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.fan") {
+	definition(name: "Z-Wave Fan Controller", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.fan", genericHandler: "Z-Wave") {
 		capability "Switch Level"
 		capability "Switch"
 		capability "Fan Speed"
@@ -122,7 +122,7 @@ def off() {
 	setLevel(0x00)
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.debug "setLevel >> value: $value"
 	def level = value as Integer
 	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)

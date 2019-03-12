@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition(name: "ZLL Dimmer Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
+	definition(name: "ZLL Dimmer Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true, genericHandler: "ZLL") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Polling"
@@ -102,7 +102,7 @@ def on() {
 	zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()
 	//adding refresh because of ZLL bulb not conforming to send-me-a-report
 }

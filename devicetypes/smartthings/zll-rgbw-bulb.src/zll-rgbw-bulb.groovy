@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZLL RGBW Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
+    definition (name: "ZLL RGBW Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true, genericHandler: "ZLL") {
 
         capability "Actuator"
         capability "Color Control"
@@ -205,7 +205,7 @@ def setColorTemperature(value) {
     zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()        //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
