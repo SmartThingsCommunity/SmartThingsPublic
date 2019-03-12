@@ -364,6 +364,8 @@ def handleSwitchValue(value) {
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [name: "battery", unit: "%"]
 
+	// The Utilitech siren always sends low battery events (0xFF) below 20%,
+	// so we will ignore 0% events that sometimes seem to come before valid events.
 	if (cmd.batteryLevel == 0 && isUtilitech()) {
 		log.debug "Ignoring battery 0%"
 		return [:]
