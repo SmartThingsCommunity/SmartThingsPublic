@@ -128,18 +128,18 @@ def getDelay() {
 	zwaveInfo.mfr == "001D" ? 2000 : 5000
 }
 
-def setLevel(value) {
-	def cmds = []
-	def timeNow = now()
-	if (state.lastOnCommand && timeNow - state.lastOnCommand < delay ) {
-		// because some devices cannot handle commands in quick succession, this will delay the setLevel command by a max of 2s
-		log.debug "command delay ${delay - (timeNow - state.lastOnCommand)}"
-		cmds << "delay ${delay - (timeNow - state.lastOnCommand)}"
-	}
-	def level = value as Integer
-	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
-	log.debug "setLevel >> value: $level"
-	cmds << delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+def setLevel(value, rate = null) {
+    def cmds = []
+    def timeNow = now()
+    if (state.lastOnCommand && timeNow - state.lastOnCommand < delay ) {
+        // because some devices cannot handle commands in quick succession, this will delay the setLevel command by a max of 2s
+        log.debug "command delay ${delay - (timeNow - state.lastOnCommand)}"
+        cmds << "delay ${delay - (timeNow - state.lastOnCommand)}"
+    }
+    def level = value as Integer
+    level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
+    log.debug "setLevel >> value: $level"
+    cmds << delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
 def setFanSpeed(speed) {

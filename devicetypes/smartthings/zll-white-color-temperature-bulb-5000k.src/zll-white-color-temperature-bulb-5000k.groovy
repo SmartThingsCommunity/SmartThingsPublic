@@ -102,7 +102,7 @@ def on() {
     zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 

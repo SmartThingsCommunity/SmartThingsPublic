@@ -110,7 +110,7 @@ def on() {
 	sendEvent(name: "switch", value: "on", isStateChange: true)
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	if (value == 0) {
 		sendEvent(name: "switch", value: "off")
 	} else {
