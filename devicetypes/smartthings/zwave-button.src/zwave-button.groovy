@@ -16,7 +16,7 @@
 import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "Z-Wave Button", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller" ,vid: "generic-button-4") {
+	definition (name: "Z-Wave Button", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mmnm: "SmartThings", vid: "generic-button-4") {
 		capability "Button"
 		capability "Battery"
 		capability "Sensor"
@@ -50,7 +50,7 @@ def installed() {
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
 	sendEvent(name: "numberOfButtons", value: 1)
-	sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1])
+	sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
 	response([
 			secure(zwave.batteryV1.batteryGet()),
 			"delay 2000",
@@ -91,12 +91,12 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
-	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1])
+	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1], isStateChange: true)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
 	def value = cmd.sceneId % 2 ? "pushed"  : "held"
-	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1])
+	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1], isStateChange: true)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
@@ -141,11 +141,11 @@ private secure(cmd) {
 private getEventsMap() {[
 		0: "pushed",
 		1: "held",
-		2: "down_hold",
-		3: "pushed_2x",
-		4: "pushed_3x",
-		5: "pushed_4x",
-		6: "pushed_5x"
+		//2: "down_hold",
+		3: "double",
+		//4: "pushed_3x",
+		//5: "pushed_4x",
+		//6: "pushed_5x"
 ]}
 
 private getCommandClasses() {[
