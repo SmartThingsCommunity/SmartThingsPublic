@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 /**
  *  Z-Wave Multi Button
  *
@@ -24,6 +26,8 @@ metadata {
 
 		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob" //EU
 		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob" //US
+		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //US
+		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //EU
 	}
 
 	tiles(scale: 2) {
@@ -54,7 +58,11 @@ def updated() {
 def initialize() {
 	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
-	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if(zwaveInfo.mfr?.contains("0371")) {
+		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
+	} else {
+		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	}
 	if(!childDevices) {
 		addChildButtons(numberOfButtons)
 	}
@@ -74,8 +82,11 @@ def initialize() {
 
 def configure() {
 	def cmds = []
-	for(def parameter : 21..26) {
-		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: parameter, scaledConfigurationValue: 15)) //Makes Fibaro KeyFob buttons send all kind of supported events
+	if(zwaveInfo.mfr?.contains("010F")) {
+		for (def parameter : 21..26) {
+			cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: parameter, scaledConfigurationValue: 15))
+			//Makes Fibaro KeyFob buttons send all kind of supported events
+		}
 	}
 	cmds
 }
@@ -184,5 +195,7 @@ private getEventsMap() {[
 ]}
 
 private getProdNumberOfButtons() {[
-		"1001" : 6
+		"1001" : 6,
+		"0102" : 4,
+		"0002" : 4
 ]}
