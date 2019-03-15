@@ -1,5 +1,5 @@
  /*
-  *  Copyright 2018 SmartThings
+  *  Copyright 2019 SmartThings
   *
   *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
   *  use this file except in compliance with the License. You may obtain a copy
@@ -12,31 +12,31 @@
   *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
   *  License for the specific language governing permissions and limitations
   *  under the License.
-  *  Author : Fen Mei / f.mei@samsung.com
-  *  Date : 2018-07-06
+  *  Author : Donald Kirker, Fen Mei / f.mei@samsung.com
+  *  Date : 2019-02-26
   */
 
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Smoke Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-smoke", genericHandler: "Zigbee") {
-		capability "Smoke Detector"
+	definition (name: "Zigbee CO Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-carbon-monoxide-3") {
+		capability "Carbon Monoxide Detector"
 		capability "Sensor"
 		capability "Battery"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "CO_00.00.00.22TC", deviceJoinName: "Ozom Smart Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "CO_00.00.00.15TC", deviceJoinName: "Ozom Smart Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide"
 	}
 
 	tiles {
-		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4) {
-			tileAttribute ("device.smoke", key: "PRIMARY_CONTROL") {
+		multiAttributeTile(name:"carbonMonoxide", type: "lighting", width: 6, height: 4) {
+			tileAttribute ("device.carbonMonoxide", key: "PRIMARY_CONTROL") {
 				attributeState("clear", label: "clear", icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff")
-				attributeState("detected", label: "Smoke!", icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13")
+				attributeState("detected", label: "MONOXIDE", icon: "st.alarm.carbon-monoxide.carbon-monoxide", backgroundColor: "#e86d13")
 			}
 		}
 
@@ -48,13 +48,17 @@ metadata {
 			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-		main "smoke"
-		details(["smoke", "battery", "refresh"])
+		main "carbonMonoxide"
+		details(["carbonMonoxide", "battery", "refresh"])
 	}
 }
 
 def installed(){
 	log.debug "installed"
+
+	if (isOzomCO()) {
+		sendEvent(name: "battery", value: 100, unit: "%", displayed: false)
+	}
 
 	response(refresh())
 }
@@ -115,12 +119,12 @@ private Map getBatteryPercentageResult(rawValue) {
 }
 
 def getDetectedResult(value) {
-	def detected = value ? 'detected': 'clear'
+	def detected = value ? 'detected' : 'clear'
 	String descriptionText = "${device.displayName} smoke ${detected}"
-	return [name:'smoke',
+	return [name: 'carbonMonoxide',
 			value: detected,
-			descriptionText:descriptionText,
-			translatable:true]
+			descriptionText: descriptionText,
+			translatable: true]
 }
 
 def refresh() {
@@ -147,4 +151,8 @@ def configure() {
 	Integer reportableChange = null
 	return refresh() + zigbee.enrollResponse() + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
 				zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, minReportTime, maxReportTime, reportableChange)
+}
+
+def isOzomCO() {
+	return "ClimaxTechnology" == device.getDataValue("manufacturer") && ("CO_00.00.00.22TC" == device.getDataValue("model") || "CO_00.00.00.15TC" == device.getDataValue("model"))
 }

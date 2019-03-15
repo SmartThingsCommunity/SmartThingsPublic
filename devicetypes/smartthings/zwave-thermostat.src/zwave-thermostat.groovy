@@ -358,7 +358,7 @@ def longPollDevice() {
 	def cmds = []
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
-	sendHubCommands(cmds)
+	sendHubCommand(cmds)
 }
 
 def raiseHeatingSetpoint() {

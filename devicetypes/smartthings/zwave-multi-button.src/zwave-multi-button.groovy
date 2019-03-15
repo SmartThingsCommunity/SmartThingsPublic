@@ -1,7 +1,7 @@
 /**
- *  Z-Wave Button
+ *  Z-Wave Multi Button
  *
- *  Copyright 2018 SmartThings
+ *  Copyright 2019 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,19 +13,17 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "Z-Wave Button", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mmnm: "SmartThings", vid: "generic-button-4") {
+	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-6-button") {
 		capability "Button"
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint mfr: "010F", prod: "0F01", model: "1000", deviceJoinName: "Fibaro Button"
-		fingerprint mfr: "0371", prod: "0102", model: "0004", deviceJoinName: "Aeotec NanoMote One" //US
-		fingerprint mfr: "0371", prod: "0002", model: "0004", deviceJoinName: "Aeotec NanoMote One" //EU
+		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob" //EU
+		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob" //US
 	}
 
 	tiles(scale: 2) {
@@ -44,13 +42,29 @@ metadata {
 }
 
 def installed() {
-	if(zwaveInfo.mfr?.contains("0371")) {
-		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
-	} else {
-		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	runIn(2, "initialize", [overwrite: true])
+	sendEvent(name: "button", value: "pushed", isStateChange: true)
+}
+
+def updated() {
+	runIn(2, "initialize", [overwrite: true])
+}
+
+
+def initialize() {
+	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
+	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if(!childDevices) {
+		addChildButtons(numberOfButtons)
 	}
-	sendEvent(name: "numberOfButtons", value: 1)
-	sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
+	if(childDevices) {
+		def event
+		for(def endpoint : 2..prodNumberOfButtons[zwaveInfo.prod]) {
+			event = createEvent(name: "button", value: "pushed", isStateChange: true)
+			sendEventToChild(endpoint, event)
+		}
+	}
 	response([
 			secure(zwave.batteryV1.batteryGet()),
 			"delay 2000",
@@ -59,10 +73,11 @@ def installed() {
 }
 
 def configure() {
-	if(zwaveInfo.mfr?.contains("0086"))
-		[
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 250, scaledConfigurationValue: 1)),	//makes Aeotec Panic Button communicate with primary controller
-		]
+	def cmds = []
+	for(def parameter : 21..26) {
+		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: parameter, scaledConfigurationValue: 15)) //Makes Fibaro KeyFob buttons send all kind of supported events
+	}
+	cmds
 }
 
 def parse(String description) {
@@ -70,7 +85,7 @@ def parse(String description) {
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText:description, isStateChange:true)
 	} else {
-		def cmd = zwave.parse(description, commandClasses)
+		def cmd = zwave.parse(description)
 		if (cmd) {
 			result += zwaveEvent(cmd)
 		}
@@ -80,7 +95,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand(commandClasses)
+	def encapsulatedCommand = cmd.encapsulatedCommand()
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	} else {
@@ -91,26 +106,30 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
-	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1], isStateChange: true)
+	def description = "Button no. ${cmd.sceneNumber} was ${value}"
+	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
+	if(cmd.sceneNumber == 1) {
+		return event
+	} else {
+		sendEventToChild(cmd.sceneNumber, event)
+		return createEvent(descriptionText: description)
+	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
-	def value = cmd.sceneId % 2 ? "pushed"  : "held"
-	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1], isStateChange: true)
+def sendEventToChild(buttonNumber, event) {
+	String childDni = "${device.deviceNetworkId}:$buttonNumber"
+	def child = childDevices.find { it.deviceNetworkId == childDni }
+	child?.sendEvent(event)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	def results = []
 	results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
-	if (!state.lastbatt || (now() - state.lastbatt) >= 56*60*60*1000) {
-		results += response([
-				secure(zwave.batteryV1.batteryGet()),
-				"delay 2000",
-				secure(zwave.wakeUpV1.wakeUpNoMoreInformation())
-		])
-	} else {
-		results += response(secure(zwave.wakeUpV1.wakeUpNoMoreInformation()))
-	}
+	results += response([
+			secure(zwave.batteryV1.batteryGet()),
+			"delay 2000",
+			secure(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	])
 	results
 }
 
@@ -138,16 +157,32 @@ private secure(cmd) {
 	}
 }
 
+private addChildButtons(numberOfButtons) {
+	for(def endpoint : 2..numberOfButtons) {
+		try {
+			String childDni = "${device.deviceNetworkId}:$endpoint"
+			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : (device.displayName + " ")) + "${endpoint}"
+			addChildDevice("Child Button", childDni, device.getHub().getId(), [
+					completedSetup: true,
+					label         : componentLabel,
+					isComponent   : true,
+					componentName : "button$endpoint",
+					componentLabel: "Button $endpoint"
+			])
+		} catch(Exception e) {
+			log.debug "Exception: ${e}"
+		}
+	}
+}
+
 private getEventsMap() {[
 		0: "pushed",
 		1: "held",
 		//2: "down_hold",
 		3: "double",
-		//4: "pushed_3x",
-		//5: "pushed_4x",
-		//6: "pushed_5x"
+		//4: "pushed_3x"
 ]}
 
-private getCommandClasses() {[
-		0x84: 1
+private getProdNumberOfButtons() {[
+		"1001" : 6
 ]}

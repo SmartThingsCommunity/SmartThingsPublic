@@ -316,7 +316,7 @@ def refresh() {
 	command(zwave.basicV1.basicGet())
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	commands([zwave.basicV1.basicSet(value: value as Integer), zwave.basicV1.basicGet()], 4000)
 }
 

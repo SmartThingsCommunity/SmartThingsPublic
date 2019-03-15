@@ -142,7 +142,7 @@ def configure() {
 	refresh()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	zigbee.setLevel(value)
 }
 
