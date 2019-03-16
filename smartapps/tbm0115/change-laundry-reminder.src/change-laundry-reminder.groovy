@@ -19,9 +19,9 @@ definition(
     author: "Trais McAllister",
     description: "Receive a reminder when a washer/dryer machine cycle is complete.",
     category: "Family",
-    iconUrl: "http://cdn.device-icons.smartthings.com/samsung/da/washer_ic_active_kids_dim@2x.png",
-    iconX2Url: "http://cdn.device-icons.smartthings.com/samsung/da/washer_ic_active_kids_dim@2x.png",
-    iconX3Url: "http://cdn.device-icons.smartthings.com/samsung/da/washer_ic_active_kids_dim@2x.png")
+    iconUrl: "http://cdn.device-icons.smartthings.com/Appliances/appliances1-icn@2x.png",
+    iconX2Url: "http://cdn.device-icons.smartthings.com/Appliances/appliances1-icn@2x.png",
+    iconX3Url: "http://cdn.device-icons.smartthings.com/Appliances/appliances1-icn@2x.png")
 
 preferences {
     page(name: "pgWasher", title: "Washer Setup", nextPage: "pgDryer", uninstall: true){
@@ -165,27 +165,36 @@ def remindD(){
 	remind(mpSensorD, "dryer")
 }
 def remindW(){
-	if (!blnAlertWithDryer || mpSensorD == null){
+	if (!blnAlertWithDryer || (mpSensorD == null && isTimedOut("dryer"))){
 		remind(mpSensorW, "washer")
     }
+}
+Boolean isTimedOut(strType){
+	def timeOut = now()
+    def lastActive = state[strType + "_lastActive"]
+    if (strType == "dryer"){
+    	timeOut = timeOut - (intThresD * 60)
+    }else if (strType == "washer"){
+    	timeOut = timeOut - (intThresW * 60)
+    }
+    return lastActive <= timeOut
 }
 def remind(dev, strType){
  	// Send reminder notification to change wash
     def timeOut = now()
     def lastActive = state[strType + "_lastActive"]
     def lastOpened = state[strType + "_lastOpened"]
-    if (strType == "dryer"){
-    	timeOut = timeOut - (intThresD * 60)
-	}else if (strType == "washer"){
-    	timeOut = timeOut - (intThresW * 60)
-	}
+    //if (strType == "dryer"){
+    //	timeOut = timeOut - (intThresD * 60)
+	//}else if (strType == "washer"){
+    ///	timeOut = timeOut - (intThresW * 60)
+	//}
     
-    def blnTimedOut = lastActive <= timeOut
+    def blnTimedOut = isTimedOut(dev, strType)// lastActive <= timeOut
     if (lastActive > lastOpened){
         if (state[strType + "_isClosed"] && !state[strType + "_sentNotification"] && blnTimedOut){
-            log.debug "remind called:\r\n\tChange Wash!"
             state[strType + "_sentNotification"] = true;
-            sendPush("[TestMode] Change $strType!")
+            sendPush("Change $strType!")
         }else{
             log.debug "remind called:\r\n\tCouldn't send notification.\r\n\tlastActive: $lastActive\r\n\ttimeOut: $timeOut\r\n\tlastActive <= timeOut: $blnTimedOut"
         }
