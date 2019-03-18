@@ -165,7 +165,7 @@ def levelDown() {
 	setLevel(level)
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.debug "in setLevel with value: ${value}"
 	def level = value as Integer
 

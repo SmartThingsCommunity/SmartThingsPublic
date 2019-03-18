@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Multi", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Multi", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-contact-2") {
 		capability "Three Axis"
 		capability "Contact Sensor"
 		capability "Acceleration Sensor"

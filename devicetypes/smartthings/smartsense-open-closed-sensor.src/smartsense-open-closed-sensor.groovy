@@ -16,7 +16,7 @@
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 
 metadata {
-	definition(name: "SmartSense Open/Closed Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "SmartSense Open/Closed Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Zigbee") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
@@ -32,7 +32,10 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3320-L", deviceJoinName: "Iris Contact Sensor"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3323-G", deviceJoinName: "Centralite Micro Door Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "Contact Sensor-A", deviceJoinName: "Sylvania SMART+ Contact and Temperature Smart Sensor"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 E", deviceJoinName: "Visonic Door/Window Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "4655BC0-R", deviceJoinName: "Ecolink Door/Window Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0003,0019", manufacturer: "iMagic by GreatStar", model: "1116-S", deviceJoinName: "Iris Contact Sensor"
 	}
 
 	simulator {
@@ -82,18 +85,21 @@ def parse(String description) {
 
 	Map map = zigbee.getEvent(description)
 	if (!map) {
-		if (description?.startsWith('zone status')) {
+		if (description?.startsWith('zone status') || description?.startsWith('zone report')) {
 			map = parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
 				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
-			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt == 0x07) {
 				if (descMap.data[0] == "00") {
-					log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
-					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+					log.debug "IAS ZONE REPORTING CONFIG RESPONSE: $descMap"
+					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 				} else {
-					log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
+					log.warn "IAS ZONE REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
 			}
 		}
@@ -126,7 +132,7 @@ private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
 
-    def result = [:]
+	def result = [:]
 
 	def volts = rawValue / 10
 	if (!(rawValue == 0 || rawValue == 255)) {
@@ -159,25 +165,37 @@ private Map getContactResult(value) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x001, 0x0020) // Read the Battery Level
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
 
-	return refreshCmds + zigbee.enrollResponse()
+	return refreshCmds
 }
 
 def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
-
+	def cmds = refresh() + zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 60 * 30) + zigbee.enrollResponse()
+	if(getDataValue("manufacturer") == "Ecolink") {
+		cmds += configureEcolink()
+	}
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
-	return refresh() + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) // send refresh cmds as part of config
+	return cmds
+}
+
+private configureEcolink() {
+	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
+	def enrollCmds = zigbee.writeAttribute(0x0020, 0x0000, 0x23, 0x00001C20) + zigbee.command(0x0020, 0x03, "0200") +
+			zigbee.writeAttribute(0x0020, 0x0003, 0x21, 0x0028) + zigbee.command(0x0020, 0x02, "B1040000")
+
+	return zigbee.addBinding(0x0020) + refresh() + enrollCmds
 }
