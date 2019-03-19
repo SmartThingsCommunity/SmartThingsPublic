@@ -58,10 +58,10 @@ def updated() {
 def initialize() {
 	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
-	if(zwaveInfo.mfr?.contains("0371")) {
+	if(isUntrackedAeotec()) {
 		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 	} else {
-		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
 	if(!childDevices) {
 		addChildButtons(numberOfButtons)
@@ -82,7 +82,7 @@ def initialize() {
 
 def configure() {
 	def cmds = []
-	if(zwaveInfo.mfr?.contains("010F")) {
+	if(isFibaro()) {
 		for (def parameter : 21..26) {
 			cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: parameter, scaledConfigurationValue: 15))
 			//Makes Fibaro KeyFob buttons send all kind of supported events
@@ -199,3 +199,11 @@ private getProdNumberOfButtons() {[
 		"0102" : 4,
 		"0002" : 4
 ]}
+
+private isFibaro() {
+	zwaveInfo.mfr?.contains("010F")
+}
+
+private isUntrackedAeotec() {
+	zwaveInfo.mfr?.contains("0371") && zwaveInfo.model?.contains("0003")
+}
