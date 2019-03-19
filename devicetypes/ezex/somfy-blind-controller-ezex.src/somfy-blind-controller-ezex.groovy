@@ -11,6 +11,7 @@
  *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *	for the specific language governing permissions and limitations under the License.
  */
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
     definition(name: "SOMFY Blind Controller/eZEX", namespace: "eZEX", author: "eZEX Corp", vid:"SmartThings-smartthings-Somfy_WindowShade", ocfDeviceType: "oic.d.blind") {
@@ -23,7 +24,7 @@ metadata {
 
         command "pause"
 
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", manufacturer: "eZEX", model: "E2B0-KR000Z0-HA" // SY-IoT201-BD
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", model: "E2B0-KR000Z0-HA" // SY-IoT201-BD
     }
 
 
@@ -61,8 +62,9 @@ private getATTRIBUTE_POSITION_LIFT() { 0x0008 }
 // Parse incoming device messages to generate events
 def parse(String description) {
     def parseMap = zigbee.parseDescriptionAsMap(description)
+    log.info "LOG-INFO-Shade: In parse(), description:- ${description}"
     def attrs = parseMap.additionalAttrs
-    log.info "attrs - ${attrs}"
+    log.info "LOG-INFO-Shade: In parse(), additionalAttrs: - ${attrs}"
     if ( attrs != null ) {
         attrs.each { attr ->
             if(parseMap.clusterInt == CLUSTER_WINDOW_COVERING && attr.attrInt == ATTRIBUTE_POSITION_LIFT) {
@@ -73,6 +75,7 @@ def parse(String description) {
                     sendEvent(name: "windowShade", value: "closed")
                     sendEvent(name: "level", value: "0")
                 } else {
+                    log.info "Partially open state event"
                     sendEvent(name: "windowShade", value: "partially open")
                     sendEvent(name: "level", value: zigbee.convertHexToInt(attr.value))
                 }
@@ -82,12 +85,12 @@ def parse(String description) {
 }
 
 def close() {
-    log.info "LOG-INFO-Shade: off()"
+    log.info "LOG-INFO-Shade: close()"
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x01)
 }
 
 def open() {
-    log.info "LOG-INFO-Shade: on()"
+    log.info "LOG-INFO-Shade: open()"
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x00)
 }
 
@@ -107,12 +110,14 @@ def ping() {
 }
 
 def refresh() {
-    def cmds =  zigbee.readAttribute(CLUSTER_WINDOW_COVERING, 0x00)
+    def cmds =  zigbee.readAttribute(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT)
     log.info "LOG-INFO-Shade: refresh() read covering information : ${cmds}"
+    return cmds
 }
 
 def configure() {
     // Device-Watch allows 2 check-in misses from device + ping (plus 2 min lag time)
     sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting and Bindings."
+    zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 600, null)
 }
