@@ -1341,7 +1341,6 @@ def setCode(codeID, code, codeName = null) {
 
 	def cmds = validateAttributes()
 	cmds << secure(zwave.userCodeV1.userCodeSet(userIdentifier:codeID, userIdStatus:1, user:code))
-	cmds << requestCode(codeID)
 	if(cmds.size() > 1) {
 		cmds = delayBetween(cmds, 4200)
 	}
