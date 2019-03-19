@@ -226,8 +226,8 @@ def zwaveEvent(basicv1.BasicReport cmd) {
 	// The EZMultiPli sets the color back to #ffffff on "off" or at init, so update the ST device to reflect this.
 	if (device.latestState("color") == null || (cmd.value == 0 && device.latestState("color").value != "#ffffff")) {
 		result << createEvent(name: "color", value: "#ffffff")
-		result << createEvent(name: "hue", value: 0)
-		result << createEvent(name: "saturation", value: 0)
+		result << createEvent(name: "hue", value: 0, isStateChange: true)
+		result << createEvent(name: "saturation", value: 0, isStateChange: true)
 	}
 	result << createEvent(name: "switch", value: cmd.value ? "on" : "off")
 
@@ -248,8 +248,8 @@ def zwaveEvent(switchcolorv3.SwitchColorReport cmd) {
 		result << createEvent(name: "color", value: hexColor)
 		// Send the color as hue and saturation
 		def hsv = rgbToHSV(*colors)
-		result << createEvent(name: "hue", value: hsv.hue)
-		result << createEvent(name: "saturation", value: hsv.saturation)
+		result << createEvent(name: "hue", value: hsv.hue, isStateChange: true)
+		result << createEvent(name: "saturation", value: hsv.saturation, isStateChange: true)
 		// Reset the values
 		RGB_NAMES.collect { state.colorReceived[it] = null}
 	}
