@@ -12,7 +12,10 @@ definition(
     category: "Convenience",
     iconUrl: "http://energycurb.com/images/logo.png",
     iconX2Url: "http://energycurb.com/images/logo.png",
-    oauth: [displayName: "SmartThings Curb Control", displayLink: "energycurb.com"]
+    singleInstance: true,
+    oauth: true,
+    usesThirdPartyAuthentication: true,
+    pausable: false
 )
 
 preferences {
