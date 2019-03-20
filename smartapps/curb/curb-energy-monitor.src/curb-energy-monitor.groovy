@@ -16,7 +16,7 @@
 include 'asynchttp_v1'
 
 definition(
-    name: "CURB Energy Monitor",
+    name: "CURB Connect",
     namespace: "curb",
     author: "Curb",
     description: "Gain insight into energy usage throughout your home.",
