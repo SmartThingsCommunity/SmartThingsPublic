@@ -401,6 +401,7 @@ def parse(description) {
     def map = [:]
     def events = []
     def cmds = []
+    def body
     
     if(description == "updated") return
     def descMap = parseDescriptionAsMap(description)
@@ -410,9 +411,8 @@ def parse(description) {
         updateDataValue("mac", descMap["mac"])
 	}
     if (state.mac != null && state.dni != state.mac) state.dni = setDeviceNetworkId(state.mac)
-    
-    def body = new String(descMap["body"].decodeBase64())
-    if(body.startsWith("{") || body.startsWith("[")) {
+    if (descMap["body"]) body = new String(descMap["body"].decodeBase64())
+    if(body?.startsWith("{") || body?.startsWith("[")) {
     
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
@@ -975,20 +975,6 @@ private getHeader(userpass = null){
     return headers
 }
 
-def toAscii(s){
-        StringBuilder sb = new StringBuilder();
-        String ascString = null;
-        long asciiInt;
-                for (int i = 0; i < s.length(); i++){
-                    sb.append((int)s.charAt(i));
-                    sb.append("|");
-                    char c = s.charAt(i);
-                }
-                ascString = sb.toString();
-                asciiInt = Long.parseLong(ascString);
-                return asciiInt;
-}
-
 def on1() { onOffCmd(1, 1) }
 def on2() { onOffCmd(1, 2) }
 def on3() { onOffCmd(1, 3) }
@@ -1024,22 +1010,22 @@ if(state."program${number}" != null) {
     } else {
         //default programs if user hasn't set them up
         switch(number){
-        case "1":
+        case 1:
             uri = "/program?value=g~ff0000~100_g~0000ff~100&repeat=-1&off=true&number=${number}"
             break;
-        case "2":
+        case 2:
             uri = "/program?value=f~ff0000~6000_f~0000ff~6000_f~00ff00~6000_f~ffff00~6000_f~5a00ff~6000_f~ff00ff~6000_f~00ffff~6000&repeat=-1&off=false&number=${number}"
             break;
-        case "3":
+        case 3:
             uri = "/program?value=f~xxxxxx~100-3000&repeat=-1&off=false&number=${number}"
             break;
-        case "4":
+        case 4:
             uri = "/program?value=f~800000~100-3000_f~662400~100-2000_f~330000~100-3000_f~4d1b00~100-2000_f~990000~100-3000_f~1a0900~100-2000&repeat=-1&off=true&number=${number}"
             break;
-        case "5":
+        case 5:
             uri = "/program?value=f~00004d~100-15000_x~b3~100_g~000000~100_x~cc~100&repeat=-1&off=true&number=${number}"
             break;
-        case "6":
+        case 6:
             uri = "/program?value=f~xxxxxx~100-3000&repeat=-1&off=false&number=${number}"
             break;
         default:
@@ -1055,14 +1041,13 @@ def childOn(String dni) {
     log.debug "childOn($dni)"
     def uri = ""
     switch(channelNumber(dni)) {
-        case ["01", "02", "03", "04", "05", "06"]:
-        getProgramString(channelNumber(dni))
+        case [1, 2, 3, 4, 5, 6]:
+        sendHubCommand(getAction(getProgramString(channelNumber(dni))))
         break;
-        case ["7", "8", "9", "10", "11"]:
+        case [7, 8, 9, 10, 11]:
         childSetLevel(dni, 100)
         break;
     }
-    sendHubCommand(getAction(uri))
 }
 
 def childSetLevel(String dni, value) {
@@ -1072,19 +1057,19 @@ def childSetLevel(String dni, value) {
     log.debug "level: ${level}"
     level = hex(level)
     switch (channelNumber(dni)) {
-        case "7":
+        case 7:
             uri = "/r?value=$level&channels=$channels&transition=$dtransition"
         break
-        case "8":
+        case 8:
             uri = "/g?value=$level&channels=$channels&transition=$dtransition"
         break
-        case "9":
+        case 9:
             uri = "/b?value=$level&channels=$channels&transition=$dtransition"
         break
-        case "10":
+        case 10:
             uri = "/w1?value=$level&channels=$channels&transition=$dtransition"
         break
-        case "11":
+        case 11:
             uri = "/w2?value=$level&channels=$channels&transition=$dtransition"
         break
     }
@@ -1100,19 +1085,19 @@ def childOff(String dni) {
          sendHubCommand(getAction(uri))
      } else {
         switch (channelNumber(dni)) {
-        case "7":
+        case 7:
             childSetLevel(dni, 0)
             break;
-        case "8":
+        case 8:
             childSetLevel(dni, 0)
             break;
-        case "9":
+        case 9:
             childSetLevel(dni, 0)
             break;
-        case "10":
+        case 10:
             childSetLevel(dni, 0)
             break;
-        case "11":
+        case 11:
             childSetLevel(dni, 0)
             break;
         }
