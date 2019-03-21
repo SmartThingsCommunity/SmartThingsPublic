@@ -351,19 +351,17 @@ private estimateLux(obs, sunriseDate, sunsetDate) {
     }
     else {
         //day
-        switch(obs.iconCode as String) {
-            case '4':
+        switch(obs.iconCode) {
+            case 4:
                 lux = 200
                 break
-            case ['5', '6', '7', '8', '9', '10',
-                  '11', '12', '13','14', '15','17','18','19','20',
-                  '21','22','23','24','25','26']:
+            case 5..26:
                 lux = 1000
                 break
-            case ['27', '28']:
+            case 27..28:
                 lux = 2500
                 break
-            case ['29', '30']:
+            case 29..30:
                 lux = 7500
                 break
             default:
