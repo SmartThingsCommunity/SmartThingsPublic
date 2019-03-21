@@ -49,8 +49,14 @@ metadata {
 	simulator { }
 
 	preferences {
-		input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: true, displayDuringSetup: true)
-		input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+		section {
+			input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: true, displayDuringSetup: true)
+		}
+		section {
+			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter a zipcode below.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input title: "", description: "Only U.S. based zipcodes are supported by the weather provider. However, if you are outside of the U.S. then enter your zipcode below and make sure that your SmartThings location has a Geolocation configured.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+		}
 	}
 
 	tiles(scale : 2) {
@@ -161,6 +167,7 @@ def updated() {
 
 	unschedule(scheduledUpdateWeather)
 	if (settings.zipcode) {
+		state.invalidZip = false // Reset and validate the zip-code later
 		runEvery1Hour(scheduledUpdateWeather)
 		scheduledUpdateWeather()
 	}
@@ -208,21 +215,50 @@ def updateWeather() {
 	// If there is a zipcode defined, weather forecast will be sent. Otherwise, no weather forecast.
 	if (settings.zipcode) {
 		log.debug "ZipCode: ${settings.zipcode}"
-		weather = getTwcConditions(settings.zipcode)
-
-		// Check if the variable is populated, otherwise return.
-		if (!weather) {
-			log.debug("Something went wrong, no data found.")
-			return false
+		try {
+			// If we do not have a zip-code setting we've determined as invalid, try to use the zip-code defined.
+			if (!state.invalidZip) {
+				weather = getTwcConditions(settings.zipcode)
+			}
+		} catch (e) {
+			log.debug "getTwcConditions exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			state.invalidZip = true
 		}
 
-		def locationScale = getTemperatureScale()
-		def tempToSend = weather.temperature
-		log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
-		// Right now this can disrupt device health if the device is
-		// currently offline -- it would be erroneously marked online.
-		//sendEvent(name: 'outsideTemp', value: tempToSend)
-		setOutdoorTemperature(tempToSend)
+		if (!weather) {
+			try {
+				// It is possible that a non-U.S. zip-code was used, so try with the location's lat/lon.
+				if (location?.latitude && location?.longitude) {
+					// Restrict to two decimal places for the API
+					java.text.DecimalFormat formatter = new java.text.DecimalFormat()
+					formatter.setMaximumFractionDigits(2)
+					formatter.setMinimumFractionDigits(0)
+
+					def lat = formatter.format(location.latitude)
+					def lon = formatter.format(location.longitude)
+
+					def latlon = "${lat},${lon}"
+					weather = getTwcConditions(latlon)
+				}
+			} catch (e2) {
+				log.debug "getTwcConditions exception: $e2"
+				weather = null
+			}
+		}
+
+		// Either the location lat,lon was invalid or one was not defined for the location, on top of an error with the given zip-code
+		if (!weather) {
+			log.debug("Something went wrong, no data found.")
+		} else {
+			def locationScale = getTemperatureScale()
+			def tempToSend = weather.temperature
+			log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
+			// Right now this can disrupt device health if the device is
+			// currently offline -- it would be erroneously marked online.
+			//sendEvent( name: 'outsideTemp', value: tempToSend )
+			setOutdoorTemperature(tempToSend)
+		}
 	}
 }
 
@@ -387,6 +423,7 @@ def refresh() {
 def configure() {
 	unschedule(scheduledUpdateWeather)
 	if (settings.zipcode) {
+		state.invalidZip = false // Reset and validate the zip-code later
 		runEvery1Hour(scheduledUpdateWeather)
 	}
 	poll()
