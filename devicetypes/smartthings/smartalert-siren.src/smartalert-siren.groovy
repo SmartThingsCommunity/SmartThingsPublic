@@ -16,7 +16,7 @@
  *  Date: 2013-03-05
  */
 metadata {
-	definition (name: "SmartAlert Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "SmartAlert Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"
@@ -166,5 +166,5 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	secure(zwave.basicV1.basicGet())
+	zwave.basicV1.basicGet().format()
 }

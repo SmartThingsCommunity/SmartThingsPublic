@@ -14,6 +14,7 @@ metadata {
 
         command "reset"
 
+        fingerprint mfr: "010F", prod: "0403", model: "3000"
         fingerprint mfr: "010F", prod: "0403", model: "2000"
         fingerprint mfr: "010F", prod: "0403", model: "1000"
      }
@@ -111,6 +112,7 @@ def reset() {
 
 def refresh() {
     def cmds = []
+    cmds << zwave.switchBinaryV1.switchBinaryGet()
     cmds << zwave.meterV3.meterGet(scale: 0)
     cmds << zwave.meterV3.meterGet(scale: 2)
     encapSequence(cmds,1000)
@@ -124,6 +126,7 @@ def ping() {
 def installed(){
     log.debug "installed()"
     sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    response(refresh())
 }
 
 //Configuration and synchronization
@@ -175,7 +178,7 @@ private syncNext() {
     }
 }
 
-private syncCheck() {
+def syncCheck() {
     logging("Executing syncCheck()","info")
     def failed = []
     def incorrect = []

@@ -51,7 +51,7 @@ def getCallbackUrl()             { return "${getServerUrl()}/oauth/callback" }
 def apiURL(path = '/') 			 { return "https://api.lifx.com/v1${path}" }
 def getSecretKey()               { return appSettings.secretKey }
 def getClientId()                { return appSettings.clientId }
-private getVendorName() { "LIFX" }
+def getVendorName() { "LIFX" }
 
 def authPage() {
     if (state.lifxAccessToken) {
@@ -294,7 +294,7 @@ def initialize() {
 }
 
 // Misc
-private setupDeviceWatch() {
+def setupDeviceWatch() {
     def hub = location.hubs[0]
     // Make sure that all child devices are enrolled in device watch
     getChildDevices().each {

@@ -103,7 +103,7 @@ def authPage() {
 	} else {
 		return dynamicPage(name: "auth", title: "Log In", nextPage:"deviceList", install: false, uninstall:uninstallAllowed) {
 			section(){
-				paragraph "Tap Next to continue to setup your ecobee thermostats."
+				paragraph "Tap Next to continue to set up your ecobee thermostats."
 				href url:redirectUrl, style:"embedded", state:"complete", title:"ecobee", description:description
 			}
 		}
@@ -1200,7 +1200,7 @@ def setSensorName(name, deviceId) {
  *
  * @return true if the command was accepted by Ecobee without error, false otherwise.
  */
-private boolean sendCommandToEcobee(Map bodyParams) {
+boolean sendCommandToEcobee(Map bodyParams) {
 	// no need to try sending a command if authToken is null
 	if (!state.authToken) {
 		log.warn "sendCommandToEcobee failed due to authToken=null"
@@ -1259,7 +1259,7 @@ def getCallbackUrl()         { return "${serverUrl}/oauth/callback" }
 def getBuildRedirectUrl()    { return "${serverUrl}/oauth/initialize?appId=${app.id}&access_token=${state.accessToken}&apiServerUrl=${apiServerUrl}" }
 def getApiEndpoint()         { return "https://api.ecobee.com" }
 def getSmartThingsClientId() { return appSettings.clientId }
-private getVendorIcon() 	 { return "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png" }
+def getVendorIcon() 	 { return "https://s3.amazonaws.com/smartapp-icons/Partner/ecobee.png" }
 
 //send both push notification and mobile activity feeds
 def sendPushAndFeeds(notificationMessage) {
@@ -1302,7 +1302,7 @@ def getThermostatData(data) {
  * Stores data about the thermostats in atomicState.
  * @param thermostats - a list of thermostats as returned from the Ecobee API
  */
-private void storeThermostatData(thermostatData) {
+void storeThermostatData(thermostatData) {
 	def data
 	def remoteSensors = state.remoteSensors2 ?: [:]
 	def thermostatList = state.thermostats ?: [:]

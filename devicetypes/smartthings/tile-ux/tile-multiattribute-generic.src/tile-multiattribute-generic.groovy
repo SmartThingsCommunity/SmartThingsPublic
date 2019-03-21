@@ -124,7 +124,7 @@ def off() {
 	sendEvent(name: "switch", value: "off")
 }
 
-def setLevel(percent) {
+def setLevel(percent, rate = null) {
 	log.debug "setLevel: ${percent}, this"
 	sendEvent(name: "level", value: percent)
 }

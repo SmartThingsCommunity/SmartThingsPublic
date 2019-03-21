@@ -108,19 +108,22 @@ metadata {
         command "setHumidityPercent", ["number"]
         command "delayedEvaluate"
         command "runSimHvacCycle"
+
+        command "markDeviceOnline"
+        command "markDeviceOffline"
     }
 
     tiles(scale: 2) {
         multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:6, height:4) {
             tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-                attributeState("default", label:'${currentValue} °F', unit:"°F")
+                attributeState("temp", label:'${currentValue}°', unit:"°F", defaultState: true)
             }
             tileAttribute("device.temperature", key: "VALUE_CONTROL") {
                 attributeState("VALUE_UP", action: "setpointUp")
                 attributeState("VALUE_DOWN", action: "setpointDown")
             }
             tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
-                attributeState("default", label: '${currentValue}% Hum', unit: "%", icon: "st.Weather.weather12")
+                attributeState("humidity", label: '${currentValue}%', unit: "%", defaultState: true)
             }
             tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
                 attributeState("idle", backgroundColor: "#FFFFFF")
@@ -135,10 +138,10 @@ metadata {
                 attributeState("emergency heat", label: 'e-heat')
             }
             tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
-                attributeState("default", label: '${currentValue}', unit: "°F")
+                attributeState("default", label: '${currentValue}', unit: "°F", defaultState: true)
             }
             tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
-                attributeState("default", label: '${currentValue}', unit: "°F")
+                attributeState("default", label: '${currentValue}', unit: "°F", defaultState: true)
             }
         }
 
@@ -160,7 +163,7 @@ metadata {
         }
 
         valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2, decoration: "flat") {
-            state "heat", label:'Heat\n${currentValue} °F', unit: "°F", backgroundColor:"#E86D13"
+            state "heat", label:'Heat\n${currentValue}°', unit: "°F", backgroundColor:"#E86D13"
         }
         standardTile("heatDown", "device.temperature", width: 1, height: 1, decoration: "flat") {
             state "default", label: "heat", action: "heatDown", icon: "st.thermostat.thermostat-down"
@@ -170,7 +173,7 @@ metadata {
         }
 
         valueTile("coolingSetpoint", "device.coolingSetpoint", width: 2, height: 2, decoration: "flat") {
-            state "cool", label: 'Cool\n${currentValue} °F', unit: "°F", backgroundColor: "#00A0DC"
+            state "cool", label: 'Cool\n${currentValue}°', unit: "°F", backgroundColor: "#00A0DC"
         }
         standardTile("coolDown", "device.temperature", width: 1, height: 1, decoration: "flat") {
             state "default", label: "cool", action: "coolDown", icon: "st.thermostat.thermostat-down"
@@ -179,8 +182,8 @@ metadata {
             state "default", label: "cool", action: "coolUp", icon: "st.thermostat.thermostat-up"
         }
 
-        valueTile("roomTemp", "device.temperature", width: 2, height: 2, decoration: "flat") {
-            state "default", label:'${currentValue} °F', unit: "°F", backgroundColors: [
+        valueTile("roomTemp", "device.temperature", width: 2, height: 1, decoration: "flat") {
+            state "default", label:'${currentValue}°', unit: "°F", backgroundColors: [
                 // Celsius Color Range
                 [value:  0, color: "#153591"],
                 [value:  7, color: "#1E9CBB"],
@@ -218,16 +221,27 @@ metadata {
             state "default", label: ""
         }
 
-        valueTile("reset", "device.switch", width: 4, height: 1, decoration: "flat") {
-            state "default", label: "Reset to Defaults", action: "configure"
-        }
-
-        valueTile("humiditySliderLabel", "device.humidity", width: 4, height: 1, decoration: "flat") {
+        valueTile("humiditySliderLabel", "device.humidity", width: 3, height: 1, decoration: "flat") {
             state "default", label: 'Simulated Humidity: ${currentValue}%'
         }
 
-        controlTile("humiditySlider", "device.humidity", "slider", width: 4, height: 1, range: "(0..100)") {
+        controlTile("humiditySlider", "device.humidity", "slider", width: 1, height: 1, range: "(0..100)") {
             state "humidity", action: "setHumidityPercent"
+        }
+
+        standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "default", label: "", action: "refresh", icon: "st.secondary.refresh"
+        }
+
+        valueTile("reset", "device.switch", width: 2, height: 2, decoration: "flat") {
+            state "default", label: "Reset to Defaults", action: "configure"
+        }
+
+        standardTile("deviceHealthControl", "device.healthStatus", decoration: "flat", width: 2, height: 2, inactiveLabel: false) {
+            state "online",  label: "ONLINE", backgroundColor: "#00A0DC", action: "markDeviceOffline", icon: "st.Health & Wellness.health9", nextState: "goingOffline", defaultState: true
+            state "offline", label: "OFFLINE", backgroundColor: "#E86D13", action: "markDeviceOnline", icon: "st.Health & Wellness.health9", nextState: "goingOnline"
+            state "goingOnline", label: "Going ONLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+            state "goingOffline", label: "Going OFFLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
         }
 
         main("roomTemp")
@@ -239,17 +253,17 @@ metadata {
             "coolingSetpoint",
             "fanMode",
             "blank2x1", "blank2x1",
+            "deviceHealthControl", "refresh", "reset",
             "blank1x1", "simControlLabel", "blank1x1",
-            "tempDown", "tempUp", "humiditySliderLabel",
-            "roomTemp", "humiditySlider",
-            "reset"
+            "tempDown", "tempUp", "humiditySliderLabel", "humiditySlider",
+            "roomTemp"
         ])
     }
 }
 
 def installed() {
     log.trace "Executing 'installed'"
-    initialize()
+    configure()
     done()
 }
 
@@ -261,17 +275,36 @@ def updated() {
 
 def configure() {
     log.trace "Executing 'configure'"
+    // this would be for a physical device when it gets a handler assigned to it
+
+    // for HealthCheck
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    markDeviceOnline()
+
     initialize()
     done()
 }
 
+def markDeviceOnline() {
+    setDeviceHealth("online")
+}
+
+def markDeviceOffline() {
+    setDeviceHealth("offline")
+}
+
+private setDeviceHealth(String healthState) {
+    log.debug("healthStatus: ${device.currentValue('healthStatus')}; DeviceWatch-DeviceStatus: ${device.currentValue('DeviceWatch-DeviceStatus')}")
+    // ensure healthState is valid
+    List validHealthStates = ["online", "offline"]
+    healthState = validHealthStates.contains(healthState) ? healthState : device.currentValue("healthStatus")
+    // set the healthState
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: healthState)
+    sendEvent(name: "healthStatus", value: healthState)
+}
+
 private initialize() {
     log.trace "Executing 'initialize'"
-
-    // for HealthCheck
-    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
-    sendEvent(name: "healthStatus", value: "online")
-    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 
     sendEvent(name: "temperature", value: DEFAULT_TEMPERATURE, unit: "°F")
     sendEvent(name: "humidity", value: DEFAULT_HUMIDITY, unit: "%")
@@ -291,7 +324,6 @@ private initialize() {
     state.lastUserSetpointMode = DEFAULT_PREVIOUS_STATE
     unschedule()
 }
-
 
 // parse events into attributes
 def parse(String description) {
@@ -688,7 +720,7 @@ private startSimHvac() {
     }
 }
 
-private runSimHvacCycle() {
+def runSimHvacCycle() {
     def operatingState = getOperatingState()
     def currentTemp = getTemperature()
     def heatSet = getHeatingSetpoint()

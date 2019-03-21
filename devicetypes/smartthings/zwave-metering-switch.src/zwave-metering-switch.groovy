@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Z-Wave Metering Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
@@ -28,13 +28,21 @@ metadata {
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Micro Smart Switch"
 		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch"
-		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"
+		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"  //US
+		fingerprint mfr: "0086", prod: "0003", model: "0060", deviceJoinName: "Aeotec Smart Switch 6"  //EU
 		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeotec Nano Switch"
 		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeotec Nano Switch"
 		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "GoControl Wall-Mounted Outlet"
 		fingerprint mfr: "014F", prod: "5053", model: "3531", deviceJoinName: "GoControl Plug-in Switch"
 		fingerprint mfr: "0063", prod: "4F44", model: "3031", deviceJoinName: "GE Direct-Wire Outdoor Switch"
 		fingerprint mfr: "0258", prod: "0003", model: "0087", deviceJoinName: "NEO Coolcam Power plug"
+		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Wall Plug ZW5" // EU
+		fingerprint mfr: "010F", prod: "1801", model: "1000", deviceJoinName: "Fibaro Wall Plug ZW5" // UK
+		fingerprint mfr: "0086", prod: "0003", model: "004E", deviceJoinName: "Aeotec Heavy Duty Smart Switch" //EU
+		fingerprint mfr: "0086", prod: "0103", model: "004E", deviceJoinName: "Aeotec Heavy Duty Smart Switch" //US
+		//zw:L type:1001 mfr:0258 prod:0003 model:1087 ver:3.94 zwv:4.05 lib:03 cc:5E,72,86,85,59,5A,73,70,25,27,71,32,20 role:05 ff:8700 ui:8700
+		fingerprint mfr: "0258", prod: "0003", model: "1087", deviceJoinName: "NEO Coolcam Power Plug"  //EU
+		fingerprint mfr: "027A", prod: "0101", model: "000D", deviceJoinName: "Zooz Power Switch"
 	}
 
 	// simulator metadata
@@ -87,16 +95,16 @@ metadata {
 def installed() {
 	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	if (zwaveInfo?.mfr?.equals("0063")) { // These old GE devices have to be polled
+	initialize()
+	if (zwaveInfo?.mfr?.equals("0063") || zwaveInfo?.mfr?.equals("014F")) { // These old GE devices have to be polled. GoControl Plug refresh status every 15 min.
 		runEvery15Minutes("poll", [forceForLocallyExecuting: true])
 	}
 }
 
 def updated() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	if (zwaveInfo?.mfr?.equals("0063")) { // These old GE devices have to be polled
+	initialize()
+	if (zwaveInfo?.mfr?.equals("0063") || zwaveInfo?.mfr?.equals("014F")) { // These old GE devices have to be polled. GoControl Plug refresh status every 15 min.
 		unschedule("poll", [forceForLocallyExecuting: true])
 		runEvery15Minutes("poll", [forceForLocallyExecuting: true])
 	}
@@ -107,6 +115,10 @@ def updated() {
 	} catch (e) {
 		log.debug e
 	}
+}
+
+def initialize() {
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def getCommandClassVersions() {
@@ -233,6 +245,11 @@ def configure() {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, scaledConfigurationValue: 2)))	// basic report cc
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 12)))	// report power in watts
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)))	 // every 5 min
+	} else if (zwaveInfo.mfr == "010F" && zwaveInfo.prod == "1801" && zwaveInfo.model == "1000") { // Fibaro Wall Plug UK
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 11, size: 1, scaledConfigurationValue: 2))) // 2% power change results in report
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 5*60))) // report every 5 minutes
+	} else if (zwaveInfo.mfr == "014F" && zwaveInfo.prod == "5053" && zwaveInfo.model == "3531") {
+		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 15))) //report kWH every 15 min
 	}
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))

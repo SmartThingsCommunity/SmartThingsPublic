@@ -25,8 +25,6 @@ metadata {
 		attribute "multiStatus", "string"
 
 		fingerprint mfr: "010F", prod: "0702"
-		fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x22,0x80,0x56,0x7A,0x73,0x98,0x31,0x85,0x70,0x5A,0x72,0x8E,0x71,0x86,0x84"
-		fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x22,0x80,0x56,0x7A,0x73,0x31,0x85,0x70,0x5A,0x72,0x8E,0x71,0x86,0x84"
 	}
 
 	tiles (scale: 2) {
@@ -199,7 +197,7 @@ private syncStart() {
 	}
 }
 
-private syncNext() {
+def syncNext() {
 	logging("${device.displayName} - Executing syncNext()","debug")
 	def cmds = []
 	for ( param in parameterMap() ) {
@@ -219,7 +217,7 @@ private syncNext() {
 	}
 }
 
-private syncCheck() {
+def syncCheck() {
 	logging("${device.displayName} - Executing syncCheck()","debug")
 	def failed = []
 	def incorrect = []
@@ -264,7 +262,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	}
 	cmds << zwave.batteryV1.batteryGet()
 	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
-	runIn(1,"syncNext")
+	runIn(1, "syncNext")
 	[response(encapSequence(cmds,1000))]
 }
 
