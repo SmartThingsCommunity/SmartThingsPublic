@@ -16,7 +16,7 @@
 include 'asynchttp_v1'
 
 definition(
-    name: "CURB Energy Monitor",
+    name: "CURB Connect",
     namespace: "curb",
     author: "Curb",
     description: "Gain insight into energy usage throughout your home.",
@@ -26,7 +26,11 @@ definition(
     iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
-    singleInstance: true
+    singleInstance: true,
+
+    oauth: true,
+    usesThirdPartyAuthentication: true,
+    pausable: false
 ) {
     appSetting "clientId"
     appSetting "clientSecret"
