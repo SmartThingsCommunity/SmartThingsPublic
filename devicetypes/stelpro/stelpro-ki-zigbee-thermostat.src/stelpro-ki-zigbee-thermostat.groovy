@@ -56,8 +56,7 @@ metadata {
 			input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		}
 		section {
-			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter a zipcode below.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input title: "", description: "Only U.S. based zipcodes are supported by the weather provider. However, if you are outside of the U.S. then enter your zipcode below and make sure that your SmartThings location has a Geolocation configured.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
 		}
 	}
@@ -455,15 +454,7 @@ def updateWeather() {
 				// It is possible that a non-U.S. zip-code was used, so try with the location's lat/lon.
 				if (location?.latitude && location?.longitude) {
 					// Restrict to two decimal places for the API
-					java.text.DecimalFormat formatter = new java.text.DecimalFormat()
-					formatter.setMaximumFractionDigits(2)
-					formatter.setMinimumFractionDigits(0)
-
-					def lat = formatter.format(location.latitude)
-					def lon = formatter.format(location.longitude)
-
-					def latlon = "${lat},${lon}"
-					weather = getTwcConditions(latlon)
+					weather = getTwcConditions(sprintf("%.2f,%.2f", location.latitude, location.longitude))
 				}
 			} catch (e2) {
 				log.debug "getTwcConditions exception: $e2"
