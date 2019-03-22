@@ -124,9 +124,16 @@ private Map parseCatchAllMessage(String description) {
 					}
 					break
 				case 0x0001:	// power configuration cluster
-					resultMap.name = 'battery'
-					log.debug "battery value: ${cluster.data.last()}"
-					resultMap.value = getBatteryPercentage(cluster.data.last())
+					Map descMap = zigbee.parseDescriptionAsMap(description)
+					if(descMap.attrInt == 0x0020) {
+						log.debug 'Battery'
+						resultMap.name = 'battery'
+						resultMap.value = getBatteryPercentage(convertHexToInt(descMap.value))
+					} else if (descMap.attrInt == 0x0021) {
+						log.debug 'Battery'
+						resultMap.name = 'battery'
+						resultMap.value = Math.round(Integer.parseInt(descMap.value, 16)/2)
+					}
 					break
 				case 0x0402:	// temperature cluster
 					if (cluster.command == 0x01) {
@@ -202,17 +209,21 @@ private boolean shouldProcessMessage(cluster) {
 }
 
 private Map parseReportAttributeMessage(String description) {
-	Map descMap = zigbee.parseReadAttrDescription(description)
+	def descMap = zigbee.parseDescriptionAsMap(description)
 	Map resultMap = [:]
 
 	log.debug "parseReportAttributeMessage: descMap ${descMap}"
 
-	switch(descMap.cluster) {
-		case "0001":
-			if(descMap.attrId == "0020") {
+	switch(descMap.clusterInt) {
+		case zigbee.POWER_CONFIGURATION_CLUSTER:
+			if(descMap.attrInt == 0x0020) {
 				log.debug 'Battery'
 				resultMap.name = 'battery'
 				resultMap.value = getBatteryPercentage(convertHexToInt(descMap.value))
+			} else if (descMap.attrInt == 0x0021) {
+				log.debug 'Battery'
+				resultMap.name = 'battery'
+				resultMap.value = Math.round(Integer.parseInt(descMap.value, 16)/2)
 			}
 			break
 		default:
@@ -256,9 +267,9 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	if(device.getDataValue("manufacturer") == "sengled") {
-		return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
+		return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) +
 		zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 300, null) +
-		zigbee.batteryConfig(30, 300) + zigbee.enrollResponse()
+        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) + zigbee.enrollResponse()
 	} else {
 		// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 		return zigbee.iasZoneConfig() + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
