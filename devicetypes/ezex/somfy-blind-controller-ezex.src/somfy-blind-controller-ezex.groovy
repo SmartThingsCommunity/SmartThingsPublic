@@ -44,7 +44,7 @@ metadata {
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
-        valueTile("ShadeLevel", "device.level", width: 4, height: 1) {
+        valueTile("shadeLevel", "device.level", width: 4, height: 1) {
             state "level", label: 'Shade is ${currentValue}% up', defaultState: true
         }
         controlTile("levelSliderControl", "device.level", "slider", width:2, height: 1, inactiveLabel: false) {
@@ -52,30 +52,42 @@ metadata {
         }
 
         main "windowShade"
-        details(["windowShade", "contPause", "ShadeLevel", "levelSliderControl","refresh"])
+        details(["windowShade", "contPause", "shadeLevel", "levelSliderControl", "refresh"])
     }
 }
 
 private getCLUSTER_WINDOW_COVERING() { 0x0102 }
 private getATTRIBUTE_POSITION_LIFT() { 0x0008 }
 
+private List<Map> collectAttributes(Map descMap) {
+	List<Map> descMaps = new ArrayList<Map>()
+
+	descMaps.add(descMap)
+
+	if (descMap.additionalAttrs) {
+		descMaps.addAll(descMap.additionalAttrs)
+	}
+
+	return  descMaps
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
-    def parseMap = zigbee.parseDescriptionAsMap(description)
-    log.info "LOG-INFO-Shade: In parse(), description:- ${description}"
-    def attrs = parseMap.additionalAttrs
-    log.info "LOG-INFO-Shade: In parse(), additionalAttrs: - ${attrs}"
-    if ( attrs != null ) {
-        attrs.each { attr ->
-            if(parseMap.clusterInt == CLUSTER_WINDOW_COVERING && attr.attrInt == ATTRIBUTE_POSITION_LIFT) {
-                if (attr.value == "64") { //open
+    log.debug "description:- ${description}"
+    if (description?.startsWith("read attr -")) {
+        Map descMap = zigbee.parseDescriptionAsMap(description)
+        if (descMap?.clusterInt == CLUSTER_WINDOW_COVERING && descMap.value) {
+            log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, decValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
+            List<Map> descMaps = collectAttributes(descMap)
+            def liftmap = descMaps.find { it.attrInt == ATTRIBUTE_POSITION_LIFT }
+            if (liftmap) {
+                 if (liftmap.value == "64") { //open
                     sendEvent(name: "windowShade", value: "open")
                     sendEvent(name: "level", value: "100")
-                } else if (attr.value == "00") { //closed
+                } else if (liftmap.value == "00") { //closed
                     sendEvent(name: "windowShade", value: "closed")
                     sendEvent(name: "level", value: "0")
                 } else {
-                    log.info "Partially open state event"
                     sendEvent(name: "windowShade", value: "partially open")
                     sendEvent(name: "level", value: zigbee.convertHexToInt(attr.value))
                 }
@@ -85,20 +97,22 @@ def parse(String description) {
 }
 
 def close() {
-    log.info "LOG-INFO-Shade: close()"
+    log.info "close()"
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x01)
 }
 
 def open() {
-    log.info "LOG-INFO-Shade: open()"
+    log.info "open()"
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x00)
 }
 
 def setLevel(data) {
+    log.info "setLevel()"
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(data, 2))
 }
 
 def pause() {
+    log.info "pause()"
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x02)
 }
 
@@ -110,13 +124,14 @@ def ping() {
 }
 
 def refresh() {
-    def cmds =  zigbee.readAttribute(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT)
-    log.info "LOG-INFO-Shade: refresh() read covering information : ${cmds}"
+    log.info "refresh()"
+    def cmds = zigbee.readAttribute(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT)
     return cmds
 }
 
 def configure() {
     // Device-Watch allows 2 check-in misses from device + ping (plus 2 min lag time)
+    log.info "configure()"
     sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting and Bindings."
     zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 600, null)
