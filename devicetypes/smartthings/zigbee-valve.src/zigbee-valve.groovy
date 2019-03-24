@@ -11,18 +11,22 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZigBee Valve", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "ZigBee Valve", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
         capability "Actuator"
         capability "Battery"
         capability "Configuration"
         capability "Power Source"
+        capability "Health Check"
         capability "Refresh"
         capability "Valve"
 
         fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0006, 0020, 0B02, FC02", outClusters: "0019", manufacturer: "WAXMAN", model: "leakSMART Water Valve v2.10", deviceJoinName: "leakSMART Valve"
         fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0004, 0005, 0006, 0008, 000F, 0020, 0B02", outClusters: "0003, 0019", manufacturer: "WAXMAN", model: "House Water Valve - MDL-TBD", deviceJoinName: "Waxman House Water Valve"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006, 0500", outClusters: "0019", manufacturer: "", model: "E253-KR0B0ZX-HA", deviceJoinName: "Smart Gas Valve Actuator", mnmn:"SmartThings", vid: "eZEX-gas-valve"
+
     }
 
     // simulator metadata
@@ -37,12 +41,12 @@ metadata {
     }
 
     tiles(scale: 2) {
-        multiAttributeTile(name:"valve", type: "generic", width: 6, height: 4, canChangeIcon: true){
+        multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4, canChangeIcon: true){
             tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
-                attributeState "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#53a7c0", nextState:"closing"
-                attributeState "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#e86d13", nextState:"opening"
-                attributeState "opening", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#53a7c0", nextState:"closing"
-                attributeState "closing", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#e86d13", nextState:"opening"
+                attributeState "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC", nextState:"closing"
+                attributeState "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"opening"
+                attributeState "opening", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC", nextState:"closing"
+                attributeState "closing", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"opening"
             }
             tileAttribute ("powerSource", key: "SECONDARY_CONTROL") {
                 attributeState "powerSource", label:'Power Source: ${currentValue}'
@@ -57,8 +61,8 @@ metadata {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
-        main(["valve"])
-        details(["valve", "battery", "refresh"])
+        main(["contact"])
+        details(["contact", "battery", "refresh"])
     }
 }
 
@@ -66,8 +70,6 @@ private getCLUSTER_BASIC() { 0x0000 }
 private getBASIC_ATTR_POWER_SOURCE() { 0x0007 }
 private getCLUSTER_POWER() { 0x0001 }
 private getPOWER_ATTR_BATTERY_PERCENTAGE_REMAINING() { 0x0021 }
-private getTYPE_U8() { 0x20 }
-private getTYPE_ENUM8() { 0x30 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
@@ -82,6 +84,11 @@ def parse(String description) {
             else if(event.value == "off") {
                 event.value = "closed"
             }
+            sendEvent(event)
+            // we need a valve and a contact event every time
+            event.name = "valve"
+        } else if (event.name == "powerSource") {
+            event.value = event.value.toLowerCase()
         }
         sendEvent(event)
     }
@@ -90,16 +97,16 @@ def parse(String description) {
         if (descMap.clusterInt == CLUSTER_BASIC && descMap.attrInt == BASIC_ATTR_POWER_SOURCE){
             def value = descMap.value
             if (value == "01" || value == "02") {
-                sendEvent(name: "powerSource", value: "Mains")
+                sendEvent(name: "powerSource", value: "mains")
             }
             else if (value == "03") {
-                sendEvent(name: "powerSource", value: "Battery")
+                sendEvent(name: "powerSource", value: "battery")
             }
             else if (value == "04") {
-                sendEvent(name: "powerSource", value: "DC")
+                sendEvent(name: "powerSource", value: "dc")
             }
             else {
-                sendEvent(name: "powerSource", value: "Unknown")
+                sendEvent(name: "powerSource", value: "unknown")
             }
         }
         else if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
@@ -107,11 +114,31 @@ def parse(String description) {
             event.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
             sendEvent(event)
         }
+        else if (descMap.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
+            sendBatteryResult(description)
+        }
         else {
             log.warn "DID NOT PARSE MESSAGE for description : $description"
             log.debug descMap
         }
     }
+}
+
+def sendBatteryResult(description) {
+    def result = [:]
+    def descMap = zigbee.parseDescriptionAsMap(description)
+    //IAS Zone Cluster (0x0500) - Zone Status Attribute (0x0002) - BIT 3 (0x0008) : Low Battery 
+    def descValue = Integer.parseInt(descMap.value,16)
+    //normal: sendout 50%,low: sendout 5%,UI metadata will handle 5%->low, 50%->normal.
+    def value = descValue & 0x0008 ?5:50
+    log.debug "$value"
+
+    result.name = 'battery'
+    result.value = value
+    result.descriptionText = "${device.displayName} battery value is ${value}"
+    result.translatable = true
+
+    sendEvent(result)
 }
 
 def open() {
@@ -124,15 +151,30 @@ def close() {
 
 def refresh() {
     log.debug "refresh called"
-    zigbee.onOffRefresh() +
-    zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE) +
-    zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) +
-    zigbee.onOffConfig() +
-    zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, TYPE_U8, 600, 21600, 1) +
-    zigbee.configureReporting(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE, TYPE_ENUM8, 5, 21600, 1)
+    def cmds= []
+    cmds += zigbee.onOffRefresh()
+    cmds += zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE)
+    cmds += zigbee.onOffConfig()
+    cmds += zigbee.configureReporting(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE, DataType.ENUM8, 5, 21600, 1)
+    if (device.getDataValue("model") == "E253-KR0B0ZX-HA") {
+        cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+        cmds += zigbee.iasZoneConfig()
+    } else {
+        cmds += zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
+        cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 600, 21600, 1)
+    }
+    return cmds
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
     refresh()
+}
+
+def installed() {
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+def ping() {
+    zigbee.onOffRefresh()
 }

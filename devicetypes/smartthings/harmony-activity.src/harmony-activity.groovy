@@ -13,11 +13,15 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
+
 metadata {
         definition (name: "Harmony Activity", namespace: "smartthings", author: "Juan Risso") {
         capability "Switch"
         capability "Actuator"
 		capability "Refresh"
+		capability "Health Check"
 
         command "huboff"
         command "alloff"
@@ -32,7 +36,7 @@ metadata {
 	tiles {
 		standardTile("button", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label: 'Off', action: "switch.on", icon: "st.harmony.harmony-hub-icon", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'On', action: "switch.off", icon: "st.harmony.harmony-hub-icon", backgroundColor: "#79b821", nextState: "off"
+			state "on", label: 'On', action: "switch.off", icon: "st.harmony.harmony-hub-icon", backgroundColor: "#00A0DC", nextState: "off"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -49,6 +53,20 @@ metadata {
 		main "button"
 		details(["button", "refresh", "forceoff", "huboff", "alloff"])
 	}
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+}
+
+def installed() {
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 def parse(String description) {

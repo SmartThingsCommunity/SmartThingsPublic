@@ -1,3 +1,6 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonOutput
+
 /**
  *  Copyright 2015 SmartThings
  *
@@ -12,15 +15,15 @@
  *
  */
 metadata {
-	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
 		capability "Configuration"
 		capability "Sensor"
+		capability "Health Check"
 
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B", outClusters: "0x26,0x2B"
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B,0x85,0x84", outClusters: "0x26" // old style with numbered buttons
+		fingerprint mfr: "0086", prod: "0001", model:"0003"
 	}
 
 	simulator {
@@ -34,12 +37,13 @@ metadata {
 		status "button 4 held":  "command: 2001, payload: 8D"
 		status "wakeup":  "command: 8407, payload: "
 	}
-	tiles {
-		standardTile("button", "device.button", width: 2, height: 2) {
-			state "default", label: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
+			tileAttribute("device.button", key: "PRIMARY_CONTROL") {
+				attributeState "default", label: ' ', action: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
+			}
 		}
-		main "button"
-		details(["button"])
+		childDeviceTiles("outlets")
 	}
 }
 
@@ -52,7 +56,6 @@ def parse(String description) {
 		if(cmd) results += zwaveEvent(cmd)
 		if(!results) results = [ descriptionText: cmd, displayed: false ]
 	}
-	// log.debug("Parsed '$description' to $results")
 	return results
 }
 
@@ -67,9 +70,16 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 
 def buttonEvent(button, held) {
 	button = button as Integer
+	String childDni = "${device.deviceNetworkId}/${button}"
+	def child = childDevices.find{it.deviceNetworkId == childDni}
+	if (!child) {
+		log.error "Child device $childDni not found"
+	}
 	if (held) {
+		child?.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
 		createEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
+		child?.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
 		createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
@@ -109,15 +119,36 @@ def configure() {
 	return cmds
 }
 
-
 def installed() {
 	initialize()
+	createChildDevices()
 }
 
 def updated() {
 	initialize()
+	if (!childDevices) {
+		createChildDevices()
+	}
+	else if (device.label != state.oldLabel) {
+		childDevices.each {
+			def segs = it.deviceNetworkId.split("/")
+			def newLabel = "${device.displayName} button ${segs[-1]}"
+			it.setLabel(newLabel)
+		}
+		state.oldLabel = device.label
+	}
 }
 
 def initialize() {
 	sendEvent(name: "numberOfButtons", value: 4)
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
+}
+
+private void createChildDevices() {
+	state.oldLabel = device.label
+	for (i in 1..4) {
+		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", device.hubId,
+				[completedSetup: true, label: "${device.displayName} button ${i}",
+				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+	}
 }

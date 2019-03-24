@@ -16,7 +16,7 @@
  *  Date: 2013-03-07
  */
 metadata {
-	definition (name: "Z-Wave Virtual Momentary Contact Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Virtual Momentary Contact Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Refresh"
@@ -39,7 +39,7 @@ metadata {
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label: '${name}', action: "momentary.push", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
+			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
