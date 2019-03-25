@@ -78,12 +78,12 @@ tiles(scale: 2) {
 }
 
 def installed() {
-	initialize()
+	runIn(2, "initialize", [overwrite: true])
 }
 
 def refresh() {
 	def commands = []
-	 //get temperature value
+	//get temperature value
 	commands << secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01))
 	//get humidity value
 	commands << secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05))
@@ -102,11 +102,13 @@ def initialize() {
 	def cmd = []
 	//temperature and humidity are set for reporting every 60 min
 	cmd << secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 2, configurationValue: [60]))
-	return response(cmd << refresh())
+	cmd << refresh()
+
+	sendHubCommand(cmd.flatten(), 2000)
 }
 
 def configure() {
-	initialize()
+	runIn(2, "initialize", [overwrite: true])
 }
 
 def parse(String description) {
@@ -169,7 +171,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	
 	if(cmd.batteryLevel == 0xFF){
 		map.value = 1
-	}else {
+	} else {
 		map.value = cmd.batteryLevel
 	}
 
@@ -177,11 +179,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }	
 	
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo.zw.contains("s")) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	}else {
-		cmd.format()
-	}
+	[:]
 }
 
 def on() {
@@ -218,5 +216,9 @@ def ping() {
 }
 
 private secure(physicalgraph.zwave.Command cmd) {
-	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	if (zwaveInfo.zw.contains("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
 }
