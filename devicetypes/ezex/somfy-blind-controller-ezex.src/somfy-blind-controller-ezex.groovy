@@ -1,6 +1,6 @@
 /**
  *
- *	Copyright 2019 eZEX
+ *	Copyright 2019 SmartThings
  *
  *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *	in compliance with the License. You may obtain a copy of the License at:
@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition(name: "SOMFY Blind Controller/eZEX", namespace: "eZEX", author: "eZEX Corp", vid:"SmartThings-smartthings-Somfy_WindowShade", ocfDeviceType: "oic.d.blind") {
+    definition(name: "ZigBee Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
@@ -24,7 +24,7 @@ metadata {
 
         command "pause"
 
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", model: "E2B0-KR000Z0-HA" // SY-IoT201-BD
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", model: "E2B0-KR000Z0-HA", deviceJoinName: "SOMFY Blind Controller/eZEX", vid:"SmartThings-smartthings-Somfy_WindowShade" // SY-IoT201-BD
     }
 
 
