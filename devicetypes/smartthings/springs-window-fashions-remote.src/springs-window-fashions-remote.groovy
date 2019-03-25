@@ -82,7 +82,7 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-    createEvent(isStateChange: true, "$device.displayName: $cmd")
+    createEvent(isStateChange: true, dscriptionText: "$device.displayName: $cmd")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
