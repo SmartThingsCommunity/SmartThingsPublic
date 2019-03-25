@@ -22,7 +22,7 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-        /*
+		/*
 		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob" //EU
 		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob" //US
 		*/
