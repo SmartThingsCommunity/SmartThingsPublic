@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeon_Home_Energy_Meter") {
         capability "Energy Meter"
         capability "Power Meter"
         capability "Refresh"
@@ -105,5 +105,3 @@ def configure() {
            zigbee.simpleMeteringPowerConfig() +
            zigbee.electricMeasurementPowerConfig()
 }
-
-
