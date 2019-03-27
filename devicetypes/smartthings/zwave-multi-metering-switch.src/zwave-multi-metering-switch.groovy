@@ -143,11 +143,11 @@ private createMeterEventMap(cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
 	if(!childDevices) {
-    	if (zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")) {
-        	addChildSwitches(5)
-        } else {
+		if (zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")) {
+			addChildSwitches(5)
+		} else {
 			addChildSwitches(cmd.endPoints)
-    	}
+		}
 	}
 	response([
 			resetAll(),
