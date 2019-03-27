@@ -2752,7 +2752,7 @@ void loop()
         program_step = 1;
         run_program = false;
         if (program_off == "true") {
-          changeColor("0000000000", 99, false);
+          changeColor("0000000000", 0, false);
         } else if (program_off == "previous") {
           changeColor(pre_program != ""? pre_program : "xxxxxxxxxx", 8, false);
         } 
