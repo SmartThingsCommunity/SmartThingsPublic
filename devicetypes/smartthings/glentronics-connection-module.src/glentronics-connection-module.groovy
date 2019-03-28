@@ -17,7 +17,6 @@ metadata {
 		capability "Sensor"
 		capability "Water Sensor"
 		capability "Battery"
-		capability "Switch"
 		capability "Power Source"
 		capability "Health Check"
 
@@ -30,10 +29,6 @@ metadata {
 				attributeState("dry", icon: "st.alarm.water.dry", backgroundColor: "#ffffff")
 				attributeState("wet", icon: "st.alarm.water.wet", backgroundColor: "#00A0DC")
 			}
-		}
-		valueTile("switch", "device.switch", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
-			state "on", label: 'Pump ${name}', icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
-			state "off", label: 'Pump ${name}', icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 		}
 		valueTile("battery", "device.battery", inactiveLabel: true, decoration: "flat", width: 2, height: 2) {
 			state "battery", label: 'Backup battery: ${currentValue}%', unit: ""
@@ -64,7 +59,6 @@ def installed() {
 	//There's no possibility for initial poll, so to avoid empty fields, assuming everything is functioning correctly
 	sendEvent(name: "battery", value: 100, unit: "%")
 	sendEvent(name: "water", value: "dry")
-	sendEvent(name: "switch", value: "off")
 	sendEvent(name: "powerSource", value: "mains")
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
@@ -81,20 +75,15 @@ def getPowerEvent(event) {
 	} else if (event == 0x0B) {
 		createEvent(name: "battery", value: 1, unit: "%", descriptionText: "Backup battery critically low")
 	} else if (event == 0x0D) {
-		createEvent(name: "alarmState", value: 100, unit: "%", descriptionText: "Backup battery is fully charged")
+		createEvent(name: "battery", value: 100, unit: "%", descriptionText: "Backup battery is fully charged")
 	}
 }
 
 def getManufacturerSpecificEvent(cmd) {
 	if (cmd.event == 3) {
 		if (cmd.eventParameter[0] == 0) {
-			[
-					createEvent(name: "switch", value: "off", descriptionText: "Water pump turned off"),
-					createEvent(name: "water", value: "dry", descriptionText: "Water alarm has been cleared")
-			]
+			createEvent(name: "water", value: "dry", descriptionText: "Water alarm has been cleared")
 		} else if (cmd.eventParameter[0] == 2) {
-			createEvent(name: "switch", value: "on", descriptionText: "Backup pump was turned on")
-		} else if (cmd.eventParameter[0] == 3) {
 			createEvent(name: "water", value: "wet", descriptionText: "High water alarm")
 		}
 	}
@@ -116,12 +105,4 @@ def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.warn "Unhandled command: ${cmd}"
 	createEvent(descriptionText: "Unhandled event came in")
-}
-
-def on() {
-	log.debug "Pump cannot be turned on manually"
-}
-
-def off() {
-	log.debug "Pump cannot be turned off manually"
 }
