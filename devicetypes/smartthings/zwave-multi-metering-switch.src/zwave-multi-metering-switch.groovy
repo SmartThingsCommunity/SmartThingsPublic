@@ -143,6 +143,7 @@ private createMeterEventMap(cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
 	if(!childDevices) {
+		// Check it's Zooz Zen Strip v2. and add child device without USB ports.
 		if (zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")) {
 			addChildSwitches(5)
 		} else {
