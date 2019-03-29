@@ -330,20 +330,34 @@ def handleTemperature(descMap) {
 		map.value = getTemperature(intVal)
 		map.unit = getTemperatureScale()
 
-		// Handle cases where we need to update the temperature alarm state given certain temperatures
-		// Account for a f/w bug where the freeze alarm doesn't trigger at 0C
-		if (map.value < (map.unit == "C" ? 0 : 32)) {
-			log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
-			sendEvent(name: "temperatureAlarm", value: "freeze")
-		}
-		// Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C to match thermostat display
-		else if (map.value >= (map.unit == "C" ? 50 : 122)) {
-			log.debug "EARLY HEAT ALARM @  $map.value $map.unit (raw $intVal)"
-			sendEvent(name: "temperatureAlarm", value: "heat")
-		} else if (device.currentValue("temperatureAlarm") != "cleared") {
-			log.debug "CLEAR ALARM @ $map.value $map.unit (raw $intVal)"
-			sendEvent(name: "temperatureAlarm", value: "cleared")
-		}
+		def lastTemp = device.currentValue("temperature")
+		def lastAlarm = device.currentValue("temperatureAlarm")
+		if (lastAlarm != "cleared") {
+			if (lastTemp && device.currentState("temperature").unit == map.unit) {
+				// Check to see if we are coming out of our alarm state and only clear then
+				// NOTE: A thermostat might send us an alarm *before* it has completed sending us previous measurements,
+				// so it might appear that the alarm is no longer valid. We need to check the trajectory of the temperature
+				// to verify this.
+				if ((lastAlarm == "heat" &&
+						map.value < (map.unit == "C" ? 50 : 122) &&
+						lastTemp > map.value) ||
+					(lastAlarm == "freeze" &&
+						map.value > (map.unit == "C" ? 0 : 32) &&
+						lastTemp < map.value)) {
+							sendEvent(name: "temperatureAlarm", value: "cleared")
+				}
+			}
+		} /*else {
+			// Handle cases where we need to update the temperature alarm state given certain temperatures
+
+			if (map.value <= (map.unit == "C" ? 0 : 32)) {
+				log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
+				sendEvent(name: "temperatureAlarm", value: "freeze")
+			} else if (map.value >= (map.unit == "C" ? 50 : 122)) {
+				log.debug "EARLY HEAT ALARM @  $map.value $map.unit (raw $intVal)"
+				sendEvent(name: "temperatureAlarm", value: "heat")
+			}
+		}*/
 	}
 
 	map
@@ -538,7 +552,7 @@ def configure() {
 	log.debug "binding to Thermostat cluster"
 	requests += zigbee.addBinding(THERMOSTAT_CLUSTER)
 	// Configure Thermostat Cluster
-	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP, DataType.INT16, 10, 60, 50)
+	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP, DataType.INT16, 1, 60, 50)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, 1, 0, 50)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE, DataType.UINT8, 1, 900, 1)
 
