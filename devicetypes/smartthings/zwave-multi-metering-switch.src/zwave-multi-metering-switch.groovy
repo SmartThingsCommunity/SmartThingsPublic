@@ -28,7 +28,7 @@ metadata {
 		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
 		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Nano Switch 1"
 		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz ZEN Power Strip"
-		fingerprint manufacturer: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Double Plug"
+		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Double Plug"
 	}
 
 	tiles(scale: 2){
@@ -147,7 +147,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 	if(!childDevices) {
 		if (isZoozZenStripV2()) {
 			addChildSwitches(5)
-		} else if (isZoozDoublePlug()){
+		} else if (isZoozDoublePlug()) {
 			addChildSwitches(2)
 
 		} else {
