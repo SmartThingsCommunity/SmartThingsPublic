@@ -28,6 +28,7 @@ metadata {
 		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
 		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Nano Switch 1"
 		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz ZEN Power Strip"
+		fingerprint manufacturer: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Double Plug"
 	}
 
 	tiles(scale: 2){
@@ -141,11 +142,14 @@ private createMeterEventMap(cmd) {
 	eventMap
 }
 
+// cmd.endPoints includes the USB ports but we don't want to expose them as child devices since they cannot be controlled so hardcode to just include the outlets
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
 	if(!childDevices) {
-		// Check it's Zooz Zen Strip v2. and add child device without USB ports.
-		if (zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")) {
+		if (isZoozZenStripV2()) {
 			addChildSwitches(5)
+		} else if (isZoozDoublePlug()){
+			addChildSwitches(2)
+
 		} else {
 			addChildSwitches(cmd.endPoints)
 		}
@@ -154,6 +158,20 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 			resetAll(),
 			refreshAll()
 	])
+}
+def isZoozZenStripV2() {
+	if (zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")) {
+		
+		return true
+	}
+	return false
+}
+def isZoozDoublePlug() {
+	if (zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A003")) {
+		
+		return true
+	}
+	return false
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, ep = null) {
