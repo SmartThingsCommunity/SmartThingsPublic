@@ -149,14 +149,13 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 			addChildSwitches(5)
 		} else if (isZoozDoublePlug()) {
 			addChildSwitches(2)
-
 		} else {
 			addChildSwitches(cmd.endPoints)
 		}
 	}
 	response([
-			resetAll(),
-			refreshAll()
+		resetAll(),
+		refreshAll()
 	])
 }
 def isZoozZenStripV2() {
