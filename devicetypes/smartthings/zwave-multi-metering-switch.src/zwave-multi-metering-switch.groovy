@@ -160,18 +160,10 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 	])
 }
 def isZoozZenStripV2() {
-	if (zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")) {
-		
-		return true
-	}
-	return false
+	zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")
 }
 def isZoozDoublePlug() {
-	if (zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A003")) {
-		
-		return true
-	}
-	return false
+	zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A003")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, ep = null) {
