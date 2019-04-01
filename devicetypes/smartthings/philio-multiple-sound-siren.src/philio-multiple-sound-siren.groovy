@@ -159,6 +159,19 @@ def updated() {
 	response(commands)
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x70: 1,  // Configuration
+		0x85: 2,  // Association
+		0x98: 1,  // Security 0
+	]
+}
+
+
 def parse(String description) {
 	log.debug "parse($description)"
 	def result = null
@@ -175,7 +188,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [0x98: 1, 0x20: 1, 0x70: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -185,7 +198,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x85: 2, 0x70: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
