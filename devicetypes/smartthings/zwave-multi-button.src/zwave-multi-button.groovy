@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 /**
  *  Z-Wave Multi Button
  *
@@ -25,6 +27,10 @@ metadata {
 		/*
 		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob" //EU
 		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob" //US
+		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //US
+		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //EU
+		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //US
+		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //EU
 		*/
 	}
 
@@ -56,7 +62,11 @@ def updated() {
 def initialize() {
 	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
-	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if(isUntrackedAeotec()) {
+		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
+	} else {
+		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	}
 	if(!childDevices) {
 		addChildButtons(numberOfButtons)
 	}
@@ -76,8 +86,15 @@ def initialize() {
 
 def configure() {
 	def cmds = []
-	for(def parameter : 21..26) {
-		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: parameter, scaledConfigurationValue: 15)) //Makes Fibaro KeyFob buttons send all kind of supported events
+	if(isAeotecKeyFob()) {
+		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: 250, scaledConfigurationValue: 1))
+		//makes Aeotec KeyFob communicate with primary controller
+	}
+	if(isFibaro()) {
+		for (def parameter : 21..26) {
+			cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: parameter, scaledConfigurationValue: 15))
+			//Makes Fibaro KeyFob buttons send all kind of supported events
+		}
 	}
 	cmds
 }
@@ -87,7 +104,7 @@ def parse(String description) {
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText:description, isStateChange:true)
 	} else {
-		def cmd = zwave.parse(description)
+		def cmd = zwave.parse(description, [0x84: 1])
 		if (cmd) {
 			result += zwaveEvent(cmd)
 		}
@@ -97,7 +114,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand()
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x84: 1])
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	} else {
@@ -186,5 +203,19 @@ private getEventsMap() {[
 ]}
 
 private getProdNumberOfButtons() {[
-		"1001" : 6
+		"1001" : 6,
+		"0102" : 4,
+		"0002" : 4
 ]}
+
+private isFibaro() {
+	zwaveInfo.mfr?.contains("010F")
+}
+
+private isUntrackedAeotec() {
+	zwaveInfo.mfr?.contains("0371") && zwaveInfo.model?.contains("0003")
+}
+
+private isAeotecKeyFob() {
+	zwaveInfo.mfr?.contains("0086")
+}

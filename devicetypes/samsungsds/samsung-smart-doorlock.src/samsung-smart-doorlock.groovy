@@ -366,7 +366,6 @@ private def parseCommandResponse(String description) {
 				responseMap = [ name: "tamper", value: "detected", descriptionText: "Door forced open under door locked condition", isStateChange: true ]
 				break
 			case 7: // Door opened for over 30 seconds
-				responseMap = [ name: "lock", value: "autolockError", descriptionText: "Door remains opened for over 30 seconds" ]
 				break
 			case 8: // Door opened with threat (code + 112)
 				responseMap = [ name: "tamper", value: "detected", descriptionText: "Opened door under threatening condition.", isStateChange: true ]
