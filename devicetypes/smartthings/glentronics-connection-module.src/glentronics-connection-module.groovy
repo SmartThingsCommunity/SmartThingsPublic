@@ -36,8 +36,8 @@ metadata {
 		valueTile("powerSource", "device.powerSource", width: 2, height: 1, inactiveLabel: true, decoration: "flat") {
 			state "powerSource", label: 'Power Source: ${currentValue}', backgroundColor: "#ffffff"
 		}
-		main "switch"
-		details(["water", "switch", "battery", "powerSource"])
+		main "water"
+		details(["water", "battery", "powerSource"])
 	}
 }
 
