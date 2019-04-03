@@ -215,7 +215,7 @@ def poll() {
             log.debug zipCode.substring(4)
             pollUsingPwsId(zipCode.substring(4).toUpperCase())
         } else {
-            pollUsingZipCode(zipCode.toUpperCase())
+            pollUsingZipCode(zipCode?.toUpperCase())
         }
     }
 }
