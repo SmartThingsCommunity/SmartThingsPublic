@@ -24,12 +24,14 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
+		/*
 		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob" //EU
 		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob" //US
 		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //US
 		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //EU
 		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //US
 		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //EU
+		*/
 	}
 
 	tiles(scale: 2) {
