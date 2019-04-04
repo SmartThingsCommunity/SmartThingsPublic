@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -33,7 +33,7 @@ metadata {
 		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Portable Smart Motion Sensor"
 		fingerprint mfr: "0214", prod: "0003", model: "0002", deviceJoinName: "BeSense Motion Detector"
 		fingerprint mfr: "027A", prod: "0001", model: "0005", deviceJoinName: "Zooz Outdoor Motion Sensor"
-		fingerprint mfr: "027A", prod: "0301", model: "0012", deviceJoinName: "Zooz Motion Sensor"
+		fingerprint mfr: "027A", prod: "0301", model: "0012", deviceJoinName: "Zooz Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2"
 	}
 
 	simulator {

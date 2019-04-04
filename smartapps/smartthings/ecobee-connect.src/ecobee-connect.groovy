@@ -103,7 +103,7 @@ def authPage() {
 	} else {
 		return dynamicPage(name: "auth", title: "Log In", nextPage:"deviceList", install: false, uninstall:uninstallAllowed) {
 			section(){
-				paragraph "Tap Next to continue to setup your ecobee thermostats."
+				paragraph "Tap Next to continue to set up your ecobee thermostats."
 				href url:redirectUrl, style:"embedded", state:"complete", title:"ecobee", description:description
 			}
 		}
