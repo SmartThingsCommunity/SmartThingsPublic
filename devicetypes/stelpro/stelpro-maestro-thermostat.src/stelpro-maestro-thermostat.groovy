@@ -338,12 +338,12 @@ def handleTemperature(descMap) {
 				// NOTE: A thermostat might send us an alarm *before* it has completed sending us previous measurements,
 				// so it might appear that the alarm is no longer valid. We need to check the trajectory of the temperature
 				// to verify this.
-				if ((lastAlarm == "heat" &&
-						map.value < (map.unit == "C" ? 50 : 122) &&
-						lastTemp > map.value) ||
-					(lastAlarm == "freeze" &&
+				if ((lastAlarm == "freeze" &&
 						map.value > (map.unit == "C" ? 0 : 32) &&
-						lastTemp < map.value)) {
+						lastTemp < map.value) ||
+					(lastAlarm == "heat" &&
+						map.value < (map.unit == "C" ? 50 : 122) &&
+						lastTemp > map.value)) {
 							sendEvent(name: "temperatureAlarm", value: "cleared")
 				}
 			}
@@ -552,7 +552,7 @@ def configure() {
 	log.debug "binding to Thermostat cluster"
 	requests += zigbee.addBinding(THERMOSTAT_CLUSTER)
 	// Configure Thermostat Cluster
-	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP, DataType.INT16, 1, 60, 50)
+	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP, DataType.INT16, 10, 60, 50)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, 1, 0, 50)
 	requests += zigbee.configureReporting(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE, DataType.UINT8, 1, 900, 1)
 
