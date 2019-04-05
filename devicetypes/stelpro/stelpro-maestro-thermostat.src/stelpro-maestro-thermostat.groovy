@@ -309,6 +309,9 @@ def parse(String description) {
 	return result
 }
 
+private getFREEZE_ALARM_TEMP() { getTemperatureScale() == "C" ? 0 : 32 }
+private getHEAT_ALARM_TEMP() { getTemperatureScale() == "C" ? 50 : 122 }
+
 def handleTemperature(descMap) {
 	def map = [:]
 	def intVal = Integer.parseInt(descMap.value, 16)
@@ -333,18 +336,26 @@ def handleTemperature(descMap) {
 		def lastTemp = device.currentValue("temperature")
 		def lastAlarm = device.currentValue("temperatureAlarm")
 		if (lastAlarm != "cleared") {
+			// Should we? lastTemp = convertTempIfNeeded
+			def cleared = false
 			if (lastTemp && device.currentState("temperature").unit == map.unit) {
 				// Check to see if we are coming out of our alarm state and only clear then
 				// NOTE: A thermostat might send us an alarm *before* it has completed sending us previous measurements,
 				// so it might appear that the alarm is no longer valid. We need to check the trajectory of the temperature
 				// to verify this.
 				if ((lastAlarm == "freeze" &&
-						map.value > (map.unit == "C" ? 0 : 32) &&
+						map.value > FREEZE_ALARM_TEMP &&
 						lastTemp < map.value) ||
 					(lastAlarm == "heat" &&
-						map.value < (map.unit == "C" ? 50 : 122) &&
+						map.value < HEAT_ALARM_TEMP &&
 						lastTemp > map.value)) {
 							sendEvent(name: "temperatureAlarm", value: "cleared")
+							cleared = true
+				}
+
+				if (!cleared) {
+					log.debug "Hiding stale temperature ${map.value} because of ${lastAlarm} alarm"
+					map.value = (lastAlarm == "freeze") ? FREEZE_ALARM_TEMP : HEAT_ALARM_TEMP
 				}
 			}
 		} /*else {
