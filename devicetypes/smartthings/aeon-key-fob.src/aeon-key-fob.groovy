@@ -13,7 +13,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Key Fob", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
@@ -23,7 +23,8 @@ metadata {
 		capability "Health Check"
 
 		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x80,0x84,0x85"
-		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeon Panic Button"
+		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec Key Fob"
+		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Panic Button"
 	}
 
 	simulator {
@@ -39,7 +40,7 @@ metadata {
 	}
 	tiles {
 
-		multiAttributeTile(name: "rich-control") {
+		multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.button", key: "PRIMARY_CONTROL") {
 				attributeState "default", label: ' ', action: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
 			}
@@ -80,16 +81,41 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 
 def buttonEvent(button, held) {
 	button = button as Integer
-	String childDni = "${device.deviceNetworkId}/${button}"
-	def child = childDevices.find{it.deviceNetworkId == childDni}
-	if (!child) {
-		log.error "Child device $childDni not found"
+	def child
+	Integer buttons
+
+	if (device.currentState("numberOfButtons")) {
+		buttons = (device.currentState("numberOfButtons").value).toBigInteger()
 	}
+	else {
+		def zwMap = getZwaveInfo()
+		buttons = 4 // Default for Key Fob
+
+		// Only one button for Aeon Panic Button
+		if (zwMap && zwMap.mfr == "0086" && zwMap.prod == "0001" && zwMap.model == "0026") {
+			buttons = 1
+		}
+		sendEvent(name: "numberOfButtons", value: buttons)
+	}
+
+	if(buttons > 1)
+	{
+		String childDni = "${device.deviceNetworkId}/${button}"
+		child = childDevices.find{it.deviceNetworkId == childDni}
+		if (!child) {
+			log.error "Child device $childDni not found"
+		}
+	}
+
 	if (held) {
-		child?.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
+		if(buttons > 1) {
+			child?.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
+		}
 		createEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
-		child?.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
+		if(buttons > 1) {
+			child?.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
+		}
 		createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
@@ -129,41 +155,54 @@ def configure() {
 
 def installed() {
 	initialize()
+	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
+	if(buttons > 1) {
+		createChildDevices()
+	}
 }
 
 def updated() {
 	initialize()
-	if (!childDevices) {
-		createChildDevices()
-	}
-	else if (device.label != state.oldLabel) {
-		childDevices.each {
-			def segs = it.deviceNetworkId.split("/")
-			def newLabel = "${device.displayName} button ${segs[-1]}"
-			it.setLabel(newLabel)
+	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
+	if(buttons > 1)
+	{
+		if (!childDevices) {
+			createChildDevices()
 		}
-		state.oldLabel = device.label
+		else if (device.label != state.oldLabel) {
+			childDevices.each {
+				def segs = it.deviceNetworkId.split("/")
+				def newLabel = "${device.displayName} button ${segs[-1]}"
+				it.setLabel(newLabel)
+			}
+			state.oldLabel = device.label
+		}
 	}
 }
 
 def initialize() {
-	// Device only goes OFFLINE when Hub is off
-	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 
-	def zwMap = getZwaveInfo()
-	def buttons = 4 // Default for Key Fob
+	def results = []
+	def buttons = 1
 
-	// Only one button for Aeon Panic Button
-	if (zwMap && zwMap.mfr == "0086" && zwMap.prod == "0001" && zwMap.model == "0026") {
-		buttons = 1
+	if (zwaveInfo && zwaveInfo.mfr == "0086" && zwaveInfo.prod == "0001" && zwaveInfo.model == "0026") {
+		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+		buttons = 1 // Only one button for Aeon Panic Button
+		results << response(zwave.batteryV1.batteryGet().format())
+	} else {
+		// Device only goes OFFLINE when Hub is off
+		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
+		buttons = 4 // Default for Key Fob
 	}
-	createChildDevices(buttons)
+	
 	sendEvent(name: "numberOfButtons", value: buttons)
+	results
 }
 
-private void createChildDevices(def num) {
+private void createChildDevices() {
 	state.oldLabel = device.label
-	for (i in num) {
+	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
+	for (i in 1..buttons) {
 		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
 				[completedSetup: true, label: "${device.displayName} button ${i}",
 				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])

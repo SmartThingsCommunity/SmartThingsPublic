@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Device", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Device", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Switch"
 		capability "Switch Level"
@@ -67,8 +67,10 @@ def parse(String description) {
 	return result
 }
 
-def updated() {
-	response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+def installed() {
+	if (zwaveInfo.cc?.contains("84")) {
+		response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
@@ -129,7 +131,7 @@ def refresh() {
 	command(zwave.basicV1.basicGet())
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	commands([zwave.basicV1.basicSet(value: value as Integer), zwave.basicV1.basicGet()], 4000)
 }
 
