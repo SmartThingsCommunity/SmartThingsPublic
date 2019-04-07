@@ -14,19 +14,11 @@
  *
  */
 metadata {
-<<<<<<< HEAD
-	definition (name: "Switch Child Device", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-switch") {
-		capability "Switch"
-		capability "Actuator"
-		capability "Sensor"
-		capability "Refresh"
-=======
 	definition (name: "Switch Child Device", namespace: "erocm123", author: "Eric Maycock", vid: "generic-switch") {
 		capability "Switch"
 		capability "Actuator"
 		capability "Sensor"
         capability "Refresh"
->>>>>>> 3935a51f0134b08cd92c380fbff2569e14b09961
 	}
 
 	tiles {
@@ -38,15 +30,9 @@ metadata {
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 		}
-<<<<<<< HEAD
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-=======
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		    state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
->>>>>>> 3935a51f0134b08cd92c380fbff2569e14b09961
 	}
 }
 

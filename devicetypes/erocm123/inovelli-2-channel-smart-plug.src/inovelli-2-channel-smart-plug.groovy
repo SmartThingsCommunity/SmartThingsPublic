@@ -19,11 +19,7 @@
  *
  */
 metadata {
-<<<<<<< HEAD
-	definition(name: "Inovelli 2-Channel Smart Plug", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-switch") {
-=======
 	definition(name: "Inovelli 2-Channel Smart Plug", namespace: "erocm123", author: "Eric Maycock", vid: "generic-switch") {
->>>>>>> 3935a51f0134b08cd92c380fbff2569e14b09961
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"
@@ -31,20 +27,12 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-<<<<<<< HEAD
-		fingerprint manufacturer: "015D", prod: "0221", model: "251C", deviceJoinName: "Show Home 2-Channel Smart Plug"
-=======
 		fingerprint manufacturer: "015D", prod: "0221", model: "251C", deviceJoinName: "Inovelli 2-Channel Smart Plug"
->>>>>>> 3935a51f0134b08cd92c380fbff2569e14b09961
 		fingerprint manufacturer: "0312", prod: "0221", model: "251C", deviceJoinName: "Inovelli 2-Channel Smart Plug"
 		fingerprint manufacturer: "0312", prod: "B221", model: "251C", deviceJoinName: "Inovelli 2-Channel Smart Plug"
 		fingerprint manufacturer: "0312", prod: "0221", model: "611C", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
 		fingerprint manufacturer: "015D", prod: "0221", model: "611C", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
 		fingerprint manufacturer: "015D", prod: "6100", model: "6100", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
-<<<<<<< HEAD
-		fingerprint manufacturer: "0312", prod: "6100", model: "6100", deviceJoinName: "Inovelli 2-Channel Outdoor Smart Plug"
-=======
->>>>>>> 3935a51f0134b08cd92c380fbff2569e14b09961
 		fingerprint manufacturer: "015D", prod: "2500", model: "2500", deviceJoinName: "Inovelli 2-Channel Smart Plug w/Scene"
 	}
 	simulator {}
@@ -94,11 +82,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 			def allOff = true
 			childDevices.each {
 				n ->
-<<<<<<< HEAD
-					if (n.currentState("switch").value != "off") allOff = false
-=======
 					if (n.deviceNetworkId != "$device.deviceNetworkId-ep$ep" && n.currentState("switch").value != "off") allOff = false
->>>>>>> 3935a51f0134b08cd92c380fbff2569e14b09961
 			}
 			if (allOff) {
 				event = [createEvent([name: "switch", value: "off"])]
