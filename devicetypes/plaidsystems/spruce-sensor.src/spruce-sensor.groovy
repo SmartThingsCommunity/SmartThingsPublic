@@ -307,8 +307,8 @@ def setConfig(){
 }
 
 def installed(){
-	//check every 3 hours
-    sendEvent(name: "checkInterval", value: 3 * 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	//check every 62 minutes
+    sendEvent(name: "checkInterval", value: 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 //when device preferences are changed
@@ -321,8 +321,10 @@ def updated(){
             sendEvent(name: 'configuration',value: 0, descriptionText: "Settings changed and will update at next report. Measure interval set to ${interval} mins")
     	}
     }
-    //check every 3 hours
-    sendEvent(name: "checkInterval", value: 3 * 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    //check every 62mins or interval + 120s
+    def reportingInterval  = interval * 60 + 2 * 60
+    if (reportingInterval < 3720) reportingInterval = 3720
+    sendEvent(name: "checkInterval", value: reportingInterval, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 //poll
