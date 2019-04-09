@@ -76,6 +76,20 @@ def updated(){
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x63: 1,  // User Code
+		0x71: 3,  // Notification
+		0x72: 2,  // Manufacturer Specific
+		0x80: 1,  // Battery
+		0x85: 2,  // Association
+		0x98: 1   // Security 0
+	]
+}
+
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
@@ -91,7 +105,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [ 0x98: 1, 0x72: 2 ])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -101,7 +115,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x71: 3, 0x80: 1, 0x85: 2, 0x63: 1, 0x98: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
