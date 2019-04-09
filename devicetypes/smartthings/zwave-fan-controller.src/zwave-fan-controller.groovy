@@ -110,7 +110,9 @@ def fanEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
-	result << createEvent(name: "fanSpeed", value: Math.round(cmd.value/33))
+	def fan_level = Math.ceil(cmd.value/33) as int
+//	if (cmd.value < 33 && cmd.value >= 1) fan_level = 1 //sometimes we get "1" when the device is on low
+	result << createEvent(name: "fanSpeed", value: fan_level)
 	return result
 }
 
