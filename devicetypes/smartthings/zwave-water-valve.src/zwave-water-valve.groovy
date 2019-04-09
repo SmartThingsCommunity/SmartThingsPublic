@@ -16,7 +16,6 @@ metadata {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Valve"
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 
@@ -124,10 +123,6 @@ def close() {
 		zwave.basicV1.basicSet(value: 0x00).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format()
 	], 10000) //wait for a water valve to be completely closed
-}
-
-def poll() {
-	zwave.switchBinaryV1.switchBinaryGet().format()
 }
 
 /**
