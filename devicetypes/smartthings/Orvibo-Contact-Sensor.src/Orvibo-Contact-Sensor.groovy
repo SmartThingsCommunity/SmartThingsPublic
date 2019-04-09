@@ -131,7 +131,7 @@ def configure() {
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	//The electricity attribute is reported without bind and reporting CFG. The TI plan reports the power once in about 10 minutes; the NXP plan reports the electricity once in 20 minutes
 	if (getDataValue("manufacturer") == "Aurora") {
-		cmds = zigbee.iasZoneConfig(30, 60 * 5) + zigbee.batteryConfig()
+		cmds = zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) + zigbee.batteryConfig()
 	}
 	cmds += refresh()
 	cmds
