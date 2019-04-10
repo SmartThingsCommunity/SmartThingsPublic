@@ -35,75 +35,87 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		command "switchMode"
-		command "lowerHeatingSetpoint"
+		/*command "lowerHeatingSetpoint"
 		command "raiseHeatingSetpoint"
 		command "lowerCoolSetpoint"
-		command "raiseCoolSetpoint"
+		command "raiseCoolSetpoint"*/
 
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019",  manufacturer: "LUX", model: "KONOZ", deviceJoinName: "LUX KONOz Thermostat"
 	}
 
 	tiles {
-		multiAttributeTile(name:"temperature", type:"generic", width:3, height:2, canChangeIcon: true) {
+		multiAttributeTile(name:"thermostatMulti", type:"thermostat", width:3, height:2, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
 				attributeState("temperature", label:'${currentValue}°', icon: "st.alarm.temperature.normal",
-						backgroundColors:[
-								// Celsius
-								[value: 0, color: "#153591"],
-								[value: 7, color: "#1e9cbb"],
-								[value: 15, color: "#90d2a7"],
-								[value: 23, color: "#44b621"],
-								[value: 28, color: "#f1d801"],
-								[value: 35, color: "#d04e00"],
-								[value: 37, color: "#bc2323"],
-								// Fahrenheit
-								[value: 40, color: "#153591"],
-								[value: 44, color: "#1e9cbb"],
-								[value: 59, color: "#90d2a7"],
-								[value: 74, color: "#44b621"],
-								[value: 84, color: "#f1d801"],
-								[value: 95, color: "#d04e00"],
-								[value: 96, color: "#bc2323"]
-						]
+					backgroundColors: [
+						// Celsius
+						[value: 0, color: "#153591"],
+						[value: 7, color: "#1e9cbb"],
+						[value: 15, color: "#90d2a7"],
+						[value: 23, color: "#44b621"],
+						[value: 28, color: "#f1d801"],
+						[value: 35, color: "#d04e00"],
+						[value: 37, color: "#bc2323"],
+						// Fahrenheit
+						[value: 40, color: "#153591"],
+						[value: 44, color: "#1e9cbb"],
+						[value: 59, color: "#90d2a7"],
+						[value: 74, color: "#44b621"],
+						[value: 84, color: "#f1d801"],
+						[value: 95, color: "#d04e00"],
+						[value: 96, color: "#bc2323"]
+					]
 				)
 			}
+			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+				attributeState("idle", backgroundColor: "#cccccc")
+				attributeState("heating", backgroundColor: "#E86D13")
+				attributeState("cooling", backgroundColor: "#00A0DC")
+			}
+			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
+				attributeState("off", action: "setThermostatMode", label: "Off", icon: "st.thermostat.heating-cooling-off")
+				attributeState("cool", action: "setThermostatMode", label: "Cool", icon: "st.thermostat.cool")
+				attributeState("heat", action: "setThermostatMode", label: "Heat", icon: "st.thermostat.heat")
+				attributeState("auto", action: "setThermostatMode", label: "Auto", icon: "st.tesla.tesla-hvac")
+				attributeState("emergency heat", action:"setThermostatMode", label: "Emergency heat", icon: "st.thermostat.emergency-heat")
+			}
+			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+				attributeState("default", label: '${currentValue}', unit: "°", defaultState: true)
+			}
+			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+				attributeState("default", label: '${currentValue}', unit: "°", defaultState: true)
+			}
 		}
-		standardTile("thermostatMode", "device.thermostatMode", width:2, height:2, inactiveLabel: false, decoration: "flat") {
-			state "off", action:"switchMode", nextState: "updating", icon: "st.thermostat.heating-cooling-off"
-			state "heat", action:"switchMode",  nextState: "updating", icon: "st.thermostat.heat"
-			state "cool", action:"switchMode",  nextState: "updating", icon: "st.thermostat.cool"
-			state "auto", action:"switchMode",  nextState: "updating", icon: "st.thermostat.auto"
-			state "emergency heat", action:"switchMode", nextState: "updating", icon: "st.thermostat.emergency-heat"
-			state "updating", label:"Updating..."
+		controlTile("thermostatMode", "device.thermostatMode", "enum", width: 2 , height: 2, supportedStates: "device.supportedThermostatModes") {
+			state("off", action: "setThermostatMode", label: 'Off', icon: "st.thermostat.heating-cooling-off")
+			state("cool", action: "setThermostatMode", label: 'Cool', icon: "st.thermostat.cool")
+			state("heat", action: "setThermostatMode", label: 'Heat', icon: "st.thermostat.heat")
+			state("auto", action: "setThermostatMode", label: 'Auto', icon: "st.tesla.tesla-hvac")
+			state("emergency heat", action:"setThermostatMode", label: 'Emergency heat', icon: "st.thermostat.emergency-heat")
 		}
-		standardTile("thermostatFanMode", "device.thermostatFanMode", width:2, height:2, inactiveLabel: false, decoration: "flat") {
-			state "auto", action:"thermostatFanMode.fanOn", nextState:"...", icon: "st.thermostat.fan-auto"
-			state "on", action:"thermostatFanMode.fanAuto", nextState:"...", icon: "st.thermostat.fan-on"
-			state "...", label: "Updating...", nextState:"...", backgroundColor:"#ffffff"
+		controlTile("heatingSetpoint", "device.heatingSetpoint", "slider",
+				sliderType: "HEATING",
+				debouncePeriod: 1500,
+				range: "device.heatingSetpointRange",
+				width: 2, height: 2)
+				{
+					state "default", action:"setHeatingSetpoint", label:'${currentValue}', backgroundColor: "#E86D13"
+				}
+		controlTile("coolingSetpoint", "device.coolingSetpoint", "slider",
+				sliderType: "COOLING",
+				debouncePeriod: 1500,
+				range: "device.coolingSetpointRange",
+				width: 2, height: 2)
+				{
+					state "default", action:"setCoolingSetpoint", label:'${currentValue}', backgroundColor: "#00A0DC"
+				}
+		controlTile("thermostatFanMode", "device.thermostatFanMode", "enum", width: 2 , height: 2, supportedStates: "device.supportedThermostatFanModes") {
+			state "auto", action: "setThermostatFanMode", label: 'Auto', icon: "st.thermostat.fan-auto"
+			state "on",	action: "setThermostatFanMode", label: 'On', icon: "st.thermostat.fan-on"
+			//state "circulate", action: "setThermostatFanMode", label: 'Circulate', icon: "st.thermostat.fan-circulate"
+			//state "off", action: "setThermostatFanMode", label: 'Off', icon: "st.thermostat.fan-off"
 		}
-		standardTile("lowerHeatingSetpoint", "device.heatingSetpoint", width:2, height:1, inactiveLabel: false, decoration: "flat") {
-			state "heatingSetpoint", action:"lowerHeatingSetpoint", icon:"st.thermostat.thermostat-left"
-		}
-		valueTile("heatingSetpoint", "device.heatingSetpoint", width:2, height:1, inactiveLabel: false, decoration: "flat") {
-			state "heatingSetpoint", label:'${currentValue}° heat', backgroundColor:"#ffffff"
-		}
-		standardTile("raiseHeatingSetpoint", "device.heatingSetpoint", width:2, height:1, inactiveLabel: false, decoration: "flat") {
-			state "heatingSetpoint", action:"raiseHeatingSetpoint", icon:"st.thermostat.thermostat-right"
-		}
-		standardTile("lowerCoolSetpoint", "device.coolingSetpoint", width:2, height:1, inactiveLabel: false, decoration: "flat") {
-			state "coolingSetpoint", action:"lowerCoolSetpoint", icon:"st.thermostat.thermostat-left"
-		}
-		valueTile("coolingSetpoint", "device.coolingSetpoint", width:2, height:1, inactiveLabel: false, decoration: "flat") {
-			state "coolingSetpoint", label:'${currentValue}° cool', backgroundColor:"#ffffff"
-		}
-		standardTile("raiseCoolSetpoint", "device.heatingSetpoint", width:2, height:1, inactiveLabel: false, decoration: "flat") {
-			state "heatingSetpoint", action:"raiseCoolSetpoint", icon:"st.thermostat.thermostat-right"
-		}
-		standardTile("thermostatOperatingState", "device.thermostatOperatingState", width: 2, height:1, decoration: "flat") {
-			state "thermostatOperatingState", label:'${currentValue}', backgroundColor:"#ffffff"
-		}
-		standardTile("refresh", "device.thermostatMode", width:2, height:1, inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.thermostatMode", width: 2, height: 1, inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		valueTile("powerSource", "device.powerSource", width: 2, heigh: 1, inactiveLabel: true, decoration: "flat") {
@@ -112,10 +124,8 @@ metadata {
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		main "temperature"
-		details(["temperature", "lowerHeatingSetpoint", "heatingSetpoint", "raiseHeatingSetpoint", "lowerCoolSetpoint",
-				 "coolingSetpoint", "raiseCoolSetpoint", "thermostatMode", "thermostatFanMode", "thermostatOperatingState",
-				 "refresh", "battery", "powerSource"])
+		main "thermostatMulti"
+		details(["thermostatMulti", "thermostatMode", "heatingSetpoint", "coolingSetpoint", "thermostatFanMode", "battery", "powerSource", "refresh"])
 	}
 }
 
@@ -161,7 +171,7 @@ private parseAttrMessage(description) {
 				log.debug "MODE"
 				map.name = "thermostatMode"
 				map.value = THERMOSTAT_MODE_MAP[it.value]
-				map.data = [supportedThermostatModes: state.supportedModes]
+				map.data = [supportedThermostatModes: state.supportedThermostatModes]
 			} else if (it.attribute == THERMOSTAT_RUNNING_STATE) {
 				log.debug "RUNNING STATE"
 				def binValue = extendString(bin(hexToInt(it.value)), 16, '0').reverse()
@@ -189,6 +199,7 @@ private parseAttrMessage(description) {
 				if (heating != "11") {
 					supportedModes << "heat"
 				}
+				// Auto doesn't actually seem to be supported by the thermostat
 				/*if (supportedModes.contains("cool") && supportedModes.contains("heat")) {
 					supportedModes << "auto"
 				}*/
@@ -197,7 +208,7 @@ private parseAttrMessage(description) {
 				}
 				log.debug "supported modes: $supportedModes"
 				state.supportedThermostatModes = supportedModes
-				sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
+				sendEvent(name: "supportedThermostatModes", value: JsonOutput.toJson(supportedModes), displayed: false)
 			}
 		} else if (it.cluster == FAN_CONTROL_CLUSTER) {
 			if (it.attribute == FAN_MODE) {
@@ -224,10 +235,12 @@ private parseAttrMessage(description) {
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	state.supportedModes = ["off", "heat", "cool", "emergency heat"]
+	state.supportedThermostatModes = ["off", "heat", "cool", "emergency heat"]
 	state.supportedFanModes = ["on", "auto"]
-	sendEvent(name: "supportedThermostatModes", value: state.supportedModes, displayed: false)
-	sendEvent(name: "supportedThermostatFanModes", value: state.supportedFanModes, displayed: false)
+	sendEvent(name: "supportedThermostatModes", value: JsonOutput.toJson(state.supportedThermostatModes), displayed: false)
+	sendEvent(name: "supportedThermostatFanModes", value: JsonOutput.toJson(state.supportedFanModes), displayed: false)
+	sendEvent(name: "coolingSetpointRange", value: coolingSetpointRange, displayed: false)
+	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 
 	refresh()
 }
@@ -304,24 +317,10 @@ def getPowerSource(value) {
 	return result
 }
 
-def switchMode() {
-	def currentMode = device.currentValue("thermostatMode")
-	def modeOrder = state.supportedThermostatModes
-log.debug "switchMode() $currentMode $modeOrder"
-	if (modeOrder) {
-		def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
-		def nextMode = next(currentMode)
-log.debug "nextMode $nextMode"
-		setThermostatMode(nextMode)
-	} else {
-		log.warn "supportedThermostatModes not defined"
-	}
-}
-
-def setThermostatMode(value) {
-	log.debug "set mode $value (supported ${state.supportedThermostatModes})"
-	if (state.supportedThermostatModes?.contains(value)) {
-		switch(value) {
+def setThermostatMode(mode) {
+	log.debug "set mode $mode (supported ${state.supportedThermostatModes})"
+	if (state.supportedThermostatModes?.contains(mode)) {
+		switch(mode) {
 			case "heat":
 				heat()
 				break
@@ -338,12 +337,14 @@ def setThermostatMode(value) {
 				off()
 				break
 		}
+	} else {
+		log.debug "Unsupported mode $mode"
 	}
 }
 
-def setThermostatFanMode(value) {
-	if (state.supportedFanModes?.contains(value)) {
-		switch(value) {
+def setThermostatFanMode(mode) {
+	if (state.supportedFanModes?.contains(mode)) {
+		switch(mode) {
 			case "on":
 				fanOn()
 				break
@@ -452,6 +453,20 @@ private hexToInt(value) {
 
 private extendString(str, size, character) {
 	return character * (size - str.length()) + str
+}
+
+def getMinSetpointIndex() {
+	0
+}
+def getMaxSetpointIndex() {
+	1
+}
+// TODO: Get these from the thermostat; for now they are set to match the UI metadata
+def getCoolingSetpointRange() {
+	(getTemperatureScale() == "C") ? [10, 35] : [50, 95]
+}
+def getHeatingSetpointRange() {
+	(getTemperatureScale() == "C") ? [7, 32] : [45, 90]
 }
 
 private getTHERMOSTAT_CLUSTER() { 0x0201 }
