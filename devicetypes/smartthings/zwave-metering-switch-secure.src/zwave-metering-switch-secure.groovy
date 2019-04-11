@@ -27,6 +27,7 @@ metadata {
 
 		fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x22, 0x85, 0x59, 0x70, 0x56, 0x5A, 0x7A, 0x72, 0x32, 0x8E, 0x71, 0x73, 0x98, 0x31, 0x25, 0x86", outClusters: ""
 		fingerprint mfr: "0072", prod: "0501", model: "0F06", deviceJoinName: "Fibaro Wall Plug ZW5" // US
+		fingerprint mfr: "0159", prod: "0002", model: "0054", deviceJoinName: "QUBINO", mnmm: "SmartThings", vid: "generic-switch-power"
 	}
 
 	// simulator metadata
