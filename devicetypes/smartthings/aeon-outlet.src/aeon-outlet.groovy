@@ -12,12 +12,11 @@
  *
  */
 metadata {
-	definition (name: "Aeon Outlet", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Outlet", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Energy Meter"
 		capability "Actuator"
 		capability "Switch"
 		capability "Configuration"
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 
@@ -43,21 +42,23 @@ metadata {
 	}
 
 	// tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc"
-			state "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState("on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00a0dc")
+				attributeState("off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff")
+			}
 		}
-		valueTile("energy", "device.energy", decoration: "flat") {
+		valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
 			state "default", label:'${currentValue} kWh'
 		}
-		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat") {
+		standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'reset kWh', action:"reset"
 		}
-		standardTile("configure", "device.power", inactiveLabel: false, decoration: "flat") {
+		standardTile("configure", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
-		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
@@ -117,13 +118,6 @@ def off() {
 	delayBetween([
 		zwave.basicV1.basicSet(value: 0x00).format(),
 		zwave.switchBinaryV1.switchBinaryGet().format()
-	])
-}
-
-def poll() {
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.meterV2.meterGet().format()
 	])
 }
 
