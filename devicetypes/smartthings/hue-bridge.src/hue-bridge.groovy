@@ -1,3 +1,5 @@
+//DEPRECATED. INTEGRATION MOVED TO SUPER LAN CONNECT
+
 /**
  *  Hue Bridge
  *
@@ -7,9 +9,12 @@
 metadata {
 	// Automatically generated. Make future change here.
 	definition (name: "Hue Bridge", namespace: "smartthings", author: "SmartThings") {
+		capability "Bridge"
+		capability "Health Check"
+
 		attribute "networkAddress", "string"
-        // Used to indicate if bridge is reachable or not, i.e. is the bridge connected to the network
-        // Possible values "Online" or "Offline"
+		// Used to indicate if bridge is reachable or not, i.e. is the bridge connected to the network
+		// Possible values "Online" or "Offline"
 		attribute "status", "string"
 		// Id is the number on the back of the hub, Hue uses last six digits of Mac address
 		// This is also used in the Hue application as ID
@@ -21,10 +26,10 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-     	multiAttributeTile(name:"rich-control"){
+     	multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
 				attributeState "Offline", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#ffffff"
-	            attributeState "Online", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#79b821"
+	            attributeState "Online", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#00A0DC"
 			}
 			}
 		valueTile("doNotRemove", "v", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
@@ -40,6 +45,20 @@ metadata {
 		main (["rich-control"])
 		details(["rich-control", "doNotRemove", "idNumber", "networkAddress"])
 	}
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
+}
+
+void installed() {
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 // parse events into attributes
@@ -70,13 +89,8 @@ def parse(description) {
 					def bulbs = new groovy.json.JsonSlurper().parseText(msg.body)
 					if (bulbs.state) {
 						log.info "Bridge response: $msg.body"
-					} else {
-						// Sending Bulbs List to parent"
-						if (parent.isInBulbDiscovery())
-							log.info parent.bulbListHandler(device.hub.id, msg.body)
 					}
-				}
-				else if (contentType?.contains("xml")) {
+				} else if (contentType?.contains("xml")) {
 					log.debug "HUE BRIDGE ALREADY PRESENT"
 					parent.hubVerification(device.hub.id, msg.body)
 				}
