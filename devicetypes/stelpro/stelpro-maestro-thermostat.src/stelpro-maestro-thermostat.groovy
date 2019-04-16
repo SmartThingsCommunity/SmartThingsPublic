@@ -44,8 +44,8 @@ metadata {
 		command "updateWeather"
 
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "MaestroStat", deviceJoinName: "Stelpro Maestro Thermostat"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SORB", deviceJoinName: "Stelpro ORLÉANS Fan Heater"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SonomaStyle", deviceJoinName: "Stelpro Sonoma Style Fan Heater"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SORB", deviceJoinName: "Stelpro ORLÉANS Fan Heater", mnmn: "SmartThings", vid: "SmartThings-smartthings-Stelpro_Orleans_Sonoma_Fan_Thermostat"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0201, 0204, 0405", outClusters: "0003, 000A, 0402", manufacturer: "Stelpro", model: "SonomaStyle", deviceJoinName: "Stelpro Sonoma Style Fan Heater", mnmn: "SmartThings", vid: "SmartThings-smartthings-Stelpro_Orleans_Sonoma_Fan_Thermostat"
 	}
 
 	// simulator metadata
@@ -309,6 +309,9 @@ def parse(String description) {
 	return result
 }
 
+private getFREEZE_ALARM_TEMP() { getTemperatureScale() == "C" ? 0 : 32 }
+private getHEAT_ALARM_TEMP() { getTemperatureScale() == "C" ? 50 : 122 }
+
 def handleTemperature(descMap) {
 	def map = [:]
 	def intVal = Integer.parseInt(descMap.value, 16)
@@ -317,9 +320,11 @@ def handleTemperature(descMap) {
 	if (intVal == 0x7ffd) { // Freeze Alarm
 		map.name = "temperatureAlarm"
 		map.value = "freeze"
+		sendEvent(name: "temperature", value: FREEZE_ALARM_TEMP, unit: getTemperatureScale())
 	} else if (intVal == 0x7fff) { // Overheat Alarm
 		map.name = "temperatureAlarm"
 		map.value = "heat"
+		sendEvent(name: "temperature", value: HEAT_ALARM_TEMP, unit: getTemperatureScale())
 	} else if (intVal == 0x8000) { // Temperature Sensor Error
 		map.descriptionText = "Received a temperature error"
 	} else {
@@ -330,19 +335,44 @@ def handleTemperature(descMap) {
 		map.value = getTemperature(intVal)
 		map.unit = getTemperatureScale()
 
-		// Handle cases where we need to update the temperature alarm state given certain temperatures
-		// Account for a f/w bug where the freeze alarm doesn't trigger at 0C
-		if (map.value < (map.unit == "C" ? 0 : 32)) {
-			log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
-			sendEvent(name: "temperatureAlarm", value: "freeze")
-		}
-		// Overheat alarm doesn't trigger until 80C, but we'll start sending at 50C to match thermostat display
-		else if (map.value >= (map.unit == "C" ? 50 : 122)) {
-			log.debug "EARLY HEAT ALARM @  $map.value $map.unit (raw $intVal)"
-			sendEvent(name: "temperatureAlarm", value: "heat")
-		} else if (device.currentValue("temperatureAlarm") != "cleared") {
-			log.debug "CLEAR ALARM @ $map.value $map.unit (raw $intVal)"
-			sendEvent(name: "temperatureAlarm", value: "cleared")
+		def lastTemp = device.currentValue("temperature")
+		def lastAlarm = device.currentValue("temperatureAlarm")
+		if (lastAlarm != "cleared") {
+			def cleared = false
+			if (lastTemp) {
+				lastTemp = convertTemperatureIfNeeded(lastTemp, device.currentState("temperature").unit).toFloat()
+				// Check to see if we are coming out of our alarm state and only clear then
+				// NOTE: A thermostat might send us an alarm *before* it has completed sending us previous measurements,
+				// so it might appear that the alarm is no longer valid. We need to check the trajectory of the temperature
+				// to verify this.
+				if ((lastAlarm == "freeze" &&
+						map.value > FREEZE_ALARM_TEMP &&
+						lastTemp < map.value) ||
+					(lastAlarm == "heat" &&
+						map.value < HEAT_ALARM_TEMP &&
+						lastTemp > map.value)) {
+							log.debug "Clearing $lastAlarm temp alarm"
+							sendEvent(name: "temperatureAlarm", value: "cleared")
+							cleared = true
+				}
+			}
+
+			// Check to see if this temperature event is still a "catch up" event to our alarm temperature threshold, and if it is
+			// just mask it.
+			if (!cleared &&
+					((lastAlarm == "freeze" && map.value > FREEZE_ALARM_TEMP) ||
+					 (lastAlarm == "heat" && map.value < HEAT_ALARM_TEMP))) {
+				log.debug "Hiding stale temperature ${map.value} because of ${lastAlarm} alarm"
+				map.value = (lastAlarm == "freeze") ? FREEZE_ALARM_TEMP : HEAT_ALARM_TEMP
+			}
+		} else { // If we came out of an alarm and went back in to it, we seem to hit an edge case where we don't get the new alarm
+			if (map.value <= FREEZE_ALARM_TEMP) {
+				log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
+				sendEvent(name: "temperatureAlarm", value: "freeze")
+			} else if (map.value >= HEAT_ALARM_TEMP) {
+				log.debug "EARLY HEAT ALARM @  $map.value $map.unit (raw $intVal)"
+				sendEvent(name: "temperatureAlarm", value: "heat")
+			}
 		}
 	}
 
@@ -411,8 +441,12 @@ def ping() {
 }
 
 def poll() {
-	def requests = []
 	log.debug "poll()"
+}
+
+def refresh() {
+	def requests = []
+	log.debug "refresh()"
 
 	requests += updateWeather()
 	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP)
@@ -421,6 +455,7 @@ def poll() {
 	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT)
 	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE)
 	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT)
+	requests += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO)
 
 	requests
 }
@@ -445,10 +480,6 @@ def getTemperature(value) {
 			return rounded
 		}
 	}
-}
-
-def refresh() {
-	poll()
 }
 
 def setHeatingSetpoint(preciseDegrees) {
@@ -549,13 +580,7 @@ def configure() {
 	requests += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO, DataType.UINT16, 10, 300, 1)
 
 	// Read the configured variables
-	requests += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO)
-	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP)
-	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT)
-	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
-	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE)
-	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT)
-	requests += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO)
+	requests += refresh()
 
 	requests
 }

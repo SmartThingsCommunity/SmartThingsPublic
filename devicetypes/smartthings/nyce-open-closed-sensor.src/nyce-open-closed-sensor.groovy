@@ -261,7 +261,8 @@ def configure() {
 		zigbee.batteryConfig(30, 300) + zigbee.enrollResponse()
 	} else {
 		// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
-		return zigbee.iasZoneConfig() + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
+		return zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 60 * 60, null) +
+				zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
 	}
 }
 
