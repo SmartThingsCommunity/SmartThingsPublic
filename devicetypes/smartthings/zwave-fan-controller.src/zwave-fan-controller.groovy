@@ -108,21 +108,33 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 
 def fanEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
-	def result = [createEvent(name: "switch", value: value)]
-	result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
+	def result = [createEvent(name: "switch", value: value),
+				  createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)]
+
 	def fan_level = Math.ceil(cmd.value/33) as int
-//	if (cmd.value < 33 && cmd.value >= 1) fan_level = 1 //sometimes we get "1" when the device is on low
+
+	// The GE, Honeywell, and Leviton treat 33 as medium, so account for that
+	if (cmd.value == 33) {
+		fan_level = 2
+	}
 	result << createEvent(name: "fanSpeed", value: fan_level)
+
 	return result
 }
 
 def on() {
 	state.lastOnCommand = now()
-	delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: 0xFF).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+	delayBetween([
+			zwave.switchMultilevelV3.switchMultilevelSet(value: 0xFF).format(),
+			zwave.switchMultilevelV1.switchMultilevelGet().format()
+		], 5000)
 }
 
 def off() {
-	delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 1000)
+	delayBetween([
+			zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00).format(),
+			zwave.switchMultilevelV1.switchMultilevelGet().format()
+		], 1000)
 }
 
 def getDelay() {
@@ -133,15 +145,23 @@ def getDelay() {
 def setLevel(value, rate = null) {
     def cmds = []
     def timeNow = now()
+
     if (state.lastOnCommand && timeNow - state.lastOnCommand < delay ) {
         // because some devices cannot handle commands in quick succession, this will delay the setLevel command by a max of 2s
         log.debug "command delay ${delay - (timeNow - state.lastOnCommand)}"
         cmds << "delay ${delay - (timeNow - state.lastOnCommand)}"
     }
+
     def level = value as Integer
     level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
     log.debug "setLevel >> value: $level"
-    cmds << delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+
+    cmds << delayBetween([
+				zwave.switchMultilevelV3.switchMultilevelSet(value: level).format(),
+				zwave.switchMultilevelV1.switchMultilevelGet().format()
+			], 5000)
+
+	return cmds
 }
 
 def setFanSpeed(speed) {
