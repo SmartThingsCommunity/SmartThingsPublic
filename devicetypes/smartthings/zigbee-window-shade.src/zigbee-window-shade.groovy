@@ -77,12 +77,12 @@ def parse(String description) {
     if (description?.startsWith("read attr -")) {
         Map descMap = zigbee.parseDescriptionAsMap(description)
         if (descMap?.clusterInt == CLUSTER_WINDOW_COVERING && descMap.value) {
-            log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, decValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
+            log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, descValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
             List<Map> descMaps = collectAttributes(descMap)
             def liftmap = descMaps.find { it.attrInt == ATTRIBUTE_POSITION_LIFT }
             if (liftmap) {
-                state.level = Integer.parseInt(descMap.value, 16)
-                 if (liftmap.value == "64") { //open
+                state.level = Integer.parseInt(liftmap.value, 16)
+                if (liftmap.value == "64") { //open
                     sendEvent(name: "windowShade", value: "open")
                     sendEvent(name: "level", value: "100")
                 } else if (liftmap.value == "00") { //closed
@@ -118,7 +118,7 @@ def setLevel(data) {
     } else if (level < currentLevel) {
         sendEvent(name: "windowShade", value: "closing")
     }
-    zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(data,2))
+    zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(data, 2))
 }
 
 def pause() {
