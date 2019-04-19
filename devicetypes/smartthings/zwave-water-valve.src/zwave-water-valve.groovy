@@ -1,14 +1,14 @@
 /**
- *  Copyright 2015 SmartThings
+ *	Copyright 2015 SmartThings
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *	in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ *	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *	for the specific language governing permissions and limitations under the License.
  *
  */
 metadata {
@@ -16,7 +16,6 @@ metadata {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Valve"
-		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 
@@ -80,6 +79,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+
 	def value = cmd.value == 0xFF ? "open" : cmd.value == 0x00 ? "closed" : "unknown"
 
 	return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
@@ -88,10 +88,10 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
 	//TODO should show MSR when device is discovered
-	log.debug "manufacturerId:   ${cmd.manufacturerId}"
+	log.debug "manufacturerId:	 ${cmd.manufacturerId}"
 	log.debug "manufacturerName: ${cmd.manufacturerName}"
-	log.debug "productId:        ${cmd.productId}"
-	log.debug "productTypeId:    ${cmd.productTypeId}"
+	log.debug "productId:		 ${cmd.productId}"
+	log.debug "productTypeId:	 ${cmd.productTypeId}"
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
 	updateDataValue("MSR", msr)
 	return createEventWithDebug([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
@@ -102,10 +102,14 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-	def value = cmd.value == 0xFF ? "open" : cmd.value == 0x00 ? "closed" : "unknown"
 
-	return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
-			createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])]
+	if(!isBulldogValve()) {
+
+		def value = cmd.value == 0xFF ? "open" : cmd.value == 0x00 ? "closed" : "unknown"
+
+		return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
+				createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])]
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -113,21 +117,27 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def open() {
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
-	], 10000) //wait for a water valve to be completely opened
+	def cmd = []
+	cmd << zwave.basicV1.basicSet(value: 0xFF).format()
+	
+	if(!isBulldogValve()) {
+		cmd << zwave.switchBinaryV1.switchBinaryGet().format()
+	} else {
+		cmd << zwave.basicV1.basicGet().format()
+	}
+	delayBetween(cmd, 10000) //wait for a water valve to be completely open
 }
 
 def close() {
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
-	], 10000) //wait for a water valve to be completely closed
-}
-
-def poll() {
-	zwave.switchBinaryV1.switchBinaryGet().format()
+	def cmd = []
+	cmd << zwave.basicV1.basicSet(value: 0x00).format()
+	
+	if(!isBulldogValve()) {
+		cmd << zwave.switchBinaryV1.switchBinaryGet().format()
+	} else {
+		cmd << zwave.basicV1.basicGet().format()
+	}
+	delayBetween(cmd, 10000) //wait for a water valve to be completely closed
 }
 
 /**
@@ -139,7 +149,14 @@ def ping() {
 
 def refresh() {
 	log.debug "refresh() is called"
-	def commands = [zwave.switchBinaryV1.switchBinaryGet().format()]
+	def commands = []
+	
+	if(!isBulldogValve()) {
+		commands << zwave.switchBinaryV1.switchBinaryGet().format()
+	} else {
+		commands << zwave.basicV1.basicGet().format()
+	}
+
 	if (getDataValue("MSR") == null) {
 		commands << zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
 	}
@@ -150,4 +167,8 @@ def createEventWithDebug(eventMap) {
 	def event = createEvent(eventMap)
 	log.debug "Event created with ${event?.descriptionText}"
 	return event
+}
+
+private boolean isBulldogValve() {
+	zwaveInfo?.mfr?.equals("0157")
 }
