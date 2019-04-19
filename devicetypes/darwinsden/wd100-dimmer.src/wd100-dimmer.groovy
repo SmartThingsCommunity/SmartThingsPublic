@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.06 (04/19/2019) - Added rate argument for setLevel for cloud integrations
  *  1.05 (05/06/2018) - Request dim level on hold to improve dim level status. Removed call to set switch status off on hold release.
  *  1.04 (05/04/2018) - Remove call to set switch to off when held down
  *  1.03 (11/14/2017) - Turn off firmware event log, correct physical button setting for some presses, remove 100ms delay in instant status
@@ -293,6 +294,11 @@ def setLevel (value) {
     result += response(zwave.switchMultilevelV1.switchMultilevelGet())
     result += response("delay 5000")
     result += response(zwave.switchMultilevelV1.switchMultilevelGet())
+}
+
+// Add rate argument for setLevel for cloud integrations
+def setLevel(value, duration) {
+	setLevel (value)
 }
 
 def poll() {
