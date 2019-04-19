@@ -89,7 +89,7 @@ def parse(String description) {
                     sendEvent(name: "level", value: "0")
                 } else {
                     sendEvent(name: "windowShade", value: "partially open")
-                    sendEvent(name: "level", value: zigbee.convertHexToInt(attr.value))
+                    sendEvent(name: "level", value: zigbee.convertHexToInt(liftmap.value))
                 }
             }
         }
