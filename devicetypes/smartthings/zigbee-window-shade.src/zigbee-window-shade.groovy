@@ -81,6 +81,7 @@ def parse(String description) {
             List<Map> descMaps = collectAttributes(descMap)
             def liftmap = descMaps.find { it.attrInt == ATTRIBUTE_POSITION_LIFT }
             if (liftmap) {
+                state.level = Integer.parseInt(descMap.value, 16)
                  if (liftmap.value == "64") { //open
                     sendEvent(name: "windowShade", value: "open")
                     sendEvent(name: "level", value: "100")
@@ -98,17 +99,26 @@ def parse(String description) {
 
 def close() {
     log.info "close()"
+    sendEvent(name: "windowShade", value: "closing")
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x01)
 }
 
 def open() {
     log.info "open()"
+    sendEvent(name: "windowShade", value: "opening")
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x00)
 }
 
 def setLevel(data) {
     log.info "setLevel()"
-    zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(data, 2))
+    Integer currentLevel = state.level
+    Integer level = data as Integer
+    if (level > currentLevel) {
+        sendEvent(name: "windowShade", value: "opening")
+    } else if (level < currentLevel) {
+        sendEvent(name: "windowShade", value: "closing")
+    }
+    zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(data,2))
 }
 
 def pause() {
