@@ -87,7 +87,7 @@ def doorOpenCheck()
 		if (currentState?.value == "open") {
 			log.debug "open for ${now() - currentState.date.time}, openDoorNotificationSent: ${state.openDoorNotificationSent}"
 			if (!state.openDoorNotificationSent && now() - currentState.date.time > thresholdMinutes * 60 *1000) {
-				def msg = "${doorSwitch.displayName} was been open for ${thresholdMinutes} minutes"
+				def msg = "${doorSwitch.displayName} has been open for ${thresholdMinutes} minutes"
 				log.info msg
 
                 if (location.contactBookEnabled) {
