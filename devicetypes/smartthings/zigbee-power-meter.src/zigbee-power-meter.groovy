@@ -51,10 +51,10 @@ def parse(String description) {
     def event = zigbee.getEvent(description)
     if (event) {
         log.info event
-        if (event.name== "power") {
+        if (event.name == "power") {
             event.value = event.value/1000
             event.unit = "W"
-        } else if (event.name== "energy") {
+        } else if (event.name == "energy") {
             event.value = event.value/1000000
             event.unit = "kWh"
         }
