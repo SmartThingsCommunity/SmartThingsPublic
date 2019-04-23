@@ -314,7 +314,6 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     def nowtimeplusdate = new Date(nowtimeplus)
 //    log.debug "now = $nowtime, plus = $nowtimeplus, ${nowtimeplusdate.format('HH:mm')}" //,location.timeZone
 
-
     state.ComCount = 0
     def event = createEvent(name: "wake up", value: "${new Date().time}", descriptionText: "${device.displayName} woke up", displayed: false)
 	def cmds = []
@@ -389,7 +388,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
     cmds << zwave.wakeUpV2.wakeUpNoMoreInformation().format()
     
     encap << cmds.collect{ (it instanceof physicalgraph.zwave.Command ) ? response(encapCommand(it)) : response(it) }
-    log.debug "WakeUp - commands are ${cmds}, command count is $state.ComCount, encap is ${encap} - product id - ${state.productId}"
+    log.trace "WakeUp - commands are ${cmds}, command count is $state.ComCount, encap is ${encap} - product id - ${state.productId}"
     state.ComCount = 0
   	    
   return  [event, response(delayBetween(encap, 10))]

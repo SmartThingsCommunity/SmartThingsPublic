@@ -28,7 +28,7 @@ metadata {
 
 	tiles(scale: 2) {
 
-	standardTile("UGW_web", "device.UGW_web",  width: 6, height: 3,  canChangeIcon: false ) {
+	standardTile("UGW_web", "device.UGW_web",  width: 6, height: 2,  canChangeIcon: false ) {
             state "default", label: '${currentValue}', unit:'${currentValue}'     }  // , icon: "st.Weather.weather2" 
              
     standardTile("temperature", "device.temperature", width: 2, height: 1,  canChangeIcon: false) { //decoration: "flat",
@@ -103,7 +103,7 @@ metadata {
  		state "default", label:'${currentValue}'
  		} 
 
-    standardTile("wu_main", "device.wu_main", decoration: "flat", width: 6, height: 4) {
+    standardTile("wu_main", "device.wu_main", decoration: "flat", width: 6, height: 2) {
             state "00", icon:"https://smartthings-twc-icons.s3.amazonaws.com/00.png", label:'${currentValue}'
             state "01", icon:"https://smartthings-twc-icons.s3.amazonaws.com/01.png"
             state "02", icon:"https://smartthings-twc-icons.s3.amazonaws.com/02.png"
@@ -183,10 +183,10 @@ metadata {
             state "default", label: 'Observation Time ${currentValue}'}
     
     standardTile("alert", "device.alert", width: 5, height: 1, canChangeIcon: false) {
-            state "default", label: 'Alerts:${currentValue}'}
+            state "default", label: 'Alerts: ${currentValue}'}
             
-    standardTile("forcast", "device.forcast", width: 6, height: 3, inactiveLabel: true, canChangeIcon: false) { //decoration: "flat"
-            state "default", label: 'FORCAST \n${currentValue}',defaultState: true} //,defaultState: true inactiveLabel: true,
+    standardTile("forcast", "device.forcast", width: 6, height: 2, inactiveLabel: true, canChangeIcon: false) { //decoration: "flat"
+            state "default", label: '${currentValue}',defaultState: true} //,defaultState: true inactiveLabel: true,
        
 	main("wu_main")
 	details(["UGW_web","alert","temperature", "UGWFeelsLikelevel",  "weather", "refresh", "wind_gust_mph", "wind_mph", "wind_dir", "UGW_Icon_UrlIcon", "pressure_trend","pressure_mb","precip_1hr_metric","precip_today_metric","UV","visibility_mi","humidity","UGWdewpointlevel","observation_time","forcast"]) //"wind_string",
@@ -250,10 +250,11 @@ def refresh() {
     def newcurrent = getTwcConditions(settings.postcode)
     def newalemap = getTwcAlerts(settings.postcode)
     def newforcast = getTwcForecast(settings.postcode)
-    def forcastdetail = "${newforcast.daypart[0].daypartName[0]} - ${newforcast.daypart[0].narrative[0]} \n${newforcast.daypart[0].daypartName[1]} - ${newforcast.daypart[0].narrative[1]}\n${newforcast.daypart[0].daypartName[2]} - ${newforcast.daypart[0].narrative[2]}\n${newforcast.daypart[0].daypartName[3]} - ${newforcast.daypart[0].narrative[3]}\n${newforcast.daypart[0].daypartName[4]} - ${newforcast.daypart[0].narrative[4]}"
+    def forcastdetail = "${newforcast.daypart[0].daypartName[0]} - ${newforcast.daypart[0].narrative[0].toString()} \n${newforcast.daypart[0].daypartName[1]} - ${newforcast.daypart[0].narrative[1]}"
+    def forcastdetail2 = "${newforcast.daypart[0].daypartName[2]} - ${newforcast.daypart[0].narrative[2]}\n${newforcast.daypart[0].daypartName[3]} - ${newforcast.daypart[0].narrative[3]}\n${newforcast.daypart[0].daypartName[4]} - ${newforcast.daypart[0].narrative[4]}"
 
 
-//log.debug "\n HUB PosCode - $hublocation \n DEFALT - $hublocationfix"
+log.info "$hublocation"
 
 //log.debug "CURRENT - ${newcurrent}"
 log.debug "ALERTS ${newalemap}"
@@ -327,10 +328,10 @@ log.debug "ALERTS ${newalemap}"
    sendEvent(name:"pressure_trend", 	value: "${newcurrent.pressureTendencyTrend}", displayed:false)
    sendEvent(name:"visibility_mi", 		value: "${newcurrent.visibility}", displayed:false)
    sendEvent(name:"observation_time", 	value: "${newcurrent.validTimeLocal}", displayed:false)
-   sendEvent(name:"alert", 				value: "${newalemap.headlineText}", displayed:false)
+   sendEvent(name:"alert", 				value: "${newalemap.headlineText[0]}", displayed:false)
    
 //   sendEvent(name:"forcast", 			value: "${newforcast.daypart[0].daypartName[0]} - ${newforcast.daypart[0].narrative[0]} \n${newforcast.daypart[0].daypartName[1]} - ${newforcast.daypart[0].narrative[1]}\n${newforcast.daypart[0].daypartName[2]} - ${newforcast.daypart[0].narrative[2]}\n${newforcast.daypart[0].daypartName[3]} - ${newforcast.daypart[0].narrative[3]}\n${newforcast.daypart[0].daypartName[4]} - ${newforcast.daypart[0].narrative[4]}", displayed:false)
-    sendEvent(name:"forcast", 			value: forcastdetail, displayed:false)
+    sendEvent(name:"forcast", 			value: forcastdetail2, displayed:false)
   
    sendEvent(name:"ultravioletIndex",	value: "${newcurrent.uvDescription}", displayed:false)
    sendEvent(name:"UGW_web", 			value: forcastdetail , displayed:false) //what to do with ?? "${newcurrent.temperatureFeelsLike}"
