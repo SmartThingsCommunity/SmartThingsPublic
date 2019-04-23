@@ -431,6 +431,9 @@ def updateDevices() {
 				}
      		}
         }
+        else {
+        log.warn "UnIdentified: device ${device.id}: ${device.device_type}: ${device.label}"
+        }
     }
    	log.debug selectors
    	//Remove devices if does not exist on the MiHome platform - stop an mihome error removing a devece
