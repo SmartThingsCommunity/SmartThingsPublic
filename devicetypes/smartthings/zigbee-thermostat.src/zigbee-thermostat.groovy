@@ -97,16 +97,14 @@ metadata {
 				sliderType: "HEATING",
 				debouncePeriod: 1500,
 				range: "device.heatingSetpointRange",
-				width: 2, height: 2)
-				{
+				width: 2, height: 2) {
 					state "default", action:"setHeatingSetpoint", label:'${currentValue}', backgroundColor: "#E86D13"
 				}
 		controlTile("coolingSetpoint", "device.coolingSetpoint", "slider",
 				sliderType: "COOLING",
 				debouncePeriod: 1500,
 				range: "device.coolingSetpointRange",
-				width: 2, height: 2)
-				{
+				width: 2, height: 2) {
 					state "default", action:"setCoolingSetpoint", label:'${currentValue}', backgroundColor: "#00A0DC"
 				}
 		controlTile("thermostatFanMode", "device.thermostatFanMode", "enum", width: 2 , height: 2, supportedStates: "device.supportedThermostatFanModes") {
@@ -132,20 +130,25 @@ metadata {
 def parse(String description) {
 	def map = zigbee.getEvent(description)
 	def result
-	if(!map) {
+
+	if (!map) {
 		result = parseAttrMessage(description)
 	} else {
 		log.warn "Unexpected event: ${map}"
 	}
-	//log.debug "Description ${description} parsed to ${result}"
+
+	log.debug "Description ${description} parsed to ${result}"
+
 	return result
 }
 
 private parseAttrMessage(description) {
 	def descMap = zigbee.parseDescriptionAsMap(description)
-	log.debug "Desc Map: $descMap"
 	def result = []
 	List attrData = [[cluster: descMap.clusterInt, attribute: descMap.attrInt, value: descMap.value]]
+
+	log.debug "Desc Map: $descMap"
+
 	descMap.additionalAttrs.each {
 		attrData << [cluster: descMap.clusterInt, attribute: it.attrInt, value: it.value]
 	}
@@ -225,10 +228,11 @@ private parseAttrMessage(description) {
 			}
 		}
 
-		if(map) {
+		if (map) {
 			result << createEvent(map)
 		}
 	}
+
 	return result
 }
 
@@ -271,8 +275,10 @@ def configure() {
 
 def getBatteryPercentage(rawValue) {
 	def result = [:]
+
 	result.name = "battery"
-	if(rawValue == 0) {
+
+	if (rawValue == 0) {
 		sendEvent(name: "powerSource", value: "mains", descriptionText: "${device.displayName} is connected to mains")
 		result.value = 100
 		result.descriptionText = "${device.displayName} is powered by external source."
@@ -288,6 +294,7 @@ def getBatteryPercentage(rawValue) {
 		result.value = Math.min(100, roundedPct)
 		result.descriptionText = "${device.displayName} battery has ${result.value}%"
 	}
+
 	return result
 }
 
@@ -304,7 +311,7 @@ def getTemperature(value) {
 
 def getPowerSource(value) {
 	def result = [name: "powerSource"]
-	switch(value) {
+	switch (value) {
 		case "40000000":
 			result.value = "battery"
 			result.descriptionText = "${device.displayName} is powered by batteries"
@@ -320,7 +327,7 @@ def getPowerSource(value) {
 def setThermostatMode(mode) {
 	log.debug "set mode $mode (supported ${state.supportedThermostatModes})"
 	if (state.supportedThermostatModes?.contains(mode)) {
-		switch(mode) {
+		switch (mode) {
 			case "heat":
 				heat()
 				break
@@ -344,7 +351,7 @@ def setThermostatMode(mode) {
 
 def setThermostatFanMode(mode) {
 	if (state.supportedFanModes?.contains(mode)) {
-		switch(mode) {
+		switch (mode) {
 			case "on":
 				fanOn()
 				break
@@ -352,6 +359,8 @@ def setThermostatFanMode(mode) {
 				fanAuto()
 				break
 		}
+	} else {
+		log.debug "Unsupported fan mode $mode"
 	}
 }
 
