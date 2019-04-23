@@ -765,7 +765,6 @@ def turnOffSwitch() {
         } else {
             
             device.off();
-                  
             return [Device_id: params.id, result_action: "200"]
         }
 }
@@ -789,6 +788,7 @@ def getTempSensorsStatus(id) {
             return []
         } else {
         	def bat = getBatteryStatus(device.id)
-        	return [temperature: device.currentValue('temperature')] + bat
+            def scale = [Scale: location.temperatureScale]
+        	return [temperature: device.currentValue('temperature')] + bat + scale
    		}
    }

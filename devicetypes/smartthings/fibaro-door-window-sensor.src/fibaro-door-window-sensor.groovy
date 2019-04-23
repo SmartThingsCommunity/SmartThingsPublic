@@ -34,7 +34,7 @@
  * @return none
  */
  metadata {
-	definition (name: "Fibaro Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {      
+	definition (name: "Fibaro Door/Window Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
 		//capability 	"Temperature Measurement"  //UNCOMMENT ME IF TEMP INSTALLED      
 		capability 	"Contact Sensor"
 		capability 	"Sensor"
@@ -68,8 +68,8 @@
 
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#ffa81e"
-			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+			state "open",   label: '${name}', icon: "st.contact.contact.open",   backgroundColor: "#e86d13"
+			state "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
@@ -86,7 +86,7 @@
 		}
         standardTile("tamper", "device.alarm") {
 			state("secure", label:'secure',    icon:"st.locks.lock.locked",   backgroundColor:"#ffffff")
-			state("tampered", label:'tampered', icon:"st.locks.lock.unlocked", backgroundColor:"#53a7c0")
+			state("tampered", label:'tampered', icon:"st.locks.lock.unlocked", backgroundColor:"#00a0dc")
 		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
@@ -105,11 +105,28 @@
 	}
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x30: 1,  // Sensor Binary
+		0x31: 2,  // Sensor MultiLevel
+		0x56: 1,  // Crc16Encap
+		0x60: 3,  // Multi-Channel
+		0x70: 2,  // Configuration
+		0x72: 2,  // Manufacturer Specific
+		0x80: 1,  // Battery
+		0x84: 1,  // WakeUp
+		0x9C: 1   // Sensor Alarm
+	]
+}
+
 // Parse incoming device messages to generate events 
 def parse(String description)
 {
 	def result = []
-	def cmd = zwave.parse(description, [0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x72: 2, 0x56: 1, 0x60: 3])
+	def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
 		result += zwaveEvent(cmd)
 	}
@@ -119,7 +136,7 @@ def parse(String description)
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 {
-	def versions = [0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x72: 2, 0x60: 3]
+	def versions = commandClassVersions
 	// def encapsulatedCommand = cmd.encapsulatedCommand(versions)
 	def version = versions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)

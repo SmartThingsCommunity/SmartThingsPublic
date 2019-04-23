@@ -136,10 +136,20 @@ def getDataForChild(child, startDate, endDate) {
 
 	def wattvisionURL = wattvisionURL(child.deviceNetworkId, startDate, endDate)
 	if (wattvisionURL) {
-		httpGet(uri: wattvisionURL) { response ->
-			def json = new org.json.JSONObject(response.data.toString())
-			child.addWattvisionData(json)
-			return "success"
+		try {
+			httpGet(uri: wattvisionURL) { response ->
+				def json = new org.json.JSONObject(response.data.toString())
+				child.addWattvisionData(json)
+				return "success"
+			}
+		} catch (groovyx.net.http.HttpResponseException httpE) {
+			log.error "Wattvision getDataForChild HttpResponseException: ${httpE} -> ${httpE.response.data}"
+			//log.debug "wattvisionURL = ${wattvisionURL}"
+			return "fail"
+		} catch (e) {
+			log.error "Wattvision getDataForChild General Exception: ${e}"
+			//log.debug "wattvisionURL = ${wattvisionURL}"
+			return "fail"
 		}
 	}
 }
@@ -164,8 +174,13 @@ def wattvisionURL(senorId, startDate, endDate) {
 	if (diff > 259200000) { // 3 days in milliseconds
 		// Wattvision only allows pulling 3 hours of data at a time
 		startDate = new Date(hours: endDate.hours - 3)
+	} else if (diff < 10000) { // 10 seconds in milliseconds
+		// Wattvision throws errors when the difference between start_time and end_time is 5 seconds or less
+		// So we are going to make sure that we have a few more seconds of breathing room
+		use (groovy.time.TimeCategory) {
+			startDate = endDate - 10.seconds
+		}
 	}
-
 
 	def params = [
 		"sensor_id" : senorId,
@@ -480,4 +495,3 @@ def connectionSuccessful(deviceName, iconSrc) {
 
 	render contentType: 'text/html', data: html
 }
-

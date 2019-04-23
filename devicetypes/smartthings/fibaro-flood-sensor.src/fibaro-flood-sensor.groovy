@@ -26,8 +26,8 @@
  * not displayed to the user. We do this so we can receive events and display on device 
  * activity. If the user wants to display the tamper tile, adjust the tile display lines
  * with the following:
- *      main(["water", "temperature", "tamper"])
- *      details(["water", "temperature", "battery", "tamper"])
+ *		main(["water", "temperature"])
+ *		details(["water", "temperature", "tamper", "battery", "configure"])
  *
  * @param none
  *
@@ -40,7 +40,7 @@ metadata {
 		capability "Configuration"
 		capability "Battery"
 		capability "Health Check"
-    capability "Sensor"
+		capability "Sensor"
     
 		command    "resetParams2StDefaults"
 		command    "listCurrentParams"
@@ -74,12 +74,14 @@ metadata {
 		}
 	}
 
-	tiles {
-		standardTile("water", "device.water", width: 2, height: 2) {
-			state "dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff"
-			state "wet", icon:"st.alarm.water.wet", backgroundColor:"#00a0dc"
-		}
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+	tiles(scale:2) {
+		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
+			tileAttribute("device.water", key: "PRIMARY_CONTROL") {
+				attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
+				attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC")
+ 			}
+ 		}
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 			backgroundColors:[
 				[value: 31, color: "#153591"],
@@ -91,14 +93,14 @@ metadata {
 				[value: 96, color: "#bc2323"]
 			]
 		}
-		standardTile("tamper", "device.tamper") {
-			state("secure",         label:"secure",         icon:"st.locks.lock.locked",   backgroundColor:"#ffffff")
-			state("tampered",       label:"tampered",       icon:"st.locks.lock.unlocked", backgroundColor:"#00a0dc")
+		standardTile("tamper", "device.tamper", width: 2, height: 2) {
+			state("secure", label:"secure", icon:"st.locks.lock.locked",   backgroundColor:"#ffffff")
+			state("tampered", label:"tampered", icon:"st.locks.lock.unlocked", backgroundColor:"#00a0dc")
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
+		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
 
@@ -169,9 +171,16 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [:]
 	map.name = "battery"
-	map.value = cmd.batteryLevel > 0 ? cmd.batteryLevel.toString() : 1
 	map.unit = "%"
-	map.displayed = false
+
+	if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
+		map.value = 1
+		map.descriptionText = "${device.displayName} has a low battery"
+		map.isStateChange = true
+	} else {
+		map.value = cmd.batteryLevel
+		map.descriptionText = "Current battery level"
+	}
 	createEvent(map)
 }
 
