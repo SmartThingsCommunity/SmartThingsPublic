@@ -11,11 +11,12 @@
  *	for the specific language governing permissions and limitations under the License.
  *
  */
+
 metadata {
 	definition (name: "Zigbee Range Extender", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.networking") {
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0009, 0B05, 1000, FC7C", outClusters: "0019, 0020, 1000", model: "TRADFRI signal repeater", deviceJoinName: "TRÅDFRI Signal Repeater"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0009, 0B05, 1000, FC7C", outClusters: "0019, 0020, 1000",  manufacturer: "IKEA of Sweden",  model: "TRADFRI signal repeater", deviceJoinName: "TRÅDFRI Signal Repeater"
 	}
 
 	tiles(scale: 2) {
@@ -49,13 +50,11 @@ def parse(String description) {
 def parseAttrMessage(description) {
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	log.debug "Desc Map: $descMap"
-	if(descMap.clusterInt == zigbee.BASIC_CLUSTER && descMap.attrInt == ZCL_VERSION_ATTRIBUTE) {
-		createEvent(name: "status", displayed: true, value: 'online', descriptionText: "$device.displayName is online")
-	}
+	createEvent(name: "status", displayed: true, value: 'online', descriptionText: "$device.displayName is online")
 }
 
 def ping() {
-	zigbee.readAttribute(zigbee.BASIC_CLUSTER, ZCL_VERSION_ATTRIBUTE)
+	sendHubCommand(zigbee.readAttribute(zigbee.BASIC_CLUSTER, ZCL_VERSION_ATTRIBUTE))
 }
 
 private getZCL_VERSION_ATTRIBUTE() { 0x0000 }
