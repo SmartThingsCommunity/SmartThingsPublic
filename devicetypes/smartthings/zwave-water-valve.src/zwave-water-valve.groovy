@@ -79,7 +79,6 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-
 	def value = cmd.value == 0xFF ? "open" : cmd.value == 0x00 ? "closed" : "unknown"
 
 	return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
@@ -103,7 +102,7 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 
-	if(!isBulldogValve()) {
+	if (!isBulldogValve()) {
 
 		def value = cmd.value == 0xFF ? "open" : cmd.value == 0x00 ? "closed" : "unknown"
 
@@ -120,7 +119,7 @@ def open() {
 	def cmd = []
 	cmd << zwave.basicV1.basicSet(value: 0xFF).format()
 	
-	if(!isBulldogValve()) {
+	if (!isBulldogValve()) {
 		cmd << zwave.switchBinaryV1.switchBinaryGet().format()
 	} else {
 		cmd << zwave.basicV1.basicGet().format()
@@ -132,7 +131,7 @@ def close() {
 	def cmd = []
 	cmd << zwave.basicV1.basicSet(value: 0x00).format()
 	
-	if(!isBulldogValve()) {
+	if (!isBulldogValve()) {
 		cmd << zwave.switchBinaryV1.switchBinaryGet().format()
 	} else {
 		cmd << zwave.basicV1.basicGet().format()
@@ -151,7 +150,7 @@ def refresh() {
 	log.debug "refresh() is called"
 	def commands = []
 	
-	if(!isBulldogValve()) {
+	if (!isBulldogValve()) {
 		commands << zwave.switchBinaryV1.switchBinaryGet().format()
 	} else {
 		commands << zwave.basicV1.basicGet().format()
