@@ -227,7 +227,6 @@ private parseAttrMessage(description) {
 				def cooling = 	   intValue & 0b00000011
 				def heating = 	  (intValue & 0b00001100) >>> 2
 				def heatingType = (intValue & 0b00010000) >>> 4
-				def heatingFuel = (intValue & 0b00100000) >>> 5
 				def supportedModes = ["off"]
 
 				if (cooling != 0x03) {
@@ -466,20 +465,10 @@ private hexToInt(value) {
 	new BigInteger(value, 16)
 }
 
-private extendString(str, size, character) {
-	return character * (size - str.length()) + str
-}
-
 private boolean isLuxKONOZ() {
 	device.getDataValue("model") == "KONOZ"
 }
 
-def getMinSetpointIndex() {
-	0
-}
-def getMaxSetpointIndex() {
-	1
-}
 // TODO: Get these from the thermostat; for now they are set to match the UI metadata
 def getCoolingSetpointRange() {
 	(getTemperatureScale() == "C") ? [10, 35] : [50, 95]
