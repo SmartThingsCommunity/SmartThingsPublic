@@ -16,6 +16,7 @@
  *	Date: 2018-10-15
  */
 
+import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -34,11 +35,6 @@ metadata {
 		capability "Health Check"
 		capability "Refresh"
 		capability "Sensor"
-
-		/*command "lowerHeatingSetpoint"
-		command "raiseHeatingSetpoint"
-		command "lowerCoolSetpoint"
-		command "raiseCoolSetpoint"*/
 
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019",  manufacturer: "LUX", model: "KONOZ", deviceJoinName: "LUX KONOz Thermostat"
 	}
@@ -177,41 +173,82 @@ private parseAttrMessage(description) {
 				map.data = [supportedThermostatModes: state.supportedThermostatModes]
 			} else if (it.attribute == THERMOSTAT_RUNNING_STATE) {
 				log.debug "RUNNING STATE"
-				def binValue = extendString(bin(hexToInt(it.value)), 16, '0').reverse()
+				def intValue = hexToInt(it.value) as int
+				/**
+				 * Zigbee Cluster Library spec 6.3.2.2.3.7
+				 * Bit	Description
+				 *  0	Heat State
+				 *  1	Cool State
+				 *  2	Fan State
+				 *  3	Heat 2nd Stage State
+				 *  4	Cool 2nd Stage State
+				 *  5	Fan 2nd Stage State
+				 *  6	Fan 3rd Stage Stage
+				 **/
 				map.name = "thermostatOperatingState"
-				if (binValue[0] == "1") {
+				if (intValue & 0x01) {
 					map.value = "heating"
-				} else if (binValue[1] == "1") {
+				} else if (intValue & 0x02) {
 					map.value = "cooling"
+				} else if (intValue & 0x04) {
+					map.value = "fan only"
 				} else {
-					map.value = binValue[2] == "1" ? "fan only" : "idle"
+					map.value = "idle"
 				}
-			} else if (it.attribute == THERMOSTAT_SYSTEM_CONFIG) {
-				def binValue = extendString(bin(hexToInt(it.value)), 16, '0').reverse()
-				// Use reverse() below so that we match Table 6-12. HVAC System Type Configuration Values in the Zigbee Cluster Library spec
-				// The byte representation is RtL, but string indices are LtR...
-				def cooling = binValue[0..1].reverse()
-				def heating = binValue[2..3].reverse()
-				def heatingType = binValue[4]
-				def heatingFuel = binValue[5]
+			} else if (it.attribute == CONTROL_SEQUENCE_OF_OPERATION) {
+				log.debug "CONTROL SEQUENCE OF OPERATION"
+				state.supportedThermostatModes = CONTROL_SEQUENCE_OF_OPERATION_MAP[it.value]
+				map.name = "supportedThermostatModes"
+				map.value = JsonOutput.toJson(CONTROL_SEQUENCE_OF_OPERATION_MAP[it.value])
+			}
+			// Thermostat System Config is an optional attribute, but is supported by the LUX KONOz and is more informative.
+			else if (it.attribute == THERMOSTAT_SYSTEM_CONFIG) {
+				log.debug "THERMOSTAT SYSTEM CONFIG"
+				def intValue = hexToInt(it.value) as int
+				/**
+				 *
+				 * Table 6-12. HVAC System Type Configuration Values
+				 * Bit Number	Description
+				 * 	0 – 1		Cooling System Stage
+				 * 					00 – Cool Stage 1
+				 * 					01 – Cool Stage 2
+				 * 					10 – Cool Stage 3
+				 * 					11 – Reserved
+				 * 	2 – 3		Heating System Stage
+				 * 					00 – Heat Stage 1
+				 * 					01 – Heat Stage 2
+				 * 					10 – Heat Stage 3
+				 * 					11 – Reserved
+				 * 	4			Heating System Type
+				 * 					0 – Conventional
+				 * 					1 – Heat Pump
+				 * 	5			Heating Fuel Source
+				 * 					0 – Electric / B
+				 * 					1 – Gas / O
+				 */
+				def cooling = 	   intValue & 0b00000011
+				def heating = 	  (intValue & 0b00001100) >>> 2
+				def heatingType = (intValue & 0b00010000) >>> 4
+				def heatingFuel = (intValue & 0b00100000) >>> 5
 				def supportedModes = ["off"]
 
-				if (cooling != "11") {
+				if (cooling != 0x03) {
 					supportedModes << "cool"
 				}
-				if (heating != "11") {
+				if (heating != 0x03) {
 					supportedModes << "heat"
 				}
 				// Auto doesn't actually seem to be supported by the thermostat
-				/*if (supportedModes.contains("cool") && supportedModes.contains("heat")) {
-					supportedModes << "auto"
-				}*/
-				if (heating == "01" && heatingType == "1") {
+				//if (supportedModes.contains("cool") && supportedModes.contains("heat")) {
+				//	supportedModes << "auto"
+				//}
+				if ((heating == 0x01 || heating == 0x02) && heatingType == 1) {
 					supportedModes << "emergency heat"
 				}
 				log.debug "supported modes: $supportedModes"
 				state.supportedThermostatModes = supportedModes
-				sendEvent(name: "supportedThermostatModes", value: JsonOutput.toJson(supportedModes), displayed: false)
+				map.name = "supportedThermostatModes"
+				map.value = JsonOutput.toJson(supportedModes)
 			}
 		} else if (it.cluster == FAN_CONTROL_CLUSTER) {
 			if (it.attribute == FAN_MODE) {
@@ -219,6 +256,11 @@ private parseAttrMessage(description) {
 				map.name = "thermostatFanMode"
 				map.value = FAN_MODE_MAP[it.value]
 				map.data = [supportedThermostatFanModes: state.supportedFanModes]
+			} else if (it.attribute == FAN_MODE_SEQUENCE) {
+				log.debug "FAN MODE SEQUENCE"
+				map.name = "supportedThermostatFanModes"
+				map.value = JsonOutput.toJson(FAN_MODE_SEQUENCE_MAP[it.value])
+				state.supportedFanModes = FAN_MODE_SEQUENCE_MAP[it.value]
 			}
 		} else if (it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER) {
 			if (it.attribute == BATTERY_VOLTAGE) {
@@ -245,12 +287,12 @@ def installed() {
 	sendEvent(name: "supportedThermostatFanModes", value: JsonOutput.toJson(state.supportedFanModes), displayed: false)
 	sendEvent(name: "coolingSetpointRange", value: coolingSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
-
-	refresh()
 }
 
 def refresh() {
+	// THERMOSTAT_SYSTEM_CONFIG is an optional attribute. It we add other thermostats we need to determine if they support this and behave accordingly.
 	return zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_SYSTEM_CONFIG) +
+			zigbee.readAttribute(FAN_CONTROL_CLUSTER, FAN_MODE_SEQUENCE) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, LOCAL_TEMPERATURE) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT) +
@@ -418,42 +460,8 @@ def setHeatingSetpoint(degrees) {
 	}
 }
 
-def raiseHeatingSetpoint() {
-	alterSetpoint(true, "heatingSetpoint")
-}
-
-def lowerHeatingSetpoint() {
-	alterSetpoint(false, "heatingSetpoint")
-}
-
-def raiseCoolSetpoint() {
-	alterSetpoint(true, "coolingSetpoint")
-}
-
-def lowerCoolSetpoint() {
-	alterSetpoint(false, "coolingSetpoint")
-}
-
-/*
-* This method uses Setpoint Raise/Lower Command
-* MSB is responsible for choosing heating/cooling setpoint,
-* 0x00 for heat, 0x01 for cool.
-* LSB is signed 8-bit integer, which specifies with how many steps setpoint will be changed.
-* One step: 0.1 C
- */
-def alterSetpoint(raise, setpoint) {
-	def MSB = (setpoint == "heatingSetpoint") ? "00" : "01"
-	def LSB = raise ? "05" : "FB" // +0.5 C : -0.5 C
-	def payload = MSB + LSB
-	zigbee.command(THERMOSTAT_CLUSTER, SETPOINT_RAISE_LOWER_CMD, payload)
-}
-
 private hex(value) {
 	return new BigInteger(Math.round(value).toString()).toString(16)
-}
-
-private bin(value) {
-	return new BigInteger(Math.round(value).toString()).toString(2)
 }
 
 private hexToInt(value) {
@@ -480,34 +488,61 @@ def getHeatingSetpointRange() {
 
 private getTHERMOSTAT_CLUSTER() { 0x0201 }
 private getLOCAL_TEMPERATURE() { 0x0000 }
-private getTHERMOSTAT_SYSTEM_CONFIG() { 0x0009 }
+private getTHERMOSTAT_SYSTEM_CONFIG() { 0x0009 } // Optional attribute
 private getCOOLING_SETPOINT() { 0x0011 }
 private getHEATING_SETPOINT() { 0x0012 }
 private getTHERMOSTAT_RUNNING_MODE() { 0x001E }
+private getCONTROL_SEQUENCE_OF_OPERATION() { 0x001B } // Mandatory attribute
+private getCONTROL_SEQUENCE_OF_OPERATION_MAP() {
+    [
+        "00":["off", "cool"],
+        "01":["off", "cool"],
+		// 0x02, 0x03, 0x04, and 0x05 don't actually guarentee emergency heat; to learn this, one would
+		// try THERMOSTAT_SYSTEM_CONFIG (optional), which we default to for the LUX KONOz since it supports THERMOSTAT_SYSTEM_CONFIG
+        "02":["off", "heat", "emergency heat"],
+        "03":["off", "heat", "emergency heat"],
+        "04":["off", "heat", "auto", "cool", "emergency heat"],
+        "05":["off", "heat", "auto", "cool", "emergency heat"]
+    ]
+}
 private getTHERMOSTAT_MODE() { 0x001C }
 private getTHERMOSTAT_MODE_OFF() { 0x00 }
 private getTHERMOSTAT_MODE_AUTO() { 0x01 }
 private getTHERMOSTAT_MODE_COOL() { 0x03 }
 private getTHERMOSTAT_MODE_HEAT() { 0x04 }
 private getTHERMOSTAT_MODE_EMERGENCY_HEAT() { 0x05 }
-private getTHERMOSTAT_MODE_MAP() { [
+private getTHERMOSTAT_MODE_MAP() {
+	[
 		"00":"off",
 		"01":"auto",
 		"03":"cool",
 		"04":"heat",
 		"05":"emergency heat"
-]}
+	]
+}
 private getTHERMOSTAT_RUNNING_STATE() { 0x0029 }
 private getSETPOINT_RAISE_LOWER_CMD() { 0x00 }
 
 private getFAN_CONTROL_CLUSTER() { 0x0202 }
 private getFAN_MODE() { 0x0000 }
+private getFAN_MODE_SEQUENCE() { 0x0001 }
+private getFAN_MODE_SEQUENCE_MAP() {
+    [
+        "00":["low", "medium", "high"],
+        "01":["low", "high"],
+        "02":["low", "medium", "high", "auto"],
+        "03":["low", "high", "auto"],
+        "04":["on", "auto"],
+    ]
+}
 private getFAN_MODE_ON() { 0x04 }
 private getFAN_MODE_AUTO() { 0x05 }
-private getFAN_MODE_MAP() { [
+private getFAN_MODE_MAP() {
+	[
 		"04":"on",
 		"05":"auto"
-]}
+	]
+}
 
 private getBATTERY_VOLTAGE() { 0x0020 }
 private getBATTERY_ALARM_STATE() { 0x003E }
