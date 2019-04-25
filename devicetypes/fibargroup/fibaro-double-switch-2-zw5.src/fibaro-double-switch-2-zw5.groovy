@@ -15,6 +15,7 @@ metadata {
 
 		fingerprint mfr: "010F", prod: "0203", model: "2000"
 		fingerprint mfr: "010F", prod: "0203", model: "1000"
+		fingerprint mfr: "010F", prod: "0203", model: "3000"
 	  }
 
 	tiles (scale: 2) {
