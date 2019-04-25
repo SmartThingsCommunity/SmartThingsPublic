@@ -51,6 +51,7 @@ preferences {
 	
     }
 	section("Then send this message in a push notification"){
+    	input "pushmessageoff", "bool", title: "disable push messages, but still take (simply toggle)", defaultValue: false
 		input "messageText", "text", title: "Message Text"
 	}
 	section("And as text message to this number (optional)"){
@@ -101,36 +102,6 @@ def sendMessage(evt) {
         	camera.take()
             log.debug "motion take"
             camera.burst()
-/*            		try {
-            delayBetween([
-        		camera.take(),             
-                camera.take(),            
-                camera.take(),
-                camera.take(),             
-                camera.take(),            
-                camera.take(),
-                camera.take(),            
-                camera.take(), 
-                camera.take()     
-    		], 500)
-            } catch (e1) {
-        		log.warn "exception respones 1 - '${e1}'"
-                }
-			//(1..3).each {
-            //	camera.take(delay: (3000 * it)) //was 7000
-			//}
-*/            
-/*            	try{
-            delayBetween([
-        		camera.take(),             
-                camera.take(),            
-                camera.take(),      
-                camera.take()     
-    		], 10000)
-			} catch (e2) {
-        		log.warn "exception respones 2 - '${e2}'"
-         	 }
-*/
 		}
     	
     }
@@ -210,8 +181,9 @@ def sendMessage(evt) {
 
     
     if(!((evt.name == "motion")&&(evt.value == "inactive"))) {
-    	log.debug "sendnote command"
-    	sendNotification()
+    	if (pushmessageoff == false){ // disable push messages, but still take
+    		sendNotification()
+        }
 	}  
 }
 
