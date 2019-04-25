@@ -106,8 +106,6 @@ metadata {
 		controlTile("thermostatFanMode", "device.thermostatFanMode", "enum", width: 2 , height: 2, supportedStates: "device.supportedThermostatFanModes") {
 			state "auto", action: "setThermostatFanMode", label: 'Auto', icon: "st.thermostat.fan-auto"
 			state "on",	action: "setThermostatFanMode", label: 'On', icon: "st.thermostat.fan-on"
-			//state "circulate", action: "setThermostatFanMode", label: 'Circulate', icon: "st.thermostat.fan-circulate"
-			//state "off", action: "setThermostatFanMode", label: 'Off', icon: "st.thermostat.fan-off"
 		}
 		standardTile("refresh", "device.thermostatMode", width: 2, height: 1, inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -238,10 +236,10 @@ private parseAttrMessage(description) {
 				if (heating != 0x03) {
 					supportedModes << "heat"
 				}
-				// Auto doesn't actually seem to be supported by the thermostat
-				//if (supportedModes.contains("cool") && supportedModes.contains("heat")) {
-				//	supportedModes << "auto"
-				//}
+				// Auto doesn't actually seem to be supported by the LUX KONOz
+				if (!isLuxKONOZ() && supportedModes.contains("cool") && supportedModes.contains("heat")) {
+					supportedModes << "auto"
+				}
 				if ((heating == 0x01 || heating == 0x02) && heatingType == 1) {
 					supportedModes << "emergency heat"
 				}
@@ -470,6 +468,10 @@ private hexToInt(value) {
 
 private extendString(str, size, character) {
 	return character * (size - str.length()) + str
+}
+
+private boolean isLuxKONOZ() {
+	device.getDataValue("model") == "KONOZ"
 }
 
 def getMinSetpointIndex() {
