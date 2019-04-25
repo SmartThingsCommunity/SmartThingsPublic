@@ -297,13 +297,13 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			map.descriptionText = cmd.toString()
 	}
     
-    def request = update_needed_settings()
+    //def request = update_needed_settings()
     
-    if(request != []){
-        return [response(commands(request)), createEvent(map)]
-    } else {
+    //if(request != []){
+        //return [response(commands(request)), createEvent(map)]
+    //} else {
         return createEvent(map)
-    }
+    //}
 
 }
 
