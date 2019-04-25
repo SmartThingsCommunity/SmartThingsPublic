@@ -17,7 +17,7 @@ definition(
 
 preferences {
 	section("Choose a temperature sensor"){
-		input "sensor", "capability.temperatureMeasurement", title: "Temperature Sensor"
+		input "sensor", "capability.temperatureMeasurement", title: "Temperature Sensor", required: true
 	}
 	section("Select the outlet(s) for available heating and/or cooling sources"){
 		input "heatOutlets", "capability.switch", title: "Heating Outlets", multiple: true, required: false
@@ -27,9 +27,9 @@ preferences {
 		input "setlowpoint", "decimal", title: "Set Lowest Temperature"
         input "sethighpoint", "decimal", title: "Set Highest Temperature"
 	}
-	section("When there's been movement from (optional, leave blank to not require motion)"){
+	section("When there's been movement from (optional, leave blank to not require motion)", hideWhenEmpty: true){
 		input "motion", "capability.motionSensor", title: "Motion", required: false
-        input "minutes", "number", title: "Minute(s)", required: false
+        input "minutes", "number", title: "Minute(s)", required: false, hideWhenEmpty: "motion"
 	}
 }
 
