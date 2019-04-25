@@ -23,6 +23,8 @@ metadata {
 		capability "Configuration"
 
 		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "Aurora", model: "Remote50AU", deviceJoinName: "Aurora Wireless Wall Remote"
+		fingerprint endpointId: "01", profileId: "0104", deviceId: "0810", inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0006, 0008, 0019, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI wireless dimmer", deviceJoinName: "IKEA TRÅDFRI Wireless dimmer"
+		fingerprint endpointId: "01", profileId: "C05E", deviceId: "0810", inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0006, 0008, 0019, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI wireless dimmer", deviceJoinName: "IKEA TRÅDFRI Wireless dimmer"
 	}
 
 	tiles(scale: 2) {
@@ -44,6 +46,20 @@ metadata {
 
 def getSTEP() {10}
 
+def getONOFF_ON_COMMAND() { 0x01 }
+def getONOFF_OFF_COMMAND() { 0x00 }
+def getLEVEL_MOVE_LEVEL_COMMAND() { 0x00 }
+def getLEVEL_MOVE_COMMAND() { 0x01 }
+def getLEVEL_STEP_COMMAND() { 0x02 }
+def getLEVEL_STOP_COMMAND() { 0x03 }
+def getLEVEL_MOVE_LEVEL_ONOFF_COMMAND() { 0x04 }
+def getLEVEL_MOVE_ONOFF_COMMAND() { 0x05 }
+def getLEVEL_STEP_ONOFF_COMMAND() { 0x06 }
+
+def isIkeaDimmer() {
+	device.getDataValue("model") == "TRADFRI wireless dimmer"
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description is $description"
@@ -56,25 +72,36 @@ def parse(String description) {
 		}
 	} else {
 		def descMap = zigbee.parseDescriptionAsMap(description)
-		if (descMap && descMap.clusterInt == 0x0006) {
-			if (descMap.commandInt == 0x01 || descMap.commandInt == 0x00) {
+		if (descMap && descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+			if (descMap.commandInt == ONOFF_ON_COMMAND || descMap.commandInt == ONOFF_OFF_COMMAND) {
 				if (device.currentValue("level") == 0) {
 					sendEvent(name: "level", value: STEP)
 				}
-				sendEvent(name: "switch", value: device.currentValue("switch") == "on" ? "off" : "on")
+
+				if (isIkeaDimmer()) {
+					sendEvent(name: "switch", value: descMap.commandInt == ONOFF_OFF_COMMAND ? "off" : "on")
+				} else {
+					sendEvent(name: "switch", value: device.currentValue("switch") == "on" ? "off" : "on")
+				}
 			}
-		} else if (descMap && descMap.clusterInt == 0x0008) {
+		} else if (descMap && descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
 			def currentLevel = device.currentValue("level") as Integer ?: 0
-			if (descMap.commandInt == 0x02) {
+
+			if (descMap.commandInt == LEVEL_STEP_COMMAND) {
 				def value = Math.min(currentLevel + STEP, 100)
+
 				log.debug "move to ${descMap.data}"
+
 				if (descMap.data[0] == "00") {
 					log.debug "move up"
+
 					sendEvent(name: "switch", value: "on")
 					sendEvent(name: "level", value: value)
 				} else if (descMap.data[0] == "01") {
 					log.debug "move down"
+
 					value = Math.max(currentLevel - STEP, 0)
+
 					// don't change level if switch will be turning off
 					if (value == 0) {
 						sendEvent(name: "switch", value: "off")
@@ -82,13 +109,20 @@ def parse(String description) {
 						sendEvent(name: "level", value: value)
 					}
 				}
-			} else if (descMap.commandInt == 0x01) {
+			} else if (descMap.commandInt == LEVEL_MOVE_COMMAND) {
 				sendEvent(name: "level", value: descMap.data[0] == "00" ? 100 : STEP)
 				sendEvent(name: "switch", value: "on" )
+
 				log.debug "step to ${descMap.data}"
-			} else if (descMap.commandInt == 0x03) {
+			} else if (descMap.commandInt == LEVEL_STOP_COMMAND) {
 				log.debug "stop move"
-			}
+			} else if (descMap.commandInt == LEVEL_MOVE_LEVEL_ONOFF_COMMAND) {
+				if (descMap.data[0] == "00") {
+					sendEvent(name: "switch", value: "off", isStateChange: true)
+				} else if (descMap.data[0] == "FF") {
+					sendEvent(name: "switch", value: "on", isStateChange: true)
+				}
+            }
 		} else if (descMap && descMap.clusterInt == 0x0005) {
 			if (descMap.commandInt == 0x05) {
 				sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], isStateChange: true)
