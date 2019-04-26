@@ -122,7 +122,7 @@ def setColor(value) {
 def setLevel(level, duration=null) {
     log.debug "setLevel >> value: $value"
     def valueaux = value as Integer
-    def level = Math.max(Math.min(valueaux, 99), 0)
+    level = Math.max(Math.min(valueaux, 99), 0)
     delayBetween([zwave.basicV1.basicSet(value: level), zwave.switchMultilevelV1.switchMultilevelGet()], 2000)
 }
 
@@ -302,7 +302,7 @@ def huesatToRGB(hue, sat) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-    if (zwaveInfo.zw.endsWith("s")) {) {
+    if (zwaveInfo.zw.endsWith("s"))  {
         zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd)
     } else {
         cmd
