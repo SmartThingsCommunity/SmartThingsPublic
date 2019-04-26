@@ -27,7 +27,8 @@ definition(
     category:  "Convenience",
     iconUrl:   "https://dashboard.myplantlink.com/images/apple-touch-icon-76x76-precomposed.png",
     iconX2Url: "https://dashboard.myplantlink.com/images/apple-touch-icon-120x120-precomposed.png",
-    iconX3Url: "https://dashboard.myplantlink.com/images/apple-touch-icon-152x152-precomposed.png"
+    iconX3Url: "https://dashboard.myplantlink.com/images/apple-touch-icon-152x152-precomposed.png",
+    pausable: true
 ) {
     appSetting "client_id"
     appSetting "client_secret"
@@ -57,7 +58,7 @@ def authPage(){
         atomicState.accessToken = state.accessToken
     }
 
-	def redirectUrl = oauthInitUrl()
+    def redirectUrl = oauthInitUrl()
     def uninstallAllowed = false
     def oauthTokenProvided = false
     if(atomicState.authToken){
@@ -78,9 +79,9 @@ def authPage(){
         }
     }else{
         return dynamicPage(name: "auth", title: "Step 1 of 2 - Completed", nextPage:"deviceList", uninstall:uninstallAllowed) {
-	        section(){
+            section(){
                paragraph "You are logged in to myplantlink.com, tap next to continue", image: iconUrl
- 			   href(url:redirectUrl, title:"Or", description:"tap to switch accounts")
+               href(url:redirectUrl, title:"Or", description:"tap to switch accounts")
             }
         }
     }
@@ -137,36 +138,44 @@ def dock_sensor(device_serial, expected_plant_name) {
             contentType: "application/json",
     ]
     log.debug "Creating new plant on myplantlink.com - ${expected_plant_name}"
-    httpPost(docking_params) { docking_response ->
-        if (parse_api_response(docking_response, "Docking a link")) {
-            if (docking_response.data.plants.size() == 0) {
-                log.debug "creating plant for - ${expected_plant_name}"
-                plant_post_body_map["name"] = expected_plant_name
-                plant_post_body_map['links_key'] = [docking_response.data.key]
-                def plant_post_body_json_builder = new JsonBuilder(plant_post_body_map)
-                plant_post_params["body"] = plant_post_body_json_builder.toString()
-                httpPost(plant_post_params) { plant_post_response ->
-                    if(parse_api_response(plant_post_response, 'creating plant')){
-                        def attached_map = atomicState.attached_sensors
-                        attached_map[device_serial] = plant_post_response.data
-                        atomicState.attached_sensors = attached_map
+    try {
+        httpPost(docking_params) { docking_response ->
+            if (parse_api_response(docking_response, "Docking a link")) {
+                if (docking_response.data.plants.size() == 0) {
+                    log.debug "creating plant for - ${expected_plant_name}"
+                    plant_post_body_map["name"] = expected_plant_name
+                    plant_post_body_map['links_key'] = [docking_response.data.key]
+                    def plant_post_body_json_builder = new JsonBuilder(plant_post_body_map)
+                    plant_post_params["body"] = plant_post_body_json_builder.toString()
+                    try {
+                        httpPost(plant_post_params) { plant_post_response ->
+                            if(parse_api_response(plant_post_response, 'creating plant')){
+                                def attached_map = atomicState.attached_sensors
+                                attached_map[device_serial] = plant_post_response.data
+                                atomicState.attached_sensors = attached_map
+                            }
+                        }
+                    } catch (Exception f) {
+                        log.debug "call failed $f"
                     }
+                } else {
+                    def plant = docking_response.data.plants[0]
+                    def attached_map = atomicState.attached_sensors
+                    attached_map[device_serial] = plant
+                    atomicState.attached_sensors = attached_map
+                    checkAndUpdatePlantIfNeeded(plant, expected_plant_name)
                 }
-            } else {
-                def plant = docking_response.data.plants[0]
-                def attached_map = atomicState.attached_sensors
-                attached_map[device_serial] = plant
-                atomicState.attached_sensors = attached_map
-                checkAndUpdatePlantIfNeeded(plant, expected_plant_name)
             }
         }
+    } catch (Exception e) {
+        log.debug "call failed $e"
     }
     return true
 }
 
 def checkAndUpdatePlantIfNeeded(plant, expected_plant_name){
     def plant_put_params = [
-		uri : appSettings.https_plantLinkServer,
+        uri : appSettings.https_plantLinkServer,
         headers : ["Content-Type": "application/json", "Authorization": "Bearer ${atomicState.authToken}"],
         contentType : "application/json"
     ]
@@ -174,12 +183,16 @@ def checkAndUpdatePlantIfNeeded(plant, expected_plant_name){
         log.debug "updating plant for - ${expected_plant_name}"
         plant_put_params["path"] = "/api/v1/plants/${plant.key}"
         def plant_put_body_map = [
-			name: expected_plant_name
+            name: expected_plant_name
         ]
         def plant_put_body_json_builder = new JsonBuilder(plant_put_body_map)
         plant_put_params["body"] = plant_put_body_json_builder.toString()
-        httpPut(plant_put_params) { plant_put_response ->
-            parse_api_response(plant_put_response, 'updating plant name')
+        try {
+            httpPut(plant_put_params) { plant_put_response ->
+                parse_api_response(plant_put_response, 'updating plant name')
+            }
+        } catch (Exception e) {
+            log.debug "call failed $e"
         }
     }
 }
@@ -198,25 +211,29 @@ def moistureHandler(event){
                 contentType: "application/json",
                 body: event.value
         ]
-        httpPost(measurement_post_params) { measurement_post_response ->
-            if (parse_api_response(measurement_post_response, 'creating moisture measurement') &&
-                    measurement_post_response.data.size() >0){
-                def measurement = measurement_post_response.data[0]
-                def plant =  measurement.plant
-                log.debug plant
-                checkAndUpdatePlantIfNeeded(plant, expected_plant_name)
-                plantlinksensors.each{ sensor_device ->
-                    if (sensor_device.id == event.deviceId){
-                        sensor_device.setStatusIcon(plant.status)
-                        if (plant.last_measurements && plant.last_measurements[0].moisture){
-                            sensor_device.setPlantFuelLevel(plant.last_measurements[0].moisture * 100 as int)
-                        }
-                        if (plant.last_measurements && plant.last_measurements[0].battery){
-                            sensor_device.setBatteryLevel(plant.last_measurements[0].battery * 100 as int)
+        try {
+            httpPost(measurement_post_params) { measurement_post_response ->
+                if (parse_api_response(measurement_post_response, 'creating moisture measurement') &&
+                        measurement_post_response.data.size() >0){
+                    def measurement = measurement_post_response.data[0]
+                    def plant =  measurement.plant
+                    log.debug plant
+                    checkAndUpdatePlantIfNeeded(plant, expected_plant_name)
+                    plantlinksensors.each{ sensor_device ->
+                        if (sensor_device.id == event.deviceId){
+                            sensor_device.setStatusIcon(plant.status)
+                            if (plant.last_measurements && plant.last_measurements[0].moisture){
+                                sensor_device.setPlantFuelLevel(plant.last_measurements[0].moisture * 100 as int)
+                            }
+                            if (plant.last_measurements && plant.last_measurements[0].battery){
+                                sensor_device.setBatteryLevel(plant.last_measurements[0].battery * 100 as int)
+                            }
                         }
                     }
                 }
             }
+        } catch (Exception e) {
+            log.debug "call failed $e"
         }
     }
 }
@@ -235,8 +252,12 @@ def batteryHandler(event){
                 contentType: "application/json",
                 body: event.value
         ]
-        httpPost(measurement_post_params) { measurement_post_response ->
-            parse_api_response(measurement_post_response, 'creating battery measurement')
+        try {
+            httpPost(measurement_post_params) { measurement_post_response ->
+                parse_api_response(measurement_post_response, 'creating battery measurement')
+            }
+        } catch (Exception e) {
+            log.debug "call failed $e"
         }
     }
 }
@@ -248,7 +269,7 @@ def getDeviceSerialFromEvent(event){
 }
 
 def oauthInitUrl(){
-	atomicState.oauthInitState = UUID.randomUUID().toString()
+    atomicState.oauthInitState = UUID.randomUUID().toString()
     def oauthParams = [
             response_type: "code",
             client_id: appSettings.client_id,
@@ -275,8 +296,12 @@ def swapToken(){
     ]
 
     def jsonMap
-    httpPost(postParams) { resp ->
-        jsonMap = resp.data
+    try {
+        httpPost(postParams) { resp ->
+            jsonMap = resp.data
+        }
+    } catch (Exception e) {
+        log.debug "call failed $e"
     }
 
     atomicState.refreshToken = jsonMap.refresh_token
@@ -287,33 +312,33 @@ def swapToken(){
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-	.container {
-		padding:25px;
-	}
-	.flex1 {
-    	width:33%;
-		float:left;
-		text-align: center;
-	}
-	p {
-		font-size: 2em;
-		font-family: Verdana, Geneva, sans-serif;
-		text-align: center;
-		color: #777;
-	}
+    .container {
+        padding:25px;
+    }
+    .flex1 {
+        width:33%;
+        float:left;
+        text-align: center;
+    }
+    p {
+        font-size: 2em;
+        font-family: Verdana, Geneva, sans-serif;
+        text-align: center;
+        color: #777;
+    }
 </style>
 </head>
 <body>
-	<div class="container">
-		<div class="flex1"><img src="https://dashboard.myplantlink.com/images/PLlogo.png" alt="PlantLink" height="75"/></div>
-		<div class="flex1"><img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected to"  height="25" style="padding-top:25px;" /></div>
-		<div class="flex1"><img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings" height="75"/></div>
-		<br clear="all">
+    <div class="container">
+        <div class="flex1"><img src="https://dashboard.myplantlink.com/images/PLlogo.png" alt="PlantLink" height="75"/></div>
+        <div class="flex1"><img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/connected-device-icn%402x.png" alt="connected to"  height="25" style="padding-top:25px;" /></div>
+        <div class="flex1"><img src="https://s3.amazonaws.com/smartapp-icons/Partner/support/st-logo%402x.png" alt="SmartThings" height="75"/></div>
+        <br clear="all">
   </div>
   <div class="container">
-		<p>Your PlantLink Account is now connected to SmartThings!</p>
-		<p style="color:green;">Click <strong>Done</strong> at the top right to finish setup.</p>
-	</div>
+        <p>Your PlantLink Account is now connected to SmartThings!</p>
+        <p style="color:green;">Click <strong>Done</strong> at the top right to finish setup.</p>
+    </div>
 </body>
 </html>
 """

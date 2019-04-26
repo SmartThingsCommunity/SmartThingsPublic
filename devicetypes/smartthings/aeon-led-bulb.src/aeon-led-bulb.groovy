@@ -36,36 +36,35 @@ metadata {
 	simulator {
 	}
 
-	standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-		state "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-		state "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-		state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-		state "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 1, height: 1, canChangeIcon: true) {
+			tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState("on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff")
+				attributeState("off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn")
+				attributeState("turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00a0dc", nextState:"turningOff")
+				attributeState("turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn")
+			}
+
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+
+			tileAttribute ("device.color", key: "COLOR_CONTROL") {
+				attributeState "color", action:"setColor"
+			}
+		}
 	}
-	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat") {
+
+	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
 	}
-	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
-		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-	}
-	controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
-		state "level", action:"switch level.setLevel"
-	}
-	controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
-		state "color", action:"setColor"
-	}
-	valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-		state "level", label: 'Level ${currentValue}%'
-	}
-	controlTile("colorTempControl", "device.colorTemperature", "slider", height: 1, width: 2, inactiveLabel: false) {
-		state "colorTemperature", action:"setColorTemperature"
-	}
-	valueTile("hue", "device.hue", inactiveLabel: false, decoration: "flat") {
-		state "hue", label: 'Hue ${currentValue}   '
+
+	controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
+		state "colorTemperature", action:"color temperature.setColorTemperature"
 	}
 
 	main(["switch"])
-	details(["switch", "levelSliderControl", "rgbSelector", "reset", "colorTempControl", "refresh"])
+	details(["switch", "levelSliderControl", "rgbSelector", "colorTempSliderControl", "reset"])
 }
 
 def updated() {
@@ -104,7 +103,7 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")]
 	if (cmd.value) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%")
 	}
 	return result
 }
@@ -175,11 +174,7 @@ def setColor(value) {
 		def c = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
 		result << zwave.switchColorV3.switchColorSet(red:c[0], green:c[1], blue:c[2], warmWhite:0, coldWhite:0)
 	} else {
-		def hue = value.hue ?: device.currentValue("hue")
-		def saturation = value.saturation ?: device.currentValue("saturation")
-		if(hue == null) hue = 13
-		if(saturation == null) saturation = 13
-		def rgb = huesatToRGB(hue, saturation)
+		def rgb = huesatToRGB(value.hue, value.saturation)
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:0, coldWhite:0)
 	}
 
@@ -191,16 +186,27 @@ def setColor(value) {
 	commands(result)
 }
 
-def setColorTemperature(percent) {
-	if(percent > 99) percent = 99
-	int warmValue = percent * 255 / 99
-	command(zwave.switchColorV3.switchColorSet(red:0, green:0, blue:0, warmWhite:warmValue, coldWhite:(255 - warmValue)))
+private getCOLOR_TEMP_MAX() { 6500 }
+private getCOLOR_TEMP_MIN() { 2700 }
+private getCOLOR_TEMP_DIFF() { COLOR_TEMP_MAX - COLOR_TEMP_MIN }
+
+def setColorTemperature(temp) {
+	if(temp > COLOR_TEMP_MAX)
+		temp = COLOR_TEMP_MAX
+	else if(temp < COLOR_TEMP_MIN)
+		temp = COLOR_TEMP_MIN
+	log.debug "setColorTemperature($temp)"
+	def warmValue = ((COLOR_TEMP_MAX - temp) / COLOR_TEMP_DIFF * 255) as Integer
+	def coldValue = 255 - warmValue
+	def cmds = [zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)]
+	cmds += queryAllColors()
+	commands(cmds)
 }
 
 def reset() {
 	log.debug "reset()"
 	sendEvent(name: "color", value: "#ffffff")
-	setColorTemperature(99)
+	setColorTemperature(COLOR_TEMP_MAX)
 }
 
 private command(physicalgraph.zwave.Command cmd) {
@@ -216,39 +222,12 @@ private commands(commands, delay=200) {
 }
 
 def rgbToHSV(red, green, blue) {
-	float r = red / 255f
-	float g = green / 255f
-	float b = blue / 255f
-	float max = [r, g, b].max()
-	float delta = max - [r, g, b].min()
-	def hue = 13
-	def saturation = 0
-	if (max && delta) {
-		saturation = 100 * delta / max
-		if (r == max) {
-			hue = ((g - b) / delta) * 100 / 6
-		} else if (g == max) {
-			hue = (2 + (b - r) / delta) * 100 / 6
-		} else {
-			hue = (4 + (r - g) / delta) * 100 / 6
-		}
-	}
-	[hue: hue, saturation: saturation, value: max * 100]
+	def hex = colorUtil.rgbToHex(red as int, green as int, blue as int)
+	def hsv = colorUtil.hexToHsv(hex)
+	return [hue: hsv[0], saturation: hsv[1], value: hsv[2]]
 }
 
-def huesatToRGB(float hue, float sat) {
-	while(hue >= 100) hue -= 100
-	int h = (int)(hue / 100 * 6)
-	float f = hue / 100 * 6 - h
-	int p = Math.round(255 * (1 - (sat / 100)))
-	int q = Math.round(255 * (1 - (sat / 100) * f))
-	int t = Math.round(255 * (1 - (sat / 100) * (1 - f)))
-	switch (h) {
-		case 0: return [255, t, p]
-		case 1: return [q, 255, p]
-		case 2: return [p, 255, t]
-		case 3: return [p, q, 255]
-		case 4: return [t, p, 255]
-		case 5: return [255, p, q]
-	}
+def huesatToRGB(hue, sat) {
+	def color = colorUtil.hsvToHex(Math.round(hue) as int, Math.round(sat) as int)
+	return colorUtil.hexToRgb(color)
 }

@@ -16,6 +16,7 @@ metadata {
 	definition (name: "Simulated Contact Sensor", namespace: "smartthings/testing", author: "bob") {
 		capability "Contact Sensor"
 		capability "Sensor"
+		capability "Health Check"
 
 		command "open"
 		command "close"
@@ -28,12 +29,30 @@ metadata {
 
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821", action: "open")
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e", action: "close")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC", action: "open")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13", action: "close")
 		}
 		main "contact"
 		details "contact"
 	}
+}
+
+def installed() {
+	log.trace "Executing 'installed'"
+	initialize()
+}
+
+def updated() {
+	log.trace "Executing 'updated'"
+	initialize()
+}
+
+private initialize() {
+	log.trace "Executing 'initialize'"
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 def parse(String description) {

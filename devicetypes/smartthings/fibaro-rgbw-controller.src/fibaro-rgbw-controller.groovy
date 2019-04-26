@@ -82,16 +82,16 @@
 		controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
             state "color", action:"setAdjustedColor"
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
 			state "level", action:"switch level.setLevel"
 		}
 		controlTile("whiteSliderControl", "device.whiteLevel", "slider", height: 1, width: 3, inactiveLabel: false) {
             state "whiteLevel", action:"setWhiteLevel", label:'White Level'
         }
 		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
-        	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821", nextState:"turningOff"
+        	state "on", label:'${name}', action:"switch.off", icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC", nextState:"turningOff"
             state "off", label:'${name}', action:"switch.on", icon:"st.illuminance.illuminance.dark", backgroundColor:"#ffffff", nextState:"turningOn"
-            state "turningOn", label:'${name}', icon:"st.illuminance.illuminance.bright", backgroundColor:"#79b821"
+            state "turningOn", label:'${name}', icon:"st.illuminance.illuminance.bright", backgroundColor:"#00A0DC"
             state "turningOff", label:'${name}', icon:"st.illuminance.illuminance.dark", backgroundColor:"#ffffff"
         }
         valueTile("power", "device.power", decoration: "flat") {
@@ -300,20 +300,26 @@ def setColor(value) {
         value.hex = "#${hex(value.red)}${hex(value.green)}${hex(value.blue)}"
     }
 
-	sendEvent(name: "hue", value: value.hue, displayed: false)
-	sendEvent(name: "saturation", value: value.saturation, displayed: false)
-	sendEvent(name: "color", value: value.hex, displayed: false)
-	if (value.level) {
-		sendEvent(name: "level", value: value.level)
-	}
-	if (value.switch) {
-		sendEvent(name: "switch", value: value.switch)
-	}
+    if(value.hue) {
+        sendEvent(name: "hue", value: value.hue, displayed: false)
+    }
+    if(value.saturation) {
+        sendEvent(name: "saturation", value: value.saturation, displayed: false)
+    }
+    if(value.hex?.trim()) {
+        sendEvent(name: "color", value: value.hex, displayed: false)
+    }
+    if (value.level) {
+        sendEvent(name: "level", value: value.level)
+    }
+    if (value.switch?.trim()) {
+        sendEvent(name: "switch", value: value.switch)
+    }
 
     sendRGB(value.rh, value.gh, value.bh)
 }
 
-def setLevel(level) {
+def setLevel(level, rate = null) {
 	log.debug "setLevel($level)"
 
 	if (level == 0) { off() }
@@ -526,7 +532,7 @@ def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {
      if (cmd.value >= 5) {
           def item2 = new LinkedHashMap(item1)
           item2.name = "level"
-          item2.value = cmd.value as String
+          item2.value = (cmd.value == 99 ? 100 : cmd.value) as String
           item2.unit = "%"
           item2.descriptionText = "${item1.linkText} dimmed ${item2.value} %"
           item2.canBeCurrentState = true
@@ -724,7 +730,7 @@ def hueToRgb(v1, v2, vh) {
 	if (vh > 1) { vh -= 1 }
 	if ((6 * vh) < 1) { return (v1 + (v2 - v1) * 6 * vh) }
     if ((2 * vh) < 1) { return (v2) }
-    if ((3 * vh) < 2) { return (v1 + (v2 - $v1) * ((2 / 3 - vh) * 6)) }
+    if ((3 * vh) < 2) { return (v1 + (v2 - v1) * ((2 / 3 - vh) * 6)) }
     return (v1)
 }
 
