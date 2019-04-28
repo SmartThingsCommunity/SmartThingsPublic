@@ -522,13 +522,33 @@ def convertParam(number, value) {
             //Parameter difference between firmware versions
         	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != null) {
                 if (device.currentValue("currentFirmware") == "1.07" || device.currentValue("currentFirmware") == "1.08" || device.currentValue("currentFirmware") == "1.09") {
-                    (value * 256) + 2
+                    if (device.currentValue("currentFirmware") == "1.09" && value < 10) {
+                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                        (10 * 256) + 2
+                    } else {
+                        (value * 256) + 2
+                    }
                 } else if (device.currentValue("currentFirmware") == "1.10" || device.currentValue("currentFirmware") == "1.11" || device.currentValue("currentFirmware") == "1.12" || device.currentValue("currentFirmware") == "1.13") {
-                    (value * 65536) + 512
+                    if (value < 10) {
+                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                        (10 * 65536) + 512
+                    } else {
+                        (value * 65536) + 512
+                    }
                 } else if (device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU" || device.currentValue("currentFirmware") == "1.12EU" || device.currentValue("currentFirmware") == "1.13EU") {
-                    (value * 65536) + 256
+                    if (value < 10) {
+                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                        (10 * 65536) + 256
+                    } else {
+                        (value * 65536) + 256
+                    }
                 } else if (device.currentValue("currentFirmware") == "1.07EU" || device.currentValue("currentFirmware") == "1.08EU" || device.currentValue("currentFirmware") == "1.09EU") {
-                    (value * 256) + 1
+                    if (device.currentValue("currentFirmware") == "1.09EU" && value < 10) {
+                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                        (10 * 256) + 1
+                    } else {
+                        (value * 256) + 1
+                    }
                 } else {
                     value
                 }	
