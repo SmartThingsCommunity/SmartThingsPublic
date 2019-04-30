@@ -132,7 +132,7 @@ def initialize() {
 		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE)
 		cmds += zigbee.readAttribute(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS)
 		cmds += zigbee.enrollResponse()
-		cmds += configureReporting(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS, DataType.BITMAP16, 30, 60*5, null)
+		cmds += zigbee.configureReporting(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS, DataType.BITMAP16, 30, 60*5, null)
 	} else {
 		cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,DataType.ENUM8, 0, 3600, null) 
 		cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,DataType.UINT8, 600, 21600, 0x01)

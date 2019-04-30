@@ -14,8 +14,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-    definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings",
-            runLocally: true, minHubCoreVersion: '000.025.00025', executeCommandsLocally: true) {
+    definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings") {
         capability "Tone"
         capability "Actuator"
         capability "Presence Sensor"
@@ -59,7 +58,6 @@ metadata {
 }
 
 def updated() {
-    stopTimer()
     startTimer()
 }
 
@@ -161,19 +159,16 @@ private handlePresenceEvent(present) {
 
 private startTimer() {
     log.debug "Scheduling periodic timer"
-    // Unlike stopTimer, only schedule this when running in the cloud since the hub will take care presence detection
-    // when it is running locally
     runEvery1Minute("checkPresenceCallback")
 }
 
 private stopTimer() {
     log.debug "Stopping periodic timer"
-    // Always unschedule to handle the case where the DTH was running in the cloud and is now running locally
-    unschedule("checkPresenceCallback", [forceForLocallyExecuting: true])
+    unschedule()
 }
 
 def checkPresenceCallback() {
-    def timeSinceLastCheckin = (now() - state.lastCheckin ?: 0) / 1000
+    def timeSinceLastCheckin = (now() - state.lastCheckin) / 1000
     def theCheckInterval = (checkInterval ? checkInterval as int : 2) * 60
     log.debug "Sensor checked in ${timeSinceLastCheckin} seconds ago"
     if (timeSinceLastCheckin >= theCheckInterval) {
