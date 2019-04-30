@@ -77,11 +77,12 @@ def parse(String description) {
     if (description?.startsWith("read attr -")) {
         Map descMap = zigbee.parseDescriptionAsMap(description)
         if (descMap?.clusterInt == CLUSTER_WINDOW_COVERING && descMap.value) {
-            log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, decValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
+            log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, descValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
             List<Map> descMaps = collectAttributes(descMap)
             def liftmap = descMaps.find { it.attrInt == ATTRIBUTE_POSITION_LIFT }
             if (liftmap) {
-                 if (liftmap.value == "64") { //open
+                state.level = Integer.parseInt(liftmap.value, 16)
+                if (liftmap.value == "64") { //open
                     sendEvent(name: "windowShade", value: "open")
                     sendEvent(name: "level", value: "100")
                 } else if (liftmap.value == "00") { //closed
@@ -89,7 +90,7 @@ def parse(String description) {
                     sendEvent(name: "level", value: "0")
                 } else {
                     sendEvent(name: "windowShade", value: "partially open")
-                    sendEvent(name: "level", value: zigbee.convertHexToInt(attr.value))
+                    sendEvent(name: "level", value: zigbee.convertHexToInt(liftmap.value))
                 }
             }
         }
@@ -98,16 +99,25 @@ def parse(String description) {
 
 def close() {
     log.info "close()"
+    sendEvent(name: "windowShade", value: "closing")
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x01)
 }
 
 def open() {
     log.info "open()"
+    sendEvent(name: "windowShade", value: "opening")
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x00)
 }
 
 def setLevel(data) {
     log.info "setLevel()"
+    Integer currentLevel = state.level
+    Integer level = data as Integer
+    if (level > currentLevel) {
+        sendEvent(name: "windowShade", value: "opening")
+    } else if (level < currentLevel) {
+        sendEvent(name: "windowShade", value: "closing")
+    }
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(data, 2))
 }
 

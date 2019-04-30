@@ -41,9 +41,8 @@ metadata {
     }
 }
 
-def installed(){
+def installed() {
     log.debug "installed"
-    response(refresh())
 }
 
 def parse(String description) {
