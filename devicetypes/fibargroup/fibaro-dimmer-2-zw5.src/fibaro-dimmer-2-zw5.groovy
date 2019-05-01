@@ -155,7 +155,7 @@ def configure(){
 def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
 	logging("${device.displayName} - Executing updated()","info")
-	runIn(3, "syncStart")
+	runIn(3, "syncStart", [overwrite: true, forceForLocallyExecuting: true])
 	state.lastUpdated = now()
 }
 
@@ -191,10 +191,10 @@ private syncNext() {
 		}
 	}
 	if (cmds) {
-		runIn(10, "syncCheck")
+		runIn(10, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 		sendHubCommand(cmds,1000)
 	} else {
-		runIn(1, "syncCheck")
+		runIn(1, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 

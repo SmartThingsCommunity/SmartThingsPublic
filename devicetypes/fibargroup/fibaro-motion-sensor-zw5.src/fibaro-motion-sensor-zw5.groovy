@@ -284,7 +284,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1))
 	cmds << "delay 1200"
 	cmds << encap(zwave.wakeUpV1.wakeUpNoMoreInformation())
-	runIn(1, "syncNext")
+	runIn(1, "syncNext", [overwrite: true, forceForLocallyExecuting: true])
 	[event, response(cmds)]
 }
 
@@ -403,7 +403,7 @@ private motionEvent(Integer sensorType, value) {
 			break
 		case 52..54:
 			sendEvent(name: axisMap[sensorType], value: value, displayed: false)
-			runIn(2, "axisEvent")
+			runIn(2, "axisEvent", [overwrite: true, forceForLocallyExecuting: true])
 			break
 	}
 }
@@ -460,10 +460,10 @@ def syncNext() {
 		}
 	}
 	if (cmds) {
-		runIn(10, "syncCheck")
+		runIn(10, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 		sendHubCommand(cmds, 1000)
 	} else {
-		runIn(1, "syncCheck")
+		runIn(1, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 
