@@ -1,5 +1,3 @@
-import groovy.json.JsonOutput
-
 /**
  *  Copyright 2019 SmartThings
  *
@@ -13,6 +11,9 @@ import groovy.json.JsonOutput
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
+
 metadata {
     definition (name: "Aeotec Wallmote", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true) {
         capability "Actuator"
@@ -49,20 +50,11 @@ def getNumberOfButtons() {
 
 def installed() {
     sendEvent(name: "numberOfButtons", value: numberOfButtons)
-    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false)
     sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1])
-    createChildDevices()
-    response([
-            secure(zwave.batteryV1.batteryGet()),
-            "delay 2000",
-            secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
-    ])
 }
 
 def updated() {
-    if (!childDevices) {
-        createChildDevices()
-    }
+    createChildDevices()
     else if (device.label != state.oldLabel) {
         childDevices.each {
             def segs = it.deviceNetworkId.split(":")
@@ -74,7 +66,13 @@ def updated() {
 }
 
 def configure() {
-
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false)
+    createChildDevices()
+    response([
+            secure(zwave.batteryV1.batteryGet()),
+            "delay 2000",
+            secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
+    ])
 }
 
 def parse(String description) {
@@ -143,18 +141,20 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def createChildDevices() {
-    state.oldLabel = device.label
-    def child
-    for (i in 1..numberOfButtons) {
-        child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
-                [completedSetup: true, label: "${device.displayName} button ${i}",
-                 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
-        child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: i], descriptionText: "$child.displayName was pushed", isStateChange: true)
+    if (!childDevices) {
+        state.oldLabel = device.label
+        def child
+        for (i in 1..numberOfButtons) {
+            child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
+                    [completedSetup: true, label: "${device.displayName} button ${i}",
+                     isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+            child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: i], descriptionText: "$child.displayName was pushed", isStateChange: true)
+        }
     }
 }
 
 def secure(cmd) {
-    if(zwaveInfo.zw.endsWith("s")) {
+    if (zwaveInfo.zw.endsWith("s")) {
         zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
     } else {
         cmd.format()
