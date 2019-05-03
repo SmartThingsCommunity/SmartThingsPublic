@@ -55,7 +55,7 @@ def installed() {
 
 def updated() {
     createChildDevices()
-    else if (device.label != state.oldLabel) {
+    if (device.label != state.oldLabel) {
         childDevices.each {
             def segs = it.deviceNetworkId.split(":")
             def newLabel = "${device.displayName} button ${segs[-1]}"
@@ -81,8 +81,8 @@ def parse(String description) {
         results = createEvent(descriptionText:description, displayed:true)
     } else {
         def cmd = zwave.parse(description)
-        if(cmd) results += zwaveEvent(cmd)
-        if(!results) results = [ descriptionText: cmd, displayed: false ]
+        if (cmd) results += zwaveEvent(cmd)
+        if (!results) results = [ descriptionText: cmd, displayed: false ]
     }
     return results
 }
