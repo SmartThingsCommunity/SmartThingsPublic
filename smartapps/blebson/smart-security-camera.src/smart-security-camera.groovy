@@ -86,7 +86,7 @@ def subscribeToEvents() {
 def sendMessage(evt) {
 	unschedule(videoOff)
 	log.debug "$evt.name: $evt.value, $messageText" 
-    
+    	//motion active recored or take
     if((evt.name == "motion")&&(evt.value == "active")) {
         if(video == true) {
         	log.debug "Turning Video Recording On."
@@ -105,13 +105,15 @@ def sendMessage(evt) {
 		}
     	
     }
+    	// motion off stop recording
     else if((evt.name == "motion")&&(evt.value == "inactive")) {
         if(video == true) {
         	log.debug "Turning Video Recording Off in ${length} seconds."
     		runIn(length.toInteger(), videoOff)
         }
     }
-    else if(evt.name != "motion") {
+    	//contact or switch open
+    else if(evt.name != "motion") { 
     	if(video == true) {
         	camera.vrOn()
         	runIn(duration.toInteger(), videoOff)
@@ -123,68 +125,19 @@ def sendMessage(evt) {
    
     	if(picture == true) {
         	camera.take()
-            log.debug "$evt , not motion 1"
+            log.debug "$evt , not motion"
             camera.burst()
             //(1..3).each {
             //	camera.take(delay: (500 * it)) //was 7000 //camera.take(delay: 1500) //was 7000
 			//}
-
-/*		try {
-        	def eventList = []
-        	eventList << camera.take()
-            eventList << "delay 500"
-            eventList << camera.take()
-            eventList << "delay 1000"
-            eventList << camera.take()
-            eventList << "delay 2000"
-            eventList << camera.take()
-            eventList << "delay 3000"
-            eventList << camera.take()
-            eventList << "delay 4000"
-            eventList << camera.take()
-            eventList << "delay 5000"
-            eventList << camera.take()
-            eventList
-*/            
-/*            delayBetween([
-        		camera.take(),             
-                camera.take(),            
-                camera.take(),
-                camera.take(),           
-                camera.take(),            
-                camera.take(),
-                camera.take(),            
-                camera.take(), 
-                camera.take()     
-    		], 1000)
-
-		} catch (e1) {
-        	
-	    	log.warn "exception respones 1 - '${e1}'"
-*/
-    	}
-/*		try {
-            delayBetween([
-        		camera.take(),             
-                camera.take(),            
-                camera.take(),      
-                camera.take()     
-    		], 10000)
-		} catch (e2) {
-        	
-	    	log.warn "exception respones 2 - '${e2}'"
-    	}
-    	}
-*/        
-   		log.debug "not motion end"
-    }
-
-    
-    if(!((evt.name == "motion")&&(evt.value == "inactive"))) {
-    	if (pushmessageoff == false){ // disable push messages, but still take
-    		sendNotification()
-        }
-	}  
+		}
+    		// always check to see if need to send message
+    	if(!((evt.name == "motion")&&(evt.value == "inactive"))) { //as long as its not an inactive motion check to send message
+    		if (pushmessageoff == false){ // disable push messages, but still take
+    			sendNotification()
+        	}
+		}  
+	}
 }
 
 def sendNotification(){
