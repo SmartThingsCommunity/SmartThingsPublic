@@ -14,7 +14,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-    definition (name: "Aeotec Wallmote", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller") {
+    definition (name: "Aeotec Wallmote", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller", mcdSync: true) {
         capability "Actuator"
         capability "Button"
         capability "Battery"
