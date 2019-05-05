@@ -91,6 +91,16 @@ def parse(String description) {
             event.value = event.value.toLowerCase()
         }
         sendEvent(event)
+    }else if(description?.startsWith('zone status') || description?.startsWith('zone report')){
+        def splitMsg = description.split(" ");
+        def descValue = Integer.parseInt(splitMsg[-1],16)
+        def value = descValue & 0x0008 ?5:50
+        def result = [:]
+        result.name = 'battery'
+        result.value = value
+        result.descriptionText = "${device.displayName} battery value is ${value}"
+        result.translatable = true
+        sendEvent(result)
     }
     else {
         def descMap = zigbee.parseDescriptionAsMap(description)
