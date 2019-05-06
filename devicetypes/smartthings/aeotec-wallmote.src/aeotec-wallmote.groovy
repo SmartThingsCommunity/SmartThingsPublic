@@ -50,6 +50,7 @@ def getNumberOfButtons() {
 
 def installed() {
     sendEvent(name: "numberOfButtons", value: numberOfButtons)
+    sendEvent(name: "supportedButtonValues", value: ["pushed", "held"])
     sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1])
 }
 
