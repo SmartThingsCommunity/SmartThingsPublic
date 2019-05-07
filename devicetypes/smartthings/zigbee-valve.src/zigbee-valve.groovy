@@ -11,6 +11,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -92,6 +93,15 @@ def parse(String description) {
         }
         sendEvent(event)
     }
+    else if (description?.startsWith('zone status') || description?.startsWith('zone report')) {
+        ZoneStatus zs = zigbee.parseZoneStatus(description)
+        def value = zs.isBatterySet() ? 5 : 50
+        def result = [:]
+        result.name = 'battery'
+        result.value = value
+        result.descriptionText = "${device.displayName} battery was ${result.value}%"
+        sendEvent(result)
+    }
     else {
         def descMap = zigbee.parseDescriptionAsMap(description)
         if (descMap.clusterInt == CLUSTER_BASIC && descMap.attrInt == BASIC_ATTR_POWER_SOURCE){
@@ -135,8 +145,7 @@ def sendBatteryResult(description) {
 
     result.name = 'battery'
     result.value = value
-    result.descriptionText = "${device.displayName} battery value is ${value}"
-    result.translatable = true
+    result.descriptionText = "${device.displayName} battery was ${result.value}%"
 
     sendEvent(result)
 }
