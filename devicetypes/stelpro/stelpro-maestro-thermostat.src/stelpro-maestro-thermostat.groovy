@@ -339,7 +339,8 @@ def handleTemperature(descMap) {
 		def lastAlarm = device.currentValue("temperatureAlarm")
 		if (lastAlarm != "cleared") {
 			def cleared = false
-			if (lastTemp) {
+
+			if (lastTemp != null) {
 				lastTemp = convertTemperatureIfNeeded(lastTemp, device.currentState("temperature").unit).toFloat()
 				// Check to see if we are coming out of our alarm state and only clear then
 				// NOTE: A thermostat might send us an alarm *before* it has completed sending us previous measurements,
