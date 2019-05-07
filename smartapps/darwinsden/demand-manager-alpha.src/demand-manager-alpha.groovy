@@ -2,7 +2,7 @@
  *  Demand Manager
  *
  *  Author: Darwin@DarwinsDen.com
- *  Copyright 2018 - All rights reserved
+ *  Copyright 2018, 2019 - All rights reserved
  *  
  *  ****** WARNING ******
  *  Installation and configuration of this software will grant this application control of your home thermostat and other devices. 
@@ -19,14 +19,16 @@
  * 
  *  The developer retains all rights, title, copyright, and interest, including all copyright, patent rights, and trade secrets 
  *  associated with the algorthms, and technologies used herein. 
- * 
+ *
  */
-def version() {
-    return "v0.1.1e.20180921"
-}
+ 
+def version() { return "v0.1.2e.20190507" }
+/*
+ *	07-May-2019 >>> v0.1.2e.20190507 - Added additional exception handling and watchdog processes, logic updates
+ */
 
 def warning() {
-    return "WARNING: By enabling these features, you are granting permission of this application to control your thermostat and other devices. This software is in early beta stages. Normal operation and/or unexpected failures or defects in this software, dependent hardware, and/or network may result in uninted high or low temperatures and high utility usage & costs."
+    return "WARNING: By enabling these features, you are granting permission of this application to control your thermostat and other devices. This software is in early beta stages. Normal operation and/or unexpected failures or defects in this software, dependent hardware, and/or network may result in unintended high or low temperatures and high utility usage & costs."
 }
 
 def release() {
@@ -224,7 +226,7 @@ def pageNotifications() {
         section("Send a notification if the monthly demand reaches a new high") {
             input "notifyWhenMonthlyDemandExceeded", "boolean", required: false, defaultValue: false, title: "Notify of new monthly high demand"
         }
-        section("Send a notification for general demand status (demand cycle started/ended, etc..") {
+        section("Send a notification for general demand status (demand cycle started/ended, etc..)") {
             input "notifyWithGeneralDemandStatus", "boolean", required: false, defaultValue: false, title: "Notify of general demand status"
         }
         section("Notify when thermostat is controlled - or when the Demand Manager recommends that the air conditioner should be turned off if thermostat control is disabled") {
@@ -286,17 +288,18 @@ def pageThermostat() {
             input "maxTemperature", "number", required: false, defaultValue: 83, title: "Maximum Temperature"
         }
 
-        section("Precool Home to a chosen temperature and return home temperature back when the peak period ends.") {
+        section("Precool Home to a chosen temperature and return home temperature back when the peak period ends. When used in conjunction with Demand Manager thermostat commanding, " +
+               "the pre-cool start time is typically 30 minutes or more before your peak period begins, and the pre-cool return time will typically be the same time " +
+               "that your peak period ends. Note: You may wish to  program your smart thermostat to perform this function itself locally instead of using the precool functions here.") {
             input "precoolHome", "boolean", required: false, defaultValue: false, title: "Precool"
             input "precoolStartTime", "time", required: false, title: "Pre-cool start time"
-            input "precoolStopTime", "time", required: false, title: "Pre-cool stop time (time when temperature should be returned back)"
+            input "precoolStopTime", "time", required: false, title: "Pre-cool return time"
             input "precoolStartTemperature", "number", required: false, title: "Temperature to pre-cool to (°F)"
-            input "precoolStopTemperature", "number", required: false, title: "Temperature to return to at stop time (°F)"
-
+            input "precoolStopTemperature", "number", required: false, title: "Temperature to return to at pre-cool return time (°F)"
         }
 
 
-        section("Conserve Energy: Allow air conditioner to continue through to the next demand cycle (ie 30 or 60 minute period) if it is close to the end of a demand cycle and demand overage will not be extreme " +
+        section("Conserve Energy: Allow air conditioner to continue through to the next demand cycle (ie 30 or 60 minute period) if it is close to the end of a demand cycle and demand overage will not be extreme. " +
             "Warning: May result in demand slightly exceeding your goal demand") {
             input "conserveAirConditioningEnergy", "boolean", required: false, defaultValue: false, title: "Conserve AC Energy"
         }
@@ -339,7 +342,6 @@ def pageRemove() {
 
 def installed() {
     log.debug("installed called")
-    atomicState.lastThrottleRunTime = now()
     initialize()
 }
 
@@ -433,17 +435,33 @@ def memUsed() {
 
 def initialize() {
     log.debug "Initializing Demand Manager"
+    atomicState.lastThrottleRunTime = now()
+    atomicState.lastProcessCompletedTime = now()
     runEvery1Minute(throttleEvents)
+    runEvery5Minutes(watchDog)
     subscribeDevices()
     schedulePrecooling()
     schedulePeakTimes()
 }
 
+def getSecondsIntoThisDay(def Date) {
+           def hour = timeNow.format('h').toInteger()
+            def min = timeNow.format('m').toInteger()
+            def sec = timeNow.format('s').toInteger()
+            def secondsIntoThisDay = hour*3600+min*60+sec
+    return secondsIntoThisDay
+}
+
 def schedulePeakTimes() {
     if (schedule1IsActive && schedule1IsActive.toBoolean() == true) {
         if (schedule1StartTime && schedule1StopTime) {
-            schedule(schedule1StartTime.toString(), startPeak1Schedule)
-            schedule(schedule1StopTime.toString(), stopPeak1Schedule)
+           def onPeakNow = timeOfDayIsBetween(schedule1StartTime, schedule1StopTime, new Date(), location.timeZone)
+           if (onPeakNow) {
+              startPeak1Schedule()
+           }
+           schedule(schedule1StartTime.toString(), startPeak1Schedule)
+           schedule(schedule1StopTime.toString(), stopPeak1Schedule)
+            
         } else {
             message = "Schedule 1 enabled in preferences, but start and/or stop time was not specified. Peak schedule 1 could not be set."
             log.warn message
@@ -452,6 +470,10 @@ def schedulePeakTimes() {
     }
     if (schedule2IsActive && schedule2IsActive.toBoolean() == true) {
         if (schedule2StartTime && schedule2StopTime) {
+            def onPeakNow = timeOfDayIsBetween(schedule2StartTime, schedule2StopTime, new Date(), location.timeZone)
+            if (onPeakNow) {
+              startPeak2Schedule()
+            }
             schedule(schedule2StartTime.toString(), startPeak2Schedule)
             schedule(schedule2StopTime.toString(), stopPeak2Schedule)
         } else {
@@ -462,10 +484,14 @@ def schedulePeakTimes() {
     }
     if (schedule3IsActive && schedule3IsActive.toBoolean() == true) {
         if (schedule3StartTime && schedule3StopTime) {
+            def onPeakNow = timeOfDayIsBetween(schedule3StartTime, schedule3StopTime, new Date(), location.timeZone)
+            if (onPeakNow) {
+              startPeak3Schedule()
+            } 
             schedule(schedule3StartTime.toString(), startPeak3Schedule)
             schedule(schedule3StopTime.toString(), stopPeak3Schedule)
         } else {
-            message = "Schedule 2 enabled in preferences, but start and/or stop time was not specified. Peak schedule 3 could not be set."
+            message = "Schedule 3 enabled in preferences, but start and/or stop time was not specified. Peak schedule 3 could not be set."
             log.warn message
             sendNotificationMessage(message, "anomaly")
         }
@@ -757,11 +783,12 @@ def throttleEvents() {
     if (atomicState.lastThrottleRunTime == null) {
         atomicState.lastThrottleRunTime = 0
     }
-    def timeNow = new Date()
     def secondsSinceLastRun = (now() - atomicState.lastThrottleRunTime) / 1000
-    if (secondsSinceLastRun > 600) {
-        sendNotificationMessage("Warning: Demand Manager time since last execution exceeded 10 minutes.", "anomaly")
-        subscribeDevices()
+    if (secondsSinceLastRun > 300) {
+        sendNotificationMessage("Warning: Demand Manager has not processed events in the last 5 minutes. Reinitializing", "anomaly")
+        unsubscribe()
+        unschedule()
+        initialize()
     }
     if (secondsSinceLastRun > 40) {
         atomicState.lastThrottleRunTime = now()
@@ -1049,14 +1076,25 @@ def turnOnThermostat() {
 }
 
 def getTrsAdjustedTargetDemand() {
-    def goalAdjustmentWatts = getSmartThermoWeightedDeparture(homeThermostat.coolingSetpointState.integerValue) * 200
-    def trsAdjustedTargetDemand = atomicState.goalDemandWatts + goalAdjustmentWatts
-    if (demandPeakToday && trsAdjustedTargetDemand < demandPeakToday.powerState.integerValue) {
-        if (demandPeakToday.powerState.integerValue < atomicState.goalDemandWatts) {
+    def trsAdjustedTargetDemand
+    if (homeThermostat.coolingSetpointState.stringValue != "") {
+      try {
+        def goalAdjustmentWatts = getSmartThermoWeightedDeparture(homeThermostat.coolingSetpointState.integerValue) * 200
+        trsAdjustedTargetDemand = atomicState.goalDemandWatts + goalAdjustmentWatts
+        if (demandPeakToday && trsAdjustedTargetDemand < demandPeakToday.powerState.integerValue) {
+           if (demandPeakToday.powerState.integerValue < atomicState.goalDemandWatts) {
             trsAdjustedTargetDemand = demandPeakToday.powerState.integerValue
-        } else {
-            trsAdjustedTargetDemand = atomicState.goalDemandWatts
-        }
+           } else {
+              trsAdjustedTargetDemand = atomicState.goalDemandWatts
+           }
+         }
+       } catch (Exception e) {
+        log.warn "exception in getTrsAdjustedTargetDemand: ${e}"
+        sendNotificationMessage("Issue processing temperature rise scheduling.", "anomaly")
+        trsAdjustedTargetDemand = atomicState.goalDemandWatts
+      }
+    } else {
+       trsAdjustedTargetDemand = atomicState.goalDemandWatts
     }
     return trsAdjustedTargetDemand
 }
@@ -1137,7 +1175,13 @@ def verifyThermostatCommand(data) {
     if (homeThermostat.coolingSetpointState.integerValue != setPoint) {
         log.debug("Cooling setpoint was not set to ${data.coolingSetpoint} as commanded (currently: ${homeThermostat.coolingSetpointState.integerValue}). Retrying...")
         atomicState.lastThermostatCommandTime = now()
-        homeThermostat.setCoolingSetpoint(setPoint)
+        try {
+            homeThermostat.setCoolingSetpoint(setPoint)
+        } catch (Exception e) {
+            log.debug "exception setting setpoint: ${e}"
+            sendNotificationMessage("Warning: thermostat exception in verify when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
+            throw e
+        }
         runIn(45, verifyThermostatCommandFinal, [data: [coolingSetpoint: setPoint]])
     } else {
         log.debug("Confirmed cooling setpoint ${data.coolingSetpoint} is set.")
@@ -1153,7 +1197,14 @@ def commandThermostatHandler(data) {
     def setPoint = data.coolingSetpoint
     log.debug "Setting Thermostat to ${setPoint}F degrees."
     atomicState.lastThermostatCommandTime = now()
-    homeThermostat.setCoolingSetpoint(setPoint)
+    try {
+        homeThermostat.setCoolingSetpoint(setPoint)
+    } catch (Exception e) {
+        log.debug "exception setting setpoint: ${e}"
+        sendNotificationMessage("Warning: thermostat exception in handler when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
+        runIn(45, verifyThermostatCommand, [data: [coolingSetpoint: setPoint]])
+        throw e
+    }
     runIn(45, verifyThermostatCommand, [data: [coolingSetpoint: setPoint]])
 }
 
@@ -1168,7 +1219,7 @@ def commandThermostatWithBump(setPoint, degreesBump) {
         homeThermostat.setCoolingSetpoint(setPoint + degreesBump)
     } catch (Exception e) {
         log.debug "exception setting setpoint: ${e}"
-        sendNotificationMessage("Warning: thermostat exception when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
+        sendNotificationMessage("Warning: thermostat exception in bump handler when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
         throw e
     }
     atomicState.processingThermostatCommand = true
@@ -1260,7 +1311,7 @@ def setIndicatorDevices() {
             }
         }
         if (stateChanged) {
-            log.debug "state changed!"
+            //log.debug "state changed!"
             if (nowInPeakUtilityPeriod == true) {
                 runIn(5, colorIndicatorOnPeakHandler)
             } else {
@@ -1362,6 +1413,17 @@ def setWD200LEDs(ledLevel, ledColor, ledBlink) {
     }
 }
 
+def watchDog ()
+{
+    def secondsSinceLastProcessCompleted = (now() - atomicState.lastProcessCompletedTime) / 1000
+    if (secondsSinceLastProcessCompleted > 290) {
+        sendNotificationMessage("Warning: Demand Manager has not successfully run in the last 5 minutes. Reinitializing", "anomaly")
+        unsubscribe()
+        unschedule()
+        initialize()
+    }
+}
+
 def process() {
     setUtilityPeriodGlobalStatus()
     setCycleStatus()
@@ -1369,4 +1431,5 @@ def process() {
     thermostatControls()
     recordPeakDemands()
     setIndicatorDevices()
+    atomicState.lastProcessCompletedTime = now()
 }
