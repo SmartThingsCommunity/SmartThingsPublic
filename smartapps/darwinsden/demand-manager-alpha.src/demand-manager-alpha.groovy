@@ -776,6 +776,7 @@ def throttledEvent(evt) {
 
 def immediateEvent(evt) {
     //log.debug "Immediate Event Received: ${evt.device} ${evt.name} ${evt.value} "
+    atomicState.lastThrottleRunTime = now()
     process()
 }
 
@@ -784,6 +785,7 @@ def throttleEvents() {
         atomicState.lastThrottleRunTime = 0
     }
     def secondsSinceLastRun = (now() - atomicState.lastThrottleRunTime) / 1000
+    //log.debug "${secondsSinceLastRun}"
     if (secondsSinceLastRun > 300) {
         sendNotificationMessage("Warning: Demand Manager has not processed events in the last 5 minutes. Reinitializing", "anomaly")
         unsubscribe()
