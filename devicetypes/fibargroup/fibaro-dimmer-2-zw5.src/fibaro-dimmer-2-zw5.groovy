@@ -166,8 +166,7 @@ def syncStart() {
 		if(settings."$it.key" != null) {
 			if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] }
 			// this parameter (38) is not supported on some earlier firmware versions, so we'll mark it as already synced
-			if (!zwaveInfo.ver ||
-				("$it.key" == "levelCorrection" && (zwaveInfo.ver as float) <= REDUCED_CONFIGURATION_VERSION)) {
+			if ("$it.key" == "levelCorrection" && (!zwaveInfo.ver || (zwaveInfo.ver as float) <= REDUCED_CONFIGURATION_VERSION)) {
 				state."$it.key".state = "synced"
 			} else if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state in ["notSynced","inProgress"]) {
 				state."$it.key".value = settings."$it.key" as Integer
