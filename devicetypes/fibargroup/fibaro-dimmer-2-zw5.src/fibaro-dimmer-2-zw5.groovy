@@ -165,15 +165,13 @@ def syncStart() {
 	parameterMap().each {
 		if(settings."$it.key" != null) {
 			if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] }
-			if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state in ["notSynced","inProgress"]) {
-				state."$it.key".value = settings."$it.key" as Integer
-				state."$it.key".state = "notSynced"
-				syncNeeded = true
-			}
 			// this parameter (38) is not supported on some earlier firmware versions, so we'll mark it as already synced
 			if ("$it.key" == "levelCorrection" && (zwaveInfo.ver as float) <= REDUCED_CONFIGURATION_VERSION) {
 				state."$it.key".state = "synced"
-				syncNeeded = settings.size() > 1
+			} else if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state in ["notSynced","inProgress"]) {
+				state."$it.key".value = settings."$it.key" as Integer
+				state."$it.key".state = "notSynced"
+				syncNeeded = true
 			}
 		}
 	}
@@ -451,7 +449,7 @@ private Map cmdVersions() {
 	[0x5E: 1, 0x86: 1, 0x72: 2, 0x59: 1, 0x73: 1, 0x22: 1, 0x31: 5, 0x32: 3, 0x71: 3, 0x56: 1, 0x98: 1, 0x7A: 2, 0x20: 1, 0x5A: 1, 0x85: 2, 0x26: 3, 0x8E: 2, 0x60: 3, 0x70: 2, 0x75: 2, 0x27: 1]
 }
 
-private getREDUCED_CONFIGURATION_VERSION() {3.03}
+private getREDUCED_CONFIGURATION_VERSION() {3.04}
 
 private parameterMap() {[
 		[key: "autoStepTime", num: 6, size: 2, type: "enum", options: [
