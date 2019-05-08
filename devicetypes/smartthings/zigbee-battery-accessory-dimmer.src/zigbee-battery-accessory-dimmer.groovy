@@ -17,10 +17,10 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 	definition (name: "ZigBee Battery Accessory Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Actuator"
-		capability "Switch"
 		capability "Battery"
-		capability "Switch Level"
 		capability "Configuration"
+		capability "Switch"
+		capability "Switch Level"
 		
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,FC11", outClusters: "0003,0004,0006,0008,FC10", manufacturer: "sengled", model: "E1E-G7F", deviceJoinName: "Sengled Smart Switch"
 	}
@@ -51,52 +51,70 @@ def getSTEP() {5}
 def parse(String description) {
 
 	def descMap = zigbee.parseDescriptionAsMap(description)
+	if(isSengledSwitch()) {
+		handleSengledSwitchEvents(descMap)
+	}
+	handleBatteryEvents(descMap)
+}
 
+
+def handleSengledSwitchEvents(descMap) {
 	if (descMap && descMap.clusterInt == 0xFC10) {
 		def currentLevel = device.currentValue("level") as Integer ?: 0
 		def value = 0
-		if (descMap.data[0] == '01') {
-			//short press of 'ON' button
-			sendEvent(name: "switch", value: "on")
-		} else if (descMap.data[0] == '02' ) {
-			// move up
-			if (descMap.data[2] == '02') {
-				//long press of 'BRIGHTEN' button
-				value = Math.min(currentLevel + DOUBLE_STEP, 100)
-			} else if (descMap.data[2] == '01') {
-				//short press of 'BRIGHTEN' button
-				value = Math.min(currentLevel + STEP, 100)
-			}
-			sendEvent(name: "switch", value: "on")
-			sendEvent(name: "level", value: value)
-			
-		} else if (descMap.data[0] == "03") {
-			//move down
-			if (descMap.data[2] == '02') {
-				//long press of 'DIM' button
-				value = Math.max(currentLevel - DOUBLE_STEP, 0)
-			} else if (descMap.data[2] == '01') {
-				//short press of 'DIM' button
-				value = Math.max(currentLevel - STEP, 0)
-			}
-			
-			if (value == 0) {
+
+		switch(descMap.data[0]) {
+			case '01':
+				//short press of 'ON' button
+				sendEvent(name: "switch", value: "on")
+				break
+			case '02':
+				// move up
+				if (descMap.data[2] == '02') {
+					//long press of 'BRIGHTEN' button
+					value = Math.min(currentLevel + DOUBLE_STEP, 100)
+				} else if (descMap.data[2] == '01') {
+					//short press of 'BRIGHTEN' button
+					value = Math.min(currentLevel + STEP, 100)
+				}
+				sendEvent(name: "switch", value: "on")
+				sendEvent(name: "level", value: value)
+				break
+			case '03':
+				//move down
+				if (descMap.data[2] == '02') {
+					//long press of 'DIM' button
+					value = Math.max(currentLevel - DOUBLE_STEP, 0)
+				} else if (descMap.data[2] == '01') {
+					//short press of 'DIM' button
+					value = Math.max(currentLevel - STEP, 0)
+				}
+
+				if (value == 0) {
+					sendEvent(name: "switch", value: "off")
+				}
+				sendEvent(name: "level", value: value)
+				break
+			case '04':
+				//short press of 'OFF' button
 				sendEvent(name: "switch", value: "off")
-				sendEvent(name: "level", value: value)
-			} else {
-				sendEvent(name: "level", value: value)
-			}
-		} else if (descMap.data[0] == '04') {
-			//short press of 'OFF' button
-			sendEvent(name: "switch", value: "off")
-		} else if (descMap.data[0] == '06') {
-			//long press of 'ON' button
-			 sendEvent(name: "switch", value: "off")
-		} else if (descMap.data[0] == '08') {
-			//long press of 'OFF' button
-			sendEvent(name: "switch", value: "off")
+				break
+			case '06':
+				//long press of 'ON' button
+				 sendEvent(name: "switch", value: "off")
+				 break
+			case '08':
+				//long press of 'OFF' button
+				sendEvent(name: "switch", value: "off")
+				break
+			default:
+				break
 		}
-	} else if (descMap && descMap.clusterInt == 1 && descMap?.value) { 
+	}
+}
+
+def handleBatteryEvents(descMap) {
+	if (descMap && descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap?.value) {
 		def batteryValue = zigbee.convertHexToInt(descMap.value) / 2
 		sendEvent(name: "battery", value: batteryValue)
 	}
@@ -125,5 +143,9 @@ def installed() {
 }
 
 def configure() {
-	zigbee.configureReporting(0x0001, 0x0021, DataType.UINT8, 30, 300, null) + zigbee.readAttribute(0x0001, 0x0021) 
+	zigbee.readAttribute(0x0001, 0x0021) + zigbee.configureReporting(0x0001, 0x0021, DataType.UINT8, 30, 6 * 60 * 60, null)
+}
+
+private boolean isSengledSwitch() {
+	device.getDataValue("model") == "E1E-G7F"
 }
