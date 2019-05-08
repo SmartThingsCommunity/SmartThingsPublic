@@ -287,7 +287,7 @@ private addChildSwitches(numberOfSwitches) {
 			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : componentLabel,
-					isComponent   : false,
+					isComponent   : true,
 					componentName : "switch$endpoint",
 					componentLabel: "Switch $endpoint"
 			])
