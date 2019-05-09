@@ -144,143 +144,98 @@ def refresh() {
             runIn(30,refresh)
 		}
  	}
-//    logout(token)
+
 	log.info "'$device' REFRESH - Mode is '$state.mode', Response- '$YaleAlarmState' complete"
 	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Refresh - mode is '$state.mode', response '$YaleAlarmState'")
 	runEvery3Hours(refresh)
 	return YaleAlarmState
 }
-
-// ===================  Arm Function. Performs arming function ====================
-def armAway() {
-	def reply = ''
-    def responsecode
-	def paramsArm = [
-			uri: baseUrl() + endpointMode(),
-			body: [area: 1, mode: "arm"],
-			headers: ['Authorization' : "Bearer ${state.accessToken}"],
-			requestContentType: "application/x-www-form-urlencoded",
-			contentType: "application/json"
-	]
-	httpPost(paramsArm) {	response -> // Arming Function in away mode
-		reply = response.data.message
-		log.debug "AA - response = '$reply'"
-	}
-	if (reply != 'OK!'){
-		log.warn "$device - AA - Status '$reply'"
-		state.mode = reply
-		runIn(60,refresh)
-	}
-	else {
-		state.mode = 'Armed-Away'
-	}
-//    logout(token)
-	log.info "AA- Status is: '$reply' - mode '$state.mode', "
-	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Arm(Away) System - '$reply', mode - '$state.mode'")
-}
-
-def armStay() {
-	def reply = ''
-    def responsecode
-	def paramsArm = [
-			uri: baseUrl() + endpointMode(),
-			body: [area: 1, mode: "home"],
-			headers: ['Authorization' : "Bearer ${state.accessToken}"],
-			requestContentType: "application/x-www-form-urlencoded",
-			contentType: "application/json"
-	]
-	httpPost(paramsArm) {	response -> // Arming Function in away mode
-		reply = response.data.message
-        responsecode = response.status
-		log.debug "AS - response '$response.data.message'"
-	}
-    if (responsecode != 200) {
-        state.errorcount = state.errorcount + 1
-    	log.warn "${responsecode}' - try getting new token, error count is ${state.errorcount}"
-   		if (state.errorcount > 2){
-   			log.error "too many errors"
-       		state.errorcount = 0
-		}
-   		else {
-			login()
-         	runIn(10, armStay)
-		}
-	}
-    else {
-       	state.errorcount = 0
-	if (reply != 'OK!'){
-		log.warn "AS - response '$reply'"
-		state.mode = reply
-
-		runIn(60,refresh)
-	}
-	else {
-		state.mode = 'Armed-Stay'
-	}
-//    logout(token)
-	log.info "'$device' AS - Status is: '$reply' - mode '$state.mode'"
-	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Arm(Home) System - '$reply', mode - '$state.mode'") //state: state.mode,
-}
-}
-def disarm() {
-	def reply = ''
-    def responsecode
-	def paramsDisarm = [
-			uri: baseUrl() + endpointMode(),
-			body: [area: 1, mode: "disarm"],
-			headers: ['Authorization' : "Bearer ${state.accessToken}"],
-			requestContentType: "application/x-www-form-urlencoded",
-			contentType: "application/json"
-	]
-	httpPost(paramsDisarm) {	response ->
-		reply = response.data.message
-        responsecode = response.status
-		log.debug "$device - DA - response '$response.data.message' - $responsecode"
-	}
-    if (responsecode != 200) {
-        state.errorcount = state.errorcount + 1
-    	log.warn "${responsecode}' - try getting new token, error count is ${state.errorcount}"
-   		if (state.errorcount > 2){
-   			log.error "too many errors"
-       		state.errorcount = 0
-		}
-   		else {
-			login()
-         	runIn(05, disarm)
-		}
-	}
-    else {
-       	state.errorcount = 0
-		if (reply != 'OK!'){
-			log.warn "$device - DA - response '$reply'"
-			state.mode = reply
-			runIn(10,refresh)
-		}
-		else {
-			state.mode = 'Disarmed'
-		}
-//    logout(token)
-		log.info "$device DA - Status is: '$reply' -'$state.mode'"
-		sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Disarm - '$reply', mode - '$state.mode'")
-	}
-}
-// handle commands
+// ==================== Buttons / voice comands ==========================
 def lock() {
-	log.debug "Executing 'Arm Stay'"
 	armStay()
 }
 def unlock() {
-	log.debug "Executing 'Disarm'"
 	disarm()
 }
 def on() {
-	log.debug "Executing 'Arm Away'"
 	armAway()
 }
 def off() {
-	log.debug "Executing 'Disarm'"
 	disarm()
 }
+// ===================   Buttons / voice comands end == in to Modes ====================
+def armAway() {
+	mode = "arm"
+	//log.debug "armaway mode ${mode.value}"
+	postcmd(mode)
+}
+def armStay(mode) {
+	mode = "home"
+	//log.debug "arm stay mode ${mode.value}"
+	postcmd(mode)
+}
+def disarm(mode) {
+	mode = "disarm"
+	//log.debug "disarm mode ${mode.value}"
+	postcmd(mode)
+}
+// ===================   Modes end    ==  in to post CMDs ====================
+def postcmd(mode){
+	log.debug "Incoming Mode CMD ${mode.value}"
+	def reply = ''
+    def responsecode
+	def paramsMode = [
+			uri: baseUrl() + endpointMode(),
+			body: [area: 1, mode: "${mode.value}"],
+			headers: ['Authorization' : "Bearer ${state.accessToken}"],
+			requestContentType: "application/x-www-form-urlencoded",
+			contentType: "application/json"
+	]
+	httpPost(paramsMode) {	response ->
+		reply = response.data.message
+        responsecode = response.status
+//		log.debug "Mode change Request Response - $device - $responsecode" //'${response.data}'
+	}
+    if (responsecode != 200) { //bad
+        state.errorcount = state.errorcount + 1
+    	log.warn "${responsecode}' - error count is ${state.errorcount}"
+   		if (state.errorcount > 2){
+   			log.error "too many errors"
+       		state.errorcount = 0
+            state.mode = responsecode
+		}
+   		else {
+        	log.warn "${responsecode}' - try getting new token, error count is ${state.errorcount}"
+			login()
+         	runIn(05, disarm)
+		}
+	} //bad end
+    else { //good
+       	state.errorcount = 0
+		if (reply != 'OK!'){ //other bad response
+			log.warn "$device response '$reply'"
+			state.mode = reply
+			runIn(10,refresh)
+		} // othe bad end
+		else { //still good
+        	if(mode == "disarm"){
+				state.mode = 'Disarmed'
+            }
+            else if(mode == "home"){
+            	state.mode = 'Armed-Stay'
+            }
+            else if(mode == "arm"){
+            	state.mode = 'Armed-Away'
+            }
+            else{
+            	state.mode = 'error'
+            }
+		} //still good end
+	} //good end
+    log.info "$device PostCMD- Status is: '$reply' -'$state.mode'"
+	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Mode Command - '$reply', mode - '$state.mode'")
+}
+
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
