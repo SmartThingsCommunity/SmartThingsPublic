@@ -45,6 +45,13 @@ metadata {
 	}
 }
 
+def updated() {
+	refresh()
+}
+def installed() {
+	refresh() 
+}
+
 def baseUrl() {
 	return "https://mob.yalehomesystem.co.uk/yapi/"
 }
@@ -60,7 +67,7 @@ def yaleAuthToken () {
 
 // ================================== Login/out Function. Returns cookie for rest of the functions =========
 def login() {
-	log.debug "Attempting to login"
+	log.debug "Attempting to login for new token"
 	def paramsLogin = [
 			uri: baseUrl() + endpointToken(),
 			body: [grant_type: "password", username:settings.userName , password: settings.password],
@@ -73,20 +80,10 @@ def login() {
 		state.accessToken = responseLogin.data?.access_token
 		state.refreshToken = responseLogin.data?.refresh_token
 	}
-	log.info "'$device' Logged in"
+	log.info "'$device' Logged in for new token ${state.accessToken}"
 }
 //
-def error() {
-	state.errorcount = state.errorcount + 1
-    log.warn "$responsecode' - try getting new token, error count is ${state.errorcount}"
-    if (state.errorcount > 2){
-    	log.error "too many errors"
-        state.errorcount = 0
-	}
-    else {
-		login()
-	}
-}
+
 //def logout(token) {
 //    def paramsLogout = [
 //            uri: "https://www.yalehomesystem.co.uk/homeportal/api/logout/",
@@ -112,7 +109,7 @@ def refresh() {
 			headers: ['Authorization' : "Bearer ${state.accessToken}"]
 	]
 	httpGet(getPanelMetaDataAndFullStatus) {	response ->
-		log.debug "'$device' REFRESH - response = '${response.data.data[0].mode}, ${response.status}"
+		//log.debug "'$device' REFRESH - response = '${response.data.data[0].mode}, ${response.status}"
         YaleAlarmState = response.data.data.getAt(0)
         responsecode = response.status
         }
@@ -157,6 +154,7 @@ def refresh() {
 // ===================  Arm Function. Performs arming function ====================
 def armAway() {
 	def reply = ''
+    def responsecode
 	def paramsArm = [
 			uri: baseUrl() + endpointMode(),
 			body: [area: 1, mode: "arm"],
@@ -183,6 +181,7 @@ def armAway() {
 
 def armStay() {
 	def reply = ''
+    def responsecode
 	def paramsArm = [
 			uri: baseUrl() + endpointMode(),
 			body: [area: 1, mode: "home"],
@@ -192,8 +191,23 @@ def armStay() {
 	]
 	httpPost(paramsArm) {	response -> // Arming Function in away mode
 		reply = response.data.message
+        responsecode = response.status
 		log.debug "AS - response '$response.data.message'"
 	}
+    if (responsecode != 200) {
+        state.errorcount = state.errorcount + 1
+    	log.warn "${responsecode}' - try getting new token, error count is ${state.errorcount}"
+   		if (state.errorcount > 2){
+   			log.error "too many errors"
+       		state.errorcount = 0
+		}
+   		else {
+			login()
+         	runIn(10, armStay)
+		}
+	}
+    else {
+       	state.errorcount = 0
 	if (reply != 'OK!'){
 		log.warn "AS - response '$reply'"
 		state.mode = reply
@@ -207,7 +221,7 @@ def armStay() {
 	log.info "'$device' AS - Status is: '$reply' - mode '$state.mode'"
 	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Arm(Home) System - '$reply', mode - '$state.mode'") //state: state.mode,
 }
-
+}
 def disarm() {
 	def reply = ''
     def responsecode
@@ -232,7 +246,7 @@ def disarm() {
 		}
    		else {
 			login()
-         //	runIn(05, disarm)
+         	runIn(05, disarm)
 		}
 	}
     else {
