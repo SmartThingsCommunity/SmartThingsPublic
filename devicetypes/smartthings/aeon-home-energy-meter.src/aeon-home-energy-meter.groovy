@@ -17,7 +17,7 @@
  *  Date: 2013-05-30
  */
 metadata {
-	definition (name: "Aeon Home Energy Meter", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Aeon Home Energy Meter", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "x.com.st.d.energymeter") {
 		capability "Energy Meter"
 		capability "Power Meter"
 		capability "Configuration"
@@ -30,6 +30,7 @@ metadata {
 		fingerprint deviceId: "0x2101", inClusters: " 0x70,0x31,0x72,0x86,0x32,0x80,0x85,0x60"
 		fingerprint mfr: "0086", prod: "0102", model: "005F", deviceJoinName: "Home Energy Meter (Gen5)" // US
 		fingerprint mfr: "0086", prod: "0002", model: "005F", deviceJoinName: "Home Energy Meter (Gen5)" // EU
+		fingerprint mfr: "0159", prod: "0007", model: "0052", deviceJoinName: "Qubino Smart Meter"
 	}
 
 	// simulator metadata
@@ -96,7 +97,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand()
+	def encapsulatedCommand = cmd.encapsulatedCommand(versions)
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	} else {
@@ -106,13 +107,6 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-	def versions = [
-			0x20: 1,  // Basic
-			0x32: 3,  // Meter
-			0x56: 1,  // Crc16Encap
-			0x70: 1,  // Configuration
-			0x72: 1,  // ManufacturerSpecific
-	]
 	def version = versions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
 	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
@@ -161,15 +155,20 @@ def reset() {
 
 def configure() {
 	log.debug "configure()..."
-	if (zwaveInfo.model.equals("005F"))
+	if (isAeotecHomeEnergyMeter())
 		delayBetween([
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 4, scaledConfigurationValue: 1)), // Reset the device to the default settings
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 1)), // report power in Watts...
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 300)), // ...every 5 min
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 2)), // report energy in kWh...
 				encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 300)), // ...every 5 min
-				zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1), // enabling automatic reports...
-				zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 10) // ...every 10W change
+				zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1).format(), // enabling automatic reports...
+				zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 10).format() // ...every 10W change
+		], 500)
+	else if (isQubinoSmartMeter())
+		delayBetween([
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 40, size: 1, scaledConfigurationValue: 10)), // Device will report on 10% power change
+				encap(zwave.configurationV1.configurationSet(parameterNumber: 42, size: 2, scaledConfigurationValue: 300)), // report every 5 minutes
 		], 500)
 	else
 		delayBetween([
@@ -188,7 +187,7 @@ private encap(physicalgraph.zwave.Command cmd) {
 	} else if (zwaveInfo.cc.contains("56")){
 		crcEncap(cmd)
 	} else {
-		response(cmd.format())
+		cmd.format()
 	}
 }
 
@@ -198,4 +197,20 @@ private secEncap(physicalgraph.zwave.Command cmd) {
 
 private crcEncap(physicalgraph.zwave.Command cmd) {
 	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
+private getVersions() {
+	[
+			0x32: 1,  // Meter
+			0x70: 1,  // Configuration
+			0x72: 1,  // ManufacturerSpecific
+	]
+}
+
+private isAeotecHomeEnergyMeter() {
+	zwaveInfo.model.equals("005F")
+}
+
+private isQubinoSmartMeter() {
+	zwaveInfo.model.equals("0052")
 }

@@ -15,7 +15,8 @@ metadata {
 		attribute "coLevel", "number"
 
 		fingerprint mfr: "010F", prod: "1201", model: "1000"
-		fingerprint deviceId: "0x0701", inClusters:"0x5E,0x59,0x73,0x80,0x22,0x56,0x31,0x7A,0x5A,0x85,0x84,0x71,0x70,0x8E,0x9C,0x86,0x72"
+		fingerprint mfr: "010F", prod: "1201", model: "1001"
+		fingerprint mfr: "010F", prod: "1201"
 	}
 
 	tiles (scale: 2) {

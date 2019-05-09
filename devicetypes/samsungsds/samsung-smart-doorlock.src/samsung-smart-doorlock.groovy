@@ -19,7 +19,7 @@ import physicalgraph.zigbee.zcl.DataType
 
 
 metadata {
-	definition (name: "Samsung Smart Doorlock", namespace: "Samsung SDS", author: "kyun.park", mnmn: "SmartThings", vid: "generic-lock") {
+	definition (name: "Samsung Smart Doorlock", namespace: "Samsung SDS", author: "kyun.park", mnmn: "SmartThings", vid: "SmartThings-smartthings-Samsung_Smart_Doorlock") {
 		capability "Actuator"
 		capability "Lock"
 		capability "Battery"
@@ -34,11 +34,9 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"toggle", type:"generic",  decoration:"flat", width:6, height:4) {
 			tileAttribute ("device.lock", key:"PRIMARY_CONTROL") {
-				attributeState "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00A0DC", nextState:"unlocking"
+				attributeState "locked", label:'locked', action:"lock.unlock", icon:"st.locks.lock.locked", backgroundColor:"#00A0DC"
 				attributeState "unlocked", label:'unlocked', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
 				attributeState "unknown", label:"unknown", icon:"st.locks.lock.unknown", backgroundColor:"#ffffff"
-				attributeState "unlocking", label:'unlocking', icon:"st.locks.lock.unlocked", backgroundColor:"#ffffff"
-				attributeState "autolockError", label:'autolock error', icon:"st.locks.lock.unlocked", backgroundColor:"#ff0000"
 			}
 			tileAttribute("device.displayName", key: "SECONDARY_CONTROL") {
 				attributeState "displayName", label: 'Model:  ${currentValue}'
@@ -348,6 +346,7 @@ private def parseCommandResponse(String description) {
 		}
 	} else if (clusterInt == CLUSTER_ALARM && cmd == ALARM_CMD_ALARM) {
 		log.trace "ZigBee DTH - Executing ALARM_CMD_ALARM for device ${deviceName} with description map:- $descMap"
+		/*
 		def alarmCode = Integer.parseInt(data[0], 16)
 		switch (alarmCode) {
 			case 0: // Deadbolt Jammed
@@ -366,7 +365,7 @@ private def parseCommandResponse(String description) {
 				responseMap = [ name: "tamper", value: "detected", descriptionText: "Door forced open under door locked condition", isStateChange: true ]
 				break
 			case 7: // Door opened for over 30 seconds
-				responseMap = [ name: "lock", value: "autolockError", descriptionText: "Door remains opened for over 30 seconds" ]
+				responseMap = [ name: "tamper", value: "detected", descriptionText: "Door remains opened for over 30 seconds", isStateChange: true ]
 				break
 			case 8: // Door opened with threat (code + 112)
 				responseMap = [ name: "tamper", value: "detected", descriptionText: "Opened door under threatening condition.", isStateChange: true ]
@@ -380,6 +379,7 @@ private def parseCommandResponse(String description) {
 			default:
 				break
 		}
+		*/
 	} else {
 		/********LATER TO ADD PROGRAMMING EVENT HERE, SUCH AS KEY CHANGE, UPDATE**********/
 		log.trace "ZigBee DTH - parseCommandResponse() - ignoring command response"

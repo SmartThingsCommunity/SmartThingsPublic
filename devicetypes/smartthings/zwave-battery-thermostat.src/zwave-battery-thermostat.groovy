@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Battery Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
+	definition (name: "Z-Wave Battery Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat", genericHandler: "Z-Wave") {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat Heating Setpoint"
@@ -303,7 +303,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 	if(cmd.heat) { supportedModes << "heat" }
 	if(cmd.cool) { supportedModes << "cool" }
 	if(cmd.auto) { supportedModes << "auto" }
-//	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" } // device doesn't actually support this
+	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" }
 
 	state.supportedModes = supportedModes
 	createEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)

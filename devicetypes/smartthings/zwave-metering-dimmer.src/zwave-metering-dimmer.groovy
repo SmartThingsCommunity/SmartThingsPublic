@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
+	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, genericHandler: "Z-Wave") {
 		capability "Switch"
 		capability "Polling"
 		capability "Power Meter"
@@ -216,7 +216,7 @@ def refresh() {
 	], 1000)
 }
 
-def setLevel(level) {
+def setLevel(level, rate = null) {
 	if(level > 99) level = 99
 	encapSequence([
 		zwave.basicV1.basicSet(value: level),

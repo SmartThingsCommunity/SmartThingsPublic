@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Fan Controller", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.fan") {
+	definition(name: "Z-Wave Fan Controller", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.fan", genericHandler: "Z-Wave") {
 		capability "Switch Level"
 		capability "Switch"
 		capability "Fan Speed"
@@ -102,32 +102,58 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevelS
 	fanEvents(cmd)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
+	log.debug "received hail from device"
+}
+
 def fanEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	def result = [createEvent(name: "switch", value: value)]
 	result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
-	result << createEvent(name: "fanSpeed", value: Math.round(cmd.value/33))
+	def fan_level = Math.ceil(cmd.value/33) as int
+//	if (cmd.value < 33 && cmd.value >= 1) fan_level = 1 //sometimes we get "1" when the device is on low
+	result << createEvent(name: "fanSpeed", value: fan_level)
 	return result
 }
 
 def on() {
-	setLevel(0xFF)
+	state.lastOnCommand = now()
+	delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: 0xFF).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
 def off() {
-	setLevel(0x00)
+	delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: 0x00).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 1000)
 }
 
-def setLevel(value) {
-	log.debug "setLevel >> value: $value"
-	def level = value as Integer
-	level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
-	sendEvent(name: "switch", value: level > 0 ? "on" : "off")
-	delayBetween([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
+def getDelay() {
+    // the leviton is comparatively well-behaved, but the GE and Honeywell devices are not
+	zwaveInfo.mfr == "001D" ? 2000 : 5000
+}
+
+def setLevel(value, rate = null) {
+    def cmds = []
+    def timeNow = now()
+    if (state.lastOnCommand && timeNow - state.lastOnCommand < delay ) {
+        // because some devices cannot handle commands in quick succession, this will delay the setLevel command by a max of 2s
+        log.debug "command delay ${delay - (timeNow - state.lastOnCommand)}"
+        cmds << "delay ${delay - (timeNow - state.lastOnCommand)}"
+    }
+    def level = value as Integer
+    level = level == 255 ? level : Math.max(Math.min(level, 99), 0)
+    log.debug "setLevel >> value: $level"
+    cmds << delayBetween([zwave.switchMultilevelV3.switchMultilevelSet(value: level).format(), zwave.switchMultilevelV1.switchMultilevelGet().format()], 5000)
 }
 
 def setFanSpeed(speed) {
-	setLevel(speed * 33)
+	if (speed as Integer == 0) {
+		off()
+	} else if (speed as Integer == 1) {
+		low()
+	} else if (speed as Integer == 2) {
+		medium()
+	} else if (speed as Integer == 3) {
+		high()
+	}
 }
 
 def raiseFanSpeed() {
@@ -139,15 +165,15 @@ def lowerFanSpeed() {
 }
 
 def low() {
-	setFanSpeed(1)
+	setLevel(32)
 }
 
 def medium() {
-	setFanSpeed(2)
+	setLevel(66)
 }
 
 def high() {
-	setFanSpeed(3)
+	setLevel(99)
 }
 
 def refresh() {
@@ -157,4 +183,3 @@ def refresh() {
 def ping() {
 	refresh()
 }
-

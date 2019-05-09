@@ -16,7 +16,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "SmartSense Temp/Humidity Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "SmartSense Temp/Humidity Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "oic.d.thermostat") {
 		capability "Configuration"
 		capability "Battery"
 		capability "Refresh"
@@ -26,9 +26,10 @@ metadata {
 		capability "Sensor"
 
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-S", deviceJoinName: "SmartSense Temp & Humidity Sensor"
-		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-G", deviceJoinName: "Temp & Humidity Sensor"
+		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-G", deviceJoinName: "Centralite Temp & Humidity Sensor"
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310", deviceJoinName: "Temp & Humidity Sensor"
 		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "Heiman", model: "b467083cfc864f5e826459e5d8ea6079", deviceJoinName: "Orvibo Temperature & Humidity Sensor"
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "HEIMAN", model: "888a434f3cfc47f29ec4a3a03e9fc442", deviceJoinName: "Orvibo Temperature & Humidity Sensor"
 	}
 
 	simulator {
@@ -144,7 +145,7 @@ def refresh() {
 
 	def manufacturer = device.getDataValue("manufacturer")
 
-	if (manufacturer == "Heiman") {
+	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, [destEndpoint: 0x01])+
 		        zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
 		        zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
@@ -166,7 +167,7 @@ def configure() {
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
 	def manufacturer = device.getDataValue("manufacturer")
-	if (manufacturer == "Heiman") {
+	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
 		return refresh() +
 		        zigbee.temperatureConfig(30, 300) +
 		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
@@ -179,4 +180,3 @@ def configure() {
 		        zigbee.temperatureConfig(30, 300)
 	}
 }
-
