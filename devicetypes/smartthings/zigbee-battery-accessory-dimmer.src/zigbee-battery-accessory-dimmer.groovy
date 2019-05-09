@@ -19,6 +19,7 @@ metadata {
 		capability "Actuator"
 		capability "Battery"
 		capability "Configuration"
+		capability "Health Check"
 		capability "Switch"
 		capability "Switch Level"
 		
@@ -51,15 +52,18 @@ def getSTEP() {5}
 def parse(String description) {
 
 	def descMap = zigbee.parseDescriptionAsMap(description)
-	if(isSengledSwitch()) {
+	if (isSengledSwitch()) {
 		handleSengledSwitchEvents(descMap)
 	}
 	handleBatteryEvents(descMap)
 }
 
+private boolean isSengledSwitch() {
+	device.getDataValue("model") == "E1E-G7F"
+}
 
 def handleSengledSwitchEvents(descMap) {
-	if (descMap && descMap.clusterInt == 0xFC10) {
+	if (descMap?.clusterInt == 0xFC10) {
 		def currentLevel = device.currentValue("level") as Integer ?: 0
 		def value = 0
 
@@ -101,7 +105,7 @@ def handleSengledSwitchEvents(descMap) {
 				break
 			case '06':
 				//long press of 'ON' button
-				 sendEvent(name: "switch", value: "off")
+				 sendEvent(name: "switch", value: "on")
 				 break
 			case '08':
 				//long press of 'OFF' button
@@ -114,7 +118,7 @@ def handleSengledSwitchEvents(descMap) {
 }
 
 def handleBatteryEvents(descMap) {
-	if (descMap && descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap?.value) {
+	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap?.value) {
 		def batteryValue = zigbee.convertHexToInt(descMap.value) / 2
 		sendEvent(name: "battery", value: batteryValue)
 	}
@@ -137,15 +141,17 @@ def setLevel(value, rate = null) {
 	}
 }
 
+def ping() {
+	zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
+}
+
 def installed() {
 	sendEvent(name: "switch", value: "on", displayed: false)
 	sendEvent(name: "level", value: 100, displayed: false)
 }
 
 def configure() {
-	zigbee.readAttribute(0x0001, 0x0021) + zigbee.configureReporting(0x0001, 0x0021, DataType.UINT8, 30, 6 * 60 * 60, null)
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021) + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 10 * 60, null)
 }
 
-private boolean isSengledSwitch() {
-	device.getDataValue("model") == "E1E-G7F"
-}
