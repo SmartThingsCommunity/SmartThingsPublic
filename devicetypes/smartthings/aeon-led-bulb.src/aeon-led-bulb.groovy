@@ -203,11 +203,6 @@ def setColorTemperature(temp) {
 	commands(cmds)
 }
 
-private queryAllColors() {
-	def colors = ["red", "green", "blue", "warmWhite", "coldWhite"]
-	colors.collect { zwave.switchColorV3.switchColorGet(colorComponent: it) }
-}
-
 def reset() {
 	log.debug "reset()"
 	sendEvent(name: "color", value: "#ffffff")
