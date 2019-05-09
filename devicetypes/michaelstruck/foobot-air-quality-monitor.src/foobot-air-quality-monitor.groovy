@@ -127,7 +127,7 @@ metadata {
 	}
 }
 private getAPIKey() {
-    return "eyJhbGciOiJIUzI1NiJ9.eyJncmFudGVlIjoibWljaGFlbC5hbGxlbi5zdHJ1Y2tAZ21haWwuY29tIiwiaWF0IjoxNTAxMzY1NDk1LCJ2YWxpZGl0eSI6LTEsImp0aSI6ImE5ZmU5NzYwLTgxODUtNDYzZi05Njk3LWM3ZTEwM2M0Y2UzZiIsInBlcm1pc3Npb25zIjpbInVzZXI6cmVhZCIsImRldmljZTpyZWFkIl0sInF1b3RhIjoyMDAsInJhdGVMaW1pdCI6NX0.ZpI0nolDobSjywWW88NRC-U6fT0yxn958rmE6GhnLzI"
+    return "INSERT YOUR KEY HERE"
 }
 def parse(String description) {
 	log.debug "Parsing '${description}'"
