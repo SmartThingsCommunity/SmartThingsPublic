@@ -12,12 +12,13 @@
  *
  */
 metadata {
-    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings") {
+    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeon_Home_Energy_Meter") {
         capability "Energy Meter"
         capability "Power Meter"
         capability "Refresh"
         capability "Health Check"
         capability "Sensor"
+        capability "Configuration"
 
         fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR080Z0-HA", deviceJoinName: "Smart Sub-meter(CT Type)"
         
@@ -50,6 +51,14 @@ def parse(String description) {
     def event = zigbee.getEvent(description)
     if (event) {
         log.info event
+        if (event.name == "power") {
+            event.value = event.value/1000
+            event.unit = "W"
+        } else if (event.name == "energy") {
+            event.value = event.value/1000000
+            event.unit = "kWh"
+        }
+        log.info "event outer:$event"
         sendEvent(event)
     } else {
         List result = []
@@ -66,11 +75,13 @@ def parse(String description) {
                         log.debug "meter"
                         map.name = "power"
                         map.value = zigbee.convertHexToInt(it.value)/1000
+                        map.unit = "W"
                 }
                 if (it.clusterInt == 0x0702 && it.attrInt == 0x0000) {
                          log.debug "energy"
                          map.name = "energy"
                          map.value = zigbee.convertHexToInt(it.value)/1000000
+                         map.unit = "kWh"
                 }
                 
                 if (map) {
@@ -105,5 +116,3 @@ def configure() {
            zigbee.simpleMeteringPowerConfig() +
            zigbee.electricMeasurementPowerConfig()
 }
-
-
