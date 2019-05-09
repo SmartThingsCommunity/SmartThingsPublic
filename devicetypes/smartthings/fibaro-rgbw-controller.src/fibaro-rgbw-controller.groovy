@@ -102,7 +102,7 @@ def installed() {
 def setColor(value) {
 	def result = []
 	log.debug "setColor: ${value}"
-  def rgb
+	def rgb
 	if (value.hex) {
 		rgb = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
 	} else {
@@ -245,7 +245,7 @@ def off() {
 
 
 def ping() {
-    refresh()
+	refresh()
 }
 
 def refresh() {
