@@ -105,10 +105,13 @@ def setColor(value) {
 	def rgb
 	if (value.hex) {
 		rgb = value.hex.findAll(/[0-9a-fA-F]{2}/).collect { Integer.parseInt(it, 16) }
-	} else {
+	} else if (value.hue != null && value.saturation != null) {
 		rgb = huesatToRGB(value.hue, value.saturation)
 	}
-	result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2])
+
+	if (rgb) {
+		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2])
+	}
 
 	if (value.hex) sendEvent(name: "color", value: value.hex)
 	if (value.hue) sendEvent(name: "hue", value: value.hue)
@@ -119,7 +122,7 @@ def setColor(value) {
 
 def setLevel(level, duration=null) {
 	level = Math.max(Math.min(level, 99), 0)
-	commands([zwave.basicV1.basicSet(value: level), zwave.switchMultilevelV1.switchMultilevelGet()], 2000)
+	commands([zwave.basicV1.basicSet(value: level), zwave.switchMultilevelV3.switchMultilevelGet()], 2000)
 }
 
 private getCOLOR_TEMP_MAX() { 100 }
@@ -252,7 +255,7 @@ def ping() {
 }
 
 def refresh() {
-	commands([zwave.switchMultilevelV1.switchMultilevelGet(), zwave.meterV3.meterGet(scale: 2)])
+	commands([zwave.switchMultilevelV3.switchMultilevelGet(), zwave.meterV3.meterGet(scale: 2)])
 }
 
  /**
@@ -271,15 +274,15 @@ def refresh() {
  */
 def updateZwaveParam(params) {
 	if ( params ) {
-		def pNumber = params.paramNumber
+		def pNumber	= params.paramNumber
 		def pSize	= params.size
 		def pValue	= [params.value]
 		log.debug "Updating ${device.displayName} parameter number '${pNumber}' with value '${pValue}' with size of '${pSize}'"
 
 		def cmds = []
-		cmds << zwave.configurationV1.configurationSet(configurationValue: pValue, parameterNumber: pNumber, size: pSize)
+		cmds << zwave.configurationV2.configurationSet(configurationValue: pValue, parameterNumber: pNumber, size: pSize)
 
-		cmds << zwave.configurationV1.configurationGet(parameterNumber: pNumber)
+		cmds << zwave.configurationV2.configurationGet(parameterNumber: pNumber)
 		commands(cmds, 1500)
 	}
 }
@@ -296,7 +299,7 @@ def huesatToRGB(hue, sat) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo.zw.endsWith("s"))  {
+	if (zwaveInfo?.zw?.endsWith("s"))  {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
