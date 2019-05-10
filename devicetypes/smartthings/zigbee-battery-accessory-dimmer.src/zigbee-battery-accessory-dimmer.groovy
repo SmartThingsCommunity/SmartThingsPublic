@@ -96,8 +96,9 @@ def handleSengledSwitchEvents(descMap) {
 
 				if (value == 0) {
 					sendEvent(name: "switch", value: "off")
+				} else {
+					sendEvent(name: "level", value: value)
 				}
-				sendEvent(name: "level", value: value)
 				break
 			case '04':
 				//short press of 'OFF' button
