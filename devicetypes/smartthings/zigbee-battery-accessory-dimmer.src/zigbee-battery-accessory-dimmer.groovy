@@ -106,8 +106,8 @@ def handleSengledSwitchEvents(descMap) {
 				break
 			case '06':
 				//long press of 'ON' button
-				 sendEvent(name: "switch", value: "on")
-				 break
+				sendEvent(name: "switch", value: "on")
+				break
 			case '08':
 				//long press of 'OFF' button
 				sendEvent(name: "switch", value: "off")
