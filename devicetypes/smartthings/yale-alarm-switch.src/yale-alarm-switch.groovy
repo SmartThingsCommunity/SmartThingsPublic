@@ -81,6 +81,7 @@ def login() {
 		state.refreshToken = responseLogin.data?.refresh_token
 	}
 	log.info "'$device' Logged in for new token ${state.accessToken}"
+    sendEvent(name: "mode", value: "default", displayed: true, descriptionText: "token updated")
 }
 //
 
@@ -117,12 +118,14 @@ def refresh() {
         	state.errorcount = state.errorcount + 1
     		log.warn "${responsecode}' - try getting new token, error count is ${state.errorcount}"
     		if (state.errorcount > 2){
+            	state.mode = "refersh error lots of errors"
     			log.error "too many errors"
         		state.errorcount = 0
 			}
     		else {
 				login()
             	runIn(05, refresh)
+                state.mode = "refersh error count ${state.errorcount}"
             }
         }
         else {
@@ -146,7 +149,7 @@ def refresh() {
  	}
 
 	log.info "'$device' REFRESH - Mode is '$state.mode', Response- '$YaleAlarmState' complete"
-	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Refresh - mode is '$state.mode', response '$YaleAlarmState'")
+	sendEvent(name: "mode", value: state.mode, isStateChange: true, displayed: true, descriptionText: "Refresh - mode is '$state.mode', response '$YaleAlarmState'")
 	runEvery3Hours(refresh)
 	return YaleAlarmState
 }
@@ -164,7 +167,7 @@ def off() {
 	disarm()
 }
 // ===================   Buttons / voice comands end == in to Modes ====================
-def armAway() {
+def armAway(mode) {
 	mode = "arm"
 	//log.debug "armaway mode ${mode.value}"
 	postcmd(mode)
@@ -194,7 +197,7 @@ def postcmd(mode){
 	httpPost(paramsMode) {	response ->
 		reply = response.data.message
         responsecode = response.status
-//		log.debug "Mode change Request Response - $device - $responsecode" //'${response.data}'
+		log.debug "Mode change Request Response - $device - $responsecode - '${response.data}'"
 	}
     if (responsecode != 200) { //bad
         state.errorcount = state.errorcount + 1
@@ -208,6 +211,7 @@ def postcmd(mode){
         	log.warn "${responsecode}' - try getting new token, error count is ${state.errorcount}"
 			login()
          	runIn(05, disarm)
+            state.mode = "Mod change - ${responsecode} - error count ${state.errorcount}"
 		}
 	} //bad end
     else { //good
