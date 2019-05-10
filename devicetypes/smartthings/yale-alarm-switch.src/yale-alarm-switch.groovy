@@ -46,10 +46,10 @@ metadata {
 }
 
 def updated() {
-	refresh()
+	login()
 }
 def installed() {
-	refresh() 
+	login() 
 }
 
 def baseUrl() {
@@ -83,17 +83,7 @@ def login() {
 	log.info "'$device' Logged in for new token ${state.accessToken}"
     sendEvent(name: "mode", value: "default", displayed: true, descriptionText: "token updated")
 }
-//
 
-//def logout(token) {
-//    def paramsLogout = [
-//            uri: "https://www.yalehomesystem.co.uk/homeportal/api/logout/",
-//            headers: ['Cookie' : "${token}"]
-//    ]
-//    httpPost(paramsLogout) { responseLogout ->
-//    }
-//    log.info "'$device' Logged out"
-//}
 // ================================================ Login /out end ========================
 
 def poll() {
@@ -179,12 +169,13 @@ def armStay(mode) {
 }
 def disarm(mode) {
 	mode = "disarm"
-	//log.debug "disarm mode ${mode.value}"
+    //endp = endpointMode()
+	//log.debug "disarm mode ${mode.value} "
 	postcmd(mode)
 }
 // ===================   Modes end    ==  in to post CMDs ====================
 def postcmd(mode){
-	log.debug "Incoming Mode CMD ${mode.value}"
+	log.debug "Incoming Mode CMD ${mode.value} "
 	def reply = ''
     def responsecode
 	def paramsMode = [
