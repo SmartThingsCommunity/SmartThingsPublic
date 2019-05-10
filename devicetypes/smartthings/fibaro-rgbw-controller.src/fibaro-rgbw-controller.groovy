@@ -110,9 +110,9 @@ def setColor(value) {
 	}
 	result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2])
 
-	if(value.hue) sendEvent(name: "hue", value: value.hue)
-	if(value.hex) sendEvent(name: "color", value: value.hex)
-	if(value.saturation) sendEvent(name: "saturation", value: value.saturation)
+	if (value.hex) sendEvent(name: "color", value: value.hex)
+	if (value.hue) sendEvent(name: "hue", value: value.hue)
+	if (value.saturation) sendEvent(name: "saturation", value: value.saturation)
 
 	commands(result)
 }
@@ -143,7 +143,10 @@ def configure() {
 
 	// send associate to group 5 to get sensor data reported only to hub
 	command(zwave.associationV2.associationSet(groupingIdentifier:5, nodeId:zwaveHubNodeId))
+}
 
+def updated() {
+	sendEvent(name: "checkInterval", value: 60 * 60 * 12, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def parse(description) {
