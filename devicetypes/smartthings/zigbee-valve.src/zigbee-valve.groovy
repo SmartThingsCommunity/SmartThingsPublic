@@ -11,6 +11,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -92,6 +93,15 @@ def parse(String description) {
         }
         sendEvent(event)
     }
+    else if (description?.startsWith('zone status') || description?.startsWith('zone report')) {
+        ZoneStatus zs = zigbee.parseZoneStatus(description)
+        def value = zs.isBatterySet() ? 5 : 50
+        def result = [:]
+        result.name = 'battery'
+        result.value = value
+        result.descriptionText = "${device.displayName} battery was ${result.value}%"
+        sendEvent(result)
+    }
     else {
         def descMap = zigbee.parseDescriptionAsMap(description)
         if (descMap.clusterInt == CLUSTER_BASIC && descMap.attrInt == BASIC_ATTR_POWER_SOURCE){
@@ -135,8 +145,7 @@ def sendBatteryResult(description) {
 
     result.name = 'battery'
     result.value = value
-    result.descriptionText = "${device.displayName} battery value is ${value}"
-    result.translatable = true
+    result.descriptionText = "${device.displayName} battery was ${result.value}%"
 
     sendEvent(result)
 }
@@ -158,7 +167,8 @@ def refresh() {
     cmds += zigbee.configureReporting(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE, DataType.ENUM8, 5, 21600, 1)
     if (device.getDataValue("model") == "E253-KR0B0ZX-HA") {
         cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-        cmds += zigbee.iasZoneConfig()
+        cmds += zigbee.enrollResponse()
+        cmds += zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 60 * 60, null)
     } else {
         cmds += zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
         cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 600, 21600, 1)

@@ -51,9 +51,14 @@ metadata {
 	simulator { }
 
 	preferences {
-		input("lock", "enum", title: "Do you want to lock your thermostat's physical keypad?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: false)
-		input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
-		input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+		section {
+			input("lock", "enum", title: "Do you want to lock your thermostat's physical keypad?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: false)
+			input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
+		}
+		section {
+			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+		}
 	}
 
 	tiles(scale : 2) {
@@ -191,6 +196,7 @@ def updated() {
 
 	unschedule(scheduledUpdateWeather)
 	if (settings.zipcode) {
+		state.invalidZip = false // Reset and validate the zip-code later
 		requests += updateWeather()
 		runEvery1Hour(scheduledUpdateWeather)
 	}
@@ -348,7 +354,7 @@ def handleTemperature(descMap) {
 
 		// Handle cases where we need to update the temperature alarm state given certain temperatures
 		// Account for a f/w bug where the freeze alarm doesn't trigger at 0C
-		if (map.value < (map.unit == "C" ? 0 : 32)) {
+		if (map.value <= (map.unit == "C" ? 0 : 32)) {
 			log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
 			sendEvent(name: "temperatureAlarm", value: "freeze")
 		}
@@ -432,21 +438,42 @@ def updateWeather() {
 	// If there is a zipcode defined, weather forecast will be sent. Otherwise, no weather forecast.
 	if (settings.zipcode) {
 		log.debug "ZipCode: ${settings.zipcode}"
-		weather = getTwcConditions(settings.zipcode)
-
-		// Check if the variable is populated, otherwise return.
-		if (!weather) {
-			log.debug("Something went wrong, no data found.")
-			return false
+		try {
+			// If we do not have a zip-code setting we've determined as invalid, try to use the zip-code defined.
+			if (!state.invalidZip) {
+				weather = getTwcConditions(settings.zipcode)
+			}
+		} catch (e) {
+			log.debug "getTwcConditions exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			state.invalidZip = true
 		}
 
-		def locationScale = getTemperatureScale()
-		def tempToSend = weather.temperature
-		log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
-		// Right now this can disrupt device health if the device is
-		// currently offline -- it would be erroneously marked online.
-		//sendEvent( name: 'outsideTemp', value: tempToSend )
-		setOutdoorTemperature(tempToSend)
+		if (!weather) {
+			try {
+				// It is possible that a non-U.S. zip-code was used, so try with the location's lat/lon.
+				if (location?.latitude && location?.longitude) {
+					// Restrict to two decimal places for the API
+					weather = getTwcConditions(sprintf("%.2f,%.2f", location.latitude, location.longitude))
+				}
+			} catch (e2) {
+				log.debug "getTwcConditions exception: $e2"
+				weather = null
+			}
+		}
+
+		// Either the location lat,lon was invalid or one was not defined for the location, on top of an error with the given zip-code
+		if (!weather) {
+			log.debug("Something went wrong, no data found.")
+		} else {
+			def locationScale = getTemperatureScale()
+			def tempToSend = weather.temperature
+			log.debug("Outdoor Temperature: ${tempToSend} ${locationScale}")
+			// Right now this can disrupt device health if the device is
+			// currently offline -- it would be erroneously marked online.
+			//sendEvent( name: 'outsideTemp', value: tempToSend )
+			setOutdoorTemperature(tempToSend)
+		}
 	}
 }
 
@@ -614,6 +641,7 @@ def configure() {
 
 	unschedule(scheduledUpdateWeather)
 	if (settings.zipcode) {
+		state.invalidZip = false // Reset and validate the zip-code later
 		requests += updateWeather()
 		runEvery1Hour(scheduledUpdateWeather)
 	}

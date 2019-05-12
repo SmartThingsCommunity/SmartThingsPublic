@@ -24,10 +24,14 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
+		/*
 		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob" //EU
 		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob" //US
 		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //US
 		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //EU
+		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //US
+		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //EU
+		*/
 	}
 
 	tiles(scale: 2) {
@@ -82,6 +86,10 @@ def initialize() {
 
 def configure() {
 	def cmds = []
+	if(isAeotecKeyFob()) {
+		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: 250, scaledConfigurationValue: 1))
+		//makes Aeotec KeyFob communicate with primary controller
+	}
 	if(isFibaro()) {
 		for (def parameter : 21..26) {
 			cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: parameter, scaledConfigurationValue: 15))
@@ -96,7 +104,7 @@ def parse(String description) {
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText:description, isStateChange:true)
 	} else {
-		def cmd = zwave.parse(description)
+		def cmd = zwave.parse(description, [0x84: 1])
 		if (cmd) {
 			result += zwaveEvent(cmd)
 		}
@@ -106,7 +114,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand()
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x84: 1])
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	} else {
@@ -206,4 +214,8 @@ private isFibaro() {
 
 private isUntrackedAeotec() {
 	zwaveInfo.mfr?.contains("0371") && zwaveInfo.model?.contains("0003")
+}
+
+private isAeotecKeyFob() {
+	zwaveInfo.mfr?.contains("0086")
 }
