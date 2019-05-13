@@ -64,16 +64,17 @@ def updated() {
 def switchstate(evt){
 //if switch 2
 	state.sstate = evt.value
-log.debug "swith: ${evt.value}"
+log.debug "${switch1.label} switch: ${evt.value}"
     if (evt.value == "off" && state.appstate == "on"){
-    	log.trace "swith is '${evt.value}' , but App is still '${state.appstate}' turning on - Should be on event and app on"
+    	log.trace "${switch1.label} switch is '${evt.value}' , but App is still '${state.appstate}' turning on - Should be on event and app on"
     	switch1?.on()
     }
 }
 
 def humidityHandler(evt) {
-log.debug "Reported humidity: ${evt.value}, set point upper: ${settings.humidity1}, set point lower: ${settings.humidity2}"
+//log.debug "Reported humidity: ${evt.value}, set point upper: ${settings.humidity1}, set point lower: ${settings.humidity2}"
 	def currentHumidity = Double.parseDouble(evt.value.replace("%", ""))
+    def traceaction = ""
 //High ------------------------
 	if (currentHumidity >= settings.humidity1) {
 		if (state.sstate == "on" && state.appstate == "on"){ // everything on - Don't send a continuous stream of text messages
@@ -95,36 +96,38 @@ log.debug "Reported humidity: ${evt.value}, set point upper: ${settings.humidity
 //Low -------------------
     else if (currentHumidity <= settings.humidity2) {
 		if (state.sstate == "off" && state.appstate == "off"){
-			log.debug "low Hum Switch is ${state.sstate}, App State is ${state.appstate} no action"
+			traceaction = "All off - no action"
         }
 		
         else if (state.sstate == "on" && state.appstate == "on") {
-        	log.trace "Humidity Fell Below ${settings.humidity2}:  sending SMS and turning off ${settings?.switch1}"
+        	traceaction = "sending SMS '${sendPushMessage?.value}'and turning off ${settings?.switch1}"
 			state.appstate = "off"
 			send("${humiditySensor1.label} sensed LOW humidity level of ${evt.value} and de-activating ${settings?.switch1}")
             switch1?.off()
         }
             
         else if (state.sstate == "off" && state.appstate == "on"){
-        	log.trace "Humid Low, Switch is ${state.sstate}, App State is ${state.appstate} turning app off and sending off message"
+        	traceaction = "sending SMS '${sendPushMessage?.value}'and turning off APP"
             state.appstate = "off"
-            send("${humiditySensor1.label} sensed LOW humidity level of ${evt.value}")
+            send("${humiditySensor1.label} sensed LOW humidity level of ${evt.value} and de-activating ${settings?.switch1}")
         }
         else {
-        	log.trace "Humid Low, Switch is ${state.sstate}, App State is ${state.appstate} , No action"
+        	traceaction = "No action"
         }
+		log.trace "Low humidity: Reported humidity: '${evt.value}', Switch is-'${state.sstate}', App is-'${state.appstate}', ${traceaction}" 
 	}
 // middle --------------------------
     else {
     	if (state.sstate == "off" && state.appstate == "on"){
-        	log.trace "Humid Middle, ${settings.humidity1} - '${currentHumidity}' - ${settings.humidity2}, Switch is ${state.sstate}, App State is ${state.appstate} turning on again"
+        	traceaction = "turning on again"
         	switch1?.on()
      	}
         else {
-        	log.trace "Humid Middle, Switch is ${state.sstate}, App State is ${state.appstate} , No action"
+        	traceaction = "No action"
         }
+        log.trace "Humid Middle, Reported humidity: '${evt.value}', Switch is-'${state.sstate}', App is-'${state.appstate}', ${traceaction}"
 	}
-    log.debug "end of hume event"
+    //log.debug "end of hume event"
 }
 
 private send(msg) {

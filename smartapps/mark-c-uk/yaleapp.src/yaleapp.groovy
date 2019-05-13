@@ -101,12 +101,13 @@ def selectDevices() {
 		errorMsg = "There were no devices from YALE"
 	}
 	def newDevices = [:]
-    log.debug "select devices, $devices"
+    log.debug "select devices, ${devices}"
 	devices.each {
-		def isChild = getChildDevice(it.value.device_id)
+    	log.debug "select devices each ${it.value.deviceId} - ${it.value.alias}"
+		def isChild = getChildDevice(it.value.deviceId) //value.
 		if (!isChild) {
-        	log.debug "select devices, each !ischild ${it.value.alias}"
-			newDevices["${it.value.device_id}"] = "${it.value.alias} model ${it.value.deviceModel}"
+        	//log.debug "select devices, each !ischild ${it.value.alias} - ${it.value.deviceid}" //value.
+			newDevices["${it.value.deviceId}"] = "${it.value.alias} model ${it.value.deviceModel}"
 		}
 	}
 	if (newDevices == [:]) {
@@ -135,24 +136,25 @@ def selectDevices() {
 }
 def getDevices() {
 	def currentDevices = getDeviceData()
-    log.debug "${currentDevices?.data?.data}"
+    //log.debug "get devices - ${currentDevices?.data?.data}"
 	state.devices = [:]
 	def devices = state.devices
 	currentDevices.data?.data.each {
 		def device = [:]
-		device["deviceMac"] = it.mac		//	data.data[0]
+		//device["deviceMac"] = it.mac		//	data.data[0]
 		device["alias"] = it.name
 		device["deviceModel"] = it.type
 		device["deviceId"] = it.device_id
+        
 // ========================================		device["appServerUrl"] = it.appServerUrl
 		devices << ["${it.device_id}": device]	// ====================	not sure
-		def isChild = getChildDevice(it.device_id)
+		//def isChild = getChildDevice(it.device_id)
 //		if (isChild) {
 //			isChild.syncAppServerUrl(it.appServerUrl)
 //		}
-		log.info "Device ${it.name} added to devices array"
+		log.info "GET Device ${it.name} - ${it.device_id}"
 	}
-    log.debug "arry $devices"
+    //log.debug "arry $devices"
 }
 
 def addDevices() {
@@ -160,19 +162,20 @@ def addDevices() {
 	def Model = [:]
 	//	Plug-Switch Devices (no energy monitor capability)
 	Model << ["YaleAlarm" : "Yale Alarm pannel"]			
-	Model << ["YaleDevice" : "device_type.keypad"]
-    Model << ["YaleDevice" : "device_type.remote_controller"]
-    Model << ["YaleDevice" : "device_type.pir"]
-    Model << ["YaleDevice" : "device_type.door_contact"]
+	Model << ["Yale Alarm Open Close Sensor" : "device_type.keypad"]
+    Model << ["Yale Alarm Open Close Sensor" : "device_type.remote_controller"]
+    Model << ["Yale Alarm Open Close Sensor" : "device_type.pir"]
+    Model << ["Yale Alarm Open Close Sensor" : "device_type.door_contact"]
 
 
 
 	def hub = location.hubs[0]
 	def hubId = hub.id
-	selectedDevices.each { dni ->
+	selectedDevices.each { dni -> 
+    	log.debug "add it- ${it.value.deviceId} - ${it.value.alias}"
 		def isChild = getChildDevice(dni)
 		if (!isChild) {
-			def device = state.devices.find { it.value.mac == dni }
+			def device = state.devices.find { it.value.deviceId == dni }
 			def deviceModel = device.value.deviceModel // ===================not sure
 			addChildDevice(
 				"mcyale",
