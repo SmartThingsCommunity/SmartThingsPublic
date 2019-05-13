@@ -103,11 +103,11 @@ def selectDevices() {
 	def newDevices = [:]
     log.debug "select devices, ${devices}"
 	devices.each {
-    	log.debug "select devices each ${it.value.deviceId} - ${it.value.alias}"
+    	log.debug "select devices each ${it.value.deviceId} - ${it.value.alias} - model ${it.value.deviceModel}"
 		def isChild = getChildDevice(it.value.deviceId) //value.
 		if (!isChild) {
         	//log.debug "select devices, each !ischild ${it.value.alias} - ${it.value.deviceid}" //value.
-			newDevices["${it.value.deviceId}"] = "${it.value.alias} model ${it.value.deviceModel}"
+			newDevices["${it.value.dni}"] = "${it.value.alias} model ${it.value.deviceModel}"
 		}
 	}
 	if (newDevices == [:]) {
@@ -140,11 +140,13 @@ def getDevices() {
 	state.devices = [:]
 	def devices = state.devices
 	currentDevices.data?.data.each {
+    def length = it.device_id.length()-1
 		def device = [:]
 		//device["deviceMac"] = it.mac		//	data.data[0]
 		device["alias"] = it.name
 		device["deviceModel"] = it.type
 		device["deviceId"] = it.device_id
+        device["dni"] = it.device_id.substring(3,length)
         
 // ========================================		device["appServerUrl"] = it.appServerUrl
 		devices << ["${it.device_id}": device]	// ====================	not sure
@@ -158,7 +160,7 @@ def getDevices() {
 }
 
 def addDevices() {
-	log.debug "ADD Devices"
+	log.debug "ADD Devices ${state?.devices}"
 	def Model = [:]
 	//	Plug-Switch Devices (no energy monitor capability)
 	Model << ["YaleAlarm" : "Yale Alarm pannel"]			
@@ -172,15 +174,15 @@ def addDevices() {
 	def hub = location.hubs[0]
 	def hubId = hub.id
 	selectedDevices.each { dni -> 
-    	log.debug "add it- ${it.value.deviceId} - ${it.value.alias}"
+    	log.debug "add it- $it "
 		def isChild = getChildDevice(dni)
 		if (!isChild) {
-			def device = state.devices.find { it.value.deviceId == dni }
+			def device = state.devices.find { it.value.dni } //it.value.deviceNetworkId == dni
 			def deviceModel = device.value.deviceModel // ===================not sure
 			addChildDevice(
 				"mcyale",
 				Model["${deviceModel}"], 
-				device.value.mac,
+				device.value.dni,
 				hubId, [
 					"label": device.value.name,
 						"name": device.value.deviceModel, 
