@@ -330,23 +330,25 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep=null) {
 	logging("${device.displayName} - MeterReport received, value: ${cmd.scaledMeterValue} scale: ${cmd.scale} ep: $ep","info")
 	log.debug "cmd: "+cmd
 	if (ep==1) {
+		def value = cmd.scaledMeterValue.doubleValue()
 		switch (cmd.scale) {
 			case 0:
-				sendEvent([name: "energy", value: cmd.scaledMeterValue, unit: "kWh"])
+				sendEvent([name: "energy", value: value, unit: "kWh"])
 				break
 			case 2:
-				sendEvent([name: "power", value: cmd.scaledMeterValue, unit: "W"])
+				sendEvent([name: "power", value: value, unit: "W"])
 				break
 		}
 		multiStatusEvent("${(device.currentValue("power") ?: "0.0")} W | ${(device.currentValue("energy") ?: "0.00")} kWh")
 
 	} else if (ep==2) {
+		def value = cmd.scaledMeterValue.doubleValue()
 		switch (cmd.scale) {
 			case 0:
-				getChild(2)?.sendEvent([name: "energy", value: cmd.scaledMeterValue, unit: "kWh"])
+				getChild(2)?.sendEvent([name: "energy", value: value, unit: "kWh"])
 				break
 			case 2:
-				getChild(2)?.sendEvent([name: "power", value: cmd.scaledMeterValue, unit: "W"])
+				getChild(2)?.sendEvent([name: "power", value: value, unit: "W"])
 				break
 		}
 		getChild(2)?.sendEvent([name: "combinedMeter", value: "${(getChild(2)?.currentValue("power") ?: "0.0")} W / ${(getChild(2)?.currentValue("energy") ?: "0.00")} kWh", displayed: false])
