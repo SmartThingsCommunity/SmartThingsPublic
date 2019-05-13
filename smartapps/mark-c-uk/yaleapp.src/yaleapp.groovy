@@ -174,11 +174,12 @@ def addDevices() {
 	def hub = location.hubs[0]
 	def hubId = hub.id
 	selectedDevices.each { dni -> 
-    	log.debug "add it- $it "
+    	log.debug "add it"
 		def isChild = getChildDevice(dni)
 		if (!isChild) {
 			def device = state.devices.find { it.value.dni } //it.value.deviceNetworkId == dni
 			def deviceModel = device.value.deviceModel // ===================not sure
+            log.debug " add it not child $device - $deviceModel"
 			addChildDevice(
 				"mcyale",
 				Model["${deviceModel}"], 
