@@ -1,7 +1,7 @@
 /**
  *  YaleApp
  *
- *  Copyright 2019 Mark Cockcroft
+ *  Copyright 2019 Mark Cockcroft (and thanks to the support of DAVE GUTHEINZ)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -107,7 +107,7 @@ def selectDevices() {
 		def isChild = getChildDevice(it.value.deviceId) // deviceId changed to dni so dont add twice
 		if (!isChild) {
         	//log.debug "select devices, each !ischild ${it.value.alias} - ${it.value.deviceid}" //value.
-			newDevices["${it.value.deviceId}"] = "${it.value.alias} model ${it.value.deviceModel}"
+			newDevices["${it.value.deviceId}"] = "${it.value.alias} \n model ${it.value.deviceModel}"
             //log.debug "select devices, each !ischild $newDevices"
 		}
 	}
@@ -159,25 +159,28 @@ def getDevices() {
             	]]
 */    
 	currentDevices.data?.data.each {
-    def length = it.device_id.length()-1
 		def device = [:]
-		//device["deviceMac"] = it.mac		//	data.data[0]
 		device["alias"] = it.name
 		device["deviceModel"] = it.type
 		device["deviceId"] = it.device_id
-        device["dni"] = it.device_id.substring(3,length)
         
 		devices << ["${it.device_id}": device]	
 		//log.info "GET Device ${it.name} - ${it.device_id}"
 	}
-    ///devices << ["${it.device_id}": device] //add pannel device?
+    def deviceP = [:]
+		deviceP["alias"] = "Yale Alarm"
+		deviceP["deviceModel"] = "YaleAlarmPannel"
+		deviceP["deviceId"] = "RF:YalePan1"
+        
+		devices << ["RF:YalePan1": deviceP]	
+    //devices << ["RF:YalePan1":["alias:Yale Alarm, deviceModel:Yale Alarm pannel, deviceId:RF:YalePan1"]] //add pannel device?
     log.debug "arry $devices"
 }
 
 def addDevices() {
 	log.debug "ADD Devices "// ${state?.devices}
 	def Model = [:]
-	Model << ["YaleAlarm" : "Yale Alarm pannel"]			
+	Model << ["YaleAlarmPannel" : "Yale Alarm pannel"]			
 	Model << ["device_type.keypad" : "Yale Alarm Open Close Sensor"]
     Model << ["device_type.remote_controller" : "Yale Alarm Open Close Sensor"]
     Model << ["device_type.pir" : "Yale Alarm Open Close Sensor"]
@@ -199,6 +202,7 @@ def addDevices() {
 				device.value.deviceId,
 				hubId, [
 					"label": "${device.value.alias} Yale",
+                    //"label": "${device.value.alias} Yale",
 						"name": device.value.deviceModel,
 					"data": [
 						"deviceId" : device.value.deviceId,
@@ -257,15 +261,21 @@ log.debug "getDeviceData"
 		//log.debug "get device data - response = ${response.status} ===== ${response.data}"
         if (response.status == 200){
         	currentDevices = response
-            state.devdata = response.data.data //
-   			log.debug "retun data from getdevicedata - done " //${currentDevices.data} 
-			return currentDevices
+	        currentDevices?.data?.data?.each {
+        		//log.debug "it ${it?.name} - ${it?.device_id}"
+				def isChild = getChildDevice(it?.device_id)
+            	if (isChild) {
+                	log.info "Sending status of '${it?.status_open[0]}' to child '${it?.name}'" 
+                	isChild.datain(it) //it?.status_open[0]
+                }
+        	}
         }
 		else (response.status != 200) {
 			state.currentError = response.status
 			sendEvent(name: "currentError", value: response.data)
-			log.error "Error in getDeviceData: ${state.currentError}"
+			log.error "Error in getDeviceData device data: ${state.currentError}"
 		}
+        //return currentDevices
 	}
 	def getPanelStatus = [
 			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/", //	api/panel/mode/",
@@ -274,10 +284,49 @@ log.debug "getDeviceData"
     httpGet(getPanelStatus) { response ->
 		//log.debug "get device data - response = ${response.status} ===== ${response.data}"
         if (response.status == 200){
-        	log.debug "Pannel request good - ${response.data.data.getAt(0)}"
+        	log.debug "Pannel request good - ${response.data.data.getAt(0)} , ${response.data.message}" //${response.data}
+        	def isChild = getChildDevice('RF:YalePan1')
+            	if (isChild) {
+                	log.info "Sending status of '${response.data}' to child '${it?.name}' also " 
+                	isChild.datain(response.data)
+                	if (response.data.message != 'OK!'){
+                    	sendPush("Alarm updated with message ${response.data.message}")
+                    }
+                }
+        
         }
+        else (response.status != 200) {
+			state.currentError = response.status
+			sendEvent(name: "currentError", value: response.data)
+			log.error "Error in getDeviceData pannel data: ${state.currentError}"
+		}
 	}
+    //def children = getChildDevice('RF:25450410') //getAllChildDevices()
+    //log.debug "getchilddevices all children $children"
+	//children.each { child ->
+	//	log.debug "getchilddevices ${it?.value?.deviceId} , ${child?.value?.deviceId} , ${child?.deviceId}"
+    //    }
+    return currentDevices
 }
+//	----- ARM DISARM REFRESH -----
+def ArmDisRef(mode){
+	log.debug "Incoming Mode CMD ${mode.value} "
+	def reply = ''
+    def responsecode
+	def paramsMode = [
+			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
+			body: [area: 1, mode: "${mode.value}"],
+			headers: ['Authorization' : "Bearer ${state.accessToken}"],
+			requestContentType: "application/x-www-form-urlencoded",
+			contentType: "application/json"
+	]
+	httpPost(paramsMode) {	response ->
+		logResponse(response)
+			return response
+            log.debug "$responseLogin"
+		}
+}
+
 //	----- INSTALL, UPDATE, INITIALIZE -----
 def installed() {
 	initialize()
