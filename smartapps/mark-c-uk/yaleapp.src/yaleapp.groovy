@@ -101,13 +101,14 @@ def selectDevices() {
 		errorMsg = "There were no devices from YALE"
 	}
 	def newDevices = [:]
-    log.debug "select devices, ${devices}"
+    //log.debug "select devices, ${devices}"
 	devices.each {
-    	log.debug "select devices each ${it.value.deviceId} - ${it.value.alias} - model ${it.value.deviceModel}"
-		def isChild = getChildDevice(it.value.deviceId) //value.
+    	//log.debug "select devices each ${it.value.deviceId} - ${it.value.alias} - model ${it.value.deviceModel}"
+		def isChild = getChildDevice(it.value.deviceId) // deviceId changed to dni so dont add twice
 		if (!isChild) {
         	//log.debug "select devices, each !ischild ${it.value.alias} - ${it.value.deviceid}" //value.
-			newDevices["${it.value.dni}"] = "${it.value.alias} model ${it.value.deviceModel}"
+			newDevices["${it.value.deviceId}"] = "${it.value.alias} model ${it.value.deviceModel}"
+            //log.debug "select devices, each !ischild $newDevices"
 		}
 	}
 	if (newDevices == [:]) {
@@ -135,10 +136,28 @@ def selectDevices() {
 	}
 }
 def getDevices() {
-	def currentDevices = getDeviceData()
+	def currentDevices = ''
+	currentDevices = getDeviceData()
     //log.debug "get devices - ${currentDevices?.data?.data}"
 	state.devices = [:]
 	def devices = state.devices
+    
+/*    def map = [ result: "true", //need to add this map to other
+            			code: "000",
+                        message: "OK!",
+                        token: "NA",
+                        data:[[mac:"mademac",
+                        		name:"Alarm",
+                                type:"Alarm",
+                                device_id:"madeid"
+                         ],
+                         [mac:"mademac1",
+                        		name:"Alarm1",
+                                type:"Alarm1",
+                                device_id:"madeid1"
+                         ]
+            	]]
+*/    
 	currentDevices.data?.data.each {
     def length = it.device_id.length()-1
 		def device = [:]
@@ -148,74 +167,49 @@ def getDevices() {
 		device["deviceId"] = it.device_id
         device["dni"] = it.device_id.substring(3,length)
         
-// ========================================		device["appServerUrl"] = it.appServerUrl
-		devices << ["${it.device_id}": device]	// ====================	not sure
-		//def isChild = getChildDevice(it.device_id)
-//		if (isChild) {
-//			isChild.syncAppServerUrl(it.appServerUrl)
-//		}
-		log.info "GET Device ${it.name} - ${it.device_id}"
+		devices << ["${it.device_id}": device]	
+		//log.info "GET Device ${it.name} - ${it.device_id}"
 	}
-    //log.debug "arry $devices"
+    ///devices << ["${it.device_id}": device] //add pannel device?
+    log.debug "arry $devices"
 }
 
 def addDevices() {
-	log.debug "ADD Devices ${state?.devices}"
+	log.debug "ADD Devices "// ${state?.devices}
 	def Model = [:]
-	//	Plug-Switch Devices (no energy monitor capability)
 	Model << ["YaleAlarm" : "Yale Alarm pannel"]			
-	Model << ["Yale Alarm Open Close Sensor" : "device_type.keypad"]
-    Model << ["Yale Alarm Open Close Sensor" : "device_type.remote_controller"]
-    Model << ["Yale Alarm Open Close Sensor" : "device_type.pir"]
-    Model << ["Yale Alarm Open Close Sensor" : "device_type.door_contact"]
-
+	Model << ["device_type.keypad" : "Yale Alarm Open Close Sensor"]
+    Model << ["device_type.remote_controller" : "Yale Alarm Open Close Sensor"]
+    Model << ["device_type.pir" : "Yale Alarm Open Close Sensor"]
+    Model << ["device_type.door_contact" : "Yale Alarm Open Close Sensor"]
 
 
 	def hub = location.hubs[0]
 	def hubId = hub.id
-	selectedDevices.each { dni -> 
-    	log.debug "add it"
-		def isChild = getChildDevice(dni)
+	selectedDevices.each { deviceId -> 
+    	log.debug "addDevice each --- $deviceId"
+		def isChild = getChildDevice(deviceId)
 		if (!isChild) {
-			def device = state.devices.find { it.value.dni } //it.value.deviceNetworkId == dni
-			def deviceModel = device.value.deviceModel // ===================not sure
-            log.debug " add it not child $device - $deviceModel"
+			def device = state.devices.find { it.value.deviceId == deviceId }
+			def deviceModel = device.value.deviceModel 
+            log.debug " add it not child $device - $device -and- $deviceModel"
 			addChildDevice(
-				"mcyale",
+				"smartthings",
 				Model["${deviceModel}"], 
-				device.value.dni,
+				device.value.deviceId,
 				hubId, [
-					"label": device.value.name,
-						"name": device.value.deviceModel, 
+					"label": "${device.value.alias} Yale",
+						"name": device.value.deviceModel,
 					"data": [
-						"deviceId" : device.value.device_id,
-						///"appServerUrl": device.value.appServerUrl,
+						"deviceId" : device.value.deviceId,
 					]
 				]
 			)
-			log.info "Installed  $deviceModel with alias ${device.value.name}"
+			log.info "Installed  $deviceModel with alias ${device.value.alias}"
 		}
 	}
 }
-//	----- GET A NEW TOKEN FROM CLOUD -----
-/*
-log.debug "Attempting to login for new token"
-	def paramsLogin = [
-			uri: baseUrl() + endpointToken(),
-			body: [grant_type: "password", username:settings.userName , password: settings.password],
-			headers: ['Authorization' : "Basic ${yaleAuthToken()}"],
-			requestContentType: "application/x-www-form-urlencoded",
-			contentType: "application/json"
-	]
-	httpPost(paramsLogin) { responseLogin ->
-		log.debug "Login response is $responseLogin.data"
-		state.accessToken = responseLogin.data?.access_token
-		state.refreshToken = responseLogin.data?.refresh_token
-	}
-	log.info "'$device' Logged in for new token ${state.accessToken}"
-    sendEvent(name: "mode", value: "default", displayed: true, descriptionText: "token updated")
-}
-*/
+
 def yaleAuthToken () {
 	return "VnVWWDZYVjlXSUNzVHJhcUVpdVNCUHBwZ3ZPakxUeXNsRU1LUHBjdTpkd3RPbE15WEtENUJ5ZW1GWHV0am55eGhrc0U3V0ZFY2p0dFcyOXRaSWNuWHlSWHFsWVBEZ1BSZE1xczF4R3VwVTlxa1o4UE5ubGlQanY5Z2hBZFFtMHpsM0h4V3dlS0ZBcGZzakpMcW1GMm1HR1lXRlpad01MRkw3MGR0bmNndQ=="
 }
@@ -246,10 +240,15 @@ def getToken() {
 	}
 }
 //	----- GET DEVICE DATA FROM THE CLOUD -----
-def getDeviceData() {
-	def currentDevices = ""
-	def cmdBody = [method: "getDeviceList"]
+def getDeviceData() { // get details for adding
+log.debug "getDeviceData"
+/*	data()
+    def currentDevices = state.data //''
+    //currentDevices = state.data
 	
+    return currentDevices
+*/	
+	def currentDevices = ''
     def getPanelMetaDataAndFullStatus = [
 			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/device_status/", //	api/panel/mode/",
 			headers: ['Authorization' : "Bearer ${state.Token}"]
@@ -257,31 +256,26 @@ def getDeviceData() {
     httpGet(getPanelMetaDataAndFullStatus) { response ->
 		//log.debug "get device data - response = ${response.status} ===== ${response.data}"
         if (response.status == 200){
-        	def map = [ result: "true", //need to add this map to other
-            			code: "000",
-                        message: "OK!",
-                        token: "NA",
-                        data:[[mac:"mademac",
-                        		name:"Alarm",
-                                type:"Alarm",
-                                device_id:"madeid"
-                         ],
-                         [mac:"mademac1",
-                        		name:"Alarm1",
-                                type:"Alarm1",
-                                device_id:"madeid1"
-                         ]
-            	]]
-            
         	currentDevices = response
-   			log.debug "retun data from getdevicedata - ${currentDevices}"
-            return currentDevices
+            state.devdata = response.data.data //
+   			log.debug "retun data from getdevicedata - done " //${currentDevices.data} 
+			return currentDevices
         }
 		else (response.status != 200) {
-			state.currentError = resp.statusLine
+			state.currentError = response.status
 			sendEvent(name: "currentError", value: response.data)
 			log.error "Error in getDeviceData: ${state.currentError}"
 		}
+	}
+	def getPanelStatus = [
+			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/", //	api/panel/mode/",
+			headers: ['Authorization' : "Bearer ${state.Token}"]
+	]
+    httpGet(getPanelStatus) { response ->
+		//log.debug "get device data - response = ${response.status} ===== ${response.data}"
+        if (response.status == 200){
+        	log.debug "Pannel request good - ${response.data.data.getAt(0)}"
+        }
 	}
 }
 //	----- INSTALL, UPDATE, INITIALIZE -----
@@ -298,6 +292,7 @@ def initialize() {
 	unsubscribe()
 	unschedule()
 	runEvery5Minutes(checkError)
+    runEvery5Minutes(getDeviceData)
 	schedule("0 30 2 ? * WED", getToken)
 	if (selectedDevices) {
 		addDevices()
