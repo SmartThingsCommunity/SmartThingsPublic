@@ -14,6 +14,7 @@ metadata {
 		capability "lock"
 		capability "Polling"
 		command "datain"
+        command "ArmDisRef"
 	}
 	tiles {
 		standardTile("mode", "device.mode", inactiveLabel: false, width: 2, height: 2) {
@@ -60,67 +61,52 @@ def refresh() {
     parent.getDeviceData()
 }
 def datain(data) {
-	log.debug "Datain ${data?.message} , ${data?.data[0].mode}, ${data?.data[0]}"
-    def resp = data?.data[0].mode
+	//log.debug "Datain $data"
+    log.debug "Datain ${data?.message} ,  ${data?.data}" //${data?.data[0].mode},
+    
+    	def resp = data?.data[0]?.mode
     	if (resp.equals("arm")) {
             state.mode = 'Armed-Away'
+            state.errorCount = 0
         }
         else if (resp.equals("home")) {
             state.mode = 'Armed-Stay'
+            state.errorCount = 0
         }
         else if (resp.equals("disarm")) {
             state.mode = 'Disarmed'
+            state.errorCount = 0
         }
         else { //if (YaleAlarmState.mode.contains("system.permission_denied")) {
+            state.errorCount = state.errorCount +1
             log.warn "system off line / Error, response= '${data?.data[0]}' or Resp $resp"
             state.mode = 'default' //"${data?.mode} - ${data?.message}"
-            runIn(30,refresh)
+            if (state.errorCount < 5){ runIn(30,refresh)}
         }
-        log.info "datain state is ${state.mode}, ${data?.message}"
+        if (data?.message != "OK!"){
+        	state.errorCount = state.errorCount +1
+        	log.warn "${data?.message}"
+            if (state.errorCount < 5){runIn(20,refresh)}
+        }
+        
+      
+       
+        log.info "datain state is ${state.mode}, ${data?.message}, error are '${state.errorCount}'"
 		sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Datain - response '${data?.message}'") //isStateChange: false,
 
 }
-/*if (responsecode != 200) {
-        	state.errorcount = state.errorcount + 1
-    		log.warn "${responsecode}' - try getting new token, error count is ${state.errorcount}"
-    		if (state.errorcount > 2){
-            	state.mode = "refersh error lots of errors"
-    			log.error "too many errors"
-                send("Refresh issue  '${responsecode}', error count '${state.errorcount}'")
-        		state.errorcount = 0
-			}
-    		else {
-				login()
-            	runIn(05, refresh)
-                state.mode = "refersh error count ${state.errorcount}"
-            }
-        }
-        else {
-        	state.errorcount = 0
-			//YaleAlarmState = response.data.data.getAt(0)
-		
-        if (YaleAlarmState.mode.equals("arm")) {
-            state.mode = 'Armed-Away'
-        }
-        else if (YaleAlarmState.mode.equals("home")) {
-            state.mode = 'Armed-Stay'
-        }
-        else if (YaleAlarmState.mode.equals("disarm")) {
-            state.mode = 'Disarmed'
-        }
-        else { //if (YaleAlarmState.mode.contains("system.permission_denied")) {
-            log.warn "system off line / Error, response= '$YaleAlarmState'"
-            state.mode = YaleAlarmState
-            runIn(30,refresh)
-		}
- 	}
+def datainmode(data) {
+	log.debug "Datain ${data?.message} ,  ${data?.data} ${state.mode}"
+	if (data?.message == "OK!"){
+    	if 		(state.mode == "arm")		{state.mode = 'Armed-Away'}
+        else if (state.mode == "disarm") 	{state.mode = 'Disarmed'}
+        else if (state.mode == "home")		{state.mode = 'Armed-Stay'}
+    }
 
-	log.info "'$device' REFRESH - Mode is '$state.mode', Response- '$YaleAlarmState' complete"
-	sendEvent(name: "mode", value: state.mode, isStateChange: true, displayed: true, descriptionText: "Refresh - mode is '$state.mode', response '$YaleAlarmState'")
+    log.info "datain state is ${state.mode}, ${data?.message}, error are '${state.errorCount}'"
+	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Datainmode - response '${data?.message}'") //isStateChange: false,
+}
 
-*/
-	
-//}
 // ==================== Buttons / voice comands ==========================
 def lock() {
 	armStay()
@@ -137,16 +123,19 @@ def off() {
 // ===================   Buttons / voice comands end == in to Modes ====================
 def armAway(mode) {
 	mode = "arm"
+    state.mode = "arm"
 	//log.debug "armaway mode ${mode.value}"
 	postcmd(mode)
 }
 def armStay(mode) {
 	mode = "home"
+    state.mode = "home"
 	//log.debug "arm stay mode ${mode.value}"
 	postcmd(mode)
 }
 def disarm(mode) {
 	mode = "disarm"
+    state.mode = "disarm"
     //endp = endpointMode()
 	//log.debug "disarm mode ${mode.value} "
 	postcmd(mode)
@@ -155,6 +144,8 @@ def disarm(mode) {
 def postcmd(mode){
 	log.debug "Incoming Mode CMD ${mode.value} "
     parent.ArmDisRef(mode)
+    //log.debug "$response"
+    		
 }
 
 // parse events into attributes
