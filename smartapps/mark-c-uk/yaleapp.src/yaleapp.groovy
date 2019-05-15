@@ -302,36 +302,38 @@ private send(msg) {
 //	----- ARM DISARM REFRESH -----
 def ArmDisRef(mode){
 	log.debug "Incoming Mode CMD ${mode.value} "
+    
+    
 	def reply = ''
     def responsecode
 	def paramsMode = [
 			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
 			body: [area: 1, mode: "${mode.value}"],
-			headers: ['Authorization' : "Bearer ${state.accessToken}"],
+			headers: ['Authorization' : "Bearer ${state.Token}"],
 			requestContentType: "application/x-www-form-urlencoded",
 			contentType: "application/json"
 	]
 	httpPost(paramsMode) {	response ->
-		logResponse(response)
-			//return response
-            if (response.status == 200){
+			if (response?.status == 200){
+            	
             	if (state.errorCount != 0) {
 					state.errorCount = 0
 				}
             	if (state.currentError != null) {
 					state.currentError = null
                 }
-            	log.debug "Mode $response"
+            	log.debug "Mode ${response?.status}"
             	def isChild = getChildDevice('RF:YalePan1')
             		if (isChild) {
-                		log.info "Sending status of '${response.data}' to child Alarm DH " 
-                		isChild.datain(response.data)
-                		if (response.data.message != 'OK!'){
+                		log.info "Mode - Sending status of '${response.data}' to child Alarm DH " 
+                		isChild.datainmode(response?.data)
+                		if (response?.data?.message != 'OK!'){
                     		send("Alarm MODE change issue, message ${response.data.message}") //if door left open
                     	}
 					}
+                    return
                 }
-			else (response.status != 200) {
+			else (response?.status != 200) {
 				state.currentError = response.status
 				sendEvent(name: "currentError", value: response?.data)
 				log.error "Error in MODE change pannel data: ${state.currentError} - ${response?.data}"
