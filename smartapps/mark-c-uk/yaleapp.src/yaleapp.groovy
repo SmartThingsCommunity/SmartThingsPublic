@@ -78,6 +78,7 @@ def cloudLogin() {
 				multiple: false,
 				options: ["Initial Install", "Add Devices", "Update Token"]
 			)
+            input("push", "bool", title: "Send push messages", required: true, displayDuringSetup: true, )
 		}
 	}
 }
@@ -141,23 +142,6 @@ def getDevices() {
     //log.debug "get devices - ${currentDevices?.data?.data}"
 	state.devices = [:]
 	def devices = state.devices
-    
-/*    def map = [ result: "true", //need to add this map to other
-            			code: "000",
-                        message: "OK!",
-                        token: "NA",
-                        data:[[mac:"mademac",
-                        		name:"Alarm",
-                                type:"Alarm",
-                                device_id:"madeid"
-                         ],
-                         [mac:"mademac1",
-                        		name:"Alarm1",
-                                type:"Alarm1",
-                                device_id:"madeid1"
-                         ]
-            	]]
-*/    
 	currentDevices.data?.data.each {
 		def device = [:]
 		device["alias"] = it.name
@@ -234,48 +218,52 @@ def getToken() {
         	state.Token = responseLogin.data?.access_token
     		//log.info "Token updated to ${state.Token}"
     		sendEvent(name: "TokenUpdate", value: "tokenUpdate Successful.")
+            send("token updated") //============================================================== to remove one auto tonken checked
+            if (state.currentError != null) {
+				state.currentError = null
+			}
     	}
     	else if (responseLogin.status != 200) {
 			state.currentError = responseLogin.message
 			sendEvent(name: "currentError", value: responseLogin.data)
 			log.error "Error in getToken: ${state.currentError}"
 			sendEvent(name: "TokenUpdate", value: state.currentError)
+            send("token update error ${state.currentError}")
 		} 
 	}
 }
 //	----- GET DEVICE DATA FROM THE CLOUD -----
 def getDeviceData() { // get details for adding
-log.debug "getDeviceData"
-/*	data()
-    def currentDevices = state.data //''
-    //currentDevices = state.data
-	
-    return currentDevices
-*/	
+	//log.debug "getDeviceData"
 	def currentDevices = ''
-    def getPanelMetaDataAndFullStatus = [
-			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/device_status/", //	api/panel/mode/",
+    def getDeviceStatus = [
+			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/device_status/",
 			headers: ['Authorization' : "Bearer ${state.Token}"]
 	]
-    httpGet(getPanelMetaDataAndFullStatus) { response ->
+    httpGet(getDeviceStatus) { response ->
 		//log.debug "get device data - response = ${response.status} ===== ${response.data}"
         if (response.status == 200){
+        	if (state.errorCount != 0) {
+				state.errorCount = 0
+			}
+        	if (state.currentError != null) {
+				state.currentError = null
+			}
         	currentDevices = response
 	        currentDevices?.data?.data?.each {
         		//log.debug "it ${it?.name} - ${it?.device_id}"
 				def isChild = getChildDevice(it?.device_id)
             	if (isChild) {
                 	log.info "Sending status of '${it?.status_open[0]}' to child '${it?.name}'" 
-                	isChild.datain(it) //it?.status_open[0]
+                	isChild.datain(it)
                 }
         	}
         }
 		else (response.status != 200) {
 			state.currentError = response.status
-			sendEvent(name: "currentError", value: response.data)
-			log.error "Error in getDeviceData device data: ${state.currentError}"
+			sendEvent(name: "currentError", value: response?.data)
+			log.error "Error in getDeviceData device data: ${state.currentError} - ${response?.data}"
 		}
-        //return currentDevices
 	}
 	def getPanelStatus = [
 			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/", //	api/panel/mode/",
@@ -284,29 +272,32 @@ log.debug "getDeviceData"
     httpGet(getPanelStatus) { response ->
 		//log.debug "get device data - response = ${response.status} ===== ${response.data}"
         if (response.status == 200){
-        	log.debug "Pannel request good - ${response.data.data.getAt(0)} , ${response.data.message}" //${response.data}
+        	if (state.currentError != null) {
+				state.currentError = null
+			}
+        	//log.debug "Pannel request good - ${response.data.data.getAt(0)} , ${response.data.message}" //${response.data}
         	def isChild = getChildDevice('RF:YalePan1')
             	if (isChild) {
-                	log.info "Sending status of '${response.data}' to child '${it?.name}' also " 
+                	log.info "Sending status of '${response.data.data}', '${response.data.message}' to AlarmPannel" 
                 	isChild.datain(response.data)
                 	if (response.data.message != 'OK!'){
-                    	sendPush("Alarm updated with message ${response.data.message}")
+                    	send("Alarm updated with message ${response.data.message}")   
                     }
                 }
-        
         }
         else (response.status != 200) {
 			state.currentError = response.status
-			sendEvent(name: "currentError", value: response.data)
-			log.error "Error in getDeviceData pannel data: ${state.currentError}"
+			sendEvent(name: "currentError", value: response?.data)
+			log.error "Error in getDeviceData pannel data: ${state.currentError} - ${response?.data}"
 		}
 	}
-    //def children = getChildDevice('RF:25450410') //getAllChildDevices()
-    //log.debug "getchilddevices all children $children"
-	//children.each { child ->
-	//	log.debug "getchilddevices ${it?.value?.deviceId} , ${child?.value?.deviceId} , ${child?.deviceId}"
-    //    }
     return currentDevices
+}
+private send(msg) {
+    if ( push == true ) {
+        log.debug "sending push message - $msg" 
+        sendPush(msg)
+    }
 }
 //	----- ARM DISARM REFRESH -----
 def ArmDisRef(mode){
@@ -322,9 +313,31 @@ def ArmDisRef(mode){
 	]
 	httpPost(paramsMode) {	response ->
 		logResponse(response)
-			return response
-            log.debug "$responseLogin"
+			//return response
+            if (response.status == 200){
+            	if (state.errorCount != 0) {
+					state.errorCount = 0
+				}
+            	if (state.currentError != null) {
+					state.currentError = null
+                }
+            	log.debug "Mode $response"
+            	def isChild = getChildDevice('RF:YalePan1')
+            		if (isChild) {
+                		log.info "Sending status of '${response.data}' to child Alarm DH " 
+                		isChild.datain(response.data)
+                		if (response.data.message != 'OK!'){
+                    		send("Alarm MODE change issue, message ${response.data.message}") //if door left open
+                    	}
+					}
+                }
+			else (response.status != 200) {
+				state.currentError = response.status
+				sendEvent(name: "currentError", value: response?.data)
+				log.error "Error in MODE change pannel data: ${state.currentError} - ${response?.data}"
+                send("error in MODE change ${state.currentError} - ${response?.data}")
 		}
+	}
 }
 
 //	----- INSTALL, UPDATE, INITIALIZE -----
@@ -338,11 +351,13 @@ def updated() {
 }
 
 def initialize() {
+	log.debug "initialise"
 	unsubscribe()
 	unschedule()
 	runEvery5Minutes(checkError)
-    runEvery5Minutes(getDeviceData)
-	schedule("0 30 2 ? * WED", getToken)
+    runEvery10Minutes(getDeviceData)
+	//schedule("0 30 2 ? * WED", getToken)
+    schedule(now() + 604800000, getToken) // once a week
 	if (selectedDevices) {
 		addDevices()
 	}
@@ -353,14 +368,15 @@ def checkError() {
 		log.info "Connect did not have any set errors."
 		return
 	}
-	def errMsg = state.currentError.msg
+	def errMsg = state.currentError?.msg
 	log.info "Attempting to solve error: ${errMsg}"
 	state.errorCount = state.errorCount +1
-	if (errMsg == "Token expired" && state.errorCount < 6) {
+    send("error ${errMsg}, count is ${state.errorCount}")
+	if (state.errorCount < 6) { //errMsg == "Token expired" && 
 		sendEvent (name: "ErrHandling", value: "Handle comms error attempt ${state.errorCount}")
 		getDevices()
 		if (state.currentError == null) {
-			log.info "getDevices successful.  apiServerUrl updated and token is good."
+			log.info "getDevices successful. token is good."
 			return
 		}
 		log.error "${errMsg} error while attempting getDevices.  Will attempt getToken"
@@ -372,6 +388,7 @@ def checkError() {
 		}
 	} else {
 		log.error "checkError:  No auto-correctable errors or exceeded Token request count."
+        send("error ${errMsg}, count is ${state.errorCount} couldnt fix it")
 	}
 	log.error "checkError residual:  ${state.currentError}"
 }
