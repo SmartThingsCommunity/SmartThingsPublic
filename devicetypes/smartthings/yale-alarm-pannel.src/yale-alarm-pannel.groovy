@@ -14,7 +14,7 @@ metadata {
 		capability "lock"
 		capability "Polling"
 		command "datain"
-        command "ArmDisRef"
+        command "postcmd"
 	}
 	tiles {
 		standardTile("mode", "device.mode", inactiveLabel: false, width: 2, height: 2) {
@@ -62,8 +62,8 @@ def refresh() {
 }
 def datain(data) {
 	//log.debug "Datain $data"
-    log.debug "Datain ${data?.message} ,  ${data?.data}" //${data?.data[0].mode},
-    
+    //log.debug "Datain ${data?.message} ,  ${data?.data}" //${data?.data[0].mode},
+    	def dmsg = data?.message
     	def resp = data?.data[0]?.mode
     	if (resp.equals("arm")) {
             state.mode = 'Armed-Away'
@@ -83,28 +83,14 @@ def datain(data) {
             state.mode = 'default' //"${data?.mode} - ${data?.message}"
             if (state.errorCount < 5){ runIn(30,refresh)}
         }
-        if (data?.message != "OK!"){
+        if (dmsg != "OK!"){
         	state.errorCount = state.errorCount +1
-        	log.warn "${data?.message}"
+        	log.warn "$dmsg"
             if (state.errorCount < 5){runIn(20,refresh)}
         }
-        
-      
-       
-        log.info "datain state is ${state.mode}, ${data?.message}, error are '${state.errorCount}'"
-		sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Datain - response '${data?.message}'") //isStateChange: false,
+        log.info "datain state is ${state.mode}, error are '${state.errorCount}'" //${data?.message}
+		sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Datain - response '$dmsg'") //isStateChange: false,
 
-}
-def datainmode(data) {
-	log.debug "Datain mode ${data?.message} ,  ${data?.data} ${state.mode}"
-	if (data?.message == "OK!"){
-    	if 		(state.mode == "arm")		{state.mode = "Armed-Away"}
-        else if (state.mode == "disarm") 	{state.mode = "Disarmed"}
-        else if (state.mode == "home")		{state.mode = "Armed-Stay"}
-    }
-	else {state.mode = "default"}
-    log.info "datainmode state is ${state.mode}, ${data?.message}, error are '${state.errorCount}'"
-	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Datainmode - response '${data?.message}'") //isStateChange: false,
 }
 
 // ==================== Buttons / voice comands ==========================
@@ -123,29 +109,51 @@ def off() {
 // ===================   Buttons / voice comands end == in to Modes ====================
 def armAway(mode) {
 	mode = "arm"
-    state.mode = "arm"
+    state.mode = 'arm'
 	//log.debug "armaway mode ${mode.value}"
 	postcmd(mode)
 }
 def armStay(mode) {
 	mode = "home"
-    state.mode = "home"
+    state.mode = 'home'
 	//log.debug "arm stay mode ${mode.value}"
 	postcmd(mode)
 }
 def disarm(mode) {
 	mode = "disarm"
-    state.mode = "disarm"
+    state.mode = 'disarm'
     //endp = endpointMode()
 	//log.debug "disarm mode ${mode.value} "
 	postcmd(mode)
 }
 // ===================   Modes end    ==  in to post CMDs ====================
 def postcmd(mode){
-	log.debug "Incoming Mode CMD ${mode.value} "
-    parent.ArmDisRef(mode)
-    //log.debug "$response"
-    		
+	log.trace "outgoing Mode CMD $mode "
+    def data = parent.ArmDisRef(mode)
+    //log.debug "POSTCMD $data"
+    def dmsg = ''
+    if (data != "error"){
+    	dmsg = data?.message
+    }
+    else {
+    	dmsg = data
+    }
+	if (dmsg == 'OK!'){
+    	if (mode == 'arm'){
+        	state.mode = 'Armed-Away'
+        }
+        else if (mode == 'disarm'){
+        	state.mode = 'Disarmed'
+        }
+        else if (mode == 'home'){
+        	state.mode = 'Armed-Stay'
+        }
+    }
+	else {
+    	state.mode = 'default'
+    }
+    log.info "Data In for Mode state is ${state.mode}, $dmsg, errors are ${state.errorCount}"
+	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Data in for mode, $dmsg") //isStateChange: false,
 }
 
 // parse events into attributes
