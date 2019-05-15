@@ -155,71 +155,8 @@ def disarm(mode) {
 def postcmd(mode){
 	log.debug "Incoming Mode CMD ${mode.value} "
     parent.ArmDisRef(mode)
-/*	def reply = ''
-    def responsecode
-	def paramsMode = [
-			uri: baseUrl() + endpointMode(),
-			body: [area: 1, mode: "${mode.value}"],
-			headers: ['Authorization' : "Bearer ${state.accessToken}"],
-			requestContentType: "application/x-www-form-urlencoded",
-			contentType: "application/json"
-	]
-	httpPost(paramsMode) {	response ->
-		reply = response.data.message
-        responsecode = response.status
-		log.debug "Mode change Request Response - $device - $responsecode - '${response.data}' - ${response}"
-	}
-    
-    //// insert parent
-    if (responsecode != 200) { //bad
-        state.errorcount = state.errorcount + 1
-    	log.warn "${responsecode}' - error count is ${state.errorcount}"
-   		if (state.errorcount > 2){
-   			log.error "too many errors"
-       		state.errorcount = 0
-            state.mode = responsecode
-		}
-   		else {
-        	log.warn "${responsecode}' - try getting new token, error count is ${state.errorcount}"
-			login()
-         	runIn(05, disarm)
-            state.mode = "Mod change - ${responsecode} - error count ${state.errorcount}"
-		}
-	} //bad end
-    else { //good
-       	state.errorcount = 0
-		if (reply != 'OK!'){ //other bad response
-			log.warn "$device response '$reply'"
-			state.mode = reply
-            send("Command issue ${state.mode}, messageing $reply")
-			runIn(10,refresh)
-		} // othe bad end
-		else { //still good
-        	if(mode == "disarm"){
-				state.mode = 'Disarmed'
-            }
-            else if(mode == "home"){
-            	state.mode = 'Armed-Stay'
-            }
-            else if(mode == "arm"){
-            	state.mode = 'Armed-Away'
-            }
-            else{
-            	state.mode = 'error'
-            }
-		} //still good end
-	} //good end
-    log.info "$device PostCMD- Status is: '$reply' -'$state.mode'"
-	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Mode Command - '$reply', mode - '$state.mode'")
-*/
 }
 
-private send(msg) {
-    if ( sendPushMessage == "Yes" ) {
-        log.debug "sending push message" 
-        //sendPush(msg)
-    }
-}
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"

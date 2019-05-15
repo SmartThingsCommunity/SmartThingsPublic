@@ -39,7 +39,10 @@ def datain(data){
     else if (data.status_open[0] == 'device_status.dc_open'){
     	sendEvent(name: "contact", value: "open")
     }
-    else {sendEvent(name: "contact", value: "Failed", descriptionText: "Device is '${data.status_open[0]}'")}
+    else {
+    	sendEvent(name: "contact", value: "Failed", descriptionText: "Device is '${data.status_open[0]}'")
+    	log.warn "Datain failed - $data"
+    }
     
     if (data.status_fault[0] == 'device_status.low_battery'){
     	sendEvent(name:"battery", value:"1", descriptionText: "Low battery warning not 1%")
