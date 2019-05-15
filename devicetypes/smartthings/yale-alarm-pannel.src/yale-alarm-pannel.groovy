@@ -96,14 +96,14 @@ def datain(data) {
 
 }
 def datainmode(data) {
-	log.debug "Datain ${data?.message} ,  ${data?.data} ${state.mode}"
+	log.debug "Datain mode ${data?.message} ,  ${data?.data} ${state.mode}"
 	if (data?.message == "OK!"){
-    	if 		(state.mode == "arm")		{state.mode = 'Armed-Away'}
-        else if (state.mode == "disarm") 	{state.mode = 'Disarmed'}
-        else if (state.mode == "home")		{state.mode = 'Armed-Stay'}
+    	if 		(state.mode == "arm")		{state.mode = "Armed-Away"}
+        else if (state.mode == "disarm") 	{state.mode = "Disarmed"}
+        else if (state.mode == "home")		{state.mode = "Armed-Stay"}
     }
-
-    log.info "datain state is ${state.mode}, ${data?.message}, error are '${state.errorCount}'"
+	else {state.mode = "default"}
+    log.info "datainmode state is ${state.mode}, ${data?.message}, error are '${state.errorCount}'"
 	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Datainmode - response '${data?.message}'") //isStateChange: false,
 }
 
