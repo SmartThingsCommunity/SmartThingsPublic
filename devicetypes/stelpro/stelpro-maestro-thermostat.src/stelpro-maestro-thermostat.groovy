@@ -461,7 +461,7 @@ def refresh() {
 	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE)
 	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT)
 
-	if (!isStelproOrleans()) {
+	if (!isOrleansOrSonoma()) {
 		requests += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO)
 	}
 
