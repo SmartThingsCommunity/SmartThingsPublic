@@ -71,6 +71,9 @@ def isIkeaDimmer() {
 def isAuroraRemote() {
 	device.getDataValue("model") == "Remote50AU"
 }
+def isMullerLichtTint() {
+	device.getDataValue("model") == "ZBT-DIMController-D0800"
+}
 
 // Parse incoming device messages to generate events
 def parse(String description) {
@@ -92,7 +95,7 @@ def parse(String description) {
 					results << createEvent(name: "level", value: STEP)
 				}
 
-				if (isAuroraRemote()) {
+				if (isAuroraRemote() || isMullerLichtTint()) { // Devices that have one power button
 					results << createEvent(name: "switch", value: device.currentValue("switch") == "on" ? "off" : "on")
 				} else {
 					results << createEvent(name: "switch", value: descMap.commandInt == ONOFF_OFF_COMMAND ? "off" : "on")
