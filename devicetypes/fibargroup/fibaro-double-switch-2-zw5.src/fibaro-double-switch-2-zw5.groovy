@@ -436,6 +436,11 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	[:]
+}
+
 private logging(text, type = "debug") {
 	if (settings.logging == "true") {
 		log."$type" text
