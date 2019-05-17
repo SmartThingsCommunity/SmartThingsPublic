@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Simulated Garage Door Opener with Cam Viewer", namespace: "smartthings/testing", author: "SmartThings") {
+	definition (name: "Simulated Garage Door Opener with Cam Viewer", namespace: "pa1972vigo", author: "Pepe Grillo") {
 		capability "Actuator"
 		capability "Door Control"
         capability "Garage Door Control"
