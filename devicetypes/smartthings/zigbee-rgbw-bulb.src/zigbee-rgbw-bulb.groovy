@@ -213,7 +213,11 @@ def setGenericName(value){
 }
 
 def setLevel(value, rate = null) {
-	zigbee.setLevel(value)
+	if (value == 0) {
+		zigbee.off()
+	} else {
+		zigbee.setLevel(value)
+	}
 }
 
 private getScaledHue(value) {
