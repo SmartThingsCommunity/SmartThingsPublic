@@ -80,9 +80,6 @@
 		valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
 			state "power", label:'${currentValue} W'
 		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
-			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
-		}
 		standardTile("refresh", "device.switch", height: 2, width:2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
@@ -140,7 +137,6 @@ def setColorTemperature(temp) {
 
 def configure() {
 	log.debug "Configuring Device For SmartThings Use"
-	def cmds = []
 
 	sendEvent(name: "checkInterval", value: 60 * 60 * 12, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
