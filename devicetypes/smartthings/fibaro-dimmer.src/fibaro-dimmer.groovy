@@ -73,6 +73,17 @@ metadata {
 	}
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x26: 1,  // Switch Multilevel
+		0x70: 2,  // Configuration
+		0x72: 2   // Manufacturer Specific
+	]
+}
+
 def parse(String description) {
 	def item1 = [
 		canBeCurrentState: false,
@@ -83,7 +94,7 @@ def parse(String description) {
 		value:  description
 	]
 	def result
-	def cmd = zwave.parse(description, [0x26: 1, 0x70: 2, 072: 2])
+	def cmd = zwave.parse(description, commandClassVersions)
     //log.debug "cmd: ${cmd}"
     
     if (cmd) {
@@ -141,6 +152,16 @@ def createEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevel
 		result[i].type = "digital"
 	}
 	result
+}
+
+def createEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
+def createEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport)' with cmd = $cmd"
 }
 
 def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {

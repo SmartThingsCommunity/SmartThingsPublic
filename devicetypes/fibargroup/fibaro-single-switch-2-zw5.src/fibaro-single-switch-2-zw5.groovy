@@ -112,6 +112,7 @@ def reset() {
 
 def refresh() {
     def cmds = []
+    cmds << zwave.switchBinaryV1.switchBinaryGet()
     cmds << zwave.meterV3.meterGet(scale: 0)
     cmds << zwave.meterV3.meterGet(scale: 2)
     encapSequence(cmds,1000)
@@ -125,6 +126,7 @@ def ping() {
 def installed(){
     log.debug "installed()"
     sendEvent(name: "checkInterval", value: 1920, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+    response(refresh())
 }
 
 //Configuration and synchronization
@@ -308,6 +310,11 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
     }
 }
 
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+    // Handles all Z-Wave commands we aren't interested in
+    log.debug "Unhandled: ${cmd.toString()}"
+    [:]
+}
 
 private logging(text, type = "debug") {
     if (settings.logging == "true" || type == "warn") {

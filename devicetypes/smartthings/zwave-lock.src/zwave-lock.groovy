@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Lock", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Z-Wave Lock", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Actuator"
 		capability "Lock"
 		capability "Polling"
@@ -39,6 +39,8 @@ metadata {
 		fingerprint mfr:"0090", prod:"0003", model:"0642", deviceJoinName: "KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock"
 		//zw:Fs type:4003 mfr:0090 prod:0003 model:0541 ver:4.79 zwv:4.34 lib:03 cc:5E,72,5A,98,73,7A sec:86,80,62,63,85,59,71,70,5D role:07 ff:8300 ui:8300
 		fingerprint mfr:"0090", prod:"0003", model:"0541", deviceJoinName: "KwikSet SmartCode 888 Touchpad Deadbolt Door Lock"
+		//zw:Fs type:4003 mfr:0090 prod:0003 model:0742 ver:4.10 zwv:4.34 lib:03 cc:5E,72,5A,98,73,7A sec:86,80,62,63,85,59,71,70,4E,8B,4C,5D role:07 ff:8300 ui:8300
+		fingerprint mfr:"0090", prod:"0003", model:"0742", deviceJoinName: "Kwikset Obsidian Lock"
 		// Schlage
 		fingerprint mfr:"003B", prod:"6341", model:"0544", deviceJoinName: "Schlage Touchscreen Deadbolt Door Lock"
 		fingerprint mfr:"003B", prod:"6341", model:"5044", deviceJoinName: "Schlage Touchscreen Deadbolt Door Lock"
@@ -61,12 +63,12 @@ metadata {
 		fingerprint mfr:"0129", prod:"800C", model:"0F00", deviceJoinName: "Yale Assure Touchscreen Lever Door Lock" // YRL226-ZW2
 		fingerprint mfr:"0129", prod:"8002", model:"1000", deviceJoinName: "Yale Assure Lock" //YRD-ZWM-1
 		// Samsung
-		fingerprint mfr:"022E", prod:"0001", model:"0001", deviceJoinName: "Samsung Digital Lock" // SHP-DS705, SHP-DHP728, SHP-DHP525
-		//KeyWe
+		fingerprint mfr:"022E", prod:"0001", model:"0001", deviceJoinName: "Samsung Digital Lock", mnmn: "SmartThings", vid: "SmartThings-smartthings-Samsung_Smart_Doorlock" // SHP-DS705, SHP-DHP728, SHP-DHP525
+		// KeyWe
 		fingerprint mfr:"037B", prod:"0002", model:"0001", deviceJoinName: "KeyWe Lock" // GKW-2000D
-		//KWIKSET OBSIDIAN
-		//zw:Fs type:4003 mfr:0090 prod:0003 model:0742 ver:4.10 zwv:4.34 lib:03 cc:5E,72,5A,98,73,7A sec:86,80,62,63,85,59,71,70,4E,8B,4C,5D role:07 ff:8300 ui:8300
-		fingerprint mfr:"0090", prod:"0003", model:"0742", deviceJoinName: "Kwikset Obsidian Lock"
+		fingerprint mfr:"037B", prod:"0003", model:"0001", deviceJoinName: "KeyWe Smart Rim Lock" // GKW-1000Z
+		// Philia
+		fingerprint mfr:"0366", prod:"0001", model:"0001", deviceJoinName: "Philia Smart Door Lock" // PDS-100
 	}
 
 	simulator {
@@ -248,7 +250,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [ 0x98: 1, 0x72: 2, 0x85: 2, 0x86: 1 ])
+		def cmd = zwave.parse(description, [ 0x98: 1, 0x62: 1, 0x63: 1, 0x71: 2, 0x72: 2, 0x80: 1, 0x85: 2, 0x86: 1 ])
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -908,7 +910,7 @@ def zwaveEvent(UserCodeReport cmd) {
 			result << response(requestCode(state.checkCode))
 		}
 	}
-	if (codeID == state.pollCode) {
+	if (codeID.toInteger() == state.pollCode) {
 		if (state.pollCode + 1 > state.codes || state.pollCode >= 15) {
 			state.remove("pollCode")  // done
 			state["pollCode"] = null

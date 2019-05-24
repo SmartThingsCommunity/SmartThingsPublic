@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition(name: "ZLL Dimmer Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
+	definition(name: "ZLL Dimmer Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true, genericHandler: "ZLL") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Polling"
@@ -39,14 +39,15 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E17 W op/ch 400lm", deviceJoinName: "IKEA TRADFRI LED Bulb"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb GU10 W 400lm", deviceJoinName: "IKEA TRADFRI LED Bulb"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 W opal 1000lm", deviceJoinName: "IKEA TRADFRI LED Bulb"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RS 125", deviceJoinName: "Innr Smart Spot"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RB 165", deviceJoinName: "Innr Smart Bulb"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RB 175 W", deviceJoinName: "Innr Smart Bulb (Warm Dimming)"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RS 125", deviceJoinName: "Innr Smart Spot White"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RB 165", deviceJoinName: "Innr Smart Bulb White"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RB 175 W", deviceJoinName: "Innr Smart Bulb Warm Dimming"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E14-U43", deviceJoinName: "Sengled E14-U43"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RB 145", deviceJoinName: "Innr Smart Candle"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "innr", model: "RB 145", deviceJoinName: "Innr Smart Candle White"
 		//IKEA TRADFRI bulb E14 W op/ch 400lm: 01 C05E 0100 02 08 0000 0003 0004 0005 0006 0008 0B05 1000 04 0005 0019 0020 1000
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E14 W op/ch 400lm", deviceJoinName: "IKEA TRADFRI LED Bulb"
-
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI transformer 10W", deviceJoinName: "TRÅDFRI Driver for wireless control 10W"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI transformer 30W", deviceJoinName: "TRADFRI Driver for wireless control 30W"
 	}
 
 	// simulator metadata
@@ -102,7 +103,7 @@ def on() {
 	zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()
 	//adding refresh because of ZLL bulb not conforming to send-me-a-report
 }

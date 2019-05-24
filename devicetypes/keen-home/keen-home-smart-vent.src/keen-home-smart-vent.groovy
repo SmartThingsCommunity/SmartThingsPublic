@@ -155,7 +155,7 @@ def clearObstruction() {
     ] + configure()
 }
 
-def setLevel(value, rate=null) {
+def setLevel(value, rate = null) {
     log.debug "setting level: ${value}"
     def cmds = []
     if (isObstructed()) {

@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition(name: "ZLL White Color Temperature Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true) {
+	definition(name: "ZLL White Color Temperature Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true, genericHandler: "ZLL") {
 
 		capability "Actuator"
 		capability "Color Temperature"
@@ -38,6 +38,9 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW013", deviceJoinName: "Philips Hue White Ambiance Spot"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW014", deviceJoinName: "Philips Hue White Ambiance Spot"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Philips", model: "LTW015", deviceJoinName: "Philips Hue White Ambiance A19"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "FLOALT panel WS 30x30", deviceJoinName: "IKEA FLOALT Panel", mnmn:"SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "SURTE door WS 38x64", deviceJoinName: "IKEA SURTE Panel", mnmn:"SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "JORMLIEN door WS 40x80", deviceJoinName: "IKEA JORMLIEN Panel", mnmn:"SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
 	}
 
 	// UI tile definitions
@@ -103,7 +106,7 @@ def on() {
 	zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 

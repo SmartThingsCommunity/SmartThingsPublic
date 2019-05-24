@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "Z-Wave Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition(name: "Z-Wave Door/Window Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Contact Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -51,6 +51,8 @@ metadata {
 		//zw:S type:0701 mfr:0214 prod:0002 model:0001 ver:6.38 zwv:4.38 lib:06 cc:5E,30,84,80,86,72,71,70,85,59,73,5A role:06 ff:8C06 ui:8C06
 		fingerprint mfr: "0214", prod: "0002", model: "0001", deviceJoinName: "BeSense Door/Window Detector"
 		fingerprint mfr: "0086", prod: "0002", model: "0078", deviceJoinName: "Aeotec Door/Window Sensor Gen5" //EU
+		fingerprint mfr: "0371", prod: "0102", model: "0007", deviceJoinName: "Aeotec Door/Window Sensor 7" //EU
+		fingerprint mfr: "0371", prod: "0002", model: "0007", deviceJoinName: "Aeotec Door/Window Sensor 7" //US
 	}
 
 	// simulator metadata
