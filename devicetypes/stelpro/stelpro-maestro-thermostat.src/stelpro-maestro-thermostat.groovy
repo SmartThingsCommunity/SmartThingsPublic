@@ -339,7 +339,8 @@ def handleTemperature(descMap) {
 		def lastAlarm = device.currentValue("temperatureAlarm")
 		if (lastAlarm != "cleared") {
 			def cleared = false
-			if (lastTemp) {
+
+			if (lastTemp != null) {
 				lastTemp = convertTemperatureIfNeeded(lastTemp, device.currentState("temperature").unit).toFloat()
 				// Check to see if we are coming out of our alarm state and only clear then
 				// NOTE: A thermostat might send us an alarm *before* it has completed sending us previous measurements,
@@ -451,7 +452,7 @@ def refresh() {
 	requests += updateWeather()
 	requests += zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_LOCAL_TEMP)
 
-	if (!isStelproOrleans()) {
+	if (!isOrleansOrSonoma()) {
 		requests += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO)
 	}
 
@@ -460,7 +461,7 @@ def refresh() {
 	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE)
 	requests += zigbee.readAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT)
 
-	if (!isStelproOrleans()) {
+	if (!isOrleansOrSonoma()) {
 		requests += zigbee.readAttribute(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO)
 	}
 
@@ -584,7 +585,7 @@ def configure() {
 	requests += zigbee.configureReporting(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_TEMP_DISP_MODE, DataType.ENUM8, 1, 0, 1)
 	requests += zigbee.configureReporting(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT, DataType.ENUM8, 1, 0, 1)
 
-	if (!isStelproOrleans()) {
+	if (!isOrleansOrSonoma()) {
 		requests += zigbee.configureReporting(zigbee.RELATIVE_HUMIDITY_CLUSTER, ATTRIBUTE_HUMIDITY_INFO, DataType.UINT16, 10, 300, 1)
 	}
 	// Read the configured variables
@@ -652,6 +653,6 @@ private Boolean secondsPast(timestamp, seconds) {
 	return (now() - timestamp) > (seconds * 1000)
 }
 
-private Boolean isStelproOrleans() {
-    device.getDataValue("model") == "SORB"
+private Boolean isOrleansOrSonoma() {
+	device.getDataValue("model") == "SORB" || device.getDataValue("model") == "SonomaStyle"
 }
