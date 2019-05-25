@@ -1,5 +1,5 @@
 /**
- *  TRIGGERcmd (Connect)
+ *  TRIGGERcmd V2
  *
  *  Copyright 2017 VanderMey Consulting, LLC
  *
@@ -218,7 +218,7 @@ def cleanupTriggers() {
 def deviceDiscovery() {
 	def Params = [
 		token: "${atomicState.token}",
-        uri: "/api/command/commandlist"		
+        uri: "/api/smartthings/commandlist"		
 	]
 
 	def triggers = ""
@@ -442,7 +442,7 @@ def on(childDevice) {
 	//Russ
 	def Params = [
 		token: "${atomicState.token}",
-        uri: "/api/run/triggerByID",
+        uri: "/api/smartthings/triggerBase64",
         body: "trigger=${dni}&params=on"
 	]
 
@@ -460,7 +460,7 @@ def off(childDevice) {
 	//Russ
 	def Params = [
 		token: "${atomicState.token}",
-        uri: "/api/run/triggerByID",
+        uri: "/api/smartthings/triggerBase64",
         body: "trigger=${dni}&params=off"
 	]
 
