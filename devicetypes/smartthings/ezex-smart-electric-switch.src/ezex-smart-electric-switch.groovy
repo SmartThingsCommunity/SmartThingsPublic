@@ -11,8 +11,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-import physicalgraph.zigbee.zcl.DataType
-
 metadata {
     definition (name: "eZEX smart electric switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
         capability "Energy Meter"
@@ -25,8 +23,6 @@ metadata {
         capability "Configuration"
 
         fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0006, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR116Z-HA", deviceJoinName: "Smart Electric Switch"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "LDS", model: "ZB-ONOFFPlug-D0000", deviceJoinName: "Smart Plug"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 0702, FC82", outClusters: "0003, 000A, 0019", manufacturer: "LDS", model: "ZB-ONOFFPlug-D0005", deviceJoinName: "Smart Plug"
     }
 
     tiles(scale: 2){
@@ -60,21 +56,13 @@ def getATTRIBUTE_HISTORICAL_CONSUMPTION() { 0x0400 }
 def parse(String description) {
     log.debug "description is $description"
     def event = zigbee.getEvent(description)
-    def powerDiv = 1000
-    def energyDiv = 1000000
-
-    if (device.getDataValue("manufacturer") == "LDS") {
-        powerDiv = 1
-        energyDiv = 100
-    }
-
     if (event) {
         log.info "event enter:$event"
         if (event.name== "power") {
-            event.value = event.value/powerDiv
+            event.value = event.value/1000
             event.unit = "W"
         } else if (event.name== "energy") {
-            event.value = event.value/energyDiv
+            event.value = event.value/1000000
             event.unit = "kWh"
         }
         log.info "event outer:$event"
@@ -83,24 +71,23 @@ def parse(String description) {
         List result = []
         def descMap = zigbee.parseDescriptionAsMap(description)
         log.debug "Desc Map: $descMap"
-
+        
         List attrData = [[clusterInt: descMap.clusterInt ,attrInt: descMap.attrInt, value: descMap.value]]
         descMap.additionalAttrs.each {
             attrData << [clusterInt: descMap.clusterInt, attrInt: it.attrInt, value: it.value]
         }
-
         attrData.each {
                 def map = [:]
                 if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_HISTORICAL_CONSUMPTION) {
                         log.debug "power"
                         map.name = "power"
-                        map.value = zigbee.convertHexToInt(it.value)/powerDiv
+                        map.value = zigbee.convertHexToInt(it.value)/1000
                         map.unit = "W"
                 }
                 else if (it.clusterInt == zigbee.SIMPLE_METERING_CLUSTER && it.attrInt == ATTRIBUTE_READING_INFO_SET) {
                         log.debug "energy"
                         map.name = "energy"
-                        map.value = zigbee.convertHexToInt(it.value)/energyDiv
+                        map.value = zigbee.convertHexToInt(it.value)/1000000
                         map.unit = "kWh"
                 }
 
@@ -109,7 +96,7 @@ def parse(String description) {
                 }
                 log.debug "Parse returned $map"
         }
-        return result
+        return result       
     }
 }
 
@@ -130,32 +117,17 @@ def ping() {
 
 def refresh() {
     log.debug "refresh"
-    def additionalCmds = []
-    if (device.getDataValue("manufacturer") == "LDS") {
-        additionalCmds = zigbee.readAttribute(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET)
-    } else {
-        additionalCmds = zigbee.simpleMeteringPowerRefresh()
-    }
-
     zigbee.electricMeasurementPowerRefresh() +
-    zigbee.onOffRefresh() +
-    additionalCmds
+           zigbee.simpleMeteringPowerRefresh() +
+           zigbee.onOffRefresh()
 }
 
 def configure() {
     // this device will send instantaneous demand and current summation delivered every 1 minute
     sendEvent(name: "checkInterval", value: 2 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting"
-    def additionalCmds = []
-    if (device.getDataValue("manufacturer") == "LDS") {
-        additionalCmds += zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1)
-        additionalCmds += zigbee.electricMeasurementPowerConfig(1, 600, 2)  //leedarson device's power deviation is 2w.So set the report step to 2.
-    } else {
-        additionalCmds += zigbee.simpleMeteringPowerConfig()
-        additionalCmds += zigbee.electricMeasurementPowerConfig()
-    }
 
     return refresh() +
-           zigbee.onOffConfig() +
-           additionalCmds
+           zigbee.simpleMeteringPowerConfig() +
+           zigbee.electricMeasurementPowerConfig()
 }
