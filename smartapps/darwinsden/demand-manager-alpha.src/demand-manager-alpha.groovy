@@ -22,11 +22,12 @@
  *
  */
  
-def version() { return "v0.1.2e.20190507" }
-/*
+def version() { return "v0.1.2e.20190528" }
+/*   
+ *	28-May-2019 >>> v0.1.3e.20190528 - Added option to persist off-peak indication display, improved threading, additional watchdog logic
  *	07-May-2019 >>> v0.1.2e.20190507 - Added additional exception handling and watchdog processes, logic updates
  */
-
+ 
 def warning() {
     return "WARNING: By enabling these features, you are granting permission of this application to control your thermostat and other devices. This software is in early beta stages. Normal operation and/or unexpected failures or defects in this software, dependent hardware, and/or network may result in unintended high or low temperatures and high utility usage & costs."
 }
@@ -204,6 +205,7 @@ def pageDisplayIndicators() {
         section("Select a color indicator light (such as the EZ MultiPli/HomeSeer HSM200) to indicate when you're in a peak demand period") {
             input "colorIndicatorDevice1", "capability.colorControl", required: false, title: "Select your peak period color indicator device 1"
             input "colorIndicatorDevice2", "capability.colorControl", required: false, title: "Select your peak period color indicator device 2"
+            input "alwaysDisplayOffPeakIndicator", "boolean", required: false, defaultValue: false, title: "Persist off-peak indication display"
         }
         section("Select HomeSeer WD200+ dimmers to be used as demand warning indicators and solar inverter (if present) production level indicators... ") {
             input "WD200Dimmer1", "capability.indicator", required: false, title: "Select your HomeSeer WD200+ dimmer 1"
@@ -437,18 +439,21 @@ def initialize() {
     log.debug "Initializing Demand Manager"
     atomicState.lastThrottleRunTime = now()
     atomicState.lastProcessCompletedTime = now()
+    atomicState.lastProcessedTime = now()
     runEvery1Minute(throttleEvents)
-    runEvery5Minutes(watchDog)
+    runEvery5Minutes(watchDog5Minutes)
+    runEvery1Hour(watchDogHourly)
+    runEvery1Hour(confirmDisplayIndications)
     subscribeDevices()
     schedulePrecooling()
     schedulePeakTimes()
 }
 
 def getSecondsIntoThisDay(def Date) {
-           def hour = timeNow.format('h').toInteger()
-            def min = timeNow.format('m').toInteger()
-            def sec = timeNow.format('s').toInteger()
-            def secondsIntoThisDay = hour*3600+min*60+sec
+    def hour = timeNow.format('h').toInteger()
+    def min = timeNow.format('m').toInteger()
+    def sec = timeNow.format('s').toInteger()
+    def secondsIntoThisDay = hour*3600+min*60+sec
     return secondsIntoThisDay
 }
 
@@ -683,6 +688,7 @@ def precoolingStart() {
             sendNotificationMessage("Pre-cooling is enabled, but no start time was specified. Pre-cooling was not started.", "anomaly")
         }
     }
+    processWatchDog()
 }
 
 def precoolingStop() {
@@ -695,6 +701,7 @@ def precoolingStop() {
         }
         sendNotificationMessage("Precooling period complete. Returning thermostat to ${precoolStopTemperature}°F." + precoolStopNotes, "thermostat")
     }
+    processWatchDog()
 }
 
 private sendNotificationMessage(message, msgType) {
@@ -785,13 +792,6 @@ def throttleEvents() {
         atomicState.lastThrottleRunTime = 0
     }
     def secondsSinceLastRun = (now() - atomicState.lastThrottleRunTime) / 1000
-    //log.debug "${secondsSinceLastRun}"
-    if (secondsSinceLastRun > 300) {
-        sendNotificationMessage("Warning: Demand Manager has not processed events in the last 5 minutes. Reinitializing", "anomaly")
-        unsubscribe()
-        unschedule()
-        initialize()
-    }
     if (secondsSinceLastRun > 40) {
         atomicState.lastThrottleRunTime = now()
         process()
@@ -1250,78 +1250,42 @@ def toggleColorIndicatorHandler(data) {
     }
 }
 
-def colorIndicatorOnPeakHandler() {
+def colorIndicatorHandler() {
     def red = [level: 0, saturation: 0, hex: "#f0000"]
-    if (colorIndicatorDevice1) {
-        colorIndicatorDevice1.setColor(red)
-    }
-    if (colorIndicatorDevice2) {
-        colorIndicatorDevice2.setColor(red)
-    }
-}
-
-def colorIndicatorOffPeakHandler() {
     def green = [level: 0, saturation: 0, hex: "#00FF00"]
+    def nowInPeakUtilityPeriod = atomicState.nowInPeakUtilityPeriod.toBoolean()
+    def color
+    if (nowInPeakUtilityPeriod) {
+       color = red
+    } else
+    {
+       color = green
+    }
     if (colorIndicatorDevice1) {
-       colorIndicatorDevice1.setColor(green)
+        colorIndicatorDevice1.setColor(color)
     }
     if (colorIndicatorDevice2) {
-       colorIndicatorDevice2.setColor(green)
+        colorIndicatorDevice2.setColor(color)
     }
-    runIn(5, toggleColorIndicatorHandler, [data: [stateOn: false]])
-}
-
-def setEachWd200Led(data) {
-    def Dimmer
-    def Id
-    if (WD200Dimmer1.id == data.device) {
-        Dimmer = WD200Dimmer1
-        Id = 1
-    } else if (WD200Dimmer2.id == data.device) {
-        Dimmer = WD200Dimmer2
-        Id = 2
-    }
-    if (atomicState.wd200ProcessLock[Id] == true) {
-        log.debug "locked! led ${data.ledNumber}"
-        for (int i = 0; i < 15; i++) {
-            pause(500)
-            if (atomicState?.wd200ProcessLock[Id] == false) {
-                atomicState?.wd200ProcessLock[Id] = true
-                log.debug "lock obtained! led ${data.ledNumber}"
-                break
-            }
-            if (i == 14) {
-                log.warn "Failed to get lock to set wd200 LED: ${data.ledNumber}."
-                atomicState.lastLedLevel = 0
-            }
-        }
-    }
-    atomicState.wd200ProcessLock[Id] = true
-    log.debug "Setting dimmer ${Id} LED: ${data.ledNumber} color: ${data.ledColor} blink: ${data.ledBlink}"
-    Dimmer.setStatusLed(data.ledNumber, data.ledColor, data.ledBlink)
-    atomicState.wd200ProcessLock[Id] = false
 }
 
 def setIndicatorDevices() {
     def nowInPeakUtilityPeriod = atomicState.nowInPeakUtilityPeriod.toBoolean()
     if (colorIndicatorDevice1 || colorIndicatorDevice2) {
         def stateChanged = false
-        if (atomicState.lastPeakStateOn != null) {
-            if ((nowInPeakUtilityPeriod == true & atomicState.lastPeakStateOn.toBoolean() == false) ||
-                (nowInPeakUtilityPeriod == false & atomicState.lastPeakStateOn.toBoolean() == true)) {
-                stateChanged = true
-            }
-        }
-        if (stateChanged) {
-            //log.debug "state changed!"
-            if (nowInPeakUtilityPeriod == true) {
-                runIn(5, colorIndicatorOnPeakHandler)
-            } else {
-                runIn(5, colorIndicatorOffPeakHandler)
+        if (atomicState.lastPeakDisplayStateOn != null) {
+            if ((nowInPeakUtilityPeriod == true & atomicState.lastPeakDisplayStateOn.toBoolean() == false) ||
+                (nowInPeakUtilityPeriod == false & atomicState.lastPeakDisplayStateOn.toBoolean() == true)) {
+                    //log.debug "state changed!"
+                    runIn(5, colorIndicatorHandler)                 
+                    def displayOffIndicator = alwaysDisplayOffPeakIndicator ? alwaysDisplayOffPeakIndicator.toBoolean() : false
+                    if (!nowInPeakUtilityPeriod && !displayOffIndicator) {
+                       runIn (15, toggleColorIndicatorHandler, [data: [stateOn: false]])
+                    }
             }
         }
     }
-    atomicState.lastPeakStateOn = nowInPeakUtilityPeriod
+    atomicState.lastPeakDisplayStateOn = nowInPeakUtilityPeriod
 
     if (WD200Dimmer1 || WD200Dimmer2) {
         def ledRed = 1
@@ -1393,45 +1357,83 @@ def wd200LedBlinkHandler(data) {
 }
 
 def setWD200LEDs(ledLevel, ledColor, ledBlink) {
-    def locks = new Boolean[2]
-    locks = [false, false]
-    atomicState.wd200ProcessLock = locks
-    for (int led = 1; led <= 7; led++) {
+     for (int led = 1; led <= 7; led++) {
         def color = ledColor
         def blink = ledBlink
         if (led > ledLevel) {
             color = 0
             blink = 0
         }
-        //log.debug "setting led: ${led} color: ${color} blink: ${blink}"
-        def timeToRun1 = new Date(now() + 10000 + 2000 * led);
-        def timeToRun2 = new Date(now() + 10000 + 2000 * led + 1000);
+        //log.debug "Set dimmer LED: ${led} color: ${color} blink: ${blink}"
         if (WD200Dimmer1) {
-            runOnce(timeToRun1, setEachWd200Led, [overwrite: false, data: [device: WD200Dimmer1.id, ledNumber: led, ledColor: color, ledBlink: blink]])
+            WD200Dimmer1.setStatusLed(led, color, blink)
+           
         }
         if (WD200Dimmer2) {
-            runOnce(timeToRun2, setEachWd200Led, [overwrite: false, data: [device: WD200Dimmer2.id, ledNumber: led, ledColor: color, ledBlink: blink]])
+            WD200Dimmer2.setStatusLed(led, color, blink)
         }
+        pause (500)
     }
 }
 
-def watchDog ()
+def confirmDisplayIndications()
 {
-    def secondsSinceLastProcessCompleted = (now() - atomicState.lastProcessCompletedTime) / 1000
-    if (secondsSinceLastProcessCompleted > 290) {
-        sendNotificationMessage("Warning: Demand Manager has not successfully run in the last 5 minutes. Reinitializing", "anomaly")
-        unsubscribe()
-        unschedule()
-        initialize()
+     //trigger update of display devices on next planned processing cycle
+     atomicState.lastBlinkDuration = 0
+     atomicState.lastLedLevel = 0
+     if (nowInPeakUtilityPeriod | (alwaysDisplayOffPeakIndicator != null && alwaysDisplayOffPeakIndicator.toBoolean () == true)) {
+          // Do not reconfirm color indicator if it should be off, since setting the color can turn it back on
+          runIn(5, colorIndicatorHandler)
+     }
+     //why not check the watchDog while we're here:
+     processWatchDog()
+}
+
+def rescheduleAllEvents ()
+{
+       unsubscribe()
+       unschedule()
+       initialize()
+}
+
+def processWatchDog ()
+{
+    if (!atomicState.lastProcessedTime) {
+      atomicState.lastProcessedTime = now()
     }
+    if (!atomicState.lastProcessCompletedTime) {
+      tomicState.lastProcessCompletedTime = now()
+    }
+    def secondsSinceLastProcessed = (now() - atomicState.lastProcessedTime) / 1000  
+    def secondsSinceLastProcessCompleted = (now() - atomicState.lastProcessCompletedTime) / 1000
+   
+    if (secondsSinceLastProcessed > 290)   {
+        sendNotificationMessage("Warning: Demand Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing", "anomaly")
+        runIn (30, rescheduleAllEvents)
+    } else if (secondsSinceLastProcessCompleted > 290) {
+        sendNotificationMessage("Warning: Demand Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing", "anomaly")
+        runIn (30, rescheduleAllEvents)
+    } 
+}
+
+def watchDog5Minutes ()
+{
+  processWatchDog()
+}
+
+def watchDogHourly ()
+{
+  processWatchDog()
 }
 
 def process() {
+    processWatchDog()
+    atomicState.lastProcessedTime = now()
     setUtilityPeriodGlobalStatus()
     setCycleStatus()
     calcCurrentAndProjectedDemand()
-    thermostatControls()
-    recordPeakDemands()
-    setIndicatorDevices()
+    runIn (1, thermostatControls)
+    runIn (5, recordPeakDemands)
+    runIn (10, setIndicatorDevices)
     atomicState.lastProcessCompletedTime = now()
 }
