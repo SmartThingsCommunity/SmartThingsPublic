@@ -15,7 +15,7 @@ definition(
 
 preferences {
 	section("When I arrive and leave..."){
-		input "presence1", "capability.presenceSensor", title: "Who?", multiple: true
+		input "people", "capability.presenceSensor", title: "Who?", multiple: true
 	}
 	section("Turn on/off a light..."){
 		input "switch1", "capability.switch", multiple: true
@@ -37,26 +37,26 @@ def presenceHandler(evt)
 {
 	def now = new Date()
 	def sunTime = getSunriseAndSunset();
+	def pplPresent = people.findAll{person -> person.currentPresence == "present"}
     
-	log.debug "nowTime: $now"
+    	log.debug "nowTime: $now"
 	log.debug "riseTime: $sunTime.sunrise"
 	log.debug "setTime: $sunTime.sunset"
 	log.debug "presenceHandler $evt.name: $evt.value"
-    
-	def current = presence1.currentValue("presence")
-	log.debug current
-	def presenceValue = presence1.find{it.currentPresence == "present"}
-	log.debug presenceValue
-	if(presenceValue && (now > sunTime.sunset)) {
-		switch1.on()
-		log.debug "Welcome home at night!"
+	log.debug "pplPresent: $pplPresent"
+	
+	if(pplPresent.size > 0) {// First presence to arrive
+		if(now > sunTime.sunset || now < sunTime.sunrise) {// Arrive at Night
+			switch1.on()
+			log.debug "Welcome home at night!"
+		}
+		else if(now > sunTime.sunrise && now < sunTime.sunset) {// Arrive at Day
+			log.debug "Welcome home at daytime!"
+		}
 	}
-    else if(presenceValue && (now < sunTime.sunset)) {
-    	log.debug "Welcome home at daytime!"
-    }
-	else {
-		switch1.off()
-		log.debug "Everyone's away."
+	if(pplPresent.size == 0) {// Everyone left
+	    switch1.off()
+	    log.debug "Everyone's away"
 	}
 }
 
