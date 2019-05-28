@@ -1366,13 +1366,14 @@ def setWD200LEDs(ledLevel, ledColor, ledBlink) {
         }
         //log.debug "Set dimmer LED: ${led} color: ${color} blink: ${blink}"
         if (WD200Dimmer1) {
-            WD200Dimmer1.setStatusLed(led, color, blink)
-           
+            WD200Dimmer1.setStatusLed(led, color, blink)          
         }
         if (WD200Dimmer2) {
             WD200Dimmer2.setStatusLed(led, color, blink)
         }
-        pause (500)
+        if (led < 7) {
+          pause (250)
+        }
     }
 }
 
@@ -1381,7 +1382,8 @@ def confirmDisplayIndications()
      //trigger update of display devices on next planned processing cycle
      atomicState.lastBlinkDuration = 0
      atomicState.lastLedLevel = 0
-     if (nowInPeakUtilityPeriod | (alwaysDisplayOffPeakIndicator != null && alwaysDisplayOffPeakIndicator.toBoolean () == true)) {
+     def displayOffIndicator = alwaysDisplayOffPeakIndicator ? alwaysDisplayOffPeakIndicator.toBoolean() : false
+     if (nowInPeakUtilityPeriod | displayOffIndicator) {
           // Do not reconfirm color indicator if it should be off, since setting the color can turn it back on
           runIn(5, colorIndicatorHandler)
      }
