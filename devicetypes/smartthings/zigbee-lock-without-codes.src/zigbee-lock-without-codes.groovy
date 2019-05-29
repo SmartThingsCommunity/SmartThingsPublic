@@ -160,8 +160,10 @@ def unlock() {
 def parse(String description) {
 	def result = null
 	if (description) {
-		if (description.startsWith('read attr -')) {
+		if (description?.startsWith('read attr -')) {
 			result = parseAttributeResponse(description)
+		} else if (description?.startsWith('zone report')) {
+			result = parseIasMessage(description)
 		} else {
 			result = parseCommandResponse(description)
 		}
@@ -210,6 +212,12 @@ private def parseAttributeResponse(String description) {
 	}
 	result << createEvent(responseMap)
 	return result
+}
+
+private def parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	def responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 50]
+	return responseMap
 }
 
 private def parseCommandResponse(String description) {
