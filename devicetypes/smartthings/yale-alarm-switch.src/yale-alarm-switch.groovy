@@ -6,7 +6,7 @@ preferences {
 	input("userName", "text", title: "Username", description: "Your username for Yale Home System")
 	input("password", "password", title: "Password", description: "Your Password for Yale Home System")
 	input description: "Once you have filled in your details \nUse “Switch off” to Disarm in any mode \nUse “Lock” to Home Arm (Arm Stay) \nUse “Switch on” to Fully Arm (Arm away).", title: "Guide", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-
+	input ("sendPushMessage", "text", title: "Send a push notification?", description: "type yes to recive push messages")
 }
 
 metadata {
@@ -46,10 +46,13 @@ metadata {
 }
 
 def updated() {
-	login()
+unschedule()
+    login()
+    runEvery3Hours(refresh)
 }
 def installed() {
 	login() 
+    runEvery3Hours(refresh)
 }
 
 def baseUrl() {
@@ -110,6 +113,7 @@ def refresh() {
     		if (state.errorcount > 2){
             	state.mode = "refersh error lots of errors"
     			log.error "too many errors"
+                send("Refresh issue  '${responsecode}', error count '${state.errorcount}'")
         		state.errorcount = 0
 			}
     		else {
@@ -140,7 +144,25 @@ def refresh() {
 
 	log.info "'$device' REFRESH - Mode is '$state.mode', Response- '$YaleAlarmState' complete"
 	sendEvent(name: "mode", value: state.mode, isStateChange: true, displayed: true, descriptionText: "Refresh - mode is '$state.mode', response '$YaleAlarmState'")
-	runEvery3Hours(refresh)
+/*
+// ============================	devices
+		def DDetails
+    	def DDetailsresponsecode
+		def getDetails = [
+			uri: baseUrl() + "api/panel/device_status/",
+			headers: ['Authorization' : "Bearer ${state.accessToken}"]
+		]
+        //log.debug "REFRESH DD - '$getDetails'"
+    	httpGet(getDetails) {	response ->
+		//log.debug "REFRESH DD - response = '${response.data.data} " //${response.data} //${response.data.data[0]} - [0] is first item
+        	//DDetails = response.data.data.getAt(0)
+        	//DDetailsresponsecode = response.status
+        response.data.data.each {
+           log.debug "${it?.type} - ${it?.name} - ${it?.status_fault[0]} - ${it?.status_open[0]}"
+        }
+        }
+// ==============================    devices
+*/
 	return YaleAlarmState
 }
 // ==================== Buttons / voice comands ==========================
@@ -188,8 +210,10 @@ def postcmd(mode){
 	httpPost(paramsMode) {	response ->
 		reply = response.data.message
         responsecode = response.status
-		log.debug "Mode change Request Response - $device - $responsecode - '${response.data}'"
+		log.debug "Mode change Request Response - $device - $responsecode - '${response.data}' - ${response}"
 	}
+    
+    //// insert parent
     if (responsecode != 200) { //bad
         state.errorcount = state.errorcount + 1
     	log.warn "${responsecode}' - error count is ${state.errorcount}"
@@ -210,6 +234,7 @@ def postcmd(mode){
 		if (reply != 'OK!'){ //other bad response
 			log.warn "$device response '$reply'"
 			state.mode = reply
+            send("Command issue ${state.mode}, messageing $reply")
 			runIn(10,refresh)
 		} // othe bad end
 		else { //still good
@@ -231,6 +256,12 @@ def postcmd(mode){
 	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Mode Command - '$reply', mode - '$state.mode'")
 }
 
+private send(msg) {
+    if ( sendPushMessage == "Yes" ) {
+        log.debug "sending push message" 
+        //sendPush(msg)
+    }
+}
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"

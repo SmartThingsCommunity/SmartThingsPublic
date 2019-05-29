@@ -18,7 +18,7 @@ metadata {
 	}
 	tiles {
 		standardTile("mode", "device.mode", inactiveLabel: false, width: 2, height: 2) {
-			state ("default", label:'${currentValue}', defaultState: true, action: "device.refresh", icon:"st.security.alarm.alarm", backgroundColor:"#e86d13")
+			state ("default", label:'${currentValue}', defaultState: true, action: "refresh", icon:"st.security.alarm.alarm", backgroundColor:"#e86d13")
 			state ("Armed-Stay", label:'${name}', action: "switch.off", icon:"st.Home.home4", backgroundColor:"#00a0dc", nextState:"Disarming")
 			state ("Disarmed", label:'${name}', action: "lock", icon:"st.Home.home2", backgroundColor:"#ffffff", nextState:"Arming")
 			state ("Armed-Away", label:'${name}', action: "switch.off", icon:"st.Home.home3", backgroundColor:"#00a0dc", nextState:"Disarming")
@@ -58,7 +58,12 @@ def poll() {
 
 def refresh() {
 	log.debug "Refresh"
+    try {
     parent.getDeviceData()
+    }
+    catch (e){
+    log.warn "refresh error $e"
+    }
 }
 def datain(data) {
 	//log.debug "Datain $data"
@@ -86,10 +91,11 @@ def datain(data) {
         if (dmsg != "OK!"){
         	state.errorCount = state.errorCount +1
         	log.warn "$dmsg"
+            state.mode = 'default'
             if (state.errorCount < 5){runIn(20,refresh)}
         }
-        log.info "datain state is ${state.mode}, error are '${state.errorCount}'" //${data?.message}
-		sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Datain - response '$dmsg'") //isStateChange: false,
+        log.info "Refresh (datain) state is ${state.mode}, error are '${state.errorCount}'" //${data?.message}
+		sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Refresh - response '$dmsg'") //isStateChange: false,
 
 }
 
@@ -152,8 +158,8 @@ def postcmd(mode){
 	else {
     	state.mode = 'default'
     }
-    log.info "Data In for Mode state is ${state.mode}, $dmsg, errors are ${state.errorCount}"
-	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Data in for mode, $dmsg") //isStateChange: false,
+    log.info "Mode Change state is ${state.mode}, $dmsg, errors are ${state.errorCount}"
+	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Mode Change to ${state.mode} - $dmsg") //isStateChange: false,
 }
 
 // parse events into attributes
