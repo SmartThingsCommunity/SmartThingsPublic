@@ -23,7 +23,7 @@ metadata {
 		capability "Configuration"
 
 		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "Aurora", model: "Remote50AU", deviceJoinName: "Aurora Wireless Wall Remote"
-		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI wireless dimmer", deviceJoinName: "IKEA TRÅDFRI Wireless dimmer"
+		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI wireless dimmer", deviceJoinName: "IKEA TRÅDFRI Wireless dimmer" // 01 [0104 or C05E] 0810 02 06 0000 0001 0003 0009 0B05 1000 06 0003 0004 0006 0008 0019 1000
 		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "LDS", model: "ZBT-DIMController-D0800", deviceJoinName: "Müller Licht Tint Mobile Switch"
 	}
 
@@ -90,51 +90,11 @@ def parse(String description) {
 	} else {
 		def descMap = zigbee.parseDescriptionAsMap(description)
 
-		if (descMap && descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
-			if (descMap.commandInt == ONOFF_ON_COMMAND || descMap.commandInt == ONOFF_OFF_COMMAND) {
-				if (device.currentValue("level") == 0) {
-					results << createEvent(name: "level", value: STEP)
-				}
-
-				if (isAuroraRemote() || isMullerLichtTint()) { // Devices that have one power button
-					results << createEvent(name: "switch", value: device.currentValue("switch") == "on" ? "off" : "on")
-				} else {
-					results << createEvent(name: "switch", value: descMap.commandInt == ONOFF_OFF_COMMAND ? "off" : "on")
-				}
-			}
-		} else if (descMap && descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
-			if (descMap.commandInt == LEVEL_STEP_COMMAND) {
-				results += handleStepEvent(descMap)
-			} else if (isIkeaDimmer() && (descMap.commandInt == LEVEL_MOVE_COMMAND || descMap.commandInt == LEVEL_MOVE_ONOFF_COMMAND)) {
-				// For the IKEA Dimmer we are going to treat Level Move and Level Move with On/Off as Level Step
-				results += handleStepEvent(descMap)
-			} else if (descMap.commandInt == LEVEL_MOVE_COMMAND) {
-				results << createEvent(name: "level", value: descMap.data[0] == LEVEL_DIRECTION_UP ? 100 : STEP)
-				results << createEvent(name: "switch", value: "on")
-
-				log.debug "step to ${descMap.data}"
-			} else if (descMap.commandInt == LEVEL_STOP_COMMAND || descMap.commandInt == LEVEL_STOP_ONOFF_COMMAND) {
-				log.debug "stop move"
-			} else if (descMap.commandInt == LEVEL_MOVE_LEVEL_ONOFF_COMMAND) {
-				// The spec defines this as "Move to level with on/off". The IKEA Dimmer sends us 0x00 or 0xFF only, so we will treat this more as a
-				// on/off command for the dimmer. Otherwise, we will treat this as off or on and setLevel.
-				if (descMap.data[0] == "00") {
-					results << createEvent(name: "switch", value: "off", isStateChange: true)
-				} else if (descMap.data[0] == "FF" && isIkeaDimmer()) {
-					// The IKEA Dimmer sends 0xFF -- this is technically not to spec, but we will treat this as an "on"
-					if (device.currentValue("level") == 0) {
-						results << createEvent(name: "level", value: STEP)
-					}
-
-					results << createEvent(name: "switch", value: "on", isStateChange: true)
-				} else {
-					results << createEvent(name: "switch", value: "on", isStateChange: true)
-					// Handle the Zigbee level the same way as we would normally with the same code path -- commandInt doesn't matter right now
-					// The first byte is the level, the second two bytes are the rate -- we only care about the level right now.
-					results << createEvent(zigbee.getEventFromAttrData(descMap.clusterInt, descMap.commandInt, UINT8_STR, descMap.data[0]))
-				}
-            }
-		} else if (descMap && descMap.clusterInt == SCENES_CLUSTER) {
+		if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+			results += handleSwitchEvent(descMap)
+		} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
+			results += handleLevelEvent(descMap)
+		} else if (descMap.clusterInt == SCENES_CLUSTER) {
 			if (descMap.commandInt == SCENES_RECALL_SCENE_COMMAND) {
 				results << createEvent(name: "button", value: "pushed", data: [buttonNumber: 1], isStateChange: true)
 			} else if (descMap.commandInt == SCENES_STORE_SCENE_COMMAND) {
@@ -147,6 +107,65 @@ def parse(String description) {
 	}
 
 	log.debug "parse returned $results"
+	return results
+}
+
+def handleSwitchEvent(descMap) {
+	def results = []
+
+	if (descMap.commandInt == ONOFF_ON_COMMAND || descMap.commandInt == ONOFF_OFF_COMMAND) {
+		if (device.currentValue("level") == 0) {
+			results << createEvent(name: "level", value: STEP)
+		}
+
+		if (isAuroraRemote() || isMullerLichtTint()) { // Devices that have one power button
+			results << createEvent(name: "switch", value: device.currentValue("switch") == "on" ? "off" : "on")
+		} else {
+			results << createEvent(name: "switch", value: descMap.commandInt == ONOFF_OFF_COMMAND ? "off" : "on")
+		}
+	}
+
+	return results
+}
+
+def handleLevelEvent(descMap) {
+	def results = []
+
+	if (descMap.commandInt == LEVEL_STEP_COMMAND) {
+		results += handleStepEvent(descMap)
+	} else if (descMap.commandInt == LEVEL_MOVE_COMMAND || descMap.commandInt == LEVEL_MOVE_ONOFF_COMMAND) {
+		// For the IKEA Dimmer we are going to treat Level Move and Level Move with On/Off as Level Step
+		if (isIkeaDimmer()) {
+			results += handleStepEvent(descMap)
+		} else {
+			results << createEvent(name: "level", value: descMap.data[0] == LEVEL_DIRECTION_UP ? 100 : STEP)
+			results << createEvent(name: "switch", value: "on")
+
+			log.debug "step to ${descMap.data}"
+		}
+	} else if (descMap.commandInt == LEVEL_STOP_COMMAND || descMap.commandInt == LEVEL_STOP_ONOFF_COMMAND) {
+		// We are not going to handle this event because we are not implementing this the way that the Zigbee spec indicates
+		log.debug "stop move"
+	} else if (descMap.commandInt == LEVEL_MOVE_LEVEL_ONOFF_COMMAND) {
+		// The spec defines this as "Move to level with on/off". The IKEA Dimmer sends us 0x00 or 0xFF only, so we will treat this more as a
+		// on/off command for the dimmer. Otherwise, we will treat this as off or on and setLevel.
+		if (descMap.data[0] == "00") {
+			results << createEvent(name: "switch", value: "off", isStateChange: true)
+		} else if (descMap.data[0] == "FF" && isIkeaDimmer()) {
+			// The IKEA Dimmer sends 0xFF -- this is technically not to spec, but we will treat this as an "on"
+			if (device.currentValue("level") == 0) {
+				results << createEvent(name: "level", value: STEP)
+			}
+
+			results << createEvent(name: "switch", value: "on", isStateChange: true)
+		} else {
+			results << createEvent(name: "switch", value: "on", isStateChange: true)
+			// Handle the Zigbee level the same way as we would normally with the same code path -- commandInt doesn't matter right now
+			// The first byte is the level, the second two bytes are the rate -- we only care about the level right now.
+			results << createEvent(zigbee.getEventFromAttrData(descMap.clusterInt, descMap.commandInt, UINT8_STR, descMap.data[0]))
+		}
+	}
+
 	return results
 }
 
