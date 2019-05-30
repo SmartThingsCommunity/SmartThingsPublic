@@ -388,7 +388,7 @@ def setPointHandler(evt){
         log.debug "learning new desired temperature.."
         state.learnedDesiredTemp = thisTemp
         state.learnedOutsideTemp = outsideTemp
-        recordData(thisTemp, outsideTemp, humidity, currMode)
+        //recordData(thisTemp, outsideTemp, humidity, currMode)
     }
     else if(override)
     {
@@ -479,9 +479,9 @@ def recordData(temp, outsideTemp, humidity, mode)
 
 def eval()
 {
-    //state.learnBase = [:]
-    //state.megaBase = []
-    //runIn(10, eval) // FOR DEBUG ONLY
+    state.learnBase = [:] // not in use yet so do not increment
+    state.megaBase = [] // not in use yet so do not increment
+    runIn(10, eval) // FOR DEBUG ONLY
 
     log.debug "START"
 
@@ -492,7 +492,18 @@ def eval()
 
 def main()
 {
-
+    float outsideTemp = outdoor.currentValue("temperature")
+    def feel = outsideTemp
+    if(state.FeelString != null)
+    {
+        def feelString = state.FeelString
+        //log.defbug """gettting value for $state.FeelString attribute: feelString = $feelString"""
+        feel = outdoor.currentValue(feelString).toFloat()
+    }
+    if(state.windowsStatus == null)
+    {
+        state.windowsStatus = "alreadyopen"
+    }
     def thermMode = Thermostat.currentValue("thermostatMode")
     boolean override = thermMode == "auto"  // auto 
     state.override = override
@@ -505,9 +516,9 @@ def main()
     state.criticalTempH = 70
     state.criticalTempC = 77
 
-    float desired = getDesiredTemp().toFloat()
+    float desired = state.learnedDesiredTemp.toInteger() // getDesiredTemp().toFloat()
     //log.debug "INFO 1: desired = $desired"
-    desired = desired + adjustWithHumidity(state.lastNeed) 
+    //desired = desired + adjustWithHumidity(state.lastNeed) 
     //log.debug "INFO 2: desired = $desired && adjustWithHumidity(state.lastNeed)  = ${adjustWithHumidity(state.lastNeed)}"
     state.desired = desired
 
@@ -515,7 +526,8 @@ def main()
     def currCSP = Thermostat.currentValue("coolingSetpoint")
     float currTemp = Thermostat.currentValue("temperature")
     def humidity = getHumidity()
-    boolean humidityOk = (humidity < 60 && feel > 60)
+    boolean humidityOk = humidity < 65 && feel > 60
+    log.debug "humidityOk = $humidityOk ($humidity < 65 && $feel > 60)"
     float currTempAtThermostat = Thermostat.currentValue("temperature")
     def CurrentContacts = contact?.currentValue("contact")
     def Open = CurrentContacts.findAll { val ->
@@ -536,8 +548,6 @@ def main()
         duration = windowDelay
     }
     boolean okToOpen = false
-
-
     long openTime = 1000 * 60 * 10 // 10 minutes open time (if outside is cold, or if inside remains hot)
     def contactEvents = contact.collect{ it.eventsSince(new Date(now() - openTime)) }.flatten()
     def openEvents = contactEvents?.findAll{it.name == "open"}
@@ -550,19 +560,7 @@ def main()
     boolean thermodeIsOk
 
     def need = "ERROR OR OVERRIDE"
-    float outsideTemp = outdoor.currentValue("temperature")
 
-    def feel = outsideTemp
-    if(state.FeelString != null)
-    {
-        def feelString = state.FeelString
-        //log.defbug """gettting value for $state.FeelString attribute: feelString = $feelString"""
-        feel = outdoor.currentValue(feelString).toFloat()
-    }
-    if(state.windowsStatus == null)
-    {
-        state.windowsStatus = "alreadyopen"
-    }
 
     boolean okToChangeToCool = state.coolMode <= 4 || thermMode == "off"
     boolean okToChangeToHeat = state.heatMode <= 4 || thermMode == "off"
@@ -728,7 +726,7 @@ def main()
                 }
 
 
-                okToOpen = feel < 75 && feel >= 60 && humidityOk && !critical && currTemp < desired + 3 && currTemp >= desired - 1 && !WAreOpen
+                okToOpen = feel < 75 && feel >= 55 && humidityOk && !critical && currTemp <= desired + 3 && currTemp >= desired - 1 //&& !WAreOpen
                 //log.info "okToOpen = $okToOpen"
                 if(windows && inWindowsMode)
                 {
@@ -961,7 +959,7 @@ def main()
 
 def setHeatingSP()
 {
-    def desired = state.desired
+    def desired = state.learnedDesiredTemp
     state.NoLearnMode = true
     if(Thermostat.currentValue("coolingSetpoint") != desired)
     {
@@ -987,7 +985,7 @@ def setHeatingSP()
 def setCoolingSP()
 {
     state.NoLearnMode = true
-    def desired = state.desired
+    def desired = state.learnedDesiredTemp
     if(Thermostat.currentValue("coolingSetpoint") != desired)
     {
         while(state.NoLearnMode != true) // if and only if nolearn is true, to prevent false learning input
@@ -1019,7 +1017,7 @@ def getDesiredTemp()
     if(outdoor)
     {
         //log.debug "getting desired data from $outdoor sensor"
-        result = getComfort()
+        result = state.learnedDesiredTemp.toInteger() // getComfort()
     }
     else 
     {
@@ -1051,7 +1049,7 @@ def getDesiredTemp()
 
     if(result <= 68)
     {
-        result = 71
+        result = 72
         log.debug "INCONSISTENT A.I..."
     }
 
@@ -1089,24 +1087,24 @@ def getComfort()
         float beforeRound = newComfort
 
         newComfort = newComfort.round().toInteger()
+        log.info "linear newComfort HEAT is $newComfort"
     }
     else 
-        ////////////////// LOGARITHMIC COOLING FUNCTION ///////////////// 
+        ////////////////// LINEAR COOLING FUNCTION ///////////////// 
     {
 
-        /*****************************************
-        concept: x = log(72)75   to what power (that is to say "x") do I have to raise 72, to get to 75?
-        logb(n) = loge(n) / loge(b)
-        Where log can be a logarithm function in any base, n is the number and b is the base. 
-        For example, in Java this will find the base-2 logarithm of 256:
-        Math.log(256) / Math.log(2)
-        => 8.0
-        *****************************************/
-        // the logarithm's base varies like the logarithm of outsidetemp and humidity 
-        def Base = linearBase(humidity) //Math.log(outsideTemp) * Math.log(humidity) 
         //outsideTemp = 90 // for test only 
-        newComfort = Math.log(outsideTemp)/ Math.log(Base) * learnedDesiredTemp 
-        log.info "Logarithmic newComfort is $newComfort"
+        //humidity = 80
+        def comfortHumidity = linearCoolHumidity(humidity)
+        def comfortOutside = linearCoolOutsideTemp(outsideTemp)
+        newComfort = (comfortHumidity + comfortOutside + learnedDesiredTemp)/3
+
+        // learnedDesiredTemp 
+        log.info """"
+        linear newComfort COOL is $newComfort
+        TEST LOG = ${LogCoolAll(comfortHumidity, comfortOutside)*learnedDesiredTemp}
+        Math.log10 = ${Math.log10(LogCoolAll(comfortHumidity, comfortOutside)*learnedDesiredTemp)}
+        """
     }
 
     newComfort = newComfort.round().toInteger()
@@ -1124,20 +1122,44 @@ def getComfort()
     //return 71
 }
 
-def linearBase(humidity)
+def linearCoolHumidity(humidity)
 {
-    def xa = 90 // humidity 
-    def ya = 72 // desired base for humidity a (NOT A TEMPERATURE, JUST A BASE FOR LOG)
+    def xa = 98 // humidity 
+    def ya = 70 // desired temp for humidity a 
     def xb = 40  // humidity 
-    def yb = 76 // desired base for humidity b  
+    def yb = 75 // desired temp for humidity b  
     def coef = (yb-ya)/(xb-xa)
     // solve intercept, b
     def b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b //
     //b = ya - coef * outsideTemp  //
     def y = coef * humidity + b 
+    log.debug "linearCoolHumidity returns $y"
     return y
 }
-
+def linearCoolOutsideTemp(outsideTemp)
+{
+    def xa = 110 // outsideTemp 
+    def ya = 78 // desired temp for humidity a 
+    def xb = 70  // outsideTemp 
+    def yb = 70 // desired temp for humidity b  
+    def coef = (yb-ya)/(xb-xa)
+    // solve intercept, b
+    def b = ya - coef * xa // solution to ya = coef*xa + b // HSPSet = coef*outsideTemp + b //
+    //b = ya - coef * outsideTemp  //
+    def y = coef * outsideTemp + b 
+    log.debug "linearCoolOutsideTemp returns $y"
+    return y
+}
+def LogCoolAll(comfortHumidity, comfortOutside)
+{
+    log.debug """
+    comfortHumidity = $comfortHumidity
+    comfortOutside = $comfortOutside
+    """
+    def y = Math.log(comfortHumidity) / Math.log(comfortOutside) 
+    log.debug "LogCoolAll returns $y"
+    return y
+}
 def adjustWithHumidity(need)
 {
     log.debug "humidity adjustments..."
@@ -1147,7 +1169,7 @@ def adjustWithHumidity(need)
 
     // now, implement humidity as a new variable
 
-    if(outsideTemp > 60) // cooling conditions
+    if(outsideTemp >= 68) // cooling conditions
     {
         if(humidity > 60)
         {
@@ -1172,8 +1194,8 @@ def adjustWithHumidity(need)
 
     log.debug "Humidity adjustment returns $newComfortHumid as value to be added"
     //return newComfortHumid
-    
-    return 0 // deprecated because logarithm takes humidity into consideration
+
+    return newComfortHumid 
 
 }
 
@@ -1293,7 +1315,7 @@ def openWindows(int duration, String cmdOrigin)
 
     if(timeToOpenOk)
     {
-        if(!state.alreadyOpen || (state.alreadyOpen && !WAreOpen) || timeToOpenOk){
+        if(state.alreadyOpen && !WAreOpen){
             windows.on()
             state.windowsStatus = "alreadyopen"
             state.openTime = now() as long
@@ -1362,7 +1384,7 @@ def closeWindows()
     if(timeToCloseOk){ // timeToCloseOk means enough time since LAST OPENING has passed
         //if(state.openByApp) // major safety
         //{
-        if(!state.alreadyClosed || timeToCloseOk)
+        if(!state.alreadyClosed && WAreOpen)
         {
             windows.off()
             state.windowsStatus = "closed"
