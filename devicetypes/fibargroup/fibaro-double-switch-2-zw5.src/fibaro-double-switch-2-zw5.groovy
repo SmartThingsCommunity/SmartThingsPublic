@@ -15,6 +15,7 @@ metadata {
 
 		fingerprint mfr: "010F", prod: "0203", model: "2000"
 		fingerprint mfr: "010F", prod: "0203", model: "1000"
+		fingerprint mfr: "010F", prod: "0203", model: "3000"
 	  }
 
 	tiles (scale: 2) {
@@ -433,6 +434,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	} else {
 		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {

@@ -15,7 +15,7 @@ import groovy.json.JsonOutput
  */
 metadata {
     definition (name: "Arrival Sensor HA", namespace: "smartthings", author: "SmartThings",
-            runLocally: true, minHubCoreVersion: '000.025.00025', executeCommandsLocally: true) {
+            runLocally: true, minHubCoreVersion: '000.025.00032', executeCommandsLocally: true) {
         capability "Tone"
         capability "Actuator"
         capability "Presence Sensor"
@@ -163,7 +163,7 @@ private startTimer() {
     log.debug "Scheduling periodic timer"
     // Unlike stopTimer, only schedule this when running in the cloud since the hub will take care presence detection
     // when it is running locally
-    runEvery1Minute("checkPresenceCallback")
+    runEvery1Minute("checkPresenceCallback", [forceForLocallyExecuting: false])
 }
 
 private stopTimer() {
