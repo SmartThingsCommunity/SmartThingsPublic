@@ -53,12 +53,9 @@ def pageSetup() {
             input "LSen", "capability.illuminanceMeasurement", title: "pick a sensor", required:true, multiple: false, submitOnChange: true
 
             if(LSen){
-                def attr = LSen.supportedAttributes
-                log.debug "supportedAttributes for $LSen: $attr"
-                def FindUnit = LSen.currentState("illuminance")
-                if(FindUnit.unit == "lux"){
-                    input "maxValue", "number", title: "$LSen uses lux units instead of %. Please, select max lux value for this sensor", default: false
-                }
+
+                input "maxValue", "number", title: "Please, select max lux value for this sensor", default: false
+
             }
             input "pause", "bool", title: "pause if all selected dimmers are off", default: false
         }
@@ -124,7 +121,7 @@ def initialize() {
 def switchHandler(evt){
     log.debug "$evt.device is now set to $evt.value"
 
-    if(atomicState.override){
+    if(OVRD && atomicState.override){
         log.debug "END OF OVERRIDE"
         atomicState.override = false
     }
@@ -145,7 +142,7 @@ def dimmersHandler(evt){
     log.debug "autoDim = $autoDim // $val"
 
 
-    if(autoDim != val && evt.value != "off" && evt.value != "on"){
+    if(OVRD && autoDim != val && evt.value != "off" && evt.value != "on"){
         log.debug "OVERRIDE TRIGGERED"
         atomicState.override = true
     }
@@ -161,12 +158,16 @@ def illuminanceHandler(evt){
 }
 
 def motionHandler(){
-log.debug "motion $evt.value at $evt.device "
+    log.debug "motion $evt.value at $evt.device "
 
 
 }
 
 def evaluate(){
+
+    /**********************************************************************/
+    runIn(10, evaluate) // TESTS ONLY COMMENT OUT AFTER !!!! 
+    /**********************************************************************/
 
     def illum = LSen.currentValue("illuminance")
     def FindUnit = LSen.currentState("illuminance")
@@ -181,27 +182,32 @@ illuminance is: $illum"""
 
     /// ALGEBRA
 
+    //  log.debug "unit: ${FindUnit.unit}"
+    //  if(FindUnit.unit == "lux"){
+    log.debug "$LSen returns values in lux"
+    /// ALGEBRA corrected with lux frame of reference
     def xa = 0 		// min illuminance
     def ya = 100 	// corresponding dimmer level
-    def xb = 100 	// max illuminance
+    def xb = maxValue 	// max illuminance
     def yb = 0 		// corresponding dimmer level
-
-
-    log.debug "unit: ${FindUnit.unit}"
-    if(FindUnit.unit == "lux"){
-        log.debug "this sensor sends values in lux"
-        /// ALGEBRA corrected with lux frame of reference
-        xa = 0 		// min illuminance
-        ya = 100 	// corresponding dimmer level
-        xb = maxValue 	// max illuminance
-        yb = 0 		// corresponding dimmer level
-
-    }
 
     def coef = (yb-ya)/(xb-xa)	// slope
     def b = ya - coef * xa // solution to ya = coef*xa + b //
 
     def dimVal = coef*illum + b
+    dimVal = dimVal.toInteger()
+
+    log.debug """
+    ALGEBRA RESULTS: 
+    current illuminance : $illum
+    xa = $xa,
+    ya = $ya, 
+    xb = $xb, 
+    yb = $yb, 
+    slope = $coef, 
+    b = $b, 
+    result = $dimVal
+    """
 
     if(dimVal <= 0){
         dimVal = 1
@@ -211,7 +217,8 @@ illuminance is: $illum"""
         if(dimVal == 0){
             dimVal = 1
         }
-        dimVal = dimVal.toInteger()
+        dimVal = dimVal
+        log.debug "setting dimmers to $dimVal"
         setDimmers(dimVal)
     }
     else {
@@ -238,17 +245,20 @@ def setDimmers(val){
                     log.debug "; $i ;"
             }
             def valMode = "dimValMode${i}"
-            valMode = settings.find{it.key == valMode}.value
+            val = settings.find{it.key == valMode}.value
 
             log.debug "ADJUSTED WITH CURRENT MODE == > valMode = $valMode "
-
-            val = valMode
         }
     }
+    if(atomicState.dimVal > valMode){
+        atomicState.dimVal = valMode // for override and pause purposes only
+    }
+    else 
+    {
+        atomicState.dimVal = val // for override and pause purposes only
+    }
 
-    atomicState.dimVal = val
-
-    if(!atomicState.override){
+    if(!atomicState.override || !OVRD){
         i = 0
         for(s != 0; i < s; i++){
             isNotOff = "on" in dimmers[i].currentValue("switch")
@@ -263,8 +273,9 @@ def setDimmers(val){
         log.debug "OVERRIDE MODE, DOING NOTHING"
     }
 
-
-
-
+log.trace """
+atomicState.dimVal = $atomicState.dimVal
+val = $val
+"""
 }
 
