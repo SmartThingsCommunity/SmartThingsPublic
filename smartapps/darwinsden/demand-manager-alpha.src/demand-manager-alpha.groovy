@@ -346,7 +346,7 @@ def pageRemove() {
 
 def installed() {
     log.debug("installed called")
-    initialize()
+    //initialize()
 }
 
 def uninstalled() {
@@ -400,6 +400,10 @@ def updated() {
     if (getChildDevice("dashboardDevice") == null) {
         log.debug "adding virtual active peak period switch"
         def child = addChildDevice("darwinsden", "Demand Manager Dashboard", "dashboardDevice", null, [name: "dashboardDevice", label: "Demand Manager - Active Peak Period Switch", completedSetup: true])
+        def dashboardDevice = getChildDevice("dashboardDevice")
+        if (dashboardDevice) {
+            dashboardDevice.off()
+        }
     }
     if (installVirtualDemandMeters && installVirtualDemandMeters.toBoolean() == true) {
         if (getChildDevice("demandPeakCurrent") == null) {
@@ -427,7 +431,7 @@ def updated() {
     }
     unsubscribe()
     unschedule()
-    runIn (30,initialize) // Give time for virtual devices to be created before kicking off threads
+    initialize()
 }
 
 def memUsed() {
@@ -445,8 +449,8 @@ def initialize() {
     runEvery1Hour(watchDogHourly)
     runEvery1Hour(confirmDisplayIndications)
     subscribeDevices()
-    runIn(30, schedulePrecooling)
-    runIn(30, schedulePeakTimes)  //Give time to create virtual peak on/off switch
+    schedulePrecooling()
+    schedulePeakTimes()
 }
 
 def getSecondsIntoThisDay(def Date) {
@@ -616,7 +620,7 @@ def startPeak1Schedule() {
     if (!weekend() && (!monthsSchedule1 || monthsSchedule1.contains(month))) {
         atomicState.peak1ScheduleActive = true
         turnOnPeakPeriod()
-        immediateEvent()
+        runIn(1,immediateEvent)
     }
 }
 
@@ -625,7 +629,7 @@ def stopPeak1Schedule() {
     if (!monthsSchedule1 || monthsSchedule1.contains(month)) {
         atomicState.peak1ScheduleActive = false
         turnOffPeakPeriod()
-        immediateEvent()
+        runIn(1,immediateEvent)
     }
 }
 
@@ -634,7 +638,7 @@ def startPeak2Schedule() {
     if (!weekend() && (!monthsSchedule2 || monthsSchedule2.contains(month))) {
         atomicState.peak2ScheduleActive = true
         turnOnPeakPeriod()
-        immediateEvent()
+        runIn(1,immediateEvent)
     }
 }
 
@@ -643,7 +647,7 @@ def stopPeak2Schedule() {
     if (!monthsSchedule2 || monthsSchedule2.contains(month)) {
         atomicState.peak2ScheduleActive = false
         turnOffPeakPeriod()
-        immediateEvent()
+        runIn(1,immediateEvent)
     }
 }
 
@@ -652,7 +656,7 @@ def startPeak3Schedule() {
     if (!weekend() && (!monthsSchedule3 || monthsSchedule3.contains(month))) {
         atomicState.peak3ScheduleActive = true
         turnOnPeakPeriod()
-        immediateEvent()
+        runIn(1,immediateEvent)
     }
 }
 
@@ -661,7 +665,7 @@ def stopPeak3Schedule() {
     if (!monthsSchedule3 || monthsSchedule3.contains(month)) {
         atomicState.peak3ScheduleActive = false
         turnOffPeakPeriod()
-        immediateEvent()
+        runIn(1,immediateEvent)
     }
 }
 
@@ -830,7 +834,6 @@ def setUtilityPeriodGlobalStatus() {
     //**************************
     atomicState.todayIsPeakUtilityDay = peakUsageDay
     atomicState.nowInPeakUtilityPeriod = peakUsagePeriod
-
 }
 
 def setCycleStatus() {
@@ -845,7 +848,7 @@ def setCycleStatus() {
     def sec = timeNow.format('s').toInteger()
     def millisec = timeNow.format('S').toInteger()
     
-    //Handle rare unexpected initialization issue - values will (may?) be reset
+    //Protect against unexpected currupted atomic data
     if (atomicState.cycleTimeMinutes == null) {
         log.warn ("handling null cycle minutes")
         atomicState.cycleTimeMinutes = 60}
@@ -853,6 +856,7 @@ def setCycleStatus() {
         log.warn ("handling null nominal usage watts")
         atomicState.nominalUsageWatts = 1000 
     }
+    
     if (min >= atomicState.cycleTimeMinutes) {
         secondsIntoThisCycle = (min - atomicState.cycleTimeMinutes) * 60 + sec + millisec / 1000.0
     } else {
@@ -871,7 +875,7 @@ def setCycleStatus() {
         }
         secondsInThisInterval = secondsIntoThisCycle
         if (atomicState.processedDemandOnActions && atomicState.processedDemandOnActions.toBoolean() == true) {
-            peakDemandOffActions()
+            runIn (1,peakDemandOffActions)
             atomicState.processedDemandOnActions = false
         }
     } else {
@@ -971,7 +975,7 @@ def recordPeakDemands() {
 
         if (projectedDemand > atomicState.goalDemandWatts &&
             (!atomicState.processedDemandOnActions || atomicState.processedDemandOnActions.toBoolean() == false)) {
-            peakDemandOnActions()
+            runIn (1,peakDemandOnActions)
             atomicState.processedDemandOnActions = true
         }
 
@@ -1234,7 +1238,7 @@ def commandThermostatHandler(data) {
 
 def commandThermostatWithBump(setPoint, degreesBump) {
     if (!signedRelease || signedRelease != 'I Agree') {
-        log.warn "Please sign consent setting in thermostat preferences to allow program to manage the thermostat."
+        log.warn "Please accept consent setting in thermostat preferences to allow program to manage the thermostat."
         return
     }
     log.debug "Setting Thermostat to ${setPoint}F with bump of ${degreesBump} (${(setPoint + degreesBump)}F)."
@@ -1289,6 +1293,7 @@ def colorIndicatorHandler() {
     if (colorIndicatorDevice2) {
         colorIndicatorDevice2.setColor(color)
     }
+    atomicState.lastPeakDisplayStateOn = nowInPeakUtilityPeriod
 }
 
 def setIndicatorDevices() {
@@ -1299,22 +1304,21 @@ def setIndicatorDevices() {
             if ((nowInPeakUtilityPeriod == true & atomicState.lastPeakDisplayStateOn.toBoolean() == false) ||
                 (nowInPeakUtilityPeriod == false & atomicState.lastPeakDisplayStateOn.toBoolean() == true)) {
                     //log.debug "state changed!"
-                    runIn(5, colorIndicatorHandler)                 
+                    runIn(1, colorIndicatorHandler) 
                     def displayOffIndicator = alwaysDisplayOffPeakIndicator ? alwaysDisplayOffPeakIndicator.toBoolean() : false
                     if (!nowInPeakUtilityPeriod && !displayOffIndicator) {
-                       runIn (15, toggleColorIndicatorHandler, [data: [stateOn: false]])
+                       runIn (20, toggleColorIndicatorHandler, [data: [stateOn: false]])
                     }
             }
         }
     }
-    atomicState.lastPeakDisplayStateOn = nowInPeakUtilityPeriod
 
     if (WD200Dimmer1 || WD200Dimmer2) {
         def ledRed = 1
         def ledGreen = 2
         def ledYellow = 5
         def ledMagenta = 3
-        def ledLevel = 1;
+        def level = 1;
         def blinkDuration = 0
         def blink = 0;
         def color = ledGreen;
@@ -1327,17 +1331,17 @@ def setIndicatorDevices() {
         }
 
         if (powerGenerator1) {
-            ledLevel = ((powerGenerator1.powerState.integerValue + 500) / scaleWattsPerLed + 1).toInteger()
-            if (ledLevel > 7) {
-                ledLevel = 7
+            level = ((powerGenerator1.powerState.integerValue + 500) / scaleWattsPerLed + 1).toInteger()
+            if (level > 7) {
+                level = 7
             } else {
-                if (ledLevel < 1) {
-                    ledLevel = 1
+                if (level < 1) {
+                    level = 1
                 }
             }
         }
         if (nowInPeakUtilityPeriod == true) {
-                if (ledLevel == 1) {
+                if (level == 1) {
                     color = ledRed
                 } else {
                     color = ledYellow
@@ -1354,17 +1358,14 @@ def setIndicatorDevices() {
 
         if (blinkDuration != atomicState.lastBlinkDuration) {
             log.debug "setting led blink duration to: ${blinkDuration}"
-            runIn(15, wd200LedBlinkHandler, [data: [duration: blinkDuration]])
+            runIn(3, wd200LedBlinkHandler, [data: [duration: blinkDuration]])
         }
         //color=5
-        //ledLevel = 3
-        if (color != atomicState.lastLedColor || ledLevel != atomicState.lastLedLevel || blink != atomicState.lastLedBlink) {
-            setWD200LEDs(ledLevel, color, blink)
+        //level=3
+        if (color != atomicState.lastLedColor || level != atomicState.lastLedLevel || blink != atomicState.lastLedBlink) {
+            //log.debug "Sending dimmer LED: color: ${color} blink: ${blink} level: ${level}"
+            runIn (1, setWD200LEDs, [data: [ledLevel: level, ledColor: color, ledBlink: blink]])
         }
-        atomicState.lastLedLevel = ledLevel
-        atomicState.lastLedColor = color
-        atomicState.lastLedBlink = blink
-        atomicState.lastBlinkDuration = blinkDuration
     }
 }
 
@@ -1376,17 +1377,18 @@ def wd200LedBlinkHandler(data) {
     if (WD200Dimmer2) {
         WD200Dimmer2.setBlinkDurationMilliseconds(blinkDuration)
     }
+    atomicState.lastBlinkDuration = blinkDuration
 }
 
-def setWD200LEDs(ledLevel, ledColor, ledBlink) {
+def setWD200LEDs(data) {
+     def color = data.ledColor
+     def blink = data.ledBlink
+     logDebug "Setting dimmer LED: color: ${color} blink: ${blink} level: ${data.ledLevel}"
      for (int led = 1; led <= 7; led++) {
-        def color = ledColor
-        def blink = ledBlink
-        if (led > ledLevel) {
+        if (led > data.ledLevel) {
             color = 0
             blink = 0
-        }
-        //log.debug "Set dimmer LED: ${led} color: ${color} blink: ${blink}"
+        }  
         if (WD200Dimmer1) {
             WD200Dimmer1.setStatusLed(led, color, blink)          
         }
@@ -1397,17 +1399,24 @@ def setWD200LEDs(ledLevel, ledColor, ledBlink) {
           pause (150)
         }
     }
+    atomicState.lastLedLevel = data.ledLevel
+    atomicState.lastLedColor = data.ledColor
+    atomicState.lastLedBlink = data.ledBlink
 }
 
 def confirmDisplayIndications()
 {
-     //trigger update of display devices on next planned processing cycle
-     atomicState.lastBlinkDuration = 0
-     atomicState.lastLedLevel = 0
+     //Periodically ensure display indicator devices are correctly set
+     //trigger update of WD200 display devices on next planned processing cycle
+     atomicState.lastBlinkDuration = -1
+     atomicState.lastLedLevel = -1
      def displayOffIndicator = alwaysDisplayOffPeakIndicator ? alwaysDisplayOffPeakIndicator.toBoolean() : false
      if (atomicState.nowInPeakUtilityPeriod.toBoolean() | displayOffIndicator) {
-          // Do not reconfirm color indicator if it should be off, since setting the color can turn it back on
+          // Do not reconfirm color of indicator if it should be off, since setting the color can turn it back on
           runIn(5, colorIndicatorHandler)
+     } else if (!atomicState.nowInPeakUtilityPeriod.toBoolean() && !displayOffIndicator)  {
+       // ensure it is off
+       runIn (5, toggleColorIndicatorHandler, [data: [stateOn: false]])
      }
      //why not check the watchDog while we're here:
      processWatchDog()
@@ -1451,13 +1460,13 @@ def watchDogHourly ()
 }
 
 def process() {
-    processWatchDog()
+    runIn (1,processWatchDog)
     atomicState.lastProcessedTime = now()
     setUtilityPeriodGlobalStatus()
     setCycleStatus()
     calcCurrentAndProjectedDemand()
     runIn (1, thermostatControls)
-    runIn (5, recordPeakDemands)
-    runIn (10, setIndicatorDevices)
+    runIn (1, recordPeakDemands)
+    runIn (5, setIndicatorDevices)
     atomicState.lastProcessCompletedTime = now()
 }
