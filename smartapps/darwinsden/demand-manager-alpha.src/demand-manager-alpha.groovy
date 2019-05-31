@@ -208,7 +208,8 @@ def pagePeakSchedule3() {
 
 def pageDisplayIndicators() {
     dynamicPage(name: "pageDisplayIndicators", title: "Choose display indicator devices (optional)", install: false, uninstall: false) {
-        section("Select a color indicator light (such as the EZ MultiPli/HomeSeer HSM200) to indicate when you're in a peak demand period") {
+        section("Select a color indicator light (such as the EZ MultiPli/HomeSeer HSM200) to indicate when you're in a peak demand period. Note: "+
+           "The indicator on green light will only be briefly displayed during off-peak unless the persist off-peak display is set below.") {
             input "colorIndicatorDevice1", "capability.colorControl", required: false, title: "Select your peak period color indicator device 1"
             input "colorIndicatorDevice2", "capability.colorControl", required: false, title: "Select your peak period color indicator device 2"
             input "alwaysDisplayOffPeakIndicator", "boolean", required: false, defaultValue: false, title: "Persist off-peak indication display"
@@ -219,7 +220,8 @@ def pageDisplayIndicators() {
             input "WD200Dimmer2", "capability.indicator", required: false, title: "Select your HomeSeer WD200+ dimmer 2"
             input "solarSystemSizeWatts", "number", required: false, default: 6000, title: "Size of your Solar System in Watts"
         }
-        section("Install Virtual Demand Meters (Current, Projected, Peak Today, and Peak Month) for use with dashboards (ActionTiles, etc..).") {
+        section("Install Virtual Demand Meters (Current, Projected, Peak Today, and Peak Month) for use with dashboards (ActionTiles, etc..). " +
+             "These should be added to the dashboard smart app as Power Meters.") {
             input "installVirtualDemandMeters", "boolean", required: false, defaultValue: false, title: "Install Virtual Demand Meters"
         }
     }
@@ -340,7 +342,8 @@ def pageRemove() {
     dynamicPage(name: "pageRemove", title: "", install: false, uninstall: true) {
         section() {
             paragraph parent ? "CAUTION: You are about to remove the '${app.label}'. This action is irreversible. If you are sure you want to do this, please tap on the Remove button below." :
-                "CAUTION: You are about to completely remove Demand Manager and all of its settings. This action is irreversible. If you are sure you want to do this, please tap on the Remove button below.",
+                "CAUTION: You are about to completely remove Demand Manager and all of its settings. This action is irreversible. If you are sure you want to do this, please tap on the Remove button below. " +
+                 "Note: If an error occurs during removal, you may need to first manually remove references to Demand Manager child devices from other smart apps if you have manually added them.",
                 required: true, state: null
         }
     }
@@ -354,6 +357,7 @@ def installed() {
 
 def uninstalled() {
     removeChildDevices(getChildDevices())
+
 }
 
 private removeChildDevices(delete) {
