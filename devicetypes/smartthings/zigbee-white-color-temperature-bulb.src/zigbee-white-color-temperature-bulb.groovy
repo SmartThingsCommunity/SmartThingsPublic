@@ -80,8 +80,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Electric Can Tunable White"
 
 		// Muller Licht Tint
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ColorTemperature", deviceJoinName: "Müller Licht Tint GU10 Spot White"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ColorTemperature", deviceJoinName: "Müller Licht Tint Candle White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ColorTemperature", deviceJoinName: "Müller Licht Tint White Bulb"
 	}
 
 	// UI tile definitions

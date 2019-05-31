@@ -197,6 +197,12 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	return results
 }
 
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 def sensorMotionEvent(value) {
 	def result = []
 	if (value) {

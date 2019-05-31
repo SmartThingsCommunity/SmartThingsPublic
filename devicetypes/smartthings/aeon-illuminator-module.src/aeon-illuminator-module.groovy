@@ -106,6 +106,12 @@ def createEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevel
 	result
 }
 
+def createEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {
 	def result = [item1]
 
