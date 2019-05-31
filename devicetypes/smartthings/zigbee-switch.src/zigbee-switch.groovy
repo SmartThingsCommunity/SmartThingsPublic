@@ -33,6 +33,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "Centralite Systems", model: "4200-C", deviceJoinName: "Centralite Smart Outlet"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FC7C", outClusters: "0005, 0019, 0020", manufacturer:"IKEA of Sweden", model: "TRADFRI control outlet", deviceJoinName: "IKEA TRÅDFRI control outlet"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006, 0402, 0B05, FC01, FC02", outClusters: "0003, 0019", manufacturer: "iMagic by GreatStar", model: "1113-S", deviceJoinName: "Iris Smart Plug"
+        fingerprint profileId: "0104", manufacturer: "VV_test_icl", model: "VV_test_icl_model1", deviceJoinName: "vv_test_switch"
 	}
 
 	// simulator metadata
@@ -71,7 +72,7 @@ def parse(String description) {
 		sendEvent(event)
 	}
 	else {
-		log.warn "DID NOT PARSE MESSAGE for description : $description"
+		log.warn "DID NOT PARSE MESSAGE for description test : $description"
 		log.debug zigbee.parseDescriptionAsMap(description)
 	}
 }
