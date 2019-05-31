@@ -138,14 +138,15 @@ def handleLevelEvent(descMap) {
 		if (isIkeaDimmer()) {
 			results += handleStepEvent(descMap)
 		} else {
-			results << createEvent(name: "level", value: descMap.data[0] == LEVEL_DIRECTION_UP ? 100 : STEP)
+			def newLevel = descMap.data[0] == LEVEL_DIRECTION_UP ? 100 : STEP
+			results << createEvent(name: "level", value: newLevel)
 			results << createEvent(name: "switch", value: "on")
 
-			log.debug "step to ${descMap.data}"
+			log.debug "step $STEP to ${newLevel}"
 		}
 	} else if (descMap.commandInt == LEVEL_STOP_COMMAND || descMap.commandInt == LEVEL_STOP_ONOFF_COMMAND) {
 		// We are not going to handle this event because we are not implementing this the way that the Zigbee spec indicates
-		log.debug "stop move"
+		log.debug "Received stop move - not handling"
 	} else if (descMap.commandInt == LEVEL_MOVE_LEVEL_ONOFF_COMMAND) {
 		// The spec defines this as "Move to level with on/off". The IKEA Dimmer sends us 0x00 or 0xFF only, so we will treat this more as a
 		// on/off command for the dimmer. Otherwise, we will treat this as off or on and setLevel.
@@ -174,19 +175,17 @@ def handleStepEvent(descMap) {
 	def currentLevel = device.currentValue("level") as Integer ?: 0
 	def value = null
 
-	log.debug "move to ${descMap.data}"
+	log.debug "handleStepEvent - ${descMap.data}"
 
 	if (descMap.data[0] == LEVEL_DIRECTION_UP) {
-		log.debug "move up"
-
 		value = Math.min(currentLevel + STEP, 100)
 	} else if (descMap.data[0] == LEVEL_DIRECTION_DOWN) {
-		log.debug "move down"
-
 		value = Math.max(currentLevel - STEP, 0)
 	}
 
 	if (value != null) {
+		log.debug "Step ${descMap.data[0] == LEVEL_DIRECTION_UP ? "up" : "down"} by $STEP to $value"
+
 		// don't change level if switch will be turning off
 		if (value == 0) {
 			results << createEvent(name: "switch", value: "off")
@@ -194,6 +193,8 @@ def handleStepEvent(descMap) {
 			results << createEvent(name: "switch", value: "on")
 			results << createEvent(name: "level", value: value)
 		}
+	} else {
+		log.debug "Received invalid direction ${descMap.data[0]} - descMap.data = ${descMap.data}"
 	}
 
 	return results
