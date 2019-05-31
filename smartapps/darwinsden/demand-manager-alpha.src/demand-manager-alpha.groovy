@@ -3,34 +3,39 @@
  *
  *  Author: Darwin@DarwinsDen.com
  *  Copyright 2018, 2019 - All rights reserved
+ *
+ *  For questions, more information, or to provide feedback on this smart app, please visit: 
+ *  please visit: 
+ *
+ *    darwinsden.com/demand/
  *  
  *  ****** WARNING ******
  *  Installation and configuration of this software will grant this application control of your home thermostat and other devices. 
  *  Unexpectedly high and low home temperatures and unexpected high utility usage & costs may result due to both the planned 
- *  and unplanned nature of the algorithms and technologies involved, unreliability of devices and networks, and un-anticipated 
+ *  and unplanned nature of the algorithms and technologies involved, the unreliability of devices and networks, and unanticipated 
  *  software defects including those in this software application and its dependencies. By installing this software, you are accepting
  *  the risks to people, pets, and personal property and agree to not hold the developer liable.
  *  
  *  This software was developed in the hopes that it will be useful to others, however, 
- *  it is distributed on an "AS IS" BASIS, WITOUT WARRANTIES OR GUARANTEES OF ANY KIND, either express or implied. 
+ *  it is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR GUARANTEES OF ANY KIND, either express or implied. 
  * 
  *  The end user is free to modify this software for personal use. Re-distribution of this software in its original or 
  *  modified form requires explicit written consent from the developer. 
  * 
  *  The developer retains all rights, title, copyright, and interest, including all copyright, patent rights, and trade secrets 
- *  associated with the algorthms, and technologies used herein. 
+ *  associated with the algorithms, and technologies used herein. 
  *
  */
  
 def version() { return "v0.1.4e.20190530" }
 /*   
-*	30-May-2019 >>> v0.1.4e.20190530 - Resolve new install/init issue
+ *	30-May-2019 >>> v0.1.4e.20190530 - Resolve new install/init issue
  *	28-May-2019 >>> v0.1.3e.20190528 - Added option to persist off-peak indication display, improved threading, additional watchdog logic
  *	07-May-2019 >>> v0.1.2e.20190507 - Added additional exception handling and watchdog processes, logic updates
  */
  
 def warning() {
-    return "WARNING: By enabling these features, you are granting permission of this application to control your thermostat and other devices. This software is in early beta stages. Normal operation and/or unexpected failures or defects in this software, dependent hardware, and/or network may result in unintended high or low temperatures and high utility usage & costs."
+    return "WARNING: By enabling these features, you are granting permission of this application to control your thermostat and other devices. This software is in the early beta stages. Normal operation and/or unexpected failures or defects in this software, dependent hardware, and/or network may result in unintended high or low temperatures and high utility usage & costs."
 }
 
 def release() {
@@ -288,7 +293,7 @@ def pageThermostat() {
             input "commandThermostat", "boolean", required: false, defaultValue: false, title: "Command Thermostat"
         }
 
-        section("Maximum thermostat set point temperature the program will reach. Once this set point temperature is reached, the Demand Manager will no longer raise the thermostat temperature to manage demand.") {
+        section("Maximum thermostat set point temperature the program will reach. Once this set-point temperature is reached, the Demand Manager will no longer raise the thermostat temperature to manage demand.") {
             input "maxTemperature", "number", required: false, defaultValue: 83, title: "Maximum Temperature"
         }
 
@@ -329,9 +334,7 @@ def pageAdvancedSettings() {
         }
     
     }
-
 }
-
 
 def pageRemove() {
     dynamicPage(name: "pageRemove", title: "", install: false, uninstall: true) {
