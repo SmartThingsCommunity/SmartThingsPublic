@@ -1003,7 +1003,8 @@ def recordPeakDemands() {
                     if (demandPeakThisMonth) {
                         demandPeakThisMonth.setPower(projectedDemand)
                     }
-                    if (notifyWhenMonthlyDemandExceeded && notifyWhenMonthlyDemandExceeded.toBoolean() == true) {
+                    if (notifyWhenMonthlyDemandExceeded && notifyWhenMonthlyDemandExceeded.toBoolean() == true &&
+                          projectedDemand > exceededBuffer) {
                         sendNotificationMessage("New Peak Demand for ${getTheMonth()} is: ${projectedDemand}W", "demandMonth")
                     }
                 }
@@ -1304,11 +1305,13 @@ def colorIndicatorHandler() {
 }
 
 def setIndicatorDevices() {
-    def nowInPeakUtilityPeriod = atomicState.nowInPeakUtilityPeriod.toBoolean()
+    def nowInPeakUtilityPeriod = atomicState.nowInPeakUtilityPeriod ? atomicState.nowInPeakUtilityPeriod.toBoolean() : false
     if (colorIndicatorDevice1 || colorIndicatorDevice2) {
         def stateChanged = false
-        if (atomicState.lastPeakDisplayStateOn != null) {
-            if ((nowInPeakUtilityPeriod == true & atomicState.lastPeakDisplayStateOn.toBoolean() == false) ||
+        if (atomicState.lastPeakDisplayStateOn == null) {
+          atomicState.lastPeakDisplayStateOn = !nowInPeakUtilityPeriod
+        }
+        if ((nowInPeakUtilityPeriod == true & atomicState.lastPeakDisplayStateOn.toBoolean() == false) ||
                 (nowInPeakUtilityPeriod == false & atomicState.lastPeakDisplayStateOn.toBoolean() == true)) {
                     //log.debug "state changed!"
                     runIn(1, colorIndicatorHandler) 
@@ -1316,7 +1319,6 @@ def setIndicatorDevices() {
                     if (!nowInPeakUtilityPeriod && !displayOffIndicator) {
                        runIn (20, toggleColorIndicatorHandler, [data: [stateOn: false]])
                     }
-            }
         }
     }
 
