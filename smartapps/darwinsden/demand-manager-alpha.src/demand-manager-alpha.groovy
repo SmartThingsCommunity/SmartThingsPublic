@@ -614,7 +614,7 @@ def turnOffPeakPeriod() {
         if (!monitorOnly || monitorOnly.toBoolean() == false) {
             dashboardDevice.off()
             peakPeriodOffActions()
-            log.debug "now ending peak demand period"
+            logDebug "now ending peak demand period"
             sendNotification("now ending peak demand period", "demandGeneral")
         }
     } else {
@@ -715,10 +715,14 @@ def precoolingStop() {
     processWatchDog()
 }
 
-private logDebug (message) {
+def logDebugHandler (data) {
+    log.debug (data.message)
+}
+ 
+def logDebug (msg) {
    if (logLevel != null) {
       if (logLevel == "debug" | logLevel == "trace") {
-         log.debug (message)
+         runIn (1, logDebugHandler, [data: [message: msg], overwrite: false])
       }
    }
 }
@@ -873,7 +877,7 @@ def setCycleStatus() {
     def secondsSinceLastCheck = (now() - atomicState.lastCycleCheckTime) / 1000.0
     if (secondsSinceLastCheck > atomicState.cycleTimeMinutes * 60 || atomicState.lastMinute > min ||
         (atomicState.lastMinute < atomicState.cycleTimeMinutes && min >= atomicState.cycleTimeMinutes)) {
-        log.debug "New Demand Cycle"
+        logDebug "New Demand Cycle"
         atomicState.demandCurrentWatts = Math.max(wholeHomePowerMeter.powerState.integerValue, 0)
         atomicState.cycleDemandNotificationSent = false
         def demandPeakCurrent = getChildDevice("demandPeakCurrent")
@@ -904,6 +908,34 @@ def setCycleStatus() {
     atomicState.deltaIntervalSeconds = secondsInThisInterval
 }
 
+def setPeakCurrentDevice (data) {
+    def demandPeakCurrent = getChildDevice("demandPeakCurrent")
+    if (demandPeakCurrent) {
+        demandPeakCurrent.setPower(data.power)
+     }
+}
+
+def setPeakProjectedDevice (data) {
+    def demandPeakProjected = getChildDevice("demandPeakProjected")
+    if (demandPeakProjected) {
+        demandPeakProjected.setPower(data.power)
+     }
+}
+
+def setDashboardCurrentDemand (data) {
+    def dashboardDevice = getChildDevice("dashboardDevice")
+    if (dashboardDevice) {
+        dashboardDevice.setCurrentDemand(data.power)
+     }
+}
+
+def setDashboardProjectedDemand (data) {
+    def dashboardDevice = getChildDevice("dashboardDevice")
+    if (dashboardDevice) {
+        dashboardDevice.setProjectedDemand(data.power)
+     }
+}
+
 def calcCurrentAndProjectedDemand() {
     def demandCurrent
     def demandProjected
@@ -921,18 +953,22 @@ def calcCurrentAndProjectedDemand() {
         atomicState.secondsLeftInThisDemandCycle) / (atomicState.cycleTimeMinutes * 60.0)).toInteger()
     def demandPeakCurrent = getChildDevice("demandPeakCurrent")
     if (demandPeakCurrent) {
-        demandPeakCurrent.setPower(demandCurrent)
+        runIn (1, setPeakCurrentDevice, [data: [power: demandCurrent]])
+        //demandPeakCurrent.setPower(demandCurrent)
     }
     def dashboardDevice = getChildDevice("dashboardDevice")
     if (dashboardDevice) {
-        dashboardDevice.setCurrentDemand(demandCurrent)
-        dashboardDevice.setProjectedDemand(demandProjected)
+        runIn (1, setDashboardCurrentDemand, [data: [power: demandCurrent]])
+        //dashboardDevice.setCurrentDemand(demandCurrent)
+        runIn (1, setDashboardProjectedDemand, [data: [power: demandProjected]])
+        //dashboardDevice.setProjectedDemand(demandProjected)
     }
     def demandPeakProjected = getChildDevice("demandPeakProjected")
     if (demandPeakProjected) {
-        demandPeakProjected.setPower(demandProjected)
+        runIn (1, setPeakProjectedDevice, [data: [power: demandProjected]])
+        //demandPeakProjected.setPower(demandProjected)
     }
-    logDebug "Projected Demand: ${demandProjected}W. Current Demand: ${demandCurrent}W."
+    logDebug ("Projected Demand: ${demandProjected}W. Current Demand: ${demandCurrent}W.")
     //***********************************************
     //* Set Current and Projected Demand Global Data
     //***********************************************   
@@ -991,14 +1027,14 @@ def recordPeakDemands() {
                 def peakDemandToday = dashboardDevice.currentValue("peakDayDemand")
                 def peakDemandThisMonth = dashboardDevice.currentValue("peakMonthDemand")
                 if (!peakDemandToday || projectedDemand > peakDemandToday) {
-                    log.debug("setting today's peak demand")
+                    logDebug("setting today's peak demand")
                     dashboardDevice.setPeakDayDemand(projectedDemand)
                     if (demandPeakToday) {
                         demandPeakToday.setPower(projectedDemand)
                     }
                 }
                 if (!peakDemandThisMonth || projectedDemand > peakDemandThisMonth) {
-                    log.debug("setting this month's peak demand")
+                    logDebug("setting this month's peak demand")
                     dashboardDevice.setPeakMonthDemand(projectedDemand)
                     if (demandPeakThisMonth) {
                         demandPeakThisMonth.setPower(projectedDemand)
@@ -1079,13 +1115,13 @@ def turnOffThermostat() {
     def tempBumpDegrees = 2
     if (thermoRiseSchedulingPlan && thermoRiseSchedulingPlan.toString() != "Off" && getSmartThermoWeightedDeparture(homeThermostat.coolingSetpointState.integerValue) < -1) {
         setPointToCommand = setPointToCommand + 1
-        log.debug "Ahead of thermostat schedule. Upping commanded setpoint by 1 to: ${setPointToCommand}"
+        logDebug "Ahead of thermostat schedule. Upping commanded setpoint by 1 to: ${setPointToCommand}"
     }
     if ((setPointToCommand < homeThermostat.temperatureState.integerValue) &&
         (homeThermostat.coolingSetpointState.integerValue <= 82)) {
         setPointToCommand = setPointToCommand + 1
         tempBumpDegrees = tempBumpDegrees + 1
-        log.debug "Current temperature is above planned setpoint value. Upping commanded setpoint by 1 to: ${setPointToCommand}"
+        logDebug "Current temperature is above planned setpoint value. Upping commanded setpoint by 1 to: ${setPointToCommand}"
     }
 
     if (setPointToCommand == homeThermostat.coolingSetpointState.integerValue) {
@@ -1231,7 +1267,7 @@ def commandThermostatHandler(data) {
         return
     }
     def setPoint = data.coolingSetpoint
-    log.debug "Setting Thermostat to ${setPoint}F degrees."
+    logDebug "Setting Thermostat to ${setPoint}F degrees."
     atomicState.lastThermostatCommandTime = now()
     try {
         homeThermostat.setCoolingSetpoint(setPoint)
@@ -1239,7 +1275,7 @@ def commandThermostatHandler(data) {
         log.debug "exception setting setpoint: ${e}"
         sendNotificationMessage("Warning: thermostat exception in handler when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
         runIn(45, verifyThermostatCommand, [data: [coolingSetpoint: setPoint]])
-        throw e
+        //throw e
     }
     runIn(45, verifyThermostatCommand, [data: [coolingSetpoint: setPoint]])
 }
@@ -1249,14 +1285,14 @@ def commandThermostatWithBump(setPoint, degreesBump) {
         log.warn "Please accept consent setting in thermostat preferences to allow program to manage the thermostat."
         return
     }
-    log.debug "Setting Thermostat to ${setPoint}F with bump of ${degreesBump} (${(setPoint + degreesBump)}F)."
+    logDebug "Setting Thermostat to ${setPoint}F with bump of ${degreesBump} (${(setPoint + degreesBump)}F)."
     atomicState.lastThermostatCommandTime = now()
     try {
         homeThermostat.setCoolingSetpoint(setPoint + degreesBump)
     } catch (Exception e) {
         log.debug "exception setting setpoint: ${e}"
         sendNotificationMessage("Warning: thermostat exception in bump handler when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
-        throw e
+        //throw e
     }
     atomicState.processingThermostatCommand = true
     // command final setpoint 
@@ -1266,7 +1302,7 @@ def commandThermostatWithBump(setPoint, degreesBump) {
 def toggleColorIndicatorHandler(data) {
     def stateIsOn = data.stateOn.toBoolean()
     if (stateIsOn == true) {
-        log.debug("turning on light!")
+        logDebug ("turning on peak indicator light!")
         if (colorIndicatorDevice1) {
            colorIndicatorDevice1.on()
         }
@@ -1274,7 +1310,7 @@ def toggleColorIndicatorHandler(data) {
            colorIndicatorDevice2.on()
         }
     } else {
-        log.debug("turning off light!")
+        logDebug("turning off peak indicator light!")
         if (colorIndicatorDevice1) {
            colorIndicatorDevice1.off()
         }
@@ -1366,17 +1402,18 @@ def setIndicatorDevices() {
         }
 
         if (blinkDuration != atomicState.lastBlinkDuration) {
-            log.debug "setting led blink duration to: ${blinkDuration}"
+            logDebug "setting led blink duration to: ${blinkDuration}"
             runIn(3, wd200LedBlinkHandler, [data: [duration: blinkDuration]])
         }
-        //color=5
-        //level=3
+        //color=4
+        //level=6
         if (color != atomicState.lastLedColor || level != atomicState.lastLedLevel || blink != atomicState.lastLedBlink) {
-            //log.debug "Sending dimmer LED: color: ${color} blink: ${blink} level: ${level}"
-            runIn (1, setWD200LEDs, [data: [ledLevel: level, ledColor: color, ledBlink: blink]])
+            //log.debug "Sending dimmer LED: color: ${color} blink: ${blink} level: ${level}"       
+            runIn (1, setWD200Leds, [data: [ledLevel: level, ledColor: color, ledBlink: blink]])
         }
     }
 }
+
 
 def wd200LedBlinkHandler(data) {
     def blinkDuration = data.duration
@@ -1389,30 +1426,60 @@ def wd200LedBlinkHandler(data) {
     atomicState.lastBlinkDuration = blinkDuration
 }
 
-def setWD200LEDs(data) {
-     def color = data.ledColor
-     def blink = data.ledBlink
-     logDebug "Setting dimmer LED: color: ${color} blink: ${blink} level: ${data.ledLevel}"
-     for (int led = 1; led <= 7; led++) {
-        if (led > data.ledLevel) {
-            color = 0
-            blink = 0
-        }  
-        if (WD200Dimmer1) {
-            WD200Dimmer1.setStatusLed(led, color, blink)          
-        }
-        if (WD200Dimmer2) {
-            WD200Dimmer2.setStatusLed(led, color, blink)
-        }
-        if (led < 7) {
-          pause (150)
-        }
+def setWD200LED (led, data){
+    def color = data.ledColor
+    def blink = data.ledBlink
+    if (led > data.ledLevel) {
+        color = 0
+        blink = 0
+    }   
+    //logDebug "Setting dimmer LED: color: ${color} blink: ${blink} led: ${led}"
+    if (WD200Dimmer1) {
+       WD200Dimmer1.setStatusLed(led, color, blink)          
     }
-    atomicState.lastLedLevel = data.ledLevel
-    atomicState.lastLedColor = data.ledColor
-    atomicState.lastLedBlink = data.ledBlink
+    if (WD200Dimmer2) {
+       WD200Dimmer2.setStatusLed(led, color, blink)
+    }
 }
 
+def setWD200Led7 (dataIn) {
+    setWD200LED (7, dataIn)
+    atomicState.lastLedLevel = dataIn.ledLevel
+    atomicState.lastLedColor = dataIn.ledColor
+    atomicState.lastLedBlink = dataIn.ledBlink
+}
+
+def setWD200Led6 (dataIn) {
+   setWD200LED (6, dataIn)
+   runIn (1, setWD200Led7,[data: dataIn])
+}
+
+def setWD200Led5 (dataIn) {
+   setWD200LED (5, dataIn)
+   runIn (1, setWD200Led6,[data: dataIn])
+}
+
+def setWD200Led4 (dataIn) {
+   setWD200LED (4, dataIn)
+   runIn (1, setWD200Led5,[data: dataIn])
+}
+
+def setWD200Led3 (dataIn) {
+   setWD200LED (3, dataIn)
+   runIn (1, setWD200Led4,[data: dataIn])
+}
+
+def setWD200Led2 (dataIn) {
+   setWD200LED (2, dataIn)
+   runIn (1, setWD200Led3,[data: dataIn])
+}
+
+def setWD200Leds (dataIn) {
+   setWD200LED (1, dataIn)
+   runIn (1, setWD200Led2,[data: dataIn])
+   logDebug "Setting dimmer LEDs: color: ${dataIn.ledColor} blink: ${dataIn.ledBlink} level: ${dataIn.ledLevel}"
+}
+  
 def confirmDisplayIndications()
 {
      //Periodically ensure display indicator devices are correctly set
@@ -1468,14 +1535,27 @@ def watchDogHourly ()
   processWatchDog()
 }
 
+def chainProcessing3 () {
+   calcCurrentAndProjectedDemand()
+   //the following can run concurrently
+   runIn (1, thermostatControls)
+   runIn (2, recordPeakDemands)
+   runIn (3, setIndicatorDevices)
+   atomicState.lastProcessCompletedTime = now()
+}
+
+def chainProcessing2 () {
+   setCycleStatus()
+   runIn (1, chainProcessing3)
+}
+
+def chainProcessing1 () {
+   setUtilityPeriodGlobalStatus()
+   runIn (1, chainProcessing2)
+}
+
 def process() {
     runIn (1,processWatchDog)
     atomicState.lastProcessedTime = now()
-    setUtilityPeriodGlobalStatus()
-    setCycleStatus()
-    calcCurrentAndProjectedDemand()
-    runIn (1, thermostatControls)
-    runIn (1, recordPeakDemands)
-    runIn (5, setIndicatorDevices)
-    atomicState.lastProcessCompletedTime = now()
+    chainProcessing1 ()
 }
