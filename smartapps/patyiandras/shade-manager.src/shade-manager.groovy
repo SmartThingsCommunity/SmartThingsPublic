@@ -108,9 +108,10 @@ def scheduleMove(timeString) {
 
     //calculate the offset
     def offsetedTime = new Date(timeinput.time + (offset * 60 * 1000))
+    log.debug "Time: $time, offsetedTime: $offsetedTime"
     if (time!=null)
     {
-        def timeparam = toDateTime(time, null)
+        def timeparam = toDateTime(offsetedTime.format("yyyy-MM-dd")+"T"+timeToday(time, location.timeZone).format("HH:mm:ss.SSSZ"), location.timeZone)
         if (type=="At sunset not later than time" && offsetedTime>timeparam) {
             log.debug "$offsetedTime is later than $timeparam"
             offsetedTime=timeparam
@@ -142,7 +143,7 @@ def moveToLevel() {
         log.debug "moving shades to level: $level (day is $day in $thesedays)"
         def i=0
         shades.each { shade ->
-            moveShade(i, level, 5)
+            moveShade(i, level, 0)
             i++
         }
     }
