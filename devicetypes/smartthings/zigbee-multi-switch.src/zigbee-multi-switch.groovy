@@ -28,6 +28,7 @@ metadata {
 		command "childOff", ["string"]
 
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Switch 1"
+		fingerprint profileId: "0104", inClusters: "0006, 0005, 0004, 0000, 0003, 0B04, 0008", outClusters: "0019", manufacturer: "Aurora", model: "DoubleSocket50AU", deviceJoinName: "Aurora Smart Double Socket 1"
 	}
 	// simulator metadata
 	simulator {
@@ -163,6 +164,21 @@ def configureHealthCheck() {
 def configure() {
 	log.debug "configure()"
 	configureHealthCheck()
-	//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
-	return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
+
+	if (isOrvibo()) {
+		//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
+		return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
+	} else {
+		// turn off switches during paring for Aurora
+		def cmd = []
+		cmd << childOff("${device.deviceNetworkId}:02}")
+		cmd << off()
+
+		cmd.each { sendHubCommand(it) }
+	}
 }
+
+private Boolean isOrvibo() {
+	device.getDataValue("model") == "074b3ffba5a045b7afd94c47079dd553"
+}
+
