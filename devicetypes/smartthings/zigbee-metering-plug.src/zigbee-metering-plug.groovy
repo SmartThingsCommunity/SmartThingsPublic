@@ -136,5 +136,5 @@ def configure() {
     return refresh() +
     	   zigbee.onOffConfig() +
            zigbee.configureReporting(zigbee.SIMPLE_METERING_CLUSTER, ATTRIBUTE_READING_INFO_SET, DataType.UINT48, 1, 600, 1) +
-           zigbee.electricMeasurementPowerConfig(1, 600, 2)  //leedarson device's power deviation is 2w.So set the report step to 2.
+           zigbee.electricMeasurementPowerConfig(1, 600, 1) 
 }
