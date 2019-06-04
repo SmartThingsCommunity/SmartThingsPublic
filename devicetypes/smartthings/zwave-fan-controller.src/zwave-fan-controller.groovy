@@ -106,6 +106,12 @@ def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 	log.debug "received hail from device"
 }
 
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 def fanEvents(physicalgraph.zwave.Command cmd) {
 	def rawLevel = cmd.value as int
 	def result = []
