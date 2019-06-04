@@ -93,12 +93,10 @@ def handleSengledSwitchEvents(descMap) {
 					//short press of 'DIM' button
 					value = Math.max(currentLevel - STEP, 0)
 				}
-
 				if (value == 0) {
 					sendEvent(name: "switch", value: "off")
-				} else {
-					sendEvent(name: "level", value: value)
 				}
+					sendEvent(name: "level", value: value)
 				break
 			case '04':
 				//short press of 'OFF' button
