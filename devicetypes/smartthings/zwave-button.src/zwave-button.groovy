@@ -44,12 +44,13 @@ metadata {
 }
 
 def installed() {
-	if(zwaveInfo.mfr?.contains("0371")) {
+	if (isAeotec()) {
 		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 	} else {
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
-	sendEvent(name: "numberOfButtons", value: 1)
+	sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
+	sendEvent(name: "numberOfButtons", value: 1, displayed: false)
 	sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
 	response([
 			secure(zwave.batteryV1.batteryGet()),
@@ -59,7 +60,7 @@ def installed() {
 }
 
 def configure() {
-	if(zwaveInfo.mfr?.contains("0086"))
+	if (zwaveInfo.mfr?.contains("0086"))
 		[
 			secure(zwave.configurationV1.configurationSet(parameterNumber: 250, scaledConfigurationValue: 1)),	//makes Aeotec Panic Button communicate with primary controller
 		]
@@ -151,3 +152,15 @@ private getEventsMap() {[
 private getCommandClasses() {[
 		0x84: 1
 ]}
+
+private isAeotec() {
+	zwaveInfo.mfr == "0371"
+}
+
+private getSupportedButtonValues() {
+	if (isAeotec()) {
+		["pushed", "held"]
+	} else {
+		["pushed", "held", "double"]
+	}
+}
