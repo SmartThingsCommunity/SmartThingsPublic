@@ -27,8 +27,9 @@
  *
  */
  
-def version() { return "v0.1.4e.20190530" }
+def version() { return "v0.1.5e.20190604" }
 /*   
+ *	04-Jun-2019 >>> v0.1.5e.20190604 - Fix issue with turning back on peak demand exceeded devices at start of new cycle. 
  *	30-May-2019 >>> v0.1.4e.20190530 - Resolve new install/init issue
  *	28-May-2019 >>> v0.1.3e.20190528 - Added option to persist off-peak indication display, improved threading, additional watchdog logic
  *	07-May-2019 >>> v0.1.2e.20190507 - Added additional exception handling and watchdog processes, logic updates
@@ -587,7 +588,7 @@ def peakDemandOnActions() {
 def peakDemandOffActions() {
     if (operationMode && operationMode.toString() == "fullControl") {
         if (deviceToTurnOffDuringPeakDemand1) {
-            deviceToTurnOffDuringPeak1Demand.on()
+            deviceToTurnOffDuringPeakDemand1.on()
         }
         if (deviceToTurnOffDuringPeakDemand2) {
             deviceToTurnOffDuringPeakDemand2.on()
