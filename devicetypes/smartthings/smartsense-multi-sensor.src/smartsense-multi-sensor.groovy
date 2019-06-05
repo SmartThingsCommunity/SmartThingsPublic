@@ -408,13 +408,14 @@ def configure() {
 
 	if (device.getDataValue("manufacturer") == "SmartThings") {
 		log.debug "Refreshing Values for manufacturer: SmartThings "
-		/* These values of Motion Threshold Multiplier(0x01) and Motion Threshold (0x7602)
+		/* These values of Motion Threshold Multiplier(0x01) and Motion Threshold (0x0276)
 		 seem to be giving pretty accurate results for the XYZ co-ordinates for this manufacturer.
 		 Separating these out in a separate if-else because I do not want to touch Centralite part
 		 as of now.
 		*/
 		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x01, [mfgCode: manufacturerCode])
-		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, 0x7602, [mfgCode: manufacturerCode])
+		// passed as little-endian as a bug-workaround
+		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, "7602", [mfgCode: manufacturerCode])
 	} else if (device.getDataValue("manufacturer") == "Samjin") {
 		log.debug "Refreshing Values for manufacturer: Samjin "
 		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x14, [mfgCode: manufacturerCode])
