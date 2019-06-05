@@ -77,14 +77,14 @@ def parse(String description) {
 
 	if (!eventMap && eventDescMap) {
 		eventMap = [:]
-		if (eventDescMap?.cluster == zigbee.ONOFF_CLUSTER || eventDescMap?.clusterId == zigbee.ONOFF_CLUSTER) {
+		if (eventDescMap?.clusterId == zigbee.ONOFF_CLUSTER) {
 			eventMap[name] = "switch"
 			eventMap[value] = eventDescMap?.value
 		}
 	}
 
 	if (eventMap.value) {
-		if (eventDescMap?.endpoint == "01" || eventDescMap?.sourceEndpoint == "01") {
+		if (eventDescMap?.sourceEndpoint == "01") {
 			sendEvent(eventMap)
 		} else {
 			def childDevice = childDevices.find {
@@ -139,7 +139,11 @@ def ping() {
 }
 
 def refresh() {
-	zigbee.onOffRefresh() + zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 2]) + zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
+	if (isOrvibo()) {
+		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
+	} else {
+		zigbee.onOffRefresh() + zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 2])
+	}
 }
 
 def poll() {
