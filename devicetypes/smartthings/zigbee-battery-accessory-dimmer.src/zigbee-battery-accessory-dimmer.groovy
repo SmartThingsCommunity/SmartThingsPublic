@@ -50,21 +50,21 @@ metadata {
 def getDOUBLE_STEP() {10}
 def getSTEP() {5}
 
-def getONOFF_ON_COMMAND() { 0x01 }
-def getONOFF_OFF_COMMAND() { 0x00 }
-def getLEVEL_MOVE_LEVEL_COMMAND() { 0x00 }
-def getLEVEL_MOVE_COMMAND() { 0x01 }
-def getLEVEL_STEP_COMMAND() { 0x02 }
-def getLEVEL_STOP_COMMAND() { 0x03 }
-def getLEVEL_MOVE_LEVEL_ONOFF_COMMAND() { 0x04 }
-def getLEVEL_MOVE_ONOFF_COMMAND() { 0x05 }
-def getLEVEL_STEP_ONOFF_COMMAND() { 0x06 }
-def getLEVEL_STOP_ONOFF_COMMAND() { 0x07 }
+def getONOFF_ON_COMMAND() { 0x0001 }
+def getONOFF_OFF_COMMAND() { 0x0000 }
+def getLEVEL_MOVE_LEVEL_COMMAND() { 0x0000 }
+def getLEVEL_MOVE_COMMAND() { 0x0001 }
+def getLEVEL_STEP_COMMAND() { 0x0002 }
+def getLEVEL_STOP_COMMAND() { 0x0003 }
+def getLEVEL_MOVE_LEVEL_ONOFF_COMMAND() { 0x0004 }
+def getLEVEL_MOVE_ONOFF_COMMAND() { 0x0005 }
+def getLEVEL_STEP_ONOFF_COMMAND() { 0x0006 }
+def getLEVEL_STOP_ONOFF_COMMAND() { 0x0007 }
 def getLEVEL_DIRECTION_UP() { "00" }
 def getLEVEL_DIRECTION_DOWN() { "01" }
 
-def getBATTERY_VOLTAGE_COMMAND() { 0x20 }
-def getBATTERY_PERCENT_COMMAND() { 0x21 }
+def getBATTERY_VOLTAGE_COMMAND() { 0x0020 }
+def getBATTERY_PERCENT_COMMAND() { 0x0021 }
 
 def getMFR_SPECIFIC_CLUSTER() { 0xFC10 }
 
@@ -259,16 +259,21 @@ def handleBatteryEvents(descMap) {
 	def results = []
 
 	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.value) {
+		def rawValue = zigbee.convertHexToInt(descMap.value)
 		def batteryValue = null
 
-		if (descMap.commandInt == BATTERY_VOLTAGE_COMMAND) {
+		if (rawValue == 0xFF) {
+			// Log invalid readings to info for analytics and skip sending an event.
+			// This would be a good thing to watch for and form some sort of device health alert if too many come in.
+			log.info "Invalid battery reading returned"
+		} else if (descMap.commandInt == BATTERY_VOLTAGE_COMMAND) {
 			def minVolts = 2.3
 			def maxVolts = 3.0
-			def batteryValueVoltage = zigbee.convertHexToInt(descMap.value) / 10
+			def batteryValueVoltage = rawValue / 10
 
 			batteryValue = Math.round(((batteryValueVoltage- minVolts) / (maxVolts - minVolts)) * 100)
 		} else if (descMap.commandInt == BATTERY_PERCENT_COMMAND) {
-			batteryValue = zigbee.convertHexToInt(descMap.value) / 2
+			batteryValue = rawValue / 2
 		}
 
 		if (batteryValue != null) {
