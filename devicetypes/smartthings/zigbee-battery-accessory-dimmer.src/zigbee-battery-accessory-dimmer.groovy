@@ -48,8 +48,8 @@ metadata {
 	}
 }
 
-def getDOUBLE_STEP() {10}
-def getSTEP() {5}
+def getDOUBLE_STEP() { 10 }
+def getSTEP() { 5 }
 
 def getONOFF_ON_COMMAND() { 0x0001 }
 def getONOFF_OFF_COMMAND() { 0x0000 }
@@ -93,20 +93,21 @@ def parse(String description) {
 		def descMap = zigbee.parseDescriptionAsMap(description)
 
 		if (isSengledSwitch()) {
-			results += handleSengledSwitchEvents(descMap)
-		} else if (isCentraliteSwitch())  {
-			handleCentraliteSmartSwitchEvents(descMap)
-		} else { //if (isIkeaDimmer()) {
-			if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
-				results += handleSwitchEvent(descMap)
-			} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
-				results += handleLevelEvent(descMap)
-			} else {
-				log.warn "DID NOT PARSE MESSAGE for description : $description"
-				log.debug "${descMap}"
+			results = handleSengledSwitchEvents(descMap)
+		} else if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+			results = handleSwitchEvent(descMap)
+		} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
+			if (isCentraliteSwitch()) {
+				results = handleCentraliteSmartSwitchLevelEvent(descMap)
+			} else if (isIkeaDimmer()) {
+				results = handleIkeaDimmerLevelEvent(descMap)
 			}
+		} else if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER) {
+			results = handleBatteryEvents(descMap)
+		} else {
+			log.warn "DID NOT PARSE MESSAGE for description : $description"
+			log.debug "${descMap}"
 		}
-		results += handleBatteryEvents(descMap)
 	}
 
 	log.debug "parse returned $results"
@@ -173,37 +174,28 @@ def handleSengledSwitchEvents(descMap) {
 	return results
 }
 
-def handleSwitchEvent(descMap) {
+def handleCentraliteSmartSwitchLevelEvent(descMap) {
 	def results = []
 
-	if (descMap.commandInt == ONOFF_ON_COMMAND) {
-		results << createEvent(name: "switch", value: "on")
-	} else if (descMap.commandInt == ONOFF_OFF_COMMAND) {
-		/*if (device.currentValue("level") == 0) {
-			results << createEvent(name: "level", value: STEP)
-		}*/
-		results << createEvent(name: "switch", value: "off")
+	if (descMap.commandInt == LEVEL_MOVE_ONOFF_COMMAND) {
+		// device is sending 0x05 command while long pressing the upper button
+		results = handleStepEvent(LEVEL_DIRECTION_UP, descMap)
+	} else if (descMap.commandInt == LEVEL_MOVE_COMMAND) {
+		//device is sending 0x01 command while long pressing the bottom button
+		results = handleStepEvent(LEVEL_DIRECTION_DOWN, descMap)
 	}
 
 	return results
 }
 
-def handleLevelEvent(descMap) {
+def handleIkeaDimmerLevelEvent(descMap) {
 	def results = []
 
 	if (descMap.commandInt == LEVEL_STEP_COMMAND) {
-		results += handleStepEvent(descMap)
+		results = handleStepEvent(descMap.data[0], descMap)
 	} else if (descMap.commandInt == LEVEL_MOVE_COMMAND || descMap.commandInt == LEVEL_MOVE_ONOFF_COMMAND) {
 		// Treat Level Move and Level Move with On/Off as Level Step
-		//if (isIkeaDimmer()) {
-			results += handleStepEvent(descMap)
-		/*} else {
-			def newLevel = descMap.data[0] == LEVEL_DIRECTION_UP ? 100 : DOUBLE_STEP
-			results << createEvent(name: "level", value: newLevel)
-			results << createEvent(name: "switch", value: "on")
-
-			log.debug "step $DOUBLE_STEP to ${newLevel}"
-		}*/
+		results = handleStepEvent(descMap.data[0], descMap)
 	} else if (descMap.commandInt == LEVEL_STOP_COMMAND || descMap.commandInt == LEVEL_STOP_ONOFF_COMMAND) {
 		// We are not going to handle this event because we are not implementing this the way that the Zigbee spec indicates
 		log.debug "Received stop move - not handling"
@@ -212,7 +204,7 @@ def handleLevelEvent(descMap) {
 		// on/off command for the dimmer. Otherwise, we will treat this as off or on and setLevel.
 		if (descMap.data[0] == "00") {
 			results << createEvent(name: "switch", value: "off", isStateChange: true)
-		} else if (descMap.data[0] == "FF" && isIkeaDimmer()) {
+		} else if (descMap.data[0] == "FF") {
 			// The IKEA Dimmer sends 0xFF -- this is technically not to spec, but we will treat this as an "on"
 			if (device.currentValue("level") == 0) {
 				results << createEvent(name: "level", value: DOUBLE_STEP)
@@ -230,21 +222,34 @@ def handleLevelEvent(descMap) {
 	return results
 }
 
-def handleStepEvent(descMap) {
+def handleSwitchEvent(descMap) {
+	def results = []
+
+	if (descMap.commandInt == ONOFF_ON_COMMAND) {
+		if (device.currentValue("level") == 0) {
+			results << createEvent(name: "level", value: DOUBLE_STEP)
+		}
+		results << createEvent(name: "switch", value: "on")
+	} else if (descMap.commandInt == ONOFF_OFF_COMMAND) {
+		results << createEvent(name: "switch", value: "off")
+	}
+
+	return results
+}
+
+def handleStepEvent(direction, descMap) {
 	def results = []
 	def currentLevel = device.currentValue("level") as Integer ?: 0
 	def value = null
 
-	log.debug "handleStepEvent - ${descMap.data}"
-
-	if (descMap.data[0] == LEVEL_DIRECTION_UP) {
+	if (direction == LEVEL_DIRECTION_UP) {
 		value = Math.min(currentLevel + DOUBLE_STEP, 100)
-	} else if (descMap.data[0] == LEVEL_DIRECTION_DOWN) {
+	} else if (direction == LEVEL_DIRECTION_DOWN) {
 		value = Math.max(currentLevel - DOUBLE_STEP, 0)
 	}
 
 	if (value != null) {
-		log.debug "Step ${descMap.data[0] == LEVEL_DIRECTION_UP ? "up" : "down"} by $DOUBLE_STEP to $value"
+		log.debug "Step ${direction == LEVEL_DIRECTION_UP ? "up" : "down"} by $DOUBLE_STEP to $value"
 
 		// don't change level if switch will be turning off
 		if (value == 0) {
@@ -254,46 +259,16 @@ def handleStepEvent(descMap) {
 			results << createEvent(name: "level", value: value)
 		}
 	} else {
-		log.debug "Received invalid direction ${descMap.data[0]} - descMap.data = ${descMap.data}"
+		log.debug "Received invalid direction ${direction} - descMap.data = ${descMap.data}"
 	}
 
 	return results
 }
 
-def handleCentraliteSmartSwitchEvents(descMap) {
-	if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
-		if (descMap.commandInt == 0x01) {
-			sendEvent(name: "switch", value: "on")
-		} else if (descMap.commandInt == 0x00) {
-			sendEvent(name: "switch", value: "off")
-		}
-	} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
-		def currentLevel = device.currentValue("level") as Integer ?: 0
-		if (descMap.commandInt == 0x05) {
-			// device is sending 0x05 command while long pressing the upper button
-			log.debug "move up"
-			def value = Math.min(currentLevel + DOUBLE_STEP, 100)
-			// don't change level if switch will be turning off
-			sendEvent(name: "level", value: value)
-			sendEvent(name: "switch", value: "on")
-		} else if (descMap.commandInt == 0x01) {
-			//device is sending 0x01 command while long pressing the bottom button
-			log.debug "move down"
-			def value = Math.max(currentLevel - DOUBLE_STEP, 0)
-			if (value == 0) {
-				sendEvent(name: "switch", value: "off" )
-			} else {
-				sendEvent(name: "switch", value: "on")
-				sendEvent(name: "level", value: value)
-			}
-		}
-	}
-}
-
 def handleBatteryEvents(descMap) {
 	def results = []
 
-	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.value) {
+	if (descMap.value) {
 		def rawValue = zigbee.convertHexToInt(descMap.value)
 		def batteryValue = null
 
@@ -301,7 +276,7 @@ def handleBatteryEvents(descMap) {
 			// Log invalid readings to info for analytics and skip sending an event.
 			// This would be a good thing to watch for and form some sort of device health alert if too many come in.
 			log.info "Invalid battery reading returned"
-		} else if (descMap.attrInt == BATTERY_VOLTAGE_ATTR && !isIkeaDimmer()) { // Ignore from IKEA Dimmer if it sends this
+		} else if (descMap.attrInt == BATTERY_VOLTAGE_ATTR && !isIkeaDimmer()) { // Ignore from IKEA Dimmer if it sends this since it is probably 0
 			def minVolts = 2.3
 			def maxVolts = 3.0
 			def batteryValueVoltage = rawValue / 10
