@@ -266,13 +266,13 @@ def handleBatteryEvents(descMap) {
 			// Log invalid readings to info for analytics and skip sending an event.
 			// This would be a good thing to watch for and form some sort of device health alert if too many come in.
 			log.info "Invalid battery reading returned"
-		} else if (descMap.commandInt == BATTERY_VOLTAGE_COMMAND) {
+		} else if (descMap.attrInt == BATTERY_VOLTAGE_COMMAND && !isIkeaDimmer()) { // Ignore from IKEA Dimmer if it sends this
 			def minVolts = 2.3
 			def maxVolts = 3.0
 			def batteryValueVoltage = rawValue / 10
 
 			batteryValue = Math.round(((batteryValueVoltage- minVolts) / (maxVolts - minVolts)) * 100)
-		} else if (descMap.commandInt == BATTERY_PERCENT_COMMAND) {
+		} else if (descMap.attrInt == BATTERY_PERCENT_COMMAND) {
 			batteryValue = rawValue / 2
 		}
 
