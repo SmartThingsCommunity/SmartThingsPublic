@@ -22,9 +22,10 @@ metadata {
 		capability "Health Check"
 		capability "Switch"
 		capability "Switch Level"
-		
+
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,FC11", outClusters: "0003,0004,0006,0008,FC10", manufacturer: "sengled", model: "E1E-G7F", deviceJoinName: "Sengled Smart Switch"
 		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI wireless dimmer", deviceJoinName: "IKEA TRÅDFRI Wireless dimmer" // 01 [0104 or C05E] 0810 02 06 0000 0001 0003 0009 0B05 1000 06 0003 0004 0006 0008 0019 1000
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0B05", outClusters: "0003,0006,0008,0019", manufacturer: "Centralite Systems", model: "3131-G", deviceJoinName: "Centralite Smart Switch"
 	}
 
 	tiles(scale: 2) {
@@ -63,8 +64,8 @@ def getLEVEL_STOP_ONOFF_COMMAND() { 0x0007 }
 def getLEVEL_DIRECTION_UP() { "00" }
 def getLEVEL_DIRECTION_DOWN() { "01" }
 
-def getBATTERY_VOLTAGE_COMMAND() { 0x0020 }
-def getBATTERY_PERCENT_COMMAND() { 0x0021 }
+def getBATTERY_VOLTAGE_ATTR() { 0x0020 }
+def getBATTERY_PERCENT_ATTR() { 0x0021 }
 
 def getMFR_SPECIFIC_CLUSTER() { 0xFC10 }
 
@@ -76,6 +77,9 @@ private boolean isIkeaDimmer() {
 }
 private boolean isSengledSwitch() {
 	device.getDataValue("model") == "E1E-G7F"
+}
+private boolean isCentraliteSwitch() {
+	device.getDataValue("model") == "3131-G"
 }
 
 def parse(String description) {
@@ -90,6 +94,8 @@ def parse(String description) {
 
 		if (isSengledSwitch()) {
 			results += handleSengledSwitchEvents(descMap)
+		} else if (isCentraliteSwitch())  {
+			handleCentraliteSmartSwitchEvents(descMap)
 		} else { //if (isIkeaDimmer()) {
 			if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
 				results += handleSwitchEvent(descMap)
@@ -254,6 +260,35 @@ def handleStepEvent(descMap) {
 	return results
 }
 
+def handleCentraliteSmartSwitchEvents(descMap) {
+	if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+		if (descMap.commandInt == 0x01) {
+			sendEvent(name: "switch", value: "on")
+		} else if (descMap.commandInt == 0x00) {
+			sendEvent(name: "switch", value: "off")
+		}
+	} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
+		def currentLevel = device.currentValue("level") as Integer ?: 0
+		if (descMap.commandInt == 0x05) {
+			// device is sending 0x05 command while long pressing the upper button
+			log.debug "move up"
+			def value = Math.min(currentLevel + DOUBLE_STEP, 100)
+			// don't change level if switch will be turning off
+			sendEvent(name: "level", value: value)
+			sendEvent(name: "switch", value: "on")
+		} else if (descMap.commandInt == 0x01) {
+			//device is sending 0x01 command while long pressing the bottom button
+			log.debug "move down"
+			def value = Math.max(currentLevel - DOUBLE_STEP, 0)
+			if (value == 0) {
+				sendEvent(name: "switch", value: "off" )
+			} else {
+				sendEvent(name: "switch", value: "on")
+				sendEvent(name: "level", value: value)
+			}
+		}
+	}
+}
 
 def handleBatteryEvents(descMap) {
 	def results = []
@@ -266,13 +301,13 @@ def handleBatteryEvents(descMap) {
 			// Log invalid readings to info for analytics and skip sending an event.
 			// This would be a good thing to watch for and form some sort of device health alert if too many come in.
 			log.info "Invalid battery reading returned"
-		} else if (descMap.attrInt == BATTERY_VOLTAGE_COMMAND && !isIkeaDimmer()) { // Ignore from IKEA Dimmer if it sends this
+		} else if (descMap.attrInt == BATTERY_VOLTAGE_ATTR && !isIkeaDimmer()) { // Ignore from IKEA Dimmer if it sends this
 			def minVolts = 2.3
 			def maxVolts = 3.0
 			def batteryValueVoltage = rawValue / 10
 
 			batteryValue = Math.round(((batteryValueVoltage- minVolts) / (maxVolts - minVolts)) * 100)
-		} else if (descMap.attrInt == BATTERY_PERCENT_COMMAND) {
+		} else if (descMap.attrInt == BATTERY_PERCENT_ATTR) {
 			batteryValue = rawValue / 2
 		}
 
@@ -302,18 +337,28 @@ def setLevel(value, rate = null) {
 }
 
 def ping() {
-	zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_COMMAND)
+	if (isCentraliteSwitch()) {
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR)
+	} else {
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR)
+	}
 }
 
 def installed() {
-	sendEvent(name: "switch", value: "on", displayed: false)
-	sendEvent(name: "level", value: 100, displayed: false)
+	sendEvent(name: "switch", value: "on")
+	sendEvent(name: "level", value: 100)
 }
 
 def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_COMMAND) +
-		zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_COMMAND, DataType.UINT8, 30, 10 * 60, null)
+	if (isCentraliteSwitch()) {
+		zigbee.addBinding(zigbee.ONOFF_CLUSTER) + zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR) +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR, DataType.UINT8, 0, 21600, null)
+	} else {
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR) +
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 10 * 60, null)
+	}
 }
 
