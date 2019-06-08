@@ -117,11 +117,11 @@ def parse(String description) {
 def handleSengledSwitchEvents(descMap) {
 	def results = []
 
-	if (descMap?.clusterInt == MFR_SPECIFIC_CLUSTER) {
+	if (descMap?.clusterInt == MFR_SPECIFIC_CLUSTER && descMap.data) {
 		def currentLevel = device.currentValue("level") as Integer ?: 0
-		def value = 0
+		def value = currentLevel
 
-		switch(descMap.data[0]) {
+		switch (descMap.data[0]) {
 			case '01':
 				//short press of 'ON' button
 				results << createEvent(name: "switch", value: "on")
