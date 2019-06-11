@@ -37,6 +37,7 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 E", deviceJoinName: "Visonic Door/Window Sensor"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "4655BC0-R", deviceJoinName: "Ecolink Door/Window Sensor"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0003,0019", manufacturer: "iMagic by GreatStar", model: "1116-S", deviceJoinName: "Iris Contact Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Bosch", model: "RFMS-ZBMS", deviceJoinName: "Bosch multi-sensor"
 	}
 
 	simulator {
@@ -57,16 +58,16 @@ metadata {
 		}
 
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
-			state "temperature", label: '${currentValue}Â°',
-					backgroundColors: [
-							[value: 31, color: "#153591"],
-							[value: 44, color: "#1e9cbb"],
-							[value: 59, color: "#90d2a7"],
-							[value: 74, color: "#44b621"],
-							[value: 84, color: "#f1d801"],
-							[value: 95, color: "#d04e00"],
-							[value: 96, color: "#bc2323"]
-					]
+			state "temperature", label: '${currentValue}°',
+				backgroundColors: [
+					[value: 31, color: "#153591"],
+					[value: 44, color: "#1e9cbb"],
+					[value: 59, color: "#90d2a7"],
+					[value: 74, color: "#44b621"],
+					[value: 84, color: "#f1d801"],
+					[value: 95, color: "#d04e00"],
+					[value: 96, color: "#bc2323"]
+				]
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
@@ -90,9 +91,9 @@ def parse(String description) {
 			map = parseIasMessage(description)
 		} else {
 			Map descMap = zigbee.parseDescriptionAsMap(description)
-			if (descMap?.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
 				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
-			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == 0x0002) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
 			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt == 0x07) {
@@ -102,13 +103,21 @@ def parse(String description) {
 				} else {
 					log.warn "IAS ZONE REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 				}
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == 0x0001 && isBoschRadionMultiSensor()) {
+				if (Integer.parseInt(descMap.value, 16) == 0x0015) {
+					//multi-sensor is in contact or tilt detector mode - both act as contact sensor so no action is necessary
+				} else if (Integer.parseInt(descMap.value, 16) == 0x002A) {
+					//multi-sensor is in water detector mode, DTH should be changed to water sensor DTH
+					log.debug "SmartSense Moisture Sensor"
+					setDeviceType("SmartSense Moisture Sensor")
+				}
 			}
 		}
 	} else if (map.name == "temperature") {
 		if (tempOffset) {
 			map.value = (int) map.value + (int) tempOffset
 		}
-		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}Â°C' : '{{ device.displayName }} was {{ value }}Â°F'
+		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
 		map.translatable = true
 	}
 
@@ -156,9 +165,9 @@ private Map getContactResult(value) {
 	def linkText = getLinkText(device)
 	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
 	return [
-			name           : 'contact',
-			value          : value,
-			descriptionText: descriptionText
+		name           : 'contact',
+		value          : value,
+		descriptionText: descriptionText
 	]
 }
 
@@ -172,7 +181,7 @@ def ping() {
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
 	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
-			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
 
 	return refreshCmds
 }
@@ -184,12 +193,14 @@ def configure() {
 
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	def cmds = refresh() +
-			zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) +
-			zigbee.batteryConfig() +
-			zigbee.temperatureConfig(30, 60 * 30) +
-			zigbee.enrollResponse()
-	if(getDataValue("manufacturer") == "Ecolink") {
+		zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) +
+		zigbee.batteryConfig() +
+		zigbee.temperatureConfig(30, 60 * 30) +
+		zigbee.enrollResponse()
+	if (isEcolink()) {
 		cmds += configureEcolink()
+	} else if (isBoschRadionMultiSensor()) {
+		cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, 0x0001)
 	}
 	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
 	// battery minReport 30 seconds, maxReportTime 6 hrs by default
@@ -200,7 +211,15 @@ private configureEcolink() {
 	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	def enrollCmds = zigbee.writeAttribute(0x0020, 0x0000, 0x23, 0x00001C20) + zigbee.command(0x0020, 0x03, "0200") +
-			zigbee.writeAttribute(0x0020, 0x0003, 0x21, 0x0028) + zigbee.command(0x0020, 0x02, "B1040000")
+		zigbee.writeAttribute(0x0020, 0x0003, 0x21, 0x0028) + zigbee.command(0x0020, 0x02, "B1040000")
 
 	return zigbee.addBinding(0x0020) + refresh() + enrollCmds
+}
+
+private Boolean isEcolink() {
+	device.getDataValue("manufacturer") == "Ecolink"
+}
+
+private Boolean isBoschRadionMultiSensor() {
+	device.getDataValue("manufacturer") == "Bosch" && device.getDataValue("model") == "RFMS-ZBMS"
 }
