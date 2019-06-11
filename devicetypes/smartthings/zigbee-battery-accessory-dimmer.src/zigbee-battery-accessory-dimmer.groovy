@@ -286,12 +286,14 @@ def handleBatteryEvents(descMap) {
 			def maxVolts = 3.0
 			def batteryValueVoltage = rawValue / 10
 
-			batteryValue = Math.round(((batteryValueVoltage- minVolts) / (maxVolts - minVolts)) * 100)
+			batteryValue = Math.round(((batteryValueVoltage - minVolts) / (maxVolts - minVolts)) * 100)
 		} else if (descMap.attrInt == BATTERY_PERCENT_ATTR) {
-			batteryValue = rawValue / 2
+			batteryValue = Math.round(rawValue / 2)
 		}
 
 		if (batteryValue != null) {
+			batteryValue = Math.min(100, Math.max(0, batteryValue))
+
 			results << createEvent(name: "battery", value: batteryValue, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%", translatable: true)
 		}
 	}
