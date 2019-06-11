@@ -1,18 +1,18 @@
 /**
- *  Sensibo
- *
- *  Copyright 2015 Eric Gosselin
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
- *
- */
+*  Sensibo
+*
+*  Copyright 2015 Eric Gosselin
+*
+*  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+*  in compliance with the License. You may obtain a copy of the License at:
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+*  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+*  for the specific language governing permissions and limitations under the License.
+*
+*/
 
 import groovyx.net.http.HTTPBuilder
 import groovyx.net.http.ContentType
@@ -265,9 +265,13 @@ def setAll(newMode,temp,fan)
         
         Level = GetNextFanLevel(LevelBefore,capabilities.remoteCapabilities.fanLevels)
         log.debug "Fan : " + Level
-   
+        
         def result = parent.setACStates(this, device.deviceNetworkId, "on", newMode, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
        
+        if (Level == null) {
+        	Level = LevelBefore
+		}
+        
         if (result) {
         	if (LevelBefore != Level) {
                 generatefanLevelEvent(Level)
@@ -872,7 +876,10 @@ def dfanLevel(String newLevel){
         
         Level = GetNextFanLevel(newLevel,capabilities.remoteCapabilities.fanLevels)
         //log.debug "Fan : " + Level
-        
+        if (Level == null) {
+          generateStatusEvent
+          return
+        }
         def result = parent.setACStates(this, device.deviceNetworkId,"on", device.currentState("currentmode").value, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
 
         if (result) {
@@ -1159,9 +1166,14 @@ def modeMode(String newMode){
         
         Level = GetNextFanLevel(LevelBefore,capabilities.remoteCapabilities.fanLevels)
         
-        //log.debug "Fan : " + Level
-   
+        log.debug "FanLevel : " + Level
+        
         def result = parent.setACStates(this, device.deviceNetworkId, "on", newMode, Setpoint, Level, device.currentState("swing").value, device.currentState("temperatureUnit").value)
+        
+        if (Level == null) {
+        	Level = LevelBefore
+        }
+        
         if (result) {
         	log.info "Mode changed to " + newMode + " for " + device.deviceNetworkId
             
@@ -1217,7 +1229,7 @@ def GetNextFanLevel(fanLevel, fanLevels)
 {
 	log.trace "GetNextFanLevel called with " + fanLevel
     
-    if (fanLevels == null || fanLevels == "null") {
+    if (fanLevels == null || fanLevel == "null") {
       return null
     }
     
@@ -1274,7 +1286,7 @@ def NextMode(sMode)
 def GetNextSwingMode(swingMode, swingModes){
 	log.trace "GetNextSwingMode() called with " + swingMode
 	
-    if (swingModes == null || swingModes == "null") {
+    if (swingModes == null || swingMode == "null") {
     	return null
     }
     
@@ -1351,6 +1363,11 @@ def modeSwing(String newSwing)
         //log.debug "Swing : " + Swing
         
         def result = parent.setACStates(this, device.deviceNetworkId, "on", device.currentState("currentmode").value, Setpoint, device.currentState("fanLevel").value, Swing, device.currentState("temperatureUnit").value)
+        
+        if (Swing == null) {
+        	Swing = SwingBefore
+        }
+        
         if (result) {
         	log.info "Swing mode changed to " + Swing + " for " + device.deviceNetworkId
             
