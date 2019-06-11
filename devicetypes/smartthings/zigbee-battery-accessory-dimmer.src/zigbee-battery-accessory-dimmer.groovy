@@ -92,7 +92,9 @@ def parse(String description) {
 	} else {
 		def descMap = zigbee.parseDescriptionAsMap(description)
 
-		if (isSengledSwitch()) {
+		if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER) {
+			results = handleBatteryEvents(descMap)
+		} else if (isSengledSwitch()) {
 			results = handleSengledSwitchEvents(descMap)
 		} else if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
 			results = handleSwitchEvent(descMap)
@@ -102,8 +104,6 @@ def parse(String description) {
 			} else if (isIkeaDimmer()) {
 				results = handleIkeaDimmerLevelEvent(descMap)
 			}
-		} else if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER) {
-			results = handleBatteryEvents(descMap)
 		} else {
 			log.warn "DID NOT PARSE MESSAGE for description : $description"
 			log.debug "${descMap}"
@@ -134,7 +134,10 @@ def handleSengledSwitchEvents(descMap) {
 				} else if (descMap.data[2] == '01') {
 					//short press of 'BRIGHTEN' button
 					value = Math.min(currentLevel + STEP, 100)
+				} else {
+					log.info "Invalid value ${descMap.data[2]} received for descMap.data[2]"
 				}
+
 				results << createEvent(name: "switch", value: "on")
 				results << createEvent(name: "level", value: value)
 				break
@@ -146,6 +149,8 @@ def handleSengledSwitchEvents(descMap) {
 				} else if (descMap.data[2] == '01') {
 					//short press of 'DIM' button
 					value = Math.max(currentLevel - STEP, 0)
+				} else {
+					log.info "Invalid value ${descMap.data[2]} received for descMap.data[2]"
 				}
 
 				if (value == 0) {
@@ -287,7 +292,7 @@ def handleBatteryEvents(descMap) {
 		}
 
 		if (batteryValue != null) {
-			results << createEvent(name: "battery", value: batteryValue, unit: "%")
+			results << createEvent(name: "battery", value: batteryValue, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%", translatable: true)
 		}
 	}
 
