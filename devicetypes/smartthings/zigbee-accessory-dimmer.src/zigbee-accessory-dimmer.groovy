@@ -81,7 +81,7 @@ def parse(String description) {
 					if (value == 0) {
 						sendEvent(name: "switch", value: "off")
 					} else {
-						sendEven t(name: "level", value: value)
+						sendEvent(name: "level", value: value)
 					}
 				}
 			} else if (descMap.commandInt == 0x01) {
