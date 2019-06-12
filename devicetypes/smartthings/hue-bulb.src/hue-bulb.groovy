@@ -1,8 +1,13 @@
+//DEPRECATED. INTEGRATION MOVED TO SUPER LAN CONNECT
+
 /**
  *  Hue Bulb
  *
+ *  Philips Hue Type "Extended Color Light"
+ *
  *  Author: SmartThings
  */
+
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
@@ -14,6 +19,8 @@ metadata {
 		capability "Switch"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
+		capability "Light"
 
 		command "setAdjustedColor"
         command "reset"
@@ -27,75 +34,65 @@ metadata {
 	tiles (scale: 2){
 		multiAttributeTile(name:"rich-control", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
             }
-            tileAttribute ("device.level", key: "SECONDARY_CONTROL") {
-	            attributeState "level", label: 'Level ${currentValue}%'
-			}
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
 				attributeState "color", action:"setAdjustedColor"
 			}
 		}
 
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-			state "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-			state "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"turningOff"
-			state "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-		}
+    controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
+        state "colorTemperature", action:"color temperature.setColorTemperature"
+    }
 
-        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2000..6500)") {
-            state "colorTemperature", action:"color temperature.setColorTemperature"
-        }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
-        }
+    valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+        state "colorTemperature", label: 'WHITES'
+    }
 
 		standardTile("reset", "device.reset", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
-		}
-		standardTile("refresh", "device.switch", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false, range:"(0..100)") {
-			state "level", action:"switch level.setLevel"
-		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-			state "level", label: 'Level ${currentValue}%'
-		}
-		controlTile("saturationSliderControl", "device.saturation", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "saturation", action:"color control.setSaturation"
-		}
-		valueTile("saturation", "device.saturation", inactiveLabel: false, decoration: "flat") {
-			state "saturation", label: 'Sat ${currentValue}    '
-		}
-		controlTile("hueSliderControl", "device.hue", "slider", height: 1, width: 2, inactiveLabel: false) {
-			state "hue", action:"color control.setHue"
-		}
-		valueTile("hue", "device.hue", inactiveLabel: false, decoration: "flat") {
-			state "hue", label: 'Hue ${currentValue}   '
+			state "default", label:"Reset To White", action:"reset", icon:"st.lights.philips.hue-single"
 		}
 
-		main(["switch"])
+		standardTile("refresh", "device.refresh", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+
+		main(["rich-control"])
 		details(["rich-control", "colorTempSliderControl", "colorTemp", "reset", "refresh"])
 	}
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
+}
+
+void installed() {
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 // parse events into attributes
 def parse(description) {
 	log.debug "parse() - $description"
 	def results = []
+
 	def map = description
 	if (description instanceof String)  {
 		log.debug "Hue Bulb stringToMap - ${map}"
 		map = stringToMap(description)
 	}
+
 	if (map?.name && map?.value) {
 		results << createEvent(name: "${map?.name}", value: "${map?.value}")
 	}
@@ -105,97 +102,102 @@ def parse(description) {
 // handle commands
 void on() {
 	log.trace parent.on(this)
-	sendEvent(name: "switch", value: "on")
 }
 
 void off() {
 	log.trace parent.off(this)
-	sendEvent(name: "switch", value: "off")
 }
 
-void nextLevel() {
-	def level = device.latestValue("level") as Integer ?: 0
-	if (level <= 100) {
-		level = Math.min(25 * (Math.round(level / 25) + 1), 100) as Integer
-	}
-	else {
-		level = 25
-	}
-	setLevel(level)
-}
-
-void setLevel(percent) {
-	log.debug "Executing 'setLevel'"
-	parent.setLevel(this, percent)
-	sendEvent(name: "level", value: percent)
+void setLevel(percent, rate = null) {
+    log.debug "Executing 'setLevel'"
+    if (verifyPercent(percent)) {
+	    log.trace parent.setLevel(this, percent)
+    }
 }
 
 void setSaturation(percent) {
-	log.debug "Executing 'setSaturation'"
-	parent.setSaturation(this, percent)
-	sendEvent(name: "saturation", value: percent)
+    log.debug "Executing 'setSaturation'"
+    if (verifyPercent(percent)) {
+	    log.trace parent.setSaturation(this, percent)
+    }
 }
 
 void setHue(percent) {
-	log.debug "Executing 'setHue'"
-	parent.setHue(this, percent)
-	sendEvent(name: "hue", value: percent)
+    log.debug "Executing 'setHue'"
+    if (verifyPercent(percent)) {
+	    log.trace parent.setHue(this, percent)
+    }
 }
 
 void setColor(value) {
-	log.debug "setColor: ${value}, $this"
-	parent.setColor(this, value)
-	if (value.hue) { sendEvent(name: "hue", value: value.hue)}
-	if (value.saturation) { sendEvent(name: "saturation", value: value.saturation)}
-	if (value.hex) { sendEvent(name: "color", value: value.hex)}
-	if (value.level) { sendEvent(name: "level", value: value.level)}
-	if (value.switch) { sendEvent(name: "switch", value: value.switch)}
+    def events = []
+    def validValues = [:]
+
+    if (verifyPercent(value.hue)) {
+        validValues.hue = value.hue
+    }
+    if (verifyPercent(value.saturation)) {
+        validValues.saturation = value.saturation
+    }
+    if (value.hex != null) {
+        if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
+            validValues.hex = value.hex
+        } else {
+            log.warn "$value.hex is not a valid color"
+        }
+    }
+    if (verifyPercent(value.level)) {
+        validValues.level = value.level
+    }
+    if (value.switch == "off" || (value.level != null && value.level <= 0)) {
+        validValues.switch = "off"
+    } else {
+        validValues.switch = "on"
+    }
+    if (!validValues.isEmpty()) {
+	    log.trace parent.setColor(this, validValues)
+    }
 }
 
 void reset() {
-	log.debug "Executing 'reset'"
-    def value = [level:100, hex:"#90C638", saturation:56, hue:23]
-    setAdjustedColor(value)
-	parent.poll()
+    log.debug "Executing 'reset'"
+	setColorTemperature(4000)
 }
 
 void setAdjustedColor(value) {
-	if (value) {
+    if (value) {
         log.trace "setAdjustedColor: ${value}"
         def adjusted = value + [:]
-        adjusted.hue = adjustOutgoingHue(value.hue)
         // Needed because color picker always sends 100
         adjusted.level = null
-        setColor(adjusted)
+	    setColor(adjusted)
+    } else {
+        log.warn "Invalid color input $value"
     }
 }
 
 void setColorTemperature(value) {
-	if (value) {
+    if (value) {
         log.trace "setColorTemperature: ${value}k"
-        parent.setColorTemperature(this, value)
-        sendEvent(name: "colorTemperature", value: value)
-	}
+	    log.trace parent.setColorTemperature(this, value)
+    } else {
+        log.warn "Invalid color temperature $value"
+    }
 }
 
 void refresh() {
-	log.debug "Executing 'refresh'"
-	parent.manualRefresh()
+    log.debug "Executing 'refresh'"
+    parent?.manualRefresh()
 }
 
-def adjustOutgoingHue(percent) {
-	def adjusted = percent
-	if (percent > 31) {
-		if (percent < 63.0) {
-			adjusted = percent + (7 * (percent -30 ) / 32)
-		}
-		else if (percent < 73.0) {
-			adjusted = 69 + (5 * (percent - 62) / 10)
-		}
-		else {
-			adjusted = percent + (2 * (100 - percent) / 28)
-		}
-	}
-	log.info "percent: $percent, adjusted: $adjusted"
-	adjusted
+def verifyPercent(percent) {
+    if (percent == null)
+        return false
+    else if (percent >= 0 && percent <= 100) {
+        return true
+    } else {
+        log.warn "$percent is not 0-100"
+        return false
+    }
 }
+

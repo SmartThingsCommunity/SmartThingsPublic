@@ -13,7 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+
 metadata {
 	definition (name: "Tyco Door/Window Sensor", namespace: "smartthings", author: "SmartThings") {
 		capability "Battery"
@@ -21,29 +22,33 @@ metadata {
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Temperature Measurement"
-        
+		capability "Health Check"
+		capability "Sensor"
+
 		command "enrollResponse"
- 
- 
+
+
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 SMA"
 	}
- 
+
 	simulator {
- 
+
 	}
 
 	preferences {
 		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
- 
-	tiles {
-    	standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			}
 		}
-    	
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -55,26 +60,26 @@ metadata {
 					[value: 96, color: "#bc2323"]
 				]
 		}
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-        
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+
+       		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-        
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
+
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
- 
+
 		main (["contact", "temperature"])
 		details(["contact","temperature","battery","refresh","configure"])
 	}
 }
- 
+
 def parse(String description) {
 	log.debug "description: $description"
-    
+
 	Map map = [:]
 	if (description?.startsWith('catchall:')) {
 		map = parseCatchAllMessage(description)
@@ -88,10 +93,10 @@ def parse(String description) {
     else if (description?.startsWith('zone status')) {
     	map = parseIasMessage(description)
     }
- 
+
 	log.debug "Parse returned $map"
 	def result = map ? createEvent(map) : null
-    
+
     if (description?.startsWith('enroll request')) {
     	List cmds = enrollResponse()
         log.debug "enroll response: ${cmds}"
@@ -99,12 +104,20 @@ def parse(String description) {
     }
     return result
 }
- 
+
 private Map parseCatchAllMessage(String description) {
     Map resultMap = [:]
     def cluster = zigbee.parse(description)
     if (shouldProcessMessage(cluster)) {
         switch(cluster.clusterId) {
+			case 0x0500:
+				Map descMap = zigbee.parseDescriptionAsMap(description)
+				// someone who understands Zigbee better than me should refactor this whole DTH to bring it up to date
+				if (descMap?.attrInt == 0x0002) {
+                    def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+                    resultMap = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
+                }
+				break
             case 0x0001:
             	resultMap = getBatteryResult(cluster.data.last())
                 break
@@ -125,20 +138,20 @@ private Map parseCatchAllMessage(String description) {
 private boolean shouldProcessMessage(cluster) {
     // 0x0B is default response indicating message got through
     // 0x07 is bind message
-    boolean ignoredMessage = cluster.profileId != 0x0104 || 
+    boolean ignoredMessage = cluster.profileId != 0x0104 ||
         cluster.command == 0x0B ||
         cluster.command == 0x07 ||
         (cluster.data.size() > 0 && cluster.data.first() == 0x3e)
     return !ignoredMessage
 }
- 
+
 private Map parseReportAttributeMessage(String description) {
 	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
 		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
 	}
 	log.debug "Desc Map: $descMap"
- 
+
 	Map resultMap = [:]
 	if (descMap.cluster == "0402" && descMap.attrId == "0000") {
 		def value = getTemperature(descMap.value)
@@ -147,10 +160,10 @@ private Map parseReportAttributeMessage(String description) {
 	else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
 		resultMap = getBatteryResult(Integer.parseInt(descMap.value, 16))
 	}
- 
+
 	return resultMap
 }
- 
+
 private Map parseCustomMessage(String description) {
 	Map resultMap = [:]
 	if (description?.startsWith('temperature: ')) {
@@ -161,42 +174,11 @@ private Map parseCustomMessage(String description) {
 }
 
 private Map parseIasMessage(String description) {
-    List parsedMsg = description.split(' ')
-    String msgCode = parsedMsg[2]
-    
-    Map resultMap = [:]
-    switch(msgCode) {
-        case '0x0020': // Closed/No Motion/Dry
-        	resultMap = getContactResult('closed')
-            break
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
 
-        case '0x0021': // Open/Motion/Wet
-        	resultMap = getContactResult('open')
-            break
-
-        case '0x0022': // Tamper Alarm
-            break
-
-        case '0x0023': // Battery Alarm
-            break
-
-        case '0x0024': // Supervision Report
-        	resultMap = getContactResult('closed')
-            break
-
-        case '0x0025': // Restore Report
-        	resultMap = getContactResult('open')
-            break
-
-        case '0x0026': // Trouble/Failure
-            break
-
-        case '0x0028': // Test Mode
-            break
-    }
-    return resultMap
+	return zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
 }
- 
+
 def getTemperature(value) {
 	def celsius = Integer.parseInt(value, 16).shortValue() / 100
 	if(getTemperatureScale() == "C"){
@@ -209,22 +191,18 @@ def getTemperature(value) {
 private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
-    
-    def result = [
-    	name: 'battery'
-    ]
-    
-	def volts = rawValue / 10
-	def descriptionText
-	if (volts > 3.5) {
-		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
-	}
-	else {
+
+    def result = [:]
+
+	if (!(rawValue == 0 || rawValue == 255)) {
+		def volts = rawValue / 10
 		def minVolts = 2.1
-    	def maxVolts = 3.0
+		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
-		result.value = Math.min(100, (int) pct * 100)
+		def roundedPct = Math.round(pct * 100)
+		result.value = Math.min(100, roundedPct)
 		result.descriptionText = "${linkText} battery was ${result.value}%"
+		result.name = 'battery'
 	}
 
 	return result
@@ -242,7 +220,8 @@ private Map getTemperatureResult(value) {
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+		unit: temperatureScale
 	]
 }
 
@@ -257,53 +236,51 @@ private Map getContactResult(value) {
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+}
+
 def refresh()
 {
 	log.debug "Refreshing Temperature and Battery"
-	[
-    
+	def refreshCmds = [
+
         "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
 		"st rattr 0x${device.deviceNetworkId} 1 1 0x20"
 
 	]
+
+	return refreshCmds + enrollResponse()
 }
 
 def configure() {
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 		log.debug "Configuring Reporting, IAS CIE, and Bindings."
-	def configCmds = [
+	def enrollCmds = [
     	"delay 1000",
-        
+
 		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
 		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        "zcl global send-me-a-report 1 0x20 0x20 600 3600 {01}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        "zcl global send-me-a-report 0x402 0 0x29 300 3600 {6400}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        
+
         //"raw 0x500 {01 23 00 00 00}", "delay 200",
         //"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-        
-        
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zdo bind 0x${device.deviceNetworkId} 1 1 1 {${device.zigbeeId}} {}",
-        
-        "delay 500"
 	]
-    return configCmds + enrollResponse() + refresh() // send refresh cmds as part of config
+    return enrollCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
 def enrollResponse() {
 	log.debug "Sending enroll response"
-    [	
-    	
+    [
+
 	"raw 0x500 {01 23 00 00 00}", "delay 200",
     "send 0x${device.deviceNetworkId} 1 1"
-        
+
     ]
 }
 private hex(value) {

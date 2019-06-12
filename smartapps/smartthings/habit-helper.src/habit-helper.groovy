@@ -57,12 +57,11 @@ def scheduleCheck()
 	def message = message1 ?: "SmartThings - Habit Helper Reminder!"
 
     if (location.contactBookEnabled) {
-        log.debug "Texting reminder: ($message) to contacts:${recipients?.size()}"
+        log.debug "Texting reminder to contacts:${recipients?.size()}"
         sendNotificationToContacts(message, recipients)
     }
     else {
-
-        log.debug "Texting reminder: ($message) to $phone1"
+        log.debug "Texting reminder"
         sendSms(phone1, message)
     }
 }

@@ -47,7 +47,7 @@ def updated() {
 
 def presenceHandler(evt) {
 	if (evt.value == "present") {
-		log.debug "${presence.label ?: presence.name} has arrived at the ${location}"
+		// log.debug "${presence.label ?: presence.name} has arrived at the ${location}"
 
         if (location.contactBookEnabled) {
             sendNotificationToContacts("${presence.label ?: presence.name} has arrived at the ${location}", recipients)
@@ -56,7 +56,7 @@ def presenceHandler(evt) {
             sendSms(phone1, "${presence.label ?: presence.name} has arrived at the ${location}")
         }
 	} else if (evt.value == "not present") {
-		log.debug "${presence.label ?: presence.name} has left the ${location}"
+		// log.debug "${presence.label ?: presence.name} has left the ${location}"
 
         if (location.contactBookEnabled) {
             sendNotificationToContacts("${presence.label ?: presence.name} has left the ${location}", recipients)

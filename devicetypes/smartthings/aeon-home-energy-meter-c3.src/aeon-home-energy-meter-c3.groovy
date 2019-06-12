@@ -97,7 +97,7 @@ def parse(String description) {
 	}
 	log.debug "Parse returned ${result?.descriptionText}"
 
-	storeGraphData(result.name, result.value)
+	if (result?.name && result.value) storeGraphData(result.name, result.value)
 
 	return result
 }
