@@ -21,11 +21,11 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
-		//capability "Tamper Alert" waiting for LE fix for Zooz 4-in-1
+		capability "Tamper Alert"
 
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A", outClusters:"0x5A"
 		fingerprint mfr:"0086", prod:"0102", model:"004A", deviceJoinName: "Aeotec MultiSensor (Gen 5)"
-		fingerprint mfr:"027A", prod:"2021", model:"2101", deviceJoinName: "Zooz 4-in-1 sensor"
+		fingerprint mfr:"027A", prod:"2021", model:"2101", deviceJoinName: "Zooz 4-in-1 sensor", mnmn: "SmartThings", vid: "generic-motion-6"
 	}
 
 	simulator {
