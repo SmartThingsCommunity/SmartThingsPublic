@@ -81,7 +81,7 @@ def parse(String description) {
 					if (value == 0) {
 						sendEvent(name: "switch", value: "off")
 					} else {
-						sendEvent(name: "level", value: value)
+						sendEven t(name: "level", value: value)
 					}
 				}
 			} else if (descMap.commandInt == 0x01) {
@@ -115,10 +115,12 @@ def on() {
 def setLevel(value, rate = null) {
 	if (value == 0) {
 		sendEvent(name: "switch", value: "off")
+		// OneApp expects a level event when the dimmer value is changed
+		value = device.currentValue("level")
 	} else {
 		sendEvent(name: "switch", value: "on")
-		sendEvent(name: "level", value: value)
 	}
+	sendEvent(name: "level", value: value)
 }
 
 def installed() {
