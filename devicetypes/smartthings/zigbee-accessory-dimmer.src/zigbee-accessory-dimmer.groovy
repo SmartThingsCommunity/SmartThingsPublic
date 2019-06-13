@@ -120,7 +120,11 @@ def setLevel(value, rate = null) {
 	} else {
 		sendEvent(name: "switch", value: "on")
 	}
-	sendEvent(name: "level", value: value)
+	runIn(1, delayedSend, [data: createEvent(name: "level", value: value), overwrite: true])
+}
+
+def delayedSend(data) {
+	sendEvent(data)
 }
 
 def installed() {
