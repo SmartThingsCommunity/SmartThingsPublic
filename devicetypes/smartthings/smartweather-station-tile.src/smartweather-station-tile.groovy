@@ -274,8 +274,8 @@ def pollUsingZipCode(String zipCode) {
             def icon = f.daypart[0].iconCode[0] ?: f.daypart[0].iconCode[1]
             def value = f.daypart[0].precipChance[0] ?: f.daypart[0].precipChance[1]
             def narrative = f.daypart[0].narrative
-            send(name: "percentPrecip", value: value, unit: "%")
-            send(name: "forecastIcon", value: icon, displayed: false)
+            send(name: "percentPrecip", value: value as String, unit: "%")
+            send(name: "forecastIcon", value: icon as String, displayed: false)
             send(name: "forecastToday", value: narrative[0])
             send(name: "forecastTonight", value: narrative[1])
             send(name: "forecastTomorrow", value: narrative[2])
@@ -427,18 +427,18 @@ private estimateLux(obs, sunriseDate, sunsetDate) {
     else {
         //day
         switch(obs.iconCode) {
-            case '04':
+            case 4:
                 lux = 200
                 break
-            case ['05', '06', '07', '08', '09', '10',
-                  '11', '12', '13','14', '15','17','18','19','20',
-                  '21','22','23','24','25','26']:
+            case [5,6,7,8,9,10,
+                  11,12,13,14,15,17,18,19,20,
+                  21,22,23,24,25,26]:
                 lux = 1000
                 break
-            case ['27', '28']:
+            case [27,28]:
                 lux = 2500
                 break
-            case ['29', '30']:
+            case [29,30]:
                 lux = 7500
                 break
             default:
