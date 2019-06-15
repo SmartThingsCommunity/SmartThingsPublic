@@ -108,7 +108,7 @@ metadata {
 			input "TempMin", "number", title: "Temperature Report Frequency", description: "Temperature report sent every N minutes [0-127]", range: "0..127", defaultValue: 6, displayDuringSetup: true, required: false
 		}
 		section {
-			input "TempAdj", "number", title: "Temperature Offset", description: "Adjust temperature up/down N tenths of a degree F [(-127)-(+128)]", range: "-127..128", defaultValue: 0, displayDuringSetup: true, required: false
+			input "TempAdj", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "-127..128", defaultValue: 0, displayDuringSetup: true, required: false
 		}
 		section {
 			input title: "Associated Devices", description: "The below preferences control associated node 2 devices.", displayDuringSetup: false, type: "paragraph", element: "paragraph"
