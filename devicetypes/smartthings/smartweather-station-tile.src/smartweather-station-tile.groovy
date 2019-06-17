@@ -278,8 +278,8 @@ def pollUsingZipCode(String zipCode) {
             def icon = f.daypart[0].iconCode[0] ?: f.daypart[0].iconCode[1]
             def value = f.daypart[0].precipChance[0] ?: f.daypart[0].precipChance[1]
             def narrative = f.daypart[0].narrative
-            send(name: "percentPrecip", value: value, unit: "%")
-            send(name: "forecastIcon", value: icon, displayed: false)
+            send(name: "percentPrecip", value: value as String, unit: "%")
+            send(name: "forecastIcon", value: icon as String, displayed: false)
             send(name: "forecastToday", value: narrative[0])
             send(name: "forecastTonight", value: narrative[1])
             send(name: "forecastTomorrow", value: narrative[2])
