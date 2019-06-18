@@ -92,6 +92,8 @@ def refresh() {
 
 def configure() {
 	log.debug "in configure()"
+	log.debug "Configuring Reporting and Bindings."
+    zigbee.onOffConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig() + zigbee.onOffRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
 	return configureHealthCheck()
 }
 
