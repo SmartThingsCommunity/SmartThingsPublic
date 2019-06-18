@@ -62,6 +62,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ExtendedColor", deviceJoinName: "Müller Licht Tint Bulb White+Color", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2200K-6500K"
 		fingerprint manufacturer: "sengled", model: "E1G-G8E", deviceJoinName: "Sengled Smart Light Strip", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
 		fingerprint manufacturer: "innr", model: "RB 250 C", deviceJoinName: "Innr Smart Candle Colour", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Aurora", model: "RGBCXStrip50AU", deviceJoinName: "AOne Smart Strip Controller"
 	}
 
 	// UI tile definitions
