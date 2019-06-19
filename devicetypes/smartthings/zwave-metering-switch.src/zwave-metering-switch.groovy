@@ -195,7 +195,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	log.debug "$device.displayName: Unhandled: $cmd"
+	log.debug "${device.displayName}: Unhandled: $cmd"
 	[:]
 }
 

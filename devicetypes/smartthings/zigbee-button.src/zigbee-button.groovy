@@ -72,7 +72,7 @@ def parse(String description) {
     else {
         if ((description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))) {
             def descMap = zigbee.parseDescriptionAsMap(description)
-            if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020) {
+            if (descMap.clusterInt == 0x0001 && descMap.attrInt == 0x0020 && descMap.value != null) {
                 event = getBatteryResult(zigbee.convertHexToInt(descMap.value))
             }
             else if (descMap.clusterInt == 0x0006 || descMap.clusterInt == 0x0008) {
