@@ -340,7 +340,7 @@ def getDataLengthByType(t)
 				"e1":4, "e2":4, "e8":2, "e9":2, "ea":4, "f0":8, "f1":16]
 
 	// return number of hex chars
-    def num_of_hex_chars = map.get(t)
+	def num_of_hex_chars = map.get(t)
 	// we were frequently getting NPEs here for non-matching values of t
 	return num_of_hex_chars != null ? num_of_hex_chars * 2 : null
 }
