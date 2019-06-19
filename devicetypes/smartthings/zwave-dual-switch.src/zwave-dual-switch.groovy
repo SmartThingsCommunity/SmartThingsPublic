@@ -235,6 +235,6 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	log.warn "Unhandled command: ${cmd}"
+def zwaveEvent(physicalgraph.zwave.Command cmd, int endpointId) {
+	log.warn "Unhandled command: ${cmd} for endpoint $endpointId"
 }
