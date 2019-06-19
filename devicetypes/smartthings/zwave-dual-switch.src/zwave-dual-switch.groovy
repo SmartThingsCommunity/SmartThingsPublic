@@ -160,8 +160,9 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	[:]
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	[descriptionText: "$device.displayName: $cmd", isStateChange: true]
+def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint = null) {
+	if (endpoint == null) [descriptionText: "$device.displayName: $cmd", isStateChange: true]
+	else [descriptionText: "$device.displayName: $cmd endpoint: $endpoint", isStateChange: true]
 }
 
 def on() {
@@ -233,8 +234,4 @@ private secEncap(physicalgraph.zwave.Command cmd) {
 
 private crcEncap(physicalgraph.zwave.Command cmd) {
 	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
-}
-
-def zwaveEvent(physicalgraph.zwave.Command cmd, int endpointId) {
-	log.warn "Unhandled command: ${cmd} for endpoint $endpointId"
 }
