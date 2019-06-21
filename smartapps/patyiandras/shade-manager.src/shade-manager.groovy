@@ -55,6 +55,7 @@ def updated() {
 }
 
 def initialize() {
+state.lastRun="2019-06-20T06:03:24+0000"
 	if (type=="At sunset" || type=="At sunset not later than time") {
     	subscribe(location, "sunsetTime", suntimeHandler)
      	log.debug "Subscribed on sunset time"        
@@ -133,6 +134,15 @@ def moveToLevel() {
  		log.debug "Main switch is off"            
     	return
     }
+    log.debug "Checking lastRun: $state.lastRun"
+    if (state.lastRun!=null) {
+    	def lr=Date.parse("yyyy-MM-dd'T'HH:mm:ssZ", state.lastRun)
+    	if(lr.getDate() == new Date().getDate()) {
+    		log.debug "Today it just have ran"
+        	return
+        }
+    }
+
     def df = new java.text.SimpleDateFormat("EEE")
     // Ensure the new date object is set to local time zone
     df.setTimeZone(location.timeZone)
@@ -141,6 +151,7 @@ def moveToLevel() {
 	if (dayCheck)
     {
         log.debug "moving shades to level: $level (day is $day in $thesedays)"
+        state.lastRun = new Date()
         def i=0
         shades.each { shade ->
             moveShade(i, level, 0)
