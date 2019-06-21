@@ -148,7 +148,7 @@ def configure() {
 }
 
 def installed() {
-	sendEvent(name: "button", value: "pushed", isStateChange: true)
+	sendEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
 	initialize()
 }
 
