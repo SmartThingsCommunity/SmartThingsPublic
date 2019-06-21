@@ -48,7 +48,7 @@ metadata {
 }
 
 def installed() {
-	runIn(2, "initialize", [overwrite: true])
+    initialize()
 	sendEvent(name: "button", value: "pushed", isStateChange: true)
 }
 
