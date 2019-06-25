@@ -91,12 +91,8 @@ def getButtonResult(buttonState, buttonNumber = 1) {
 			buttonState = timeDiff < holdTime ? "pushed" : "held"
 			def descriptionText = (device.displayName.endsWith(' 1') ? "${device.displayName[0..-2]} button" : "${device.displayName}") + " ${buttonNumber} was ${buttonState}"
 			event = createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
-			if(buttonNumber != 1) {
-				sendEventToChild(buttonNumber, event)
-				return createEvent(descriptionText: descriptionText)
-			} else {
-				return event
-			}
+            sendEventToChild(buttonNumber, event)
+            return createEvent(descriptionText: descriptionText)
 		}
 	} else if (buttonState == 'press') {
 		state.pressTime = now()
@@ -165,7 +161,7 @@ def initialize() {
 	}
 	if(childDevices) {
 		def event
-		for(def endpoint : 2..device.currentValue("numberOfButtons")) {
+		for(def endpoint : 1..device.currentValue("numberOfButtons")) {
 			event = createEvent(name: "button", value: "pushed", isStateChange: true)
 			sendEventToChild(endpoint, event)
 		}
@@ -173,7 +169,7 @@ def initialize() {
 }
 
 private addChildButtons(numberOfButtons) {
-	for(def endpoint : 2..numberOfButtons) {
+	for(def endpoint : 1..numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
