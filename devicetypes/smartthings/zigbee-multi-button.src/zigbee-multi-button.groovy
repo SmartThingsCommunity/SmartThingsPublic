@@ -18,7 +18,7 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
+	definition (name: "Zigbee Multi Button", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-4-button") {
 		capability "Actuator"
 		capability "Battery"
 		capability "Button"
@@ -28,8 +28,8 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob 1", mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob 1", mnmn: "SmartThings", vid: "generic-4-button"
+		//fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob 1"
+		//fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob 1"
 	}
 
 	tiles {
@@ -148,8 +148,8 @@ def configure() {
 }
 
 def installed() {
-	sendEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
-	initialize()
+	runIn(2, "initialize", [overwrite: true])
+	sendEvent(name: "button", value: "pushed", isStateChange: true)
 }
 
 def updated() {
