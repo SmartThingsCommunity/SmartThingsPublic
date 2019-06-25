@@ -157,12 +157,12 @@ private parseAttrMessage(description) {
 			} else if (it.attribute == COOLING_SETPOINT) {
 				log.debug "COOLING SETPOINT"
 				map.name = "coolingSetpoint"
-				map.value = getTemperature(it.value)
+				map.value = Math.round(getTemperature(it.value))
 				map.unit = temperatureScale
 			} else if (it.attribute == HEATING_SETPOINT) {
 				log.debug "HEATING SETPOINT"
 				map.name = "heatingSetpoint"
-				map.value = getTemperature(it.value)
+				map.value = Math.round(getTemperature(it.value))
 				map.unit = temperatureScale
 			} else if (it.attribute == THERMOSTAT_MODE || it.attribute == THERMOSTAT_RUNNING_MODE) {
 				log.debug "MODE"
@@ -440,8 +440,8 @@ def fanOn() {
 
 def setCoolingSetpoint(degrees) {
 	if (degrees != null) {
-		def degreesInteger = Math.round(degrees)
-		def celsius = (temperatureScale == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+		def celsius = (temperatureScale == "C") ? degrees : fahrenheitToCelsius(degrees)
+        celsius = (celsius as Double).round(2)
 		return zigbee.writeAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, hex(celsius * 100)) +
 				zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT)
 	}
@@ -449,9 +449,8 @@ def setCoolingSetpoint(degrees) {
 
 def setHeatingSetpoint(degrees) {
 	if (degrees != null) {
-		def degreesInteger = Math.round(degrees)
-
-		def celsius = (temperatureScale == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+		def celsius = (temperatureScale == "C") ? degrees : fahrenheitToCelsius(degrees)
+		celsius = (celsius as Double).round(2)
 		return zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, hex(celsius * 100)) +
 				zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT)
 	}
