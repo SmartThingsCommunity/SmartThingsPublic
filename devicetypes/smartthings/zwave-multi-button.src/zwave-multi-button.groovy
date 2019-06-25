@@ -125,8 +125,8 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 	def value = eventsMap[(int) cmd.keyAttributes]
 	def description = "Button no. ${cmd.sceneNumber} was ${value}"
 	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
-    sendEventToChild(cmd.sceneNumber, event)
-    return createEvent(descriptionText: description)
+	sendEventToChild(cmd.sceneNumber, event)
+	return createEvent(descriptionText: description)
 }
 
 def sendEventToChild(buttonNumber, event) {

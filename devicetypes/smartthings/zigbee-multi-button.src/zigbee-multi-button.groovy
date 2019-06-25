@@ -91,8 +91,8 @@ def getButtonResult(buttonState, buttonNumber = 1) {
 			buttonState = timeDiff < holdTime ? "pushed" : "held"
 			def descriptionText = (device.displayName.endsWith(' 1') ? "${device.displayName[0..-2]} button" : "${device.displayName}") + " ${buttonNumber} was ${buttonState}"
 			event = createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
-            sendEventToChild(buttonNumber, event)
-            return createEvent(descriptionText: descriptionText)
+			sendEventToChild(buttonNumber, event)
+			return createEvent(descriptionText: descriptionText)
 		}
 	} else if (buttonState == 'press') {
 		state.pressTime = now()
