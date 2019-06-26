@@ -28,8 +28,8 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob 1", mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob 1", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
 	}
 
 	tiles {
