@@ -292,7 +292,7 @@ def parseDescriptionAsMap(description) {
     def result = map.get('result')
     def list = [];
 
-  if (getDataLengthByType(map.get('encoding')) < map.get('value').length()) {
+  if (getDataLengthByType(map.get('encoding')) != null && getDataLengthByType(map.get('encoding')) < map.get('value').length()) {
     def raw = map.get('raw')
 
     def size = Long.parseLong(''+ map.get('size'), 16)
@@ -334,13 +334,15 @@ def flipHexStringEndianness(s)
 def getDataLengthByType(t)
 {
 	// number of bytes in each static data type
-	 def map = ["08":1,	"09":2,	"0a":3,	"0b":4,	"0c":5,	"0d":6,	"0e":7,	"0f":8,	"10":1,	"18":1,	"19":2,	"1a":3,	"1b":4,
-	 "1c":5,"1d":6,	"1e":7,	"1f":8,	"20":1,	"21":2,	"22":3,	"23":4,	"24":5,	"25":6,	"26":7,	"27":8,	"28":1,	"29":2,
-	 "2a":3,	"2b":4,	"2c":5,	"2d":6,	"2e":7,	"2f":8,	"30":1,	"31":2,	"38":2,	"39":4,	"40":8,	"e0":4,	"e1":4,	"e2":4,
-	 "e8":2,	"e9":2,	"ea":4,	"f0":8,	"f1":16]
+	def map = ["08":1,"09":2, "0a":3, "0b":4, "0c":5, "0d":6, "0e":7, "0f":8, "10":1, "18":1, "19":2, "1a":3, "1b":4,
+				"1c":5, "1d":6, "1e":7, "1f":8, "20":1, "21":2, "22":3, "23":4, "24":5, "25":6, "26":7, "27":8, "28":1,
+				"29":2, "2a":3, "2b":4, "2c":5, "2d":6, "2e":7, "2f":8, "30":1, "31":2, "38":2, "39":4, "40":8, "e0":4,
+				"e1":4, "e2":4, "e8":2, "e9":2, "ea":4, "f0":8, "f1":16]
 
 	// return number of hex chars
-	 return map.get(t) * 2
+	def num_of_hex_chars = map.get(t)
+	// we were frequently getting NPEs here for non-matching values of t
+	return num_of_hex_chars != null ? num_of_hex_chars * 2 : null
 }
 
 
@@ -649,7 +651,7 @@ def refresh()
 {
 	log.debug "refresh called"
      // log.trace "list: " +       readAttributesCommand(0x201, [0x1C,0x1E,0x23])
-      
+
         readAttributesCommand(0x201, [0x00,0x11,0x12]) +
         readAttributesCommand(0x201, [0x1C,0x1E,0x23]) +
         readAttributesCommand(0x201, [0x24,0x25,0x29]) +
@@ -731,7 +733,7 @@ def setThermostatMode(String next) {
 	def val = (getModeMap().find { it.value == next }?.key)?: "00"
 
 	// log.trace "mode changing to $next sending value: $val"
-    
+
 	sendEvent("name":"thermostatMode", "value":"$next")
 	["st wattr 0x${device.deviceNetworkId} 1 0x201 0x1C 0x30 {$val}"] +
     refresh()
