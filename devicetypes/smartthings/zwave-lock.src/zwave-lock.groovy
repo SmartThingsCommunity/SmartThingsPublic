@@ -69,6 +69,9 @@ metadata {
 		fingerprint mfr:"037B", prod:"0003", model:"0001", deviceJoinName: "KeyWe Smart Rim Lock" // GKW-1000Z
 		// Philia
 		fingerprint mfr:"0366", prod:"0001", model:"0001", deviceJoinName: "Philia Smart Door Lock" // PDS-100
+		// Alfred
+		fingerprint mfr:"021D", prod:"0003", model:"0001", deviceJoinName: "Alfred Smart home touchscreen deadbolt" // DB2
+
 	}
 
 	simulator {
