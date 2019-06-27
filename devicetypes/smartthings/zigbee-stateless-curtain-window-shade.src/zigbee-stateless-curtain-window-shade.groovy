@@ -22,27 +22,30 @@ metadata {
         capability "Switch Level"
         capability "Stateless Curtain Power Button"
 
-        command "pause"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "westa window shade" // SY-IoT201-BD
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Curtain Motor(CMJ)" // SY-IoT201-BD
     }
 }
 
 private getCLUSTER_WINDOW_COVERING() { 0x0102 }
-private getCLUSTER_LEVEL() { 0x0008 }
 private getATTRIBUTE_CURRENT_LEVEL() { 0x0000 }
 
 
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description:- ${description}"
-    if (description?.startsWith("read attr -")) {
+
+    def resultMap = zigbee.getEvent(description)
+    log.debug "resultMap:- ${resultMap}"
+    if(resultMap){
+        if(resultMap.name == "level"){
+            sendEvent([name:resultMap.name, value:(100 - resultMap.value)])
+        }
+    }else{
         Map descMap = zigbee.parseDescriptionAsMap(description)
         log.debug "descMap:- ${descMap}"
-        if (descMap?.clusterInt == CLUSTER_LEVEL && descMap.value) {
-            log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, decValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
-            def valueInt =100 - (zigbee.convertHexToInt(descMap.value)) * 100 / 255
-            log.debug "valueInt ${valueInt}"
-            sendEvent(name: "level", value: Math.round(valueInt))            
+        if (descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.value) {
+            def valueInt = Math.round((zigbee.convertHexToInt(descMap.value)) / 255 * 100)
+            sendEvent(name: "level", value: (100 - valueInt))
         }
     }
 }
@@ -57,10 +60,19 @@ def open() {
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x00)
 }
 
-def setLevel(data) {
-    log.info "setLevel() enter ${data}"
-    data = Math.round((100 - data) * 255 / 100);
-    zigbee.command(CLUSTER_LEVEL, ATTRIBUTE_CURRENT_LEVEL, zigbee.convertToHexString(data, 2))
+def setLevel(data, rate=null) {
+    log.info "setLevel() enter ${data} ${rate}"
+    if(data == null){
+        data = 0
+    }
+    data = Math.round((100 - data) * 255 / 100)
+    if(rate == null){
+        zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, ATTRIBUTE_CURRENT_LEVEL, zigbee.convertToHexString(data, 2))
+    }else{
+		rate = (rate > 100) ? 100 : rate
+		rate = convertToHexString(Math.round((100 - rate) * 255 / 100))
+		command(zigbee.LEVEL_CONTROL_CLUSTER, 0x04, rate)
+    }
 }
 
 def pause() {
@@ -88,8 +100,7 @@ def ping() {
 
 def refresh() {
     log.info "refresh()"
-    def cmds = zigbee.readAttribute(CLUSTER_LEVEL,ATTRIBUTE_CURRENT_LEVEL)
-    return cmds
+    return zigbee.readAttribute(zigbee.LEVEL_CONTROL_CLUSTER, ATTRIBUTE_CURRENT_LEVEL)
 }
 
 def configure() {
@@ -97,5 +108,5 @@ def configure() {
     log.info "configure()"
     sendEvent(name: "checkInterval", value: 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     sendEvent(name: "availableCurtainPowerButtons", value: ["open", "pause", "close"])
-    refresh()
+    return zigbee.configureReporting(zigbee.LEVEL_CONTROL_CLUSTER, ATTRIBUTE_CURRENT_LEVEL, DataType.BITMAP16, 30, 60 * 30, null) + refresh()
 }
