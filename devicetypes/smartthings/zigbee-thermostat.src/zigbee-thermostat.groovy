@@ -152,7 +152,7 @@ private parseAttrMessage(description) {
 			if (it.attribute == LOCAL_TEMPERATURE) {
 				log.debug "TEMP"
 				map.name = "temperature"
-				map.value = Math,round(getTemperature(it.value))
+				map.value = Math.round(getTemperature(it.value))
 				map.unit = temperatureScale
 			} else if (it.attribute == COOLING_SETPOINT) {
 				log.debug "COOLING SETPOINT"
