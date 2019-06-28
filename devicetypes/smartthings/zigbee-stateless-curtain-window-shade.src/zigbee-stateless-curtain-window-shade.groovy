@@ -43,7 +43,7 @@ def parse(String description) {
         log.debug "descMap:- ${descMap}"
         if (descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.value) {
             def valueInt = Math.round((zigbee.convertHexToInt(descMap.value)) / 255 * 100)
-            map = [name:"level", value: valueInt];
+            map = [name: "level", value: valueInt]
         }
     }
     if(map?.name == "level"){
