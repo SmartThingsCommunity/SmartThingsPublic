@@ -15,7 +15,7 @@
  *
 
 -------v2.55-------------------
--update weather zipcode field to find lat&long if no zipcode found
+-update weather zipcode field to find lat&long if no zipcode found, works in Canada
 -remove zipcode page and move entry to weatherpage
 -correct behavior when no days selected
 
@@ -2036,7 +2036,7 @@ boolean isWeather(){
     if (!settings.isRain && !settings.isSeason) return false
     String wzipcode = zipString()
     log.debug wzipcode
-    log.debug "${getTwcLocation("${wzipcode}")}"
+    //log.debug "${getTwcLocation("${wzipcode}")}"
     String city = getTwcLocation(wzipcode).location.city ?: wzipcode
     def forecastData = getTwcForecast(wzipcode)
     def conditionsData = getTwcConditions(wzipcode)
