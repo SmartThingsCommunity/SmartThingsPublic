@@ -70,8 +70,7 @@ metadata {
 		// Philia
 		fingerprint mfr:"0366", prod:"0001", model:"0001", deviceJoinName: "Philia Smart Door Lock" // PDS-100
 		// Alfred
-		fingerprint mfr:"021D", prod:"0003", model:"0001", deviceJoinName: "Alfred Smart home touchscreen deadbolt" // DB2
-
+		fingerprint mfr:"021D", prod:"0003", model:"0001", deviceJoinName: "Alfred Smart Home Touchscreen Deadbolt" // DB2
 	}
 
 	simulator {
