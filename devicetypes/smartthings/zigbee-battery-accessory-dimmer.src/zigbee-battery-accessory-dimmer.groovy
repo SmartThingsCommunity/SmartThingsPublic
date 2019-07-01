@@ -291,11 +291,14 @@ def handleBatteryEvents(descMap) {
 			batteryValue = Math.round(rawValue / 2)
 		}
 
-		// Some special logic for the IKEA Dimmer:
-		// Only report the event if we have a legal battery reading, and the difference between this reading and the last reading isn't > 20%.
-		// Sometimes we receive spurious low battery events.
-		if (batteryValue != null && !(isIkeaDimmer() && device.currentValue("battery") && (device.currentValue("battery") as int) - batteryValue > 20)) {
+		if (batteryValue != null) {
 			batteryValue = Math.min(100, Math.max(0, batteryValue))
+
+			// Some special logic for the IKEA Dimmer:
+			// Sometimes we receive battery events that reflect the battery under load and dip greatly, so try to smooth them out a little.
+			if (isIkeaDimmer() && device.currentValue("battery")) {
+				batteryValue = Math.round((batteryValue + device.currentValue("battery") as int) / 2)
+			}
 
 			results << createEvent(name: "battery", value: batteryValue, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%", translatable: true)
 		}
