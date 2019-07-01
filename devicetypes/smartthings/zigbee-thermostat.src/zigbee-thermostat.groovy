@@ -152,17 +152,17 @@ private parseAttrMessage(description) {
 			if (it.attribute == LOCAL_TEMPERATURE) {
 				log.debug "TEMP"
 				map.name = "temperature"
-				map.value = Math.round(getTemperature(it.value))
+				map.value = getTemperature(it.value)
 				map.unit = temperatureScale
 			} else if (it.attribute == COOLING_SETPOINT) {
 				log.debug "COOLING SETPOINT"
 				map.name = "coolingSetpoint"
-				map.value = Math.round(getTemperature(it.value))
+				map.value = getTemperature(it.value)
 				map.unit = temperatureScale
 			} else if (it.attribute == HEATING_SETPOINT) {
 				log.debug "HEATING SETPOINT"
 				map.name = "heatingSetpoint"
-				map.value = Math.round(getTemperature(it.value))
+				map.value = getTemperature(it.value)
 				map.unit = temperatureScale
 			} else if (it.attribute == THERMOSTAT_MODE || it.attribute == THERMOSTAT_RUNNING_MODE) {
 				log.debug "MODE"
@@ -341,7 +341,7 @@ def getTemperature(value) {
 	if (value != null) {
 		def celsius = Integer.parseInt(value, 16) / 100
 		if (temperatureScale == "C") {
-			return celsius
+			return Math.round(celsius)
 		} else {
 			return Math.round(celsiusToFahrenheit(celsius))
 		}
