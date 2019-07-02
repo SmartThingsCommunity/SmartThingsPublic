@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 metadata {
-    definition(name: "Zigbee Curtain", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-curtaion") {
+    definition(name: "Zigbee Curtain", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
