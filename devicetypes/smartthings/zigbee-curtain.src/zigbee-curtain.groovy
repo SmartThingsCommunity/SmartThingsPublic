@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 metadata {
-    definition(name: "Zigbee Stateless Curtain Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-curtaion") {
+    definition(name: "Zigbee Curtain", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-curtaion") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
@@ -36,9 +36,9 @@ def parse(String description) {
     def map = [:]
     def resultMap = zigbee.getEvent(description)
     log.debug "resultMap:- ${resultMap}"
-    if(resultMap){
-        map = resultMap;
-    }else{
+    if (resultMap) {
+        map = resultMap
+    } else {
         Map descMap = zigbee.parseDescriptionAsMap(description)
         log.debug "descMap:- ${descMap}"
         if (descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.value) {
@@ -46,12 +46,12 @@ def parse(String description) {
             map = [name: "level", value: valueInt]
         }
     }
-    if(map?.name == "level"){
-        if(0 == map.value){
+    if (map?.name == "level") {
+        if (0 == map.value) {
             sendEvent(name: "windowShade", value: "closed")
-        }else if(100 == map.value){
+        } else if (100 == map.value) {
             sendEvent(name: "windowShade", value: "open")
-        }else{
+        } else {
             sendEvent(name: "windowShade", value: "partially open")
         }
         log.debug "map:- ${map}"
@@ -74,10 +74,10 @@ def open() {
 def setLevel(data, rate=null) {
     log.info "setLevel()"
 
-    if(data == null){
+    if (data == null) {
         data = 100
     }
-    Integer currentLevel = state.level
+    Integer currentLevel = device.currentValue("level")
     Integer level = data as Integer
     if (level > currentLevel) {
         sendEvent(name: "windowShade", value: "opening")
@@ -85,18 +85,18 @@ def setLevel(data, rate=null) {
         sendEvent(name: "windowShade", value: "closing")
     }
     data = Math.round(data * 255 / 100)
-    if(rate == null){
+    if (rate == null) {
         zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, 0x04, zigbee.convertToHexString(data, 2))
-    }else{
-		rate = (rate > 100) ? 100 : rate
-		rate = convertToHexString(Math.round(rate * 255 / 100))
-		command(zigbee.LEVEL_CONTROL_CLUSTER, 0x04, rate)
+    } else {
+        rate = (rate > 100) ? 100 : rate
+        rate = convertToHexString(Math.round(rate * 255 / 100))
+        command(zigbee.LEVEL_CONTROL_CLUSTER, 0x04, rate)
     }
 }
 
 def setButton(value){
     log.info "setButton ${value}"
-    if(value == "pause"){
+    if (value == "pause") {
         pause()
     }
 }
