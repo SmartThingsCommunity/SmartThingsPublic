@@ -115,10 +115,16 @@ def on() {
 def setLevel(value, rate = null) {
 	if (value == 0) {
 		sendEvent(name: "switch", value: "off")
+		// OneApp expects a level event when the dimmer value is changed
+		value = device.currentValue("level")
 	} else {
 		sendEvent(name: "switch", value: "on")
-		sendEvent(name: "level", value: value)
 	}
+	runIn(1, delayedSend, [data: createEvent(name: "level", value: value), overwrite: true])
+}
+
+def delayedSend(data) {
+	sendEvent(data)
 }
 
 def installed() {
