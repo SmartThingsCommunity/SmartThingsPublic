@@ -16,7 +16,7 @@
  *	Date: 2014-07-15
  */
 metadata {
- definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+ definition (name: "Aeon Siren", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.siren", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 	capability "Actuator"
 	capability "Alarm"
 	capability "Switch"
@@ -68,9 +68,15 @@ def installed() {
 }
 
 def updated() {
+	log.debug "updated()"
 	def commands = []
-// Device-Watch simply pings if no device events received for 32min(checkInterval)
+
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	log.debug "Scheduling health check every 15 minutes"
+	unschedule("healthPoll", [forceForLocallyExecuting: true])
+	runEvery15Minutes("healthPoll", [forceForLocallyExecuting: true])
 
 	if(!state.sound) state.sound = 1
 	if(!state.volume) state.volume = 3
@@ -94,6 +100,18 @@ def updated() {
 	response(commands)
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x70: 1,  // Configuration
+		0x85: 2,  // Association
+		0x98: 1,  // Security 0
+	]
+}
+
 def parse(String description) {
 	log.debug "parse($description)"
 	def result = null
@@ -110,7 +128,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [0x98: 1, 0x20: 1, 0x70: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -120,7 +138,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x85: 2, 0x70: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
@@ -185,4 +203,9 @@ private secure(physicalgraph.zwave.Command cmd) {
  * */
 def ping() {
 	secure(zwave.basicV1.basicGet())
+}
+
+def healthPoll() {
+	log.debug "healthPoll()"
+	sendHubCommand(ping())
 }

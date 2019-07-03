@@ -113,7 +113,7 @@ def refresh() {
     ]
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.trace "setLevel($value)"
 	def cmds = []
 

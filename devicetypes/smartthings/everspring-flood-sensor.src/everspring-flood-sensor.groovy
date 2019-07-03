@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Everspring Flood Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture") {
+	definition (name: "Everspring Flood Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", runLocally: true, minHubCoreVersion: '000.024.0000', executeCommandsLocally: true) {
 		capability "Water Sensor"
 		capability "Configuration"
 		capability "Sensor"

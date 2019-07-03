@@ -13,7 +13,7 @@
  */
 
 metadata {
-    definition (name: "ZigBee Dimmer Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
+    definition (name: "ZigBee Dimmer Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, genericHandler: "Zigbee") {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
@@ -105,7 +105,7 @@ def on() {
     zigbee.on()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     zigbee.setLevel(value) + (value?.toInteger() > 0 ? zigbee.on() : [])
 }
 
@@ -117,7 +117,14 @@ def ping() {
 }
 
 def refresh() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh() + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
+    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.simpleMeteringPowerRefresh() + zigbee.electricMeasurementPowerRefresh()
+    if (device.getDataValue("manufacturer") == "Jasco Products") {
+        // Some versions of hub firmware will incorrectly remove this binding causing manual control of switch to stop working
+        // These needs to be the first binding table entries because the device will automatically write these entries each time it restarts
+        cmds += ["zdo bind 0x${device.deviceNetworkId} 2 1 0x0006 {${device.zigbeeId}} {${device.zigbeeId}}", "delay 2000",
+                 "zdo bind 0x${device.deviceNetworkId} 2 1 0x0008 {${device.zigbeeId}} {${device.zigbeeId}}", "delay 2000"]
+    }
+    cmds + zigbee.onOffConfig(0, 300) + zigbee.levelConfig() + zigbee.simpleMeteringPowerConfig() + zigbee.electricMeasurementPowerConfig()
 }
 
 def configure() {

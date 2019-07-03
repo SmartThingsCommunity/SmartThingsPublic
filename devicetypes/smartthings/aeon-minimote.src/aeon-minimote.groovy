@@ -23,8 +23,7 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B", outClusters: "0x26,0x2B"
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B,0x85,0x84", outClusters: "0x26" // old style with numbered buttons
+		fingerprint mfr: "0086", prod: "0001", model:"0003"
 	}
 
 	simulator {

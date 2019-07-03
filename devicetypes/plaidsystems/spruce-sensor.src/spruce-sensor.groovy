@@ -1,5 +1,5 @@
 /**
- *  Spruce Sensor -updated with SLP model number 5/2017
+ *  Spruce Sensor -updated with SLP3 model number 3/2019
  *
  *  Copyright 2014 Plaid Systems
  *
@@ -19,6 +19,10 @@
  -------5/2017 Updates--------
  -Add fingerprints for SLP
  -add device health, check every 60mins + 2mins
+ 
+ -------3/2019 Updates--------
+ -Add fingerprints for SLP3
+ -change device health from 62mins to 3 hours
  */
  
 metadata {
@@ -41,6 +45,7 @@ metadata {
         
         fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Sensor"
         fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Sensor"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Sensor"
 	}
 
 	preferences {
@@ -302,8 +307,8 @@ def setConfig(){
 }
 
 def installed(){
-	//check every 1 hour + 2mins
-    sendEvent(name: "checkInterval", value: 1 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	//check every 62 minutes
+    sendEvent(name: "checkInterval", value: 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 //when device preferences are changed
@@ -316,8 +321,10 @@ def updated(){
             sendEvent(name: 'configuration',value: 0, descriptionText: "Settings changed and will update at next report. Measure interval set to ${interval} mins")
     	}
     }
-    //check every 1 hour + 2mins
-    sendEvent(name: "checkInterval", value: 1 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    //check every 62mins or interval + 120s
+    def reportingInterval  = interval * 60 + 2 * 60
+    if (reportingInterval < 3720) reportingInterval = 3720
+    sendEvent(name: "checkInterval", value: reportingInterval, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 //poll

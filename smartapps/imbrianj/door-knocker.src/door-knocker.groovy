@@ -73,9 +73,9 @@ def doorClosed(evt) {
 def doorKnock() {
   if((openSensor.latestValue("contact") == "closed") &&
     (now() - (60 * 1000) > state.lastClosed)) {
-	def kSensor = knockSensor.label ?: knockSensor.name
+    def kSensor = knockSensor.label ?: knockSensor.name
     log.debug("${kSensor} detected a knock.")
-    send(localization.translate("{{kSensor}} detected a knock.", [kSensor: kSensor]))
+    send(kSensor)
   }
 
   else {
@@ -88,16 +88,35 @@ def handleEvent(evt) {
   runIn(delay, "doorKnock")
 }
 
-private send(msg) {
-  if(sendPushMessage != "No") {
-    log.debug("Sending push message")
-    sendPush(msg)
-  }
+private send(kSensor) {
+  // Pabal translation code and params
+  String code = 'SmartApps_DoorKnocker_V_0001'
+  List params = [
+    [
+      'n': '${knockSensor.name}',
+      'value': kSensor
+    ]
+  ]
 
-  if(phone) {
-    log.debug("Sending text message")
-    sendSms(phone, msg)
-  }
+  // Legacy push/SMS message and args
+  String msg = "{{kSensor}} detected a knock."
+  Map msgArgs = [kSensor: kSensor]
 
-  log.debug(msg)
+  Map options = [
+    code: code,
+    params: params,
+    messageArgs: msgArgs,
+    translatable: true
+  ]
+
+  Boolean pushNotification = (sendPushMessage != "No")
+
+  if (pushNotification || phone) {
+    log.debug "Sending Notification"
+    options += [
+      method: (pushNotification && phone) ? "both" : (pushNotification ? "push" : "sms"),
+      phone: phone
+    ]
+    sendNotification(msg, options)
+  }
 }

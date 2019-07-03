@@ -33,6 +33,9 @@ metadata {
 		fingerprint deviceId: "0x08"
 		fingerprint inClusters: "0x43,0x40,0x44,0x31"
 		fingerprint mfr:"0039", prod:"0011", model:"0001", deviceJoinName: "Honeywell Z-Wave Thermostat"
+		fingerprint mfr:"008B", prod:"5452", model:"5439", deviceJoinName: "Trane Thermostat"
+		fingerprint mfr:"008B", prod:"5452", model:"5442", deviceJoinName: "Trane Thermostat"
+		fingerprint mfr:"008B", prod:"5452", model:"5443", deviceJoinName: "American Standard Thermostat"
 	}
 
 	tiles {
@@ -282,7 +285,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 	if(cmd.heat) { supportedModes << "heat" }
 	if(cmd.cool) { supportedModes << "cool" }
 	if(cmd.auto) { supportedModes << "auto" }
-	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" }
+	//if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" }
 
 	state.supportedModes = supportedModes
 	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
@@ -325,10 +328,15 @@ def poll() {
 }
 
 def refresh() {
-	// Only allow refresh every 2 minutes to prevent flooding the Zwave network
+	// Only allow refresh every 4 minutes to prevent flooding the Zwave network
 	def timeNow = now()
-	if (!state.refreshTriggeredAt || (2 * 60 * 1000 < (timeNow - state.refreshTriggeredAt))) {
+	if (!state.refreshTriggeredAt || (4 * 60 * 1000 < (timeNow - state.refreshTriggeredAt))) {
 		state.refreshTriggeredAt = timeNow
+		if (!state.longRefreshTriggeredAt || (48 * 60 * 60 * 1000 < (timeNow - state.longRefreshTriggeredAt))) {
+			state.longRefreshTriggeredAt = timeNow
+			// poll supported modes once every 2 days: they're not likely to change
+			runIn(10, "longPollDevice", [overwrite: true])
+		}
 		// use runIn with overwrite to prevent multiple DTH instances run before state.refreshTriggeredAt has been saved
 		runIn(2, "pollDevice", [overwrite: true])
 	}
@@ -336,14 +344,20 @@ def refresh() {
 
 def pollDevice() {
 	def cmds = []
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
-	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.sensorMultilevelV2.sensorMultilevelGet().format()) // current temperature
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatOperatingStateV1.thermostatOperatingStateGet().format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1).format())
 	cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2).format())
+	sendHubCommand(cmds)
+}
+
+// these values aren't likely to change
+def longPollDevice() {
+	def cmds = []
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatModeV2.thermostatModeSupportedGet().format())
+	cmds << new physicalgraph.device.HubAction(zwave.thermostatFanModeV3.thermostatFanModeSupportedGet().format())
 	sendHubCommand(cmds)
 }
 

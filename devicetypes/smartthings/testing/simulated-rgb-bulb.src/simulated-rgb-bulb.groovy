@@ -36,7 +36,7 @@ import groovy.transform.Field
 ]
 
 metadata {
-    definition (name: "Simulated RGB Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+    definition (name: "Simulated RGB Bulb", namespace: "smartthings/testing", author: "SmartThings", ocfDeviceType: "oic.d.light") {
         capability "HealthCheck"
         capability "Actuator"
         capability "Sensor"
@@ -52,6 +52,9 @@ metadata {
         attribute  "bulbValue", "string"
         attribute  "colorIndicator", "number"
         command    "simulateBulbState"
+
+        command    "markDeviceOnline"
+        command    "markDeviceOffline"
     }
 
     // UI tile definitions
@@ -218,8 +221,15 @@ metadata {
             state "default", label: "Reset", action: "configure"
         }
 
+        standardTile("deviceHealthControl", "device.healthStatus", decoration: "flat", width: 2, height: 2, inactiveLabel: false) {
+            state "online",  label: "ONLINE", backgroundColor: "#00A0DC", action: "markDeviceOffline", icon: "st.Health & Wellness.health9", nextState: "goingOffline", defaultState: true
+            state "offline", label: "OFFLINE", backgroundColor: "#E86D13", action: "markDeviceOnline", icon: "st.Health & Wellness.health9", nextState: "goingOnline"
+            state "goingOnline", label: "Going ONLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+            state "goingOffline", label: "Going OFFLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+        }
+        
         main(["switch"])
-        details(["switch", "bulbValue", "colorIndicator", "refresh"])
+        details(["switch", "bulbValue", "colorIndicator", "refresh", "deviceHealthControl", "reset"])
     }
 }
 
@@ -247,7 +257,7 @@ def parse(String description) {
 
 def installed() {
     log.trace "Executing 'installed'"
-    initialize()
+    configure()
 }
 
 def updated() {
@@ -278,6 +288,11 @@ def refresh() {
 def configure() {
     log.trace "Executing 'configure'"
     // this would be for a physical device when it gets a handler assigned to it
+
+    // for HealthCheck
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    markDeviceOnline()
+
     initialize()
 }
 
@@ -295,7 +310,7 @@ def off() {
     done()
 }
 
-def setLevel(levelPercent) {
+def setLevel(levelPercent, rate = null) {
     Integer boundedPercent = boundInt(levelPercent, PERCENT_RANGE)
     log.trace "Executing 'setLevel' ${boundedPercent}%"
     def effectiveMode = device.currentValue("bulbMode")
@@ -371,17 +386,26 @@ def setColor(Map colorHSMap) {
     done()
 }
 
+def markDeviceOnline() {
+    setDeviceHealth("online")
+}
+
+def markDeviceOffline() {
+    setDeviceHealth("offline")
+}
+
+private setDeviceHealth(String healthState) {
+    log.debug("healthStatus: ${device.currentValue('healthStatus')}; DeviceWatch-DeviceStatus: ${device.currentValue('DeviceWatch-DeviceStatus')}")
+    // ensure healthState is valid
+    List validHealthStates = ["online", "offline"]
+    healthState = validHealthStates.contains(healthState) ? healthState : device.currentValue("healthStatus")
+    // set the healthState
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: healthState)
+    sendEvent(name: "healthStatus", value: healthState)
+}
+
 private initialize() {
     log.trace "Executing 'initialize'"
-
-    // for HealthCheck
-    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
-    sendEvent(name: "healthStatus", value: "online")
-    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
-
-    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
-    sendEvent(name: "healthStatus", value: "online")
-    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 
     sendEvent(name: "hue", value: BLACK.h)
     sendEvent(name: "saturation", value: BLACK.s)

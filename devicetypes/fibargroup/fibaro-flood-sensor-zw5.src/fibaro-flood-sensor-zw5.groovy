@@ -18,9 +18,9 @@ metadata {
 		command "forceSync"
 
 		fingerprint mfr: "010F", prod: "0B01", model: "1002"
+		fingerprint mfr: "010F", prod: "0B01", model: "1003"
 		fingerprint mfr: "010F", prod: "0B01", model: "2002"
-		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x22, 0x59, 0x80, 0x56, 0x7A, 0x73, 0x72, 0x31, 0x98, 0x86, 0x85, 0x20, 0x70, 0x5A, 0x8E, 0x71, 0x9C", outClusters: ""
-		fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x22, 0x59, 0x80, 0x56, 0x7A, 0x73, 0x72, 0x31, 0x98, 0x86", outClusters: "0x85, 0x20, 0x70, 0x5A, 0x8E, 0x71, 0x9C, 0x84"
+		fingerprint mfr: "010F", prod: "0B01"
 	}
 
 	tiles(scale: 2) {
@@ -259,7 +259,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	log.debug "location: "+location
 	def timeDate = location.timeZone ? new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone) : new Date().format("yyyy MMM dd EEE h:mm:ss")
 
-	if (value == 0xFF) {  // Special value for low battery alert
+	if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
 		sendEvent(name: "battery", value: 1, descriptionText: "${device.displayName} has a low battery", isStateChange: true)
 	} else {
 		sendEvent(name: "battery", value: cmd.batteryLevel, descriptionText: "Current battery level")
@@ -406,6 +406,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	} else {
 		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {

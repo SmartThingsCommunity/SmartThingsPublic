@@ -15,6 +15,7 @@ metadata {
 
 		fingerprint mfr: "010F", prod: "0203", model: "2000"
 		fingerprint mfr: "010F", prod: "0203", model: "1000"
+		fingerprint mfr: "010F", prod: "0203", model: "3000"
 	  }
 
 	tiles (scale: 2) {
@@ -145,7 +146,15 @@ def ping() {
 //Configuration and synchronization
 def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-	initialize()
+	def cmds = initialize()
+	if (device.label != state.oldLabel) {
+		childDevices.each {
+			def newLabel = "${device.displayName} - USB"
+			it.setLabel(newLabel)
+		}
+		state.oldLabel = device.label
+	}
+	return cmds
 }
 
 def initialize() {
@@ -157,12 +166,12 @@ def initialize() {
 	if (device.currentValue("numberOfButtons") != 6) { sendEvent(name: "numberOfButtons", value: 6) }
 
 	cmds << zwave.multiChannelAssociationV2.multiChannelAssociationGet(groupingIdentifier: 1) //verify if group 1 association is correct  
-	runIn(3,"syncStart")
+	runIn(3, "syncStart")
 	state.lastUpdated = now()
 	response(encapSequence(cmds,1000))
 }
 
-private syncStart() {
+def syncStart() {
 	boolean syncNeeded = false
 	parameterMap().each {
 		if(settings."$it.key" != null) {
@@ -202,7 +211,7 @@ private syncNext() {
 	}
 }
 
-private syncCheck() {
+def syncCheck() {
 	logging("${device.displayName} - Executing syncCheck()","info")
 	def failed = []
 	def incorrect = []
@@ -250,6 +259,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 private createChildDevices() {
 	logging("${device.displayName} - executing createChildDevices()","info")
+	state.oldLabel = device.label
 	try {
 	log.debug "adding child device ....."
 		addChildDevice(
@@ -424,6 +434,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	} else {
 		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {

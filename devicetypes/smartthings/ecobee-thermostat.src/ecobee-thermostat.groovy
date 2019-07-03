@@ -232,7 +232,7 @@ def generateEvent(Map results) {
 }
 
 //return descriptionText to be shown on mobile activity feed
-private getThermostatDescriptionText(name, value, linkText) {
+def getThermostatDescriptionText(name, value, linkText) {
 	if(name == "temperature") {
 		return "temperature is ${value}°${location.temperatureScale}"
 

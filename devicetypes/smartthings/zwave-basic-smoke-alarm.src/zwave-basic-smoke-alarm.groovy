@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Basic Smoke Alarm", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Basic Smoke Alarm", namespace: "smartthings", author: "SmartThings", genericHandler: "Z-Wave") {
 		capability "Smoke Detector"
 		capability "Sensor"
 		capability "Battery"
@@ -22,6 +22,7 @@ metadata {
 		fingerprint mfr:"0138", prod:"0001", model:"0001", deviceJoinName: "First Alert Smoke Detector"
 		//zw:S type:0701 mfr:026F prod:0001 model:0001 ver:1.07 zwv:4.24 lib:03 cc:5E,86,72,5A,73,80,71,85,59,84 role:06 ff:8C01 ui:8C01
 		fingerprint mfr: "026F ", prod: "0001", model: "0001", deviceJoinName: "FireAngel Thermoptek Smoke Alarm"
+		fingerprint mfr: "013C", prod: "0002", model: "001E", deviceJoinName: "Philio Smoke Alarm PSG01"
 	}
 
 	simulator {
@@ -58,6 +59,7 @@ def installed() {
 	cmds << createEvent(name: "checkInterval", value: checkInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	createSmokeEvents("smokeClear", cmds)
 	cmds.each { cmd -> sendEvent(cmd) }
+	response(initialPoll())
 }
 
 def getCheckInterval() {
@@ -226,4 +228,24 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, results) {
 	event.linkText = device.label ?: device.name
 	event.descriptionText = "$event.linkText: $cmd"
 	results << createEvent(event)
+}
+
+private command(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo?.zw?.endsWith("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
+private commands(commands, delay = 200) {
+	delayBetween(commands.collect { command(it) }, delay)
+}
+
+def initialPoll() {
+	def request = []
+	// check initial battery and smoke sensor state
+	request << zwave.batteryV1.batteryGet()
+	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: zwave.sensorBinaryV2.SENSOR_TYPE_SMOKE)
+	commands(request, 500) + ["delay 6000", command(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }

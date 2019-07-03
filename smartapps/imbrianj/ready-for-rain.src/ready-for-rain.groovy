@@ -78,13 +78,8 @@ def scheduleCheck(evt) {
   // Only need to poll if we haven't checked in a while - and if something is left open.
   if((now() - (30 * 60 * 1000) > state.lastCheck["time"]) && open) {
     log.info("Something's open - let's check the weather.")
-    def response
-    if (location.channelName != 'samsungtv')
-      response = getWeatherFeature("forecast", zipCode)
-    else
-      response = getWeatherFeature("forecast")
+    def response = getTwcForecast(zipCode)
     def weather  = isStormy(response)
-
     if(weather) {
       send("${open.join(', ')} ${plural} open and ${weather} coming.")
     }
@@ -123,34 +118,19 @@ private send(msg) {
   }
 }
 
-private isStormy(json) {
-  def types    = ["rain", "snow", "showers", "sprinkles", "precipitation"]
-  def forecast = json?.forecast?.txt_forecast?.forecastday?.first()
-  def result   = false
-
-  if(forecast) {
-    def text = forecast?.fcttext?.toLowerCase()
-
-    log.debug(text)
-
-    if(text) {
-      for (int i = 0; i < types.size() && !result; i++) {
-        if(text.contains(types[i])) {
-          result = types[i]
+private isStormy(forecast) {
+    def result = false
+    if(forecast) {
+        def text = forecast.daypart?.precipType[0][0]
+        if(text) {
+            log.info("We got ${text}")
+            result = text
+        } else {
+            log.info("Got forecast, nothing coming soon.")
         }
-      }
+    } else {
+        log.warn("Did not get a forecast: ${forecast}")
     }
-
-    else {
-      log.warn("Got forecast, couldn't parse.")
-    }
-  }
-
-  else {
-    log.warn("Did not get a forecast: ${json}")
-  }
-
-  state.lastCheck = ["time": now(), "result": result]
-
-  return result
+    state.lastCheck = ["time": now(), "result": result]
+    return result
 }

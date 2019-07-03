@@ -35,8 +35,8 @@ metadata {
 
 	// tile definitions
 	tiles(scale: 2) {
-		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+		multiAttributeTile(name:"valve", type: "generic", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.valve", key: "PRIMARY_CONTROL") {
 				attributeState "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC", nextState:"closing"
 				attributeState "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"opening"
 				attributeState "opening", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
@@ -48,8 +48,8 @@ metadata {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		main "contact"
-		details(["contact","refresh"])
+		main "valve"
+		details(["valve","refresh"])
 	}
 }
 
@@ -78,8 +78,7 @@ def parse(String description) {
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	def value = cmd.value ? "closed" : "open"
 
-	return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
-			createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])]
+	return createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {

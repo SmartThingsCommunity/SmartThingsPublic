@@ -401,7 +401,10 @@ def configure() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	log.debug "Configuring Reporting"
-	def configCmds = []
+	def configCmds = [zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000), zigbee.readAttribute(0xFC02, 0x0010, [mfgCode: manufacturerCode])]
+	def batteryAttr = device.getDataValue("manufacturer") == "Samjin" ? 0x0021 : 0x0020
+	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr)
+	configCmds += zigbee.enrollResponse()
 
 	if (device.getDataValue("manufacturer") == "SmartThings") {
 		log.debug "Refreshing Values for manufacturer: SmartThings "
@@ -411,7 +414,8 @@ def configure() {
 		 as of now.
 		*/
 		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x01, [mfgCode: manufacturerCode])
-		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, 0x0276, [mfgCode: manufacturerCode])
+		// passed as little-endian as a bug-workaround
+		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, "7602", [mfgCode: manufacturerCode])
 	} else if (device.getDataValue("manufacturer") == "Samjin") {
 		log.debug "Refreshing Values for manufacturer: Samjin "
 		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x14, [mfgCode: manufacturerCode])
@@ -439,8 +443,10 @@ def configure() {
 				zigbee.configureReporting(0xFC02, 0x0013, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode]) +
 				zigbee.configureReporting(0xFC02, 0x0014, DataType.INT16, 1, 3600, 0x0001, [mfgCode: manufacturerCode])
 	}
+	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr)
+	configCmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 
-	return refresh() + configCmds + refresh()
+	return configCmds
 }
 
 def updated() {
