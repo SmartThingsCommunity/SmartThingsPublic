@@ -16,11 +16,12 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition(name: "eZEX Temp & Humidity Sensor", namespace: "smartthings", author: "SmartThings", mnmn:"SmartThings", vid:"generic-humidity") {
+    definition(name: "eZEX Temp & Humidity Sensor", namespace: "smartthings", author: "SmartThings", mnmn:"SmartThings", vid:"generic-humidity-3") {
         capability "Configuration"
         capability "Temperature Measurement"
         capability "Relative Humidity Measurement"
         capability "Sensor"
+        capability "Health Check"
         
         fingerprint profileId: "0104", inClusters: "0000,0003,0402,0405,0500", outClusters: "0019", model: "E282-KR0B0Z1-HA", deviceJoinName: "Smart Temperature/Humidity Sensor (AC Type)"
     }

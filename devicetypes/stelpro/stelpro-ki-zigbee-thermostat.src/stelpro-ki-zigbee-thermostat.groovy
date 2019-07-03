@@ -354,7 +354,7 @@ def handleTemperature(descMap) {
 
 		// Handle cases where we need to update the temperature alarm state given certain temperatures
 		// Account for a f/w bug where the freeze alarm doesn't trigger at 0C
-		if (map.value < (map.unit == "C" ? 0 : 32)) {
+		if (map.value <= (map.unit == "C" ? 0 : 32)) {
 			log.debug "EARLY FREEZE ALARM @ $map.value $map.unit (raw $intVal)"
 			sendEvent(name: "temperatureAlarm", value: "freeze")
 		}

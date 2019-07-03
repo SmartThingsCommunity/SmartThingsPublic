@@ -16,7 +16,7 @@
  *  Date : 2019-02-12
  */
 metadata {
-    definition(name: "Zigbee Plugin Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-ZigBee_Dimmer_with_Motion_Sensor") {
+    definition(name: "Zigbee Plugin Motion Sensor", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "SmartThings-smartthings-LAN_Wemo_Motion") {
         capability "Motion Sensor"
         capability "Configuration"
         capability "Refresh"
@@ -41,9 +41,8 @@ metadata {
     }
 }
 
-def installed(){
+def installed() {
     log.debug "installed"
-    response(refresh())
 }
 
 def parse(String description) {

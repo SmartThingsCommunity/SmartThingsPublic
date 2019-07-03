@@ -5,7 +5,7 @@
  *  use this file except in compliance with the License. You may obtain a copy
  *  of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -28,6 +28,7 @@ metadata {
 		command "childOff", ["string"]
 
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Switch 1"
+		fingerprint profileId: "0104", inClusters: "0006, 0005, 0004, 0000, 0003, 0B04, 0008", outClusters: "0019", manufacturer: "Aurora", model: "DoubleSocket50AU", deviceJoinName: "Aurora Smart Double Socket 1"
 	}
 	// simulator metadata
 	simulator {
@@ -67,27 +68,32 @@ def updated() {
 	updateDataValue("onOff", "catchall")
 }
 
-// Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description is $description"
-	Map map = zigbee.getEvent(description)
-	if (map) {
-		if (description?.startsWith('on/off')) {
-			log.debug "receive on/off message without endpoint id"
-			sendHubCommand(refresh().collect { new physicalgraph.device.HubAction(it) }, 0)
-		} else {
-			Map descMap = zigbee.parseDescriptionAsMap(description)
-			log.debug "$descMap"
+	Map eventMap = zigbee.getEvent(description)
+	log.debug "eventMap is $eventMap"
+	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
+	log.debug "eventDescMap is $eventDescMap"
 
-			if (descMap?.clusterId == "0006" && descMap.sourceEndpoint == "01") {
-				sendEvent(map)
-			} else if (descMap?.clusterId == "0006") {
-				def childDevice = childDevices.find {
-					it.deviceNetworkId == "$device.deviceNetworkId:${descMap.sourceEndpoint}"
-				}
-				if (childDevice) {
-					childDevice.sendEvent(map)
-				}
+	if (!eventMap && eventDescMap) {
+		eventMap = [:]
+		if (eventDescMap?.clusterId == zigbee.ONOFF_CLUSTER) {
+			eventMap[name] = "switch"
+			eventMap[value] = eventDescMap?.value
+		}
+	}
+
+	if (eventMap.value) {
+		if (eventDescMap?.sourceEndpoint == "01") {
+			sendEvent(eventMap)
+		} else {
+			def childDevice = childDevices.find {
+				it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.sourceEndpoint}" || it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.endpoint}"
+			}
+			if (childDevice) {
+				childDevice.sendEvent(eventMap)
+			} else {
+				log.debug "Child device: $device.deviceNetworkId:${eventDescMap.sourceEndpoint} was not found"
 			}
 		}
 	}
@@ -96,7 +102,7 @@ def parse(String description) {
 private void createChildDevices() {
 	def i = 2
 	addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
-			[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent : false])
+		[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
 }
 
 private getChildEndpoint(String dni) {
@@ -115,12 +121,14 @@ def off() {
 
 def childOn(String dni) {
 	log.debug(" child on ${dni}")
-	zigbee.command(0x0006, 0x01, "", [destEndpoint: getChildEndpoint(dni)])
+	def childEndpoint = getChildEndpoint(dni)
+	zigbee.command(zigbee.ONOFF_CLUSTER, 0x01, "", [destEndpoint: childEndpoint])
 }
 
 def childOff(String dni) {
 	log.debug(" child off ${dni}")
-	zigbee.command(0x0006, 0x00, "", [destEndpoint: getChildEndpoint(dni)])
+	def childEndpoint = getChildEndpoint(dni)
+	zigbee.command(zigbee.ONOFF_CLUSTER, 0x00, "", [destEndpoint: childEndpoint])
 }
 
 /**
@@ -131,7 +139,11 @@ def ping() {
 }
 
 def refresh() {
-	return zigbee.readAttribute(0x0006, 0x0000, [destEndpoint: 0xFF])
+	if (isOrvibo()) {
+		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
+	} else {
+		zigbee.onOffRefresh() + zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 2])
+	}
 }
 
 def poll() {
@@ -163,6 +175,20 @@ def configureHealthCheck() {
 def configure() {
 	log.debug "configure()"
 	configureHealthCheck()
-	//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
-	return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
+
+	if (isOrvibo()) {
+		//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
+		zigbee.writeAttribute(zigbee.BASIC_CLUSTER, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
+	} else {
+		// Aurora (and other devices supported by this DTH in the future)
+		zigbee.onOffConfig(0, 120) + zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: 0x02]) + refresh()
+	}
+}
+
+private Boolean isOrvibo() {
+	device.getDataValue("manufacturer") == "ORVIBO"
+}
+
+private Boolean isAurora() {
+	device.getDataValue("manufacturer") == "Aurora"
 }
