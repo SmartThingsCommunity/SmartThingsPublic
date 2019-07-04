@@ -5,13 +5,12 @@
  *  Copyright 2018, 2019 - All rights reserved
  *
  *  For questions, more information, or to provide feedback on this smart app, please visit: 
- *  please visit: 
  *
  *    darwinsden.com/demand/
  *  
  *  ****** WARNING ******
  *  Installation and configuration of this software will grant this application control of your home thermostat and other devices. 
- *  Unexpectedly high and low home temperatures and unexpected high utility usage & costs may result due to both the planned 
+ *  Unexpectedly high and low home temperatures and unexpected utility usage & costs may result due to both the planned 
  *  and unplanned nature of the algorithms and technologies involved, the unreliability of devices and networks, and unanticipated 
  *  software defects including those in this software application and its dependencies. By installing this software, you are accepting
  *  the risks to people, pets, and personal property and agree to not hold the developer liable.
@@ -22,19 +21,22 @@
  *  The end user is free to modify this software for personal use. Re-distribution of this software in its original or 
  *  modified form requires explicit written consent from the developer. 
  * 
- *  The developer retains all rights, title, copyright, and interest, including all copyright, patent rights, and trade secrets 
- *  associated with the algorithms, and technologies used herein. 
+ *  The developer retains all rights, title, and interest, including all copyright, patent rights, and trade secrets 
+ *  associated with the algorithms and technologies used herein. 
  *
  */
  
-def version() { return "v0.1.5e.20190604" }
+def version() {
+    return "v0.2.0e.20190703"
+}
 /*   
+ *	03-Jul-2019 >>> v0.2.0e.20190703 - Added option to re-set set-point after each cycle. Resolve issue that could result in multiple thermostat commands. 
  *	04-Jun-2019 >>> v0.1.5e.20190604 - Fix issue with turning back on peak demand exceeded devices at start of new cycle. 
  *	30-May-2019 >>> v0.1.4e.20190530 - Resolve new install/init issue
  *	28-May-2019 >>> v0.1.3e.20190528 - Added option to persist off-peak indication display, improved threading, additional watchdog logic
  *	07-May-2019 >>> v0.1.2e.20190507 - Added additional exception handling and watchdog processes, logic updates
  */
- 
+
 def warning() {
     return "WARNING: By enabling these features, you are granting permission of this application to control your thermostat and other devices. This software is in the early beta stages. Normal operation and/or unexpected failures or defects in this software, dependent hardware, and/or network may result in unintended high or low temperatures and high utility usage & costs."
 }
@@ -65,6 +67,8 @@ preferences {
     page(name: "pageAdvancedSettings")
     page(name: "pagePeakDayHolidays")
     page(name: "pageDevicesToControl")
+    page(name: "pagePrecoolSettings")
+    page(name: "pageAdvancedThermostatCommandSettings")
 }
 
 private pageMain() {
@@ -113,7 +117,7 @@ private pageMain() {
 
         section("About") {
             paragraph "Version: " + app.version() + "\nMemory used: " + memUsed() +
-                "\n\nFor additional information visit: DarwinsDen.com/demand", title: "Demand Manager", required: false
+                "\n\nFor additional information, or to provide feedback, please visit: DarwinsDen.com/demand", title: "Demand Manager", required: false
             label name: "name", title: "Name", state: (name ? "complete" : null), defaultValue: app.name, required: false
         }
         section("Remove Demand Manager") {
@@ -144,7 +148,7 @@ def pagePeakSchedule() {
                 image: "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
             href "pagePeakSchedule3", title: "Enter your Utility Peak Hour Schedule 3...", description: "", required: false,
                 image: "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
-}
+        }
 
         section("Utility Peak Day Holidays (Future Capability)") {
             href "pagePeakDayHolidays", title: "Enter holidays from peak utility periods here...", description: "", required: false,
@@ -209,20 +213,21 @@ def pagePeakSchedule3() {
 
 def pageDisplayIndicators() {
     dynamicPage(name: "pageDisplayIndicators", title: "Choose display indicator devices (optional)", install: false, uninstall: false) {
-        section("Select a color indicator light (such as the EZ MultiPli/HomeSeer HSM200) to indicate when you're in a peak demand period. Note: "+
-           "The indicator on green light will only be briefly displayed during off-peak unless the persist off-peak display is set below.") {
+        section("Select a color indicator light (such as the EZ MultiPli/HomeSeer HSM200) to indicate when you're in a peak demand period. Note: " +
+            "The indicator on green light will only be briefly displayed during off-peak unless the persist off-peak display is set below.") {
             input "colorIndicatorDevice1", "capability.colorControl", required: false, title: "Select your peak period color indicator device 1"
             input "colorIndicatorDevice2", "capability.colorControl", required: false, title: "Select your peak period color indicator device 2"
             input "alwaysDisplayOffPeakIndicator", "boolean", required: false, defaultValue: false, title: "Persist off-peak indication display"
         }
-        section("Select HomeSeer WD200+ dimmers to be used as demand warning indicators and solar inverter (if present) production level indicators. " + 
+        section("Select HomeSeer WD200+ dimmers to be used as demand warning indicators and solar inverter (if present) production level indicators. " +
             "The Demand Manager will use the colored LED's on the switch plates as graphing indicators (not the bulbs connected to the loads).") {
             input "WD200Dimmer1", "capability.indicator", required: false, title: "Select your HomeSeer WD200+ dimmer 1"
             input "WD200Dimmer2", "capability.indicator", required: false, title: "Select your HomeSeer WD200+ dimmer 2"
-            input "solarSystemSizeWatts", "number", required: false, default: 6000, title: "Size of your Solar System in Watts"
+            input "solarSystemSizeWatts", "number", required: false,
+                default: 6000, title: "Size of your Solar System in Watts"
         }
         section("Install Virtual Demand Meters (Current, Projected, Peak Today, and Peak Month) for use with dashboards (ActionTiles, etc..). " +
-             "These should be added to the dashboard smart app as Power Meters.") {
+            "These should be added to the dashboard smart app as Power Meters.") {
             input "installVirtualDemandMeters", "boolean", required: false, defaultValue: false, title: "Install Virtual Demand Meters"
         }
     }
@@ -300,16 +305,10 @@ def pageThermostat() {
             input "maxTemperature", "number", required: false, defaultValue: 83, title: "Maximum Temperature"
         }
 
-        section("Precool Home to a chosen temperature and return home temperature back when the peak period ends. When used in conjunction with Demand Manager thermostat commanding, " +
-               "the pre-cool start time is typically 30 minutes or more before your peak period begins, and the pre-cool return time will typically be the same time " +
-               "that your peak period ends. Note: You may wish to  program your smart thermostat to perform this function itself locally instead of using the precool functions here.") {
-            input "precoolHome", "boolean", required: false, defaultValue: false, title: "Precool"
-            input "precoolStartTime", "time", required: false, title: "Pre-cool start time"
-            input "precoolStopTime", "time", required: false, title: "Pre-cool return time"
-            input "precoolStartTemperature", "number", required: false, title: "Temperature to pre-cool to (°F)"
-            input "precoolStopTemperature", "number", required: false, title: "Temperature to return to at pre-cool return time (°F)"
+        section("") {
+            href "pagePrecoolSettings", title: "Pre-cool Settings", description: "Pre-cool your home before your peak period begins...", required: false,
+                image: "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
         }
-
 
         section("Conserve Energy: Allow air conditioner to continue through to the next demand cycle (ie 30 or 60 minute period) if it is close to the end of a demand cycle and demand overage will not be extreme. " +
             "Warning: May result in demand slightly exceeding your goal demand") {
@@ -326,30 +325,55 @@ def pageThermostat() {
                     "Goal81F": "81°F by 8PM (suggested precool to at least 77°/78°)",
                 ]
         }
+        section("") {
+            href "pageAdvancedThermostatCommandSettings", title: "Advanced Thermostat Command Settings", description: "Additional options & overrides...", required: false,
+                image: "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
+        }
     }
 }
-
 
 def pageAdvancedSettings() {
     dynamicPage(name: "pageAdvancedSettings", title: "Advanced Settings", install: false, uninstall: false) {
         section("IDE Log Level (set log level in SmartThings IDE Live Logging Tob)") {
-            input "logLevel", "enum", required: false, title: "IDE Log Level", options: ["none", "trace", "debug", "info","warn"]
+            input "logLevel", "enum", required: false, title: "IDE Log Level", options: ["none", "trace", "debug", "info", "warn"]
         }
-    
     }
 }
 
+def pagePrecoolSettings() {
+    dynamicPage(name: "pagePrecoolSettings", title: "Pre-cool Settings", install: false, uninstall: false) {
+        section("Precool Home to a chosen temperature and return home temperature back when the peak period ends. When used in conjunction with Demand Manager thermostat commanding, " +
+            "the pre-cool start time is typically 30 minutes or more before your peak period begins, and the pre-cool return time will typically be the same time " +
+            "that your peak period ends. Note: You may wish to  program your smart thermostat to perform this function itself locally instead of using the precool functions here.") {
+            input "precoolHome", "boolean", required: false, defaultValue: false, title: "Precool"
+            input "precoolStartTime", "time", required: false, title: "Pre-cool start time"
+            input "precoolStopTime", "time", required: false, title: "Pre-cool return time"
+            input "precoolStartTemperature", "number", required: false, title: "Temperature to pre-cool to (°F)"
+            input "precoolStopTemperature", "number", required: false, title: "Temperature to return to at pre-cool return time (°F)"
+        }
+    }
+}
+
+def pageAdvancedThermostatCommandSettings() {
+    dynamicPage(name: "pageAdvancedThermostatCommandSettings", title: "Advanced Thermostat Command Settings", install: false, uninstall: false) {
+        section("Return the thermostat back to pre-defined temperature setpoint after completing each (30 or 60 minute) cycle. Note: This will likely cause issues if TRS is enabled. " +
+            "This may also result in inefficient and frequent air conditioner cycles with typical environments. It is recommended that this option is only used when demand goal " +
+            "overage conditions are rarely expected, such as in mild/temperate environments or when supplemental home generators or batteries (eg PowerWalls) are being utilized") {
+            input "returnSetPointAfterCycle", "boolean", required: false, defaultValue: false, title: "Return temperature after each cycle"
+            input "returnCycleSetPoint", "number", required: false, title: "Temperature to return to after each (30 or 60 minute) cycle (°F)"
+        }
+    }
+}
 def pageRemove() {
     dynamicPage(name: "pageRemove", title: "", install: false, uninstall: true) {
         section() {
             paragraph parent ? "CAUTION: You are about to remove the '${app.label}'. This action is irreversible. If you are sure you want to do this, please tap on the Remove button below." :
                 "CAUTION: You are about to completely remove Demand Manager and all of its settings. This action is irreversible. If you are sure you want to do this, please tap on the Remove button below. " +
-                 "Note: If an error occurs during removal, you may need to first manually remove references to Demand Manager child devices from other smart apps if you have manually added them.",
+                "Note: If an error occurs during removal, you may need to first manually remove references to Demand Manager child devices from other smart apps if you have manually added them.",
                 required: true, state: null
         }
     }
 }
-
 
 def installed() {
     log.debug("installed called")
@@ -374,19 +398,19 @@ def updated() {
     def defaultNominalUsageWatts = 1000
     def defaultAirConditionerWatts = 5000
 
-    if (goalDemandInWatts==null) {
+    if (goalDemandInWatts == null) {
         atomicState.goalDemandWatts = defaultDemandGoalWatts
     } else {
         atomicState.goalDemandWatts = goalDemandInWatts.toInteger()
     }
 
-    if (nomUsageWatts==null) {
+    if (nomUsageWatts == null) {
         atomicState.nominalUsageWatts = defaultNominalUsageWatts
     } else {
         atomicState.nominalUsageWatts = nomUsageWatts.toInteger()
     }
 
-    if (airCondWatts==null) {
+    if (airCondWatts == null) {
         atomicState.airConditionerWatts = defaultAirConditionerWatts
     } else {
         atomicState.airConditionerWatts = airCondWatts.toInteger()
@@ -465,20 +489,20 @@ def getSecondsIntoThisDay(def Date) {
     def hour = timeNow.format('h').toInteger()
     def min = timeNow.format('m').toInteger()
     def sec = timeNow.format('s').toInteger()
-    def secondsIntoThisDay = hour*3600+min*60+sec
+    def secondsIntoThisDay = hour * 3600 + min * 60 + sec
     return secondsIntoThisDay
 }
 
 def schedulePeakTimes() {
     if (schedule1IsActive && schedule1IsActive.toBoolean() == true) {
         if (schedule1StartTime && schedule1StopTime) {
-           def onPeakNow = timeOfDayIsBetween(schedule1StartTime, schedule1StopTime, new Date(), location.timeZone)
-           if (onPeakNow) {
-              startPeak1Schedule()
-           }
-           schedule(schedule1StartTime.toString(), startPeak1Schedule)
-           schedule(schedule1StopTime.toString(), stopPeak1Schedule)
-            
+            def onPeakNow = timeOfDayIsBetween(schedule1StartTime, schedule1StopTime, new Date(), location.timeZone)
+            if (onPeakNow) {
+                startPeak1Schedule()
+            }
+            schedule(schedule1StartTime.toString(), startPeak1Schedule)
+            schedule(schedule1StopTime.toString(), stopPeak1Schedule)
+
         } else {
             message = "Schedule 1 enabled in preferences, but start and/or stop time was not specified. Peak schedule 1 could not be set."
             log.warn message
@@ -489,7 +513,7 @@ def schedulePeakTimes() {
         if (schedule2StartTime && schedule2StopTime) {
             def onPeakNow = timeOfDayIsBetween(schedule2StartTime, schedule2StopTime, new Date(), location.timeZone)
             if (onPeakNow) {
-              startPeak2Schedule()
+                startPeak2Schedule()
             }
             schedule(schedule2StartTime.toString(), startPeak2Schedule)
             schedule(schedule2StopTime.toString(), stopPeak2Schedule)
@@ -503,8 +527,8 @@ def schedulePeakTimes() {
         if (schedule3StartTime && schedule3StopTime) {
             def onPeakNow = timeOfDayIsBetween(schedule3StartTime, schedule3StopTime, new Date(), location.timeZone)
             if (onPeakNow) {
-              startPeak3Schedule()
-            } 
+                startPeak3Schedule()
+            }
             schedule(schedule3StartTime.toString(), startPeak3Schedule)
             schedule(schedule3StopTime.toString(), stopPeak3Schedule)
         } else {
@@ -512,14 +536,13 @@ def schedulePeakTimes() {
             log.warn message
             sendNotificationMessage(message, "anomaly")
         }
-    }    
+    }
 }
 
 def schedulePrecooling() {
     if (precoolHome) {
         if (precoolStartTime && precoolStartTemperature && precoolStopTemperature &&
-              precoolStartTemperature <= atomicState.maximumAllowedTemperature && precoolStopTemperature <= atomicState.maximumAllowedTemperature) 
-        {
+            precoolStartTemperature <= atomicState.maximumAllowedTemperature && precoolStopTemperature <= atomicState.maximumAllowedTemperature) {
             if (precoolStopTime) {
                 log.debug "subscribing to precool start (${precoolStartTime.toString()}) and stop times (${precoolStopTime.toString()})"
                 schedule(precoolStartTime.toString(), precoolingStart)
@@ -602,6 +625,7 @@ def turnOnPeakPeriod() {
         if (!monitorOnly || monitorOnly.toBoolean() == false) {
             dashboardDevice.on()
             peakPeriodOnActions()
+            atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
             sendNotification("now entering peak demand period", "demandGeneral")
         }
     } else {
@@ -628,7 +652,7 @@ def startPeak1Schedule() {
     if (!weekend() && (!monthsSchedule1 || monthsSchedule1.contains(month))) {
         atomicState.peak1ScheduleActive = true
         turnOnPeakPeriod()
-        runIn(1,immediateEvent)
+        runIn(1, immediateEvent)
     }
 }
 
@@ -637,7 +661,7 @@ def stopPeak1Schedule() {
     if (!monthsSchedule1 || monthsSchedule1.contains(month)) {
         atomicState.peak1ScheduleActive = false
         turnOffPeakPeriod()
-        runIn(1,immediateEvent)
+        runIn(1, immediateEvent)
     }
 }
 
@@ -646,7 +670,7 @@ def startPeak2Schedule() {
     if (!weekend() && (!monthsSchedule2 || monthsSchedule2.contains(month))) {
         atomicState.peak2ScheduleActive = true
         turnOnPeakPeriod()
-        runIn(1,immediateEvent)
+        runIn(1, immediateEvent)
     }
 }
 
@@ -655,7 +679,7 @@ def stopPeak2Schedule() {
     if (!monthsSchedule2 || monthsSchedule2.contains(month)) {
         atomicState.peak2ScheduleActive = false
         turnOffPeakPeriod()
-        runIn(1,immediateEvent)
+        runIn(1, immediateEvent)
     }
 }
 
@@ -664,7 +688,7 @@ def startPeak3Schedule() {
     if (!weekend() && (!monthsSchedule3 || monthsSchedule3.contains(month))) {
         atomicState.peak3ScheduleActive = true
         turnOnPeakPeriod()
-        runIn(1,immediateEvent)
+        runIn(1, immediateEvent)
     }
 }
 
@@ -673,7 +697,7 @@ def stopPeak3Schedule() {
     if (!monthsSchedule3 || monthsSchedule3.contains(month)) {
         atomicState.peak3ScheduleActive = false
         turnOffPeakPeriod()
-        runIn(1,immediateEvent)
+        runIn(1, immediateEvent)
     }
 }
 
@@ -684,7 +708,9 @@ def precoolingStart() {
             if (precoolStopTime && precoolStopTemperature) {
                 if (homeThermostat.coolingSetpointState.integerValue > precoolStartTemperature) {
                     log.debug "commanding thermostat to precool"
-                    runIn(15, commandThermostatHandler, [data: [coolingSetpoint: precoolStartTemperature]])
+                    atomicState.lastThermostatCommandTime = now()
+                    atomicState.processingThermostatCommand = true
+                    runIn(30, commandThermostatHandler, [data: [coolingSetpoint: precoolStartTemperature]])
                     sendNotificationMessage("Pre-cooling home to ${precoolStartTemperature} °F.", "thermostat")
                     atomicState.temperaturePriorToPrecool = homeThermostat.coolingSetpointState.integerValue
                 } else {
@@ -706,7 +732,9 @@ def precoolingStart() {
 def precoolingStop() {
     if (operationMode && operationMode.toString() == "fullControl" && precoolHome && precoolHome.toBoolean() == true && precoolStopTemperature && atomicState.todayIsPeakUtilityDay) {
         log.debug "commanding thermostat to stop precool"
-        runIn(15, commandThermostatHandler, [data: [coolingSetpoint: precoolStopTemperature]])
+        atomicState.lastThermostatCommandTime = now()
+        atomicState.processingThermostatCommand = true
+        runIn(30, commandThermostatHandler, [data: [coolingSetpoint: precoolStopTemperature]])
         def precoolStopNotes = ""
         if (atomicState.temperaturePriorToPrecool != precoolStopTemperature) {
             precoolStopNotes = " Note: Setpoint was ${atomicState.temperaturePriorToPrecool} prior to pre-cool."
@@ -716,16 +744,16 @@ def precoolingStop() {
     processWatchDog()
 }
 
-def logDebugHandler (data) {
-    log.debug (data.message)
+def logDebugHandler(data) {
+    log.debug(data.message)
 }
- 
-def logDebug (msg) {
-   if (logLevel != null) {
-      if (logLevel == "debug" | logLevel == "trace") {
-         runIn (1, logDebugHandler, [data: [message: msg], overwrite: false])
-      }
-   }
+
+def logDebug(msg) {
+    if (logLevel != null) {
+        if (logLevel == "debug" | logLevel == "trace") {
+            runIn(1, logDebugHandler, [data: [message: msg], overwrite: false])
+        }
+    }
 }
 
 private sendNotificationMessage(message, msgType) {
@@ -791,6 +819,7 @@ def peakPeriodSwitchEvent(evt) {
     if (operationMode && operationMode.toString() == "fullControl") {
         if (dashboardDevice.switchState.stringValue == "on") {
             sendNotificationMessage("Entering utility peak period.", "demandGeneral")
+            atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
             peakPeriodOnActions()
         } else {
             sendNotificationMessage("Ending utility peak period.", "demandGeneral")
@@ -859,16 +888,17 @@ def setCycleStatus() {
     def min = timeNow.format('m').toInteger()
     def sec = timeNow.format('s').toInteger()
     def millisec = timeNow.format('S').toInteger()
-    
+
     //Protect against unexpected currupted atomic data
     if (atomicState.cycleTimeMinutes == null) {
-        log.warn ("handling null cycle minutes")
-        atomicState.cycleTimeMinutes = 60}
-    if (atomicState.nominalUsageWatts == null) {
-        log.warn ("handling null nominal usage watts")
-        atomicState.nominalUsageWatts = 1000 
+        log.warn("handling null cycle minutes")
+        atomicState.cycleTimeMinutes = 60
     }
-    
+    if (atomicState.nominalUsageWatts == null) {
+        log.warn("handling null nominal usage watts")
+        atomicState.nominalUsageWatts = 1000
+    }
+
     if (min >= atomicState.cycleTimeMinutes) {
         secondsIntoThisCycle = (min - atomicState.cycleTimeMinutes) * 60 + sec + millisec / 1000.0
     } else {
@@ -882,12 +912,15 @@ def setCycleStatus() {
         atomicState.demandCurrentWatts = Math.max(wholeHomePowerMeter.powerState.integerValue, 0)
         atomicState.cycleDemandNotificationSent = false
         def demandPeakCurrent = getChildDevice("demandPeakCurrent")
+        if (atomicState.nowInPeakUtilityPeriod.toBoolean() == true) {
+            atomicState.processNewCycleThermo = true
+        }
         if (demandPeakCurrent) {
             demandPeakCurrent.setPower(atomicState.demandCurrentWatts)
         }
         secondsInThisInterval = secondsIntoThisCycle
         if (atomicState.processedDemandOnActions && atomicState.processedDemandOnActions.toBoolean() == true) {
-            runIn (1,peakDemandOffActions)
+            runIn(1, peakDemandOffActions)
             atomicState.processedDemandOnActions = false
         }
     } else {
@@ -909,32 +942,32 @@ def setCycleStatus() {
     atomicState.deltaIntervalSeconds = secondsInThisInterval
 }
 
-def setPeakCurrentDevice (data) {
+def setPeakCurrentDevice(data) {
     def demandPeakCurrent = getChildDevice("demandPeakCurrent")
     if (demandPeakCurrent) {
         demandPeakCurrent.setPower(data.power)
-     }
+    }
 }
 
-def setPeakProjectedDevice (data) {
+def setPeakProjectedDevice(data) {
     def demandPeakProjected = getChildDevice("demandPeakProjected")
     if (demandPeakProjected) {
         demandPeakProjected.setPower(data.power)
-     }
+    }
 }
 
-def setDashboardCurrentDemand (data) {
+def setDashboardCurrentDemand(data) {
     def dashboardDevice = getChildDevice("dashboardDevice")
     if (dashboardDevice) {
         dashboardDevice.setCurrentDemand(data.power)
-     }
+    }
 }
 
-def setDashboardProjectedDemand (data) {
+def setDashboardProjectedDemand(data) {
     def dashboardDevice = getChildDevice("dashboardDevice")
     if (dashboardDevice) {
         dashboardDevice.setProjectedDemand(data.power)
-     }
+    }
 }
 
 def calcCurrentAndProjectedDemand() {
@@ -954,22 +987,22 @@ def calcCurrentAndProjectedDemand() {
         atomicState.secondsLeftInThisDemandCycle) / (atomicState.cycleTimeMinutes * 60.0)).toInteger()
     def demandPeakCurrent = getChildDevice("demandPeakCurrent")
     if (demandPeakCurrent) {
-        runIn (1, setPeakCurrentDevice, [data: [power: demandCurrent]])
+        runIn(1, setPeakCurrentDevice, [data: [power: demandCurrent]])
         //demandPeakCurrent.setPower(demandCurrent)
     }
     def dashboardDevice = getChildDevice("dashboardDevice")
     if (dashboardDevice) {
-        runIn (1, setDashboardCurrentDemand, [data: [power: demandCurrent]])
+        runIn(1, setDashboardCurrentDemand, [data: [power: demandCurrent]])
         //dashboardDevice.setCurrentDemand(demandCurrent)
-        runIn (1, setDashboardProjectedDemand, [data: [power: demandProjected]])
+        runIn(1, setDashboardProjectedDemand, [data: [power: demandProjected]])
         //dashboardDevice.setProjectedDemand(demandProjected)
     }
     def demandPeakProjected = getChildDevice("demandPeakProjected")
     if (demandPeakProjected) {
-        runIn (1, setPeakProjectedDevice, [data: [power: demandProjected]])
+        runIn(1, setPeakProjectedDevice, [data: [power: demandProjected]])
         //demandPeakProjected.setPower(demandProjected)
     }
-    logDebug ("Projected Demand: ${demandProjected}W. Current Demand: ${demandCurrent}W.")
+    logDebug("Projected Demand: ${demandProjected}W. Current Demand: ${demandCurrent}W.")
     //***********************************************
     //* Set Current and Projected Demand Global Data
     //***********************************************   
@@ -1019,7 +1052,7 @@ def recordPeakDemands() {
 
         if (projectedDemand > atomicState.goalDemandWatts &&
             (!atomicState.processedDemandOnActions || atomicState.processedDemandOnActions.toBoolean() == false)) {
-            runIn (1,peakDemandOnActions)
+            runIn(1, peakDemandOnActions)
             atomicState.processedDemandOnActions = true
         }
 
@@ -1041,7 +1074,7 @@ def recordPeakDemands() {
                         demandPeakThisMonth.setPower(projectedDemand)
                     }
                     if (notifyWhenMonthlyDemandExceeded && notifyWhenMonthlyDemandExceeded.toBoolean() == true &&
-                          projectedDemand > exceededBuffer) {
+                        projectedDemand > exceededBuffer) {
                         sendNotificationMessage("New Peak Demand for ${getTheMonth()} is: ${projectedDemand}W", "demandMonth")
                     }
                 }
@@ -1094,7 +1127,7 @@ def getSmartThermoWeightedDeparture(currentSetPoint) {
 
 def getTrsStatusString(setPoint) {
     def statusString = ""
-    
+
     if (thermoRiseSchedulingPlan && thermoRiseSchedulingPlan.toString() != "Off") {
         def weightedTempDeparture = getSmartThermoWeightedDeparture(setPoint)
         if (weightedTempDeparture > -1.0 && weightedTempDeparture < 1.0) {
@@ -1112,32 +1145,40 @@ def getTrsStatusString(setPoint) {
 
 def turnOffThermostat() {
     logDebug "*******  Shut 'Er Down!...   *********"
-    def setPointToCommand = homeThermostat.coolingSetpointState.integerValue
+    def currentSetPoint = homeThermostat.coolingSetpointState.integerValue
+    def setPointToCommand = currentSetPoint
     def tempBumpDegrees = 2
-    if (thermoRiseSchedulingPlan && thermoRiseSchedulingPlan.toString() != "Off" && getSmartThermoWeightedDeparture(homeThermostat.coolingSetpointState.integerValue) < -1) {
+    if (thermoRiseSchedulingPlan && thermoRiseSchedulingPlan.toString() != "Off" && getSmartThermoWeightedDeparture(currentSetPoint) < -1) {
         setPointToCommand = setPointToCommand + 1
         logDebug "Ahead of thermostat schedule. Upping commanded setpoint by 1 to: ${setPointToCommand}"
     }
     if ((setPointToCommand < homeThermostat.temperatureState.integerValue) &&
-        (homeThermostat.coolingSetpointState.integerValue <= 82)) {
+        (currentSetPoint <= 82)) {
         setPointToCommand = setPointToCommand + 1
         tempBumpDegrees = tempBumpDegrees + 1
         logDebug "Current temperature is above planned setpoint value. Upping commanded setpoint by 1 to: ${setPointToCommand}"
     }
 
-    if (setPointToCommand == homeThermostat.coolingSetpointState.integerValue) {
-        sendNotificationMessage("Briefly adjusting thermostat & returning to ${setPointToCommand}F to halt AC. " + getTrsStatusString(setPointToCommand), "thermostat")
+    if (setPointToCommand <= atomicState.maximumAllowedTemperature) {
+        if (setPointToCommand == currentSetPoint) {
+            sendNotificationMessage("Briefly adjusting thermostat & returning to ${setPointToCommand}F to halt AC. " + getTrsStatusString(setPointToCommand), "thermostat")
+        } else {
+            sendNotificationMessage("Raising thermost from ${currentSetPoint} to ${setPointToCommand}F to manage demand." + getTrsStatusString(setPointToCommand), "thermostat")
+        }
+        atomicState.lastThermostatCommandTime = now()
+        atomicState.processingThermostatCommand = true
+        commandThermostatWithBump(setPointToCommand, tempBumpDegrees)
     } else {
-        sendNotificationMessage("Raising thermost from ${homeThermostat.coolingSetpointState.integerValue} to ${setPointToCommand}F to manage demand." + getTrsStatusString(setPointToCommand), "thermostat")
+        logDebug "Unexpected condition: Set point to command of ${setPointToCommand} is above max allowed: ${atomicState.maximumAllowedTemperature}. Cannot turn off thermostat."
     }
-    atomicState.lastThermostatCommandTime = now()
-    commandThermostatWithBump(setPointToCommand, tempBumpDegrees)
+
 }
 
 def turnOnThermostat() {
     logDebug "*******  Crank 'Er Up!... *********"
     def setPointToCommand = homeThermostat.coolingSetpointState.integerValue
     def tempBumpDegrees = -3
+    atomicState.processingThermostatCommand = true
     atomicState.lastThermostatCommandTime = now()
     commandThermostatWithBump(setPointToCommand, tempBumpDegrees)
     sendNotificationMessage("Briefly initiating cooling to ensure home will remain comfortable per TRS preference." + getTrsStatusString(setPointToCommand), "thermostat")
@@ -1146,23 +1187,23 @@ def turnOnThermostat() {
 def getTrsAdjustedTargetDemand() {
     def trsAdjustedTargetDemand
     if (homeThermostat.coolingSetpointState.stringValue != "") {
-      try {
-        def goalAdjustmentWatts = getSmartThermoWeightedDeparture(homeThermostat.coolingSetpointState.integerValue) * 200
-        trsAdjustedTargetDemand = atomicState.goalDemandWatts + goalAdjustmentWatts
-        if (demandPeakToday && trsAdjustedTargetDemand < demandPeakToday.powerState.integerValue) {
-           if (demandPeakToday.powerState.integerValue < atomicState.goalDemandWatts) {
-            trsAdjustedTargetDemand = demandPeakToday.powerState.integerValue
-           } else {
-              trsAdjustedTargetDemand = atomicState.goalDemandWatts
-           }
-         }
-       } catch (Exception e) {
-        log.warn "exception in getTrsAdjustedTargetDemand: ${e}"
-        sendNotificationMessage("Issue processing temperature rise scheduling.", "anomaly")
-        trsAdjustedTargetDemand = atomicState.goalDemandWatts
-      }
+        try {
+            def goalAdjustmentWatts = getSmartThermoWeightedDeparture(homeThermostat.coolingSetpointState.integerValue) * 200
+            trsAdjustedTargetDemand = atomicState.goalDemandWatts + goalAdjustmentWatts
+            if (demandPeakToday && trsAdjustedTargetDemand < demandPeakToday.powerState.integerValue) {
+                if (demandPeakToday.powerState.integerValue < atomicState.goalDemandWatts) {
+                    trsAdjustedTargetDemand = demandPeakToday.powerState.integerValue
+                } else {
+                    trsAdjustedTargetDemand = atomicState.goalDemandWatts
+                }
+            }
+        } catch (Exception e) {
+            log.warn "exception in getTrsAdjustedTargetDemand: ${e}"
+            sendNotificationMessage("Issue processing temperature rise scheduling.", "anomaly")
+            trsAdjustedTargetDemand = atomicState.goalDemandWatts
+        }
     } else {
-       trsAdjustedTargetDemand = atomicState.goalDemandWatts
+        trsAdjustedTargetDemand = atomicState.goalDemandWatts
     }
     return trsAdjustedTargetDemand
 }
@@ -1180,10 +1221,10 @@ def thermostatControls() {
         def wattHoursToNextCycleWithAc = atomicState.secondsLeftInThisDemandCycle * (demandWithAirConditioning) * 60 / atomicState.cycleTimeMinutes / 60 / 60
         def estimatedSecondsOfAcToPeak
         if (demandToAttempt - demandWithAirConditioning == 0) {
-          estimatedSecondsOfAcToPeak = 100000
+            estimatedSecondsOfAcToPeak = 100000
         } else {
-          estimatedSecondsOfAcToPeak = atomicState.secondsIntoThisDemandCycle * (atomicState.demandCurrentWatts - demandToAttempt) /
-            (demandToAttempt - demandWithAirConditioning)
+            estimatedSecondsOfAcToPeak = atomicState.secondsIntoThisDemandCycle * (atomicState.demandCurrentWatts - demandToAttempt) /
+                (demandToAttempt - demandWithAirConditioning)
         }
         def thermostatIsBusy = atomicState.processingThermostatCommand && ((now() - atomicState.lastThermostatCommandTime) / 1000) < 210
         logDebug "Demand To Attempt: ${demandToAttempt.toInteger()}. Demand If AC Continues: ${demandAtEndOfCycleIfAcContinues.toInteger()}." +
@@ -1195,36 +1236,50 @@ def thermostatControls() {
                 atomicState.lastThermostatCommandTime = 0. toInteger()
             }
             def allowedToCommandThermo = operationMode && operationMode.toString() == "fullControl" && commandThermostat && commandThermostat.toBoolean() == true &&
-                now() - atomicState.peakPeriodStartTime > 2 * 60 * 1000
+                now() - atomicState.peakPeriodStartTime > 2 * 60 * 1000 && atomicState.secondsIntoThisDemandCycle > 60
             //log.debug ("allowed: ${allowedToCommandThermo}")
             if (allowedToCommandThermo && !thermostatIsBusy && ((now() - atomicState.lastThermostatCommandTime) / 1000 >= 60)) {
-                if (homeThermostat.thermostatOperatingStateState.stringValue == 'cooling') {
-                    //log.debug ("cooling!")
-                    def acWattsAllowedToContinue = 200
-                    if (!atomicState.maximumAllowedTemperature) {
-                        atomicState.maximumAllowedTemperature = 83
-                    }
-                    if ((homeThermostat.coolingSetpointState.integerValue <= atomicState.maximumAllowedTemperature) &&
-                        (((demandAtEndOfCycleIfAcContinues >= demandToAttempt) &&
-                                (wattHoursToNextCycleWithAc > acWattsAllowedToContinue)) ||
-                            (demandAtEndOfCycleIfAcContinues > demandToAttempt + acWattsAllowedToContinue + 100))) {
-                        //************************
-                        //** Turn Off Thermostat
-                        //************************
+                if (atomicState.processNewCycleThermo && atomicState.processNewCycleThermo.toBoolean() == true) {
+                    atomicState.processNewCycleThermo = false
+                    if (returnSetPointAfterCycle && returnSetPointAfterCycle.toBoolean() == true && returnCycleSetPoint && returnCycleSetPoint.toInteger() > 70 &&
+                         returnCycleSetPoint.toInteger() <= atomicState.maximumAllowedTemperature && 
+                             returnCycleSetPoint.toInteger() != homeThermostat.coolingSetpointState.integerValue) {                 
+                        log.debug("setting return temp!")
                         atomicState.lastThermostatCommandTime = now()
-                        runIn(1, turnOffThermostat)
+                        atomicState.processingThermostatCommand = true
+                        runIn(15, commandThermostatHandler, [data: [coolingSetpoint: returnCycleSetPoint]])
                     }
                 } else {
-                    // Thermostat is not cooling, check if the AC should be turned on
-                    if (thermoRiseSchedulingPlan && thermoRiseSchedulingPlan.toString() != "Off" && getSmartThermoWeightedDeparture(homeThermostat.temperatureState.integerValue) > 1 &&
-                        estimatedSecondsOfAcToPeak > atomicState.secondsLeftInThisDemandCycle * 1.25 &&
-                        homeThermostat.coolingSetpointState.integerValue < homeThermostat.temperatureState.integerValue &&
-                        atomicState.secondsLeftInThisDemandCycle > 60) {
-                        //************************
-                        //** Turn On Thermostat
-                        //************************
-                        atomicState.lastThermostatCommandTime = now()
-                        runIn(1, turnOnThermostat)
+                    if (homeThermostat.thermostatOperatingStateState.stringValue == 'cooling') {
+                        //log.debug ("cooling!")
+                        def acWattsAllowedToContinue = 200
+                        if (!atomicState.maximumAllowedTemperature) {
+                            atomicState.maximumAllowedTemperature = 83
+                        }
+                        if ((homeThermostat.coolingSetpointState.integerValue <= atomicState.maximumAllowedTemperature) &&
+                            (((demandAtEndOfCycleIfAcContinues >= demandToAttempt) &&
+                                    (wattHoursToNextCycleWithAc > acWattsAllowedToContinue)) ||
+                                (demandAtEndOfCycleIfAcContinues > demandToAttempt + acWattsAllowedToContinue + 100))) {
+                            //************************
+                            //** Turn Off Thermostat
+                            //************************
+                            atomicState.lastThermostatCommandTime = now()
+                            atomicState.processingThermostatCommand = true
+                            runIn(1, turnOffThermostat)
+                        }
+                    } else {
+                        // Thermostat is not cooling, check if the AC should be turned on          
+                        if (thermoRiseSchedulingPlan && thermoRiseSchedulingPlan.toString() != "Off" && getSmartThermoWeightedDeparture(homeThermostat.temperatureState.integerValue) > 1 &&
+                            estimatedSecondsOfAcToPeak > atomicState.secondsLeftInThisDemandCycle * 1.25 &&
+                            homeThermostat.coolingSetpointState.integerValue < homeThermostat.temperatureState.integerValue &&
+                            atomicState.secondsLeftInThisDemandCycle > 60) {
+                            //************************
+                            //** Turn On Thermostat
+                            //************************
+                            atomicState.lastThermostatCommandTime = now()
+                            atomicState.processingThermostatCommand = true
+                            runIn(1, turnOnThermostat)
+                        }
                     }
                 }
             }
@@ -1248,6 +1303,7 @@ def verifyThermostatCommand(data) {
     if (homeThermostat.coolingSetpointState.integerValue != setPoint) {
         log.debug("Cooling setpoint was not set to ${data.coolingSetpoint} as commanded (currently: ${homeThermostat.coolingSetpointState.integerValue}). Retrying...")
         atomicState.lastThermostatCommandTime = now()
+        atomicState.processingThermostatCommand = true
         try {
             homeThermostat.setCoolingSetpoint(setPoint)
         } catch (Exception e) {
@@ -1270,6 +1326,7 @@ def commandThermostatHandler(data) {
     def setPoint = data.coolingSetpoint
     logDebug "Setting Thermostat to ${setPoint}F degrees."
     atomicState.lastThermostatCommandTime = now()
+    atomicState.processingThermostatCommand = true
     try {
         homeThermostat.setCoolingSetpoint(setPoint)
     } catch (Exception e) {
@@ -1286,6 +1343,11 @@ def commandThermostatWithBump(setPoint, degreesBump) {
         log.warn "Please accept consent setting in thermostat preferences to allow program to manage the thermostat."
         return
     }
+    if (setPoint > atomicState.maximumAllowedTemperature) {
+        logDebug "Unexpected condition: Set point to command of ${setPoint} is above max allowed: ${atomicState.maximumAllowedTemperature}. Cannot command thermostat."
+        return
+    }
+
     logDebug "Setting Thermostat to ${setPoint}F with bump of ${degreesBump} (${(setPoint + degreesBump)}F)."
     atomicState.lastThermostatCommandTime = now()
     try {
@@ -1303,20 +1365,20 @@ def commandThermostatWithBump(setPoint, degreesBump) {
 def toggleColorIndicatorHandler(data) {
     def stateIsOn = data.stateOn.toBoolean()
     if (stateIsOn == true) {
-        logDebug ("turning on peak indicator light!")
+        logDebug("turning on peak indicator light!")
         if (colorIndicatorDevice1) {
-           colorIndicatorDevice1.on()
+            colorIndicatorDevice1.on()
         }
         if (colorIndicatorDevice2) {
-           colorIndicatorDevice2.on()
+            colorIndicatorDevice2.on()
         }
     } else {
         logDebug("turning off peak indicator light!")
         if (colorIndicatorDevice1) {
-           colorIndicatorDevice1.off()
+            colorIndicatorDevice1.off()
         }
         if (colorIndicatorDevice2) {
-           colorIndicatorDevice2.off()
+            colorIndicatorDevice2.off()
         }
     }
 }
@@ -1327,10 +1389,9 @@ def colorIndicatorHandler() {
     def nowInPeakUtilityPeriod = atomicState.nowInPeakUtilityPeriod.toBoolean()
     def color
     if (nowInPeakUtilityPeriod) {
-       color = red
-    } else
-    {
-       color = green
+        color = red
+    } else {
+        color = green
     }
     if (colorIndicatorDevice1) {
         colorIndicatorDevice1.setColor(color)
@@ -1346,16 +1407,16 @@ def setIndicatorDevices() {
     if (colorIndicatorDevice1 || colorIndicatorDevice2) {
         def stateChanged = false
         if (atomicState.lastPeakDisplayStateOn == null) {
-          atomicState.lastPeakDisplayStateOn = !nowInPeakUtilityPeriod
+            atomicState.lastPeakDisplayStateOn = !nowInPeakUtilityPeriod
         }
         if ((nowInPeakUtilityPeriod == true & atomicState.lastPeakDisplayStateOn.toBoolean() == false) ||
-                (nowInPeakUtilityPeriod == false & atomicState.lastPeakDisplayStateOn.toBoolean() == true)) {
-                    //log.debug "state changed!"
-                    runIn(1, colorIndicatorHandler) 
-                    def displayOffIndicator = alwaysDisplayOffPeakIndicator ? alwaysDisplayOffPeakIndicator.toBoolean() : false
-                    if (!nowInPeakUtilityPeriod && !displayOffIndicator) {
-                       runIn (20, toggleColorIndicatorHandler, [data: [stateOn: false]])
-                    }
+            (nowInPeakUtilityPeriod == false & atomicState.lastPeakDisplayStateOn.toBoolean() == true)) {
+            //log.debug "state changed!"
+            runIn(1, colorIndicatorHandler)
+            def displayOffIndicator = alwaysDisplayOffPeakIndicator ? alwaysDisplayOffPeakIndicator.toBoolean() : false
+            if (!nowInPeakUtilityPeriod && !displayOffIndicator) {
+                runIn(20, toggleColorIndicatorHandler, [data: [stateOn: false]])
+            }
         }
     }
 
@@ -1368,11 +1429,10 @@ def setIndicatorDevices() {
         def blinkDuration = 0
         def blink = 0;
         def color = ledGreen;
-        def scaleWattsPerLed 
+        def scaleWattsPerLed
         if (solarSystemSizeWatts) {
-            scaleWattsPerLed = solarSystemSizeWatts.toDouble()/6
-        } else
-        { 
+            scaleWattsPerLed = solarSystemSizeWatts.toDouble() / 6
+        } else {
             scaleWattsPerLed = 1000
         }
 
@@ -1387,12 +1447,12 @@ def setIndicatorDevices() {
             }
         }
         if (nowInPeakUtilityPeriod == true) {
-                if (level == 1) {
-                    color = ledRed
-                } else {
-                    color = ledYellow
-                }
-         }
+            if (level == 1) {
+                color = ledRed
+            } else {
+                color = ledYellow
+            }
+        }
         if (nowInPeakUtilityPeriod == true && atomicState.demandProjectedWatts > atomicState.goalDemandWatts * 0.8) {
             blinkDuration = 1000
             color = ledRed
@@ -1410,7 +1470,7 @@ def setIndicatorDevices() {
         //level=6
         if (color != atomicState.lastLedColor || level != atomicState.lastLedLevel || blink != atomicState.lastLedBlink) {
             //log.debug "Sending dimmer LED: color: ${color} blink: ${blink} level: ${level}"       
-            runIn (1, setWD200Leds, [data: [ledLevel: level, ledColor: color, ledBlink: blink]])
+            runIn(1, setWD200Leds, [data: [ledLevel: level, ledColor: color, ledBlink: blink]])
         }
     }
 }
@@ -1427,136 +1487,132 @@ def wd200LedBlinkHandler(data) {
     atomicState.lastBlinkDuration = blinkDuration
 }
 
-def setWD200LED (led, data){
+def setWD200LED(led, data) {
     def color = data.ledColor
     def blink = data.ledBlink
     if (led > data.ledLevel) {
         color = 0
         blink = 0
-    }   
+    }
     //logDebug "Setting dimmer LED: color: ${color} blink: ${blink} led: ${led}"
     if (WD200Dimmer1) {
-       WD200Dimmer1.setStatusLed(led, color, blink)          
+        WD200Dimmer1.setStatusLed(led, color, blink)
     }
     if (WD200Dimmer2) {
-       WD200Dimmer2.setStatusLed(led, color, blink)
+        WD200Dimmer2.setStatusLed(led, color, blink)
     }
 }
 
-def setWD200Led7 (dataIn) {
-    setWD200LED (7, dataIn)
+def setWD200Led7(dataIn) {
+    setWD200LED(7, dataIn)
     atomicState.lastLedLevel = dataIn.ledLevel
     atomicState.lastLedColor = dataIn.ledColor
     atomicState.lastLedBlink = dataIn.ledBlink
 }
 
-def setWD200Led6 (dataIn) {
-   setWD200LED (6, dataIn)
-   runIn (1, setWD200Led7,[data: dataIn])
+def setWD200Led6(dataIn) {
+    setWD200LED(6, dataIn)
+    runIn(1, setWD200Led7, [data: dataIn])
 }
 
-def setWD200Led5 (dataIn) {
-   setWD200LED (5, dataIn)
-   runIn (1, setWD200Led6,[data: dataIn])
+def setWD200Led5(dataIn) {
+    setWD200LED(5, dataIn)
+    runIn(1, setWD200Led6, [data: dataIn])
 }
 
-def setWD200Led4 (dataIn) {
-   setWD200LED (4, dataIn)
-   runIn (1, setWD200Led5,[data: dataIn])
+def setWD200Led4(dataIn) {
+    setWD200LED(4, dataIn)
+    runIn(1, setWD200Led5, [data: dataIn])
 }
 
-def setWD200Led3 (dataIn) {
-   setWD200LED (3, dataIn)
-   runIn (1, setWD200Led4,[data: dataIn])
+def setWD200Led3(dataIn) {
+    setWD200LED(3, dataIn)
+    runIn(1, setWD200Led4, [data: dataIn])
 }
 
-def setWD200Led2 (dataIn) {
-   setWD200LED (2, dataIn)
-   runIn (1, setWD200Led3,[data: dataIn])
+def setWD200Led2(dataIn) {
+    setWD200LED(2, dataIn)
+    runIn(1, setWD200Led3, [data: dataIn])
 }
 
-def setWD200Leds (dataIn) {
-   setWD200LED (1, dataIn)
-   runIn (1, setWD200Led2,[data: dataIn])
-   logDebug "Setting dimmer LEDs: color: ${dataIn.ledColor} blink: ${dataIn.ledBlink} level: ${dataIn.ledLevel}"
-}
-  
-def confirmDisplayIndications()
-{
-     //Periodically ensure display indicator devices are correctly set
-     //trigger update of WD200 display devices on next planned processing cycle
-     atomicState.lastBlinkDuration = -1
-     atomicState.lastLedLevel = -1
-     def displayOffIndicator = alwaysDisplayOffPeakIndicator ? alwaysDisplayOffPeakIndicator.toBoolean() : false
-     if (atomicState.nowInPeakUtilityPeriod.toBoolean() | displayOffIndicator) {
-          // Do not reconfirm color of indicator if it should be off, since setting the color can turn it back on
-          runIn(5, colorIndicatorHandler)
-     } else if (!atomicState.nowInPeakUtilityPeriod.toBoolean() && !displayOffIndicator)  {
-       // ensure it is off
-       runIn (5, toggleColorIndicatorHandler, [data: [stateOn: false]])
-     }
-     //why not check the watchDog while we're here:
-     processWatchDog()
+def setWD200Leds(dataIn) {
+    setWD200LED(1, dataIn)
+    runIn(1, setWD200Led2, [data: dataIn])
+    logDebug "Setting dimmer LEDs: color: ${dataIn.ledColor} blink: ${dataIn.ledBlink} level: ${dataIn.ledLevel}"
 }
 
-def rescheduleAllEvents ()
-{
-       unsubscribe()
-       unschedule()
-       initialize()
+def confirmDisplayIndications() {
+    //Periodically ensure display indicator devices are correctly set
+    //trigger update of WD200 display devices on next planned processing cycle
+    atomicState.lastBlinkDuration = -1
+    atomicState.lastLedLevel = -1
+    def displayOffIndicator = alwaysDisplayOffPeakIndicator ? alwaysDisplayOffPeakIndicator.toBoolean() : false
+    def nowInPeakUtilityPeriod = atomicState.nowInPeakUtilityPeriod ? atomicState.nowInPeakUtilityPeriod.toBoolean() : false
+    if (nowInPeakUtilityPeriod | displayOffIndicator) {
+        // Do not reconfirm color of indicator if it should be off, since setting the color can turn it back on
+        runIn(5, colorIndicatorHandler)
+    } else if (!nowInPeakUtilityPeriod && !displayOffIndicator) {
+        // ensure it is off
+        runIn(5, toggleColorIndicatorHandler, [data: [stateOn: false]])
+    }
+    //why not check the watchDog while we're here:
+    processWatchDog()
 }
 
-def processWatchDog ()
-{
+def rescheduleAllEvents() {
+    unsubscribe()
+    unschedule()
+    initialize()
+}
+
+def processWatchDog() {
     if (!atomicState.lastProcessedTime) {
-      atomicState.lastProcessedTime = now()
+        atomicState.lastProcessedTime = now()
     }
     if (!atomicState.lastProcessCompletedTime) {
-      tomicState.lastProcessCompletedTime = now()
+        tomicState.lastProcessCompletedTime = now()
     }
-    def secondsSinceLastProcessed = (now() - atomicState.lastProcessedTime) / 1000  
+    def secondsSinceLastProcessed = (now() - atomicState.lastProcessedTime) / 1000
     def secondsSinceLastProcessCompleted = (now() - atomicState.lastProcessCompletedTime) / 1000
-   
-    if (secondsSinceLastProcessed > 290)   {
+
+    if (secondsSinceLastProcessed > 290) {
         sendNotificationMessage("Warning: Demand Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing", "anomaly")
-        runIn (30, rescheduleAllEvents)
+        runIn(30, rescheduleAllEvents)
     } else if (secondsSinceLastProcessCompleted > 290) {
         sendNotificationMessage("Warning: Demand Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing", "anomaly")
-        runIn (30, rescheduleAllEvents)
-    } 
+        runIn(30, rescheduleAllEvents)
+    }
 }
 
-def watchDog5Minutes ()
-{
-  processWatchDog()
+def watchDog5Minutes() {
+    processWatchDog()
 }
 
-def watchDogHourly ()
-{
-  processWatchDog()
+def watchDogHourly() {
+    processWatchDog()
 }
 
-def chainProcessing3 () {
-   calcCurrentAndProjectedDemand()
-   //the following can run concurrently
-   runIn (1, thermostatControls)
-   runIn (2, recordPeakDemands)
-   runIn (3, setIndicatorDevices)
-   atomicState.lastProcessCompletedTime = now()
+def chainProcessing3() {
+    calcCurrentAndProjectedDemand()
+    //the following can run concurrently
+    runIn(1, thermostatControls)
+    runIn(2, recordPeakDemands)
+    runIn(3, setIndicatorDevices)
+    atomicState.lastProcessCompletedTime = now()
 }
 
-def chainProcessing2 () {
-   setCycleStatus()
-   runIn (1, chainProcessing3)
+def chainProcessing2() {
+    setCycleStatus()
+    runIn(1, chainProcessing3)
 }
 
-def chainProcessing1 () {
-   setUtilityPeriodGlobalStatus()
-   runIn (1, chainProcessing2)
+def chainProcessing1() {
+    setUtilityPeriodGlobalStatus()
+    runIn(1, chainProcessing2)
 }
 
 def process() {
-    runIn (1,processWatchDog)
+    runIn(1, processWatchDog)
     atomicState.lastProcessedTime = now()
-    chainProcessing1 ()
+    chainProcessing1()
 }
