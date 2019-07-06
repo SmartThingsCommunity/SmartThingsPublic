@@ -27,9 +27,10 @@
  */
  
 def version() {
-    return "v0.2.0e.20190703"
+    return "v0.2.1e.20190705"
 }
 /*   
+ *	05-Jul-2019 >>> v0.2.1e.20190705 - Added support for multiple peak control and display devices. Note: update requires these devices to be re-entered in app preferences. 
  *	03-Jul-2019 >>> v0.2.0e.20190703 - Added option to re-set set-point after each cycle. Resolve issue that could result in multiple thermostat commands. 
  *	04-Jun-2019 >>> v0.1.5e.20190604 - Fix issue with turning back on peak demand exceeded devices at start of new cycle. 
  *	30-May-2019 >>> v0.1.4e.20190530 - Resolve new install/init issue
@@ -63,9 +64,9 @@ preferences {
     page(name: "pagePeakSchedule1")
     page(name: "pagePeakSchedule2")
     page(name: "pagePeakSchedule3")
+    page(name: "pagePeakDayHolidays")
     page(name: "pageNotifications")
     page(name: "pageAdvancedSettings")
-    page(name: "pagePeakDayHolidays")
     page(name: "pageDevicesToControl")
     page(name: "pagePrecoolSettings")
     page(name: "pageAdvancedThermostatCommandSettings")
@@ -73,6 +74,10 @@ preferences {
 
 private pageMain() {
     dynamicPage(name: "pageMain", title: "", install: true, uninstall: false) {
+        section() {
+          paragraph app.version() + "\n\nDarwinsDen.com/Demand", 
+          title: "Demand Manager - Alpha", required: false, image: "https://darwinsden.com/download/ddlogo-for-demandmanager-0-png"
+        }
         section("Required Information:") {
             input "goalDemandInWatts", "number", required: false, defaultValue: 3000, title: "Your Goal Demand Watts", image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/demand2-1.png"
             input "operationMode", "enum", required: true, title: "Operation Mode", options: ["monitorOnly": "MONITOR ONLY: Do not perform demand management actions",
@@ -98,7 +103,7 @@ private pageMain() {
                 image: "http://cdn.device-icons.smartthings.com/secondary/activity@2x.png"
         }
 
-        section("Proactively Manage Demand: manage demand by controlling devices and your thermostat") {
+        section("Manage demand by controlling devices and your thermostat") {
             href "pageDevicesToControl", title: "Manage demand by turning off devices during peak periods..", description: "", required: false,
                 image: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png"
             href "pageThermostat", title: "Manage demand by automatically adjusting your thermostat cooling setpoint..", description: "", required: false,
@@ -116,8 +121,21 @@ private pageMain() {
         }
 
         section("About") {
-            paragraph "Version: " + app.version() + "\nMemory used: " + memUsed() +
-                "\n\nFor additional information, or to provide feedback, please visit: DarwinsDen.com/demand", title: "Demand Manager", required: false
+            paragraph "Version: " + app.version() + "\nMemory used: " + memUsed(), title: "Demand Manager", required: false
+        }
+        section("For more information") {
+          href(name: "Site", title: "For additional information, or to provide feedback, please visit: DarwinsDen.com/demand",
+             description: "Tap open the demand manager web page on DarwinsDen.com",
+             required: false,
+             url: "https://darwinsden.com/demand/")
+       }       
+        section("Product Improvement") {
+          href(name: "Survey", title: "Please help improve the Demand Manager smart app.",
+             description: "Tap take the Demand Manager Survey",
+             required: false,
+             url: "https://www.surveymonkey.com/r/RDFFJQM")
+       }
+       section("Rename this smart app") {
             label name: "name", title: "Name", state: (name ? "complete" : null), defaultValue: app.name, required: false
         }
         section("Remove Demand Manager") {
@@ -212,17 +230,32 @@ def pagePeakSchedule3() {
 }
 
 def pageDisplayIndicators() {
+
+    def colorIndicatorDevices = [
+		name:				"colorIndicatorDevices",
+		type:				"capability.colorControl",
+		title:				"Select your peak period color indicator devices",
+		multiple:			true,
+		required:			false
+    ]
+
+    def wD200Dimmers = [
+		name:				"wD200Dimmers",
+		type:				"capability.indicator",
+		title:				"Select your HomeSeer WD200+ dimmers",
+		multiple:			true,
+		required:			false
+    ]
+    
     dynamicPage(name: "pageDisplayIndicators", title: "Choose display indicator devices (optional)", install: false, uninstall: false) {
         section("Select a color indicator light (such as the EZ MultiPli/HomeSeer HSM200) to indicate when you're in a peak demand period. Note: " +
             "The indicator on green light will only be briefly displayed during off-peak unless the persist off-peak display is set below.") {
-            input "colorIndicatorDevice1", "capability.colorControl", required: false, title: "Select your peak period color indicator device 1"
-            input "colorIndicatorDevice2", "capability.colorControl", required: false, title: "Select your peak period color indicator device 2"
+            input colorIndicatorDevices
             input "alwaysDisplayOffPeakIndicator", "boolean", required: false, defaultValue: false, title: "Persist off-peak indication display"
         }
         section("Select HomeSeer WD200+ dimmers to be used as demand warning indicators and solar inverter (if present) production level indicators. " +
             "The Demand Manager will use the colored LED's on the switch plates as graphing indicators (not the bulbs connected to the loads).") {
-            input "WD200Dimmer1", "capability.indicator", required: false, title: "Select your HomeSeer WD200+ dimmer 1"
-            input "WD200Dimmer2", "capability.indicator", required: false, title: "Select your HomeSeer WD200+ dimmer 2"
+            input wD200Dimmers
             input "solarSystemSizeWatts", "number", required: false,
                 default: 6000, title: "Size of your Solar System in Watts"
         }
@@ -259,7 +292,7 @@ def pageNotifications() {
         }
 
         section("Notification method (push notifications are via ST app)") {
-            input "notificationMethod", "enum", required: false, title: "Notification Method", options: ["none", "text", "push", "text and push"]
+            input "notificationMethod", "enum", required: false, defaultValue: "push", title: "Notification Method", options: ["none", "text", "push", "text and push"]
         }
 
         section("Phone number for text messages") {
@@ -269,21 +302,55 @@ def pageNotifications() {
 }
 
 def pagePeakDayHolidays() {
-    dynamicPage(name: "pagePeakDayHolidays", title: "Future Capability", install: false, uninstall: false) {}
+    def holidays = [
+		name:				"holidays",
+		type:				"date",
+		title:				"Enter holidays from peak periods",
+		multiple:			false,
+		required:			false
+    ]
+    dynamicPage(name: "pagePeakDayHolidays", title: "Future Capability. Not currently implemented", install: false, uninstall: false) {
+        section("Fixed Date Holidays") {
+            input "fixedDateHolidays", "enum", title: "Select fixed date holidays", required: false, multiple: true,
+                options: ["Christmas", "New Year's Day", "Independence Day (US)","Thanksgiving (US)"]
+        }
+       section("Other Holiday 1") {
+          input name: "holiday1Month", type: "number", title: "Month", required: false
+          input name: "holiday1Day", type: "number", title: "Day", required: false
+       }
+       section("Other Holiday 2") {
+          input name: "holiday2Month", type: "number", title: "Month", required: false
+          input name: "holiday2Day", type: "number", title: "Day", required: false
+       }      
+    }
 }
 
 def pageDevicesToControl() {
-    dynamicPage(name: "pageDevicesToControl", title: "Enter devices that should be turned off during peak utility periods and/or when peak demand exceeds your goal demand",
+
+    def devicesToTurnOffDuringPeak = [
+		name:				"devicesToTurnOffDuringPeak",
+		type:				"capability.switch",
+		title:				"Devices that should be off during entire peak period",
+		multiple:			true,
+		required:			false
+    ]
+
+    def deviceToTurnOffDuringPeakDemand = [
+		name:				"deviceToTurnOffDuringPeakDemand",
+		type:				"capability.switch",
+		title:				"Devices that should be off when demand goal is exceeded",
+		multiple:			true,
+		required:			false
+    ]
+    dynamicPage(name: "pageDevicesToControl", title: "Manage demand by turning off devices during peak periods",
         install: false, uninstall: false) {
 
         section("Enter devices that should be turned off during peak utility periods. Devices will be turned on again when the peak period ends... ") {
-            input "deviceToTurnOffDuringPeak1", "capability.switch", required: false, title: "Device 1"
-            input "deviceToTurnOffDuringPeak2", "capability.switch", required: false, title: "Device 2"
+            input devicesToTurnOffDuringPeak
         }
         section("Enter devices that should be turned off when peak demand exceeds your goal demand during any 30 or 60 minute demand period. " +
             "Devices will be turned back on again at the beginning of the next 30 or 60 minute demand cycle... ") {
-            input "deviceToTurnOffDuringPeakDemand1", "capability.switch", required: false, title: "Device 1"
-            input "deviceToTurnOffDuringPeakDemand2", "capability.switch", required: false, title: "Device 2"
+            input deviceToTurnOffDuringPeakDemand
         }
     }
 }
@@ -577,44 +644,32 @@ def getTheMonth() {
 
 def peakPeriodOnActions() {
     if (operationMode && operationMode.toString() == "fullControl") {
-        if (deviceToTurnOffDuringPeak1) {
-            deviceToTurnOffDuringPeak1.off()
-        }
-        if (deviceToTurnOffDuringPeak2) {
-            deviceToTurnOffDuringPeak2.off()
+        if (devicesToTurnOffDuringPeak?.size()) {
+           devicesToTurnOffDuringPeak.off()
         }
     }
 }
 
 def peakPeriodOffActions() {
     if (operationMode && operationMode.toString() == "fullControl") {
-        if (deviceToTurnOffDuringPeak1) {
-            deviceToTurnOffDuringPeak1.on()
-        }
-        if (deviceToTurnOffDuringPeak2) {
-            deviceToTurnOffDuringPeak2.on()
+        if (devicesToTurnOffDuringPeak?.size()) {
+           devicesToTurnOffDuringPeak.on()
         }
     }
 }
 
 def peakDemandOnActions() {
     if (operationMode && operationMode.toString() == "fullControl") {
-        if (deviceToTurnOffDuringPeakDemand1) {
-            deviceToTurnOffDuringPeakDemand1.off()
-        }
-        if (deviceToTurnOffDuringPeakDemand2) {
-            deviceToTurnOffDuringPeakDemand2.off()
+        if (devicesToTurnOffDuringPeakDemand?.size()) {
+           devicesToTurnOffDuringPeakDemand.off()
         }
     }
 }
 
 def peakDemandOffActions() {
     if (operationMode && operationMode.toString() == "fullControl") {
-        if (deviceToTurnOffDuringPeakDemand1) {
-            deviceToTurnOffDuringPeakDemand1.on()
-        }
-        if (deviceToTurnOffDuringPeakDemand2) {
-            deviceToTurnOffDuringPeakDemand2.on()
+        if (devicesToTurnOffDuringPeakDemand?.size()) {
+           devicesToTurnOffDuringPeakDemand.on()
         }
     }
 }
@@ -626,7 +681,7 @@ def turnOnPeakPeriod() {
             dashboardDevice.on()
             peakPeriodOnActions()
             atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
-            sendNotification("now entering peak demand period", "demandGeneral")
+            sendNotificationMessage("now entering peak demand period", "demandGeneral")
         }
     } else {
         log.error "Can't turn on peak period switch. Switch not found"
@@ -640,7 +695,7 @@ def turnOffPeakPeriod() {
             dashboardDevice.off()
             peakPeriodOffActions()
             logDebug "now ending peak demand period"
-            sendNotification("now ending peak demand period", "demandGeneral")
+            sendNotificationMessage("now ending peak demand period", "demandGeneral")
         }
     } else {
         log.error "Can't turn off peak period switch. Switch not found"
@@ -751,7 +806,7 @@ def logDebugHandler(data) {
 def logDebug(msg) {
     if (logLevel != null) {
         if (logLevel == "debug" | logLevel == "trace") {
-            runIn(1, logDebugHandler, [data: [message: msg], overwrite: false])
+            runIn(1, logDebugHandler, [overwrite: false, data: [message: msg]])
         }
     }
 }
@@ -773,6 +828,9 @@ private sendNotificationMessage(message, msgType) {
             sendNotification = true
             warning = false
         } else if (msgType == "demandGeneral" && (notifyWithGeneralDemandStatus && notifyWithGeneralDemandStatus.toBoolean() == true)) {
+            sendNotification = true
+            warning = false
+        } else if (msgType == "any") {
             sendNotification = true
             warning = false
         }
@@ -815,8 +873,8 @@ def subscribeDevices() {
 
 def peakPeriodSwitchEvent(evt) {
     //log.debug "Throttled Event Received: ${evt.device} ${evt.name} ${evt.value}"
-    def dashboardDevice = getChildDevice("dashboardDevice")
     if (operationMode && operationMode.toString() == "fullControl") {
+        def dashboardDevice = getChildDevice("dashboardDevice")
         if (dashboardDevice.switchState.stringValue == "on") {
             sendNotificationMessage("Entering utility peak period.", "demandGeneral")
             atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
@@ -877,6 +935,38 @@ def setUtilityPeriodGlobalStatus() {
     atomicState.nowInPeakUtilityPeriod = peakUsagePeriod
 }
 
+def recordFinalCyclePeaks () {
+    def dashboardDevice = getChildDevice("dashboardDevice")
+    if (dashboardDevice) {
+         def peakDemand = atomicState.lastRecordedPeakDemand ? atomicState.lastRecordedPeakDemand.toInteger() : 0
+         if (peakDemand > 1) {
+            def peakDemandToday = dashboardDevice.currentValue("peakDayDemand")
+            if (!peakDemandToday || peakDemand > peakDemandToday) {
+                log.debug("setting today's peak demand")
+                dashboardDevice.setPeakDayDemand(peakDemand)
+                def demandPeakToday = getChildDevice("demandPeakToday")
+                if (demandPeakToday) {
+                        demandPeakToday.setPower(peakDemand)
+                }
+            }
+            def peakDemandThisMonth = dashboardDevice.currentValue("peakMonthDemand")
+            if (!peakDemandThisMonth || peakDemand > peakDemandThisMonth) {
+                 logDebug("setting this month's peak demand")
+                 dashboardDevice.setPeakMonthDemand(peakDemand)
+                 def demandPeakThisMonth = getChildDevice("demandPeakMonth")
+                 if (demandPeakThisMonth) {
+                        demandPeakThisMonth.setPower(peakDemand)
+                 }
+                 if (notifyWhenMonthlyDemandExceeded && notifyWhenMonthlyDemandExceeded.toBoolean() == true &&
+                        peakDemand > exceededBuffer) {
+                        sendNotificationMessage("New Peak Demand for ${getTheMonth()} is: ${peakDemand}W", "demandMonth")
+                 }
+            }
+         }
+     }
+     atomicState.lastRecordedPeakDemand = 0
+}
+        
 def setCycleStatus() {
     def secondsIntoThisCycle
     def secondsLeftInThisCycle
@@ -909,6 +999,7 @@ def setCycleStatus() {
     if (secondsSinceLastCheck > atomicState.cycleTimeMinutes * 60 || atomicState.lastMinute > min ||
         (atomicState.lastMinute < atomicState.cycleTimeMinutes && min >= atomicState.cycleTimeMinutes)) {
         logDebug "New Demand Cycle"
+        runIn (1, recordFinalCyclePeaks)
         atomicState.demandCurrentWatts = Math.max(wholeHomePowerMeter.powerState.integerValue, 0)
         atomicState.cycleDemandNotificationSent = false
         def demandPeakCurrent = getChildDevice("demandPeakCurrent")
@@ -988,19 +1079,15 @@ def calcCurrentAndProjectedDemand() {
     def demandPeakCurrent = getChildDevice("demandPeakCurrent")
     if (demandPeakCurrent) {
         runIn(1, setPeakCurrentDevice, [data: [power: demandCurrent]])
-        //demandPeakCurrent.setPower(demandCurrent)
     }
     def dashboardDevice = getChildDevice("dashboardDevice")
     if (dashboardDevice) {
         runIn(1, setDashboardCurrentDemand, [data: [power: demandCurrent]])
-        //dashboardDevice.setCurrentDemand(demandCurrent)
         runIn(1, setDashboardProjectedDemand, [data: [power: demandProjected]])
-        //dashboardDevice.setProjectedDemand(demandProjected)
     }
     def demandPeakProjected = getChildDevice("demandPeakProjected")
     if (demandPeakProjected) {
         runIn(1, setPeakProjectedDevice, [data: [power: demandProjected]])
-        //demandPeakProjected.setPower(demandProjected)
     }
     logDebug("Projected Demand: ${demandProjected}W. Current Demand: ${demandCurrent}W.")
     //***********************************************
@@ -1013,30 +1100,31 @@ def calcCurrentAndProjectedDemand() {
 def recordPeakDemands() {
     def day = new Date().format('DD', location.timeZone).toInteger()
     def month = new Date().format('MM', location.timeZone).toInteger()
-    def dashboardDevice = getChildDevice("dashboardDevice")
-    def demandPeakToday = getChildDevice("demandPeakToday")
-    def demandPeakThisMonth = getChildDevice("demandPeakMonth")
     def projectedDemand = atomicState.demandProjectedWatts.toInteger()
 
     if (!atomicState.lastDay || atomicState.lastDay != day) {
         atomicState.lastDay = day
+        def demandPeakToday = getChildDevice("demandPeakToday")
         if (demandPeakToday) {
             demandPeakToday.setPower(0)
         }
+        def dashboardDevice = getChildDevice("dashboardDevice")
         if (dashboardDevice) {
             dashboardDevice.setPeakDayDemand(0)
         }
     }
     if (!atomicState.lastMonth || atomicState.lastMonth != month) {
         atomicState.lastMonth = month
+        def demandPeakThisMonth = getChildDevice("demandPeakMonth")
         if (demandPeakThisMonth) {
             demandPeakThisMonth.setPower(0)
         }
+        def dashboardDevice = getChildDevice("dashboardDevice")
         if (dashboardDevice) {
             dashboardDevice.setPeakMonthDemand(0)
         }
     }
-    if (atomicState.nowInPeakUtilityPeriod.toBoolean() == true && (now() - atomicState.peakPeriodStartTime > 2 * 60 * 1000)) {
+    if (atomicState.nowInPeakUtilityPeriod.toBoolean() == true && (now() - atomicState.peakPeriodStartTime > 3 * 60 * 1000)) {
         def exceededBuffer = 0
         if (!notifyWhenDemandExceededBuffer) {
             exceededBuffer = 0
@@ -1055,30 +1143,8 @@ def recordPeakDemands() {
             runIn(1, peakDemandOnActions)
             atomicState.processedDemandOnActions = true
         }
-
-        if (atomicState.nowInPeakUtilityPeriod.toBoolean() == true && atomicState.secondsLeftInThisDemandCycle < 120) {
-            if (dashboardDevice) {
-                def peakDemandToday = dashboardDevice.currentValue("peakDayDemand")
-                def peakDemandThisMonth = dashboardDevice.currentValue("peakMonthDemand")
-                if (!peakDemandToday || projectedDemand > peakDemandToday) {
-                    logDebug("setting today's peak demand")
-                    dashboardDevice.setPeakDayDemand(projectedDemand)
-                    if (demandPeakToday) {
-                        demandPeakToday.setPower(projectedDemand)
-                    }
-                }
-                if (!peakDemandThisMonth || projectedDemand > peakDemandThisMonth) {
-                    logDebug("setting this month's peak demand")
-                    dashboardDevice.setPeakMonthDemand(projectedDemand)
-                    if (demandPeakThisMonth) {
-                        demandPeakThisMonth.setPower(projectedDemand)
-                    }
-                    if (notifyWhenMonthlyDemandExceeded && notifyWhenMonthlyDemandExceeded.toBoolean() == true &&
-                        projectedDemand > exceededBuffer) {
-                        sendNotificationMessage("New Peak Demand for ${getTheMonth()} is: ${projectedDemand}W", "demandMonth")
-                    }
-                }
-            }
+        if (atomicState.secondsLeftInThisDemandCycle?.toInteger() < 600) {
+           atomicState.lastRecordedPeakDemand = projectedDemand
         }
     }
 }
@@ -1364,22 +1430,12 @@ def commandThermostatWithBump(setPoint, degreesBump) {
 
 def toggleColorIndicatorHandler(data) {
     def stateIsOn = data.stateOn.toBoolean()
-    if (stateIsOn == true) {
+    if (stateIsOn) {
         logDebug("turning on peak indicator light!")
-        if (colorIndicatorDevice1) {
-            colorIndicatorDevice1.on()
-        }
-        if (colorIndicatorDevice2) {
-            colorIndicatorDevice2.on()
-        }
+        colorIndicatorDevices.on()
     } else {
         logDebug("turning off peak indicator light!")
-        if (colorIndicatorDevice1) {
-            colorIndicatorDevice1.off()
-        }
-        if (colorIndicatorDevice2) {
-            colorIndicatorDevice2.off()
-        }
+        colorIndicatorDevices.off()
     }
 }
 
@@ -1393,18 +1449,22 @@ def colorIndicatorHandler() {
     } else {
         color = green
     }
-    if (colorIndicatorDevice1) {
-        colorIndicatorDevice1.setColor(color)
-    }
-    if (colorIndicatorDevice2) {
-        colorIndicatorDevice2.setColor(color)
-    }
+    colorIndicatorDevices.setColor(color)
     atomicState.lastPeakDisplayStateOn = nowInPeakUtilityPeriod
+}
+
+def checkDeprecated() {
+   if (!atomicState.deprecatedDevicesLogged & (WD200Dimmer1 || WD200Dimmer2 || colorIndicatorDevice1 || colorIndicatorDevice2 ||
+         deviceToTurnOffDuringPeak1 || deviceToTurnOffDuringPeak2 || deviceToTurnOffDuringPeakDemand1 || deviceToTurnOffDuringPeakDemand2)) {
+       atomicState.deprecatedDevicesLogged = true
+       sendPush ("Demand Manager smart app requires re-entry of display devices and peak period on/off devices in smart app preferences due software update") 
+   }
 }
 
 def setIndicatorDevices() {
     def nowInPeakUtilityPeriod = atomicState.nowInPeakUtilityPeriod ? atomicState.nowInPeakUtilityPeriod.toBoolean() : false
-    if (colorIndicatorDevice1 || colorIndicatorDevice2) {
+    runIn (10, checkDeprecated)
+    if (colorIndicatorDevices?.size()) {
         def stateChanged = false
         if (atomicState.lastPeakDisplayStateOn == null) {
             atomicState.lastPeakDisplayStateOn = !nowInPeakUtilityPeriod
@@ -1419,8 +1479,8 @@ def setIndicatorDevices() {
             }
         }
     }
-
-    if (WD200Dimmer1 || WD200Dimmer2) {
+    
+    if (wD200Dimmers?.size()) {
         def ledRed = 1
         def ledGreen = 2
         def ledYellow = 5
@@ -1475,15 +1535,9 @@ def setIndicatorDevices() {
     }
 }
 
-
 def wd200LedBlinkHandler(data) {
     def blinkDuration = data.duration
-    if (WD200Dimmer1) {
-        WD200Dimmer1.setBlinkDurationMilliseconds(blinkDuration)
-    }
-    if (WD200Dimmer2) {
-        WD200Dimmer2.setBlinkDurationMilliseconds(blinkDuration)
-    }
+    wD200Dimmers.setBlinkDurationMilliseconds(blinkDuration)
     atomicState.lastBlinkDuration = blinkDuration
 }
 
@@ -1494,13 +1548,7 @@ def setWD200LED(led, data) {
         color = 0
         blink = 0
     }
-    //logDebug "Setting dimmer LED: color: ${color} blink: ${blink} led: ${led}"
-    if (WD200Dimmer1) {
-        WD200Dimmer1.setStatusLed(led, color, blink)
-    }
-    if (WD200Dimmer2) {
-        WD200Dimmer2.setStatusLed(led, color, blink)
-    }
+    wD200Dimmers.setStatusLed(led, color, blink)
 }
 
 def setWD200Led7(dataIn) {
