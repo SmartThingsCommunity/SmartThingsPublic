@@ -9,4 +9,4 @@ Steps:
 1. In the mobile app change the IP and Port of your device 
 
 
-PS: Should work with Sonoff Basic as well but it wouldn't be able to read the Power Monitoring values.
+PS: It works with Sonoff Basic (confirmed by Neil_Popson) but will not provide any data for Energy Monitoring.
