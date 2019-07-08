@@ -1,5 +1,5 @@
 /*
- *  Copyright 2018 SmartThings
+ *  Copyright 2019 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -12,22 +12,21 @@
  *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  *  License for the specific language governing permissions and limitations
  *  under the License.
- *  Author : Fen Mei / f.mei@samsung.com
- *  Date : 2018-08-29
  */
 
 metadata {
-	definition(name: "ZigBee Multi Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "generic-switch") {
+	definition(name: "ZigBee Multi Switch Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "generic-switch-power") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Switch"
+		capability "Power Meter"
 
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04", outClusters: "0019", manufacturer: "Aurora", model: "DoubleSocket50AU", deviceJoinName: "Aurora Smart Double Socket 1"
 	}
 	// simulator metadata
 	simulator {
@@ -48,12 +47,16 @@ metadata {
 				attributeState "turningOn", label: '${name}', action: "switch.off", icon: "st.switches.light.on", backgroundColor: "#00A0DC", nextState: "turningOff"
 				attributeState "turningOff", label: '${name}', action: "switch.on", icon: "st.switches.light.off", backgroundColor: "#ffffff", nextState: "turningOn"
 			}
+			tileAttribute("power", key: "SECONDARY_CONTROL") {
+				attributeState "power", label: '${currentValue} W'
+			}
 		}
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label: "", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
+
 		main "switch"
-		details(["switch", "refresh"])
+		details(["switch", "refresh", "power"])
 	}
 }
 
@@ -97,7 +100,7 @@ def parse(String description) {
 
 private void createChildDevices() {
 	def i = 2
-	addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+	addChildDevice("Child Switch Health Power", "${device.deviceNetworkId}:0${i}", device.hubId,
 		[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
 }
 
@@ -135,11 +138,10 @@ def ping() {
 }
 
 def refresh() {
-	if (isOrvibo()) {
-		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
-	} else {
-		zigbee.onOffRefresh() + zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 2])
-	}
+	zigbee.onOffRefresh() +
+	zigbee.electricMeasurementPowerRefresh()
+	zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 2]) +
+	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER, 0x050B, [destEndpoint: 2]) +
 }
 
 def poll() {
@@ -172,15 +174,10 @@ def configure() {
 	log.debug "configure()"
 	configureHealthCheck()
 
-	if (isOrvibo()) {
-		//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
-		zigbee.writeAttribute(zigbee.BASIC_CLUSTER, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
-	} else {
-		//other devices supported by this DTH in the future
-		zigbee.onOffConfig(0, 120) + zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: 0x02]) + refresh()
-	}
-}
-
-private Boolean isOrvibo() {
-	device.getDataValue("manufacturer") == "ORVIBO"
+	// Aurora (and other devices supported by this DTH in the future)
+	zigbee.onOffConfig(0, 120) +
+	zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: 0x02]) +
+	zigbee.configureReporting(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER, 0x050B, 0x29, 1, 600, 0x0005, [destEndpoint: 0x02]) +
+	zigbee.electricMeasurementPowerConfig() +
+	refresh()
 }
