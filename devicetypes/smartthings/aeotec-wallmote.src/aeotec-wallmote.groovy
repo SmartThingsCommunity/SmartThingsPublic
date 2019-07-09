@@ -49,6 +49,7 @@ def getNumberOfButtons() {
 }
 
 def installed() {
+    createChildDevices()
     sendEvent(name: "numberOfButtons", value: numberOfButtons)
     sendEvent(name: "supportedButtonValues", value: ["pushed", "held"])
     sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1])
@@ -68,7 +69,6 @@ def updated() {
 
 def configure() {
     sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false)
-    createChildDevices()
     response([
             secure(zwave.batteryV1.batteryGet()),
             "delay 2000",

@@ -45,7 +45,7 @@ metadata {
     }
 }
 
-def parse(String description) {
+def parse(description) {
 }
 
 def on() {
