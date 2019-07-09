@@ -292,7 +292,7 @@ def parseDescriptionAsMap(description) {
     def result = map.get('result')
     def list = [];
 
-  if (getDataLengthByType(map.get('encoding')) != null && getDataLengthByType(map.get('encoding')) < map.get('value').length()) {
+  if (encoding != null && getDataLengthByType(encoding) != null && getDataLengthByType(encoding) < value.length()) {
     def raw = map.get('raw')
 
     def size = Long.parseLong(''+ map.get('size'), 16)

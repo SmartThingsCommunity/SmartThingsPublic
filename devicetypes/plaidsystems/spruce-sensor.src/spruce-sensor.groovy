@@ -133,7 +133,7 @@ def parse(String description) {
  	
     //check in configuration change
     if (!device.latestValue('configuration')) result = poll()
-    if (device.latestValue('configuration').toInteger() != interval && interval != null) {  	
+    if (device.latestValue('configuration') as float != interval && interval != null) {
         result = poll()            
     }
  	log.debug "result: $result"
