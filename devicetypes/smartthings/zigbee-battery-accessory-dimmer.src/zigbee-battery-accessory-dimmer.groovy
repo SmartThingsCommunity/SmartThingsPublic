@@ -294,12 +294,6 @@ def handleBatteryEvents(descMap) {
 		if (batteryValue != null) {
 			batteryValue = Math.min(100, Math.max(0, batteryValue))
 
-			// Some special logic for the IKEA Dimmer:
-			// Sometimes we receive battery events that reflect the battery under load and dip greatly, so try to smooth them out a little.
-			if (isIkeaDimmer() && device.currentValue("battery")) {
-				batteryValue = Math.round((batteryValue + device.currentValue("battery") as int) / 2)
-			}
-
 			results << createEvent(name: "battery", value: batteryValue, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%", translatable: true)
 		}
 	}
@@ -346,7 +340,8 @@ def configure() {
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR, DataType.UINT8, 0, 21600, null)
 	} else {
 		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR) +
-			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 10 * 60, null)
+			// Report no more frequently than 30 seconds, no less frequently than 6 hours, and when there is a change of 10%
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 21600, 0x14)
 	}
 }
 
