@@ -31,7 +31,7 @@ definition(
 )
 
 preferences {
-	page(name: "mainPage")
+    page(name: "mainPage")
     page(name: "pageAbout", title: "About ${textAppName()}", install: null, uninstall: true, nextPage: null)
 }
 
