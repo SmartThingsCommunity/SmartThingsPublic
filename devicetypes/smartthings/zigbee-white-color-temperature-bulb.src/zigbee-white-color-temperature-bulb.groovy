@@ -85,6 +85,7 @@ metadata {
 
 		// Muller Licht Tint
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ColorTemperature", deviceJoinName: "Müller Licht Tint White Bulb"
+        fingerprint profileId: "0104", deviceId: "010C", manufacturer: "AduroSmart Eria", model: "AD-ColorTemperature3001", deviceJoinName: "Eria Color Temperature Light"
 	}
 
 	// UI tile definitions
