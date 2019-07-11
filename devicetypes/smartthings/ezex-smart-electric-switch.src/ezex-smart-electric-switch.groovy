@@ -23,6 +23,7 @@ metadata {
         capability "Configuration"
 
         fingerprint profileId: "0104", deviceId:"0053", inClusters: "0000, 0003, 0004, 0006, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E240-KR116Z-HA", deviceJoinName: "Smart Electric Switch"
+        fingerprint profileId: "0104", deviceId:"0051", inClusters: "0000, 0003, 0004, 0006, 0B04, 0702", outClusters: "0019", manufacturer: "", model: "E210-KR210Z1-HA", deviceJoinName: "Smart Electric 2 Switch"
     }
 
     tiles(scale: 2){
