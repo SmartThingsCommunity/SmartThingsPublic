@@ -288,7 +288,8 @@ def handleBatteryEvents(descMap) {
 
 			batteryValue = Math.round(((batteryValueVoltage - minVolts) / (maxVolts - minVolts)) * 100)
 		} else if (descMap.attrInt == BATTERY_PERCENT_ATTR) {
-			batteryValue = Math.round(rawValue / 2)
+			// The IKEA dimmer is sending us full percents, but the spec tells us these are half percents, so account for this
+			batteryValue = Math.round(rawValue / (isIkeaDimmer() ? 1 : 2))
 		}
 
 		if (batteryValue != null) {
@@ -340,8 +341,8 @@ def configure() {
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR, DataType.UINT8, 0, 21600, null)
 	} else {
 		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR) +
-			// Report no more frequently than 30 seconds, no less frequently than 6 hours, and when there is a change of 10%
-			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 21600, 0x14)
+			// Report no more frequently than 30 seconds, no less frequently than 6 hours, and when there is a change of 10% (expressed as half percents, except for IKEA dimmer)
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 21600, 10 * (isIkeaDimmer() ? 1 : 2))
 	}
 }
 
