@@ -49,10 +49,6 @@ void off() {
 	parent.childOff(device.deviceNetworkId)
 }
 
-def ping() {
-	// Intentionally left blank as parent should handle this
-}
-
 def uninstalled() {
 	parent.delete()
 }

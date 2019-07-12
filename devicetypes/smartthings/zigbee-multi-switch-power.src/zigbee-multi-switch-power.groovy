@@ -28,16 +28,6 @@ metadata {
 
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04", outClusters: "0019", manufacturer: "Aurora", model: "DoubleSocket50AU", deviceJoinName: "Aurora Smart Double Socket 1"
 	}
-	// simulator metadata
-	simulator {
-		// status messages
-		status "on": "on/off: 1"
-		status "off": "on/off: 0"
-
-		// reply messages
-		reply "zcl on-off on": "on/off: 1"
-		reply "zcl on-off off": "on/off: 0"
-	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name: "switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
@@ -61,26 +51,18 @@ metadata {
 }
 
 def installed() {
+	log.debug "Installed"
 	createChildDevices()
-	updateDataValue("onOff", "catchall")
 }
 
 def updated() {
-	log.debug "updated()"
-	updateDataValue("onOff", "catchall")
+	log.debug "Updated"
+	refresh()
 }
 
 def parse(String description) {
 	Map eventMap = zigbee.getEvent(description)
 	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
-
-	if (!eventMap && eventDescMap) {
-		eventMap = [:]
-		if (eventDescMap?.clusterId == zigbee.ONOFF_CLUSTER) {
-			eventMap[name] = "switch"
-			eventMap[value] = eventDescMap?.value
-		}
-	}
 
 	if (eventMap) {
 		if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
@@ -99,33 +81,37 @@ def parse(String description) {
 }
 
 private void createChildDevices() {
-	def i = 2
-	addChildDevice("Child Switch Health Power", "${device.deviceNetworkId}:0${i}", device.hubId,
-		[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
-}
+	def numberOfChildDevices = modelNumberOfChildDevices[device.getDataValue("model")]
+	log.debug("createChildDevices(), numberOfChildDevices: ${numberOfChildDevices}")
 
-private getChildEndpoint(String dni) {
-	dni.split(":")[-1] as Integer
+	for(def endpoint : 2..numberOfChildDevices) {
+		try {
+			log.debug "creating endpoint: ${endpoint}"
+			addChildDevice("Child Switch Health Power", "${device.deviceNetworkId}:0${endpoint}", device.hubId,
+				[completedSetup: true,
+				 label: "${device.displayName[0..-2]}${endpoint}",
+				 isComponent: false
+				])
+		} catch(Exception e) {
+			log.debug "Exception: ${e}"
+		}
+	}
 }
 
 def on() {
-	log.debug("on")
 	zigbee.on()
 }
 
 def off() {
-	log.debug("off")
 	zigbee.off()
 }
 
 def childOn(String dni) {
-	log.debug(" child on ${dni}")
 	def childEndpoint = getChildEndpoint(dni)
 	zigbee.command(zigbee.ONOFF_CLUSTER, 0x01, "", [destEndpoint: childEndpoint])
 }
 
 def childOff(String dni) {
-	log.debug(" child off ${dni}")
 	def childEndpoint = getChildEndpoint(dni)
 	zigbee.command(zigbee.ONOFF_CLUSTER, 0x00, "", [destEndpoint: childEndpoint])
 }
@@ -134,50 +120,50 @@ def childOff(String dni) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return refresh()
+	refresh()
 }
 
 def refresh() {
-	zigbee.onOffRefresh() +
-	zigbee.electricMeasurementPowerRefresh()
-	zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 2]) +
-	zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER, 0x050B, [destEndpoint: 2]) +
-}
-
-def poll() {
-	refresh()
-}
-
-def healthPoll() {
-	log.debug "healthPoll()"
-	def cmds = refresh()
-	cmds.each { sendHubCommand(new physicalgraph.device.HubAction(it)) }
-}
-
-def configureHealthCheck() {
-	Integer hcIntervalMinutes = 12
-	if (!state.hasConfiguredHealthCheck) {
-		log.debug "Configuring Health Check, Reporting"
-		unschedule("healthPoll")
-		runEvery5Minutes("healthPoll")
-		def healthEvent = [name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
-		// Device-Watch allows 2 check-in misses from device
-		sendEvent(healthEvent)
-		childDevices.each {
-			it.sendEvent(healthEvent)
-		}
-		state.hasConfiguredHealthCheck = true
+	def refreshCommands = zigbee.onOffRefresh() + zigbee.electricMeasurementPowerRefresh()
+	def numberOfChildDevices = modelNumberOfChildDevices[device.getDataValue("model")]
+	for(def endpoint : 2..numberOfChildDevices) {
+		refreshCommands += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: endpoint])
+		refreshCommands += zigbee.readAttribute(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER, 0x050B, [destEndpoint: endpoint])
 	}
+	log.debug "refreshCommands: $refreshCommands"
+	return refreshCommands
 }
 
 def configure() {
-	log.debug "configure()"
+	log.debug "configure"
 	configureHealthCheck()
+	def numberOfChildDevices = modelNumberOfChildDevices[device.getDataValue("model")]
+	def configurationCommands = zigbee.onOffConfig(0, 120) + zigbee.electricMeasurementPowerConfig()
+	for(def endpoint : 2..numberOfChildDevices) {
+		configurationCommands += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: endpoint])
+		configurationCommands += zigbee.configureReporting(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER, 0x050B, 0x29, 1, 600, 0x0005, [destEndpoint: endpoint])
+	}
+	configurationCommands << refresh()
+	log.debug "configurationCommands: $configurationCommands"
+	return configurationCommands
+}
 
-	// Aurora (and other devices supported by this DTH in the future)
-	zigbee.onOffConfig(0, 120) +
-	zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: 0x02]) +
-	zigbee.configureReporting(zigbee.ELECTRICAL_MEASUREMENT_CLUSTER, 0x050B, 0x29, 1, 600, 0x0005, [destEndpoint: 0x02]) +
-	zigbee.electricMeasurementPowerConfig() +
-	refresh()
+def configureHealthCheck() {
+	log.debug "configureHealthCheck"
+	Integer hcIntervalMinutes = 12
+	def healthEvent = [name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID]]
+	sendEvent(healthEvent)
+	childDevices.each {
+		it.sendEvent(healthEvent)
+	}
+}
+
+private getChildEndpoint(String dni) {
+	dni.split(":")[-1] as Integer
+}
+
+private getModelNumberOfChildDevices() {
+	[
+		"DoubleSocket50AU" : 2
+	]
 }
