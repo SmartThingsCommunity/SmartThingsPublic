@@ -15,7 +15,7 @@
  */
 
 metadata {
-	definition(name: "ZigBee Multi Switch Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", mnmn: "SmartThings", vid: "generic-switch-power") {
+	definition(name: "ZigBee Multi Switch Power", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-switch-power") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Refresh"
