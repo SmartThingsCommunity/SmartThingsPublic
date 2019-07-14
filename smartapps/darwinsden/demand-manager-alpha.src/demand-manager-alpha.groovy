@@ -115,7 +115,7 @@ private pageMain() {
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/dashboard.png"
         }
 
-        section("Advanced Settings") {
+        section("Advanced Settings (General)") {
             href "pageAdvancedSettings", title: "Advanced settings..", description: "", required: false,
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog.png"
         }
@@ -400,7 +400,7 @@ def pageThermostat() {
 }
 
 def pageAdvancedSettings() {
-    dynamicPage(name: "pageAdvancedSettings", title: "Advanced Settings", install: false, uninstall: false) {
+    dynamicPage(name: "pageAdvancedSettings", title: "Advanced Settings (General)", install: false, uninstall: false) {
         section("IDE Log Level (set log level in SmartThings IDE Live Logging Tob)") {
             input "logLevel", "enum", required: false, title: "IDE Log Level", options: ["none", "trace", "debug", "info", "warn"]
         }
@@ -429,6 +429,12 @@ def pageAdvancedThermostatCommandSettings() {
             input "returnSetPointAfterCycle", "boolean", required: false, defaultValue: false, title: "Return temperature after each cycle"
             input "returnCycleSetPoint", "number", required: false, title: "Temperature to return to after each (30 or 60 minute) cycle (°F)"
         }
+        section("Minimum allowable time between thermostat commands. Default is 3 minutes") {
+         input "minMinutesBetweenThermostatCommands", "enum", required: false, title: "Minimum time allowed between thermostat commands", defaultValue: "3",
+          options: ["1": "1 Minute", "2":"2 Minutes", "3":"3 Minutes","4":"4 Minutes","5":"5 Minutes","7":"7 Minutes","10":"10 Minutes"]
+        }
+        
+        
     }
 }
 def pageRemove() {
@@ -495,7 +501,13 @@ def updated() {
         atomicState.cycleTimeMinutes = 60
     }
     log.debug "Cycle time is ${atomicState.cycleTimeMinutes}"
-
+    
+    if (minMinutesBetweenThermostatCommands == null) {
+        atomicState.minSecsBetweenThermoCommands = 180. toInteger()
+    } else {
+        atomicState.minSecsBetweenThermoCommands = minMinutesBetweenThermostatCommands.toInteger()*60
+    }
+   
     if (getChildDevice("dashboardDevice") == null) {
         log.debug "adding virtual active peak period switch"
         def child = addChildDevice("darwinsden", "Demand Manager Dashboard", "dashboardDevice", null, [name: "dashboardDevice", label: "Demand Manager - Active Peak Period Switch", completedSetup: true])
@@ -544,8 +556,8 @@ def initialize() {
     atomicState.lastProcessCompletedTime = now()
     atomicState.lastProcessedTime = now()
     runEvery1Minute(throttleEvents)
-    runEvery5Minutes(watchDog5Minutes)
-    runEvery1Hour(watchDogHourly)
+    runEvery5Minutes(processWatchDog)
+    runEvery1Hour(processWatchDog)
     runEvery1Hour(confirmDisplayIndications)
     subscribeDevices()
     schedulePrecooling()
@@ -607,7 +619,7 @@ def schedulePeakTimes() {
 }
 
 def schedulePrecooling() {
-    if (precoolHome) {
+    if (precoolHome?.toBoolean()) {
         if (precoolStartTime && precoolStartTemperature && precoolStopTemperature &&
             precoolStartTemperature <= atomicState.maximumAllowedTemperature && precoolStopTemperature <= atomicState.maximumAllowedTemperature) {
             if (precoolStopTime) {
@@ -681,7 +693,7 @@ def turnOnPeakPeriod() {
             dashboardDevice.on()
             peakPeriodOnActions()
             atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
-            sendNotificationMessage("now entering peak demand period", "demandGeneral")
+            //sendNotificationMessage("now entering peak demand period", "demandGeneral")
         }
     } else {
         log.error "Can't turn on peak period switch. Switch not found"
@@ -695,7 +707,7 @@ def turnOffPeakPeriod() {
             dashboardDevice.off()
             peakPeriodOffActions()
             logDebug "now ending peak demand period"
-            sendNotificationMessage("now ending peak demand period", "demandGeneral")
+            //sendNotificationMessage("now ending peak demand period", "demandGeneral")
         }
     } else {
         log.error "Can't turn off peak period switch. Switch not found"
@@ -804,9 +816,29 @@ def logDebugHandler(data) {
 }
 
 def logDebug(msg) {
+  
+    if (atomicState.lastdebugTime == null) {
+      atomicState.lastdebugTime = now()
+    }
+    if (atomicState.lastLogDelaySeconds == null) {
+      atomicState.lastLogDelaySeconds = 1
+    }
+   
+    //make sure the logger handler runIn calls are spaced out; overwrite: false apparently doesn't work well if the runIn calls are scheduled for the same second
+    def secondsSinceLastLog = (now() - atomicState.lastdebugTime)/1000
+    def delayTime = (atomicState.lastLogDelaySeconds - secondsSinceLastLog + 3).toInteger()
+    if (delayTime  < 1 ) {
+       delayTime = 1
+    } else { 
+       if (delayTime > 10) {
+        delayTime = 10
+      }
+    }
+    atomicState.lastLogDelaySeconds = delayTime
+    atomicState.lastdebugTime = now()
     if (logLevel != null) {
         if (logLevel == "debug" | logLevel == "trace") {
-            runIn(1, logDebugHandler, [overwrite: false, data: [message: msg]])
+            runIn(delayTime, logDebugHandler, [data: [message: msg], overwrite: false]) 
         }
     }
 }
@@ -942,7 +974,7 @@ def recordFinalCyclePeaks () {
          if (peakDemand > 1) {
             def peakDemandToday = dashboardDevice.currentValue("peakDayDemand")
             if (!peakDemandToday || peakDemand > peakDemandToday) {
-                log.debug("setting today's peak demand")
+                logDebug("setting today's peak demand")
                 dashboardDevice.setPeakDayDemand(peakDemand)
                 def demandPeakToday = getChildDevice("demandPeakToday")
                 if (demandPeakToday) {
@@ -1301,16 +1333,19 @@ def thermostatControls() {
             if (atomicState.lastThermostatCommandTime == null) {
                 atomicState.lastThermostatCommandTime = 0. toInteger()
             }
+            if (atomicState.minSecsBetweenThermoCommands == null) {
+                atomicState.minSecsBetweenThermoCommands = 180. toInteger()
+            }
             def allowedToCommandThermo = operationMode && operationMode.toString() == "fullControl" && commandThermostat && commandThermostat.toBoolean() == true &&
                 now() - atomicState.peakPeriodStartTime > 2 * 60 * 1000 && atomicState.secondsIntoThisDemandCycle > 60
             //log.debug ("allowed: ${allowedToCommandThermo}")
-            if (allowedToCommandThermo && !thermostatIsBusy && ((now() - atomicState.lastThermostatCommandTime) / 1000 >= 60)) {
+            if (allowedToCommandThermo && !thermostatIsBusy && ((now() - atomicState.lastThermostatCommandTime) / 1000 > atomicState.minSecsBetweenThermoCommands)) {
                 if (atomicState.processNewCycleThermo && atomicState.processNewCycleThermo.toBoolean() == true) {
                     atomicState.processNewCycleThermo = false
                     if (returnSetPointAfterCycle && returnSetPointAfterCycle.toBoolean() == true && returnCycleSetPoint && returnCycleSetPoint.toInteger() > 70 &&
                          returnCycleSetPoint.toInteger() <= atomicState.maximumAllowedTemperature && 
                              returnCycleSetPoint.toInteger() != homeThermostat.coolingSetpointState.integerValue) {                 
-                        log.debug("setting return temp!")
+                        logDebug ("setting return temp!")
                         atomicState.lastThermostatCommandTime = now()
                         atomicState.processingThermostatCommand = true
                         runIn(15, commandThermostatHandler, [data: [coolingSetpoint: returnCycleSetPoint]])
@@ -1632,14 +1667,6 @@ def processWatchDog() {
     }
 }
 
-def watchDog5Minutes() {
-    processWatchDog()
-}
-
-def watchDogHourly() {
-    processWatchDog()
-}
-
 def chainProcessing3() {
     calcCurrentAndProjectedDemand()
     //the following can run concurrently
@@ -1662,5 +1689,5 @@ def chainProcessing1() {
 def process() {
     runIn(1, processWatchDog)
     atomicState.lastProcessedTime = now()
-    chainProcessing1()
+    runIn (2, chainProcessing1)
 }
