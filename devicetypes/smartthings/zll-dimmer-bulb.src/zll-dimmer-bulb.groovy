@@ -48,6 +48,7 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E14 W op/ch 400lm", deviceJoinName: "IKEA TRADFRI LED Bulb"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI transformer 10W", deviceJoinName: "TRÅDFRI Driver for wireless control 10W"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI transformer 30W", deviceJoinName: "TRADFRI Driver for wireless control 30W"
+        fingerprint profileId: "C05E", manufacturer: "AduroSmart Eria", model: "ZLL-DimmableLight", deviceJoinName: "Eria ZLL Dimmable Light"
 	}
 
 	// simulator metadata
