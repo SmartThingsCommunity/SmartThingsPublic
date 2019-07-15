@@ -11,7 +11,6 @@
  *	for the specific language governing permissions and limitations under the License.
  *
  */
-
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -288,7 +287,8 @@ def handleBatteryEvents(descMap) {
 
 			batteryValue = Math.round(((batteryValueVoltage - minVolts) / (maxVolts - minVolts)) * 100)
 		} else if (descMap.attrInt == BATTERY_PERCENT_ATTR) {
-			batteryValue = Math.round(rawValue / 2)
+			// The IKEA dimmer is sending us full percents, but the spec tells us these are half percents, so account for this
+			batteryValue = Math.round(rawValue / (isIkeaDimmer() ? 1 : 2))
 		}
 
 		if (batteryValue != null) {
@@ -338,15 +338,20 @@ def installed() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	def offlinePingable = isIkeaDimmer() ? "0" : "1" // We can't ping the IKEA dimmer, so tell device health this
+	int reportInterval = 3 * 60 * 60
+
+	// The checkInterval is twice the reportInterval plus lag (1-2 mins allowable)
+	sendEvent(name: "checkInterval", value: 2 * 60 + 2 * reportInterval, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: offlinePingable], displayed: false)
 
 	if (isCentraliteSwitch()) {
 		zigbee.addBinding(zigbee.ONOFF_CLUSTER) + zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER) +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR) +
-			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_ATTR, DataType.UINT8, 0, 21600, null)
+			zigbee.batteryConfig(0, reportInterval, null)
 	} else {
 		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR) +
-			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, 10 * 60, null)
+			// Report no more frequently than 30 seconds, no less frequently than 6 hours, and when there is a change of 10% (expressed as half percents)
+			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENT_ATTR, DataType.UINT8, 30, reportInterval, 20)
 	}
 }
 
