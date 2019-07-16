@@ -50,7 +50,7 @@ metadata {
 
 	preferences {
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-        input "interval", "number", title: "Measurement Interval 1-120 minutes (default: 10 minutes)", description: "Set how often you would like to check soil moisture in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
+        input "interval", "number", title: "Report Interval", description: "How often the device should report in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
         input "resetMinMax", "bool", title: "Reset Humidity min and max", required: false, displayDuringSetup: false
       }
 
