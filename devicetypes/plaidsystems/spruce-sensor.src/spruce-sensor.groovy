@@ -133,7 +133,7 @@ def parse(String description) {
  	
     //check in configuration change
     if (!device.latestValue('configuration')) result = poll()
-    if (device.latestValue('configuration').toInteger() != interval && interval != null) {  	
+    if (device.latestValue('configuration') as float != interval && interval != null) {
         result = poll()            
     }
  	log.debug "result: $result"
@@ -317,7 +317,7 @@ def updated(){
     if (!device.latestValue('configuration')) configure()
     else{
     	if (resetMinMax == true) resetHumidity()
-        if (device.latestValue('configuration').toInteger() != interval && interval != null){    	
+        if (device.latestValue('configuration') as float != interval && interval != null){
             sendEvent(name: 'configuration',value: 0, descriptionText: "Settings changed and will update at next report. Measure interval set to ${interval} mins")
     	}
     }
