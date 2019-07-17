@@ -456,10 +456,10 @@ def setHeatingSetpoint(degrees) {
 		// The lowest supported heating setpoint is 45F which is 7.22C. It displays 7C. We round
 		// 7.22C elsewhere to 7C. So, we want to check to make sure if the user sets 7C we send 7.22C.
 		// Same for the upper bounds of the heating setpoint.
-		if (celsius < 7.22) {
-			celsius = 7.22
-		} else if (celsius > 32.22) {
-			celsius = 32.22
+		if (celsius < heatingSetpointRange[0]) {
+			celsius = heatingSetpointRange[0]
+		} else if (celsius > heatingSetpointRange[1]) {
+			celsius = heatingSetpointRange[1]
 		}
 
 		return zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, hex(celsius * 100)) +
