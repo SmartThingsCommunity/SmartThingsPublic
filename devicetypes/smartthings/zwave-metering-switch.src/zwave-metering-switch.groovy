@@ -27,7 +27,7 @@ metadata {
 
 		fingerprint inClusters: "0x25,0x32"
 		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Micro Smart Switch"
-		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch", , ocfDeviceType: "oic.d.smartplug"
+		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6", ocfDeviceType: "oic.d.smartplug"  //US
 		fingerprint mfr: "0086", prod: "0003", model: "0060", deviceJoinName: "Aeotec Smart Switch 6", ocfDeviceType: "oic.d.smartplug"  //EU
 		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeotec Nano Switch"
