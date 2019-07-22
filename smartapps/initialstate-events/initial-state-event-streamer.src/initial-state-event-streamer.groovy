@@ -34,13 +34,16 @@ import groovy.json.JsonSlurper
 preferences {
 	section("Choose which devices to monitor...") {
         input "accelerometers", "capability.accelerationSensor", title: "Accelerometers", multiple: true, required: false
+        input "airQualitySensors", "capability.airQualitySensor", title: "Air Quality Sensors", multiple: true, required: false
         input "alarms", "capability.alarm", title: "Alarms", multiple: true, required: false
         input "batteries", "capability.battery", title: "Batteries", multiple: true, required: false
         input "beacons", "capability.beacon", title: "Beacons", multiple: true, required: false
+        input "co2s", "capability.carbonDioxideMeasurement", title: "Carbon Dioxide Meters", multiple: true, required: false
         input "cos", "capability.carbonMonoxideDetector", title: "Carbon  Monoxide Detectors", multiple: true, required: false
         input "colors", "capability.colorControl", title: "Color Controllers", multiple: true, required: false
         input "contacts", "capability.contactSensor", title: "Contact Sensors", multiple: true, required: false
         input "doorsControllers", "capability.doorControl", title: "Door Controllers", multiple: true, required: false
+        input "dustSensors", "capability.dustSensor", title: "Dust Sensors", multiple: true, required: false
         input "energyMeters", "capability.energyMeter", title: "Energy Meters", multiple: true, required: false
         input "illuminances", "capability.illuminanceMeasurement", title: "Illuminance Meters", multiple: true, required: false
         input "locks", "capability.lock", title: "Locks", multiple: true, required: false
@@ -137,6 +140,9 @@ def subscribeToEvents() {
 	if (accelerometers != null) {
 		subscribe(accelerometers, "acceleration", genericHandler)
 	}
+	if (airQualitySensors != null) {
+		subscribe(airQualitySensors, "airQuality", genericHandler)
+	}
 	if (alarms != null) {
 		subscribe(alarms, "alarm", genericHandler)
 	}
@@ -146,7 +152,9 @@ def subscribeToEvents() {
 	if (beacons != null) {
 		subscribe(beacons, "presence", genericHandler)
 	}
-
+	if (co2s != null) {
+		subscribe(co2s, "carbonDioxide", genericHandler)
+	}
 	if (cos != null) {
 		subscribe(cos, "carbonMonoxide", genericHandler)
 	}
@@ -157,6 +165,10 @@ def subscribeToEvents() {
 	}
 	if (contacts != null) {
 		subscribe(contacts, "contact", genericHandler)
+	}
+	if (dustSensors != null) {
+		subscribe(dustSensors, "fineDustLevel", genericHandler)
+		subscribe(dustSensors, "dustLevel", genericHandler)
 	}
 	if (energyMeters != null) {
 		subscribe(energyMeters, "energy", genericHandler)
