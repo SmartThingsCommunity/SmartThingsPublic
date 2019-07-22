@@ -23,7 +23,8 @@ definition(
     description: "Integrate your Tesla car with SmartThings.",
     category: "SmartThings Labs",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/tesla-app%402x.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/tesla-app%403x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/tesla-app%403x.png",
+    singleInstance: true
 )
 
 preferences {

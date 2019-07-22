@@ -39,8 +39,8 @@ metadata {
 
 	tiles {
 		standardTile("motion", "device.motion", width: 2, height: 2) {
-			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC"
+			state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#cccccc"
 		}
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
 			state "temperature", label:'${currentValue}°',
@@ -80,19 +80,12 @@ def parse(String description) {
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
-	// log.debug "Parsed ${description.inspect()} to ${result.inspect()}"
+	log.debug "Parsed ${description.inspect()} to ${result.inspect()}"
 	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multiinstancev1.MultiInstanceCmdEncap cmd) {
-	def encapsulated = null
-	if (cmd.respondsTo("encapsulatedCommand")) {
-		encapsulated = cmd.encapsulatedCommand()
-	} else {
-		def hex1 = { n -> String.format("%02X", n) }
-		def sorry = "command: ${hex1(cmd.commandClass)}${hex1(cmd.command)}, payload: " + cmd.parameter.collect{ hex1(it) }.join(" ")
-		encapsulated = zwave.parse(sorry, [0x31: 1, 0x84: 2, 0x60: 1, 0x85: 1, 0x70: 1])
-	}
+	def encapsulated = cmd.encapsulatedCommand([0x31: 1, 0x84: 2, 0x60: 1, 0x85: 1, 0x70: 1])
 	return encapsulated ? zwaveEvent(encapsulated) : null
 }
 
