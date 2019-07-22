@@ -166,6 +166,9 @@ def subscribeToEvents() {
 	if (contacts != null) {
 		subscribe(contacts, "contact", genericHandler)
 	}
+	if (doorsControllers != null) {
+		subscribe(doorsControllers, "door", genericHandler)
+	}
 	if (dustSensors != null) {
 		subscribe(dustSensors, "fineDustLevel", genericHandler)
 		subscribe(dustSensors, "dustLevel", genericHandler)
