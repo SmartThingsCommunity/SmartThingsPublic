@@ -2,6 +2,10 @@
  *  Tesla Powerwall Manager 
  * 
  *  Copyright 2019 DarwinsDen.com
+ *  
+ *  ****** WARNING ****** USE AT YOUR OWN RISK!
+ *  This software was developed in the hopes that it will be useful to others, however, 
+ *  it is beta software and may have unforesoon side effects to your equipment and related accounts.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -216,6 +220,7 @@ private resetAccountAccess () {
  
 private httpAuthAsyncGet (handlerMethod, String path) {
     try {
+         log.debug "Async requesting: ${path}"
         def requestParameters = [
             uri: url,
             path: path,
@@ -228,6 +233,7 @@ private httpAuthAsyncGet (handlerMethod, String path) {
 }
 
 private httpAuthGet(String path, Closure closure) {
+    log.debug "requesting: ${path}"
     try {
         def requestParameters = [
             uri: url,
@@ -247,7 +253,7 @@ private httpAuthGet(String path, Closure closure) {
 }
 
 private httpAuthPost (Map params = [:], String path, Closure closure) {
-
+    log.debug "Command: ${params}"
     try {
         def requestParameters = [
             uri: url,
@@ -289,8 +295,7 @@ private sendNotificationMessage(message, msgType=null) {
 }
 
 private getPowerwalls() {
-    state.foundPowerwalls = false
-    
+       state.foundPowerwalls = false
        httpAuthGet("/api/1/products", {
         resp ->
         //log.debug "response data for products was ${resp.data} "
@@ -378,10 +383,9 @@ def initialize() {
     unsubscribe()
     unschedule()
     
-    runEvery5Minutes(processMain)
+    runEvery10Minutes(processMain)
     runEvery1Hour(processWatchdog)
     runEvery3Hours(processWatchdog)
-    runEvery1Hour(processWatchdog)
     runIn (5, processMain)
 }
 
@@ -406,7 +410,7 @@ def updateIfChanged(device, attr, value, delta=null) {
     }
     //log.debug "new value: ${value} old value: ${currentValue} attribute: ${attr} delta: ${delta} "
     def deltaMet = (currentValue == null || value != null && delta != null && Math.abs ((value.toInteger() - currentValue.toInteger()).toInteger()) > delta.toInteger())
-    def changed = currentValue != null && value != currentValue && (!delta || deltaMet)
+    def changed = value != null && value != '' && currentValue != null && currentValue != '' && value != currentValue && (!delta || deltaMet)
     state.currentAttrValue[attr] = value.toString()
     def heartBeatUpdateDue = false
 
@@ -420,7 +424,7 @@ def updateIfChanged(device, attr, value, delta=null) {
         state.lastHeartbeatUpdateTime = [:]
     }
 
-    if (changed || heartBeatUpdateDue || (currentValue == null && value != null) ) {
+    if (changed || heartBeatUpdateDue || (currentValue == null && (value != null && value!=''))) {
         device.sendEvent(name: attr, value: value)
         state.lastHeartbeatUpdateTime[attr] = now()
     }
@@ -451,6 +455,7 @@ def checkBatteryNotifications (data) {
 }
           
 def processSiteResponse(response, callData) {
+    log.debug "processing site data response"
     def data = response.json.response
        // log.debug "${data}"
     def pwDevice = getChildDevice("powerwallDashboard")
@@ -480,8 +485,9 @@ def processSiteResponse(response, callData) {
 }
 
 def processPowerwallResponse(response, callData) {
+    log.debug "processing powerwall response"
     def data=response.json.response
-    //log.debug "${data}"   
+    log.debug "${data}"   
     def child = getChildDevice("powerwallDashboard")
     
     if (child) {
@@ -500,11 +506,15 @@ def processPowerwallResponse(response, callData) {
         updateIfChanged(child, "power", data.power_reading.grid_power[0].toInteger(),100)
         updateIfChanged(child, "solarPower", data.power_reading.solar_power[0].toInteger(),100)
         updateIfChanged(child, "powerwallPower", data.power_reading.battery_power[0].toInteger(),100)
-        updateIfChanged(child, "sitenameAndVers", data.site_name.toString()+' V'+data.version.toString())
+        def versionString=''
+        if (data.version != null) {
+           versionString='V'+data.version.toString()
+        }
+        updateIfChanged(child, "sitenameAndVers", data.site_name.toString()+' ' + versionString)
         updateIfChanged(child, "siteName", data.site_name.toString())
-        def changed = updateIfChanged(child, "pwVersion", data.version)
+        def changed = updateIfChanged(child, "pwVersion", versionString)
         if (changed && notifyWhenVersionChanges?.toBoolean()) {
-            sendNotificationMessage("Powerwall software version changed to ${data.version}")
+            sendNotificationMessage("Powerwall software version changed to ${versionString}")
          }
          
         if (data.user_settings.storm_mode_enabled.toBoolean()) {
