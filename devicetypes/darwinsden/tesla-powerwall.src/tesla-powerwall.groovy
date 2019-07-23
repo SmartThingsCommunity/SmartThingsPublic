@@ -17,7 +17,6 @@
  *
  */
 
-
 metadata {
     definition(name: "Tesla Powerwall", namespace: "darwinsden", author: "darwin@darwinsden.com") {
         capability "Battery"
@@ -37,7 +36,6 @@ metadata {
 		attribute "gridPower", "number"
 		attribute "powerWallPower", "number"
         attribute "currentOpState", "string"
-        //attribute "siteNameAndVers", "string"
         attribute "currentStrategy", "string"
         attribute "siteName", "string"
         attribute "pwVersion", "string"
