@@ -216,7 +216,7 @@ private def parseAttributeResponse(String description) {
 
 private def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	def responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 50]
+	def responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 55]
 	return responseMap
 }
 
@@ -269,7 +269,7 @@ private def parseCommandResponse(String description) {
 		//isBatterySet() == false -> battery is ok -> send value 50
 		//isBatterySet() == true -> battery is low -> send value 5
 		//metadata can receive 2 values: 5 or 50 for C2O lock
-		responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 50]
+		responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 55]
 	}
 
 	result << createEvent(responseMap)
