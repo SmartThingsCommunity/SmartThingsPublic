@@ -59,7 +59,8 @@ def parse(String description) {
 	if (event) {
 		if (event.name == "power") {
 			def powerValue
-			powerValue = (event.value as Integer)/10			//TODO: The divisor value needs to be set as part of configuration
+			def div = state.divisor ?: 10
+			powerValue = (event.value as Integer)/div
 			sendEvent(name: "power", value: powerValue)
 		}
 		else {
@@ -93,6 +94,9 @@ def refresh() {
 
 def configure() {
 	log.debug "in configure()"
+	if (device.getDataValue("manufacturer") == "Aurora") {
+		state.divisor = 1
+	}
 	return configureHealthCheck()
 }
 
