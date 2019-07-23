@@ -181,7 +181,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			break;
 		case 3:
 			map.name = "illuminance"
-			map.value = cmd.scaledSensorValue.toInteger()
+			map.value = isZooz() ? getLuxFromPercentage(cmd.scaledSensorValue.toInteger()) : cmd.scaledSensorValue.toInteger()
 			map.unit = "lux"
 			break;
 		case 5:
@@ -278,6 +278,27 @@ def configure() {
 
 	secureSequence(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
+
+private getLuxFromPercentage(percentageValue) {
+	def multiplier = luxConversionData.find {
+		percentageValue >= it.min && percentageValue <= it.max
+	}?.multiplier ?: 5.312
+	def luxValue = percentageValue * multiplier
+	Math.round(luxValue)
+}
+
+private getLuxConversionData() {[
+	[min: 0, max: 9.99, multiplier: 4.451],
+	[min: 10, max: 19.99, multiplier: 5.63],
+	[min: 20, max: 29.99, multiplier: 5.38],
+	[min: 30, max: 39.99, multiplier: 5.36],
+	[min: 40, max: 49.99, multiplier: 5.59],
+	[min: 50, max: 59.99, multiplier: 6.474],
+	[min: 60, max: 69.99, multiplier: 5.222],
+	[min: 70, max: 79.99, multiplier: 5.204],
+	[min: 80, max: 89.99, multiplier: 4.965],
+	[min: 90, max: 100, multiplier: 4.843]
+]}
 
 private setConfigured() {
 	device.updateDataValue("configured", "true")
