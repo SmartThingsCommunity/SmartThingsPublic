@@ -56,13 +56,25 @@ metadata {
 
 def parse(String description) {
 	def results = []
+
+	if (!device.currentState("supportedButtonValues")) {
+		sendEvent(name: "supportedButtonValues", value: JsonOutput.toJson(["pushed", "held"]), displayed: false)
+
+		if (childDevices) {
+			childDevices.each {
+				it.sendEvent(name: "supportedButtonValues", value: JsonOutput.toJson(["pushed", "held"]), displayed: false)
+			}
+		}
+	}
+
 	if (description.startsWith("Err")) {
 		results = createEvent(descriptionText:description, displayed:true)
 	} else {
 		def cmd = zwave.parse(description, [0x2B: 1, 0x80: 1, 0x84: 1])
-		if(cmd) results += zwaveEvent(cmd)
-		if(!results) results = [ descriptionText: cmd, displayed: false ]
+		if (cmd) results += zwaveEvent(cmd)
+		if (!results) results = [ descriptionText: cmd, displayed: false ]
 	}
+
 	// log.debug("Parsed '$description' to $results")
 	return results
 }
@@ -76,6 +88,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
 	}
 	results += configurationCmds().collect{ response(it) }
 	results << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
+
 	return results
 }
 
@@ -86,8 +99,7 @@ def buttonEvent(button, held) {
 
 	if (device.currentState("numberOfButtons")) {
 		buttons = (device.currentState("numberOfButtons").value).toBigInteger()
-	}
-	else {
+	} else {
 		def zwMap = getZwaveInfo()
 		buttons = 4 // Default for Key Fob
 
@@ -95,11 +107,10 @@ def buttonEvent(button, held) {
 		if (zwMap && zwMap.mfr == "0086" && zwMap.prod == "0001" && zwMap.model == "0026") {
 			buttons = 1
 		}
-		sendEvent(name: "numberOfButtons", value: buttons)
+		sendEvent(name: "numberOfButtons", value: buttons, displayed: false)
 	}
 
-	if(buttons > 1)
-	{
+	if (buttons > 1) {
 		String childDni = "${device.deviceNetworkId}/${button}"
 		child = childDevices.find{it.deviceNetworkId == childDni}
 		if (!child) {
@@ -108,12 +119,12 @@ def buttonEvent(button, held) {
 	}
 
 	if (held) {
-		if(buttons > 1) {
+		if (buttons > 1) {
 			child?.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
 		}
 		createEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
-		if(buttons > 1) {
+		if (buttons > 1) {
 			child?.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
 		}
 		createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
@@ -128,12 +139,14 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [ name: "battery", unit: "%" ]
+
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
 		map.descriptionText = "${device.displayName} has a low battery"
 	} else {
 		map.value = cmd.batteryLevel
 	}
+
 	createEvent(map)
 }
 
@@ -156,7 +169,8 @@ def configure() {
 def installed() {
 	initialize()
 	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
-	if(buttons > 1) {
+
+	if (buttons > 1) {
 		createChildDevices()
 	}
 }
@@ -164,12 +178,11 @@ def installed() {
 def updated() {
 	initialize()
 	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
-	if(buttons > 1)
-	{
+
+	if (buttons > 1) {
 		if (!childDevices) {
 			createChildDevices()
-		}
-		else if (device.label != state.oldLabel) {
+		} else if (device.label != state.oldLabel) {
 			childDevices.each {
 				def segs = it.deviceNetworkId.split("/")
 				def newLabel = "${device.displayName} button ${segs[-1]}"
@@ -181,7 +194,6 @@ def updated() {
 }
 
 def initialize() {
-
 	def results = []
 	def buttons = 1
 
@@ -194,17 +206,23 @@ def initialize() {
 		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 		buttons = 4 // Default for Key Fob
 	}
-	
-	sendEvent(name: "numberOfButtons", value: buttons)
+
+	sendEvent(name: "numberOfButtons", value: buttons, displayed: false)
+	sendEvent(name: "supportedButtonValues", value: JsonOutput.toJson(["pushed", "held"]), displayed: false)
+
 	results
 }
 
 private void createChildDevices() {
 	state.oldLabel = device.label
 	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
+
 	for (i in 1..buttons) {
-		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
+		def child = addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
 				[completedSetup: true, label: "${device.displayName} button ${i}",
 				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+
+		child.sendEvent(name: "supportedButtonValues", value: JsonOutput.toJson(["pushed", "held"]), displayed: false)
+		child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
 	}
 }

@@ -25,6 +25,8 @@ metadata {
         command "pause"
 
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", model: "E2B0-KR000Z0-HA", deviceJoinName: "SOMFY Blind Controller/eZEX" // SY-IoT201-BD
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Curtain Motor(CMJ)"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Curtain Motor(CMJ)"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "DY0010", deviceJoinName: "Smart Curtain Motor(DT82TV)"
     }
 
@@ -58,7 +60,13 @@ metadata {
 }
 
 private getCLUSTER_WINDOW_COVERING() { 0x0102 }
+private getCOMMAND_OPEN() { 0x00 }
+private getCOMMAND_CLOSE() { 0x01 }
+private getCOMMAND_PAUSE() { 0x02 }
+private getCOMMAND_GOTO_LIFT_PERCENTAGE() { 0x05 }
 private getATTRIBUTE_POSITION_LIFT() { 0x0008 }
+private getATTRIBUTE_CURRENT_LEVEL() { 0x0000 }
+private getCOMMAND_MOVE_LEVEL_ONOFF() { 0x04 }
 
 private List<Map> collectAttributes(Map descMap) {
 	List<Map> descMaps = new ArrayList<Map>()
@@ -77,7 +85,7 @@ def parse(String description) {
     log.debug "description:- ${description}"
     if (description?.startsWith("read attr -")) {
         Map descMap = zigbee.parseDescriptionAsMap(description)
-        if (descMap?.clusterInt == CLUSTER_WINDOW_COVERING && descMap.value) {
+        if (supportsLiftPercentage() && descMap?.clusterInt == CLUSTER_WINDOW_COVERING && descMap.value) {
             log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, descValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
             List<Map> descMaps = collectAttributes(descMap)
             def liftmap = descMaps.find { it.attrInt == ATTRIBUTE_POSITION_LIFT }
@@ -94,37 +102,60 @@ def parse(String description) {
                     sendEvent(name: "level", value: zigbee.convertHexToInt(liftmap.value))
                 }
             }
+        } else if (!supportsLiftPercentage() && descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.value) {
+            def valueInt = Math.round((zigbee.convertHexToInt(descMap.value)) / 255 * 100)
+            state.level = valueInt
+            if (0 == valueInt) {
+                sendEvent(name: "windowShade", value: "closed")
+            } else if (100 == valueInt) {
+                sendEvent(name: "windowShade", value: "open")
+            } else {
+                sendEvent(name: "windowShade", value: "partially open")
+            }
+            sendEvent([name: "level", value: valueInt])
         }
     }
+}
+
+def supportsLiftPercentage() {
+    device.getDataValue("manufacturer") != "Feibit Co.Ltd"
 }
 
 def close() {
     log.info "close()"
     sendEvent(name: "windowShade", value: "closing")
-    zigbee.command(CLUSTER_WINDOW_COVERING, 0x01)
+    zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_CLOSE)
 }
 
 def open() {
     log.info "open()"
     sendEvent(name: "windowShade", value: "opening")
-    zigbee.command(CLUSTER_WINDOW_COVERING, 0x00)
+    zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_OPEN)
 }
 
-def setLevel(data) {
+def setLevel(data, rate = null) {
     log.info "setLevel()"
     Integer currentLevel = state.level
     Integer level = data as Integer
+
     if (level > currentLevel) {
         sendEvent(name: "windowShade", value: "opening")
     } else if (level < currentLevel) {
         sendEvent(name: "windowShade", value: "closing")
     }
-    zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(data, 2))
+    def cmd
+    if (supportsLiftPercentage()) {
+        cmd = zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_GOTO_LIFT_PERCENTAGE, zigbee.convertToHexString(data, 2))
+    } else {
+        cmd = zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, COMMAND_MOVE_LEVEL_ONOFF, zigbee.convertToHexString(Math.round(data * 255 / 100), 2))
+    }
+
+    return cmd
 }
 
 def pause() {
     log.info "pause()"
-    zigbee.command(CLUSTER_WINDOW_COVERING, 0x02)
+    zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE)
 }
 
 /**
@@ -136,7 +167,12 @@ def ping() {
 
 def refresh() {
     log.info "refresh()"
-    def cmds = zigbee.readAttribute(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT)
+    def cmds
+    if (supportsLiftPercentage()) {
+        cmds = zigbee.readAttribute(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT)
+    } else {
+        cmds = zigbee.readAttribute(zigbee.LEVEL_CONTROL_CLUSTER, ATTRIBUTE_CURRENT_LEVEL)
+    }
     return cmds
 }
 
@@ -145,5 +181,12 @@ def configure() {
     log.info "configure()"
     sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
     log.debug "Configuring Reporting and Bindings."
-    zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 600, null) + refresh()
+
+    def cmds
+    if (supportsLiftPercentage()) {
+        cmds = zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 600, null)
+    } else {
+        cmds = zigbee.levelConfig()
+    }
+    return refresh() + cmds
 }
