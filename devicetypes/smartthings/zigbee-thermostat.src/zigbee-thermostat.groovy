@@ -341,7 +341,7 @@ def getTemperature(value) {
 	if (value != null) {
 		def celsius = Integer.parseInt(value, 16) / 100
 		if (temperatureScale == "C") {
-			return celsius
+			return Math.round(celsius)
 		} else {
 			return Math.round(celsiusToFahrenheit(celsius))
 		}
@@ -440,8 +440,8 @@ def fanOn() {
 
 def setCoolingSetpoint(degrees) {
 	if (degrees != null) {
-		def degreesInteger = Math.round(degrees)
-		def celsius = (temperatureScale == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+		def celsius = (temperatureScale == "C") ? degrees : fahrenheitToCelsius(degrees)
+		celsius = (celsius as Double).round(2)
 		return zigbee.writeAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, hex(celsius * 100)) +
 				zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT)
 	}
@@ -449,9 +449,19 @@ def setCoolingSetpoint(degrees) {
 
 def setHeatingSetpoint(degrees) {
 	if (degrees != null) {
-		def degreesInteger = Math.round(degrees)
+		def celsius = (temperatureScale == "C") ? degrees : fahrenheitToCelsius(degrees)
+		celsius = (celsius as Double).round(2)
 
-		def celsius = (temperatureScale == "C") ? degreesInteger : (fahrenheitToCelsius(degreesInteger) as Double).round(2)
+		// The LUX KONOz is designed around Farenheit and doesn't show decimal temperatures.
+		// The lowest supported heating setpoint is 45F which is 7.22C. It displays 7C. We round
+		// 7.22C elsewhere to 7C. So, we want to check to make sure if the user sets 7C we send 7.22C.
+		// Same for the upper bounds of the heating setpoint.
+		if (celsius < heatingSetpointRange[0]) {
+			celsius = heatingSetpointRange[0]
+		} else if (celsius > heatingSetpointRange[1]) {
+			celsius = heatingSetpointRange[1]
+		}
+
 		return zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, hex(celsius * 100)) +
 				zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT)
 	}
@@ -474,7 +484,7 @@ def getCoolingSetpointRange() {
 	(getTemperatureScale() == "C") ? [10, 35] : [50, 95]
 }
 def getHeatingSetpointRange() {
-	(getTemperatureScale() == "C") ? [7, 32] : [45, 90]
+	(getTemperatureScale() == "C") ? [7.22, 32.22] : [45, 90]
 }
 
 private getTHERMOSTAT_CLUSTER() { 0x0201 }
@@ -485,16 +495,16 @@ private getHEATING_SETPOINT() { 0x0012 }
 private getTHERMOSTAT_RUNNING_MODE() { 0x001E }
 private getCONTROL_SEQUENCE_OF_OPERATION() { 0x001B } // Mandatory attribute
 private getCONTROL_SEQUENCE_OF_OPERATION_MAP() {
-    [
-        "00":["off", "cool"],
-        "01":["off", "cool"],
+	[
+		"00":["off", "cool"],
+		"01":["off", "cool"],
 		// 0x02, 0x03, 0x04, and 0x05 don't actually guarentee emergency heat; to learn this, one would
 		// try THERMOSTAT_SYSTEM_CONFIG (optional), which we default to for the LUX KONOz since it supports THERMOSTAT_SYSTEM_CONFIG
-        "02":["off", "heat", "emergency heat"],
-        "03":["off", "heat", "emergency heat"],
-        "04":["off", "heat", "auto", "cool", "emergency heat"],
-        "05":["off", "heat", "auto", "cool", "emergency heat"]
-    ]
+		"02":["off", "heat", "emergency heat"],
+		"03":["off", "heat", "emergency heat"],
+		"04":["off", "heat", "auto", "cool", "emergency heat"],
+		"05":["off", "heat", "auto", "cool", "emergency heat"]
+	]
 }
 private getTHERMOSTAT_MODE() { 0x001C }
 private getTHERMOSTAT_MODE_OFF() { 0x00 }
@@ -518,13 +528,13 @@ private getFAN_CONTROL_CLUSTER() { 0x0202 }
 private getFAN_MODE() { 0x0000 }
 private getFAN_MODE_SEQUENCE() { 0x0001 }
 private getFAN_MODE_SEQUENCE_MAP() {
-    [
-        "00":["low", "medium", "high"],
-        "01":["low", "high"],
-        "02":["low", "medium", "high", "auto"],
-        "03":["low", "high", "auto"],
-        "04":["on", "auto"],
-    ]
+	[
+		"00":["low", "medium", "high"],
+		"01":["low", "high"],
+		"02":["low", "medium", "high", "auto"],
+		"03":["low", "high", "auto"],
+		"04":["on", "auto"],
+	]
 }
 private getFAN_MODE_ON() { 0x04 }
 private getFAN_MODE_AUTO() { 0x05 }

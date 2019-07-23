@@ -87,7 +87,7 @@ def parse(String description) {
 		def zigbeeMap = zigbee.parseDescriptionAsMap(description)
 		log.trace "zigbeeMap : $zigbeeMap"
 
-		if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
+		if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER && zigbeeMap.value != null) {
 			if (zigbeeMap.attrInt == ATTRIBUTE_HUE && shouldUseHueSaturation()) { // Hue Attribute
 				def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				sendEvent(name: "hue", value: hueValue, displayed:false)

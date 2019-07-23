@@ -21,9 +21,11 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
+		capability "Tamper Alert"
 
 		fingerprint deviceId: "0x0701", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x98,0x7A", outClusters:"0x5A"
 		fingerprint mfr:"0086", prod:"0102", model:"004A", deviceJoinName: "Aeotec MultiSensor (Gen 5)"
+		fingerprint mfr:"027A", prod:"2021", model:"2101", deviceJoinName: "Zooz 4-in-1 sensor", mnmn: "SmartThings", vid: "generic-motion-6"
 	}
 
 	simulator {
@@ -92,9 +94,15 @@ metadata {
 		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configure", icon:"st.secondary.configure"
 		}
+		/* waiting for LE fix for Zooz 4-in-1
+		valueTile("tamper", "device.tamper", height: 2, width: 2, decoration: "flat") {
+			state "clear", label: 'tamper clear', backgroundColor: "#ffffff"
+			state "detected", label: 'tampered', backgroundColor: "#ff0000"
+		}
+		*/
 
 		main(["motion", "temperature", "humidity", "illuminance"])
-		details(["motion", "temperature", "humidity", "illuminance", "battery", "configure"])
+		details(["motion", "temperature", "humidity", "illuminance", "battery", "configure"/*, "tamper"*/])
 	}
 }
 
@@ -208,11 +216,19 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	def result
 	if (cmd.notificationType == 7 && cmd.event == 7) {
-		motionEvent(cmd.notificationStatus)
+		result = motionEvent(cmd.notificationStatus)
+	} else if (cmd.notificationType == 7 && cmd.event == 3) {
+		result = createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
+		unschedule(clearTamper, [forceForLocallyExecuting: true])
+		runIn(10, clearTamper, [forceForLocallyExecuting: true])
+	} else if (cmd.notificationType == 7 && cmd.event == 0) {
+		result = createEvent(name: "tamper", value: "clear", descriptionText: "$device.displayName tamper was cleared")
 	} else {
-		createEvent(descriptionText: cmd.toString(), isStateChange: false)
+		result = createEvent(descriptionText: cmd.toString(), isStateChange: false)
 	}
+	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -229,25 +245,28 @@ def ping() {
 def configure() {
 	// log.debug "configure()"
 	def request = []
-	// send temperature, humidity, and illuminance every 8 minutes
-	request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 128|64|32)
-	request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 8*60)
 
-	// send battery every 20 hours
-	request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)
-	request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 20*60*60)
+	if (!isZooz()) {
+		// send temperature, humidity, and illuminance every 8 minutes
+		request << zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 128 | 64 | 32)
+		request << zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 8 * 60)
 
-	// send no-motion report 60 seconds after motion stops
-	request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 60)
+		// send battery every 20 hours
+		request << zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 1)
+		request << zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 20 * 60 * 60)
 
-	// send binary sensor report instead of basic set for motion
-	request << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2)
+		// send no-motion report 60 seconds after motion stops
+		request << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 60)
 
-	// Turn on the Multisensor Gen5 PIR sensor
-	request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: 1)
+		// send binary sensor report instead of basic set for motion
+		request << zwave.configurationV1.configurationSet(parameterNumber: 5, size: 1, scaledConfigurationValue: 2)
 
-	// disable notification-style motion events
-	request << zwave.notificationV3.notificationSet(notificationType: 7, notificationStatus: 0)
+		// Turn on the Multisensor Gen5 PIR sensor
+		request << zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, scaledConfigurationValue: 1)
+
+		// disable notification-style motion events
+		request << zwave.notificationV3.notificationSet(notificationType: 7, notificationStatus: 0)
+	}
 
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
@@ -274,4 +293,8 @@ private secure(physicalgraph.zwave.Command cmd) {
 
 private secureSequence(commands, delay=200) {
 	delayBetween(commands.collect{ secure(it) }, delay)
+}
+
+private isZooz() {
+	zwaveInfo.mfr?.contains("027A")
 }
