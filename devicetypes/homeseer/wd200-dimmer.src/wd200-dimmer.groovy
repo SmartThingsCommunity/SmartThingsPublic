@@ -359,7 +359,6 @@ def setBlinkDurationMilliseconds (newBlinkDuration) {
 
 def setStatusLed (led,color,blink) {    
     def cmds= []
-    
     if(state.statusled1==null) {    	
     	state.statusled1=0
         state.statusled2=0
