@@ -105,6 +105,7 @@ def pageNotifications() {
             input "notifyWhenReserveApproached", "boolean", required: false, defaultValue: false, title: "Notify when energy left percentage approaches reserve percentage"
             input "notifyWhenLowerLimitReached", "boolean", required: false, defaultValue: false, title: "Notify when energy left percentage reaches a lower limit"
             input "lowerLimitNotificationValue", "number", required: false, title: "Percentage value to use for Lower Limit Notification"
+            input "notifyWhenTouScheduleChanges", "boolean", required: false, defaultValue: false, title: "Notify of Advanced Time Controls Schedule Changes (Peak/Off-Peak hours)"
             input "notifyWhenAnomalies", "boolean", required: false, defaultValue: true, title: "Notify when anomalies are encountered in the Powerwall Manager SmartApp"
         }
         
@@ -457,7 +458,7 @@ def checkBatteryNotifications (data) {
 def processSiteResponse(response, callData) {
     log.debug "processing site data response"
     def data = response.json.response
-       // log.debug "${data}"
+    // log.debug "${data}"
     def pwDevice = getChildDevice("powerwallDashboard")
     if (pwDevice) {
         def strategy = data.tou_settings.optimization_strategy
@@ -475,7 +476,7 @@ def processSiteResponse(response, callData) {
               sendNotificationMessage("Powerwall ATC optimization strategy changed to ${strategyUi}")              
         }
         
-        if (state?.lastSchedule && data.tou_settings.schedule != state.lastSchedule) {
+        if (notifyWhenTouScheduleChanges?.toBoolean() && state?.lastSchedule && data.tou_settings.schedule != state.lastSchedule) {
             sendNotificationMessage("Powerwall Advanced Time Controls schedule has changed") 
         }
         state.lastSchedule=data.tou_settings.schedule          
@@ -487,7 +488,7 @@ def processSiteResponse(response, callData) {
 def processPowerwallResponse(response, callData) {
     log.debug "processing powerwall response"
     def data=response.json.response
-    log.debug "${data}"   
+    //log.debug "${data}"   
     def child = getChildDevice("powerwallDashboard")
     
     if (child) {
@@ -541,7 +542,7 @@ def processPowerwallResponse(response, callData) {
 
 def requestSiteData() {
     if (!state?.lastSiteRequestTime || now()-state.lastSiteRequestTime > 1000) {
-       log.debug "requesting site info"
+       //log.debug "requesting site info"
        httpAuthAsyncGet('processSiteResponse',"/api/1/energy_sites/${state.energySiteId}/site_info")
        state.lastSiteRequestTime = now()
     }
@@ -549,51 +550,39 @@ def requestSiteData() {
 
 def requestPwData() {
      if (!state?.lastPwRequestTime || now()-state.lastPwRequestTime > 1000) {
-       log.debug "requesting powerwall data"
+       //log.debug "requesting powerwall data"
        httpAuthAsyncGet('processPowerwallResponse',"/api/1/powerwalls/${state.pwId}")
        state.lastPwRequestTime = now()
      }
 }
 
-def setSelfPoweredMode(child) {
-    log.debug "commanding Self-Powered"
-	child.sendEvent(name: "currentOpState", value: "Pending Self-Powered" as String, displayed: false)
-        def mode = "self_consumption"
-    def sampleMap = [default_real_mode:mode]
-     httpAuthPost(body:sampleMap,"/api/1/energy_sites/${state.energySiteId}/operation",{ resp ->
+def commandOpMode(data) {
+    log.debug "commanding opMode to ${data.mode}"
+    httpAuthPost(body:[default_real_mode:data.mode],"/api/1/energy_sites/${state.energySiteId}/operation",{ resp ->
         //log.debug "${resp.data}"
     }
     )
-    runIn(1, requestPwData) 
+    runIn(2, requestPwData)
+}
+
+def setSelfPoweredMode(child) {
+	child.sendEvent(name: "currentOpState", value: "Pending Self-Powered", displayed: false)
+    runIn(2,commandOpMode,[data: [mode: "self_consumption"]])
 }
 
 def setTimeBasedControlMode(child) {
-   log.debug "commanding Advanced Time-Based Control"
-   child.sendEvent(name: "currentOpState", value: "Pending Time-Based" as String, displayed: false)
-   def mode = "autonomous"
-   def commandMap = [default_real_mode:mode]
-   httpAuthPost(body:commandMap,"/api/1/energy_sites/${state.energySiteId}/operation", { resp ->
-       //log.debug "${resp.data}"
-       }
-   )
-    runIn(1, requestPwData)
+	child.sendEvent(name: "currentOpState", value: "Pending Time-Based", displayed: false)
+    runIn(2,commandOpMode,[data: [mode: "autonomous"]])
 }
 
 def setBackupOnlyMode(child) {
-    log.debug "commanding Backup-Only"
-    child.sendEvent(name: "currentOpState", value: "Pending Backup-Only" as String, displayed: false)
-    def mode = "backup"
-    def commandMap = [default_real_mode:mode]
-     httpAuthPost(body:commandMap,"/api/1/energy_sites/${state.energySiteId}/operation", { resp ->
-        //log.debug "${resp.data}"
-      }
-    )
-    runIn(1, requestPwData)
+	child.sendEvent(name: "currentOpState", value: "Pending Backup-Only", displayed: false)
+    runIn(2,commandOpMode,[data: [mode: "backup"]])
 }
 
 def commandTouStrategy(data)
 {
-    log.debug "commanding TOU strategy"
+    //log.debug "commanding TOU strategy"
     //request Site Data to get a current tbc schedule. Schedule needs to be sent on tou strategy command schedule will be re-set to default
     def latestSchedule
     try {
@@ -616,34 +605,38 @@ def commandTouStrategy(data)
     def commands = [tou_settings:[optimization_strategy:data.strategy,schedule:latestSchedule]]
     httpAuthPost(body:commands,"/api/1/energy_sites/${state.energySiteId}/time_of_use_settings", 
       { resp -> //log.debug "${resp.data}"
-         log.debug "TOU strategy command sent"
+         //log.debug "TOU strategy command sent"
       })
-    runIn(1, requestSiteData)
+    runIn(2, requestSiteData)
 }
 
 def setTbcBalanced(child) {
-    log.debug "commanding TBC Balanced"
+    //log.debug "commanding TBC Balanced"
     child.sendEvent(name: "currentStrategy", value: "Pending Balanced", displayed: false)
-    runIn(1,commandTouStrategy,[data: [strategy: "balanced"]])
+    runIn(2,commandTouStrategy,[data: [strategy: "balanced"]])
 }
 
 def setTbcCostSaving(child) {
-    log.debug "commanding TBC CostSaving"
+    //log.debug "commanding TBC CostSaving"
     child.sendEvent(name: "currentStrategy", value: "Pending Cost-Saving", displayed: false)
-    runIn(1,commandTouStrategy,[data: [strategy: "economics"]])
+    runIn(2,commandTouStrategy,[data: [strategy: "economics"]])
+}
+
+def commandBackupReservePercent(data) {
+   //log.debug "commanding reserve to ${data.reservePercent}%"
+   httpAuthPost(body:[backup_reserve_percent:data.reservePercent],"/api/1/energy_sites/${state.energySiteId}/backup", { resp ->
+      }
+    )
+   runIn(2, requestPwData)
 }
 
 def setBackupReservePercent(child, value) {
-    log.debug "commanding reserve to ${value}%"
-    def commandMap  = [backup_reserve_percent:value]
-    httpAuthPost(body:commandMap,"/api/1/energy_sites/${state.energySiteId}/backup", { resp ->
-      }
-    )
-    runIn(1, requestPwData)
+    //log.debug "commanding reserve to ${value}%"
+    runIn(2,commandBackupReservePercent,[data: [reservePercent:value]])
 }
         
 def refresh(child) {
     log.debug "refresh requested"
-    runIn(1, requestSiteData)
-    runIn(2, requestPwData)
+    runIn(1, requestPwData)     
+    runIn(5, requestSiteData)
 }
