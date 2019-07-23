@@ -182,7 +182,7 @@ def lowerBackupReserve(value) {
 
     def brp = device.currentValue("reserve_pending").toInteger()
     if (!brp || state.lastReserveSetTime == null || ((now() - state.lastReserveSetTime) > 20 * 1000)) {
-        brp = device.currentValue("reserve").toInteger()
+        brp = device.currentValue("reservePercent").toInteger()
     }
     if (brp > 0) {
         brp = brp - 1
