@@ -22,7 +22,7 @@ metadata {
 		capability "Light"
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
-		fingerprint mfr: "001D", prod: "1A02", model: "0334", deviceJoinName: "Leviton Appliance Module"
+		fingerprint mfr: "001D", prod: "1A02", model: "0334", deviceJoinName: "Leviton Appliance Module", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "001D", prod: "3401", model: "0001", deviceJoinName: "Leviton Switch" //Leviton DZ15S
 		fingerprint mfr: "0063", prod: "4F50", model: "3031", deviceJoinName: "GE Plug-in Outdoor Switch", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "0063", prod: "4F50", model: "3032", deviceJoinName: "GE Plug-in Outdoor Switch", ocfDeviceType: "oic.d.smartplug"
