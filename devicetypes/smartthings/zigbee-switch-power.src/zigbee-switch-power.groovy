@@ -59,7 +59,8 @@ def parse(String description) {
 	if (event) {
 		if (event.name == "power") {
 			def powerValue
-			def div = state.divisor ?: 10
+			def div = device.getDataValue("divisor")
+			div = div ? (div as int) : 10
 			powerValue = (event.value as Integer)/div
 			sendEvent(name: "power", value: powerValue)
 		}
@@ -95,7 +96,7 @@ def refresh() {
 def configure() {
 	log.debug "in configure()"
 	if (device.getDataValue("manufacturer") == "Aurora") {
-		state.divisor = 1
+		device.updateDataValue("divisor", "1")
 	}
 	return configureHealthCheck()
 }
