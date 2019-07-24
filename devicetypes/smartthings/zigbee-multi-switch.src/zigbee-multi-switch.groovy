@@ -28,6 +28,7 @@ metadata {
 		command "childOff", ["string"]
 
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Switch 1"
 	}
 	// simulator metadata
 	simulator {
@@ -96,9 +97,11 @@ def parse(String description) {
 }
 
 private void createChildDevices() {
-	def i = 2
-	addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
-		[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
+	def x = getChildCount()
+	for (i in 2..x) {
+		addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+			[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
+	}
 }
 
 private getChildEndpoint(String dni) {
@@ -183,4 +186,12 @@ def configure() {
 
 private Boolean isOrvibo() {
 	device.getDataValue("manufacturer") == "ORVIBO"
+}
+
+private getChildCount() {
+	if (device.getDataValue("model") == "9f76c9f31b4c4a499e3aca0977ac4494") {
+		return 3
+	} else {
+		return 2
+	}
 }
