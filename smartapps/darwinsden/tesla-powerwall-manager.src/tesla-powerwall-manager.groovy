@@ -347,12 +347,12 @@ def processWatchdog() {
     def secondsSinceLastProcessed = (now() - lastTimeProcessed) / 1000
     def secondsSinceLastProcessCompleted = (now() - lastTimeCompleted) / 1000
 
-    if (secondsSinceLastProcessed > 290) {
+    if (secondsSinceLastProcessed > 1800) {
         if (notifyWhenAnomalies?.toBoolean()) {
            sendNotificationMessage("Warning: Powerwall Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing")
         }
         runIn(30, initialize)
-    } else if (secondsSinceLastProcessCompleted > 290) {
+    } else if (secondsSinceLastProcessCompleted > 1800) {
         if (notifyWhenAnomalies?.toBoolean()) {
            sendNotificationMessage("Warning: Powerwall Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing")
         }
