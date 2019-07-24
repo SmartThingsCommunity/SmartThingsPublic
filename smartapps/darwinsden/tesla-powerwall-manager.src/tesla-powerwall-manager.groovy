@@ -438,9 +438,10 @@ def checkBatteryNotifications (data) {
           if (state.timeOfLastReserveNotification == null) {
             state.timeOfLastReserveNotification = now()
             sendNotificationMessage("Powerwall battery level of ${data.batteryPercent.round(1)}% is approaching or has reached ${data.reservePercent}% reserve level.")   
-           } else if (now() - state.timeOfLastReserveNotification >= 30 * 60 * 1000) {
-                state.timeOfLastReserveNotification = null
-           }
+           } 
+        } else if (now() - state.timeOfLastReserveNotification >= 30 * 60 * 1000) {
+             //reset for new notification if alert condition no longer exists and it's been at least 30 minutes since last notification
+             state.timeOfLastReserveNotification = null
         }
      }
      if (notifyWhenLowerLimitReached?.toBoolean() && lowerLimitNotificationValue != null) {
@@ -448,10 +449,11 @@ def checkBatteryNotifications (data) {
           if (state.timeOfLastLimitNotification == null) {
             state.timeOfLastLimitNotification = now()
             sendNotificationMessage("Powerwall battery level of ${data.batteryPercent.round(1)}% dropped below notification limit of ${lowerLimitNotificationValue}%.")  
-          } else if (now() - state.timeOfLastLimitNotification >= 30 * 60 * 1000) {
-                state.timeOfLastLimitNotification = null
-          }
-        }
+          } 
+       } else if (now() - state.timeOfLastLimitNotification >= 30 * 60 * 1000) {
+            //reset for new notification if alert condition no longer exists and it's been at least 30 minutes since last notification
+            state.timeOfLastLimitNotification = null
+      }
      }
 }
           
