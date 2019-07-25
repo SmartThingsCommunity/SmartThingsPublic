@@ -95,7 +95,7 @@ def refresh() {
 
 def configure() {
 	log.debug "in configure()"
-	if (device.getDataValue("manufacturer") == "Aurora") {
+	if (device.getDataValue("manufacturer") == "Develco Products A/S") {
 		device.updateDataValue("divisor", "1")
 	}
 	return configureHealthCheck()
