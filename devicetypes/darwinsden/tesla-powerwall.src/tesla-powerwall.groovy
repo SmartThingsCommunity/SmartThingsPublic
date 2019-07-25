@@ -86,7 +86,7 @@ metadata {
             state("blank", label: "", backgroundColor: "#ffffff")
         }
         valueTile("solar", "device.solarPower", width: 2, height: 2) {
-            state("solarPower", label: '\u2600\n${currentValue}\nkW', unit: "kW", backgroundColor: "#F9B732")
+            state("solarPower", label: '\u2600\n${currentValue}\nW', unit: "W", backgroundColor: "#F9B732")
         }
         standardTile("blank", "device.blank", width: 1, height: 1) {
             state("blank", label: "", backgroundColor: "#ffffff")
@@ -95,13 +95,16 @@ metadata {
             state("battery", label: ': Battery :\n ${currentValue}% \n', unit: "%", icon: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/powerwall-Image.png")
         }
         valueTile("load", "device.loadPower", width: 2, height: 2) {
-            state("loadPower", label: '\u2302\n${currentValue}\nkW', unit: "kW", backgroundColor: "#3265CB")
+            state("loadPower", label: '\u2302\n${currentValue}\nW', unit: "W", backgroundColor: "#3265CB")
         }
         valueTile("grid", "device.gridPower", width: 2, height: 2) {
-            state("gridPower", label: '\u2361\n${currentValue}\nkW', unit: "kW", backgroundColor: "#989286")
+            state("gridPower", label: '\u2361\n${currentValue}\nW', unit: "W", backgroundColor: "#989286")
+        }
+        valueTile("power", "device.power", width: 2, height: 2) {
+            state("power", label: '${currentValue}\nW', unit: "W", icon: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png")
         }
         valueTile("powerwall", "device.powerwallPower", width: 2, height: 2) {
-            state("powerwallPower", label: '\u2752\n${currentValue}\nkW', unit: "kW", backgroundColor: "#2ec214")
+            state("powerwallPower", label: '\u2752\n${currentValue}\nW', unit: "W", backgroundColor: "#2ec214")
         }
         standardTile("refresh", "device.state", decoration: "flat", width: 2, height: 1) {
             state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
@@ -143,7 +146,7 @@ metadata {
             state "Balanced", label: 'Bal', action: "setTbcBalanced", backgroundColor: "#79b821", icon: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/wavex1-1.png"
             state "Pending Balanced", label: 'Bal', action: "setTbcBalanced", backgroundColor: "#2179b8", icon: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/wavex1-1.png"
         }
-        main(["battery", "grid"])
+        main(["power","battery"])
         details(["powerwallDisplay", "sitename", "refresh", "solar", "grid", "battery", "load", "powerwall", "strategy", "stormwatch", "blank",
             "commandBar", "blank", "backup", "self-consumption", "time-based", "blankTall", "balanced", "cost-saving", "blankTall"
         ])
