@@ -308,6 +308,7 @@ def parseDescriptionAsMap(description) {
        encoding = raw[index..(index+1)]
        index+= 2;
        len =getDataLengthByType(encoding)
+       if (!len) continue
        value = flipHexStringEndianness(raw[index..(index+len-1)])
        index+=len;
        list += ['attrId': "$attrId", 'encoding':"$encoding", 'value': "$value"]
