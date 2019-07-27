@@ -34,7 +34,7 @@ metadata {
 		attribute "solarPower", "number"
 		attribute "loadPower", "number"
 		attribute "gridPower", "number"
-		attribute "powerWallPower", "number"
+		attribute "powerwallPower", "number"
         attribute "currentOpState", "string"
         attribute "currentStrategy", "string"
         attribute "siteName", "string"
