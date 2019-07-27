@@ -333,50 +333,6 @@ private removeChildDevices(delete) {
     }
 }
 
-def processWatchdog() {
-    def lastTimeProcessed
-    def lastTimeCompleted
-    if (!state.lastProcessedTime | !state.lastCompletedTime) {
-        lastTimeProcessed = now()
-        lastTimeCompleted = now()
-    } else {
-        lastTimeProcessed = state.lastProcessedTime
-        lastTimeCompleted = state.lastCompletedTime
-    }
-
-    def secondsSinceLastProcessed = (now() - lastTimeProcessed) / 1000
-    def secondsSinceLastProcessCompleted = (now() - lastTimeCompleted) / 1000
-
-    if (secondsSinceLastProcessed > 1800) {
-        if (notifyWhenAnomalies?.toBoolean()) {
-           sendNotificationMessage("Warning: Powerwall Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing")
-        }
-        runIn(30, initialize)
-    } else if (secondsSinceLastProcessCompleted > 1800) {
-        if (notifyWhenAnomalies?.toBoolean()) {
-           sendNotificationMessage("Warning: Powerwall Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing")
-        }
-        runIn(30, initialize)
-    }
-}
-
-def processMain () {
-    state.lastProcessedTime = now()
-    runIn (1, requestPwData)
-    def lastStateProcessTime
-    if (state.lastStateRunTime == null) {
-        lastStateProcessTime = 0
-    } else {
-       lastStateProcessTime = state.lastStateRunTime
-    }
-    def secondsSinceLastRun = (now() - lastStateProcessTime) / 1000
-    if (secondsSinceLastRun > 500) {
-        state.lastStateRunTime = now()
-        //runIn (30, processStateEvents)
-        runIn (10, requestSiteData)
-    }
-}
-
 def initialize() {
 
     ensureDevicesForPowerwalls()
@@ -439,7 +395,7 @@ def checkBatteryNotifications (data) {
             state.timeOfLastReserveNotification = now()
             sendNotificationMessage("Powerwall battery level of ${data.batteryPercent.round(1)}% is approaching or has reached ${data.reservePercent}% reserve level.")   
            } 
-        } else if (now() - state.timeOfLastReserveNotification >= 30 * 60 * 1000) {
+        } else if (state.timeOfLastReserveNotification != null && now() - state.timeOfLastReserveNotification >= 30 * 60 * 1000) {
              //reset for new notification if alert condition no longer exists and it's been at least 30 minutes since last notification
              state.timeOfLastReserveNotification = null
         }
@@ -450,7 +406,7 @@ def checkBatteryNotifications (data) {
             state.timeOfLastLimitNotification = now()
             sendNotificationMessage("Powerwall battery level of ${data.batteryPercent.round(1)}% dropped below notification limit of ${lowerLimitNotificationValue}%.")  
           } 
-       } else if (now() - state.timeOfLastLimitNotification >= 30 * 60 * 1000) {
+       } else if (state.timeOfLastLimitNotification != null && now() - state.timeOfLastLimitNotification >= 30 * 60 * 1000) {
             //reset for new notification if alert condition no longer exists and it's been at least 30 minutes since last notification
             state.timeOfLastLimitNotification = null
       }
@@ -639,6 +595,48 @@ def setBackupReservePercent(child, value) {
         
 def refresh(child) {
     log.debug "refresh requested"
-    runIn(1, requestPwData)     
-    runIn(5, requestSiteData)
+    runIn(1, processMain)     
+}
+
+def processWatchdog() {
+    def lastTimeProcessed
+    def lastTimeCompleted
+    if (!state.lastProcessedTime | !state.lastCompletedTime) {
+        lastTimeProcessed = now()
+        lastTimeCompleted = now()
+    } else {
+        lastTimeProcessed = state.lastProcessedTime
+        lastTimeCompleted = state.lastCompletedTime
+    }
+
+    def secondsSinceLastProcessed = (now() - lastTimeProcessed) / 1000
+    def secondsSinceLastProcessCompleted = (now() - lastTimeCompleted) / 1000
+
+    if (secondsSinceLastProcessed > 1800) {
+        if (notifyWhenAnomalies?.toBoolean()) {
+           sendNotificationMessage("Warning: Powerwall Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing")
+        }
+        runIn(30, initialize)
+    } else if (secondsSinceLastProcessCompleted > 1800) {
+        if (notifyWhenAnomalies?.toBoolean()) {
+           sendNotificationMessage("Warning: Powerwall Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing")
+        }
+        runIn(30, initialize)
+    }
+}
+
+def processMain () {
+    state.lastProcessedTime = now()
+    def lastStateProcessTime
+    if (state.lastStateRunTime == null) {
+        lastStateProcessTime = 0
+    } else {
+       lastStateProcessTime = state.lastStateRunTime
+    }
+    def secondsSinceLastRun = (now() - lastStateProcessTime) / 1000
+    if (secondsSinceLastRun > 60) {
+        state.lastStateRunTime = now()
+        runIn (1, requestPwData)
+        runIn (10, requestSiteData)
+    }
 }
