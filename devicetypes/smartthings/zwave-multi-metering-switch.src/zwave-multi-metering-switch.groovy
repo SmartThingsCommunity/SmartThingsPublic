@@ -301,7 +301,7 @@ private lateConfigure() {
 	def cmds = []
 	log.debug "Late configuration..."
 	switch(getDeviceModel()) {
-		case "ZW132":
+		case "Aeotec Nano Switch":
 			cmds = [
 					secure(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, configurationValue: [0])),    // resets configuration
 					secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1])),    // enables overheat protection
@@ -314,6 +314,12 @@ private lateConfigure() {
 					secure(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 20))    //report any 20W change
 			]
 			break
+		case "Zooz Switch":
+			cmds = [
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 4, scaledConfigurationValue: 10)),	// makes device report every 5W change
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 4, scaledConfigurationValue: 600))	// enabling kWh energy reports every 10 minutes
+			]
+			break
 		default:
 			cmds = [secure(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, scaledConfigurationValue: 0))]
 			break
@@ -323,7 +329,9 @@ private lateConfigure() {
 
 private getDeviceModel() {
 	if((zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) || (getDataValue("mfr") == "86") && (getDataValue("model") == "84")) {
-		"ZW132"
+		"Aeotec Nano Switch"
+	} else if(zwaveInfo.mfr?.contains("027A")) {
+		"Zooz Switch"
 	} else {
 		""
 	}
