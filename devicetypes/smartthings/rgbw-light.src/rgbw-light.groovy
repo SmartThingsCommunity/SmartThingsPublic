@@ -81,7 +81,7 @@ def installed() {
 	state.colorReceived = ["red": null, "green": null, "blue": null, "warmWhite": null, "coldWhite": null]
 	sendEvent(name: "checkInterval", value: 1860, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "0"])
 	sendEvent(name: "level", value: 100, unit: "%")
-	response(refresh())
+	response(command(zwave.switchColorV3.switchColorSupportedGet()) + refresh())
 }
 
 def parse(description) {

@@ -68,7 +68,7 @@ metadata {
 }
 
 def updated() {
-	response(refresh())
+	response(command(zwave.switchColorV3.switchColorSupportedGet()) + refresh())
 }
 
 def parse(description) {
