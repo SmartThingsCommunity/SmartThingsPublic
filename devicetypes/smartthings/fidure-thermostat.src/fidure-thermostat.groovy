@@ -215,12 +215,12 @@ def parse(String description) {
 					map.value = getDisplayTemperature(atMap.value)
 					updateSetpoint(map.name,map.value)
 					break;
-                case 0x001c:
+				case 0x001c:
 					map.name = "thermostatMode"
 					map.value = getModeMap()[atMap.value]
 					updateSetpoint(map.name,map.value)
 					break;
-                case 0x001e:   //running mode enum8
+				case 0x001e:   //running mode enum8
 					map.name = "runningMode"
 					map.value = getModeMap()[atMap.value]
 					updateSetpoint(map.name,map.value)
@@ -235,14 +235,14 @@ def parse(String description) {
 					map.value = Integer.parseInt("${atMap.value}", 16)
 					break;
 				case 0x0025:   // thermostat programming operation bitmap8
-                    map.name = "prorgammingOperation"
+					map.name = "prorgammingOperation"
 					def val = getProgrammingMap()[Integer.parseInt("${atMap.value}", 16) & 0x01]
-                    result += createEvent("name":"prorgammingOperationDisplay", "value": val)
+					result += createEvent("name":"prorgammingOperationDisplay", "value": val)
 					map.value = atMap.value
-                    break;
+					break;
 				case 0x0029: // relay state
-				  	map.name = "thermostatOperatingState"
-				  	map.value = getThermostatOperatingState(atMap.value)
+					map.name = "thermostatOperatingState"
+					map.value = getThermostatOperatingState(atMap.value)
 					break;
 				}
 			} else if (descMap.clusterInt == 0x0204) {
@@ -520,9 +520,9 @@ def checkLastTimeSync(delay) {
 
   //  log.debug "check Time: $lastSync duration: ${duration} settings.sync_clock: ${settings.sync_clock}"
 	if (duration > 86400000) {
-        sendEvent("name":"lastTimeSync", "value":"${new Date()}")
-        return setThermostatTime()
-    }
+		sendEvent("name":"lastTimeSync", "value":"${new Date()}")
+		return setThermostatTime()
+	}
 
 	return []
 }
@@ -544,14 +544,14 @@ def refresh() {
 	log.debug "refresh called"
 	 // log.trace "list: " +       readAttributesCommand(0x201, [0x1C,0x1E,0x23])
 
-    readAttributesCommand(0x201, [0x00,0x11,0x12]) +
-    readAttributesCommand(0x201, [0x1C,0x1E,0x23]) +
-    readAttributesCommand(0x201, [0x24,0x25,0x29]) +
-    [
-    "st rattr 0x${device.deviceNetworkId} 1 0x204 0x01", "delay 200",  // lock status
-    "raw 0x201 {04 21 11 00 00 05 00 }"                , "delay 500",  // hold expiary
-    "send 0x${device.deviceNetworkId} 1 1"             , "delay 1500"
-    ]  + checkLastTimeSync(2000)
+	readAttributesCommand(0x201, [0x00,0x11,0x12]) +
+	readAttributesCommand(0x201, [0x1C,0x1E,0x23]) +
+	readAttributesCommand(0x201, [0x24,0x25,0x29]) +
+	[
+	"st rattr 0x${device.deviceNetworkId} 1 0x204 0x01", "delay 200",  // lock status
+	"raw 0x201 {04 21 11 00 00 05 00 }"                , "delay 500",  // hold expiary
+	"send 0x${device.deviceNetworkId} 1 1"             , "delay 1500"
+	]  + checkLastTimeSync(2000)
 }
 
 def poll() {
@@ -664,8 +664,8 @@ def fanAuto() {
 def updated() {
 	def lastSync = device.currentState("lastTimeSync")?.value
 	if ((settings.sync_clock ?: false) == false) {
-        log.debug "resetting last sync time.  Used to be: $lastSync"
-        sendEvent("name":"lastTimeSync", "value":"${new Date(0)}")
+		log.debug "resetting last sync time.  Used to be: $lastSync"
+		sendEvent("name":"lastTimeSync", "value":"${new Date(0)}")
 	}
 }
 
@@ -722,31 +722,31 @@ def setThermostatTime() {
 
 def configure() {
 	[
-        "zdo bind 0x${device.deviceNetworkId} 1 1 0x201 {${device.zigbeeId}} {}", "delay 500",
+		"zdo bind 0x${device.deviceNetworkId} 1 1 0x201 {${device.zigbeeId}} {}", "delay 500",
 
-        "zcl global send-me-a-report 0x201 0x0000 0x29 20 300 {19 00}",  // report temperature changes over 0.2C
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
+		"zcl global send-me-a-report 0x201 0x0000 0x29 20 300 {19 00}",  // report temperature changes over 0.2C
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
 
-        "zcl global send-me-a-report 0x201 0x001C 0x30 10 305 { }",  // mode
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
+		"zcl global send-me-a-report 0x201 0x001C 0x30 10 305 { }",  // mode
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
 
-        "zcl global send-me-a-report 0x201 0x0025 0x18 10 310 { 00 }",  // schedule on/off
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
+		"zcl global send-me-a-report 0x201 0x0025 0x18 10 310 { 00 }",  // schedule on/off
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
 
-        "zcl global send-me-a-report 0x201 0x001E 0x30 10 315 { 00 }",  // running mode
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
+		"zcl global send-me-a-report 0x201 0x001E 0x30 10 315 { 00 }",  // running mode
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
 
-        "zcl global send-me-a-report 0x201 0x0011 0x29 10 320 {32 00}",  // cooling setpoint delta: 0.5C (0x3200 in little endian)
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
+		"zcl global send-me-a-report 0x201 0x0011 0x29 10 320 {32 00}",  // cooling setpoint delta: 0.5C (0x3200 in little endian)
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
 
-        "zcl global send-me-a-report 0x201 0x0012 0x29 10 320 {32 00}", // cooling setpoint delta: 0.5C (0x3200 in little endian)
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
+		"zcl global send-me-a-report 0x201 0x0012 0x29 10 320 {32 00}", // cooling setpoint delta: 0.5C (0x3200 in little endian)
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
 
-        "zcl global send-me-a-report 0x201 0x0029 0x19 10 325 { 00 }", "delay 200",  // relay status
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
+		"zcl global send-me-a-report 0x201 0x0029 0x19 10 325 { 00 }", "delay 200",  // relay status
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 500",
 
-        "zcl global send-me-a-report 0x201 0x0023 0x30 10 330 { 00 }", 		// hold
-        "send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 1500",
+		"zcl global send-me-a-report 0x201 0x0023 0x30 10 330 { 00 }", 		// hold
+		"send 0x${device.deviceNetworkId} 1 ${endpointId}","delay 1500",
 
 	] + refresh()
 }
