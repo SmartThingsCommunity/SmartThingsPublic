@@ -36,6 +36,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "eWeLink", model: "SA-003-Zigbee", deviceJoinName: "eWeLink SmartPlug (SA-003)", ocfDeviceType: "oic.d.smartplug"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "BASICZBR3", deviceJoinName: "SONOFF Basic (R3 Zigbee)", ocfDeviceType: "oic.d.smartplug"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "innr", model: "SP 222", deviceJoinName: "Innr Smart Plug", ocfDeviceType: "oic.d.smartplug"
+    	fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, FFFF", outClusters: "0019", manufacturer: "MEGAMAN", model: "BSZTM005", deviceJoinName: "INGENIUM ZB Mains Switching Module"
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "095db3379e414477ba6c2f7e0c6aa026", deviceJoinName: "Orvibo Smart Switch"
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "fdd5fce51a164c7ab73b2f4d8d84c88e", deviceJoinName: "Orvibo Smart Outlet", ocfDeviceType: "oic.d.smartplug"
 	}
