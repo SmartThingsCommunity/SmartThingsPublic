@@ -18,7 +18,7 @@ metadata {
 		capability "Switch Level"
 		capability "Refresh"
 		capability "Sensor"
-        capability "Power Meter"
+		capability "Power Meter"
 		capability "Energy Meter"
 
 		fingerprint deviceId: "0x"
