@@ -108,8 +108,7 @@ metadata {
 			input "TempMin", "number", title: "Temperature Report Frequency", description: "Temperature report sent every N minutes [0-127]", range: "0..127", defaultValue: 6, displayDuringSetup: true, required: false
 		}
 		section {
-			input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter '-5'. If 3 degrees too cold, enter '+3'.", displayDuringSetup: true, type: "paragraph", element: "paragraph"
-			input "TempAdj", "number", title: "Degrees", description: "Adjust temperature up/down N tenths of a degree F [(-127)-(+128)]", range: "-127..128", defaultValue: 0, displayDuringSetup: true, required: false
+			input "TempAdj", "number", title: "Temperature Offset", description: "Adjust temperature up/down N tenths of a degree F [(-127)-(+128)]", range: "-127..128", defaultValue: 0, displayDuringSetup: true, required: false
 		}
 		section {
 			input title: "Associated Devices", description: "The below preferences control associated node 2 devices.", displayDuringSetup: false, type: "paragraph", element: "paragraph"

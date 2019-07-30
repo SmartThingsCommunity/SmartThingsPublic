@@ -68,11 +68,11 @@ metadata {
 
 		// Yale siren only
 		preferences {
-			input name: "alarmLength", type: "number", title: "Alarm length (1-10 min)", range: "1..10"
+			input name: "alarmLength", type: "number", title: "Alarm length", range: "1..10"
 			// defaultValue: 10
 			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash"
 			// defaultValue: false
-			input name: "comfortLED", type: "number", title: "Comfort LED (0-25 x 10 sec.)", range: "0..25"
+			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec.)", range: "0..25"
 			// defaultValue: 0
 			input name: "tamper", type: "bool", title: "Tamper alert"
 			// defaultValue: false
