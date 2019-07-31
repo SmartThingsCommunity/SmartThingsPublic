@@ -93,6 +93,12 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 	ep ? changeSwitch(ep, value) : []
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
+	log.debug "Binary ${cmd}" + (ep ? " from endpoint $ep" : "")
+	def value = cmd.value ? "on" : "off"
+	ep ? changeSwitch(ep, value) : []
+}
+
 private changeSwitch(endpoint, value) {
 	def result = []
 	if(endpoint == 1) {
