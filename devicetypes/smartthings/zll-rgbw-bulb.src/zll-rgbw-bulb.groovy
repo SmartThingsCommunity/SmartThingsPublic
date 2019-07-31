@@ -53,6 +53,7 @@ metadata {
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 185 C", deviceJoinName: "Innr Smart Bulb Color"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "FL 130 C", deviceJoinName: "Innr Flex Light Color"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF", outClusters: "0019", manufacturer: "Megaman", model: "ZLL-ExtendedColor", deviceJoinName: "INGENIUM ZB RGBW Light"
+        fingerprint profileId: "C05E", manufacturer: "GLEDOPTO", model: "GL-B-001Z", deviceJoinName: "XLSmart E14 RGBW Light Bulb"
     }
 
     // UI tile definitions
