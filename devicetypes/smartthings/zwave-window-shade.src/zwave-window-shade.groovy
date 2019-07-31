@@ -77,7 +77,7 @@ metadata {
         }
 
         preferences {
-            input "preset", "number", title: "Default half-open position (1-100)", defaultValue: 50, required: false, displayDuringSetup: false
+            input "preset", "number", title: "Preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
         }
 
         main(["windowShade"])
