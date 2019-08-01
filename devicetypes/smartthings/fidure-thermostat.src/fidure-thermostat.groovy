@@ -44,6 +44,7 @@ metadata {
 		attribute "thermostatOperatingState", "string"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0201,0204,0B05", outClusters: "000A, 0019"
+		fingerprint manufacturer: "Fidure", model: "A1732R3" // same clusters as above
 
 	}
 
