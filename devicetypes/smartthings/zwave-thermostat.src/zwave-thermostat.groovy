@@ -481,12 +481,12 @@ def updateSetpoints(data) {
 	if (data.targetHeatingSetpoint) {
 		cmds << zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: state.scale,
 				precision: state.precision, scaledValue: data.targetHeatingSetpoint)
-		cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
 	}
 	if (data.targetCoolingSetpoint) {
 		cmds << zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: state.scale,
 				precision: state.precision, scaledValue: data.targetCoolingSetpoint)
-		cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 2)
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
 	}
 	sendHubCommand(cmds, 1000)
 }
