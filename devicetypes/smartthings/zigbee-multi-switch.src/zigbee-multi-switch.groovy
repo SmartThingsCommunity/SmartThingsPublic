@@ -27,8 +27,10 @@ metadata {
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Switch 1"
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo 2 Gang Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Orvibo 3 Gang Switch 1"
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0003", deviceJoinName: "GDKES 3 Gang Switch 1"
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0002", deviceJoinName: "GDKES 2 Gang Switch 1"
 	}
 	// simulator metadata
 	simulator {
@@ -189,7 +191,7 @@ private Boolean isOrvibo() {
 }
 
 private getChildCount() {
-	if (device.getDataValue("model") == "9f76c9f31b4c4a499e3aca0977ac4494") {
+	if (device.getDataValue("model") == "9f76c9f31b4c4a499e3aca0977ac4494" || device.getDataValue("model") == "HY0003") {
 		return 3
 	} else {
 		return 2
