@@ -17,8 +17,8 @@ metadata {
 		capability "Sensor"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0009,0500"
-		//raw data: 01 C0C9 0001 01 03 0003 0005 0006 00
-		fingerprint profileId: "C0C9", deviceId: "0001", inClusters: "0003,0005,0006",  deviceJoinName: "Aurora Smart PIR Sensor"
+		//raw description 23 0104 0402 00 06 0000 0001 0003 000F 0020 0500 02 000A 0019
+		fingerprint endpoint: "23", profileId: "0104", inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", deviceJoinName: "Aurora Smart PIR Sensor"
 	}
 
 	// simulator metadata
