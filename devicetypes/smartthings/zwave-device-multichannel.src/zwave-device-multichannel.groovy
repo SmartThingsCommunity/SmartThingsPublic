@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Device Multichannel", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Device Multichannel", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
 		capability "Actuator"
 		capability "Switch"
 		capability "Switch Level"
