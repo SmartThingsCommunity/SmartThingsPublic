@@ -24,12 +24,12 @@
 include 'asynchttp_v1'
 
 def version() {
-    return "v0.1.1e.20190723"
+    return "v0.1.2e.20190729"
 }
 
 /*   
- *	23-Jun-2019 >>> v0.1.1e.20190723 - Initial beta release
- *
+ *	29-Jul-2019 >>> v0.1.2e.20190729 - Set reserve percent to 100% in backup-only mode. Added mode scheduling.
+ *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
  */
  
 definition(
@@ -44,6 +44,9 @@ preferences {
     page(name: "verifyPowerwalls")
     page(name: "accountInfo")
     page(name: "pageNotifications")
+    page(name: "pageSchedules")
+    page(name: "pageModeSchedule")
+    page(name: "pageReserveSchedule")
     page(name: "pageRemove")
 }
 
@@ -53,19 +56,23 @@ private pageMain() {
             paragraph app.version(),
                 title: "PowerWall Manager", required: false, image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png"
         }
-        section("Tesla Account Information: ") {
-           href "accountInfo", title: "Tesla account Information..", description: "", required: (!userEmail || !userPw), image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon.png"
+        section("Tesla Account Information") {
+           href "accountInfo", title: "Account Information..", description: "", required: (!userEmail || !userPw), image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon.png"
         }
-        section("Choose how you get notified") {
-            href "pageNotifications", title: "Notification preferences..", description: "", required: false,
+        section("Preferences") {
+            href "pageNotifications", title: "Notification Preferences..", description: "", required: false,
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification.png"
+            href "pageModeSchedule", title: "Mode Schedules..", description: "", required: false,
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar.png"
+        }    
+        section("For more information") {
+          href(name: "Site", title: "For more information, questions, or to provide feedback, please visit: DarwinsDen.com/powerwall",
+               description: "Tap open the Powerwall Manager web page on DarwinsDen.com",
+             required: false,
+              image: "https://darwinsden.com/download/ddlogo-for-pwmanager-0-png",
+             url: "https://darwinsden.com/powerwall/")
+      
         }
-
-        section() {
-            paragraph "For more information, questions, or to provide feedback, please visit: DarwinsDen.com/powerwall", title: "", required: false,
-                image: "https://darwinsden.com/download/ddlogo-for-pwmanager-0-png"
-        }
-       
         section("Remove Powerwall Manager") {
             href "pageRemove", title: "", description: "Remove Powerwall Manager", required: false
         }
@@ -99,13 +106,12 @@ def pageNotifications() {
     dynamicPage(name: "pageNotifications", title: "Notification Preferences", install: false, uninstall: false) {
 
         section("Powerwall Notification Triggers:") {
-            input "notifyWhenVersionChanges", "boolean", required: false, defaultValue: false, title: "Notify when powerwall version changes"
-            input "notifyWhenOpModeChanges", "boolean", required: false, defaultValue: false, title: "Notify of operational mode changes (Backup-Only/Self-Powered/Advanced Time-Based Controls)"
-            input "notifyWhenStrategyChanges", "boolean", required: false, defaultValue: false, title: "Notify of Advanced Time Controls Strategy Changes (Balanced/Cost-Saving)"
-            input "notifyWhenReserveApproached", "boolean", required: false, defaultValue: false, title: "Notify when energy left percentage approaches reserve percentage"
-            input "notifyWhenLowerLimitReached", "boolean", required: false, defaultValue: false, title: "Notify when energy left percentage reaches a lower limit"
+            input "notifyWhenVersionChanges", "boolean", required: false, defaultValue: false, title: "Notify when Powerwall software version changes"
+            input "notifyWhenModesChange", "boolean", required: false, defaultValue: false, title: "Notify when Powerwall configuration (modes/schedules) change"
+            input "notifyWhenReserveApproached", "boolean", required: false, defaultValue: false, title: "Notify when Powerwall energy left percentage approaches reserve percentage"
+            input "notifyWhenLowerLimitReached", "boolean", required: false, defaultValue: false, title: "Notify when Powerwall energy left percentage reaches a lower limit"
             input "lowerLimitNotificationValue", "number", required: false, title: "Percentage value to use for Lower Limit Notification"
-            input "notifyWhenTouScheduleChanges", "boolean", required: false, defaultValue: false, title: "Notify of Advanced Time Controls Schedule Changes (Peak/Off-Peak hours)"
+            input "notifyOfSchedules", "boolean", required: false, defaultValue: true, title: "Notify when schedules are being executed by the Powerwall Manager"
             input "notifyWhenAnomalies", "boolean", required: false, defaultValue: true, title: "Notify when anomalies are encountered in the Powerwall Manager SmartApp"
         }
         
@@ -114,6 +120,128 @@ def pageNotifications() {
             input "phoneNumber", "phone", title: "Phone number for text messages", description: "Phone Number", required: false
         }
     }
+}
+
+def pageModeSchedule() {
+    dynamicPage(name: "pageModeSchedule", title: "Schedule Powerwall Operational Mode changes. " +
+       "Mode changes are subject to Powerwall processing rules and may not immediately take effect at the time they are commanded.", install: false, uninstall: false) {
+        section("Mode Schedule 1") {
+            input "modeSchedule1Mode", "enum", required: false, title: "Mode to set", options: ["Backup-Only", "Self-Powered", "Time-Based Control"]
+            input "modeSchedule1Time", "time", required: false, title: "At what time?"
+            input "modeSchedule1Days", "enum", required: false, title: "On which days...", multiple: true,
+                options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
+            input "modeSchedule1IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
+        }
+        section("Mode Schedule 2") {
+            input "modeSchedule2Mode", "enum", required: false, title: "Mode to set", options: ["Backup-Only", "Self-Powered", "Time-Based Control"]
+            input "modeSchedule2Time", "time", required: false, title: "At what time?"
+            input "modeSchedule2Days", "enum", required: false, title: "On which days...", multiple: true,
+                options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
+            input "modeSchedule2IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
+        }
+        section("Mode Schedule 3") {
+            input "modeSchedule3Mode", "enum", required: false, title: "Mode to set", options: ["Backup-Only", "Self-Powered", "Time-Based Control"]
+            input "modeSchedule3Time", "time", required: false, title: "At what time?"
+            input "modeSchedule3Days", "enum", required: false, title: "On which days...", multiple: true,
+                options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
+            input "modeSchedule3IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
+        }  
+       section("Mode Schedule 4") {
+            input "modeSchedule4Mode", "enum", required: false, title: "Mode to set", options: ["Backup-Only", "Self-Powered", "Time-Based Control"]
+            input "modeSchedule4Time", "time", required: false, title: "At what time?"
+            input "modeSchedule4Days", "enum", required: false, title: "On which days...", multiple: true,
+                options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
+            input "modeSchedule4IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
+        }  
+    }
+}
+
+def setSchedules() {
+    if (modeSchedule1IsActive?.toBoolean()) {
+        if (modeSchedule1Mode && modeSchedule1Time && modeSchedule1Days) {
+            log.debug "scheduling mode 1"
+            schedule(modeSchedule1Time.toString(), setMode1FromSchedule)
+        } else {
+            def message = "Mode 1 Schedule is enabled in preferences, but schedule time, mode or days was not specified. Mode Schedule 1 could not be set."
+            sendNotificationMessage(message, "anomaly")
+        }
+    }
+    if (modeSchedule2IsActive?.toBoolean()) {
+        if (modeSchedule2Mode && modeSchedule2Time && modeSchedule2Days) {
+            log.debug "scheduling mode 2"
+            schedule(modeSchedule2Time.toString(), setMode2FromSchedule)
+        } else {
+            def message = "Mode 2 Schedule is enabled in preferences, but schedule time, mode or days was not specified. Mode Schedule 2 could not be set."
+            sendNotificationMessage(message, "anomaly")
+        }
+    }
+    if (modeSchedule3IsActive?.toBoolean()) {
+        if (modeSchedule3Mode && modeSchedule3Time && modeSchedule3Days) {
+            log.debug "scheduling mode 3"
+            schedule(modeSchedule3Time.toString(), setMode3FromSchedule)
+        } else {
+            def message = "Mode 3 Schedule is enabled in preferences, but schedule time, mode or days was not specified. Mode Schedule 3 could not be set."
+            sendNotificationMessage(message, "anomaly")
+        }
+    }
+    if (modeSchedule4IsActive?.toBoolean()) {
+        if (modeSchedule4Mode && modeSchedule4Time && modeSchedule4Days) {
+            log.debug "scheduling mode 4"
+            schedule(modeSchedule4Time.toString(), setMode4FromSchedule)
+        } else {
+            def message = "Mode 4 Schedule is enabled in preferences, but schedule time, mode or days was not specified. Mode Schedule 4 could not be set."
+            sendNotificationMessage(message, "anomaly")
+        }
+    }
+}
+
+def getTheDay() {
+    def df = new java.text.SimpleDateFormat("EEEE")
+    // Ensure the new date object is set to local time zone
+    df.setTimeZone(location.timeZone)
+    def day = df.format(new Date())
+    log.debug "Today is: ${day}"
+    return day
+}
+
+def setModeFromSchedule (mode, scheduledDays) {
+    def day = getTheDay()
+    if (scheduledDays?.contains(day)) { 
+        if (notifyOfSchedules?.toBoolean()) {
+           sendNotificationMessage("Performing scheduled Powerwall mode change to: ${mode.toString()}")     
+        }
+        def pwDevice = getChildDevice("powerwallDashboard")
+        if (mode.toString()=="Backup-Only") {
+           setBackupOnlyMode(pwDevice) 
+        } else if (mode.toString()=="Self-Powered") {
+           setSelfPoweredMode(pwDevice)
+        } else if (mode.toString()=="Time-Based Control") {
+           setTimeBasedControlMode(pwDevice)
+        } else {
+           def message = "Unexpected condition processing scheduled mode change: ${mode.toString()}"
+           sendNotificationMessage(message, "anomaly")  
+        }
+    }
+}
+  
+def setMode1FromSchedule () {
+    log.debug "processing Mode 1 schedule"
+    setModeFromSchedule (modeSchedule1Mode, modeSchedule1Days)
+}
+  
+def setMode2FromSchedule () {
+    log.debug "processing Mode 2 schedule"
+    setModeFromSchedule (modeSchedule2Mode, modeSchedule2Days)
+}
+
+def setMode3FromSchedule () {
+    log.debug "processing Mode 3 schedule"
+    setModeFromSchedule (modeSchedule3Mode, modeSchedule3Days)
+}
+
+def setMode4FromSchedule () {
+    log.debug "processing Mode 4 schedule"
+    setModeFromSchedule (modeSchedule4Mode, modeSchedule4Days)
 }
 
 def verifyPowerwalls() {
@@ -222,11 +350,11 @@ private resetAccountAccess () {
 private httpAuthAsyncGet (handlerMethod, String path) {
     try {
          log.debug "Async requesting: ${path}"
-        def requestParameters = [
+         def requestParameters = [
             uri: url,
             path: path,
             headers: ['User-Agent': agent, Authorization: "Bearer ${token}"]]
-        asynchttp_v1.get(handlerMethod, requestParameters)
+         asynchttp_v1.get(handlerMethod, requestParameters)
     } 
     catch (e) {
        log.error "Http Get failed: ${e}"
@@ -285,13 +413,15 @@ private sendNotificationMessage(message, msgType=null) {
     def sendPushMessage = (!notificationMethod || (notificationMethod.toString() == "push" || notificationMethod.toString() == "text and push"))
     def sendTextMessage = (notificationMethod && (notificationMethod.toString() == "text" || notificationMethod.toString() == "text and push"))
     log.debug "notification message: ${message}"
-    if (sendTextMessage == true) {
-        if (phoneNumber) {
+    if (msgType == null || msgType != "anomaly" || notifyWhenAnomalies?.toBoolean()) {
+       if (sendTextMessage == true) {
+           if (phoneNumber) {
             sendSmsMessage(phoneNumber.toString(), message)
-        }
-    }
-    if (sendPushMessage == true) {
-        sendPush(message)
+           }
+       }
+       if (sendPushMessage == true) {
+           sendPush(message)
+       }
     }
 }
 
@@ -339,6 +469,7 @@ def initialize() {
 
     unsubscribe()
     unschedule()
+    setSchedules()
     
     runEvery10Minutes(processMain)
     runEvery1Hour(processWatchdog)
@@ -391,9 +522,15 @@ def updateIfChanged(device, attr, value, delta=null) {
 def checkBatteryNotifications (data) {
      if (notifyWhenReserveApproached?.toBoolean()) {
        if (data.batteryPercent - data.reservePercent < 5) {
+          def status
+          if (data.batteryPercent <= data.reservePercent) {
+              status = "has reached"
+          } else {
+              status = "is approaching"
+          }
           if (state.timeOfLastReserveNotification == null) {
             state.timeOfLastReserveNotification = now()
-            sendNotificationMessage("Powerwall battery level of ${data.batteryPercent.round(1)}% is approaching or has reached ${data.reservePercent}% reserve level.")   
+            sendNotificationMessage("Powerwall battery level of ${data.batteryPercent.round(1)}% ${status} ${data.reservePercent}% reserve level.")   
            } 
         } else if (state.timeOfLastReserveNotification != null && now() - state.timeOfLastReserveNotification >= 30 * 60 * 1000) {
              //reset for new notification if alert condition no longer exists and it's been at least 30 minutes since last notification
@@ -430,14 +567,15 @@ def processSiteResponse(response, callData) {
         }
         state.strategy=strategyUi.toString()
         def changed = updateIfChanged(pwDevice, "currentStrategy", strategyUi)
-        if (changed && notifyWhenStrategyChanges?.toBoolean()) {             
+        if (changed && notifyWhenModesChange?.toBoolean()) {             
               sendNotificationMessage("Powerwall ATC optimization strategy changed to ${strategyUi}")              
         }
         
-        if (notifyWhenTouScheduleChanges?.toBoolean() && state?.lastSchedule && data.tou_settings.schedule != state.lastSchedule) {
+        if (notifyWhenModesChange?.toBoolean() && state?.lastSchedule && data.tou_settings.schedule != state.lastSchedule) {
             sendNotificationMessage("Powerwall Advanced Time Controls schedule has changed") 
         }
-        state.lastSchedule=data.tou_settings.schedule          
+        state.lastSchedule=data.tou_settings.schedule  
+        //log.debug "sched: ${data.tou_settings.schedule}"
     } else {
         log.debug("No Powerwall device to update")
     }
@@ -450,13 +588,21 @@ def processPowerwallResponse(response, callData) {
     def child = getChildDevice("powerwallDashboard")
     
     if (child) {
-        updateIfChanged(child, "reservePercent", data.backup.backup_reserve_percent.toInteger())
-        updateIfChanged(child, "reserve_pending", data.backup.backup_reserve_percent.toInteger())
+        def reservePercent
+        if (data.operation == "backup") {
+            reservePercent = 100
+        } else {
+            reservePercent = data.backup.backup_reserve_percent.toInteger()
+        }
+                  
+        updateIfChanged(child, "reservePercent", reservePercent.toInteger())
+        updateIfChanged(child, "reserve_pending", reservePercent.toInteger())
         
         if (data.total_pack_energy > 1) //sometimes data appears invalid
         {
             def batteryPercent = data.energy_left.toFloat() / data.total_pack_energy.toFloat() * 100.0
-            updateIfChanged(child, "battery", batteryPercent.round(1))
+            updateIfChanged(child, "battery", batteryPercent.toInteger())
+            updateIfChanged(child, "batteryPercent", batteryPercent.round(1))
             runIn(1, checkBatteryNotifications, [data: [batteryPercent: batteryPercent, reservePercent: data.backup.backup_reserve_percent.toInteger()]])
         }
    
@@ -491,7 +637,7 @@ def processPowerwallResponse(response, callData) {
             opMode = "Backup-Only"
         }
         changed = updateIfChanged(child, "currentOpState", opMode)
-        if (changed && notifyWhenOpModeChanges?.toBoolean()) {
+        if (changed && notifyWhenModesChange?.toBoolean()) {
             sendNotificationMessage("Powerwall op mode changed to ${opMode}")     
         }
     }
@@ -590,7 +736,11 @@ def commandBackupReservePercent(data) {
 
 def setBackupReservePercent(child, value) {
     //log.debug "commanding reserve to ${value}%"
-    runIn(2,commandBackupReservePercent,[data: [reservePercent:value]])
+    if (value >= 0 && value <= 100) {
+       runIn(2,commandBackupReservePercent,[data: [reservePercent:value]])
+    } else {
+       log.debug "Backup reserve percent of: ${value} not sent. Must be between 0 and 100"
+    }
 }
         
 def refresh(child) {
@@ -613,14 +763,10 @@ def processWatchdog() {
     def secondsSinceLastProcessCompleted = (now() - lastTimeCompleted) / 1000
 
     if (secondsSinceLastProcessed > 1800) {
-        if (notifyWhenAnomalies?.toBoolean()) {
-           sendNotificationMessage("Warning: Powerwall Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing")
-        }
+        sendNotificationMessage("Warning: Powerwall Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing","anomaly")
         runIn(30, initialize)
     } else if (secondsSinceLastProcessCompleted > 1800) {
-        if (notifyWhenAnomalies?.toBoolean()) {
-           sendNotificationMessage("Warning: Powerwall Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing")
-        }
+        sendNotificationMessage("Warning: Powerwall Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing","anomaly")
         runIn(30, initialize)
     }
 }
