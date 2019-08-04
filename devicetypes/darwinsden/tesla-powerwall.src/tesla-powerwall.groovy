@@ -12,8 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *
- *	23-Jun-2019 >>> v0.1.1e.20190723 - Initial beta release
+ *	29-Jul-2019 >>> v0.1.2e.20190729 - Disable reserve percent controls in backup-only mode
+ *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
  *
  */
 
@@ -60,10 +60,11 @@ metadata {
                 attributeState("default", label: 'Reserve: ${currentValue}%', unit: "percentage", icon: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlpha5.png", defaultState: true)
             }
             tileAttribute("device.reserve_pending", key: "VALUE_CONTROL") {
+                attributeState("default", action: "lowerBackupReserve")
                 attributeState("VALUE_UP", unit: "percentage", action: "raiseBackupReserve")
                 attributeState("VALUE_DOWN", unit: "percentage", action: "lowerBackupReserve")
             }
-            tileAttribute("device.battery", key: "SECONDARY_CONTROL") {
+            tileAttribute("device.batteryPercent", key: "SECONDARY_CONTROL") {
                 attributeState("default", label: '${currentValue}%', unit: "percentage", defaultState: true)
             }
             tileAttribute('device.currentOpState', key: "OPERATING_STATE") {
@@ -91,7 +92,7 @@ metadata {
         standardTile("blank", "device.blank", width: 1, height: 1) {
             state("blank", label: "", backgroundColor: "#ffffff")
         }
-        valueTile("battery", "device.battery", width: 2, height: 2) {
+        valueTile("battery", "device.batteryPercent", width: 2, height: 2) {
             state("battery", label: ': Battery :\n ${currentValue}% \n', unit: "%", icon: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/powerwall-Image.png")
         }
         valueTile("load", "device.loadPower", width: 2, height: 2) {
@@ -182,29 +183,32 @@ def setBackupReservePercentHandler(data) {
 }
 
 def lowerBackupReserve(value) {
-
-    def brp = device.currentValue("reserve_pending").toInteger()
-    if (!brp || state.lastReserveSetTime == null || ((now() - state.lastReserveSetTime) > 20 * 1000)) {
-        brp = device.currentValue("reservePercent").toInteger()
-    }
-    if (brp > 0) {
-        brp = brp - 1
-        runIn(10, setBackupReservePercentHandler, [data: [value: brp]])
-        state.lastReserveSetTime = now()
-        sendEvent(name: "reserve_pending", value: brp, displayed: false)
+    if (device.currentValue("currentOpState").toString() != "Backup-Only") {
+       def brp = device.currentValue("reserve_pending").toInteger()
+       if (!brp || state.lastReserveSetTime == null || ((now() - state.lastReserveSetTime) > 20 * 1000)) {
+           brp = device.currentValue("reservePercent").toInteger()
+       }
+       if (brp > 0) {
+           brp = brp - 1
+           runIn(10, setBackupReservePercentHandler, [data: [value: brp]])
+           state.lastReserveSetTime = now()
+           sendEvent(name: "reserve_pending", value: brp, displayed: false)
+       }
     }
 }
 
 def raiseBackupReserve(value) {
-    def brp = device.currentValue("reserve_pending").toInteger()
-    if (!brp || state.lastReserveSetTime == null || ((now() - state.lastReserveSetTime) > 20 * 1000)) {
-        brp = device.currentValue("reservePercent").toInteger()
-    }
-    if (brp < 100) {
-        brp = brp + 1
-        runIn(10, setBackupReservePercentHandler, [data: [value: brp]])
-        state.lastReserveSetTime = now()
-        sendEvent(name: "reserve_pending", value: brp, displayed: false)
+    if (device.currentValue("currentOpState").toString() != "Backup-Only") {
+       def brp = device.currentValue("reserve_pending").toInteger()
+       if (!brp || state.lastReserveSetTime == null || ((now() - state.lastReserveSetTime) > 20 * 1000)) {
+           brp = device.currentValue("reservePercent").toInteger()
+       }
+       if (brp < 100) {
+           brp = brp + 1
+           runIn(10, setBackupReservePercentHandler, [data: [value: brp]])
+           state.lastReserveSetTime = now()
+           sendEvent(name: "reserve_pending", value: brp, displayed: false)
+       }
     }
 }
 
@@ -225,6 +229,10 @@ def refresh() {
 
 def initialize() {
     log.debug "initializing PW device"
+}
+
+def ping() {
+	log.debug "pinged"	
 }
 
 def parse(String description) {
