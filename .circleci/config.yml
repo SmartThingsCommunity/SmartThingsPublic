@@ -28,6 +28,12 @@ jobs:
       - checkout
       - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_STAGE"
       - run: ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL" --stacktrace
+  deploy-accept:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: ./gradlew deployArchives -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Ps3Buckets="$S3_BUCKETS_ACCEPT"
+      - run: ./gradlew slackSendMessage -PsmartThingsArtifactoryUserName="$ARTIFACTORY_USERNAME" -PsmartThingsArtifactoryPassword="$ARTIFACTORY_PASSWORD" -Pbranch="$CIRCLE_BRANCH" -PslackToken="$SLACK_TOKEN" -PslackWebhookUrl="$SLACK_WEBHOOK_URL" -PslackChannel="$SLACK_CHANNEL" --stacktrace
 workflows:
   version: 2
   deploy:
@@ -45,3 +51,9 @@ workflows:
           filters:
             branches:
               only: staging
+      - deploy-accept:
+          requires:
+            - build
+          filters:
+            branches:
+              only: acceptance
