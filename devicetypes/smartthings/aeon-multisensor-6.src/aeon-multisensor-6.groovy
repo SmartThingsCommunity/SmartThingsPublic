@@ -69,15 +69,12 @@ metadata {
 	}
 
 	preferences {
-		input description: "Please consult AEOTEC MULTISENSOR 6 operating manual for advanced setting options. You can skip this configuration to use default settings",
-			title: "Advanced Configuration", type: "paragraph", element: "paragraph"
-
 		input "motionDelayTime", "enum", title: "Motion Sensor Delay Time",
 			options: ["20 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"]
 
 		input "motionSensitivity", "enum", title: "Motion Sensor Sensitivity", options: ["maximum", "normal", "minimum", "disabled"]
 
-		input "reportInterval", "enum", title: "Sensors Report Interval",
+		input "reportInterval", "enum", title: "Report Interval", description: "How often the device should report in minutes",
 			options: ["8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"]
 	}
 

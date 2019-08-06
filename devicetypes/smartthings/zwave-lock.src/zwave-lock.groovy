@@ -26,6 +26,7 @@ metadata {
 		capability "Configuration"
 
 		// Generic
+		fingerprint inClusters: "0x62, 0x63"
 		fingerprint deviceId: "0x4003", inClusters: "0x98"
 		fingerprint deviceId: "0x4004", inClusters: "0x98"
 		// KwikSet
