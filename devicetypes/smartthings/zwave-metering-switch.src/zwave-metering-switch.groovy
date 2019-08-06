@@ -44,6 +44,7 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "1087", deviceJoinName: "NEO Coolcam Power Plug", ocfDeviceType: "oic.d.smartplug"  //EU
 		fingerprint mfr: "027A", prod: "0101", model: "000D", deviceJoinName: "Zooz Power Switch"
 		fingerprint mfr: "0159", prod: "0002", model: "0054", deviceJoinName: "Qubino Smart Plug", ocfDeviceType: "oic.d.smartplug"
+        fingerprint mfr: "0492", prod: "0473", model: "0002", deviceJoinName: "Test Device", ocfDeviceType: "oic.d.smartplug"
 	}
 
 	// simulator metadata
