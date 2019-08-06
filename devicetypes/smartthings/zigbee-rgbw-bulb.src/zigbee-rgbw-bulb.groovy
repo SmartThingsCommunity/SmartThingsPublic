@@ -65,7 +65,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Aurora", model: "RGBCXStrip50AU", deviceJoinName: "AOne Smart Strip Controller"
         
         //AduroSmart
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010D", manufacturer: "AduroSmartEria", model: "AD-RGBW3001", deviceJoinName: "Eria ZigBee RGBW Bulb"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010D", manufacturer: "AduroSmart Eria", model: "AD-RGBW3001", deviceJoinName: "Eria ZigBee RGBW Bulb"
 	}
 
 	// UI tile definitions
