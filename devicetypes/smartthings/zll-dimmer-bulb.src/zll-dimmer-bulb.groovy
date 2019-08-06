@@ -53,7 +53,7 @@ metadata {
        		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF", outClusters: "0019",manufacturer: "MEGAMAN", model: "BSZTM002", deviceJoinName: "INGENIUM ZB Dimmable A60 Bulb"
         	fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF", outClusters: "0019",manufacturer: "MEGAMAN", model: "BSZTM003", deviceJoinName: "INGENIUM ZB Dimming Module"
 		//AduroSmart
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF, 0019", outClusters: "0019", deviceId: "0100", manufacturer: "AduroSmartEria", model: "ZLL-DimmableLight", deviceJoinName: "Eria ZLL Dimmable Bulb"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF, 0019", outClusters: "0019", deviceId: "0100", manufacturer: "AduroSmart Eria", model: "ZLL-DimmableLight", deviceJoinName: "Eria ZLL Dimmable Bulb"
 	}
 
 	// simulator metadata
