@@ -171,9 +171,15 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	if (cmd.parameterNumber == 3 && cmd.scaledConfigurationValue == 1) {
-		if(!childDevices) {
-			addChild()
+	if (cmd.parameterNumber == 3) {
+		if (cmd.scaledConfigurationValue == 1) {
+			if (!childDevices) {
+				addChild()
+			} else {
+				changeTemperatureSensorStatus("online")
+			}
+		} else if (cmd.scaledConfigurationValue == 0 && childDevices) {
+			changeTemperatureSensorStatus("offline")
 		}
 	}
 }
@@ -328,4 +334,9 @@ private getMaxHeatingSetpointTemperature() {
 
 private getMinHeatingSetpointTemperature() {
 	temperatureScale == 'C' ? 10 : 50
+}
+
+private changeTemperatureSensorStatus(status) {
+	def map = [name: "healthStatus", value: status]
+	sendEventToChild(map)
 }
