@@ -41,6 +41,10 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "FLOALT panel WS 30x30", deviceJoinName: "IKEA FLOALT Panel", mnmn:"SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "SURTE door WS 38x64", deviceJoinName: "IKEA SURTE Panel", mnmn:"SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "JORMLIEN door WS 40x80", deviceJoinName: "IKEA JORMLIEN Panel", mnmn:"SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint profileId: "C05E", deviceId: "0220", manufacturer: "AduroSmart Eria", model: "ZLL-ColorTemperature", deviceJoinName: "Eria Color temperature light"
+		fingerprint profileId: "C05E", manufacturer: "Ubec", model: "BBB65L-HY", deviceJoinName: "XLSmart E27 Light Bulb"
+		//AduroSmart
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", deviceId: "0220", manufacturer: "AduroSmart Eria", model: "ZLL-ColorTemperature", deviceJoinName: "Eria ZLL Color Temperature Bulb", mnmn:"SmartThings", vid: "generic-color-temperature-bulb-2200K-6500K"
 	}
 
 	// UI tile definitions

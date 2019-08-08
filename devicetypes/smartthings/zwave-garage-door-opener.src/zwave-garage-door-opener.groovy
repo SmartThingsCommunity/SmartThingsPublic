@@ -23,6 +23,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
+		fingerprint inClusters: "0x66, 0x98, 0x71, 0x72"
 		fingerprint deviceId: "0x4007", inClusters: "0x98"
 		fingerprint deviceId: "0x4006", inClusters: "0x98"
 		fingerprint mfr:"014F", prod:"4744", model:"3030", deviceJoinName: "Linear GoControl Garage Door Opener"
@@ -69,6 +70,7 @@ import physicalgraph.zwave.commands.barrieroperatorv1.*
 def installed(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	response(secure(zwave.barrierOperatorV1.barrierOperatorSignalSupportedGet()))
 }
 
 def updated(){
