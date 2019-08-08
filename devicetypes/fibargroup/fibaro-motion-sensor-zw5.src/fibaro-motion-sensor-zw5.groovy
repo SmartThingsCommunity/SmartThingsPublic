@@ -120,7 +120,7 @@ def installed() {
 	sendEvent(name: "tamper", value: "clear", displayed: false)
 	sendEvent(name: "motionText", value: "X: 0.0\nY: 0.0\nZ: 0.0", displayed: false)
 	sendEvent(name: "motion", value: "inactive", displayed: false)
-	response(zwave.sensorMultilevelV5.sensorMultilevelSupportedGetSensor())
+	response(zwave.versionV1.versionCommandClassGet(requestedCommandClass: 0x31))
 	multiStatusEvent("Sync OK.", true, true)
 }
 
@@ -345,6 +345,48 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	logging("${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state."$paramKey".value, "debug")
 	state."$paramKey".state = (state."$paramKey".value == cmd.scaledConfigurationValue) ? "synced" : "incorrect"
 	syncNext()
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionCommandClassReport cmd) {
+	def cmds = []
+	if (cmd.requestedCommandClass == 0x31)
+		if(cmd.commandClassVersion < 0x05) {
+			cmds << response(zwave.sensorMultilevelV5.sensorMultilevelGet(scale: 0x0, type: 0x0))
+		} else {
+			cmds << response(zwave.sensorMultilevelV5.sensorMultilevelSupportedGetSensor())
+		}
+	}
+	cmds
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensorMultilevelv5.SensorMultilevelSupportedSensorReport cmd) {
+	def supportedSensors = []
+	for (i in 0..cmd.payload.length()) {
+		for (j in 0..8) {
+			if (cmd.payload[i] >> j & 0x01) { //check bitmask
+				supportedSensors << (i * 8 + j + 1) // bit 0 being 1 indicates sensor type 1 is supported
+			}
+		}
+	}
+	def cmds = []
+	for (sensor_type in supportedSensors) {
+		cmds << response(zwave.sensorMultilevelV5.sensorMultilevelSupportedGetScale(sensorType: sensor_type))
+	}
+	delayBetween(cmds)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensorMultilevelv5.SensorMultilevelSupportedScaleReport cmd) {
+	def _scale
+	if (cmd.scaleBitMask & 0x01) { //we're just going to use the first scale we get a hit on
+		_scale = 1
+	} else if (cmd.scaleBitMask & 0x02) {
+		_scale = 2
+	} else if (cmd.scaleBitMask & 0x04) {
+		_scale = 3
+	} else if (cmd.scaleBitMask & 0x08) {
+		_scale = 4
+	}
+	response(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: cmd.sensorType, scale: _scale))
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
