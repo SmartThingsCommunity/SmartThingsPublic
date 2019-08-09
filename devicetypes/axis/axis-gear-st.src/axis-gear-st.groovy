@@ -1,5 +1,5 @@
 metadata {
-	definition (name: "AXIS Gear ST", namespace: "axis", author: "AXIS Labs") {  
+	definition (name: "AXIS Gear ST", namespace: "axis", author: "AXIS Labs", ocfDeviceType: "oic.d.blind", vid: "generic-shade-2") {  
 		capability "Window Shade"
 		capability "Window Shade Preset"
 		capability "Switch Level"
@@ -30,10 +30,10 @@ metadata {
 		//Updated 2018-01-04 - Axis Inversion & Increased Battery Reporting interval to 1 hour (previously 5 mins)
 		//Updated 2018-01-08 - Updated battery conversion from [0-100 : 00 - 64] to [0-100 : 00-C8] to reflect firmware update
 		//Updated 2018-11-01 - added in configure reporting for refresh button, close when press on partial shade icon, update handler to parse between 0-254 as a percentage
-        //Updated 2019-06-03 - modified to use Window Covering Cluster Commands and versioning tile and backwards compatibility (firmware and app), fingerprinting enabled
-        //Updated 2019-08-08 - minor changes
+		//Updated 2019-06-03 - modified to use Window Covering Cluster Commands and versioning tile and backwards compatibility (firmware and app), fingerprinting enabled
+		//Updated 2019-08-09 - minor changes and improvements, onoff state reporting fixed
 	}
-   
+	
 	tiles(scale: 2) {
 		multiAttributeTile(name:"windowShade", type: "lighting", width: 3, height: 3) {
 			tileAttribute("device.windowShade", key: "PRIMARY_CONTROL") {
@@ -45,12 +45,12 @@ metadata {
 				attributeState("stopping", label: 'Stopping',  icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777") 
 				attributeState("stoppingNS", label: 'Stopping Not Supported',  icon: "http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777") 
 				attributeState("unknown", label: 'Configuring.... Please Wait', icon:"http://i.imgur.com/vBA17WL.png", backgroundColor: "#ff7777") 
-            }
-            tileAttribute ("device.level", key: "VALUE_CONTROL") {
-                attributeState("VALUE_UP", action: "ShadesUp")
+			}
+			tileAttribute ("device.level", key: "VALUE_CONTROL") {
+				attributeState("VALUE_UP", action: "ShadesUp")
 				attributeState("VALUE_DOWN", action: "ShadesDown")
-            }
-   		}
+			}
+		}
 		//Added a "doubled" state to toggle states between positions
 		standardTile("main", "device.windowShade"){
 			state("open", label:'Open', action:"close", icon:"http://i.imgur.com/St7oRQl.png", backgroundColor:"#ffcc33", nextState: "closing")
@@ -67,7 +67,7 @@ metadata {
 		}
 		standardTile("contPause", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "stop", label:"", icon:'st.sonos.stop-btn', action:'stop'
-        }
+		}
 		valueTile("battery", "device.battery", inactiveLabel:false, decoration:"flat", width:2, height:1) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
@@ -83,9 +83,9 @@ metadata {
 		preferences {
 			input "preset", "number", title: "Preset percentage (1-100) [Default - 50%]", defaultValue: 50, required: false, displayDuringSetup: true, range:"(1..100)"
 		}
-        
-        main(["main"])
-        details(["windowShade", "mediumSlider", "contPause", "home", "version", "battery", "refresh"])
+		
+		main(["main"])
+		details(["windowShade", "mediumSlider", "contPause", "home", "version", "battery", "refresh"])
 	}
 }
 
@@ -148,11 +148,11 @@ def stop() {
 	if (shadeState == "opening" || shadeState == "closing") {
 		if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
 			sendEvent(name: "windowShade", value: "stopping")
-			return zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_STOP)         
+			return zigbee.command(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_CMD_STOP)
 		}
 		else {
 			sendEvent(name: "windowShade", value: "stoppingNS")
-			return zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, [delay:5000])        
+			return zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, [delay:5000])
 		}
 	}
 	else {
@@ -208,7 +208,7 @@ def setLevel(value, rate=null) {
 	if (i > currentLevel) {
 		sendEvent(name: "windowShade", value: "opening")
 	}
-    else if (i < currentLevel) {
+	else if (i < currentLevel) {
 		sendEvent(name: "windowShade", value: "closing")
 	}
 	//setWindowShade(i)
@@ -272,17 +272,19 @@ def setWindowShade(value) {
 def refresh() {
 	log.debug "parse() refresh"
 	def cmds_refresh = null
-    
+	
 	if (state.currentVersion >= MIN_WINDOW_COVERING_VERSION){
-		cmds_refresh = zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE) +
-							zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
-							zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_SWBUILDID)
-    }
-    else {
-		cmds_refresh = zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL) +
-							zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
-							zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_SWBUILDID)
+		cmds_refresh = zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE)
 	}
+	else {
+		cmds_refresh = zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL)
+
+	}
+	
+	cmds_refresh = cmds_refresh + 
+					zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY) +
+					zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_SWBUILDID)
+	
 	log.info "refresh() --- cmds: $cmds_refresh"
 	
 	return cmds_refresh
@@ -307,8 +309,8 @@ def configure() {
 						zigbee.readAttribute(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL) +
 						zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY)
 						
-    def cmds = zigbee.configureReporting(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE, 0x20, 1, 3600, 0x00) + 
-				zigbee.configureReporting(CLUSTER_ONOFF, ONOFF_ATTR_ONOFFSTATE, 0x20, 1, 3600, 0x00) +
+	def cmds = zigbee.configureReporting(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE, 0x20, 1, 3600, 0x00) + 
+				zigbee.configureReporting(CLUSTER_ONOFF, ONOFF_ATTR_ONOFFSTATE, 0x10, 1, 3600, 0x00) +
 				zigbee.configureReporting(CLUSTER_LEVEL, LEVEL_ATTR_LEVEL, 0x20, 1, 3600, 0x00) +
 				zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY, 0x20, 1, 3600, 0x01)
 				
@@ -319,19 +321,20 @@ def configure() {
 def parse(String description) {
 	log.trace "parse() --- description: $description"
 	
-	def event = zigbee.getEvent(description)
-	if (event) {
-		sendEvent(event)
-    }
-	
 	Map map = [:]
-	if ((description?.startsWith('read attr -')) || (description?.startsWith('attr report -'))) {
-		map = parseReportAttributeMessage(description)
-    }
+
+	def event = zigbee.getEvent(description)
+	if (event && description?.startsWith('on/off')) {
+		log.trace "sendEvent(event)"
+		sendEvent(event)
+	}
 	
-	def result = map ? createEvent(map) : null
-	log.debug "parse() --- returned: $result"
-	return result
+	else if ((description?.startsWith('read attr -')) || (description?.startsWith('attr report -'))) {
+		map = parseReportAttributeMessage(description)
+		def result = map ? createEvent(map) : null
+		log.debug "parse() --- returned: $result"
+		return result
+	}	
 }
 
 private Map parseReportAttributeMessage(String description) {
@@ -392,7 +395,7 @@ private Map parseReportAttributeMessage(String description) {
 		for (int i = 0; i < versionString.length(); i += 2) {
 			String str = versionString.substring(i, i + 2)
 			output.append((char) (Integer.parseInt(str, 16)))   
-            if (i > 19) {
+			if (i > 19) {
 				output2.append((char) (Integer.parseInt(str, 16)))
 			}
 		} 
