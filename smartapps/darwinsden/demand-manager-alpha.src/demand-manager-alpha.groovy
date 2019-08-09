@@ -29,9 +29,10 @@
 include 'asynchttp_v1'
  
 def version() {
-    return "v0.2.2e.20190705"
+    return "v0.2.3e.20190808"
 }
 /*   
+ *	08-Aug-2019 >>> v0.2.3e.20190808 - Auto-refresh home energy meter and solar power meter if these are Powerwall devices 
  *	28-Jul-2019 >>> v0.2.2e.20190728 - Added support for Griddy and ComEd utility pricing peak period triggers. Added support for Powerwall as a solar and grid meter. 
  *	05-Jul-2019 >>> v0.2.1e.20190705 - Added support for multiple peak control and display devices. Note: update requires these devices to be re-entered in app preferences. 
  *	03-Jul-2019 >>> v0.2.0e.20190703 - Added option to re-set set-point after each cycle. Resolve issue that could result in multiple thermostat commands. 
@@ -50,7 +51,7 @@ def release() {
 }
 
 definition(
-    name: "Demand Manager - Alpha", namespace: "darwinsden", author: "Darwin", description: "Control Demand Management.",
+    name: "Demand Manager - Alpha", namespace: "darwinsden", author: "Darwin", description: "Electric Energy Demand Management.",
     category: "My Apps", iconUrl: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/meterColor.png",
     iconX2Url: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/meterColor.png"
 )
@@ -420,9 +421,12 @@ def pageThermostat() {
 
 def pageAdvancedSettings() {
     dynamicPage(name: "pageAdvancedSettings", title: "Advanced Settings (General)", install: false, uninstall: false) {
-      section("Advanced Settings ") {
+      section("") {
             input "logLevel", "enum", required: false, title: "IDE Log Level (set log level in SmartThings IDE Live Logging Tob)", options: ["none", "trace", "debug", "info", "warn"]
-            input "refreshDevices", "boolean", required: false, title: "Request device refreshes during peak periods. This may improve usage accuracy data, but result in network congestion. Currently applies to selected Home Energy Meter and Thermostat devices"
+      }
+      section ("Automatically perform device refreshes during peak periods. This may improve usage accuracy data, but result in network congestion. " +
+         "Currently applies to selected Home Energy Meter and Thermostat devices. Powerwall devices are automatically rereshed during peak periods regardless of this setting") {
+            input "refreshDevices", "boolean", required: false, title: "Refresh Devices during peak periods"
         }
    }
 }
@@ -1039,15 +1043,23 @@ def checkDynamicPricingTriggers() {
 }
 
 def refreshDevicesDuringPeak() {
-   if (refreshDevices?.toBoolean() && atomicState.nowInPeakUtilityPeriod?.toBoolean()) {
-      if (wholeHomePowerMeter !=null) {
-        wholeHomePowerMeter.refresh()
+
+   if (atomicState.nowInPeakUtilityPeriod?.toBoolean()) {
+      def homeMeterIsPw = homeMeterIsPowerwall()
+      
+      // Refresh Home Meter if set in preferences or it is a Powerwall
+      if (wholeHomePowerMeter !=null && (homeMeterIsPw || refreshDevices?.toBoolean())) {
+          wholeHomePowerMeter.refresh()
+      } 
+      
+      //Refresh solar meter if it is a Powerwall (already done if home meter is also Powerwall)
+      if (solarMeterIsPowerwall() && !homeMeterIsPw) {
+          powerGenerator1.refresh()
       }
-      if (homeThermostat != null) {
-         // Only request thermostat refreshes during demand relevant situations in an attempt to minimize costly thermostat device processing
-         if (atomicState.demandProjectedWatts > atomicState.goalDemandWatts * 0.9) {
-            homeThermostat.refresh()
-         }
+      
+      //Refresh thermostat if set in preferences & in demand relevant situation (attempt to minimize thermostat device processing)
+      if (refreshDevices?.toBoolean() && homeThermostat != null && (atomicState.demandProjectedWatts > atomicState.goalDemandWatts * 0.9)) {
+          homeThermostat.refresh()
       }
    }
 }
@@ -1632,21 +1644,46 @@ def checkDeprecated() {
    }
 }
 
-def getSolarPower ()
-{
-   def solarPower = 0
+def homeMeterIsPowerwall() {
+   def isPowerwall = false
+   if (wholeHomePowerMeter != null) {
+      def theAtts = wholeHomePowerMeter.supportedAttributes
+      theAtts.each {att ->
+           //log.debug "Supported Attribute: ${att.name}" 
+           if (att.name == "gridPower") {
+              isPowerwall = true
+           }
+      }
+   }
+   log.debug "home meter is a powerwall: ${isPowerwall}"
+   return isPowerwall
+}
+
+
+def solarMeterIsPowerwall() {
    def isPowerwall = false
    if (powerGenerator1 != null) {
       def theAtts = powerGenerator1.supportedAttributes
       theAtts.each {att ->
            //log.debug "Supported Attribute: ${att.name}" 
            if (att.name == "solarPower") {
-              solarPower = powerGenerator1.solarPowerState.integerValue
-              //log.debug "power from pW is: ${solarPower}"
               isPowerwall = true
            }
       }
-      if (!isPowerwall) {
+   }
+   //log.debug "solar meter is a powerwall: ${isPowerwall}"
+   return isPowerwall
+}
+    
+    
+def getSolarPower ()
+{
+   def solarPower = 0
+   if (powerGenerator1 != null) {
+      if (solarMeterIsPowerwall()) {
+          solarPower = powerGenerator1.solarPowerState.integerValue
+          //log.debug "power from pW is: ${solarPower}"
+      } else {
          solarPower = powerGenerator1.powerState.integerValue
          //log.debug "power from Inverter is: ${solarPower}"
       }
