@@ -77,7 +77,7 @@ private List<Map> collectAttributes(Map descMap) {
 		descMaps.addAll(descMap.additionalAttrs)
 	}
 
-	return  descMaps
+	return descMaps
 }
 
 // Parse incoming device messages to generate events
@@ -89,31 +89,47 @@ def parse(String description) {
             log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, descValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
             List<Map> descMaps = collectAttributes(descMap)
             def liftmap = descMaps.find { it.attrInt == ATTRIBUTE_POSITION_LIFT }
-            if (liftmap) {
-                state.level = Integer.parseInt(liftmap.value, 16)
-                if (liftmap.value == "64") { //open
-                    sendEvent(name: "windowShade", value: "open")
-                    sendEvent(name: "level", value: "100")
-                } else if (liftmap.value == "00") { //closed
-                    sendEvent(name: "windowShade", value: "closed")
-                    sendEvent(name: "level", value: "0")
-                } else {
-                    sendEvent(name: "windowShade", value: "partially open")
-                    sendEvent(name: "level", value: zigbee.convertHexToInt(liftmap.value))
-                }
+            if (liftmap && liftmap.value) {
+                def newLevel = zigbee.convertHexToInt(liftmap.value)
+                levelEventHandler(newLevel)
             }
         } else if (!supportsLiftPercentage() && descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.value) {
             def valueInt = Math.round((zigbee.convertHexToInt(descMap.value)) / 255 * 100)
-            state.level = valueInt
-            if (0 == valueInt) {
-                sendEvent(name: "windowShade", value: "closed")
-            } else if (100 == valueInt) {
-                sendEvent(name: "windowShade", value: "open")
-            } else {
-                sendEvent(name: "windowShade", value: "partially open")
-            }
-            sendEvent([name: "level", value: valueInt])
+
+            levelEventHandler(valueInt)
         }
+    }
+}
+
+def levelEventHandler(currentLevel) {
+    def lastLevel = device.currentValue("level")
+    log.debug "levelEventHandle - currentLevel: ${currentLevel} lastLevel: ${lastLevel}"
+    if (lastLevel == "undefined" || currentLevel == lastLevel) { //Ignore invalid reports
+        log.debug "Ignore invalid reports"
+        return
+    }
+
+    sendEvent(name: "level", value: currentLevel)
+
+    if (currentLevel == 0 || currentLevel == 100) {
+        sendEvent(name: "windowShade", value: currentLevel == 0 ? "closed" : "open")
+        return
+    }
+
+    if (lastLevel < currentLevel) {
+        sendEvent([name:"windowShade", value: "opening"])
+    } else if (lastLevel > currentLevel) {
+        sendEvent([name:"windowShade", value: "closing"])
+    }
+
+    runIn(1, "updateFinalState", [overwrite:true])
+}
+
+def updateFinalState() {
+    def level = device.currentValue("level")
+    log.debug "updateFinalState: ${level}"
+    if (level > 0 && level < 100) {
+        sendEvent(name: "windowShade", value: "partially open")
     }
 }
 
@@ -135,7 +151,7 @@ def open() {
 
 def setLevel(data, rate = null) {
     log.info "setLevel()"
-    Integer currentLevel = state.level
+    Integer currentLevel = device.currentValue("level")
     Integer level = data as Integer
 
     if (level > currentLevel) {
