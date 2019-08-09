@@ -24,10 +24,11 @@
 include 'asynchttp_v1'
 
 def version() {
-    return "v0.1.2e.20190729"
+    return "v0.1.3e.20190809"
 }
 
 /*   
+ *	09-Aug-2019 >>> v0.1.3e.20190809 - Added reserve% scheduling & polling interval preferences
  *	29-Jul-2019 >>> v0.1.2e.20190729 - Set reserve percent to 100% in backup-only mode. Added mode scheduling.
  *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
  */
@@ -45,9 +46,14 @@ preferences {
     page(name: "accountInfo")
     page(name: "pageNotifications")
     page(name: "pageSchedules")
-    page(name: "pageModeSchedule")
     page(name: "pageReserveSchedule")
     page(name: "pageRemove")
+    page(name: "schedule1Options")
+    page(name: "schedule2Options")
+    page(name: "schedule3Options")
+    page(name: "schedule4Options")
+    page(name: "schedule5Options")
+    page(name: "pagePwPreferences")
 }
 
 private pageMain() {
@@ -62,8 +68,10 @@ private pageMain() {
         section("Preferences") {
             href "pageNotifications", title: "Notification Preferences..", description: "", required: false,
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification.png"
-            href "pageModeSchedule", title: "Mode Schedules..", description: "", required: false,
+            href "pageSchedules", title: "Schedules..", description: "", required: false,
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar.png"
+            href "pagePwPreferences", title: "Powerwall Manager Preferences..", description: "", required: false,
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog.png"
         }    
         section("For more information") {
           href(name: "Site", title: "For more information, questions, or to provide feedback, please visit: DarwinsDen.com/powerwall",
@@ -122,74 +130,191 @@ def pageNotifications() {
     }
 }
 
-def pageModeSchedule() {
-    dynamicPage(name: "pageModeSchedule", title: "Schedule Powerwall Operational Mode changes. " +
-       "Mode changes are subject to Powerwall processing rules and may not immediately take effect at the time they are commanded.", install: false, uninstall: false) {
-        section("Mode Schedule 1") {
-            input "modeSchedule1Mode", "enum", required: false, title: "Mode to set", options: ["Backup-Only", "Self-Powered", "Time-Based Control"]
-            input "modeSchedule1Time", "time", required: false, title: "At what time?"
-            input "modeSchedule1Days", "enum", required: false, title: "On which days...", multiple: true,
+def schedule1Options() {
+    dynamicPage(name: "schedule1Options", title: "Schedule 1", install: false, uninstall: false) {
+        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+           input "schedule1Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
+           input "schedule1Reserve", "enum", required: false, title: "Reserve % to set",
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+           input "schedule1Time", "time", required: false, title: "At what time?"
+           input "schedule1Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
-            input "modeSchedule1IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
         }
-        section("Mode Schedule 2") {
-            input "modeSchedule2Mode", "enum", required: false, title: "Mode to set", options: ["Backup-Only", "Self-Powered", "Time-Based Control"]
-            input "modeSchedule2Time", "time", required: false, title: "At what time?"
-            input "modeSchedule2Days", "enum", required: false, title: "On which days...", multiple: true,
+    }
+}
+
+def schedule2Options() {
+    dynamicPage(name: "schedule2Options", title: "Schedule 2", install: false, uninstall: false) {
+        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+           input "schedule2Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
+           input "schedule2Reserve", "enum", required: false, title: "Reserve % to set",
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+           input "schedule2Time", "time", required: false, title: "At what time?"
+           input "schedule2Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
-            input "modeSchedule2IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
         }
-        section("Mode Schedule 3") {
-            input "modeSchedule3Mode", "enum", required: false, title: "Mode to set", options: ["Backup-Only", "Self-Powered", "Time-Based Control"]
-            input "modeSchedule3Time", "time", required: false, title: "At what time?"
-            input "modeSchedule3Days", "enum", required: false, title: "On which days...", multiple: true,
+    }
+}
+
+def schedule3Options() {
+    dynamicPage(name: "schedule3Options", title: "Schedule 3", install: false, uninstall: false) {
+        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+           input "schedule3Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
+           input "schedule3Reserve", "enum", required: false, title: "Reserve % to set",
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+           input "schedule3Time", "time", required: false, title: "At what time?"
+           input "schedule3Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
-            input "modeSchedule3IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
-        }  
-       section("Mode Schedule 4") {
-            input "modeSchedule4Mode", "enum", required: false, title: "Mode to set", options: ["Backup-Only", "Self-Powered", "Time-Based Control"]
-            input "modeSchedule4Time", "time", required: false, title: "At what time?"
-            input "modeSchedule4Days", "enum", required: false, title: "On which days...", multiple: true,
+        }
+    }
+}
+
+def schedule4Options() {
+    dynamicPage(name: "schedule4Options", title: "Schedule 4", install: false, uninstall: false) {
+        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+           input "schedule4Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
+           input "schedule4Reserve", "enum", required: false, title: "Reserve % to set",
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+           input "schedule4Time", "time", required: false, title: "At what time?"
+           input "schedule4Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
-            input "modeSchedule4IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
-        }  
+        }
+    }
+}
+
+def schedule5Options() {
+    dynamicPage(name: "schedule5Options", title: "Schedule 5", install: false, uninstall: false) {
+        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+           input "schedule5Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
+           input "schedule5Reserve", "enum", required: false, title: "Reserve % to set",
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+           input "schedule5Time", "time", required: false, title: "At what time?"
+           input "schedule5Days", "enum", required: false, title: "On which days...", multiple: true,
+                options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
+        }
+    }
+}
+
+def pagePwPreferences() {
+    dynamicPage(name: "pagePwPreferences", title: "Powerwall Manager Preferences", install: false, uninstall: false) {
+        section("") {
+           input "pollingPeriod", "enum", required: false, title: "Powerwall polling interval", defaultValue: "10 minutes",
+                options: ["Do not poll","5 minutes","10 minutes","30 minutes","1 hour"]
+        }
+    }
+}
+
+def actionsValid (modeSetting, reserveSetting) {
+     return (modeSetting && modeSetting.toString() != "No Action") || (reserveSetting && reserveSetting.toString() != "No Action")
+}
+
+def scheduleValid (timeSetting,daysSetting) {
+     return timeSetting != null && daysSetting != null && daysSetting.size() > 0
+}
+
+def getOptionsString (modeSetting,reserveSetting,timeSetting,daysSetting)
+{
+        def optionsString = ''
+        if (actionsValid (modeSetting, reserveSetting)) {
+           if (scheduleValid (timeSetting, daysSetting)) {
+              if (modeSetting && modeSetting.toString() != "No Action") {
+                 optionsString = "Mode: " + modeSetting.toString()
+              }
+              if (reserveSetting && reserveSetting.toString() != "No Action") {
+                 if (optionsString != '') {
+                     optionsString = optionsString + ',\n'
+                 }
+                 optionsString = optionsString + "Reserve: " + reserveSetting.toString() + '%'
+              }
+              def timeFormat = new java.text.SimpleDateFormat("hh:mm a")
+              def isoDatePattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+              def isoTime = new java.text.SimpleDateFormat(isoDatePattern).parse(timeSetting.toString())
+              def time = timeFormat.format(isoTime)
+              optionsString = optionsString + '\n' +  time + ' ' + daysSetting
+           } else {
+               optionsString = "No time or days scheduled"
+           }
+        }
+        else {
+           optionsString = "No actions scheduled"
+        } 
+
+        
+    return optionsString
+}
+        
+def pageSchedules() {
+    dynamicPage(name: "pageSchedules", title: "Powerwall setting changes are subject to Powerwall processing rules and may not immediately take effect at the time they are commanded.", install: false, uninstall: false) {
+        def optionsString
+        optionsString = getOptionsString(schedule1Mode, schedule1Reserve, schedule1Time, schedule1Days)
+        section("Schedule 1") {
+            href "schedule1Options", title: "${optionsString}", description: ""
+        }
+        optionsString = getOptionsString(schedule2Mode, schedule2Reserve, schedule2Time, schedule2Days)
+        section("Schedule 2") {
+            href "schedule2Options", title: "${optionsString}", description: ""
+        }
+        optionsString = getOptionsString(schedule3Mode, schedule3Reserve, schedule3Time, schedule3Days)
+        section("Schedule 3") {
+            href "schedule3Options", title: "${optionsString}", description: ""
+        }
+        optionsString = getOptionsString(schedule4Mode, schedule4Reserve, schedule4Time, schedule4Days)
+        section("Schedule 4") {
+            href "schedule4Options", title: "${optionsString}", description: ""
+        }
+        optionsString = getOptionsString(schedule5Mode, schedule5Reserve, schedule5Time, schedule5Days)
+        section("Schedule 5") {
+            href "schedule5Options", title: "${optionsString}", description: ""
+        }
     }
 }
 
 def setSchedules() {
-    if (modeSchedule1IsActive?.toBoolean()) {
-        if (modeSchedule1Mode && modeSchedule1Time && modeSchedule1Days) {
+    if (actionsValid (schedule1Mode, schedule1Reserve)) {
+        if (scheduleValid (schedule1Time, schedule1Days)) {
             log.debug "scheduling mode 1"
-            schedule(modeSchedule1Time.toString(), setMode1FromSchedule)
+            schedule(schedule1Time.toString(), processSchedule1)
         } else {
-            def message = "Mode 1 Schedule is enabled in preferences, but schedule time, mode or days was not specified. Mode Schedule 1 could not be set."
+             def message = "Schedule 1 actions are enabled in preferences, but schedule time and/or days were not specified. Schedule could not be set."
             sendNotificationMessage(message, "anomaly")
         }
     }
-    if (modeSchedule2IsActive?.toBoolean()) {
-        if (modeSchedule2Mode && modeSchedule2Time && modeSchedule2Days) {
+    
+    if (actionsValid (schedule2Mode, schedule2Reserve)) {
+        if (scheduleValid (schedule2Time, schedule2Days)) {
             log.debug "scheduling mode 2"
-            schedule(modeSchedule2Time.toString(), setMode2FromSchedule)
+            schedule(schedule2Time.toString(), processSchedule2)
         } else {
-            def message = "Mode 2 Schedule is enabled in preferences, but schedule time, mode or days was not specified. Mode Schedule 2 could not be set."
+            def message = "Schedule 2 actions are enabled in preferences, but schedule time and/or days were not specified. Schedule could not be set."
             sendNotificationMessage(message, "anomaly")
         }
     }
-    if (modeSchedule3IsActive?.toBoolean()) {
-        if (modeSchedule3Mode && modeSchedule3Time && modeSchedule3Days) {
+    
+    if (actionsValid (schedule3Mode, schedule3Reserve)) {
+        if (scheduleValid (schedule3Time, schedule3Days)) {
             log.debug "scheduling mode 3"
-            schedule(modeSchedule3Time.toString(), setMode3FromSchedule)
+            schedule(schedule3Time.toString(), processSchedule3)
         } else {
-            def message = "Mode 3 Schedule is enabled in preferences, but schedule time, mode or days was not specified. Mode Schedule 3 could not be set."
+            def message = "Schedule 3 actions are enabled in preferences, but schedule time and/or days were not specified. Schedule could not be set."
             sendNotificationMessage(message, "anomaly")
         }
     }
-    if (modeSchedule4IsActive?.toBoolean()) {
-        if (modeSchedule4Mode && modeSchedule4Time && modeSchedule4Days) {
+    
+    if (actionsValid (schedule4Mode, schedule4Reserve)) {
+        if (scheduleValid (schedule4Time, schedule4Days)) {
             log.debug "scheduling mode 4"
-            schedule(modeSchedule4Time.toString(), setMode4FromSchedule)
+            schedule(schedule4Time.toString(), processSchedule4)
         } else {
-            def message = "Mode 4 Schedule is enabled in preferences, but schedule time, mode or days was not specified. Mode Schedule 4 could not be set."
+            def message = "Schedule 4 actions are enabled in preferences, but schedule time, and/or days were not specified. Schedule could not be set."
+            sendNotificationMessage(message, "anomaly")
+        }
+    }
+    if (actionsValid (schedule5Mode, schedule5Reserve)) {
+        if (scheduleValid (schedule5Time, schedule5Days)) {
+            log.debug "scheduling mode 5"
+            schedule(schedule5Time.toString(), processSchedule5)
+        } else {
+            def message = "Schedule 5 actions are enabled in preferences, but schedule time, and/or days were not specified. Schedule could not be set."
             sendNotificationMessage(message, "anomaly")
         }
     }
@@ -200,66 +325,85 @@ def getTheDay() {
     // Ensure the new date object is set to local time zone
     df.setTimeZone(location.timeZone)
     def day = df.format(new Date())
-    log.debug "Today is: ${day}"
+    //log.debug "Today is: ${day}"
     return day
 }
 
-def setModeFromSchedule (mode, scheduledDays) {
+def commandPwFromSchedule (mode, reserve, scheduledDays) {
     def day = getTheDay()
     if (scheduledDays?.contains(day)) { 
-        if (notifyOfSchedules?.toBoolean()) {
-           sendNotificationMessage("Performing scheduled Powerwall mode change to: ${mode.toString()}")     
-        }
         def pwDevice = getChildDevice("powerwallDashboard")
-        if (mode.toString()=="Backup-Only") {
-           setBackupOnlyMode(pwDevice) 
-        } else if (mode.toString()=="Self-Powered") {
-           setSelfPoweredMode(pwDevice)
-        } else if (mode.toString()=="Time-Based Control") {
-           setTimeBasedControlMode(pwDevice)
-        } else {
-           def message = "Unexpected condition processing scheduled mode change: ${mode.toString()}"
-           sendNotificationMessage(message, "anomaly")  
+        def message = "Performing scheduled Powerwall actions." 
+        if (mode && mode.toString() != "No Action") {
+           message = message + " Setting mode to ${mode.toString()}."
+           if (mode.toString()=="Backup-Only") {
+              setBackupOnlyMode(pwDevice) 
+           } else if (mode.toString()=="Self-Powered") {
+              setSelfPoweredMode(pwDevice)
+           } else if (mode.toString()=="Time-Based Control") {
+              setTimeBasedControlMode(pwDevice)
+           } else {
+              def errMessage = "Unexpected condition processing scheduled mode change: ${mode.toString()}"
+              sendNotificationMessage(errMessage, "anomaly")  
+           }
         }
+        if (reserve && reserve.toString() != "No Action") {
+           message = message + " Setting reserve to ${reserve}%."
+           if (reserve.toInteger() >= 0 && reserve.toInteger() <= 100) {
+               runIn(10,commandBackupReservePercent,[data: [reservePercent:reserve.toInteger()]])
+              //setBackupReservePercent(pwDevice,reserve.toInteger()) 
+           } else {
+              def errMessage = "Unexpected condition processing scheduled reserve % change: ${reserve}}"
+              sendNotificationMessage(errMessage, "anomaly")  
+           }
+        }
+        if (notifyOfSchedules?.toBoolean()) {
+               sendNotificationMessage(message)     
+        }   
     }
 }
   
-def setMode1FromSchedule () {
+def processSchedule1 () {
     log.debug "processing Mode 1 schedule"
-    setModeFromSchedule (modeSchedule1Mode, modeSchedule1Days)
+    commandPwFromSchedule (schedule1Mode, schedule1Reserve, schedule1Days)
 }
-  
-def setMode2FromSchedule () {
+
+def processSchedule2 () {
     log.debug "processing Mode 2 schedule"
-    setModeFromSchedule (modeSchedule2Mode, modeSchedule2Days)
+    commandPwFromSchedule (schedule2Mode, schedule2Reserve, schedule2Days)
 }
-
-def setMode3FromSchedule () {
+def processSchedule3 () {
     log.debug "processing Mode 3 schedule"
-    setModeFromSchedule (modeSchedule3Mode, modeSchedule3Days)
+    commandPwFromSchedule (schedule3Mode, schedule3Reserve, schedule3Days)
+}
+def processSchedule4 () {
+    log.debug "processing Mode 4 schedule"
+    commandPwFromSchedule (schedule4Mode, schedule4Reserve, schedule4Days)
 }
 
-def setMode4FromSchedule () {
-    log.debug "processing Mode 4 schedule"
-    setModeFromSchedule (modeSchedule4Mode, modeSchedule4Days)
+def processSchedule5 () {
+    log.debug "processing Mode 5 schedule"
+    commandPwFromSchedule (schedule5Mode, schedule5Reserve, schedule5Days)
 }
 
 def verifyPowerwalls() {
     try {
         getPowerwalls()
         if (!state.accessTokenValid) {
-            return dynamicPage(name: "verifyPowerwalls", title: "Tesla", install: false, uninstall: true, nextPage: "") {
-               section("Error verifying Powerwall account") {
+            return dynamicPage(name: "verifyPowerwalls", title: "Tesla account issue", install: false, uninstall: false, nextPage: "") {
+               section("Error verifying Tesla/Powerwall account") {
                  paragraph "Please go back and check your username and password"
              }
         }
        } else if (state.foundPowerwalls) {
-            return dynamicPage(name: "verifyPowerwalls", title: "Tesla", install: true, uninstall: true) {
-                section("Found Powerwall(s):") {
+            return dynamicPage(name: "verifyPowerwalls", title: "Tap 'Save' to complete installation/update.", install: true, uninstall: false) {
+                section("Found Powerwall(s): ") {
                     paragraph "Name: ${state.siteName}\n" +
                          "Id: ${state.pwId}\n" + 
-                         "Site Id: ${state.energySiteId}"                         
+                         "Site Id: ${state.energySiteId}"   
                 }
+                   
+ 
             } 
          } else {
             return dynamicPage(name: "verifyPowerwalls", title: "Tesla", install: false, uninstall: true, nextPage: "") {
@@ -470,8 +614,19 @@ def initialize() {
     unsubscribe()
     unschedule()
     setSchedules()
-    
-    runEvery10Minutes(processMain)
+
+    if (pollingPeriod == "5 minutes") {
+       runEvery5Minutes(processMain) 
+    } else if (pollingPeriod == "30 minutes") {
+       runEvery30Minutes(processMain)   
+    } else if (pollingPeriod == "1 hour") {
+       runEvery1Hour(processMain)   
+    } else if (pollingPeriod != "Do not poll") {
+       runEvery10Minutes(processMain) //default
+    } else {
+       log.debug "not polling Powerwall"
+    }
+       
     runEvery1Hour(processWatchdog)
     runEvery3Hours(processWatchdog)
     runIn (5, processMain)
@@ -667,6 +822,7 @@ def commandOpMode(data) {
     }
     )
     runIn(2, requestPwData)
+    runIn (30, processWatchdog)
 }
 
 def setSelfPoweredMode(child) {
@@ -686,7 +842,7 @@ def setBackupOnlyMode(child) {
 
 def commandTouStrategy(data)
 {
-    //log.debug "commanding TOU strategy"
+    log.debug "commanding TOU strategy to ${data.strategy}"
     //request Site Data to get a current tbc schedule. Schedule needs to be sent on tou strategy command schedule will be re-set to default
     def latestSchedule
     try {
@@ -712,6 +868,7 @@ def commandTouStrategy(data)
          //log.debug "TOU strategy command sent"
       })
     runIn(2, requestSiteData)
+    runIn (30, processWatchdog)
 }
 
 def setTbcBalanced(child) {
@@ -727,11 +884,12 @@ def setTbcCostSaving(child) {
 }
 
 def commandBackupReservePercent(data) {
-   //log.debug "commanding reserve to ${data.reservePercent}%"
+   log.debug "commanding reserve to ${data.reservePercent}%"
    httpAuthPost(body:[backup_reserve_percent:data.reservePercent],"/api/1/energy_sites/${state.energySiteId}/backup", { resp ->
       }
     )
    runIn(2, requestPwData)
+   runIn (30, processWatchdog)
 }
 
 def setBackupReservePercent(child, value) {
@@ -745,7 +903,8 @@ def setBackupReservePercent(child, value) {
         
 def refresh(child) {
     log.debug "refresh requested"
-    runIn(1, processMain)     
+    runIn(1, processMain)  
+    runIn (30, processWatchdog)
 }
 
 def processWatchdog() {
