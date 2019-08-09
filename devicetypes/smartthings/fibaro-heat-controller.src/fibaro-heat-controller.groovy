@@ -174,6 +174,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	if (cmd.parameterNumber == 3) {
 		if (cmd.scaledConfigurationValue == 1) {
 			if (!childDevices) {
+				state.isChildOnline = true
 				addChild()
 			} else {
 				changeTemperatureSensorStatus("online")
@@ -305,7 +306,8 @@ def switchMode() {
 def sendEventToChild(event) {
 	String childDni = "${device.deviceNetworkId}:2"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent(event)
+	if (state.isChildOnline)
+		child?.sendEvent(event)
 }
 
 private refreshChild() {
@@ -337,6 +339,7 @@ private getMinHeatingSetpointTemperature() {
 }
 
 private changeTemperatureSensorStatus(status) {
-	def map = [name: "healthStatus", value: status]
+	state.isChildOnline = (status == "online")
+	def map = [name: "DeviceWatch-DeviceStatus", value: status]
 	sendEventToChild(map)
 }
