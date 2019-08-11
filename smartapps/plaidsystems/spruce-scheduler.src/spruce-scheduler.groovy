@@ -1,5 +1,5 @@
 /**
- *  Spruce Scheduler Pre-release V2.55 - Updated 6/2019
+ *  Spruce Scheduler Pre-release V2.55 - Updated 8/2019
  *
  *
  *  Copyright 2015 Plaid Systems
@@ -18,6 +18,7 @@
 -update weather zipcode field to find lat&long if no zipcode found, works in Canada
 -remove zipcode page and move entry to weatherpage
 -correct behavior when no days selected
+-add additional checks for missing location
 
 -------v2.54-------------------
 -update weather to use new weather api
@@ -159,7 +160,7 @@ def globalPage() {
 def weatherPage() {
     dynamicPage(name: 'weatherPage', title: 'Weather settings') {
        section("Location to get weather forecast and conditions:") {
-            input(name: 'zipcode', type: 'text', title: "Zipcode.  Default is ${getPWSID()}", required: false, submitOnChange: true)
+            input(name: 'zipcode', type: 'text', title: "Zipcode default location: ${getDefaultLocation()}", required: false, submitOnChange: true)
             input 'isRain', 'bool', title: 'Enable Rain check:', metadata: [values: ['true', 'false']]
             input 'rainDelay', 'decimal', title: 'inches of rain that will delay watering, default: 0.2', required: false
             input 'isSeason', 'bool', title: 'Enable Seasonal Weather Adjustment:', metadata: [values: ['true', 'false']]
@@ -167,10 +168,11 @@ def weatherPage() {
     }
 }
 
-private String getPWSID() {
-    String PWSID = location.zipCode
-    if (!location.zipCode.isNumber()) PWSID = "${location.latitude.floatValue()},${location.longitude.floatValue()}"
-    return PWSID
+private String getDefaultLocation() {
+    String DefaultLocation = "Not set"
+    if(location?.zipCode) DefaultLocation = location.zipCode
+    if (!location.zipCode?.isNumber() && location?.latitude && location?.longitude) DefaultLocation = "${location.latitude.floatValue()},${location.longitude.floatValue()}"
+    return DefaultLocation
 }
 
 private String startTimeString(){
@@ -790,10 +792,11 @@ private String getname(String i) {
     if (settings."name${i}") return settings."name${i}" else return "Zone ${i}"
 }
 
-private String zipString() {
-    if (!settings.zipcode && location.zipCode.isNumber()) return "${location.zipCode}"
-    if (!settings.zipcode) return "${location.latitude.floatValue()},${location.longitude.floatValue()}"//"pws:${settings.zipcode}"
-    else return settings.zipcode
+private String zipString() {    
+    if (settings?.zipcode) return settings.zipcode
+    if (!settings.zipcode && location.zipCode?.isNumber()) return "${location.zipCode}"
+    if (!settings.zipcode && location?.latitude && location?.longitude) return "${location.latitude.floatValue()},${location.longitude.floatValue()}"
+    return "not set"
 }
 
 //app install
@@ -2037,10 +2040,15 @@ boolean isWeather(){
     String wzipcode = zipString()
     log.debug wzipcode
     //log.debug "${getTwcLocation("${wzipcode}")}"
-    String city = getTwcLocation(wzipcode).location.city ?: wzipcode
+    String city = getTwcLocation(wzipcode)?.location?.city ?: wzipcode
     def forecastData = getTwcForecast(wzipcode)
     def conditionsData = getTwcConditions(wzipcode)
-   
+	
+    if (!forecastData || !conditionsData) {
+        note('warning', "${app.label}: Please check Zipcode/PWS setting, error: null", 'a')
+        return false
+        }
+        
    	//check if day or night
     int not_today = 0
    	if (forecastData.daypart[0].daypartName[0] != "Today") not_today = 1;
