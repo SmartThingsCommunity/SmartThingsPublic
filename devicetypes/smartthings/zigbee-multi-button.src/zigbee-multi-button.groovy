@@ -53,7 +53,7 @@ metadata {
 def parse(String description) {
 	def map = zigbee.getEvent(description)
 	def result = map ? map : parseAttrMessage(description)
-	if(result.name == "switch") {
+	if (result.name == "switch") {
 		result = createEvent(descriptionText: "Wake up event came in", isStateChange: true)
 	}
 	log.debug "Description ${description} parsed to ${result}"
@@ -145,6 +145,7 @@ def configure() {
 
 def installed() {
 	sendEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
+	sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 	initialize()
 }
 
@@ -173,13 +174,14 @@ private addChildButtons(numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
-			addChildDevice("Child Button", childDni, device.getHub().getId(), [
+			def child = addChildDevice("Child Button", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : componentLabel,
 					isComponent   : true,
 					componentName : "button$endpoint",
 					componentLabel: "Button $endpoint"
 			])
+			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false))
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
 		}
@@ -203,10 +205,17 @@ private getButtonMap() {[
 				"04" : 2
 		]
 ]}
+
+private getSupportedButtonValues() {
+	def values = ["pushed", "held"]
+	return values
+}
+
 private getModelNumberOfButtons() {[
 		"3450-L" : 4,
 		"3450-L2" : 4
 ]}
+
 private getModelBindings(model) {
 	def bindings = []
 	for(def endpoint : 1..modelNumberOfButtons[model]) {
