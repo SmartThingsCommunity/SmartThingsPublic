@@ -24,6 +24,7 @@ metadata {
 		capability "Configuration"
 
 		fingerprint mfr: "010F", prod: "0F01", model: "1000", deviceJoinName: "Fibaro Button"
+		fingerprint mfr: "010F", prod: "0F01", model: "2000", deviceJoinName: "Fibaro Button"
 		fingerprint mfr: "0371", prod: "0102", model: "0004", deviceJoinName: "Aeotec NanoMote One" //US
 		fingerprint mfr: "0371", prod: "0002", model: "0004", deviceJoinName: "Aeotec NanoMote One" //EU
 	}
