@@ -160,8 +160,9 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	[:]
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	[descriptionText: "$device.displayName: $cmd", isStateChange: true]
+def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint = null) {
+	if (endpoint == null) log.debug("$device.displayName: $cmd")
+	else log.debug("$device.displayName: $cmd endpoint: $endpoint")
 }
 
 def on() {
