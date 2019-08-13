@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Eaton Accessory Dimmer", namespace: "smartthings", author: "SmartThings", mnmm: "SmartThings", vid: "generic-dimmer", ocfDeviceType: "oic.d.light") {
+	definition(name: "Eaton Accessory Dimmer", namespace: "smartthings", author: "SmartThings", mnmm: "SmartThings", vid: "generic-dimmer", ocfDeviceType: "oic.d.switch") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Health Check"
