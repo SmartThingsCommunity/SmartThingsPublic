@@ -24,11 +24,11 @@
 include 'asynchttp_v1'
 
 def version() {
-    return "v0.1.4e.20190812"
+    return "v0.1.4e.20190813"
 }
 
 /*   
- *	12-Aug-2019 >>> v0.1.4e.20190812 - Added grid/outage status display, notifications, and device on/off controls 
+ *	13-Aug-2019 >>> v0.1.4e.20190813 - Added grid/outage status display, notifications, and device on/off controls 
  *	09-Aug-2019 >>> v0.1.3e.20190809 - Added reserve% scheduling & polling interval preferences
  *	29-Jul-2019 >>> v0.1.2e.20190729 - Set reserve percent to 100% in backup-only mode. Added mode scheduling.
  *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
@@ -838,8 +838,9 @@ def processPowerwallResponse(response, callData) {
           
 def processOffGridActions () 
 {
+    log.debug "processing off grid actions"
     def child = getChildDevice("powerwallDashboard")
-    child.Off()         
+    updateIfChanged(child, "switch", "off")        
     if (notifyWhenGridStatusChanges?.toBoolean()) {
         sendNotificationMessage("Powerwall status changed to: Off Grid")
     }
@@ -850,8 +851,9 @@ def processOffGridActions ()
 
 def processOnGridActions () 
 {
+    log.debug "processing on grid actions"
     def child = getChildDevice("powerwallDashboard")
-    child.On()         
+    updateIfChanged(child, "switch", "on")         
     if (notifyWhenGridStatusChanges?.toBoolean()) {
         sendNotificationMessage("Powerwall status changed to: On Grid")
     }
