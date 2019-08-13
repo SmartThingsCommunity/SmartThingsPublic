@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	12-Aug-2019 >>> v0.1.3e.20190812 - Added grid/outage status/display
  *	29-Jul-2019 >>> v0.1.2e.20190729 - Disable reserve percent controls in backup-only mode
  *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
  *
@@ -29,6 +30,7 @@ metadata {
         capability "Sensor"
         capability "Health Check"
         capability "Refresh"
+        capability "Switch"
 
         attribute "reservePercent", "number"
 		attribute "solarPower", "number"
@@ -39,6 +41,7 @@ metadata {
         attribute "currentStrategy", "string"
         attribute "siteName", "string"
         attribute "pwVersion", "string"
+        attribute "gridStatus", "enum", ["offGrid", "onGrid"]
         
         command "setBackupReservePercent"
         command "raiseBackupReserve"
