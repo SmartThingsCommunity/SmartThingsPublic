@@ -5,7 +5,7 @@
  *  
  *  ****** WARNING ****** USE AT YOUR OWN RISK!
  *  This software was developed in the hopes that it will be useful to others, however, 
- *  it is beta software and may have unforesoon side effects to your equipment and related accounts.
+ *  it is beta software and may have unforeseen side effects to your equipment and related accounts.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -24,10 +24,11 @@
 include 'asynchttp_v1'
 
 def version() {
-    return "v0.1.3e.20190809"
+    return "v0.1.4e.20190812"
 }
 
 /*   
+ *	12-Aug-2019 >>> v0.1.4e.20190812 - Added grid/outage status display, notifications, and device on/off controls 
  *	09-Aug-2019 >>> v0.1.3e.20190809 - Added reserve% scheduling & polling interval preferences
  *	29-Jul-2019 >>> v0.1.2e.20190729 - Set reserve percent to 100% in backup-only mode. Added mode scheduling.
  *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
@@ -54,6 +55,7 @@ preferences {
     page(name: "schedule4Options")
     page(name: "schedule5Options")
     page(name: "pagePwPreferences")
+    page(name: "pageDevicesToControl")
 }
 
 private pageMain() {
@@ -70,6 +72,8 @@ private pageMain() {
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification.png"
             href "pageSchedules", title: "Schedules..", description: "", required: false,
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar.png"
+            href "pageDevicesToControl", title: "Turn off devices during a grid outage..", description: "", required: false,
+                image: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png"
             href "pagePwPreferences", title: "Powerwall Manager Preferences..", description: "", required: false,
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog.png"
         }    
@@ -116,6 +120,7 @@ def pageNotifications() {
         section("Powerwall Notification Triggers:") {
             input "notifyWhenVersionChanges", "boolean", required: false, defaultValue: false, title: "Notify when Powerwall software version changes"
             input "notifyWhenModesChange", "boolean", required: false, defaultValue: false, title: "Notify when Powerwall configuration (modes/schedules) change"
+            input "notifyWhenGridStatusChanges", "boolean", required: false, defaultValue: false, title: "Notify of grid status changes/power failures"
             input "notifyWhenReserveApproached", "boolean", required: false, defaultValue: false, title: "Notify when Powerwall energy left percentage approaches reserve percentage"
             input "notifyWhenLowerLimitReached", "boolean", required: false, defaultValue: false, title: "Notify when Powerwall energy left percentage reaches a lower limit"
             input "lowerLimitNotificationValue", "number", required: false, title: "Percentage value to use for Lower Limit Notification"
@@ -203,6 +208,17 @@ def pagePwPreferences() {
         }
     }
 }
+
+def pageDevicesToControl() {
+    dynamicPage(name: "pageDevicesToControl", title: "Turn off devices when a grid outage is detected", install: false, uninstall: false) {
+        section("") {
+          input "devicesToOffDuringOutage", "capability.switch", title: "Devices that should be turned off during a grid outage", required: false, multiple: true
+          input "turnDevicesBackOnAfterOutage", "boolean", required: false, defaultValue: false, 
+                title: "Turn the above selected devices back on after grid outage is over?"
+        }
+    }
+}
+
 
 def actionsValid (modeSetting, reserveSetting) {
      return (modeSetting && modeSetting.toString() != "No Action") || (reserveSetting && reserveSetting.toString() != "No Action")
@@ -708,7 +724,7 @@ def checkBatteryNotifications (data) {
 def processSiteResponse(response, callData) {
     log.debug "processing site data response"
     def data = response.json.response
-    // log.debug "${data}"
+    //log.debug "${data}"
     def pwDevice = getChildDevice("powerwallDashboard")
     if (pwDevice) {
         def strategy = data.tou_settings.optimization_strategy
@@ -749,7 +765,7 @@ def processPowerwallResponse(response, callData) {
         } else {
             reservePercent = data.backup.backup_reserve_percent.toInteger()
         }
-                  
+      
         updateIfChanged(child, "reservePercent", reservePercent.toInteger())
         updateIfChanged(child, "reserve_pending", reservePercent.toInteger())
         
@@ -770,9 +786,29 @@ def processPowerwallResponse(response, callData) {
         if (data.version != null) {
            versionString='V'+data.version.toString()
         }
-        updateIfChanged(child, "sitenameAndVers", data.site_name.toString()+' ' + versionString)
+        //Grid Status
+        def gridStatusString
+        def gridStatusEnum
+        if (data.grid_status == "Inactive") {
+           gridStatusString = "Status: Off-Grid" 
+           gridStatusEnum = "offGrid"
+        } else {
+           gridStatusString = "Status: On-Grid"
+           gridStatusEnum = "onGrid"
+        }
+        def changed = updateIfChanged(child, "gridStatus", gridStatusEnum)
+        if (changed) {
+           if (gridStatusEnum == "offGrid") {
+              runIn (1, processOffGridActions)
+           } else {
+              runIn (1, processOnGridActions)
+           } 
+         }
+        
+        updateIfChanged(child, "sitenameAndVers", data.site_name.toString()+' ' + versionString + '\n'+gridStatusString)
         updateIfChanged(child, "siteName", data.site_name.toString())
-        def changed = updateIfChanged(child, "pwVersion", versionString)
+ 
+        changed = updateIfChanged(child, "pwVersion", versionString)
         if (changed && notifyWhenVersionChanges?.toBoolean()) {
             sendNotificationMessage("Powerwall software version changed to ${versionString}")
          }
@@ -795,8 +831,33 @@ def processPowerwallResponse(response, callData) {
         if (changed && notifyWhenModesChange?.toBoolean()) {
             sendNotificationMessage("Powerwall op mode changed to ${opMode}")     
         }
+        //log.debug "grid status is: ${data.grid_status}"         
     }
     state.lastCompletedTime = now()
+}
+          
+def processOffGridActions () 
+{
+    def child = getChildDevice("powerwallDashboard")
+    child.Off()         
+    if (notifyWhenGridStatusChanges?.toBoolean()) {
+        sendNotificationMessage("Powerwall status changed to: Off Grid")
+    }
+    if (devicesToOffDuringOutage?.size()) {
+        devicesToOffDuringOutage.off()
+    }
+}
+
+def processOnGridActions () 
+{
+    def child = getChildDevice("powerwallDashboard")
+    child.On()         
+    if (notifyWhenGridStatusChanges?.toBoolean()) {
+        sendNotificationMessage("Powerwall status changed to: On Grid")
+    }
+    if (devicesToOffDuringOutage?.size() && turnDevicesBackOnAfterOutage?.toBoolean()) {
+       devicesToOffDuringOutage.on()
+    }
 }
 
 def requestSiteData() {
