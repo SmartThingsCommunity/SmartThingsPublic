@@ -98,7 +98,7 @@ def refresh() {
 
 def configure() {
 	log.debug "in configure()"
-	if (device.getDataValue("manufacturer") == "Develco Products A/S") {
+	if ((device.getDataValue("manufacturer") == "Develco Products A/S") || (device.getDataValue("manufacturer") == "Aurora"))  {
 		device.updateDataValue("divisor", "1")
 	}
 	if (device.getDataValue("manufacturer") == "SALUS") {
