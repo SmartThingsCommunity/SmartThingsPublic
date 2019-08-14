@@ -102,7 +102,7 @@ def selectDevices() {
 		errorMsg = "There were no devices from YALE"
 	}
 	def newDevices = [:]
-    //log.debug "select devices, ${devices}"
+    log.debug "select devices, ${devices}"
 	devices.each {
     	//log.debug "select devices each ${it.value.deviceId} - ${it.value.alias} - model ${it.value.deviceModel}"
 		def isChild = getChildDevice(it.value.deviceId) // deviceId changed to dni so dont add twice
@@ -139,16 +139,16 @@ def selectDevices() {
 def getDevices() {
 	def currentDevices = ''
 	currentDevices = getDeviceData()
-    //log.debug "get devices - ${currentDevices?.data?.data}"
+    log.info "get devices - ${currentDevices}"
 	state.devices = [:]
 	def devices = state.devices
-	currentDevices.data?.data.each {
+	currentDevices.each { //.data?.data
 		def device = [:]
 		device["alias"] = it.name
 		device["deviceModel"] = it.type
 		device["deviceId"] = it.device_id
         devices << ["${it.device_id}": device]	
-		//log.info "GET Device ${it.name} - ${it.device_id}"
+		log.info "GET Device ${it.name} - ${it.device_id}"
 	}
     def deviceP = [:] //make up device for pannel and add to array
 	deviceP["alias"] = "Yale Alarm"
@@ -171,7 +171,7 @@ def addDevices() {
 	def hub = location.hubs[0]
 	def hubId = hub.id
 	selectedDevices.each { deviceId -> 
-    	log.debug "Add Devices each -$device - $deviceId"
+    	log.debug "Add Devices each -${device?.value?.alias} - $deviceId"
 		def isChild = getChildDevice(deviceId)
 		if (!isChild) {
 			def device = state.devices.find { it.value.deviceId == deviceId }
@@ -250,7 +250,7 @@ def getDeviceData() { // get details for adding
     httpGet(getDeviceStatus) { response ->
     	def respstatus = response?.status
         def respdata = response?.data
-		//log.debug "get device data devices ${response.status}"
+		//log.debug "get device data devices ${response.status} , ${response?.data}"
         if (respstatus == 200){
         	if (state.errorCount != 0) {
 				state.errorCount = 0
@@ -275,6 +275,7 @@ def getDeviceData() { // get details for adding
 		}
 	}
     }
+    
     catch (ed){
     	log.error "Error device data: ${ed}, ${ed?.message}"
         state.currentError = ed?.message
@@ -316,6 +317,7 @@ def getDeviceData() { // get details for adding
     	log.error "Get pannel data catch ${state.currentError}"
         errorhand("Get pannel data catch")
     }
+    log.info "get device data current devices ${currentDevices}"
     return currentDevices
 }
 
