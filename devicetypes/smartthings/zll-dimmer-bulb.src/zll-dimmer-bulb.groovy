@@ -48,10 +48,12 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E14 W op/ch 400lm", deviceJoinName: "IKEA TRADFRI LED Bulb"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI transformer 10W", deviceJoinName: "TRÅDFRI Driver for wireless control 10W"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI transformer 30W", deviceJoinName: "TRADFRI Driver for wireless control 30W"
-        	//Megaman INGENIUM ZB
-        	fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF", outClusters: "0019",manufacturer: "Megaman", model: "ZLL-DimmableLight", deviceJoinName: "INGENIUM ZB Dimmable Light"
-       		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF", outClusters: "0019",manufacturer: "MEGAMAN", model: "BSZTM002", deviceJoinName: "INGENIUM ZB Dimmable A60 Bulb"
-        	fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF", outClusters: "0019",manufacturer: "MEGAMAN", model: "BSZTM003", deviceJoinName: "INGENIUM ZB Dimming Module"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI Driver 30W", deviceJoinName: "TRADFRI Driver for wireless control 30W"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF", outClusters: "0019",manufacturer: "Megaman", model: "ZLL-DimmableLight", deviceJoinName: "INGENIUM ZB Dimmable Light"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF", outClusters: "0019",manufacturer: "MEGAMAN", model: "BSZTM002", deviceJoinName: "INGENIUM ZB Dimmable A60 Bulb"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF", outClusters: "0019",manufacturer: "MEGAMAN", model: "BSZTM003", deviceJoinName: "INGENIUM ZB Dimming Module"
+		//AduroSmart
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF, 0019", outClusters: "0019", deviceId: "0100", manufacturer: "AduroSmart Eria", model: "ZLL-DimmableLight", deviceJoinName: "Eria ZLL Dimmable Bulb"
 	}
 
 	// simulator metadata
