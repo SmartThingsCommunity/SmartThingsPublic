@@ -2,7 +2,6 @@ defaults: &defaults
   working_directory: ~/SmartThingsCommunity/SmartThingsPublic
   docker:
     - image: smartthings-docker-build.jfrog.io/releng/build-common:latest
-      command: /sbin/init
       auth:
         username: $ARTIFACTORY_USERNAME
         password: $ARTIFACTORY_PASSWORD
