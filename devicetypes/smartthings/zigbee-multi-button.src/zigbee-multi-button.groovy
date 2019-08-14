@@ -181,7 +181,7 @@ private addChildButtons(numberOfButtons) {
 					componentName : "button$endpoint",
 					componentLabel: "Button $endpoint"
 			])
-			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false))
+			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
 		}
