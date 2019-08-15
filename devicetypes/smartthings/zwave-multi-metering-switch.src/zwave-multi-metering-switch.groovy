@@ -224,23 +224,25 @@ def reset(endpoint = 1) {
 
 def childOnOff(deviceNetworkId, value) {
 	def switchId = getSwitchId(deviceNetworkId)
-	sendHubCommand onOffCmd(value, switchId)
+	if (switchId != null) sendHubCommand onOffCmd(value, switchId)
 }
 
 def childRefresh(deviceNetworkId) {
 	def switchId = getSwitchId(deviceNetworkId)
-	sendHubCommand refresh(switchId)
+	if (switchId != null) sendHubCommand refresh(switchId)
 }
 
 def childReset(deviceNetworkId) {
 	def switchId = getSwitchId(deviceNetworkId)
-	log.debug "Child reset switchId: ${switchId}"
-	sendHubCommand reset(switchId)
+	if (switchId != null) {
+		log.debug "Child reset switchId: ${switchId}"
+		sendHubCommand reset(switchId)
+	}
 }
 
 def getSwitchId(deviceNetworkId) {
 	def split = deviceNetworkId?.split(":")
-	return (split.length > 1) ? split[1] as Integer : 1
+	return (split.length > 1) ? split[1] as Integer : null
 }
 
 private refreshAll() {
