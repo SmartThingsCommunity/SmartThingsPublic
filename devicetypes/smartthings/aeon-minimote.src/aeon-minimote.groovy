@@ -15,7 +15,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
@@ -23,8 +23,7 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B", outClusters: "0x26,0x2B"
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B,0x85,0x84", outClusters: "0x26" // old style with numbered buttons
+		fingerprint mfr: "0086", prod: "0001", model:"0003"
 	}
 
 	simulator {
@@ -39,7 +38,7 @@ metadata {
 		status "wakeup":  "command: 8407, payload: "
 	}
 	tiles(scale: 2) {
-		multiAttributeTile(name: "rich-control") {
+		multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute("device.button", key: "PRIMARY_CONTROL") {
 				attributeState "default", label: ' ', action: "", icon: "st.unknown.zwave.remote-controller", backgroundColor: "#ffffff"
 			}
@@ -148,7 +147,7 @@ def initialize() {
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..4) {
-		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
+		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", device.hubId,
 				[completedSetup: true, label: "${device.displayName} button ${i}",
 				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
 	}

@@ -23,7 +23,9 @@ definition(
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/alfred-app.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/alfred-app@2x.png",
-    oauth: [displayName: "SmartThings Alfred Workflow", displayLink: ""]
+    oauth: [displayName: "SmartThings Alfred Workflow", displayLink: ""],
+    usesThirdPartyAuthentication: true,
+    pausable: false
 )
 
 preferences {

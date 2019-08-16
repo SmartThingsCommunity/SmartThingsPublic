@@ -26,7 +26,7 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-     	multiAttributeTile(name:"rich-control"){
+     	multiAttributeTile(name: "rich-control", type: "generic", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
 				attributeState "Offline", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#ffffff"
 	            attributeState "Online", label: '${currentValue}', action: "", icon: "st.Lighting.light99-hue", backgroundColor: "#00A0DC"
@@ -99,4 +99,3 @@ def parse(description) {
 	}
 	results
 }
-

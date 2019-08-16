@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Everspring Flood Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture") {
+	definition (name: "Everspring Flood Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", runLocally: true, minHubCoreVersion: '000.024.0000', executeCommandsLocally: true) {
 		capability "Water Sensor"
 		capability "Configuration"
 		capability "Sensor"
@@ -127,7 +127,6 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.name = "battery"
 		map.value = cmd.batteryLevel > 0 ? cmd.batteryLevel.toString() : 1
 		map.unit = "%"
-		map.displayed = false
 	}
 	[createEvent(map), response(zwave.wakeUpV1.wakeUpNoMoreInformation())]
 }

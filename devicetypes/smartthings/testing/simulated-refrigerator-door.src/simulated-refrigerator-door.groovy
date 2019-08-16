@@ -12,46 +12,60 @@
  *
  */
 metadata {
-	definition (name: "Simulated Refrigerator Door", namespace: "smartthings/testing", author: "SmartThings") {
-		capability "Contact Sensor"
-		capability "Sensor"
+    definition (name: "Simulated Refrigerator Door", namespace: "smartthings/testing", author: "SmartThings") {
+        capability "Contact Sensor"
+        capability "Sensor"
+        capability "Health Check"
 
-		command "open"
-		command "close"
-	}
+        command "open"
+        command "close"
+    }
 
-	tiles {
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC", action: "open")
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13", action: "close")
-		}
-		standardTile("freezerDoor", "device.contact", width: 2, height: 2, decoration: "flat") {
-			state("closed", label:'Freezer', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
-			state("open", label:'Freezer', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
-		}
-		standardTile("mainDoor", "device.contact", width: 2, height: 2, decoration: "flat") {
-			state("closed", label:'Fridge', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
-			state("open", label:'Fridge', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
-		}
-		standardTile("control", "device.contact", width: 1, height: 1, decoration: "flat") {
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", action: "open")
-			state("open", label:'${name}', icon:"st.contact.contact.open", action: "close")
-		}
-		main "contact"
-		details "contact"
-	}
+    tiles {
+        standardTile("contact", "device.contact", width: 2, height: 2) {
+            state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC", action: "open")
+            state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13", action: "close")
+        }
+        standardTile("freezerDoor", "device.contact", width: 2, height: 2, decoration: "flat") {
+            state("closed", label:'Freezer', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
+            state("open", label:'Freezer', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+        }
+        standardTile("mainDoor", "device.contact", width: 2, height: 2, decoration: "flat") {
+            state("closed", label:'Fridge', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
+            state("open", label:'Fridge', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+        }
+        standardTile("control", "device.contact", width: 1, height: 1, decoration: "flat") {
+            state("closed", label:'${name}', icon:"st.contact.contact.closed", action: "open")
+            state("open", label:'${name}', icon:"st.contact.contact.open", action: "close")
+        }
+        main "contact"
+        details "contact"
+    }
 }
 
 def installed() {
-	sendEvent(name: "contact", value: "closed")
+    initialize()
 }
 
+def updated() {
+    initialize()
+}
+
+def initialize() {
+    sendEvent(name: "contact", value: "closed")
+
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+    sendEvent(name: "healthStatus", value: "online")
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+}
+
+
 def open() {
-	sendEvent(name: "contact", value: "open")
-	parent.doorOpen(device.deviceNetworkId)
+    sendEvent(name: "contact", value: "open")
+    parent.doorOpen(device.deviceNetworkId)
 }
 
 def close() {
-	sendEvent(name: "contact", value: "closed")
-	parent.doorClosed(device.deviceNetworkId)
+    sendEvent(name: "contact", value: "closed")
+    parent.doorClosed(device.deviceNetworkId)
 }

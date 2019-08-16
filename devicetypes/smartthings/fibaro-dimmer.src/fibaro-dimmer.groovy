@@ -64,13 +64,24 @@ metadata {
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false) {
+		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false, range:"(0..100)") {
 			state "level", action:"switch level.setLevel"
 		}
 
 		main(["switch"])
 		details(["switch", "refresh", "levelSliderControl"])
 	}
+}
+
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x26: 1,  // Switch Multilevel
+		0x70: 2,  // Configuration
+		0x72: 2   // Manufacturer Specific
+	]
 }
 
 def parse(String description) {
@@ -83,7 +94,7 @@ def parse(String description) {
 		value:  description
 	]
 	def result
-	def cmd = zwave.parse(description, [0x26: 1, 0x70: 2, 072: 2])
+	def cmd = zwave.parse(description, commandClassVersions)
     //log.debug "cmd: ${cmd}"
     
     if (cmd) {
@@ -143,6 +154,16 @@ def createEvent(physicalgraph.zwave.commands.switchmultilevelv1.SwitchMultilevel
 	result
 }
 
+def createEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
+def createEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport)' with cmd = $cmd"
+}
+
 def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {
 	def result = [item1]
 
@@ -157,7 +178,7 @@ def doCreateEvent(physicalgraph.zwave.Command cmd, Map item1) {
 	if (cmd.value >= 5) {
 		def item2 = new LinkedHashMap(item1)
 		item2.name = "level"
-		item2.value = cmd.value as String
+		item2.value = (cmd.value == 99 ? 100 : cmd.value) as String
 		item2.unit = "%"
 		item2.descriptionText = "${item1.linkText} dimmed ${item2.value} %"
 		item2.canBeCurrentState = true
