@@ -44,8 +44,10 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "1087", deviceJoinName: "NEO Coolcam Power Plug", ocfDeviceType: "oic.d.smartplug"  //EU
 		fingerprint mfr: "027A", prod: "0101", model: "000D", deviceJoinName: "Zooz Power Switch"
 		fingerprint mfr: "0159", prod: "0002", model: "0054", deviceJoinName: "Qubino Smart Plug", ocfDeviceType: "oic.d.smartplug"
-        fingerprint mfr: "018C", prod: "0042", model: "0005", deviceJoinName: "Dawon Smart Plug", ocfDeviceType: "oic.d.smartplug"
-        fingerprint mfr: "018C", prod: "0042", model: "0008", deviceJoinName: "Dawon Smart Multitab", ocfDeviceType: "oic.d.smartplug"
+		fingerprint mfr: "018C", prod: "0042", model: "0005", deviceJoinName: "Dawon Smart Plug", ocfDeviceType: "oic.d.smartplug"
+		fingerprint mfr: "018C", prod: "0042", model: "0008", deviceJoinName: "Dawon Smart Multitab", ocfDeviceType: "oic.d.smartplug"
+		fingerprint mfr: "0371", prod: "0003", model: "00AF", deviceJoinName: "Aeotec Smart Switch 7", ocfDeviceType: "oic.d.smartplug"  //EU
+		fingerprint mfr: "0371", prod: "0103", model: "00AF", deviceJoinName: "Aeotec Smart Switch 7", ocfDeviceType: "oic.d.smartplug"  //US
 	}
 
 	// simulator metadata
