@@ -3,7 +3,7 @@ definition(
   namespace: "gaduran3", 
   author: "Geoffrey Duran",
   description: "Fan and Window AC control by Thermostat",
-  category: "My Apps",
+  category: "Climate Control",
   iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/support/honeywell-tcc.png",
   iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/support/honeywell-tcc@2x.png",
   iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Partner/support/honeywell-tcc@3x.png",
