@@ -99,7 +99,7 @@ def refreshChild(child) {
     	uri: "${serverUrl}/api/v1/insights/getnow",
         headers: [ authorization: "Bearer ${accessToken}" ],
         body: [
-		settlement_point: loadZone
+            settlement_point: loadZone
         ]
     ]) { resp -> data = [ price: Double.parseDouble(resp.data.now.price_ckwh) ] }
     
