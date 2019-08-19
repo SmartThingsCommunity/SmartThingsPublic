@@ -61,12 +61,14 @@ metadata {
 }
 
 def installed() {
-	createChildDevices()
+        createChildDevices()
+        updateDataValue("onOff", "catchall")
         refresh()
 }
 
 def updated() {
-	log.debug "updated()"
+        log.debug "updated()"
+        updateDataValue("onOff", "catchall")
         refresh()
 }
 
