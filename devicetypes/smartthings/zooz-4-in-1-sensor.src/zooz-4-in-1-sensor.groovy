@@ -171,8 +171,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		result = motionEvent(cmd.notificationStatus)
 	} else if (cmd.notificationType == 7 && cmd.event == 3) {
 		result = createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
-		unschedule(clearTamper, [forceForLocallyExecuting: true])
-		runIn(10, clearTamper, [forceForLocallyExecuting: true])
+		runIn(10, clearTamper, [overwrite: true, forceForLocallyExecuting: true])
 	} else if (cmd.notificationType == 7 && cmd.event == 0) {
 		if (cmd.eventParameter[0] == 8) {
 			result = motionEvent(0)
