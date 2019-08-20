@@ -204,6 +204,10 @@ def configure() {
 	secureSequence(request) + ["delay 20000", zwave.wakeUpV2.wakeUpNoMoreInformation().format()]
 }
 
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
+}
+
 private getLuxFromPercentage(percentageValue) {
 	def multiplier = luxConversionData.find {
 		percentageValue >= it.min && percentageValue <= it.max
