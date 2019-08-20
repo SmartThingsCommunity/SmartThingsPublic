@@ -135,26 +135,16 @@ def supportsLiftPercentage() {
 
 def close() {
     log.info "close()"
-    sendEvent(name: "windowShade", value: "closing")
     zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_CLOSE)
 }
 
 def open() {
     log.info "open()"
-    sendEvent(name: "windowShade", value: "opening")
     zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_OPEN)
 }
 
 def setLevel(data, rate = null) {
     log.info "setLevel()"
-    Integer currentLevel = device.currentValue("level")
-    Integer level = data as Integer
-
-    if (level > currentLevel) {
-        sendEvent(name: "windowShade", value: "opening")
-    } else if (level < currentLevel) {
-        sendEvent(name: "windowShade", value: "closing")
-    }
     def cmd
     if (supportsLiftPercentage()) {
         cmd = zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_GOTO_LIFT_PERCENTAGE, zigbee.convertToHexString(data, 2))
