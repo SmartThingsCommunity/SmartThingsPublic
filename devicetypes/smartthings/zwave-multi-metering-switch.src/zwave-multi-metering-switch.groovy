@@ -123,7 +123,6 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
 	} else {
 		result += zwaveEvent(cmd)
 	}
-	result += response(secureEncap(zwave.meterV3.meterGet(scale: 2), ep))
 	result
 }
 
