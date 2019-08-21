@@ -71,6 +71,8 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", deviceId: "0101", manufacturer: "AduroSmart Eria", model: "AD-DimmableLight3001", deviceJoinName: "Eria ZigBee Dimmable Bulb"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "0019", manufacturer: "innr", model: "RF 263", deviceJoinName: "INNR Smart Filament Bulb Vintage"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "0019", manufacturer: "innr", model: "BF 263", deviceJoinName: "INNR Smart Filament Bulb Vintage"
+        fingerprint profileId: "0104", deviceId: "0123", manufacturer: "sengled", model: "E11-N15", deviceJoinName: "Sengled Element Classic"
+       	fingerprint profileId: "0104", deviceId: "0123", manufacturer: "sengled", model: "E11-N16", deviceJoinName: "Sengled Element Classic" 
 	}
 
 	tiles(scale: 2) {
