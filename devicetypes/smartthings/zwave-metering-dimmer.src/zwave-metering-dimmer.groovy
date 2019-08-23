@@ -38,6 +38,7 @@ metadata {
 		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeotec Nano Dimmer"
 		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeotec Nano Dimmer"
 		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Plug-in Dimmer"
+		fingerprint mfr:"0159", prod:"0001", model:"0055", deviceJoinName: "Qubino Mini Dimmer ZMNHHD1"
 	}
 
 	simulator {
@@ -224,7 +225,7 @@ def setLevel(level, rate = null) {
 	], 5000)
 }
 
-def configure() {
+def configure(){
 	log.debug "configure()"
 	def result = []
 
@@ -246,18 +247,15 @@ def reset() {
 	])
 }
 
-def meterGet(scale)
-{
+def meterGet(scale) {
 	zwave.meterV2.meterGet(scale)
 }
 
-def meterReset()
-{
+def meterReset() {
 	zwave.meterV2.meterReset()
 }
 
-def normalizeLevel(level)
-{
+def normalizeLevel(level) {
 	// Normalize level between 1 and 100.
 	level == 99 ? 100 : level
 }
