@@ -1,235 +1,109 @@
-/*
- *  ST_Anything Doors & Windows Multiplexer - ST_Anything_Doors_Windows_Multiplexer.smartapp.groovy
+/**
+ *     Smarter garage door button with integrated sensor
+ *     modified from Lights Off, When Closed
+ *     implements a virtual switch that ties momentary to sensor
+ *     based on the opening or closing of the contact sensor
+ *     the door status is kept up to date and does the right thing
+ *     so that when you say close it closes and open it opens
+ *     if the door is already closed, and you pick close nothing happens
+ *     likewise if it is already opened and you pick open nothing happens
+ *     the only thing that doesn't work is to stop the garage in mid stream
+ * 
+ * Modified by Ken Washington to work with any switch and to ensure it goes off
  *
- *  Copyright 2015 Daniel Ogorchock
+ *  Author: SmartThings
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
- *
- *  Change History:
- *
- *    Date        Who            What
- *    ----        ---            ----
- *    2015-10-31  Dan Ogorchock  Original Creation
- *    2016-02-12  Ken Washington Adopt for my configuration
- *    2016-09-05  Ken Washington Reconfigure for additional doors/windows and fix prior basement door hack
- *
+ *  Date: 2013-05-01
  */
- 
+
 definition(
-    name: "ST_Anything Doors Multiplexer",
+    name: "Status My Garage Door",
     namespace: "kewashi",
-    author: "Ken Washington",
-    description: "Connects single Arduino with multiple ContactSensor devices to their virtual device counterparts.",
-    category: "My Apps",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
+    author: "KenWashington",
+    description: "Sets the status of a garage door open/close relay switch based on switch state",
+    category: "Convenience",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/light_contact-outlet.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/light_contact-outlet@2x.png"
+)
+
 
 preferences {
-
-	section("Select the House Doors (Virtual Contact Sensor devices)") {
-		input "kitchendoor", title: "Virtual Contact Sensor for Kitchen Door", "capability.contactSensor"
-		input "basementdoor", title: "Virtual Contact Sensor for Basement Door", "capability.contactSensor"
-		input "bedroomwindow", title: "Virtual Contact Sensor for Bedroom Window", "capability.contactSensor"
-		input "frontdoor", title: "Virtual Contact Sensor for Front Door", "capability.contactSensor"
-		input "garagedoor", title: "Virtual Contact Sensor for Garage Door", "capability.contactSensor"
-		input "livingdoor", title: "Virtual Contact Sensor for Living Room Door", "capability.contactSensor"
-		input "bedroomdoor", title: "Virtual Contact Sensor for Bedroom Door", "capability.contactSensor"
-		input "familyroomdoor", title: "Virtual Contact Sensor for FamilyRoom Door", "capability.contactSensor"
-	}
-
-	section("Select the Arduino ST_Anything device") {
-		input "arduino", "capability.contactSensor"
-    }    
+    section("This garage door...") {
+        input "theDoor", "capability.doorControl", multiple: false, required: true
+    }
+    section("is controlled by this switch...") {
+        input "theOpener", "capability.switch", multiple: false, required: true
+    }
+    section("whose status is given by this sensor...") {
+        input "theSensor", "capability.contactSensor", multiple: false, required: true
+    }
 }
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
-	subscribe()
+    log.debug "Installed with settings: ${settings}"
+
+    initialize()
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
-	unsubscribe()
-	subscribe()
+    log.debug "Updated with settings: ${settings}"
+
+    unsubscribe()
+    initialize()
 }
-
-def subscribe() {
-
-   
-    subscribe(arduino, "kitchenDoor.open", kitchenDoorOpen)
-    subscribe(arduino, "kitchenDoor.closed", kitchenDoorClosed)
-
-    subscribe(arduino, "basementDoor.open", basementDoorOpen)
-    subscribe(arduino, "basementDoor.closed", basementDoorClosed)
-
-    subscribe(arduino, "bedroomWindow.open", bedroomWindowOpen)
-    subscribe(arduino, "bedroomWindow.closed", bedroomWindowClosed)
-
-    subscribe(arduino, "frontDoor.open", frontDoorOpen)
-    subscribe(arduino, "frontDoor.closed", frontDoorClosed)
-    
-    subscribe(arduino, "garageDoor.open", garageDoorOpen)
-    subscribe(arduino, "garageDoor.closed", garageDoorClosed)
-
-    subscribe(arduino, "livingDoor.open", livingDoorOpen)
-    subscribe(arduino, "livingDoor.closed", livingDoorClosed)
-    
-    subscribe(arduino, "bedroomDoor.open", bedroomDoorOpen)
-    subscribe(arduino, "bedroomDoor.closed", bedroomDoorClosed)
-    
-    subscribe(arduino, "froomDoor.open", froomDoorOpen)
-    subscribe(arduino, "froomDoor.closed", froomDoorClosed)
-}
-
-
-// --- Kitchen Door --- 
-def kitchenDoorOpen(evt)
-{
-    if (kitchendoor.currentValue("contact") != "open") {
-    	log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	kitchendoor.openme()
-    }
-}
-
-def kitchenDoorClosed(evt)
-{
-    if (kitchendoor.currentValue("contact") != "closed") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	kitchendoor.closeme()
-    }
-}
-
-// --- Basement Door --- 
-def basementDoorOpen(evt)
-{
-    if (basementdoor.currentValue("contact") != "open") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	basementdoor.openme()
-    }
-}
-
-def basementDoorClosed(evt)
-{
-    if (basementdoor.currentValue("contact") != "closed") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	basementdoor.closeme()
-    }
-}
-
-// --- Bedroom Window  --- 
-def bedroomWindowOpen(evt)
-{
-    if (bedroomwindow.currentValue("contact") != "open") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	bedroomwindow.openme()
-    }
-}
-
-def bedroomWindowClosed(evt)
-{
-    if (bedroomwindow.currentValue("contact") != "closed") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	bedroomwindow.closeme()
-    }
-}
-
-
-// --- Front Door --- 
-def frontDoorOpen(evt)
-{
-    if (frontdoor.currentValue("contact") != "open") {
-    	log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	frontdoor.openme()
-    }
-}
-
-def frontDoorClosed(evt)
-{
-    if (frontdoor.currentValue("contact") != "closed") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	frontdoor.closeme()
-    }
-}
-
-// --- Garage Door --- 
-def garageDoorOpen(evt)
-{
-    if (garagedoor.currentValue("contact") != "open") {
-	    log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
- 	   garagedoor.openme()
-    }
-}
-
-def garageDoorClosed(evt)
-{
-    if (garagedoor.currentValue("contact") != "closed") {
-	    log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-	    garagedoor.closeme()
-    }
-}
-
-// --- living Room Door --- 
-def livingDoorOpen(evt)
-{
-    if (livingdoor.currentValue("contact") != "open") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	livingdoor.openme()
-    }
-}
-
-def livingDoorClosed(evt)
-{
-    if (livingdoor.currentValue("contact") != "closed") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	livingdoor.closeme()
-    }
-}
-
-// --- bedroom Door --- 
-def bedroomDoorOpen(evt)
-{
-    if (bedroomdoor.currentValue("contact") != "open") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	bedroomdoor.openme()
-    }
-}
-
-def bedroomDoorClosed(evt)
-{
-    if (bedroomdoor.currentValue("contact") != "closed") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	bedroomdoor.closeme()
-    }
-}
-
-
-// --- familyroom Door --- 
-def froomDoorOpen(evt)
-{
-    if (familyroomdoor.currentValue("contact") != "open") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	familyroomdoor.openme()
-    }
-}
-
-def froomDoorClosed(evt)
-{
-    if (familyroomdoor.currentValue("contact") != "closed") {
-		log.debug "arduinoevent($evt.name: $evt.value: $evt.deviceId)"
-    	familyroomdoor.closeme()
-    }
-}
-
-
 
 def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
+    subscribe(theDoor, "door", switchHit)
+    subscribe(theSensor, "contact", statusChanged)
+    subscribe(theOpener, "switch", buttonHit)
+}
+
+def buttonHit(evt) {
+    def swval = theOpener.currentValue("switch")
+    log.debug "Door switch: " + theOpener.name + ", generated value: " + evt.value + ", switch val: " + swval
+    
+    // turn button off is state is on after hit
+    if ( swval == "on" ) {
+       theOpener.off()
+    }
+}
+
+def switchHit(evt) {
+    log.debug "Virtual button: " + theDoor.name + ", generated value: " + evt.value
+    def current = theSensor.contactState
+    log.debug "Sensor: " + theSensor.name + " status = " + current.value
+
+    // if the sensor state is closed and open button is pushed activate
+    // it is more reliable to check the virtual opening state instead of open
+    if (evt.value == "opening" && current.value == "closed") {
+        if ( theOpener.hasCommand("push") ) { 
+            theOpener.push()
+        } else {
+            delayBetween( [ theOpener.off(), theOpener.on(), theOpener.off() ], 200 )
+        }
+    }    
+    // if sensor state is open and closed button is pushed then activate
+    // it is more reliable to check the virtual closing state instead of close
+     
+    else if (evt.value == "closing" && current.value == "open" ) {
+        if ( theOpener.hasCommand("push") ) { 
+            theOpener.push()
+        } else {
+            delayBetween( [ theOpener.off(), theOpener.on(), theOpener.off() ], 200 )
+        }
+    } 
+    
+
+}
+
+// handle the cases where sensor state changes for reasons other than button press
+// such as manual wall press or the original button press tied to physical relay
+// note that the physical button must still be installed - I just hide it in a group
+def statusChanged(evt) {
+    log.debug "Sensor [" + theSensor.name + "] status = " + evt.value + " door state = "+ theDoor.doorState.value
+    if (evt.value == "open" && theDoor.doorState.value!="open") {
+        theDoor.open()
+    } else if ( evt.value == "closed" && theDoor.doorState.value!="closed" ) {
+        theDoor.close()
+    }
 }
