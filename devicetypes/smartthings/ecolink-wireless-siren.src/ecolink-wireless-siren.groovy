@@ -173,9 +173,8 @@ def addChildren() {
 	endPoints.each {
 		String childDni = "${device.deviceNetworkId}-ep$it"
 		String componentLabel =	 "$device.displayName $it"
-		String ch = "ch$it"
 		
-		addChildDevice("Z-Wave Binary Switch Endpoint Siren", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false, componentName: ch, componentLabel: componentLabel])
+		addChildDevice("Z-Wave Binary Switch Endpoint Siren", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false])
 	}
 }
 

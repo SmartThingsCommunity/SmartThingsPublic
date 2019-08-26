@@ -59,8 +59,7 @@ def installed() {
 	try {
 		String dni = "${device.deviceNetworkId}-ep2"
 		addChildDevice("Z-Wave Binary Switch Endpoint", dni, device.hub.id,
-			[completedSetup: true, label: "${componentLabel}",
-			 isComponent: false, componentName: "ch2", componentLabel: "${componentLabel}"])
+			[completedSetup: true, label: "${componentLabel}", isComponent: false])
 		log.debug "Endpoint 2 (Z-Wave Binary Switch Endpoint) added as $componentLabel"
 	} catch (e) {
 		log.warn "Failed to add endpoint 2 ($desc) as Z-Wave Binary Switch Endpoint - $e"

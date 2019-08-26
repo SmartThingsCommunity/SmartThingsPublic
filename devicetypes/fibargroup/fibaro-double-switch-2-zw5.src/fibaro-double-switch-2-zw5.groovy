@@ -266,7 +266,7 @@ private createChildDevices() {
 			"Fibaro Double Switch 2 - USB",
 			"${device.deviceNetworkId}-2",
 			null,
-			[completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false, componentName: "ch2", componentLabel: "Channel 2"]
+			[completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false]
 		)
 	} catch (Exception e) {
 		logging("${device.displayName} - error attempting to create child device: "+e, "debug")
