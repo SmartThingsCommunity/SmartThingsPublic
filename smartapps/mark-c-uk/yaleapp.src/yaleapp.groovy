@@ -317,7 +317,7 @@ def getDeviceData() { // get details for adding
     	log.error "Get pannel data catch ${state.currentError}"
         errorhand("Get pannel data catch")
     }
-    log.info "get device data current devices ${currentDevices}"
+    log.info "get device data current devices ${currentDevices.name}"
     return currentDevices
 }
 
