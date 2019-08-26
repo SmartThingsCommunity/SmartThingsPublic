@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Zooz 4-in-1 sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-8") {
+	definition(name: "Zooz 4-in-1 sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-8", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
