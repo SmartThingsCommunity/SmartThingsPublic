@@ -16,7 +16,7 @@
  *	Date: 2013-12-02
  */
 metadata {
-	definition (name: "CentraLite Thermostat", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "CentraLite Thermostat", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"

@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Multi", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Multi", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-contact-2") {
 		capability "Three Axis"
 		capability "Contact Sensor"
 		capability "Acceleration Sensor"
@@ -45,8 +45,7 @@ metadata {
 	}
 
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {

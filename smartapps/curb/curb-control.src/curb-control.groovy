@@ -16,9 +16,9 @@ definition(
 )
 
 preferences {
-	section("Allow Curb to Control These Things...") {
-		input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
-	}
+  section("Allow Curb to Control These Things...") {
+  input "switches", "capability.switch", title: "Which Switches?", multiple: true, required: false
+  }
 }
 
 mappings {
@@ -27,18 +27,18 @@ mappings {
             GET: "index"
         ]
     }
-	path("/switches") {
-		action: [
-			GET: "listSwitches",
-			PUT: "updateSwitches"
-		]
-	}
-	path("/switches/:id") {
-		action: [
-			GET: "showSwitch",
-			PUT: "updateSwitch"
-		]
-	}
+  path("/switches") {
+  action: [
+    GET: "listSwitches",
+    PUT: "updateSwitches"
+    ]
+  }
+  path("/switches/:id") {
+  action: [
+    GET: "showSwitch",
+    PUT: "updateSwitch"
+    ]
+  }
 }
 
 def installed() {}
@@ -50,69 +50,69 @@ def index(){
 }
 
 def listSwitches() {
-	switches.collect { device(it,"switch") }
+  switches.collect { device(it,"switch") }
 }
 void updateSwitches() {
-	updateAll(switches)
+  updateAll(switches)
 }
 def showSwitch() {
-	show(switches, "switch")
+  show(switches, "switch")
 }
 void updateSwitch() {
-	update(switches)
+  update(switches)
 }
 
 private void updateAll(devices) {
-	def command = request.JSON?.command
-	if (command) {
-		switch(command) {
-			case "on":
-				devices.on()
-				break
-			case "off":
-				devices.off()
-				break
-			default:
-				httpError(403, "Access denied. This command is not supported by current capability.")
-		}
-	}
+  def command = request.JSON?.command
+  if (command) {
+    switch(command) {
+      case "on":
+      devices*.on()
+      break
+      case "off":
+      devices*.off()
+      break
+      default:
+      httpError(403, "Access denied. This command is not supported by current capability.")
+    }
+  }
 }
 
 private void update(devices) {
-	log.debug "update, request: ${request.JSON}, params: ${params}, devices: $devices.id"
-	def command = request.JSON?.command
-	if (command) {
-		def device = devices.find { it.id == params.id }
-		if (!device) {
-			httpError(404, "Device not found")
-		} else {
-			switch(command) {
-				case "on":
-					device.on()
-					break
-				case "off":
-					device.off()
-					break
-				default:
-					httpError(403, "Access denied. This command is not supported by current capability.")
-			}
-		}
-	}
+  log.debug "update, request: ${request.JSON}, params: ${params}, devices: $devices.id"
+  def command = request.JSON?.command
+  if (command) {
+  def device = devices.find { it.id == params.id }
+  if (!device) {
+  httpError(404, "Device not found")
+  } else {
+  switch(command) {
+  case "on":
+  device.on()
+  break
+  case "off":
+  device.off()
+  break
+  default:
+  httpError(403, "Access denied. This command is not supported by current capability.")
+  }
+  }
+  }
 }
 
 private show(devices, name) {
-	def d = devices.find { it.id == params.id }
-	if (!d) {
-		httpError(404, "Device not found")
-	}
-	else {
+  def d = devices.find { it.id == params.id }
+  if (!d) {
+  httpError(404, "Device not found")
+  }
+  else {
         device(d, name)
-	}
+  }
 }
 
 private device(it, name){
     if(it) {
-		def s = it.currentState(name)
-		[id: it.id, label: it.displayName, name: it.displayName, state: s]    
+  def s = it.currentState(name)
+  [id: it.id, label: it.displayName, name: it.displayName, state: s]
     }
 }

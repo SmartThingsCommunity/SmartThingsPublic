@@ -171,12 +171,10 @@ private Map parseReportAttributeMessage(String description) {
 private Map parseCustomMessage(String description) {
     Map resultMap = [:]
     if (description?.startsWith('temperature: ')) {
-        // log.debug "${description}"
-        // def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
-        // log.debug "split: " + description.split(": ")
-        def value = Double.parseDouble(description.split(": ")[1])
-        // log.debug "${value}"
-        resultMap = makeTemperatureResult(convertTemperature(value))
+        def tempData = description.split(": ")[1].split(" ")
+        def scale = (tempData.length > 1) ? tempData[1] : "C"
+        def value = Double.parseDouble(tempData[0])
+        resultMap = makeTemperatureResult(convertTemperature(value, scale))
     }
     return resultMap
 }
@@ -282,18 +280,19 @@ private def convertTemperatureHex(value) {
     def celsius = Integer.parseInt(value, 16).shortValue() / 100
     // log.debug "celsius: ${celsius}"
 
-    return convertTemperature(celsius)
+    return convertTemperature(celsius, "C")
 }
 
-private def convertTemperature(celsius) {
-    // log.debug "convertTemperature()"
-
-    if(getTemperatureScale() == "C"){
-        return celsius
+private def convertTemperature(value, scale = "C") {
+    if(getTemperatureScale() == scale){
+        return Math.round(value * 100) / 100
     } else {
-        def fahrenheit = Math.round(celsiusToFahrenheit(celsius) * 100) /100
-        // log.debug "converted to F: ${fahrenheit}"
-        return fahrenheit
+        if (scale == "C") {
+            // Celsius to Fahrenheit
+            return Math.round(celsiusToFahrenheit(value) * 100) /100
+        }
+        // Fahrenheit to Celsius
+        return Math.round(fahrenheitToCelsius(value) * 100) /100
     }
 }
 
@@ -371,7 +370,7 @@ def clearObstruction() {
     ] + configure()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     log.debug "setting level: ${value}"
     def linkText = getLinkText(device)
 

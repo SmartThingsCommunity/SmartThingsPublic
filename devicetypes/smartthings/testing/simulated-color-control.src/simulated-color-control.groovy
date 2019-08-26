@@ -3,6 +3,7 @@ metadata {
     	capability "Color Control"
 		capability "Sensor"
 		capability "Actuator"
+		capability "Health Check"
 	}
 
 	simulator {
@@ -22,6 +23,24 @@ metadata {
         main "rgbSelector"
         details(["rgbSelector", "saturation", "hue"])
 	}
+}
+
+def installed() {
+	log.trace "Executing 'installed'"
+	initialize()
+}
+
+def updated() {
+	log.trace "Executing 'updated'"
+	initialize()
+}
+
+private initialize() {
+	log.trace "Executing 'initialize'"
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }
 
 // parse events into attributes

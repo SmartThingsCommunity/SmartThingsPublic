@@ -14,7 +14,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition (name: "ZLL RGBW Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+    definition (name: "ZLL RGBW Bulb", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.021.00001', executeCommandsLocally: true, genericHandler: "ZLL") {
 
         capability "Actuator"
         capability "Color Control"
@@ -24,14 +24,36 @@ metadata {
         capability "Refresh"
         capability "Switch"
         capability "Switch Level"
+        capability "Health Check"
+        capability "Light"
+
+        attribute "colorName", "string"
 
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019"
         fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019"
-        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", "manufacturer":"OSRAM", "model":"Classic A60 RGBW", deviceJoinName: "OSRAM LIGHTIFY LED Classic A60 RGBW"
-        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "PAR 16 50 RGBW - LIGHTIFY", deviceJoinName: "OSRAM LIGHTIFY RGBW PAR 16 50"
-        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW", deviceJoinName: "OSRAM LIGHTIFY Flex RGBW"
-        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Gardenpole RGBW-Lightify", deviceJoinName: "OSRAM LIGHTIFY Gardenpole RGBW"
-        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Outdoor Flex RGBW", deviceJoinName: "OSRAM LIGHTIFY Outdoor Flex RGBW"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", "manufacturer":"OSRAM", "model":"Classic A60 RGBW", deviceJoinName: "OSRAM SMART+ LED Classic A60 RGBW"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "PAR 16 50 RGBW - LIGHTIFY", deviceJoinName: "OSRAM SMART+ RGBW PAR 16 50"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "CLA60 RGBW OSRAM", deviceJoinName: "OSRAM SMART+ LED Classic A60 RGBW"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW", deviceJoinName: "OSRAM SMART+ Flex RGBW"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Gardenpole RGBW-Lightify", deviceJoinName: "OSRAM SMART+ Gardenpole RGBW"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Outdoor Flex RGBW", deviceJoinName: "OSRAM SMART+ Outdoor Flex RGBW"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Indoor Flex RGBW", deviceJoinName: "OSRAM SMART+ Indoor Flex RGBW", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT001", deviceJoinName: "Philips Hue A19"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT002", deviceJoinName: "Philips Hue BR30"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT003", deviceJoinName: "Philips Hue GU10"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT007", deviceJoinName: "Philips Hue A19"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT010", deviceJoinName: "Philips Hue A19"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT011", deviceJoinName: "Philips Hue BR30"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT012", deviceJoinName: "Philips Hue Candle"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT014", deviceJoinName: "Philips Hue A19"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT015", deviceJoinName: "Philips Hue A19"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT016", deviceJoinName: "Philips Hue A19"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LST001", deviceJoinName: "Philips Hue Lightstrip"
+        fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LST002", deviceJoinName: "Philips Hue Lightstrip"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 185 C", deviceJoinName: "Innr Smart Bulb Color"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "FL 130 C", deviceJoinName: "Innr Flex Light Color"
+        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF", outClusters: "0019", manufacturer: "Megaman", model: "ZLL-ExtendedColor", deviceJoinName: "INGENIUM ZB RGBW Light"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", deviceId: "0210", manufacturer: "AduroSmart Eria", model: "ZLL-ExtendedColor", deviceJoinName: "Eria ZLL RGBW Bulb"
     }
 
     // UI tile definitions
@@ -53,15 +75,15 @@ metadata {
         controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
             state "colorTemperature", action:"color temperature.setColorTemperature"
         }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
+        valueTile("colorName", "device.colorName", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "colorName", label: '${currentValue}'
         }
         standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
 
         main(["switch"])
-        details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
+        details(["switch", "colorTempSliderControl", "colorName", "refresh"])
     }
 }
 
@@ -73,21 +95,28 @@ private getSATURATION_COMMAND() { 0x03 }
 private getMOVE_TO_HUE_AND_SATURATION_COMMAND() { 0x06 }
 private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
 private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
+private getMOVE_TO_COLOR_TEMPERATURE_COMMAND() { 0x0A }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
     log.debug "description is $description"
 
-    def finalResult = zigbee.getEvent(description)
-    if (finalResult) {
-        log.debug finalResult
-        sendEvent(finalResult)
+    def event = zigbee.getEvent(description)
+    if (event) {
+        log.debug event
+        if (event.name == "level" && event.value == 0) {}
+        else {
+            if (event.name == "colorTemperature") {
+                setGenericName(event.value)
+            }
+            sendEvent(event)
+        }
     }
     else {
         def zigbeeMap = zigbee.parseDescriptionAsMap(description)
         log.trace "zigbeeMap : $zigbeeMap"
 
-        if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER) {
+        if (zigbeeMap?.clusterInt == COLOR_CONTROL_CLUSTER && zigbeeMap.value != null) {
             if(zigbeeMap.attrInt == ATTRIBUTE_HUE){  //Hue Attribute
                 def hueValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
                 sendEvent(name: "hue", value: hueValue, displayed:false)
@@ -116,7 +145,28 @@ def refresh() {
 }
 
 def poll() {
+    configureHealthCheck()
+
     refreshAttributes()
+}
+
+def ping() {
+    refreshAttributes()
+}
+
+def healthPoll() {
+    log.debug "healthPoll()"
+    def cmds = refreshAttributes()
+    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
+}
+
+def configureHealthCheck() {
+    if (!state.hasConfiguredHealthCheck) {
+        log.debug "Configuring Health Check, Reporting"
+        unschedule("healthPoll", [forceForLocallyExecuting: true])
+        runEvery5Minutes("healthPoll", [forceForLocallyExecuting: true])
+        state.hasConfiguredHealthCheck = true
+    }
 }
 
 def configure() {
@@ -137,11 +187,27 @@ def refreshAttributes() {
     zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
 }
 
-def setColorTemperature(value) {
-    zigbee.setColorTemperature(value) + ["delay 1500"] + zigbee.colorTemperatureRefresh()
+def updated() {
+    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    configureHealthCheck()
 }
 
-def setLevel(value) {
+def installed() {
+    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    configureHealthCheck()
+}
+
+def setColorTemperature(value) {
+    value = value as Integer
+    def tempInMired = Math.round(1000000 / value)
+    def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
+
+    zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +
+    ["delay 1500"] +
+    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
+}
+
+def setLevel(value, rate = null) {
     zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()        //adding refresh because of ZLL bulb not conforming to send-me-a-report
 }
 
@@ -161,6 +227,23 @@ def setColor(value){
     zigbee.onOffRefresh() +
     zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
     zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION)
+}
+
+//Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
+def setGenericName(value){
+    if (value != null) {
+        def genericName = "White"
+        if (value < 3300) {
+            genericName = "Soft White"
+        } else if (value < 4150) {
+            genericName = "Moonlight"
+        } else if (value <= 5000) {
+            genericName = "Cool White"
+        } else if (value >= 5000) {
+            genericName = "Daylight"
+        }
+        sendEvent(name: "colorName", value: genericName)
+    }
 }
 
 def setHue(value) {

@@ -16,7 +16,7 @@
  *  Date: 2013-03-09
  */
 metadata {
-	definition (name: "SmartSense Garage Door Multi", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Garage Door Multi", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-contact-2") {
 		capability "Three Axis"
 		capability "Contact Sensor"
 		capability "Acceleration Sensor"
@@ -77,11 +77,10 @@ metadata {
 		main(["status", "contact", "acceleration"])
 		details(["status", "contact", "acceleration", "temperature", "3axis", "battery"])
 	}
-    
+
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-	}    
+		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+	}
 }
 
 def parse(String description) {
@@ -105,7 +104,7 @@ def updated() {
     def threeAxis = device.currentState("threeAxis")
     if (threeAxis) {
     	def xyz = threeAxis.xyzValue
-        def value = Math.round(xyz.z) > 925 ? "open" : "closed" 
+        def value = Math.round(xyz.z) > 925 ? "open" : "closed"
     	sendEvent(name: "contact", value: value)
     }
 }
@@ -212,18 +211,17 @@ private List parseOrientationMessage(String description) {
 
 	// Looks for Z-axis orientation as virtual contact state
 	def a = xyz.value.split(',').collect{it.toInteger()}
-	def absValueXY = Math.max(Math.abs(a[0]), Math.abs(a[1]))
 	def absValueZ = Math.abs(a[2])
-	log.debug "absValueXY: $absValueXY, absValueZ: $absValueZ"
+	log.debug "absValueZ: $absValueZ"
 
 
-	if (absValueZ > 825 && absValueXY < 175) {
+	if (absValueZ > 825) {
 		results << createEvent(name: "contact", value: "open", unit: "")
 		results << createEvent(name: "status", value: "open", unit: "")
 		results << createEvent(name: "door", value: "open", unit: "")
 		log.debug "STATUS: open"
 	}
-	else if (absValueZ < 75 && absValueXY > 825) {
+	else if (absValueZ < 100) {
 		results << createEvent(name: "contact", value: "closed", unit: "")
 		results << createEvent(name: "status", value: "closed", unit: "")
 		results << createEvent(name: "door", value: "closed", unit: "")

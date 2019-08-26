@@ -144,7 +144,7 @@ def nextLevel() {
 	setLevel(level)
 }
 
-def setLevel(percent) {
+def setLevel(percent, rate = null) {
 	log.debug "setLevel: ${percent}, this"
 	sendEvent(name: "level", value: percent)
 	def power = Math.round(percent / 1.175) * 0.1
