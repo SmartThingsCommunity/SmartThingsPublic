@@ -217,7 +217,7 @@ def updated() {
     unschedule(refreshDevices)
     runEvery3Hours(updateDevices)
     runEvery5Minutes(data)
-     // runEvery1Minute(data)
+    //  runEvery1Minute(data)
     log.info "Updated updateDevices every 3 Hours, device data every minute"
     initialize()
 }
@@ -268,10 +268,8 @@ def initialize() {
 	}
 }
 
-def data() {
+def data() { // run every X min to , sync with mihome all devices statuses. stored in state
 	devicesList()
-    //log.debug "data trigered for ${state.data.data.label}"
-	//return state.data
 }
 
 def updateDevices() {
@@ -293,7 +291,7 @@ def updateDevices() {
     def selectors = []
 	devices.each { device ->
         if (device.device_type == 'etrv') {
-			log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}: ${device.target_temperature}: ${device.last_temperature}: ${device.voltage}"
+			log.debug "Identified etrv: device ${device.id}: ${device.device_type}: ${device.label}: ${device.target_temperature}: ${device.last_temperature}: ${device.voltage}"
             selectors.add("${device.id}")
             def value = "${device.label} eTRV"
 			def key = device.id
@@ -310,7 +308,7 @@ def updateDevices() {
      		}
     	}
         else if (device.device_type == 'light'|| device.device_type == 'double_light') {
-        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+        	log.debug "Identified light: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Light Switch"
 			def key = device.id
@@ -327,7 +325,7 @@ def updateDevices() {
      		}
         }
         else if (device.device_type == 'legacy') {
-        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+        	log.debug "Identified legacy: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Adapter"
 			def key = device.id
@@ -344,7 +342,7 @@ def updateDevices() {
      		}
         }
         else if (device.device_type == 'socket') {
-        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+        	log.debug "Identified socket: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Wall Socket"
 			def key = device.id
@@ -361,7 +359,7 @@ def updateDevices() {
      			}
         }
        	else if (device.device_type == 'control') {
-        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+        	log.debug "Identified control: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Adapter Plus"
 			def key = device.id
@@ -378,7 +376,7 @@ def updateDevices() {
      		}
         }
         else if (device.device_type == 'fourgang') {
-        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+        	log.debug "Identified 4G: device ${device.id}: ${device.device_type}: ${device.label}"
             def value = "${device.label} 4 Gang Extension"
 			def key = device.id
 			state.mi4GangExtensionDevices["${key}"] = value
@@ -398,7 +396,7 @@ def updateDevices() {
             })
         }
         else if (device.device_type == 'monitor' || device.device_type == 'house' || device.device_type == 'home') {
-        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+        	log.debug "Identified monitor: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Monitor"
 			def key = device.id
@@ -415,7 +413,7 @@ def updateDevices() {
      		}
         }
         else if (device.device_type == 'motion' || device.device_type == 'open' ) {
-        	log.debug "Identified: device ${device.id}: ${device.device_type}: ${device.label}"
+        	log.debug "Identified motion: device ${device.id}: ${device.device_type}: ${device.label}"
             selectors.add("${device.id}")
             def value = "${device.label} Motion Sensor"
 			def key = device.id
@@ -435,7 +433,7 @@ def updateDevices() {
         log.warn "UnIdentified: device ${device.id}: ${device.device_type}: ${device.label}"
         }
     }
-   	log.debug selectors
+//   	log.debug selectors
    	//Remove devices if does not exist on the MiHome platform - stop an mihome error removing a devece
 /*   	getChildDevices().findAll { !selectors.contains("${it.deviceNetworkId}") }.each {
 		log.info("Deleting ${it.deviceNetworkId}")
@@ -598,29 +596,28 @@ def addMotion() {
 
 def refreshDevices() {
 	log.error "nothing happening, refresh is in the device handler"
-	//getChildDevices().each { device ->
-    //	   	if (device.name.contains("eTRV") || device.name.contains("Monitor") || device.name.contains("Motion Sensor") || device.name.contains("Adapter Plus")) {
-	//			log.debug "HF Refreshing device ${device.name}"
-    //          device.refresh()
-    //  	}
 }
 
-def devicesList() {
-	logErrors([]) {
-		def resp = apiGET("subdevices/list")
+def devicesList() { //get all devices and thier states
+	def resp = apiGET("subdevices/list")
 //log.debug "device list '$resp.data'"
-		if (resp.status == 200) {
+	if (resp != null){
+        if (resp.status == 200) {
         	state.data = ' '
             state.data = resp.data
             //log.debug "device states '${state.data}'"
 			return resp.data.data
 		} 
         else {
-			log.error "Non-200 from device list call. ${resp.status}" // ${resp.data}"
+			//log.error "devicesList - Non-200 from device list call. ${resp.status}"
 			state.data = null
             return []
 		}
-	}
+  	}
+    else {
+    	state.data = null
+        return []
+   }
 }
 
 def getMiHomeAccessToken() {   
@@ -630,32 +627,57 @@ log.debug "getting token"
 			state.miHomeAccessToken = resp.data.data.api_key
     		log.debug "miHomeAccessToken: $resp.data.data.api_key"  
 		} else {
-			log.error("Non-200 from device list call. ${resp.status} ${resp.data}")
+			log.error("Token - Non-200 from device list call. ${resp.status} ${resp.data}")
 			return []
 		}
 }
 
 def apiGET(path, body = [:]) {
-log.info "starting apiGET for Path='$path', device details ='$body'"
+//logErrors([]) {
 	try {
-    def cmdBody = [:]
+    //def cmdBody = [:]
     def paramsLogin = [
     	uri: apiURL(path),
    		headers: apiRequestHeaders(),
-    	tlsVersion: "TLSv1.1",
-        body: body
+    	tlsVersion: "TLSv1.1"//,
+        //body: body
     ]
-//log.debug "message details '$paramsLogin'"
+    
     httpPost(paramsLogin) {responseLogin ->  //as per mihome documetaion post is prefered details are not logged
-			logResponse(responseLogin)
+			//logResponse(responseLogin)
+            log.trace "apiGET for Path='$path', Response='$responseLogin.status'" // - $responseLogin.data"
 			return responseLogin
-            log.debug "$responseLogin"
 		}
-	} catch (groovyx.net.http.HttpResponseException e) {
-	logResponse(e.response)
-    log.warn "apiGET exception respones - '${e.response}', '${e}'"//log.warn "apiGET exception respones - ${e.status}', '${e.response}', '${e}'"
-		return e.response
+	} 
+    catch (e){
+    //log.error "apiGET exception respones - '${e}' " //${e.response.status}
+    sendEvent (name:"Bad apiGET",  value:"${e}")
+    if (e.response.status != null){
+    	if (e.statusCode == 401) { // token is expired
+        	log.warn "apiGET Errors - Access token is not valid - ${e.message} , ${e.statusCode}"
+			state.remove("miHomeAccessToken")
+		}
+    	else if (e.statusCode == 503) { //Service Temporarily Unavailable
+        	log.warn "apiGET Errors - ${e.message} ${e.statusCode} ${e.response.status}"
+    	}
+        else {
+        	log.warn "apiGET Errors - other code ${e.statusCode} , ${e.message}"
+       	}
+    }
+    else if (e == java.util.concurrent.TimeoutException) {
+		   log.warn "apiGET Errors - time out, ${e.message}"
+           e.response = null
+    }
+    else {
+    	log.warn "apiGET Errors - other - '${e}'"
+        e.response = null
+    }
+    log.error "apiGET exception respones - '${e}'"
+    
+    return e.response
 	}
+
+//}
 }
 
 Map apiRequestHeaders() {
@@ -669,24 +691,32 @@ Map apiRequestHeaders() {
 	]
 }
 
-def logResponse(response) {
+/*def logResponse(response) {
 	if (response.status != 200) {
-    	log.error "Status: ${response.status}, ${response}"
+    	log.error "logResponse - Status: ${response.status}, ${response}"
+        sendEvent (name:"Bad poll",  value:"${response.status} - ${response}")
     }
 }
-
+*/
 def logErrors(options = [errorReturn: null, logObject: log], Closure c) {
+log.warn "logErrors"
 	try {
 		return c()
 	} catch (groovyx.net.http.HttpResponseException e) {
 		options.logObject.error("got error: ${e}, body: ${e.getResponse().getData()}")
 		if (e.statusCode == 401) { // token is expired
+        	log.error "logErrors - Access token is not valid"
 			state.remove("miHomeAccessToken")
 			options.logObject.warn "Access token is not valid"
 		}
+        if (e.statusCode == 503) { //Service Temporarily Unavailable
+        	log.error "logErrors - Service Temporarily Unavailable"
+        	options.logObject.warn "Service Temporarily Unavailable"
+        }
 		return options.errorReturn
 	} catch (java.net.SocketTimeoutException e) {
 		options.logObject.warn "Connection timed out, not much we can do here"
+        log.error "logErrors - Connection timed out"
 		return options.errorReturn
 	}
 }
