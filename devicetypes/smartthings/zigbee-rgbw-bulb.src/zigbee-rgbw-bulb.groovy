@@ -47,7 +47,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "BY 285 C", deviceJoinName: "Innr Smart Bulb Color"
 		fingerprint manufacturer: "innr", model: "RB 250 C", deviceJoinName: "Innr Smart Candle Colour", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
 		// Müller Licht
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ExtendedColor", deviceJoinName: "Müller Licht Tint Bulb White+Color", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2200K-6500K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "MLI", model: "ZBT-ExtendedColor", deviceJoinName: "Müller Licht Bulb White+Color", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
 		// LEDVANCE/OSRAM/SYLVANIA
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Flex RGBW", deviceJoinName: "SYLVANIA Smart Flex RGBW"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW", deviceJoinName: "OSRAM SMART+ Flex RGBW"
