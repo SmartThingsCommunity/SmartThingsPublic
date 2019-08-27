@@ -161,7 +161,7 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	return result
 }
 
-def handleMeterReport(cmd){
+def handleMeterReport(cmd) {
 	if (cmd.meterType == 1) {
 		if (cmd.scale == 0) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
@@ -225,7 +225,7 @@ def setLevel(level, rate = null) {
 	], 5000)
 }
 
-def configure(){
+def configure() {
 	log.debug "configure()"
 	def result = []
 
