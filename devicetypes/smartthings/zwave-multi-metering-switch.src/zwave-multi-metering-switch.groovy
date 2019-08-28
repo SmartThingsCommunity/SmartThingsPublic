@@ -128,7 +128,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
 	def event = createEvent([isStateChange:  false, descriptionText: "Wattage change has been detected. Refreshing each endpoint"])
-	[event, response(refreshAll())]
+	isAeotec() ? [event, response(refreshAll())] : event
 }
 
 private createMeterEventMap(cmd) {
@@ -163,6 +163,11 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 		refreshAll()
 	])
 }
+
+def isAeotec() {
+	getDeviceModel() == "Aeotec Nano Switch"
+}
+
 def isZoozZenStripV2() {
 	zwaveInfo.mfr.equals("027A") && zwaveInfo.model.equals("A004")
 }
