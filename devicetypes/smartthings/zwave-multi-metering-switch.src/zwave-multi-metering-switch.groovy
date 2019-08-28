@@ -101,7 +101,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 
 private changeSwitch(endpoint, value) {
 	def result = []
-	if(endpoint == 1) {
+	if (endpoint == 1) {
 		result += createEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	} else {
 		String childDni = "${device.deviceNetworkId}:$endpoint"
@@ -114,7 +114,7 @@ private changeSwitch(endpoint, value) {
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
 	def result = []
-	if(ep == 1) {
+	if (ep == 1) {
 		result += createEvent(createMeterEventMap(cmd))
 	} else if(ep) {
 		String childDni = "${device.deviceNetworkId}:$ep"
@@ -292,16 +292,14 @@ private secureEncap(cmd, endpoint = null) {
 }
 
 private addChildSwitches(numberOfSwitches) {
-	for(def endpoint : 2..numberOfSwitches) {
+	for (def endpoint : 2..numberOfSwitches) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = device.displayName[0..-2] + "${endpoint}"
 			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : componentLabel,
-					isComponent   : false,
-					componentName : "switch$endpoint",
-					componentLabel: "Switch $endpoint"
+					isComponent   : false
 			])
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
@@ -340,7 +338,7 @@ private lateConfigure() {
 }
 
 private getDeviceModel() {
-	if((zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) || (getDataValue("mfr") == "86") && (getDataValue("model") == "84")) {
+	if ((zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) || (getDataValue("mfr") == "86") && (getDataValue("model") == "84")) {
 		"Aeotec Nano Switch"
 	} else if(zwaveInfo.mfr?.contains("027A")) {
 		"Zooz Switch"

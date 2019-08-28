@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Zooz 4-in-1 sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-8") {
+	definition(name: "Zooz 4-in-1 sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-8", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -23,7 +23,7 @@ metadata {
 		capability "Health Check"
 		capability "Tamper Alert"
 
-		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz 4-in-1 sensor"
+//		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz 4-in-1 sensor"
 	}
 
 	tiles(scale: 2) {
@@ -171,8 +171,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		result = motionEvent(cmd.notificationStatus)
 	} else if (cmd.notificationType == 7 && cmd.event == 3) {
 		result = createEvent(name: "tamper", value: "detected", descriptionText: "$device.displayName was tampered")
-		unschedule(clearTamper, [forceForLocallyExecuting: true])
-		runIn(10, clearTamper, [forceForLocallyExecuting: true])
+		runIn(10, clearTamper, [overwrite: true, forceForLocallyExecuting: true])
 	} else if (cmd.notificationType == 7 && cmd.event == 0) {
 		if (cmd.eventParameter[0] == 8) {
 			result = motionEvent(0)
@@ -202,6 +201,10 @@ def configure() {
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
 
 	secureSequence(request) + ["delay 20000", zwave.wakeUpV2.wakeUpNoMoreInformation().format()]
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
 }
 
 private getLuxFromPercentage(percentageValue) {

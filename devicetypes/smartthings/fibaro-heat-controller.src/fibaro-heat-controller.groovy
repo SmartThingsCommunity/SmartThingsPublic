@@ -317,9 +317,8 @@ private forcedRefresh() {
 def addChild() {
 	String childDni = "${device.deviceNetworkId}:2"
 	String componentLabel =	 "Fibaro Temperature Sensor"
-	String ch = "ch2"
 
-	addChildDevice("Child Temperature Sensor", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false, componentName: ch, componentLabel: componentLabel])
+	addChildDevice("Child Temperature Sensor", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false])
 }
 
 private getMaxHeatingSetpointTemperature() {
