@@ -69,11 +69,17 @@ def updated() {
 
 def configure() {
     sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false)
-    response([
-            secure(zwave.batteryV1.batteryGet()),
-            "delay 2000",
-            secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
-    ])
+
+    def cmds = []
+    cmds << secure(zwave.batteryV1.batteryGet())
+    cmds << "delay 2000"
+    cmds << secure(zwave.wakeUpV2.wakeUpNoMoreInformation())
+
+    if (isAeotecWallmoteQuad()) {
+        cmds << secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, configurationValue: [0]))
+    }
+
+    return response(cmds)
 }
 
 def parse(String description) {
@@ -169,4 +175,8 @@ def getChildDevice(button) {
         log.error "Child device $childDni not found"
     }
     return child
+}
+
+private isAeotecWallmoteQuad() {
+    zwaveInfo?.mfr?.equals("0086") && zwaveInfo?.model?.equals("0082")
 }
