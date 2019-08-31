@@ -28,7 +28,7 @@ preferences {
 }
 
 metadata {
-	definition (name: "SensiboPod", namespace: "EricG66", author: "Eric Gosselin", oauth: false) {
+	definition (name: "SensiboPod", namespace: "Sensibo", author: "Giuseppe Buzzanca", oauth: false) {
 		capability "Relative Humidity Measurement"
 		capability "Temperature Measurement"
 		capability "Polling"
