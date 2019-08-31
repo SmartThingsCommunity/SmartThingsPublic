@@ -75,6 +75,10 @@ def SensiboPodList()
         	input(name:"refreshinminutes", title: "Refresh rates in minutes", type: "enum", required:false, multiple: false, options: ["1", "5", "10","15","30"])
         }
 
+        section("Pod Prefix") {
+        	input(name:"podPrefix", title: "Pod devices prefix", type: "text", required:false, multiple: false, description: "", defaultValue: "Pod")
+        }
+
         section("Receive Pod sensors infos") {
         	input "boolnotifevery", "bool",submitOnChange: true, required: false, title: "Receive temperature, humidity and battery level notification every hour?"
             href(name: "toTimePageEvent",
@@ -509,8 +513,8 @@ def initialize() {
 				log.debug "Pod : ${name.value} - Hub : ${location.hubs[0].name} - Type : " +  getChildTypeName() + " - Namespace : " + getChildNamespace()
 
 				d = addChildDevice(getChildNamespace(), getChildTypeName(), dni, location.hubs[0].id, [
-                	"label" : "Pod ${name.value}",
-                    "name" : "Pod ${name.value}"
+                	"label" : "${podPrefix} ${name.value}",
+                    "name" : "${podPrefix} ${name.value}"
                     ])
                 d.setIcon("on","on","https://image.ibb.co/jgAMW8/sensibo-sky-off.png")
                 d.setIcon("off","on","https://image.ibb.co/jgAMW8/sensibo-sky-off.png")
