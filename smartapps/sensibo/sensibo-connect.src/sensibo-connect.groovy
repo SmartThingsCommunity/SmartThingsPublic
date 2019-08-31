@@ -489,7 +489,7 @@ def refreshDevices() {
 	}
 }
 
-def getChildNamespace() { "EricG66" }
+def getChildNamespace() { "Sensibo" }
 def getChildTypeName() { "SensiboPod" }
 
 def initialize() {
