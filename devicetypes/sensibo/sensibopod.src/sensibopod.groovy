@@ -73,8 +73,7 @@ metadata {
         command "strongfan"
         command "autofan"
         command "fullswing"
-        command "swingFixedTop"
-        command "swingStopped"
+        command "modeSwing", ["string"]
         command "setAirConditionerMode"
         command "toggleClimateReact"
         command "setClimateReact"
@@ -340,18 +339,6 @@ def fullswing()
 {	
 	log.trace "fullswing() called"
 	modeSwing("rangeFull")
-}
-
-def swingFixedTop()
-{	
-	log.trace "swingFixedTop() called"
-	modeSwing("fixedTop")
-}
-
-def swingStopped()
-{	
-	log.trace "swingStopped() called"
-	modeSwing("stopped")
 }
 
 def temperatureDown(temp)
