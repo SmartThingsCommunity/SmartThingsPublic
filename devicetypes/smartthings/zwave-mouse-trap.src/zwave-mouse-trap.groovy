@@ -21,7 +21,7 @@ metadata {
 		//capability "pestControl", enum: idle, trapArmed, trapRearmRequired, pestDetected, pestExterminated
 
 		//zw:S type:0701 mfr:021F prod:0003 model:0104 ver:3.49 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,71,30,85,59,84,70 role:06 ff:8C13 ui:8C13
-		fingerprint mfr: "021F", prod: "0003", model: "0104", deviceJoinName: "Dome Mouser"
+		fingerprint mfr: "021F", prod: "0003", model: "0104", deviceJoinName: "Dome Mouser", mnmn: "SmartThings", vid: "SmartThings-smartthings-Dome_Mouser"
 	}
 
 	tiles(scale: 2) {

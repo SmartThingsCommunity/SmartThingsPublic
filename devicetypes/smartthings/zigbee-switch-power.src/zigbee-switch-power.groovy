@@ -25,10 +25,14 @@ metadata {
 
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B05", outClusters: "0003, 000A, 0019", manufacturer: "Jasco Products", model: "45853", deviceJoinName: "GE ZigBee Plug-In Switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B05", outClusters: "0003, 000A, 0019", manufacturer: "Jasco Products", model: "45853", deviceJoinName: "GE ZigBee Plug-In Switch", ocfDeviceType: "oic.d.smartplug"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B05", outClusters: "000A, 0019", manufacturer: "Jasco Products", model: "45856", deviceJoinName: "GE ZigBee In-Wall Switch"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "PSM_00.00.00.35TC", deviceJoinName: "Ozom Smart Plug"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "PSM_00.00.00.35TC", deviceJoinName: "Ozom Smart Plug", ocfDeviceType: "oic.d.smartplug"
 		fingerprint profileId: "0104", inClusters: "0000, 0702, 0003, 0009, 0B04, 0006, 0004, 0005, 0002", outClusters: "0000, 0019, 000A, 0003, 0406", manufacturer: "Develco Products A/S", model: "Smart16ARelay51AU", deviceJoinName: "Aurora Smart Inline Relay"
+		fingerprint manufacturer: " ", model: "PAN18-v1.0.7", deviceJoinName: "Philio Smart Plug", ocfDeviceType: "oic.d.smartplug" //profileId: "0104", inClusters: "0000, 0003, 0006, 0702", outClusters: "0003, 0019",
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702", manufacturer: "SALUS",  model: "SX885ZB", deviceJoinName: "Salus miniSmartplug"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04", outClusters: "0000, 0004", manufacturer: "MEGAMAN", model: "SH-PSUKC44B-E", deviceJoinName: "INGENIUM ZB Smart Power Adaptor", ocfDeviceType: "oic.d.smartplug"
+		fingerprint profileId: "0104", inClusters: "0000, 0702, 0003, 0009, 0B04, 0006, 0004, 0005, 0002", outClusters: "0000, 0019, 000A, 0003, 0406", manufacturer: "Aurora", model: "Smart16ARelay51AU", deviceJoinName: "Aurora Smart Inline Relay"
 	}
 
 	tiles(scale: 2) {
@@ -58,7 +62,9 @@ def parse(String description) {
 	if (event) {
 		if (event.name == "power") {
 			def powerValue
-			powerValue = (event.value as Integer)/10			//TODO: The divisor value needs to be set as part of configuration
+			def div = device.getDataValue("divisor")
+			div = div ? (div as int) : 10
+			powerValue = (event.value as Integer)/div
 			sendEvent(name: "power", value: powerValue)
 		}
 		else {
@@ -92,6 +98,12 @@ def refresh() {
 
 def configure() {
 	log.debug "in configure()"
+	if ((device.getDataValue("manufacturer") == "Develco Products A/S") || (device.getDataValue("manufacturer") == "Aurora"))  {
+		device.updateDataValue("divisor", "1")
+	}
+	if (device.getDataValue("manufacturer") == "SALUS") {
+		device.updateDataValue("divisor", "1")
+	}
 	return configureHealthCheck()
 }
 

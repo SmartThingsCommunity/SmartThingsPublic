@@ -17,6 +17,8 @@ metadata {
 		capability "Sensor"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0009,0500"
+		//raw description 22 0104 0107 00 03 0000 0003 0406 00
+		fingerprint manufacturer: "Aurora", model: "MotionSensor51AU", deviceJoinName: "Aurora Smart PIR Sensor"
 	}
 
 	// simulator metadata

@@ -29,6 +29,7 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "1085", deviceJoinName: "NEO Coolcam Water Sensor" //NAS-WS03ZE
 		fingerprint mfr: "0086", prod: "0102", model: "007A", deviceJoinName: "Aeotec Water Sensor 6" //US
 		fingerprint mfr: "0086", prod: "0002", model: "007A", deviceJoinName: "Aeotec Water Sensor 6" //EU
+		fingerprint mfr: "000C", prod: "0201", model: "000A", deviceJoinName: "HomeSeer LS100+ Water Sensor"
 	}
 
 	simulator {

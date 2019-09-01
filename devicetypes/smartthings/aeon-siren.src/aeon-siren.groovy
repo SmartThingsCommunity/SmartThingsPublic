@@ -50,8 +50,8 @@ metadata {
 
 	preferences {
 		// PROB-1673 Since there is a bug with how defaultValue and range are handled together, we won't rely on defaultValue and won't set required, but will use the default values in the code below when needed.
-		input "sound", "number", title: "Siren sound (1-5)", range: "1..5" //, defaultValue: 1, required: true//, displayDuringSetup: true  // don't display during setup until defaultValue is shown
-		input "volume", "number", title: "Volume (1-3)", range: "1..3" //, defaultValue: 3, required: true//, displayDuringSetup: true
+		input "sound", "number", title: "Siren sound", range: "1..5" //, defaultValue: 1, required: true//, displayDuringSetup: true  // don't display during setup until defaultValue is shown
+		input "volume", "number", title: "Volume", range: "1..3" //, defaultValue: 3, required: true//, displayDuringSetup: true
 	}
 
 	main "alarm"
@@ -100,6 +100,18 @@ def updated() {
 	response(commands)
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x70: 1,  // Configuration
+		0x85: 2,  // Association
+		0x98: 1,  // Security 0
+	]
+}
+
 def parse(String description) {
 	log.debug "parse($description)"
 	def result = null
@@ -116,7 +128,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [0x98: 1, 0x20: 1, 0x70: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -126,7 +138,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x85: 2, 0x70: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
