@@ -1,21 +1,23 @@
 /*
- *	Copyright 2016 SmartThings
+ *  Copyright 2016 SmartThings
+ *  Modifications by Timothy B Martin (instanttim)
+ * 
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License. You may obtain a copy
+ *  of the License at:
  *
- *	Licensed under the Apache License, Version 2.0 (the "License"); you may not
- *	use this file except in compliance with the License. You may obtain a copy
- *	of the License at:
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *		http://www.apache.org/licenses/LICENSE-2.0
- *
- *	Unless required by applicable law or agreed to in writing, software
- *	distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *	License for the specific language governing permissions and limitations
- *	under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
  */
+
 metadata {
 	// Automatically generated. Make future change here.
-	definition(name: "SmartPower Outlet", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power", ocfDeviceType: "oic.d.smartplug", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
+	definition (name: "SmartPower Outlet (Preferences)", namespace: "instanttim", author: "Timothy Martin") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Power Meter"
@@ -23,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
+		capability "Light"
 		capability "Outlet"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3200", deviceJoinName: "Outlet"
@@ -30,10 +33,6 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "4257050-RZHAC", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 000F, 0B04", outClusters: "0019", manufacturer: "SmartThings", model: "outletv4", deviceJoinName: "Outlet"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0006,0009,0B04", outClusters: "0019", manufacturer: "Samjin", model: "outlet", deviceJoinName: "Outlet"
-		fingerprint profileId: "0010", inClusters: "0000 0003 0004 0005 0006 0008 0702 0B05", outClusters: "0019", manufacturer: "innr", model: "SP 120", deviceJoinName: "Innr Smart Plug EU"
-		fingerprint profileId: "0104", inClusters: "0000,0002,0003,0004,0005,0006,0009,0B04,0702", outClusters: "0019,000A,0003,0406", manufacturer: "Aurora", model: "SmartPlug51AU", deviceJoinName: "Aurora SmartPlug"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0702,0B04,0B05,FC03", outClusters: "0019", manufacturer: "CentraLite", model: "3210-L", deviceJoinName: "Iris Smart Plug"
 	}
 
 	// simulator metadata
@@ -54,6 +53,8 @@ metadata {
 					"http://cdn.device-gse.smartthings.com/Outlet/US/OutletUS2.jpg"
 			])
 		}
+        input name: "prefLogPower", type: "bool", title: "Show power in activity feed?", description: "", required: true
+        input name: "prefLogPowerDelta", type: "decimal", title: "Only if power changes by…", description: "Enter watts", defaultValue: 10, required: true
 	}
 
 	// UI tile definitions
@@ -85,10 +86,31 @@ def parse(String description) {
 
 	def event = zigbee.getEvent(description)
 
+	if (state.lastPowerValue == null) {
+		// initialize the last power value used to throttle updates.
+		state.lastPowerValue = 0
+	}
+
 	if (event) {
 		if (event.name == "power") {
-			def value = (event.value as Integer) / 10
-			event = createEvent(name: event.name, value: value, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true)
+			def powerValue = (event.value as Integer) / 10
+			def changeValue = powerValue - state.lastPowerValue
+			def showPowerActivity = prefLogPower
+            
+			if (changeValue < 0) {
+            	changeValue = -changeValue
+			}
+			
+            if (showPowerActivity == true) {
+            	if (changeValue > prefLogPowerDelta) {
+	                state.lastPowerValue = powerValue
+                } else {
+					showPowerActivity = false
+                }
+            }
+            
+			event = createEvent(name: event.name, value: powerValue, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', displayed: showPowerActivity, translatable: true)
+            
 		} else if (event.name == "switch") {
 			def descriptionText = event.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
 			event = createEvent(name: event.name, value: event.value, descriptionText: descriptionText, translatable: true)
