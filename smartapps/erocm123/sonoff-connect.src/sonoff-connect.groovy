@@ -320,7 +320,7 @@ void deviceDescriptionHandler(physicalgraph.device.HubResponse hubResponse) {
 	log.trace "description.xml response (application/xml)"
 	def body = hubResponse.xml
     log.debug body?.device?.friendlyName?.text()
-	if (body?.device?.modelName?.text().startsWith("Sonoff")) {
+	if (body?.device?.modelName?.text()?.startsWith("Sonoff") || body?.device?.modelName?.text()?.startsWith("Shelly")) {
 		def devices = getDevices()
 		def device = devices.find {it?.key?.contains(body?.device?.UDN?.text())}
 		if (device) {
@@ -359,6 +359,18 @@ def addDevices() {
                 deviceHandlerName = "Sonoff 4CH Wifi Switch"
             else if (selectedDevice?.value?.name?.startsWith("Sonoff IFan02"))
                 deviceHandlerName = "Sonoff IFan02 Wifi Controller"
+            else if (selectedDevice?.value?.name?.startsWith("Sonoff S31"))
+                deviceHandlerName = "Sonoff S31 - Tasmota"
+            else if (selectedDevice?.value?.name?.startsWith("Sonoff S2"))
+                deviceHandlerName = "Sonoff S20 - Tasmota"
+            else if (selectedDevice?.value?.name?.startsWith("Sonoff 4CH "))
+                deviceHandlerName = "Sonoff 4Ch - Tasmota"
+            else if (selectedDevice?.value?.name?.startsWith("Sonoff SC"))
+                deviceHandlerName = "Sonoff SC - Tasmota"
+            else if (selectedDevice?.value?.name?.startsWith("Sonoff Bridge"))
+                deviceHandlerName = "Sonoff Bridge - Tasmota"
+            else if (selectedDevice?.value?.name?.startsWith("Shelly"))
+                deviceHandlerName = "Sonoff Wifi Switch"
             else 
                 deviceHandlerName = "Sonoff Wifi Switch"
             def newDevice = addChildDevice("erocm123", deviceHandlerName, selectedDevice.value.mac, selectedDevice?.value.hub, [

@@ -297,13 +297,13 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 			map.descriptionText = cmd.toString()
 	}
     
-    def request = update_needed_settings()
+    //def request = update_needed_settings()
     
-    if(request != []){
-        return [response(commands(request)), createEvent(map)]
-    } else {
+    //if(request != []){
+        //return [response(commands(request)), createEvent(map)]
+    //} else {
         return createEvent(map)
-    }
+    //}
 
 }
 
@@ -522,13 +522,33 @@ def convertParam(number, value) {
             //Parameter difference between firmware versions
         	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != null) {
                 if (device.currentValue("currentFirmware") == "1.07" || device.currentValue("currentFirmware") == "1.08" || device.currentValue("currentFirmware") == "1.09") {
-                    (value * 256) + 2
-                } else if (device.currentValue("currentFirmware") == "1.10") {
-                    (value * 65536) + 512
-                } else if (device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU") {
-                    (value * 65536) + 256
+                    if (device.currentValue("currentFirmware") == "1.09" && value < 10) {
+                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                        (10 * 256) + 2
+                    } else {
+                        (value * 256) + 2
+                    }
+                } else if (device.currentValue("currentFirmware") == "1.10" || device.currentValue("currentFirmware") == "1.11" || device.currentValue("currentFirmware") == "1.12" || device.currentValue("currentFirmware") == "1.13") {
+                    if (value < 10) {
+                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                        (10 * 65536) + 512
+                    } else {
+                        (value * 65536) + 512
+                    }
+                } else if (device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU" || device.currentValue("currentFirmware") == "1.12EU" || device.currentValue("currentFirmware") == "1.13EU") {
+                    if (value < 10) {
+                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                        (10 * 65536) + 256
+                    } else {
+                        (value * 65536) + 256
+                    }
                 } else if (device.currentValue("currentFirmware") == "1.07EU" || device.currentValue("currentFirmware") == "1.08EU" || device.currentValue("currentFirmware") == "1.09EU") {
-                    (value * 256) + 1
+                    if (device.currentValue("currentFirmware") == "1.09EU" && value < 10) {
+                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                        (10 * 256) + 1
+                    } else {
+                        (value * 256) + 1
+                    }
                 } else {
                     value
                 }	
@@ -659,7 +679,7 @@ def update_needed_settings()
                     if (it.@index == "41") {
                         if (device.currentValue("currentFirmware") == "1.06" || device.currentValue("currentFirmware") == "1.06EU") {
                             cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 2), parameterNumber: it.@index.toInteger(), size: 2)
-                        } else if (device.currentValue("currentFirmware") == "1.10" || device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU") {
+                        } else if (device.currentValue("currentFirmware") == "1.10" || device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU"  || device.currentValue("currentFirmware") == "1.12EU"  || device.currentValue("currentFirmware") == "1.13EU"  || device.currentValue("currentFirmware") == "1.12" || device.currentValue("currentFirmware") == "1.13") {
                             cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4)
                         } else {
                             cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 3), parameterNumber: it.@index.toInteger(), size: 3)
@@ -938,14 +958,14 @@ def configuration_model()
 {
 '''
 <configuration>
-    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU" displayDuringSetup="true">
+    <Value type="list" index="101" label="Battery or USB?" min="240" max="241" value="241" byteSize="4" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU" displayDuringSetup="true">
     <Help>
 Is the device powered by battery or usb?
     </Help>
         <Item label="Battery" value="241" />
         <Item label="USB" value="240" />
   </Value>
-  <Value type="list" index="40" label="Enable selective reporting?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="list" index="40" label="Enable selective reporting?" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Enable/disable the selective reporting only when measurements reach a certain threshold or percentage set below. This is used to reduce network traffic.
 Default: No (Enable for Better Battery Life)
@@ -953,7 +973,7 @@ Default: No (Enable for Better Battery Life)
         <Item label="No" value="0" />
         <Item label="Yes" value="1" />
   </Value>
-  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="2120" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="short" byteSize="2" index="41" label="Temperature Threshold" min="1" max="2120" value="20" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Threshold change in temperature to induce an automatic report. 
 Range: 1~2120 (Firmware 1.09+ 10~2120)
@@ -964,7 +984,7 @@ Only used if selective reporting is enabled.
 2. The value contains one decimal point. E.g. if the value is set to 20, the threshold value =2.0 ℃ (EU/AU version) or 2.0 ℉ (US version). When the current temperature gap is more then 2.0, which will induce a temperature report to be sent out.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="42" label="Humidity Threshold" min="1" max="255" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="byte" byteSize="1" index="42" label="Humidity Threshold" min="1" max="255" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Threshold change in humidity to induce an automatic report.
 Range: 1~255.
@@ -975,7 +995,7 @@ Only used if selective reporting is enabled.
 2. The default value is 10, which means that if the current humidity gap is more than 10%, it will send out a humidity report.
     </Help>
   </Value>
-  <Value type="short" byteSize="2" index="43" label="Luminance Threshold" min="1" max="30000" value="100" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="short" byteSize="2" index="43" label="Luminance Threshold" min="1" max="30000" value="100" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Threshold change in luminance to induce an automatic report.
 Range: 1~30000.
@@ -984,7 +1004,7 @@ Note:
 Only used if selective reporting is enabled.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="44" label="Battery Threshold" min="1" max="99" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="byte" byteSize="1" index="44" label="Battery Threshold" min="1" max="99" value="10" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Threshold change in battery level to induce an automatic report.
 Range: 1~99.
@@ -995,7 +1015,7 @@ Only used if selective reporting is enabled.
 2. The default value is 10, which means that if the current battery level gap is more than 10%, it will send out a battery report.
     </Help>
   </Value>
-  <Value type="byte" byteSize="1" index="45" label="Ultraviolet Threshold" min="1" max="11" value="2" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="byte" byteSize="1" index="45" label="Ultraviolet Threshold" min="1" max="11" value="2" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Threshold change in ultraviolet to induce an automatic report.
 Range: 1~11.
@@ -1004,7 +1024,7 @@ Note: Firmware 1.06 and 1.07 only support a value of 2.
 Only used if selective reporting is enabled.
     </Help>
   </Value>
-  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU" displayDuringSetup="true">
+  <Value type="short" byteSize="2" index="3" label="PIR reset time" min="10" max="3600" value="240" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU" displayDuringSetup="true">
     <Help>
 Number of seconds to wait to report motion cleared after a motion event if there is no motion detected.
 Range: 10~3600.
@@ -1016,14 +1036,14 @@ a), Interval time =Value/60, if the interval time can be divided by 60 and witho
 b), Interval time= (Value/60) +1, if the interval time can be divided by 60 and has remainder.
     </Help>
   </Value>
-    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="5" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU" displayDuringSetup="true">
+    <Value type="byte" byteSize="1" index="4" label="PIR motion sensitivity" min="0" max="5" value="5" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU" displayDuringSetup="true">
     <Help>
 A value from 0-5, from disabled to high sensitivity
 Range: 0~5
 Default: 5
     </Help>
   </Value>
-    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="3600" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU" displayDuringSetup="true">
+    <Value type="byte" byteSize="4" index="111" label="Reporting Interval" min="5" max="2678400" value="3600" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU" displayDuringSetup="true">
     <Help>
 The interval time of sending reports in Report group 1
 Range: 30~
@@ -1072,7 +1092,7 @@ E.g. If measure value = 9 and the standard value = 8, so the calibration value =
 If the measure value = 7 and the standard value = 9, so the calibration value = 9 – 7 = 2. 
     </Help>
   </Value>
-  <Value type="list" index="5" label="Command Option" min="1" max="2" value="1" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="list" index="5" label="Command Option" min="1" max="2" value="1" byteSize="1" setting_type="zwave" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Which command should be sent when the motion sensor is triggered
 Default: Basic Set
@@ -1080,7 +1100,7 @@ Default: Basic Set
         <Item label="Basic Set" value="1" />
         <Item label="Sensor Binary" value="2" />
   </Value>
-  <Value type="list" index="81" label="LED Options" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.08,1.09,1.10,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="list" index="81" label="LED Options" min="0" max="1" value="0" byteSize="1" setting_type="zwave" fw="1.08,1.09,1.10,1.11,1.12,1.13,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Choose how the LED functions. (Option 1, 2 firmware v1.08+, Option 1, 2, 3 firmware v1.10+)
 Default: Enabled
@@ -1089,7 +1109,7 @@ Default: Enabled
         <Item label="Disable When Motion" value="1" />
         <Item label="Fully Disabled" value="2" />
   </Value>
-  <Value type="byte" index="8" label="Stay Awake Time?" min="8" max="255" value="30" byteSize="1" setting_type="zwave" fw="1.08,1.09,1.10,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="byte" index="8" label="Stay Awake Time?" min="8" max="255" value="30" byteSize="1" setting_type="zwave" fw="1.08,1.09,1.10,1.11,1.12,1.13,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 Set the timeout of awake after the Wake Up CC is sent out. (Works on Firmware v1.08 only)
 Range: 8~255
@@ -1097,7 +1117,7 @@ Default: 30
 Note: May help if config parameters aren't making it before device goes back to sleep.
     </Help>
   </Value>
-<Value type="list" index="regionOverride" label="Region Override" min="0" max="3" value="0" setting_type="preference" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+<Value type="list" index="regionOverride" label="Region Override" min="0" max="3" value="0" setting_type="preference" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 The device handler tries to automatically detect the region of your firmware (US, EU, AU). If it is detecting it incorrectly you can change it here.
 Default: Off
@@ -1107,7 +1127,7 @@ Default: Off
         <Item label="EU" value="2" />
         <Item label="AU" value="3" />
   </Value>
-  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08,1.09,1.10,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU">
+  <Value type="boolean" index="enableDebugging" label="Enable Debug Logging?" value="true" setting_type="preference" fw="1.06,1.07,1.08,1.09,1.10,1.11,1.12,1.13,1.06EU,1.07EU,1.08EU,1.09EU,1.10EU,1.11EU,1.12EU,1.13EU">
     <Help>
 
     </Help>
