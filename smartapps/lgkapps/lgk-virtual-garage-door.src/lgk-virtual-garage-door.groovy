@@ -105,6 +105,7 @@ def updated() {
 def contactHandler(evt) {
 	def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
+    log.debug "GATE event - $sensoropen = {evt.device} and {evt.value} = closed"
   	if(sensoropen == evt.device && evt.value == "closed"){
     	virtualgd.close("closed")
     }
