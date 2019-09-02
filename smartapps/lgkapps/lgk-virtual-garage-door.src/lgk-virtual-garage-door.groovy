@@ -25,16 +25,16 @@ definition(
 )
 
 preferences {
-	section("Choose the switch/relay that opens closes the garage?"){
+	section("Choose the switch/relay that opens/closes the garage?"){
 		input "opener", "capability.switch", title: "Physical Garage Opener?", required: true
 	}
-    section("Choose the switch/relay that CLOSES the garage? if different"){
+    section("Choose the switch/relay that CLOSES the garage... if different"){
 		input "closer", "capability.switch", title: "Physical Garage Opener? optional", required: false
 	}
-	section("Choose the sensor that senses if the garage is open closed? "){
+	section("Choose the sensor that senses if the garage is open/closed? "){
 		input "sensor", "capability.contactSensor", title: "Physical Garage Door Open/Closed?", required: true
 	}
-    section("Choose the sensor that senses if the garage is open closed? "){
+    section("Choose the sensor for OPEN.. optional "){
 		input "sensoropen", "capability.contactSensor", title: "Physical Garage Door Open/Closed?"
 	}
     
@@ -147,7 +147,9 @@ def virtualgdcontactHandler(evt) {
         //mysend("test 138")
     	log.trace "virtualgdcontactHandler - $msg"
     }
-    runIn(checkTimeout, checkIfActually)
+    if (sensoropen != null){
+    	runIn(checkTimeout, checkIfActually)
+    }
 }
 
 def checkIfActually() {
