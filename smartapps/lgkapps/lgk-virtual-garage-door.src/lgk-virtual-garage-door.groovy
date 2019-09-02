@@ -148,7 +148,7 @@ def virtualgdcontactHandler(evt) {
         //mysend("test 138")
     	log.trace "virtualgdcontactHandler - $msg"
     }
-    if (sensoropen != null){
+    if (sensoropen == null){
     	runIn(checkTimeout, checkIfActually)
     }
 }
