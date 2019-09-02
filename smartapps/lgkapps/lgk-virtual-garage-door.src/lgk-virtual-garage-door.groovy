@@ -35,7 +35,7 @@ preferences {
 		input "sensor", "capability.contactSensor", title: "Physical Garage Door Open/Closed?", required: true
 	}
     section("Choose the sensor for OPEN.. optional "){
-		input "sensoropen", "capability.contactSensor", title: "Physical Garage Door Open/Closed?"
+		input "sensoropen", "capability.contactSensor", title: "Physical Garage Door Open/Closed?", required: false
 	}
     
 	section("Choose the Virtual Garage Door Device? "){
