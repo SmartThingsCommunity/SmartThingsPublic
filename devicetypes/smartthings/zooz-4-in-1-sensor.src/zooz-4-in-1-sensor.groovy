@@ -23,7 +23,7 @@ metadata {
 		capability "Health Check"
 		capability "Tamper Alert"
 
-//		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz 4-in-1 sensor"
+		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz 4-in-1 sensor"
 	}
 
 	tiles(scale: 2) {
