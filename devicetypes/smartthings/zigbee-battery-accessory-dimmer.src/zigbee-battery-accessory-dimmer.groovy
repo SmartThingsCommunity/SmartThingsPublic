@@ -147,7 +147,7 @@ def handleSengledSwitchEvents(descMap) {
 					value = Math.max(currentLevel - DOUBLE_STEP, 1)
 				} else if (descMap.data[2] == '01') {
 					//short press of 'DIM' button
-					value = Math.max(currentLevel - STEP, 01)
+					value = Math.max(currentLevel - STEP, 1)
 				} else {
 					log.info "Invalid value ${descMap.data[2]} received for descMap.data[2]"
 				}
