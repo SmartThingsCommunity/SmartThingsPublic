@@ -144,17 +144,18 @@ def handleSengledSwitchEvents(descMap) {
 				//move down
 				if (descMap.data[2] == '02') {
 					//long press of 'DIM' button
-					value = Math.max(currentLevel - DOUBLE_STEP, 0)
+					value = Math.max(currentLevel - DOUBLE_STEP, 1)
 				} else if (descMap.data[2] == '01') {
 					//short press of 'DIM' button
-					value = Math.max(currentLevel - STEP, 0)
+					value = Math.max(currentLevel - STEP, 01)
 				} else {
 					log.info "Invalid value ${descMap.data[2]} received for descMap.data[2]"
 				}
 
-				if (value == 0) {
-					results << createEvent(name: "switch", value: "off")
+				if (device.currentValue("level") == 1) {
+					results << createEvent(name: "level", value: value)
 				} else {
+					results << createEvent(name: "switch", value: "on")
 					results << createEvent(name: "level", value: value)
 				}
 				break
