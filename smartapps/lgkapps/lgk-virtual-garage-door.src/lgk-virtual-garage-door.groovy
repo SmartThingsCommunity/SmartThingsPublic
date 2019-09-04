@@ -106,7 +106,7 @@ def contactHandler(evt) {
 	def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
   	
-    if(sensoropen != null){
+    if(sensoropen != null){ // if using 2 sensors 'sensoropen' should be closed when the door/gate is open
     	if(sensoropen == evt.device && evt.value == "closed"){
         log.debug "GATE phisical sensor for open - $sensoropen = ${evt.device} and ${evt.value} = closed"
     	virtualgd.close("open")
@@ -116,16 +116,16 @@ def contactHandler(evt) {
     	virtualgd.close("closed")
         }
     }
-    else{
-    if("open" == evt.value) {
-    	virtualgd.open("open")
-	}
-	if("closed" == evt.value) {
-       	virtualgd.close("closed")
-   	}
+    else{ // single sensor setup 
+    	if("open" == evt.value) {
+    		virtualgd.open("open")
+		}
+		if("closed" == evt.value) {
+       		virtualgd.close("closed")
+   		}
     }
-	mysend("Contact sensor event, virtual contact is '$virtualgdstate', door is $virtualdoorstate, sending '$evt to simulated device to sync","")
-	log.trace "contactHandler - ${evt?.device} - ${evt?.name} - ${evt.value} - virtual contact is '$virtualgdstate', door is $virtualdoorstate"
+	mysend("Contact sensor event, virtual contact is '$virtualgdstate' and door is '$virtualdoorstate', sending '${evt?.device} is ${evt?.name}' to simulated device to sync","")
+	log.trace "contactHandler - '${evt?.device} ${evt?.name}' is '${evt.value}' - virtual contact is '$virtualgdstate'and door is '$virtualdoorstate' "
 }
 
 def virtualgdcontactHandler(evt) {
@@ -152,7 +152,6 @@ def virtualgdcontactHandler(evt) {
 	}
     if (msg != ""){
     	mysend("$msg","")
-        //mysend("test 138")
     	log.trace "virtualgdcontactHandler - $msg"
     }
     //if (sensoropen == null){
@@ -183,7 +182,7 @@ def checkIfActually() {
     if (msg != ""){
     	mysend("Door is $msg - this was not the expected state of $prestate", "WARN")
     	log.warn "checkIfActually $msg"
-        //sendevent (prestate)
+        sendEvent (name:"Checking Event",  value: prestate)
     }
 }
 
