@@ -28,6 +28,7 @@ metadata {
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Curtain Motor(CMJ)"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Curtain Motor(CMJ)"
         fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "DY0010", deviceJoinName: "Smart Curtain Motor(DT82TV)"
+        fingerprint mfr:"IKEA of Sweden", model:"KADRILJ roller blind", deviceJoinName: "IKEA Kadrilj Roller Blind" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000
     }
 
 
@@ -69,15 +70,15 @@ private getATTRIBUTE_CURRENT_LEVEL() { 0x0000 }
 private getCOMMAND_MOVE_LEVEL_ONOFF() { 0x04 }
 
 private List<Map> collectAttributes(Map descMap) {
-	List<Map> descMaps = new ArrayList<Map>()
+    List<Map> descMaps = new ArrayList<Map>()
 
-	descMaps.add(descMap)
+    descMaps.add(descMap)
 
-	if (descMap.additionalAttrs) {
-		descMaps.addAll(descMap.additionalAttrs)
-	}
+    if (descMap.additionalAttrs) {
+        descMaps.addAll(descMap.additionalAttrs)
+    }
 
-	return descMaps
+    return descMaps
 }
 
 // Parse incoming device messages to generate events
@@ -85,12 +86,19 @@ def parse(String description) {
     log.debug "description:- ${description}"
     if (description?.startsWith("read attr -")) {
         Map descMap = zigbee.parseDescriptionAsMap(description)
-        if (supportsLiftPercentage() && descMap?.clusterInt == CLUSTER_WINDOW_COVERING && descMap.value) {
+        if (isBindingTableMessage(description)) {
+            parseBindingTableMessage(description)
+        } else if (supportsLiftPercentage() && descMap?.clusterInt == CLUSTER_WINDOW_COVERING && descMap.value) {
             log.debug "attr: ${descMap?.attrInt}, value: ${descMap?.value}, descValue: ${Integer.parseInt(descMap.value, 16)}, ${device.getDataValue("model")}"
             List<Map> descMaps = collectAttributes(descMap)
             def liftmap = descMaps.find { it.attrInt == ATTRIBUTE_POSITION_LIFT }
             if (liftmap && liftmap.value) {
                 def newLevel = zigbee.convertHexToInt(liftmap.value)
+                if(isIkeaKadrilj()){
+                    // Ikea Kadrilj reports % level of being closed (instead of % level of being opened)
+                    // inverting that logic is needed here to avoid a code duplication
+                    newLevel = 100 - newLevel
+                }
                 levelEventHandler(newLevel)
             }
         } else if (!supportsLiftPercentage() && descMap?.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.value) {
@@ -147,7 +155,15 @@ def setLevel(data, rate = null) {
     log.info "setLevel()"
     def cmd
     if (supportsLiftPercentage()) {
-        cmd = zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_GOTO_LIFT_PERCENTAGE, zigbee.convertToHexString(data, 2))
+        if(isIkeaKadrilj()){
+            // Ikea Kadrilj keeps % level of being closed (instead of % level of being opened)
+            // inverting that logic is needed here
+            def newData = 100 - data
+            cmd = zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_GOTO_LIFT_PERCENTAGE, zigbee.convertToHexString(newData, 2))
+        } else {
+            cmd = zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_GOTO_LIFT_PERCENTAGE, zigbee.convertToHexString(data, 2))
+        }
+
     } else {
         cmd = zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, COMMAND_MOVE_LEVEL_ONOFF, zigbee.convertToHexString(Math.round(data * 255 / 100), 2))
     }
@@ -187,8 +203,39 @@ def configure() {
     def cmds
     if (supportsLiftPercentage()) {
         cmds = zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 600, null)
+        if(isIkeaKadrilj()){
+            cmds += readDeviceBindingTable()
+        }
     } else {
         cmds = zigbee.levelConfig()
     }
     return refresh() + cmds
+}
+
+private def parseBindingTableMessage(description) {
+    Integer groupAddr = getGroupAddrFromBindingTable(description)
+    if (groupAddr) {
+        List cmds = addHubToGroup(groupAddr)
+        cmds?.collect { new physicalgraph.device.HubAction(it) }
+    }
+}
+
+private Integer getGroupAddrFromBindingTable(description) {
+    log.info "Parsing binding table - '$description'"
+    def btr = zigbee.parseBindingTableResponse(description)
+    def groupEntry = btr?.table_entries?.find { it.dstAddrMode == 1 }
+    log.info "Found ${groupEntry}"
+    !groupEntry?.dstAddr ?: Integer.parseInt(groupEntry.dstAddr, 16)
+}
+
+private List addHubToGroup(Integer groupAddr) {
+    ["st cmd 0x0000 0x01 ${CLUSTER_GROUPS} 0x00 {${zigbee.swapEndianHex(zigbee.convertToHexString(groupAddr,4))} 00}", "delay 200"]
+}
+
+private List readDeviceBindingTable() {
+    ["zdo mgmt-bind 0x${device.deviceNetworkId} 0", "delay 200"]
+}
+
+def isIkeaKadrilj(){
+    device.getDataValue("model") == "KADRILJ roller blind"
 }
