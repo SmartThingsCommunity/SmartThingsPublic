@@ -54,6 +54,7 @@ definition(
 		namespace: "alyc100",
 		author: "Alex Lee Yuk Cheung",
 		description: "Connect your MiHome devices to SmartThings.",
+        category: "Convenience",
 		iconUrl: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-icon-89db7a9bfb5c8b066ffb4e50c8d68235.png",
 		iconX2Url: "https://raw.githubusercontent.com/alyc100/SmartThingsPublic/master/smartapps/alyc100/mihome-icon-89db7a9bfb5c8b066ffb4e50c8d68235.png",
         singleInstance: true

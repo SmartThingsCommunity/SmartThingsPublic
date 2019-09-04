@@ -24,6 +24,7 @@ definition(
     name: "Smart Security Camera",
     namespace: "blebson",
     author: "Ben Lebson",
+    category: "Convenience",
     description: "Move to preset position and take a burst of photos and/or video clip and send a push notification",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Partner/photo-burst-when.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/photo-burst-when@2x.png"
@@ -47,7 +48,7 @@ preferences {
 	}
 	section("Choose which preset camera position to move to"){
     input(name: "moveEnabled", title: "Can your camera pan/tilt?", type: "bool", required: false, defaultValue: "false")
-    input name: "position", title: "Preset Position Number:", type: "string", defaultValue: 1 , required: true
+    input name: "position", title: "Preset Position Number:", type: "number", defaultValue: 1 , required: true //string
 	
     }
 	section("Then send this message in a push notification"){
@@ -120,6 +121,7 @@ def sendMessage(evt) {
         }
         
         if(moveEnabled == true){
+        log.trace "moving to $position."
     		camera.presetCommand(position)
     	}
    
@@ -127,17 +129,16 @@ def sendMessage(evt) {
         	camera.take()
             log.debug "$evt , not motion"
             camera.burst()
-            //(1..3).each {
-            //	camera.take(delay: (500 * it)) //was 7000 //camera.take(delay: 1500) //was 7000
-			//}
 		}
     		// always check to see if need to send message
-    	if(!((evt.name == "motion")&&(evt.value == "inactive"))) { //as long as its not an inactive motion check to send message
-    		if (pushmessageoff == false){ // disable push messages, but still take
-    			sendNotification()
-        	}
-		}  
 	}
+    //log.debug "motion req satifyed  ${(!(evt.name == "motion" && evt.value == "inactive"))}  push req satifyed ${pushmessageoff == null || pushmessageoff == false} - full requierment satis ${(!(evt.name == "motion" && evt.value == "inactive") && (pushmessageoff == null || pushmessageoff == false))}"
+    if(!(evt.name == "motion" && evt.value == "inactive") && (pushmessageoff == null || pushmessageoff == false)) { //as long as its not an inactive motion check to send message
+    	log.debug "push if true"
+    	//if (pushmessageoff == null || pushmessageoff == false){ // disable push messages, but still take
+    		sendNotification()
+        //}
+	}  	
 }
 
 def sendNotification(){
