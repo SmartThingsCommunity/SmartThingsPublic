@@ -113,12 +113,12 @@ def contactHandler(evt) {
     			virtualgd.open("open") //open
     		}
         	if(evt.value == "open"){
-            	virtualgd.close("") //closing
+            	virtualgd.close("closing") //closing
             }
         }
         if(sensor == evt.device){
         	if("open" == evt.value) {
-    			virtualgd.open("") //opening
+    			virtualgd.open("opening") //opening
 			}
 			if("closed" == evt.value) {
        			virtualgd.close("closed") //closed
@@ -173,7 +173,7 @@ def checkIfActually() {
 	def realgdstate = sensor.currentContact
 	def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
-    def prestate = "checkIfActually .dewl is $checkTimeout sec.. Actual sensor state ${sensor.label} = $realgdstate, Virtual door state ${virtualgd.label} = $virtualgdstate & $virtualdoorstate"
+    def prestate = "checkIfActually .dewl is $checkTimeout sec.. Actual sensor state ${sensor.label} = $realgdstate, Virtual door state  = contact is '$virtualgdstate' & and door is '$virtualdoorstate' "
 	log.info "$prestate"
     // sync them up if need be set virtual same as actual
     if (realgdstate == "open") {
@@ -196,7 +196,7 @@ def checkIfActually() {
 }
 
 private mysend(msg, error) {
-log.debug "mysend $msg , $error"
+//log.debug "mysend $msg , $error"
     if (location.contactBookEnabled) {
         log.debug("sending notifications to: ${recipients?.size()}")
         sendNotificationToContacts(msg, recipients)
