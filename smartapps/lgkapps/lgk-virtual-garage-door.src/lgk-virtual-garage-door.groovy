@@ -105,17 +105,26 @@ def updated() {
 def contactHandler(evt) {
 	def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
-  	
+    
     if(sensoropen != null){ // if using 2 sensors 'sensoropen' should be closed when the door/gate is open
-    	if(sensoropen == evt.device && evt.value == "closed"){
-        log.debug "GATE phisical sensor for open - $sensoropen = ${evt.device} and ${evt.value} = closed"
-    	virtualgd.close("open")
-    	}
-        if(sensor == evt.device && evt.value == "closed"){
-        log.debug "GATE phisical sensor for closed - $sensor = ${evt.device} and ${evt.value} = closed"
-    	virtualgd.close("closed")
+    log.debug "GATE 2 phisical sensor for open - '${evt.device}' and '${evt.value}' "
+    	if(sensoropen == evt.device){
+        	if(evt.value == "closed"){
+    			virtualgd.open("open") //open
+    		}
+        	if(evt.value == "open"){
+            	virtualgd.close("") //closing
+            }
         }
-    }
+        if(sensor == evt.device){
+        	if("open" == evt.value) {
+    			virtualgd.open("") //opening
+			}
+			if("closed" == evt.value) {
+       			virtualgd.close("closed") //closed
+   			}
+        }
+     }
     else{ // single sensor setup 
     	if("open" == evt.value) {
     		virtualgd.open("open")
