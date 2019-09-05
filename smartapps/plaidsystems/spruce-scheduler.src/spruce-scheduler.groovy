@@ -171,7 +171,7 @@ def weatherPage() {
 private String getDefaultLocation() {
     String DefaultLocation = "Not set"
     if(location?.zipCode) DefaultLocation = location.zipCode
-    if (!location.zipCode?.isNumber() && location?.latitude && location?.longitude) DefaultLocation = "${location.latitude.floatValue()},${location.longitude.floatValue()}"
+    if (!location?.zipCode?.isNumber() && location?.latitude && location?.longitude) DefaultLocation = "${location.latitude.floatValue()},${location.longitude.floatValue()}"
     return DefaultLocation
 }
 
@@ -794,8 +794,8 @@ private String getname(String i) {
 
 private String zipString() {    
     if (settings?.zipcode) return settings.zipcode
-    if (!settings.zipcode && location.zipCode?.isNumber()) return "${location.zipCode}"
-    if (!settings.zipcode && location?.latitude && location?.longitude) return "${location.latitude.floatValue()},${location.longitude.floatValue()}"
+    if (location?.zipCode?.isNumber()) return "${location.zipCode}"
+    if (location?.latitude && location?.longitude) return "${location.latitude.floatValue()},${location.longitude.floatValue()}"
     return "not set"
 }
 
@@ -2014,10 +2014,57 @@ def setSeason() {
     }
 }
 
+//TWC functions
+def getCity(){
+	String wzipcode = zipString()
+    String city
+    try {
+			city = getTwcLocation(wzipcode)?.location?.city ?: wzipcode
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			city = "unknown city"
+		}
+    
+    return city
+}
+
+def getConditions(){
+	String wzipcode = zipString()
+    def conditionsData
+    try {
+			conditionsData = getTwcConditions(wzipcode)
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			return null
+		}
+    
+    return conditionsData
+}
+
+def getForecast(){
+	String wzipcode = zipString()
+    def forecastData
+    try {
+			forecastData = getTwcForecast(wzipcode)
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			return null
+		}    
+    
+    return forecastData
+}
+
 //capture today's total rainfall - scheduled for just before midnight each day
 def getRainToday() {
-    def wzipcode = zipString()
-    def conditionsData = getTwcConditions(wzipcode)
+    //def wzipcode = zipString()
+    //def conditionsData = getTwcConditions(wzipcode)
+    def conditionsData = getConditions()
     if (!conditionsData) {
         note('warning', "${app.label}: Please check Zipcode/PWS setting, error: null", 'a')
     } else {
@@ -2037,17 +2084,18 @@ def getRainToday() {
 //check weather, set seasonal adjustment factors, skip today if rainy
 boolean isWeather(){
     if (!settings.isRain && !settings.isSeason) return false
-    String wzipcode = zipString()
-    log.debug wzipcode
-    //log.debug "${getTwcLocation("${wzipcode}")}"
-    String city = getTwcLocation(wzipcode)?.location?.city ?: wzipcode
-    def forecastData = getTwcForecast(wzipcode)
-    def conditionsData = getTwcConditions(wzipcode)
-	
+    
+    def city = getCity()
+    def forecastData = getForecast() ?: null
+    def conditionsData = getConditions() ?: null
+    //log.debug forecastData
+    //log.debug conditionsData
+    
+    //if data is null, skip weather adjustments
     if (!forecastData || !conditionsData) {
         note('warning', "${app.label}: Please check Zipcode/PWS setting, error: null", 'a')
         return false
-        }
+    }
         
    	//check if day or night
     int not_today = 0
@@ -2117,7 +2165,7 @@ boolean isWeather(){
     }
 
     log.debug 'isWeather(): build report'
-log.debug "${forecastData.daypart[0].temperature[not_today]}"
+	//log.debug "${forecastData.daypart[0].temperature[not_today]}"
     //get highs
        int highToday = 0
        int highTom = 0
