@@ -28,7 +28,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Curtain Motor(CMJ)"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Curtain Motor(CMJ)"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "DY0010", deviceJoinName: "Smart Curtain Motor(DT82TV)"
-		fingerprint manufacturer:"IKEA of Sweden", model:"KADRILJ roller blind", deviceJoinName: "IKEA Kadrilj Roller Blind" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000
+		fingerprint manufacturer: "IKEA of Sweden", model: "KADRILJ roller blind", deviceJoinName: "IKEA Kadrilj Roller Blind" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000
 	}
 
 	tiles(scale: 2) {
@@ -200,13 +200,16 @@ def configure() {
 	} else {
 		cmds = zigbee.levelConfig()
 	}
-	return refresh() + cmds + configureAdditionalBindings()
+
+	if (usesLocalGroupBinding()) {
+		cmds += readDeviceBindingTable()
+	}
+
+	return refresh() + cmds
 }
 
-def configureAdditionalBindings() {
-	if (isIkeaKadrilj()) {
-		return readDeviceBindingTable()
-	}
+def usesLocalGroupBinding() {
+	isIkeaKadrilj()
 }
 
 private def parseBindingTableMessage(description) {
