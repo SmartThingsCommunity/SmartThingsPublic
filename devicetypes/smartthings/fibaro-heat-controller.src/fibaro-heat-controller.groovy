@@ -310,6 +310,10 @@ def sendEventToChild(event) {
 		child?.sendEvent(event)
 }
 
+def configureChild() {
+	sendEventToChild(createEvent([name: "checkInterval", value: 6 * 60 * 60 + 36, displayed: false]))
+}
+
 private refreshChild() {
 	def cmds = [
 			secureEncap(zwave.batteryV1.batteryGet(), 2),
