@@ -25,25 +25,25 @@ definition(
 )
 
 preferences {
-	section("Choose the switch/relay that opens/closes the garage?"){
-		input "opener", "capability.switch", title: "Physical Garage Opener?", required: true
+	section("Choose the switch/relay that opens/closes the garage"){
+		input "opener", "capability.switch", title: "Physical Garage Opener", required: true
 	}
     section("Choose the switch/relay that CLOSES the garage... if different"){
-		input "closer", "capability.switch", title: "Physical Garage Opener? optional", required: false
+		input "closer", "capability.switch", title: "Physical Garage Opener ... optional dual switch", required: false
 	}
-	section("Choose the sensor that senses if the garage is open/closed? "){
-		input "sensor", "capability.contactSensor", title: "Physical Garage Door Open/Closed?", required: true
+	section("Choose the sensor that senses if the garage is open/close"){
+		input "sensor", "capability.contactSensor", title: "Physical Garage Door Open/Closed", required: true
 	}
     section("Choose the sensor for OPEN.. optional "){
-		input "sensoropen", "capability.contactSensor", title: "Physical Garage Door Open/Closed?", required: false
+		input "sensoropen", "capability.contactSensor", title: "Physical Garage Door fully Open .. optional dual sensors", required: false
 	}
     
-	section("Choose the Virtual Garage Door Device? "){
-		input "virtualgd", "capability.doorControl", title: "Virtual Garage Door?", required: true
+	section("Choose the Virtual Garage Door Device "){
+		input "virtualgd", "capability.doorControl", title: "Virtual Garage Door", required: true
 	}
     
-	section("Choose the Virtual Garage Door Device sensor (same as above device)?"){
-		input "virtualgdbutton", "capability.contactSensor", title: "Virtual Garage Door Open/Close Sensor?", required: true
+	section("Choose the Virtual Garage Door Device sensor ... same as above device"){
+		input "virtualgdbutton", "capability.contactSensor", title: "same as above device", required: true
 	}
     
     section("Timeout before checking if the door opened or closed correctly?"){
@@ -107,7 +107,7 @@ def contactHandler(evt) {
     def virtualdoorstate = virtualgd.currentDoor
     
     if(sensoropen != null){ // if using 2 sensors 'sensoropen' should be closed when the door/gate is open
-    log.debug "GATE 2 phisical sensor for '${evt.device}' it is '${evt.value}' "
+    log.debug "GATE 2 phisical sensor for '${evt.device}' it is '${evt.value}' sensors are '$sensoropen' & '$sensor'"
     	if(sensoropen == evt.device){
         log.debug "fully open sensor"
         	if(evt.value == "closed"){
@@ -132,6 +132,7 @@ def contactHandler(evt) {
         }
      }
     else{ // single sensor setup 
+    log.info "Single Sensor setup"
     	if("open" == evt.value) {
     		virtualgd.open("open")
 		}
