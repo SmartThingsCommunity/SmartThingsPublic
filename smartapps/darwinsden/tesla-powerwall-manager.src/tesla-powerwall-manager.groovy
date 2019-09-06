@@ -24,10 +24,11 @@
 include 'asynchttp_v1'
 
 def version() {
-    return "v0.1.4e.20190813"
+    return "v0.1.5e.20190906"
 }
 
-/*   
+/* 
+ *	06-Sep-2019 >>> v0.1.5e.20190906 - Updated watchdog to only notify once when issue first occurs and when resolved 
  *	13-Aug-2019 >>> v0.1.4e.20190813 - Added grid/outage status display, notifications, and device on/off controls 
  *	09-Aug-2019 >>> v0.1.3e.20190809 - Added reserve% scheduling & polling interval preferences
  *	29-Jul-2019 >>> v0.1.2e.20190729 - Set reserve percent to 100% in backup-only mode. Added mode scheduling.
@@ -79,7 +80,7 @@ private pageMain() {
         }    
         section("For more information") {
           href(name: "Site", title: "For more information, questions, or to provide feedback, please visit: DarwinsDen.com/powerwall",
-               description: "Tap open the Powerwall Manager web page on DarwinsDen.com",
+               description: "Tap to open the Powerwall Manager web page on DarwinsDen.com",
              required: false,
               image: "https://darwinsden.com/download/ddlogo-for-pwmanager-0-png",
              url: "https://darwinsden.com/powerwall/")
@@ -625,7 +626,7 @@ private removeChildDevices(delete) {
 
 def initialize() {
 
-    ensureDevicesForPowerwalls()
+    createDeviceForPowerwall()
 
     unsubscribe()
     unschedule()
@@ -648,7 +649,7 @@ def initialize() {
     runIn (5, processMain)
 }
 
-private ensureDevicesForPowerwalls() {
+private createDeviceForPowerwall() {
       def pwDevice = getChildDevice("powerwallDashboard")
       if (!pwDevice) {
              def device = addChildDevice("darwinsden", "Tesla Powerwall", "powerwallDashboard", null, [name: "Tesla Powerwall", label: "Tesla Powerwall", completedSetup: true])
@@ -985,12 +986,27 @@ def processWatchdog() {
     def secondsSinceLastProcessCompleted = (now() - lastTimeCompleted) / 1000
 
     if (secondsSinceLastProcessed > 1800) {
-        sendNotificationMessage("Warning: Powerwall Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing","anomaly")
+        if (!state?.processedWarningSent) {
+           sendNotificationMessage("Warning: Powerwall Manager has not executed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing","anomaly")
+           state.processedWarningSent = true
+        }
         runIn(30, initialize)
-    } else if (secondsSinceLastProcessCompleted > 1800) {
-        sendNotificationMessage("Warning: Powerwall Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing","anomaly")
-        runIn(30, initialize)
+    } else {
+       if (secondsSinceLastProcessCompleted > 1800) {
+          if (!state?.completedWarningSent) {
+              sendNotificationMessage("Warning: Powerwall Manager has not successfully received and processed data in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing","anomaly")
+              state.completedWarningSent = true
+          }
+          runIn(30, initialize)
+       } else {
+          if (state?.completedWarningSent || state?.processedWarningSent) {
+             sendNotificationMessage("Info: Powerwall Manager has successfully resumed operation","anomaly")
+             state.completedWarningSent = false 
+             state.processedWarningSent = false
+          }      
+       }
     }
+
 }
 
 def processMain () {
