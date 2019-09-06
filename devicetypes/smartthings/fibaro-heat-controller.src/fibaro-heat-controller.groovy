@@ -331,7 +331,7 @@ def addChild() {
 	String componentLabel =	 "Fibaro Temperature Sensor"
 	String ch = "ch2"
 
-	addChildDevice("Child Temperature Sensor", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false, componentName: ch, componentLabel: componentLabel])
+	addChildDevice("Child Temperature Sensorr", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false, componentName: ch, componentLabel: componentLabel])
 }
 
 private getMaxHeatingSetpointTemperature() {
