@@ -26,6 +26,9 @@ metadata {
 
 		attribute "colorName", "string"
 
+		// Generic
+		fingerprint profileId: "C05E", deviceId: "0220", inClusters: "0006, 0008, 0300", deviceJoinName: "Generic Color Temperature Light"
+
 		// AduraSmart
 		fingerprint profileId: "C05E", deviceId: "0220", manufacturer: "AduroSmart Eria", model: "ZLL-ColorTemperature", deviceJoinName: "Eria Color temperature light"
 		fingerprint profileId: "C05E", deviceId: "0220", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "ZLL-ColorTemperature", deviceJoinName: "Eria ZLL Color Temperature Bulb", mnmn:"SmartThings", vid: "generic-color-temperature-bulb-2200K-6500K"
