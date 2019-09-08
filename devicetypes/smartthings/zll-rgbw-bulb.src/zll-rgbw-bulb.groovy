@@ -30,8 +30,7 @@ metadata {
 		attribute "colorName", "string"
 
 		// Generic
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019"
+		fingerprint profileId: "C05E", deviceId: "0210", inClusters: "0006, 0008, 0300", deviceJoinName: "Generic RGBW Light"
 
 		// AduroSmart
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", deviceId: "0210", manufacturer: "AduroSmart Eria", model: "ZLL-ExtendedColor", deviceJoinName: "Eria ZLL RGBW Bulb"

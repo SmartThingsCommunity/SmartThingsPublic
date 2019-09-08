@@ -23,7 +23,7 @@ metadata {
 		capability "Light"
 
 		// Generic
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008"
+		fingerprint profileId: "0104", deviceId: "0101", inClusters: "0006, 0008", deviceJoinName: "Generic Dimmable Light"
 
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", deviceId: "0101", manufacturer: "AduroSmart Eria", model: "AD-DimmableLight3001", deviceJoinName: "Eria ZigBee Dimmable Bulb"

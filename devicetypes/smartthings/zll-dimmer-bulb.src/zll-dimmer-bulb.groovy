@@ -23,7 +23,7 @@ metadata {
 		capability "Health Check"
 
 		// Generic
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019"
+		fingerprint profileId: "C05E", deviceId: "0100", inClusters: "0006, 0008", deviceJoinName: "Generic Dimmable Light"
 
 		// AduroSmart
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FFFF, 0019", outClusters: "0019", deviceId: "0100", manufacturer: "AduroSmart Eria", model: "ZLL-DimmableLight", deviceJoinName: "Eria ZLL Dimmable Bulb"
