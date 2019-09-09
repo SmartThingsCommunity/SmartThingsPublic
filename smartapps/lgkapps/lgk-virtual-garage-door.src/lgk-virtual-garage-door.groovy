@@ -65,6 +65,7 @@ def installed() {
 	log.debug "installed ..... real contact sensor current state=  $realgdstate ....... virtual gd state= $virtualgd.currentContact"
     
 	subscribe(sensor, "contact", contactHandler)
+    subscribe(sensoropen, "contact", contactHandleropen)
     subscribe(virtualgdbutton, "contact", virtualgdcontactHandler)
     subscribe(virtualgd, "door", virtualgdcontactHandler)
     
@@ -85,6 +86,7 @@ def updated() {
 
 	unsubscribe()
 	subscribe(sensor, "contact", contactHandler)
+    subscribe(sensoropen, "contact", contactHandleropen)
     subscribe(virtualgdbutton, "contact", virtualgdcontactHandler)
     subscribe(virtualgd, "door", virtualgdcontactHandler)
     
@@ -102,37 +104,37 @@ def updated() {
 	}
 }
 
+def contactHandleropen(evt){
+	log.info "contactHandleropen '${evt.device}' it is '${evt.value}'"
+    if(evt.value == "closed"){
+    	log.debug "fully open sensor is closed so gate is closed ie open"
+    	virtualgd.open("open") //open
+    }
+    if(evt.value == "open"){
+    	log.debug "fully open sensor is open so gate is opening"
+        virtualgd.close("closing") //closing
+    }
+	mysend("Open Contact sensor event, sending '${evt.device}' is '${evt.value}'","")
+	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}'"    
+}
+
 def contactHandler(evt) {
 	def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
     
     if(sensoropen != null){ // if using 2 sensors 'sensoropen' should be closed when the door/gate is open
-    log.debug "GATE 2 phisical sensor for '${evt.device}' it is '${evt.value}' sensors are '$sensoropen' & '$sensor'"
-    	if(sensoropen == evt.device){
-        log.debug "fully open sensor"
-        	if(evt.value == "closed"){
-            log.debug "fully open sensor is closed so gate is closed ie open"
-    			virtualgd.open("open") //open
-    		}
-        	if(evt.value == "open"){
-            log.debug "fully open sensor is open so gate is opening"
-            	virtualgd.close("closing") //closing
-            }
-        }
-        if(sensor == evt.device){
-        log.debug "fully closed sensor"
-        	if(evt.value =="open") {
-            log.debug "closed sesnor is open so gate must be opening"
-    			virtualgd.open("opening") //opening
-			}
-			if(evt.value == "closed") {
+ 	   log.debug "fully closed sensor"
+       if(evt.value =="open") {
+			log.debug "closed sesnor is open so gate must be opening"
+    		virtualgd.open("opening") //opening
+		}
+		if(evt.value == "closed") {
             log.debug "closed sesnor is closed so gate is fully closed"
-       			virtualgd.close("closed") //closed
-   			}
-        }
-     }
-    else{ // single sensor setup 
-    log.info "Single Sensor setup"
+       		virtualgd.close("closed") //closed
+   		}
+      }
+	else{ // single sensor setup 
+    	log.info "Single Sensor setup"
     	if("open" == evt.value) {
     		virtualgd.open("open")
 		}
