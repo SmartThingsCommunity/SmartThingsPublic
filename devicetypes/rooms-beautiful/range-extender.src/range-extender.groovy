@@ -70,9 +70,9 @@ def parse(String description) {
                 ]*/
                 sendEvent(name: "rssi", value: rssi, unit: "dBm", displayed: false)
                 
-                def percentageOf = 255
-                def percent = Math.round((lqi / percentageOf * 100)).toString()                
-                sendEvent(name: "lqi", value: percent, unit: "%", displayed: false)
+                //def percentageOf = 255
+                //def percent = Math.round((lqi / percentageOf * 100)).toString()                
+                sendEvent(name: "lqi", value: lqi, unit: "", displayed: false)
                 
                 /*def lqiResult = [
                     name: name,
