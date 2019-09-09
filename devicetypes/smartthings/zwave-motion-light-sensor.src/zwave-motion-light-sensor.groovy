@@ -91,8 +91,9 @@ def configure() {
 	// Device wakes up every deviceCheckInterval hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 2 * deviceWakeUpInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
-	isEverspring() ?
-			response(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 600)) : []
+	if (isEverspring()) {
+		response(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 600)) //enables illuminance report every 10 minutes
+	}
 }
 
 def getDeviceWakeUpInterval() {
