@@ -60,35 +60,16 @@ preferences {
 }
 
 def installed() {
-	def realgdstate = sensor.currentContact
-	def virtualgdstate = virtualgd.currentContact
-	log.debug "installed ..... real contact sensor current state=  $realgdstate ....... virtual gd state= $virtualgd.currentContact"
-    
-	subscribe(sensor, "contact", contactHandler)
-    subscribe(sensoropen, "contact", contactHandleropen)
-    subscribe(virtualgdbutton, "contact", virtualgdcontactHandler)
-    subscribe(virtualgd, "door", virtualgdcontactHandler)
-    
-    if (realgdstate != virtualgdstate) { // sync them up if need be set virtual same as actual
-        if (realgdstate == "open"){
-             virtualgd.open("open")
-        }
-        else {
-        	virtualgd.close("closed")
-		}
-	}
+	installer()
 }
-
 def updated() {
-	def realgdstate = sensor.currentContact
+	unsubscribe()
+	installer()
+}
+def installer(){
+def realgdstate = sensor.currentContact
 	def virtualgdstate = virtualgd.currentContact
 	log.debug "updated ... Real Contact state=  $realgdstate ... Virtual door Contact state= $virtualgd.currentContact"
-
-	unsubscribe()
-	subscribe(sensor, "contact", contactHandler)
-    subscribe(sensoropen, "contact", contactHandleropen)
-    subscribe(virtualgdbutton, "contact", virtualgdcontactHandler)
-    subscribe(virtualgd, "door", virtualgdcontactHandler)
     
     if (realgdstate != virtualgdstate) { // sync them up if need be set virtual same as actual
         if (realgdstate == "open") {
@@ -105,17 +86,20 @@ def updated() {
 }
 
 def contactHandleropen(evt){
+	def msg = ""
+    def virtualgdstate = virtualgd.currentContact
+    def virtualdoorstate = virtualgd.currentDoor
 	log.info "contactHandleropen '${evt.device}' it is '${evt.value}'"
     if(evt.value == "closed"){
-    	log.debug "fully open sensor is closed so gate is closed ie open"
+    	msg = "sending open comand"
     	virtualgd.open("open") //open
     }
     if(evt.value == "open"){
-    	log.debug "fully open sensor is open so gate is opening"
+    	msg =  "sending open command"
         virtualgd.close("closing") //closing
     }
-	mysend("Open Contact sensor event, sending '${evt.device}' is '${evt.value}'","")
-	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}'"    
+	mysend("Open Contact sensor event, '${evt.device}' is '${evt.value}',virtual contact is '$virtualgdstate' and door is '$virtualdoorstate', $msg","")
+	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}',virtual contact is '$virtualgdstate' and door is '$virtualdoorstate', '$msg'"    
 }
 
 def contactHandler(evt) {
@@ -172,9 +156,7 @@ def virtualgdcontactHandler(evt) {
     	mysend("$msg","")
     	log.trace "virtualgdcontactHandler - $msg"
     }
-    //if (sensoropen == null){
     	runIn(checkTimeout, checkIfActually)
-    //}
 }
 
 def checkIfActually() {
@@ -205,7 +187,6 @@ def checkIfActually() {
 }
 
 private mysend(msg, error) {
-//log.debug "mysend $msg , $error"
     if (location.contactBookEnabled) {
         log.debug("sending notifications to: ${recipients?.size()}")
         sendNotificationToContacts(msg, recipients)
@@ -221,5 +202,4 @@ private mysend(msg, error) {
             sendSms(phone1, msg)
         }
     }
-   // log.debug msg
 }
