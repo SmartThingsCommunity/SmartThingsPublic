@@ -67,8 +67,13 @@ def updated() {
 	installer()
 }
 def installer(){
-def realgdstate = sensor.currentContact
+	def realgdstate = sensor.currentContact
 	def virtualgdstate = virtualgd.currentContact
+    
+    subscribe(sensor, "contact", contactHandler)
+    subscribe(virtualgdbutton, "contact", virtualgdcontactHandler)
+    subscribe(sensoropen, "contact", contactHandleropen)
+    
 	log.debug "updated ... Real Contact state=  $realgdstate ... Virtual door Contact state= $virtualgd.currentContact"
     
     if (realgdstate != virtualgdstate) { // sync them up if need be set virtual same as actual
