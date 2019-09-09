@@ -72,9 +72,10 @@ def installer(){
     
     subscribe(sensor, "contact", contactHandler)
     subscribe(virtualgdbutton, "contact", virtualgdcontactHandler)
+    subscribe(virtualgdbutton, "door", virtualgdcontactHandler)
     subscribe(sensoropen, "contact", contactHandleropen)
     
-	log.debug "updated ... Real Contact state=  $realgdstate ... Virtual door Contact state= $virtualgd.currentContact"
+	log.debug "updated ... Real Contact state closed =  '$realgdstate'  ... Virtual door Contact state= $virtualgd.currentContact"
     
     if (realgdstate != virtualgdstate) { // sync them up if need be set virtual same as actual
         if (realgdstate == "open") {
@@ -157,11 +158,14 @@ def virtualgdcontactHandler(evt) {
         	}
         }
 	}
+    if("closed" == evt.value) { msg = "closed"}
+    if("open" == evt.value) { msg = "open"}
+    
     if (msg != ""){
     	mysend("$msg","")
     	log.trace "virtualgdcontactHandler - $msg"
     }
-    	runIn(checkTimeout, checkIfActually)
+    runIn(checkTimeout, checkIfActually)
 }
 
 def checkIfActually() {
