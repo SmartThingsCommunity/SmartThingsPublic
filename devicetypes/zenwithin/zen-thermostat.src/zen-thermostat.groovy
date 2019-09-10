@@ -157,6 +157,12 @@ def updated() {
     log.debug "updated"
     // make sure supporedModes are in sync
     sendEvent(name: "supportedThermostatModes", value: supportedModes, eventType: "ENTITY_UPDATE", displayed: false)
+    // Right now ST event -> OCF mapping is reading supportedThermostatModes from either the supportedThermostatModes attribute,
+    // or the data field of the thermostatMode attribute. The hack for now is if we have a thermostatMode state already,
+    // be sure to update its data.
+    if (device.currentValue("thermostatMode")) {
+        sendEvent(name: "thermostatMode", value: device.currentValue("thermostatMode"), data: [supportedThermostatModes: supportedModes], isStateChange: true, displayed: false)
+    }
     // Make sure we poll all attributes from the device
     state.pollAdditionalData = state.pollAdditionalData ? state.pollAdditionalData - (24 * 60 * 60 * 1000) : null
     // initialize() needs to be called after device details has been updated() but as installed() also calls this method and
