@@ -13,12 +13,14 @@
  */
 metadata {
 	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings") {
+		capability "Actuator"
+		capability "Configuration"
+		capability "Health Check"
 		capability "Motion Sensor"
 		capability "Sensor"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0009,0500"
-		//raw description 22 0104 0107 00 03 0000 0003 0406 00
-		fingerprint manufacturer: "Aurora", model: "MotionSensor51AU", deviceJoinName: "Aurora Smart PIR Sensor"
+		fingerprint manufacturer: "Aurora", model: "MotionSensor51AU", deviceJoinName: "Aurora Smart PIR Sensor" //raw description 22 0104 0107 00 03 0000 0003 0406 00
 	}
 
 	// simulator metadata
@@ -34,14 +36,34 @@ metadata {
 				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
 				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
 			}
- 		}
+		}
 		main "motion"
 		details "motion"
 	}
 }
 
+def installed() {
+	initialize()
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	if (isTracked()) {
+		// Device-Watch simply pings if no device events received for 12min(checkInterval)
+		log.debug "device tracked"
+		sendEvent(name: "checkInterval", value: 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	} else {
+		log.debug "device untracked"
+		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+	}
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
+	log.debug "$description"
 	def name = null
 	def value = description
 	def descriptionText = null
@@ -53,11 +75,21 @@ def parse(String description) {
 	}
 
 	def result = createEvent(
-		name: name,
-		value: value,
-		descriptionText: descriptionText
+			name: name,
+			value: value,
+			descriptionText: descriptionText
 	)
 
 	log.debug "Parse returned ${result?.descriptionText}"
 	return result
+}
+
+def isTracked() {
+	return device.getDataValue("model") == "MotionSensor51AU"
+}
+
+def configure() {
+	log.debug "configure"
+	return	zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, 0x19, 0, 180, null) +
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
