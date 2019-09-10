@@ -14,6 +14,7 @@
 metadata {
 	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
+		capability "Configuration"
 		capability "Health Check"
 		capability "Motion Sensor"
 		capability "Sensor"
@@ -50,13 +51,13 @@ def updated() {
 }
 
 def initialize() {
-	if (isUntracked()) {
-		log.debug "device untracked"
-		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
-	} else {
+	if (isTracked()) {
 		// Device-Watch simply pings if no device events received for 12min(checkInterval)
 		log.debug "device tracked"
 		sendEvent(name: "checkInterval", value: 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	} else {
+		log.debug "device untracked"
+		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
 	}
 }
 
@@ -83,10 +84,12 @@ def parse(String description) {
 	return result
 }
 
-def isUntracked() {
-	return !isAuroraMotionSensor51AU()
+def isTracked() {
+	return device.getDataValue("model") == "MotionSensor51AU"
 }
 
-def isAuroraMotionSensor51AU() {
-	return device.getDataValue("model") == "MotionSensor51AU"
+def configure() {
+	log.debug "configure"
+	return	zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, 0x19, 0, 180, null) +
+			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
