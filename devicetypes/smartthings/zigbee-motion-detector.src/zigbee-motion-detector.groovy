@@ -25,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "MS01", deviceJoinName: "eWeLink Motion Sensor"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer:"ORVIBO", model:"895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor"
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer:"Megaman", model:"PS601/z1", deviceJoinName: "INGENIUM ZB PIR Sensor"
 	}
@@ -67,9 +68,14 @@ def installed(){
 def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
+	def manufacturer = getDataValue("manufacturer")
 	if(!map){
 		if (description?.startsWith('zone status')) {
-			map = parseIasMessage(description)
+			if (manufacturer == "eWeLink"){
+				map = parseWeLinKMotion(description)
+			}else{
+				map = parseIasMessage(description)
+			}
 		} else {
 			map = batteyHandler(description)
 		}
@@ -102,6 +108,18 @@ def parseIasMessage(String description) {
 		runIn(timeout, stopMotion)
 	}
 	return getMotionResult(motionActive)
+}
+
+def parseWeLinKMotion(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	def value = zs.isAlarm1Set()
+	def descriptionText = value ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
+	return [
+			name			: 'motion',
+			value			: value ? 'active' : 'inactive',
+			descriptionText : descriptionText,
+			translatable	: true
+	]
 }
 
 def getBatteryPercentageResult(rawValue) {
