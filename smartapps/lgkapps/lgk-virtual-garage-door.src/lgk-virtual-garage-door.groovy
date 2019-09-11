@@ -102,7 +102,7 @@ def contactHandleropen(evt){
     }
     if(evt.value == "open"){
     	msg =  "sending open command"
-        virtualgd.close("closing") //closing
+        //virtualgd.close("closing") //closing
     }
 	mysend("Open Contact sensor event, '${evt.device}' is '${evt.value}',virtual contact is '$virtualgdstate' and door is '$virtualdoorstate', $msg","")
 	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}',virtual contact is '$virtualgdstate' and door is '$virtualdoorstate', '$msg'"    
@@ -116,7 +116,7 @@ def contactHandler(evt) {
  	   log.debug "fully closed sensor"
        if(evt.value =="open") {
 			log.debug "closed sesnor is open so gate must be opening"
-    		virtualgd.open("opening") //opening
+    		//virtualgd.open("opening") //opening
 		}
 		if(evt.value == "closed") {
             log.debug "closed sesnor is closed so gate is fully closed"
