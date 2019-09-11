@@ -1,5 +1,5 @@
 /**
- *  Z-Wave Garage Door Opener
+ *  Simulated Garage Door Opener
  *
  *  Copyright 2014 SmartThings
  *
@@ -29,24 +29,34 @@ metadata {
 	}
 
 	tiles {
-		standardTile("toggle", "device.door", width: 2, height: 2) {
+		standardTile("toggle", "device.door", width: 3, height: 2) {
 			state("closed", label:'${name}', action:"door control.open", icon:"st.doors.garage.garage-closed", backgroundColor:"#00A0DC", nextState:"opening")
-			state("open", label:'${name}', action:"door control.close", icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing")
-			state("opening", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#e86d13")
-			state("closing", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#00A0DC")
+				//https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Closed%20Small.png
+            state("open", label:'${name}', action:"door control.close", icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing")
+				//https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Open%20Small.png 
+            state("opening", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#e86d13")
+				//https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Opening%20Small.png
+            state("closing", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#00A0DC")
+            	//https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Closing%20Small1.png
 			
 		}
 		standardTile("open", "device.door", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'open', action:"door control.open", icon:"st.doors.garage.garage-opening"
-		}
+			//https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Opening%20Small.png
+        }
 		standardTile("close", "device.door", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'close', action:"door control.close", icon:"st.doors.garage.garage-closing"
+            //https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Closing%20Small1.png
 		}
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
       		state "refresh", action:"polling.poll", icon:"st.secondary.refresh"
       	}
+        standardTile("contact", "device.contact", width: 1, height: 1) {
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+		}
 		main "toggle"
-		details(["toggle", "open", "close", "refresh"])
+		details(["toggle", "open", "close", "refresh", "contact"])
 	}
 }
 
