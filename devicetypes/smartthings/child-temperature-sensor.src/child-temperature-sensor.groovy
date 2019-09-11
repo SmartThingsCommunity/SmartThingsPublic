@@ -13,7 +13,7 @@
  *
  */
 metadata {
-	definition(name: "Child Temperature Sensorr", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-temperature-measurement", ocfDeviceType: "oic.d.thermostat") {
+	definition(name: "Child Temperature Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-temperature-measurement", ocfDeviceType: "oic.d.thermostat") {
 		capability "Temperature Measurement"
 		capability "Battery"
 		capability "Health Check"
