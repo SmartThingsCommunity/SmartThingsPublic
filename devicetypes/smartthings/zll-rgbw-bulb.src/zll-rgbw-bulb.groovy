@@ -35,9 +35,9 @@ metadata {
 
 		// AduroSmart
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", deviceId: "0210", manufacturer: "AduroSmart Eria", model: "ZLL-ExtendedColor", deviceJoinName: "Eria ZLL RGBW Bulb"
-        fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", deviceId: "0210", manufacturer: "AduroSmart Eria", model: "ZLL-ExtendedColo", deviceJoinName: "ERIA Extended Color Light Bulb V2.0"
-
-		// INGENIUM
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", deviceId: "0210", manufacturer: "AduroSmart Eria", model: "ZLL-ExtendedColo", deviceJoinName: "ERIA Extended Color Light Bulb V2.0"
+		
+        // INGENIUM
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF", outClusters: "0019", manufacturer: "Megaman", model: "ZLL-ExtendedColor", deviceJoinName: "INGENIUM ZB RGBW Light"
 
 		// Innr
