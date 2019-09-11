@@ -48,6 +48,7 @@ metadata {
 		fingerprint mfr: "018C", prod: "0042", model: "0008", deviceJoinName: "Dawon Smart Multitab", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "0371", prod: "0003", model: "00AF", deviceJoinName: "Aeotec Smart Switch 7", ocfDeviceType: "oic.d.smartplug"  //EU
 		fingerprint mfr: "0371", prod: "0103", model: "00AF", deviceJoinName: "Aeotec Smart Switch 7", ocfDeviceType: "oic.d.smartplug"  //US
+		fingerprint mfr: "0060", prod: "0004", model: "000B", deviceJoinName: "Everspring Smart Plug", ocfDeviceType: "oic.d.smartplug"  //US
 	}
 
 	// simulator metadata
