@@ -12,42 +12,43 @@
  *
  *  Author: LGKahn kahn-st@lgk.com
  *  version 2 user defineable timeout before checking if door opened or closed correctly. Raised default to 25 secs. You can reduce it to 15 secs. if you have custom simulated door with < 6 sec wait.
+	Version 3 made compatable with two sensors and two switches M Cockcroft 11/09/2019
  */
  
 definition(
     name: "LGK Virtual Garage Door",
     namespace: "lgkapps",
     author: "lgkahn kahn-st@lgk.com",
-    description: "Sync the Simulated garage door device with 2 actual devices, either a tilt or contact sensor and a switch or relay. The simulated device will then control the actual garage door. In addition, the virtual device will sync when the garage door is opened manually, \n It also attempts to double check the door was actually closed in case the beam was crossed. ",
+    description: "Sync the Simulated garage door or gate device with either 1 or two contact sesnors and either 1 or two switchs/relays. The simulated device will then control the actual door/gate. In addition, the virtual device will sync when the door/gate is opened manually, \n It also attempts to double check the door/gate was actually closed in case the beam was crossed. ",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/garage_contact.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/garage_contact@2x.png"
 )
 
 preferences {
-	section("Choose the switch/relay that opens/closes the garage"){
-		input "opener", "capability.switch", title: "Physical Garage Opener", required: true
+	section("Choose the switch/relay that opens (and closes) the gate/door"){
+		input "opener", "capability.switch", title: "Garage/Gate Opener switch (may also close)", required: true
 	}
-    section("Choose the switch/relay that CLOSES the garage... if different"){
-		input "closer", "capability.switch", title: "Physical Garage Opener ... optional dual switch", required: false
+    section("Choose the switch/relay that CLOSES the gate/door ... if different"){
+		input "closer", "capability.switch", title: "Garage/Gate Closing switch ... optional dual switch ONLY if you have two differnt switches", required: false
 	}
-	section("Choose the sensor that senses if the garage is open/close"){
-		input "sensor", "capability.contactSensor", title: "Physical Garage Door Open/Closed", required: true
+	section("Choose the sensor that senses if the gate/garage is open (and closed"){
+		input "sensor", "capability.contactSensor", title: "Garage/Gate Sensor for when fully CLOSED (closed when closed)", required: true
 	}
-    section("Choose the sensor for OPEN.. optional "){
-		input "sensoropen", "capability.contactSensor", title: "Physical Garage Door fully Open .. optional dual sensors", required: false
-	}
-    
-	section("Choose the Virtual Garage Door Device "){
-		input "virtualgd", "capability.doorControl", title: "Virtual Garage Door", required: true
+    section("Choose the sensor that senses if the gate/garage is fully OPEN.. optional"){
+		input "sensoropen", "capability.contactSensor", title: "Garage/Gate Sensor for when fully OPEN .. optional dual sensors (closed when fully oopen)", required: false
 	}
     
-	section("Choose the Virtual Garage Door Device sensor ... same as above device"){
-		input "virtualgdbutton", "capability.contactSensor", title: "same as above device", required: true
+	section("Choose the Virtual Gate/Garage Device "){
+		input "virtualgd", "capability.doorControl", title: "Virtual or Simumated Gate/Garage Door", required: true
 	}
     
-    section("Timeout before checking if the door opened or closed correctly?"){
-		input "checkTimeout", "number", title: "Door Operation Check Timeout?", required: true, defaultValue: 25
+	section("Choose the Virtual Gate/Garage Device sensor ... same as above device"){
+		input "virtualgdbutton", "capability.contactSensor", title: "same as above device .. Virtual or Simumated Gate/Garage sensor", required: true
+	}
+    
+    section("Timeout before checking if the opening or closeing correctly?"){
+		input "checkTimeout", "number", title: "Gate/Garage Operation Check Timeout", required: true, defaultValue: 25
 	}
     
      section( "Notifications" ) {
@@ -79,14 +80,14 @@ def installer(){
     
     if (realgdstate != virtualgdstate) { // sync them up if need be set virtual same as actual
         if (realgdstate == "open") {
-        	log.debug "opening virtual door"
-            mysend("Virtual Garage Door Opened!","")     
+        	log.debug "opening virtual Garage/Gate"
+            mysend("Virtual Garage/Gate Opened!","")     
             virtualgd.open("open")
 		}
         else {
         	virtualgd.close("closed")
-            log.debug "closing virtual door"
-            mysend("Virtual Garage Door Closed!","")   
+            log.debug "closing virtual Garage/Gate"
+            mysend("Virtual Garage/Gate Closed!","")   
      	}
 	}
 }
@@ -104,8 +105,8 @@ def contactHandleropen(evt){
     	msg =  "sending open command"
         //virtualgd.close("closing") //closing
     }
-	mysend("Open Contact sensor event, '${evt.device}' is '${evt.value}',virtual contact is '$virtualgdstate' and door is '$virtualdoorstate', $msg","")
-	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}',virtual contact is '$virtualgdstate' and door is '$virtualdoorstate', '$msg'"    
+	mysend("Open Contact sensor event, '${evt.device}' is '${evt.value}',virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', $msg","")
+	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}',virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', '$msg'"    
 }
 
 def contactHandler(evt) {
@@ -115,11 +116,11 @@ def contactHandler(evt) {
     if(sensoropen != null){ // if using 2 sensors 'sensoropen' should be closed when the door/gate is open
  	   log.debug "fully closed sensor"
        if(evt.value =="open") {
-			log.debug "closed sesnor is open so gate must be opening"
+			log.debug "closed sesnor is open so Garage/Gate must be opening"
     		//virtualgd.open("opening") //opening
 		}
 		if(evt.value == "closed") {
-            log.debug "closed sesnor is closed so gate is fully closed"
+            log.debug "closed sesnor is closed so Garage/Gate is fully closed"
        		virtualgd.close("closed") //closed
    		}
       }
@@ -132,28 +133,28 @@ def contactHandler(evt) {
        		virtualgd.close("closed")
    		}
     }
-	mysend("Contact sensor event, virtual contact is '$virtualgdstate' and door is '$virtualdoorstate', sending '${evt?.device} is ${evt?.name}' to simulated device to sync","")
-	log.trace "contactHandler - '${evt?.device} ${evt?.name}' is '${evt.value}' - virtual contact is '$virtualgdstate'and door is '$virtualdoorstate' "
+	mysend("Contact sensor event, virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', sending '${evt?.device} is ${evt?.name}' to simulated device to sync","")
+	log.trace "contactHandler - '${evt?.device} ${evt?.name}' is '${evt.value}' - virtual contact is '$virtualgdstate'and Garage/Gate is '$virtualdoorstate' "
 }
 
 def virtualgdcontactHandler(evt) {
 	def msg = ""
 	def realgdstate = sensor.currentContact
-	log.info "virtual gd event Contact/DoorState = ${evt?.device} - ${evt?.name} - ${evt.value}" //virtualgd.label
+	log.info "virtual Garage/Gate event Contact/DoorState = ${evt?.device} - ${evt?.name} - ${evt.value}" //virtualgd.label
 	if("opening" == evt.value) {
     	if (realgdstate != "open") { // not open state so open
-        	msg = "sending open command to ${opener.label} the actual garage controler"
+        	msg = "sending open command to ${opener.label} the actual controler"
          	opener.on()
      	}
 	}
 	if("closing" == evt.value) {
     	if (realgdstate != "closed") { // not closed state so close
         	if (closer != null){
-        		msg = "sending close command to ${closer.label} the actual garage controler"
+        		msg = "sending close command to ${closer.label} the actual controler"
         		closer.on()
         	}
         	else {
-        		msg = "sending close command to ${opener.label} the actual garage controler"
+        		msg = "sending close command to ${opener.label} the actual controler"
         		opener.on()
         	}
         }
@@ -173,7 +174,7 @@ def checkIfActually() {
 	def realgdstate = sensor.currentContact
 	def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
-    def prestate = "checkIfActually .dewl is $checkTimeout sec.. Actual sensor state ${sensor.label} = $realgdstate, Virtual door state  = contact is '$virtualgdstate' & and door is '$virtualdoorstate' "
+    def prestate = "checkIfActually .dewl is $checkTimeout sec.. Actual sensor state ${sensor.label} = $realgdstate, Virtual Garage/Gate state  = contact is '$virtualgdstate' & and Garage/Gate is '$virtualdoorstate' "
 	log.info "$prestate"
     // sync them up if need be set virtual same as actual
     if (realgdstate == "open") {
@@ -189,7 +190,7 @@ def checkIfActually() {
         }
     }
     if (msg != ""){
-    	mysend("Door is $msg - this was not the expected state of $prestate", "WARN")
+    	mysend("Garage/Gate is $msg - this was not the expected state of $prestate", "WARN")
     	log.warn "checkIfActually $msg"
         sendEvent (name:"Checking Event",  value: prestate)
     }
