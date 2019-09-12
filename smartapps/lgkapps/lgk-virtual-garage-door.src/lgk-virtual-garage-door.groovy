@@ -18,7 +18,7 @@
 definition(
     name: "LGK Virtual Garage Door",
     namespace: "lgkapps",
-    author: "lgkahn kahn-st@lgk.com",
+    author: "lgkahn kahn-st@lgk.com & Mark-C",
     description: "Sync the Simulated garage door or gate device with either 1 or two contact sesnors and either 1 or two switchs/relays. The simulated device will then control the actual door/gate. In addition, the virtual device will sync when the door/gate is opened manually, \n It also attempts to double check the door/gate was actually closed in case the beam was crossed. ",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/garage_contact.png",
@@ -80,31 +80,28 @@ def installer(){
     
     if (realgdstate != virtualgdstate) { // sync them up if need be set virtual same as actual
         if (realgdstate == "open") {
-        	log.debug "opening virtual Garage/Gate"
+        	log.trace "opening virtual Garage/Gate"
             mysend("Virtual Garage/Gate Opened!","")     
             virtualgd.open("open")
 		}
         else {
         	virtualgd.close("closed")
-            log.debug "closing virtual Garage/Gate"
+            log.trace "closing virtual Garage/Gate"
             mysend("Virtual Garage/Gate Closed!","")   
      	}
 	}
 }
 
-def contactHandleropen(evt){
+def contactHandleropen(evt){ //only used for 2 sensor setup (open)
 	def msg = ""
     def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
-	log.info "contactHandleropen '${evt.device}' it is '${evt.value}'"
+    
     if(evt.value == "closed"){
     	msg = "sending open comand"
     	virtualgd.open("open") //open
     }
-    if(evt.value == "open"){
-    	msg =  "sending open command"
-        //virtualgd.close("closing") //closing
-    }
+    
 	mysend("Open Contact sensor event, '${evt.device}' is '${evt.value}',virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', $msg","")
 	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}',virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', '$msg'"    
 }
@@ -114,16 +111,12 @@ def contactHandler(evt) {
     def virtualdoorstate = virtualgd.currentDoor
     
     if(sensoropen != null){ // if using 2 sensors 'sensoropen' should be closed when the door/gate is open
- 	   log.debug "fully closed sensor"
-       if(evt.value =="open") {
-			log.debug "closed sesnor is open so Garage/Gate must be opening"
-    		//virtualgd.open("opening") //opening
-		}
 		if(evt.value == "closed") {
+        	log.info "Dual Sensor setup"
             log.debug "closed sesnor is closed so Garage/Gate is fully closed"
        		virtualgd.close("closed") //closed
    		}
-      }
+	}
 	else{ // single sensor setup 
     	log.info "Single Sensor setup"
     	if("open" == evt.value) {
@@ -203,12 +196,12 @@ private mysend(msg, error) {
     }
     else {
         if (sendPushMessage != "No" || error == "WARN") {
-            log.debug("sending push message")
+            log.trace("sending push message")
             sendPush(msg)
         }
 
         if (phone1) {
-            log.debug("sending text message")
+            log.trace("sending text message")
             sendSms(phone1, msg)
         }
     }
