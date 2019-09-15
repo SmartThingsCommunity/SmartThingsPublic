@@ -44,7 +44,7 @@ def installer(){
 	def Tin =   tempin.currenttemperature
 	def Tout = tempout.currenttemperature
     
-    subscribe(tempin, "temperatureMeasurement", tempHandler)
+    subscribe(tempin, "temperature", tempHandler)
 	log.debug "updated ... temp of $Tin is $tempin and $tempout is $Tout"
     
     if (Tin != Tout) { // sync them up if need be set virtual same as actual
@@ -54,7 +54,8 @@ def installer(){
 
 def tempHandler(evt){
 //testing
+//def temps = 
 log.debug "$evt.unit"
 log.debug "evt.value"    
-    tempout.temperature("$evt")    
+    tempout.temperature("${evt.value}")    
 }
