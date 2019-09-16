@@ -14,7 +14,6 @@
 metadata {
 	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
-		capability "Configuration"
 		capability "Health Check"
 		capability "Motion Sensor"
 		capability "Sensor"
@@ -44,6 +43,11 @@ metadata {
 
 def installed() {
 	initialize()
+	if(isAuroraMotionSensor51AU()) {
+		// Aurora Smart PIR Sensor doesn't report when there is no motion during pairing process
+		// reports are sent only if there is motion detected, so fake event is needed here
+		sendEvent(name: "motion", value: "inactive", descriptionText: "${device.displayName} - initially no motion" )
+	}
 }
 
 def updated() {
@@ -85,11 +89,9 @@ def parse(String description) {
 }
 
 def isTracked() {
-	return device.getDataValue("model") == "MotionSensor51AU"
+	return isAuroraMotionSensor51AU()
 }
 
-def configure() {
-	log.debug "configure"
-	return	zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, 0x19, 0, 180, null) +
-			zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+def isAuroraMotionSensor51AU() {
+	return device.getDataValue("model") == "MotionSensor51AU"
 }
