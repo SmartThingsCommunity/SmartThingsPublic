@@ -93,9 +93,15 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 	ep ? changeSwitch(ep, value) : []
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
+	log.debug "Binary ${cmd}" + (ep ? " from endpoint $ep" : "")
+	def value = cmd.value ? "on" : "off"
+	ep ? changeSwitch(ep, value) : []
+}
+
 private changeSwitch(endpoint, value) {
 	def result = []
-	if(endpoint == 1) {
+	if (endpoint == 1) {
 		result += createEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	} else {
 		String childDni = "${device.deviceNetworkId}:$endpoint"
@@ -108,7 +114,7 @@ private changeSwitch(endpoint, value) {
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
 	def result = []
-	if(ep == 1) {
+	if (ep == 1) {
 		result += createEvent(createMeterEventMap(cmd))
 	} else if(ep) {
 		String childDni = "${device.deviceNetworkId}:$ep"
@@ -217,19 +223,26 @@ def reset(endpoint = 1) {
 }
 
 def childOnOff(deviceNetworkId, value) {
-	def switchId = deviceNetworkId?.split(":")[1] as Integer
-	sendHubCommand onOffCmd(value, switchId)
+	def switchId = getSwitchId(deviceNetworkId)
+	if (switchId != null) sendHubCommand onOffCmd(value, switchId)
 }
 
 def childRefresh(deviceNetworkId) {
-	def switchId = deviceNetworkId?.split(":")[1] as Integer
-	sendHubCommand refresh(switchId)
+	def switchId = getSwitchId(deviceNetworkId)
+	if (switchId != null) sendHubCommand refresh(switchId)
 }
 
 def childReset(deviceNetworkId) {
-	def switchId = deviceNetworkId?.split(":")[1] as Integer
-	log.debug "Child reset switchId: ${switchId}"
-	sendHubCommand reset(switchId)
+	def switchId = getSwitchId(deviceNetworkId)
+	if (switchId != null) {
+		log.debug "Child reset switchId: ${switchId}"
+		sendHubCommand reset(switchId)
+	}
+}
+
+def getSwitchId(deviceNetworkId) {
+	def split = deviceNetworkId?.split(":")
+	return (split.length > 1) ? split[1] as Integer : null
 }
 
 private refreshAll() {
@@ -280,16 +293,14 @@ private secureEncap(cmd, endpoint = null) {
 }
 
 private addChildSwitches(numberOfSwitches) {
-	for(def endpoint : 2..numberOfSwitches) {
+	for (def endpoint : 2..numberOfSwitches) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = device.displayName[0..-2] + "${endpoint}"
 			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : componentLabel,
-					isComponent   : false,
-					componentName : "switch$endpoint",
-					componentLabel: "Switch $endpoint"
+					isComponent   : false
 			])
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
@@ -301,7 +312,7 @@ private lateConfigure() {
 	def cmds = []
 	log.debug "Late configuration..."
 	switch(getDeviceModel()) {
-		case "ZW132":
+		case "Aeotec Nano Switch":
 			cmds = [
 					secure(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, configurationValue: [0])),    // resets configuration
 					secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1])),    // enables overheat protection
@@ -314,6 +325,12 @@ private lateConfigure() {
 					secure(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 20))    //report any 20W change
 			]
 			break
+		case "Zooz Switch":
+			cmds = [
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 4, scaledConfigurationValue: 10)),	// makes device report every 5W change
+					secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 4, scaledConfigurationValue: 600))	// enabling kWh energy reports every 10 minutes
+			]
+			break
 		default:
 			cmds = [secure(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, scaledConfigurationValue: 0))]
 			break
@@ -322,8 +339,10 @@ private lateConfigure() {
 }
 
 private getDeviceModel() {
-	if((zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) || (getDataValue("mfr") == "86") && (getDataValue("model") == "84")) {
-		"ZW132"
+	if ((zwaveInfo.mfr?.contains("0086") && zwaveInfo.model?.contains("0084")) || (getDataValue("mfr") == "86") && (getDataValue("model") == "84")) {
+		"Aeotec Nano Switch"
+	} else if(zwaveInfo.mfr?.contains("027A")) {
+		"Zooz Switch"
 	} else {
 		""
 	}

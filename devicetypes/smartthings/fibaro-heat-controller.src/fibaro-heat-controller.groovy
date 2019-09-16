@@ -171,9 +171,16 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	if (cmd.parameterNumber == 3 && cmd.scaledConfigurationValue == 1) {
-		if(!childDevices) {
-			addChild()
+	if (cmd.parameterNumber == 3) {
+		if (cmd.scaledConfigurationValue == 1) {
+			if (!childDevices) {
+				state.isChildOnline = true
+				addChild()
+			} else {
+				changeTemperatureSensorStatus("online")
+			}
+		} else if (cmd.scaledConfigurationValue == 0 && childDevices) {
+			changeTemperatureSensorStatus("offline")
 		}
 	}
 }
@@ -299,7 +306,12 @@ def switchMode() {
 def sendEventToChild(event) {
 	String childDni = "${device.deviceNetworkId}:2"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent(event)
+	if (state.isChildOnline)
+		child?.sendEvent(event)
+}
+
+def configureChild() {
+	sendEventToChild(createEvent([name: "checkInterval", value: 6 * 60 * 60 + 36, displayed: false]))
 }
 
 private refreshChild() {
@@ -317,9 +329,8 @@ private forcedRefresh() {
 def addChild() {
 	String childDni = "${device.deviceNetworkId}:2"
 	String componentLabel =	 "Fibaro Temperature Sensor"
-	String ch = "ch2"
 
-	addChildDevice("Child Temperature Sensor", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false, componentName: ch, componentLabel: componentLabel])
+	addChildDevice("Child Temperature Sensor", childDni, device.hub.id,[completedSetup: true, label: componentLabel, isComponent: false])
 }
 
 private getMaxHeatingSetpointTemperature() {
@@ -328,4 +339,10 @@ private getMaxHeatingSetpointTemperature() {
 
 private getMinHeatingSetpointTemperature() {
 	temperatureScale == 'C' ? 10 : 50
+}
+
+private changeTemperatureSensorStatus(status) {
+	state.isChildOnline = (status == "online")
+	def map = [name: "DeviceWatch-DeviceStatus", value: status]
+	sendEventToChild(map)
 }

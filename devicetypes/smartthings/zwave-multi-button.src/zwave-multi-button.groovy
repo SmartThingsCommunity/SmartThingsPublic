@@ -48,8 +48,9 @@ metadata {
 }
 
 def installed() {
-	runIn(2, "initialize", [overwrite: true])
-	sendEvent(name: "button", value: "pushed", isStateChange: true)
+	sendEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
+	sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
+	initialize()
 }
 
 def updated() {
@@ -70,7 +71,7 @@ def initialize() {
 	}
 	if(childDevices) {
 		def event
-		for(def endpoint : 2..prodNumberOfButtons[zwaveInfo.prod]) {
+		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
 			event = createEvent(name: "button", value: "pushed", isStateChange: true)
 			sendEventToChild(endpoint, event)
 		}
@@ -125,12 +126,8 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 	def value = eventsMap[(int) cmd.keyAttributes]
 	def description = "Button no. ${cmd.sceneNumber} was ${value}"
 	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
-	if(cmd.sceneNumber == 1) {
-		return event
-	} else {
-		sendEventToChild(cmd.sceneNumber, event)
-		return createEvent(descriptionText: description)
-	}
+	sendEventToChild(cmd.sceneNumber, event)
+	return createEvent(descriptionText: description)
 }
 
 def sendEventToChild(buttonNumber, event) {
@@ -175,17 +172,18 @@ private secure(cmd) {
 }
 
 private addChildButtons(numberOfButtons) {
-	for(def endpoint : 2..numberOfButtons) {
+	for(def endpoint : 1..numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : (device.displayName + " ")) + "${endpoint}"
-			addChildDevice("Child Button", childDni, device.getHub().getId(), [
+			def child = addChildDevice("Child Button", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : componentLabel,
 					isComponent   : true,
 					componentName : "button$endpoint",
 					componentLabel: "Button $endpoint"
 			])
+			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
 		}
@@ -205,6 +203,12 @@ private getProdNumberOfButtons() {[
 		"0102" : 4,
 		"0002" : 4
 ]}
+
+private getSupportedButtonValues() {
+	def values = ["pushed", "held"]
+	if (isFibaro()) values << "double"
+	return values
+}
 
 private isFibaro() {
 	zwaveInfo.mfr?.contains("010F")
