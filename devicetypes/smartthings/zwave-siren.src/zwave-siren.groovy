@@ -37,6 +37,8 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "1088", deviceJoinName: "NEO Coolcam Siren Alarm"
 		//zw:Fs type:1005 mfr:0129 prod:6F01 model:0001 ver:1.04 zwv:4.33 lib:03 cc:5E,80,5A,72,73,86,70,98 sec:59,2B,71,85,25,7A role:07 ff:8F00 ui:8F00
 		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale External Siren"
+		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Outdoor Solar Siren"
+		fingerprint mfr: "0060", prod: "000C", model: "0003", deviceJoinName: "Everspring Indoor Voice Siren"
 	}
 
 	simulator {
