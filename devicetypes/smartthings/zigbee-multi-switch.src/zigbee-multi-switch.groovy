@@ -61,13 +61,15 @@ metadata {
 }
 
 def installed() {
-	createChildDevices()
-	updateDataValue("onOff", "catchall")
+        createChildDevices()
+        updateDataValue("onOff", "catchall")
+        refresh()
 }
 
 def updated() {
-	log.debug "updated()"
-	updateDataValue("onOff", "catchall")
+        log.debug "updated()"
+        updateDataValue("onOff", "catchall")
+        refresh()
 }
 
 def parse(String description) {
@@ -143,7 +145,12 @@ def refresh() {
 	if (isOrvibo()) {
 		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
 	} else {
-		zigbee.onOffRefresh() + zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 2])
+	        def cmds = zigbee.onOffRefresh()
+	        def x = getChildCount()
+	        for (i in 2..x) {
+	        	cmds += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: i])
+	        }
+	        return cmds
 	}
 }
 
@@ -182,7 +189,13 @@ def configure() {
 		zigbee.writeAttribute(zigbee.BASIC_CLUSTER, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
 	} else {
 		//other devices supported by this DTH in the future
-		zigbee.onOffConfig(0, 120) + zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: 0x02]) + refresh()
+	        def cmds = zigbee.onOffConfig(0, 120)
+	        def x = getChildCount()
+	        for (i in 2..x) {
+	        	cmds += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: i])
+	        }
+	        cmds += refresh()
+	        return cmds
 	}
 }
 

@@ -24,6 +24,7 @@ metadata {
 		capability "Configuration"
 
 		fingerprint mfr: "010F", prod: "0F01", model: "1000", deviceJoinName: "Fibaro Button"
+		fingerprint mfr: "010F", prod: "0F01", model: "2000", deviceJoinName: "Fibaro Button"
 		fingerprint mfr: "0371", prod: "0102", model: "0004", deviceJoinName: "Aeotec NanoMote One" //US
 		fingerprint mfr: "0371", prod: "0002", model: "0004", deviceJoinName: "Aeotec NanoMote One" //EU
 	}
@@ -96,7 +97,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
-	def value = cmd.sceneId % 2 ? "pushed"  : "held"
+	def value = cmd.sceneId % 2 ? "pushed" : "held"
 	createEvent(name: "button", value: value, descriptionText: "Button was ${value}", data: [buttonNumber: 1], isStateChange: true)
 }
 
@@ -142,11 +143,11 @@ private secure(cmd) {
 private getEventsMap() {[
 		0: "pushed",
 		1: "held",
-		//2: "down_hold",
+		2: "down_hold",
 		3: "double",
-		//4: "pushed_3x",
-		//5: "pushed_4x",
-		//6: "pushed_5x"
+		4: "pushed_3x",
+		5: "pushed_4x",
+		6: "pushed_5x"
 ]}
 
 private getCommandClasses() {[
@@ -161,6 +162,6 @@ private getSupportedButtonValues() {
 	if (isAeotec()) {
 		["pushed", "held"]
 	} else {
-		["pushed", "held", "double"]
+		["pushed", "held", "down_hold", "double", "pushed_3x", "pushed_4x", "pushed_5x"]
 	}
 }
