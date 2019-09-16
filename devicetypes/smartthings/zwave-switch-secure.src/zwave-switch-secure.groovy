@@ -25,6 +25,7 @@ metadata {
 		fingerprint mfr: "0086", prod: "0003", model: "008B", deviceJoinName: "Aeon Labs Nano Switch"
 		fingerprint mfr: "0086", prod: "0103", model: "008B", deviceJoinName: "Aeon Labs Nano Switch"
 		fingerprint mfr: "027A", prod: "A000", model: "A001", deviceJoinName: "Zooz ZEN26 Switch"
+		fingerprint mfr: "0060", prod: "0004", model: "000C", deviceJoinName: "Everspring Switch"
 	}
 
 	simulator {
