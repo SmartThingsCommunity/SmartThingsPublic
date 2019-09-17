@@ -72,7 +72,13 @@ def parse(String description) {
 		if (description?.startsWith('zone status')) {
 			map = parseIasMessage(description)
 		} else {
-			map = batteyHandler(description)
+			def descMap = zigbee.parseDescriptionAsMap(description)
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER) {
+				map = batteyHandler(description)
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+				log.debug "parseDescriptionAsMap: $descMap.value"
+				map = getMotionResult(descMap.value)
+			}
 		}
 	}
 	log.debug "Parse returned $map"
@@ -82,6 +88,7 @@ def parse(String description) {
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
+
 	return result
 }
 
