@@ -46,7 +46,7 @@ def installed() {
 	if(isAuroraMotionSensor51AU()) {
 		// Aurora Smart PIR Sensor doesn't report when there is no motion during pairing process
 		// reports are sent only if there is motion detected, so fake event is needed here
-		sendEvent(name: "motion", value: "inactive", descriptionText: "${device.displayName} - initially no motion" )
+		sendEvent(name: "motion", value: "inactive", displayed: false)
 	}
 }
 
