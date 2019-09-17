@@ -25,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "MS01", deviceJoinName: "eWeLink Motion Sensor"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer:"ORVIBO", model:"895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor"
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer:"Megaman", model:"PS601/z1", deviceJoinName: "INGENIUM ZB PIR Sensor"
 	}
@@ -67,11 +68,20 @@ def installed(){
 def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
-	if(!map){
+	ZoneStatus zs
+	if (!map) {
 		if (description?.startsWith('zone status')) {
-			map = parseIasMessage(description)
+			zs = zigbee.parseZoneStatus(description)
+			map = parseIasMessage(zs)
 		} else {
-			map = batteyHandler(description)
+			def descMap = zigbee.parseDescriptionAsMap(description)
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER) {
+				map = batteyHandler(description)
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
+				log.debug "parseDescriptionAsMap: $descMap.value"
+				zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = parseIasMessage(zs)
+			}
 		}
 	}
 	log.debug "Parse returned $map"
@@ -81,6 +91,7 @@ def parse(String description) {
 		log.debug "enroll response: ${cmds}"
 		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
+
 	return result
 }
 
@@ -93,15 +104,20 @@ def batteyHandler(String description){
 	return map
 }
 
-def parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
+def parseIasMessage(ZoneStatus zs) {
 	Boolean motionActive = zs.isAlarm1Set() || zs.isAlarm2Set()
-	if (motionActive) {
-		def timeout = 20
-		log.debug "Stopping motion in ${timeout} seconds"
-		runIn(timeout, stopMotion)
+	if (!supportsRestoreNotify()) {
+		if (motionActive) {
+			def timeout = 20
+			log.debug "Stopping motion in ${timeout} seconds"
+			runIn(timeout, stopMotion)
+		}
 	}
 	return getMotionResult(motionActive)
+}
+
+def supportsRestoreNotify() {
+    getDataValue("manufacturer") == "eWeLink"
 }
 
 def getBatteryPercentageResult(rawValue) {
