@@ -68,14 +68,9 @@ def installed(){
 def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
-	def manufacturer = getDataValue("manufacturer")
-	if(!map){
+	if (!map) {
 		if (description?.startsWith('zone status')) {
-			if (manufacturer == "eWeLink"){
-				map = parseWeLinKMotion(description)
-			}else{
-				map = parseIasMessage(description)
-			}
+			map = parseIasMessage(description)
 		} else {
 			map = batteyHandler(description)
 		}
@@ -102,24 +97,18 @@ def batteyHandler(String description){
 def parseIasMessage(String description) {
 	ZoneStatus zs = zigbee.parseZoneStatus(description)
 	Boolean motionActive = zs.isAlarm1Set() || zs.isAlarm2Set()
-	if (motionActive) {
-		def timeout = 20
-		log.debug "Stopping motion in ${timeout} seconds"
-		runIn(timeout, stopMotion)
+	if (!supportsRestoreNotify()) {
+		if (motionActive) {
+			def timeout = 20
+			log.debug "Stopping motion in ${timeout} seconds"
+			runIn(timeout, stopMotion)
+		}
 	}
 	return getMotionResult(motionActive)
 }
 
-def parseWeLinKMotion(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
-	def value = zs.isAlarm1Set()
-	def descriptionText = value ? "${device.displayName} detected motion" : "${device.displayName} motion has stopped"
-	return [
-			name			: 'motion',
-			value			: value ? 'active' : 'inactive',
-			descriptionText : descriptionText,
-			translatable	: true
-	]
+def supportsRestoreNotify() {
+    getDataValue("manufacturer") == "eWeLink"
 }
 
 def getBatteryPercentageResult(rawValue) {
