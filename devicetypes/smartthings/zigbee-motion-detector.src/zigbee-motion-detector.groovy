@@ -68,16 +68,19 @@ def installed(){
 def parse(String description) {
 	log.debug "description(): $description"
 	def map = zigbee.getEvent(description)
+	ZoneStatus zs
 	if (!map) {
 		if (description?.startsWith('zone status')) {
-			map = parseIasMessage(description)
+			zs = zigbee.parseZoneStatus(description)
+			map = parseIasMessage(zs)
 		} else {
 			def descMap = zigbee.parseDescriptionAsMap(description)
 			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER) {
 				map = batteyHandler(description)
 			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
 				log.debug "parseDescriptionAsMap: $descMap.value"
-				map = getMotionResult(descMap.value)
+				zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = parseIasMessage(zs)
 			}
 		}
 	}
@@ -101,8 +104,7 @@ def batteyHandler(String description){
 	return map
 }
 
-def parseIasMessage(String description) {
-	ZoneStatus zs = zigbee.parseZoneStatus(description)
+def parseIasMessage(ZoneStatus zs) {
 	Boolean motionActive = zs.isAlarm1Set() || zs.isAlarm2Set()
 	if (!supportsRestoreNotify()) {
 		if (motionActive) {
