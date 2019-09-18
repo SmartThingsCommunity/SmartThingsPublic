@@ -16,7 +16,7 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 	definition(name: "ZigBee Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade") {
 		capability "Actuator"
-        capability "Battery"
+		capability "Battery"
 		capability "Configuration"
 		capability "Refresh"
 		capability "Window Shade"
@@ -144,7 +144,7 @@ def updateFinalState() {
 def batteryPercentageEventHandler(batteryLevel) {
 	if (batteryLevel != null) {
 		batteryLevel = Math.min(100, Math.max(0, batteryLevel))
-		sendEvent([name: "battery", value: batteryLevel, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%", isStateChange: true])
+		sendEvent([name: "battery", value: batteryLevel, unit: "%", descriptionText: "{{ device.displayName }} battery was {{ value }}%"])
 	}
 }
 
@@ -219,7 +219,7 @@ def configure() {
 	}
 
 	if (reportsBatteryPercentage()) {
-		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 30, 720, 0x01)
+		cmds += zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 30, 21600, 0x01)
 	}
 
 	return refresh() + cmds
