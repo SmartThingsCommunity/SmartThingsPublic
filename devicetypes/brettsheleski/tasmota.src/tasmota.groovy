@@ -199,7 +199,8 @@ def getModuleDevices(moduleId){
 
     switch (moduleId){
 
-        case 1: // Sonoff Basic
+        case 0: // Sonoff Mini
+	case 1: // Sonoff Basic
 
         // the next batch are mostly guesses if they work.  
         //  I'm assuming they will provide basic functionality until more specific implementations are done
