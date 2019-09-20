@@ -52,6 +52,7 @@ metadata {
 		fingerprint mfr: "0307", prod: "4447", model: "3031", deviceJoinName: "Satco Plug-In Module", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "027A", prod: "B111", model: "1E1C", deviceJoinName: "Zooz Switch"
 		fingerprint mfr: "027A", prod: "B111", model: "251C", deviceJoinName: "Zooz Switch ZEN23"
+		fingerprint mfr: "0060", prod: "0004", model: "000C", deviceJoinName: "Everspring On/Off Plug", ocfDeviceType: "oic.d.smartplug"
 	}
 
 	// simulator metadata
