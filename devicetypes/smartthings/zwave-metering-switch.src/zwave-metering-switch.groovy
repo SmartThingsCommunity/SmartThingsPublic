@@ -199,16 +199,6 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd){
-	if ((cmd.notificationType == 0x08) && zwaveInfo?.mfr?.equals("018C")) {
-		if (cmd.event == 0x02) {
-			createEvent(name: "switch", value: "off")
-		} else if (cmd.event == 0x03) {
-			createEvent(name: "switch", value: "on")
-		}
-	}
-}
-
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.debug "${device.displayName}: Unhandled: $cmd"
 	[:]
