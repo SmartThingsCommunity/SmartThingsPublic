@@ -23,7 +23,7 @@ metadata {
 		capability "Health Check"
 		capability "Tamper Alert"
 
-//		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz 4-in-1 sensor"
+		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz 4-in-1 sensor"
 	}
 
 	tiles(scale: 2) {
@@ -195,7 +195,7 @@ def ping() {
 def configure() {
 	def request = []
 	request << zwave.batteryV1.batteryGet()
-	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+	request << zwave.notificationV3.notificationGet(notificationType: 0x07, event: 0x08)  //motion
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) //temperature
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity

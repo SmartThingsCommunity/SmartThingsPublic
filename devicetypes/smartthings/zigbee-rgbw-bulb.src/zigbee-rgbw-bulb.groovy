@@ -33,7 +33,8 @@ metadata {
 		attribute "colorName", "string"
 
 		// Generic fingerprint
-		fingerprint profileId: "0104", deviceId: "010D", inClusters: "0006, 0008, 0300"// deviceId 0x010D is "Extended Color Light"
+		fingerprint profileId: "0104", deviceId: "0102", inClusters: "0006, 0008, 0300", deviceJoinName: "Generic RGBW Light"
+		fingerprint profileId: "0104", deviceId: "010D", inClusters: "0006, 0008, 0300", deviceJoinName: "Generic RGBW Light"
 
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010D", manufacturer: "AduroSmart Eria", model: "AD-RGBW3001", deviceJoinName: "Eria ZigBee RGBW Bulb"
@@ -47,7 +48,8 @@ metadata {
 		// Innr
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "RB 285 C", deviceJoinName: "Innr Smart Bulb Color"
 		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "BY 285 C", deviceJoinName: "Innr Smart Bulb Color"
-		fingerprint manufacturer: "innr", model: "RB 250 C", deviceJoinName: "Innr Smart Candle Colour", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
+		fingerprint manufacturer: "innr", model: "RB 250 C", deviceJoinName: "Innr Smart Candle Colour", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
+		fingerprint manufacturer: "innr", model: "RS 230 C", deviceJoinName: "Innr Smart GU10 Spot Colour", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
 
 		// Müller Licht
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "MLI", model: "ZBT-ExtendedColor", deviceJoinName: "Müller Licht Bulb White+Color", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
@@ -73,6 +75,7 @@ metadata {
 
 		// Sengled
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0702,0B05,FC03,FC04", outClusters: "0019", manufacturer: "sengled", model: "E11-N1EA", deviceJoinName: "Sengled Multicolor"
+    fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0702,0B05,FC03,FC04", outClusters: "0019", manufacturer: "sengled", model: "E12-N1E", deviceJoinName: "Sengled Element Color Plus"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0702,0B05,FC03,FC04", outClusters: "0019", manufacturer: "sengled", model: "E21-N1EA", deviceJoinName: "Sengled Multicolor"
 		fingerprint manufacturer: "sengled", model: "E1G-G8E", deviceJoinName: "Sengled Smart Light Strip", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05, FC03", outClusters: "0019", manufacturer: "sengled", model: "E11-U3E", deviceJoinName: "Sengled Element Color Plus", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"

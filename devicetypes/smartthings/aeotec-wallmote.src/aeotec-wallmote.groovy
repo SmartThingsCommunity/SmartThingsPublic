@@ -99,7 +99,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
         return []
     }
     def child = getChildDevice(button)
-    child?.sendEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$child.displayName was $value", isStateChange: true)
+    child?.sendEvent(name: "button", value: value, data: [buttonNumber: 1], descriptionText: "$child.displayName was $value", isStateChange: true)
     createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true)
 }
 
@@ -149,7 +149,7 @@ def createChildDevices() {
             child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
                     [completedSetup: true, label: "${device.displayName} button ${i}",
                      isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
-            child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: i], descriptionText: "$child.displayName was pushed", isStateChange: true)
+            child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
         }
     }
 }
