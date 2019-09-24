@@ -30,8 +30,7 @@ metadata {
 		attribute "colorName", "string"
 
 		// Generic
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019"
+		fingerprint profileId: "C05E", deviceId: "0210", inClusters: "0006, 0008, 0300", deviceJoinName: "Generic RGBW Light"
 
 		// AduroSmart
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", deviceId: "0210", manufacturer: "AduroSmart Eria", model: "ZLL-ExtendedColor", deviceJoinName: "Eria ZLL RGBW Bulb"
@@ -65,6 +64,9 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT016", deviceJoinName: "Philips Hue A19"
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LST001", deviceJoinName: "Philips Hue Lightstrip"
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LST002", deviceJoinName: "Philips Hue Lightstrip"
+		
+		//XLSmart
+		fingerprint profileId: "C05E", manufacturer: "GLEDOPTO", model: "GL-B-001Z", deviceJoinName: "XLSmart E14 RGBW Light Bulb"
 	}
 
 	// UI tile definitions

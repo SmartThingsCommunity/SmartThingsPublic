@@ -32,7 +32,7 @@ metadata {
 
 
 		// Generic
-		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0006, 0008, 0300"// deviceId 010C = "White color temperature light"
+		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0006, 0008, 0300", deviceJoinName: "Generic Color Temperature Light"
 
 		// AduroSmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010C", manufacturer: "AduroSmart Eria", model: "AD-ColorTemperature3001", deviceJoinName: "Eria ZigBee Color Temperature Bulb"

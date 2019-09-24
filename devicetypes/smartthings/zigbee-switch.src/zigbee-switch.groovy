@@ -21,7 +21,9 @@ metadata {
 		capability "Health Check"
 
 		// Generic
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006"
+		fingerprint profileId: "C05E", deviceId: "0000", inClusters: "0006", deviceJoinName: "Generic On/Off Light", ocfDeviceType: "oic.d.light"
+		fingerprint profileId: "0104", deviceId: "0103", inClusters: "0006", deviceJoinName: "Generic On/Off Switch"
+		fingerprint profileId: "0104", deviceId: "010A", inClusters: "0006", deviceJoinName: "Generic On/Off Plug", ocfDeviceType: "oic.d.smartplug"
 
 		// Centralite
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "Centralite Systems", model: "4200-C", deviceJoinName: "Centralite Smart Outlet", ocfDeviceType: "oic.d.smartplug"
