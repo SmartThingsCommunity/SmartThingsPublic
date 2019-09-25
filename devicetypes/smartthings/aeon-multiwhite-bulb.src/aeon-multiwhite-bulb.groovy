@@ -30,6 +30,7 @@ metadata {
 
 		fingerprint mfr: "0371", prod: "0103", model: "0001", deviceJoinName: "Aeon LED Bulb 6 Multi-White" //US
 		fingerprint mfr: "0371", prod: "0003", model: "0001", deviceJoinName: "Aeon LED Bulb 6 Multi-White" //EU
+		fingerprint mfr: "0300", prod: "0003", model: "0004", deviceJoinName: "ilumin Tunable White"
 	}
 
 	simulator {
