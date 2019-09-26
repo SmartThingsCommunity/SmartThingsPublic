@@ -241,8 +241,10 @@ private createChildDevices() {
 	addChildDevice(
 			"Fibaro Wall Plug USB",
 			"${device.deviceNetworkId}-2",
-			null,
-			[completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false]
+			device.hubId,
+			[completedSetup: true,
+			 label: "${device.displayName} (CH2)",
+			 isComponent: false]
 	)
 }
 

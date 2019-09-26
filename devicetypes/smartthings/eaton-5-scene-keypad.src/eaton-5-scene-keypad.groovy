@@ -320,13 +320,15 @@ private updateLocalSwitchState(childId, state) {
 private addChildSwitches() {
 	for (i in 2..5) {
 		String childDni = "${device.deviceNetworkId}/$i"
-		def child = addChildDevice("Child Switch", childDni, null, [
-			completedSetup: true,
-			label         : "$device.displayName Switch $i",
-			isComponent   : true,
-			componentName : "switch$i",
-			componentLabel: "Switch $i"
-		])
+		def child = addChildDevice("Child Switch",
+				childDni,
+				device.hubId,
+				[completedSetup: true,
+				 label         : "$device.displayName Switch $i",
+				 isComponent   : true,
+				 componentName : "switch$i",
+				 componentLabel: "Switch $i"
+				])
 		child.sendEvent(name: "switch", value: "off")
 	}
 }

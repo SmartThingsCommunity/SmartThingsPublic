@@ -198,9 +198,14 @@ private void onOffCmd(value, endpoint = null) {
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..5) {
-		addChildDevice("Zooz Power Strip Outlet", "${device.deviceNetworkId}-ep${i}", null,
-				[completedSetup: true, label: "${device.displayName} (CH${i})",
-				 isComponent: true, componentName: "ch$i", componentLabel: "Channel $i"])
+		addChildDevice("Zooz Power Strip Outlet",
+				"${device.deviceNetworkId}-ep${i}",
+				device.hubId,
+				[completedSetup: true,
+				 label: "${device.displayName} (CH${i})",
+				 isComponent: true,
+				 componentName: "ch$i",
+				 componentLabel: "Channel $i"])
 	}
 }
 

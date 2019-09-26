@@ -218,9 +218,14 @@ private void createChildDevices() {
 	Integer buttons = (device.currentState("numberOfButtons").value).toBigInteger()
 
 	for (i in 1..buttons) {
-		def child = addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
-				[completedSetup: true, label: "${device.displayName} button ${i}",
-				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+		def child = addChildDevice("Child Button",
+				"${device.deviceNetworkId}/${i}",
+				device.hubId,
+				[completedSetup: true,
+				 label: "${device.displayName} button ${i}",
+				 isComponent: true,
+				 componentName: "button$i",
+				 componentLabel: "Button $i"])
 
 		child.sendEvent(name: "supportedButtonValues", value: JsonOutput.toJson(["pushed", "held"]), displayed: false)
 		child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)

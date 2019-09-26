@@ -254,8 +254,14 @@ private channelNumber(String dni) {
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..2) {
-		addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep${i}", null, [completedSetup: true, label: "${device.displayName} (CH${i})",
-																						 isComponent: true, componentName: "ep$i", componentLabel: "Channel $i"
+		addChildDevice("Switch Child Device",
+				"${device.deviceNetworkId}-ep${i}",
+				device.hubId,
+				[completedSetup: true,
+				 label: "${device.displayName} (CH${i})",
+				 isComponent: true,
+				 componentName: "ep$i",
+				 componentLabel: "Channel $i"
 		])
 	}
 }
