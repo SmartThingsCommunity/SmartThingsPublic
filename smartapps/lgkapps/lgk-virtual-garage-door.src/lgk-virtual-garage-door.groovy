@@ -50,7 +50,9 @@ preferences {
     section("Timeout before checking if the opening or closeing correctly?"){
 		input "checkTimeout", "number", title: "Gate/Garage Operation Check Timeout", required: true, defaultValue: 25
 	}
-    
+    section("Lag before sending the open or close comand?"){
+		input "lag", "number", title: "Gate/Garage Operation pause befor action to get chance for buzzer", required: false //, defaultValue: 5
+	}
      section( "Notifications" ) {
         input("recipients", "contact", title: "Send notifications to") {
             input "sendPushMessage", "enum", title: "Send a push notification?", options: ["Yes", "No"], required: false
@@ -137,18 +139,21 @@ def virtualgdcontactHandler(evt) {
 	if("opening" == evt.value) {
     	if (realgdstate != "open") { // not open state so open
         	msg = "sending open command to ${opener.label} the actual controler"
-         	opener.on()
+         	runIn( lag ?: 1, "lagopen")
+            //opener.on()
      	}
 	}
 	if("closing" == evt.value) {
     	if (realgdstate != "closed") { // not closed state so close
         	if (closer != null){
         		msg = "sending close command to ${closer.label} the actual controler"
-        		closer.on()
+        		//closer.on()
+                runIn( lag ?: 1, "lagclose")
         	}
         	else {
         		msg = "sending close command to ${opener.label} the actual controler"
-        		opener.on()
+        		//opener.on()
+                runIn( lag ?: 1, "lagopen")
         	}
         }
 	}
@@ -160,6 +165,15 @@ def virtualgdcontactHandler(evt) {
     	log.trace "virtualgdcontactHandler - $msg"
     }
     runIn(checkTimeout, checkIfActually)
+}
+
+def lagclose(){ 
+	log.debug lag ?: 1
+	closer.on()
+}
+def lagopen(){ 
+	log.debug lag ?: 1
+	opener.on()
 }
 
 def checkIfActually() {
