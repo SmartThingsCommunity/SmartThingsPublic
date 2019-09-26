@@ -139,8 +139,7 @@ def virtualgdcontactHandler(evt) {
 	if("opening" == evt.value) {
     	if (realgdstate != "open") { // not open state so open
         	msg = "sending open command to ${opener.label} the actual controler"
-         	runIn( lag ?: 1, "lagopen")
-            //opener.on()
+            opener.on()
      	}
 	}
 	if("closing" == evt.value) {
