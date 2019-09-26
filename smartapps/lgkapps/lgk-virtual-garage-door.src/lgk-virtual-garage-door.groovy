@@ -50,7 +50,7 @@ preferences {
     section("Timeout before checking if the opening or closeing correctly?"){
 		input "checkTimeout", "number", title: "Gate/Garage Operation Check Timeout", required: true, defaultValue: 25
 	}
-    section("Lag before sending the open or close comand?"){
+    section("Lag before sending the close comand?"){
 		input "lag", "number", title: "Gate/Garage Operation pause befor action to get chance for buzzer", required: false //, defaultValue: 5
 	}
      section( "Notifications" ) {
