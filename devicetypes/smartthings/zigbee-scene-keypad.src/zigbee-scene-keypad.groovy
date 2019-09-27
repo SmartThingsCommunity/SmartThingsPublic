@@ -129,11 +129,9 @@ private addChildButtons(numberOfButtons) {
 private getChildCount() {
 	if (device.getDataValue("model") == "0106-G") {
 		return 6
-	} 
-	else if (device.getDataValue("model") == "HY0048") {
-    		return 4
-    	}
-	else if (device.getDataValue("model") == "cef8701bb8664a67a83033c071ef05f2") {
+	} else if (device.getDataValue("model") == "HY0048") {
+		return 4
+	} else if (device.getDataValue("model") == "cef8701bb8664a67a83033c071ef05f2") {
 		return 3
 	}
 }
