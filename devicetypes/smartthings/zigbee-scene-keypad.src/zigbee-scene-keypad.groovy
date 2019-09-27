@@ -28,6 +28,8 @@ metadata {
 
                 fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "HY0048", deviceJoinName: "情景开关 1", vid: "generic-4-button-alt"
                 fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "0106-G", deviceJoinName: "情景开关 1", vid: "generic-6-button-alt"
+		fingerprint profileId: "0104", inClusters: "0000, 0005", outClusters: "0000, 0005, 0017 ", manufacturer: "ORVIBO", model: "cef8701bb8664a67a83033c071ef05f2", deviceJoinName: "情景开关 1", vid: "generic-3-button-alt"
+
     }
 
 	tiles {
@@ -131,5 +133,9 @@ private getChildCount() {
 	else if (device.getDataValue("model") == "HY0048") {
     		return 4
     	}
+	else if  (device.getDataValue("model") == "cef8701bb8664a67a83033c071ef05f2") {
+		return 3
+	}
+
 }
 
