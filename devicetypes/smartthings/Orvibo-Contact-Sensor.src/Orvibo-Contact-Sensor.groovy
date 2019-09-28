@@ -126,7 +126,11 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	if (manufacturer == "eWeLink") {
+		sendEvent(name: "checkInterval", value:2 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	} else {
+		sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	}
 	def cmds = []
 	def manufacturer = getDataValue("manufacturer")
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
