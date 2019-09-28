@@ -126,9 +126,15 @@ def refresh() {
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	def cmds = []
 	def manufacturer = getDataValue("manufacturer")
+	
+	if (manufacturer == "eWeLink") {
+		sendEvent(name: "checkInterval", value:2 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	} else {
+		sendEvent(name: "checkInterval", value:20 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	}
+	def cmds = []
+	
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
 	//The electricity attribute is reported without bind and reporting CFG. The TI plan reports the power once in about 10 minutes; the NXP plan reports the electricity once in 20 minutes
 	if (manufacturer == "Aurora") {
