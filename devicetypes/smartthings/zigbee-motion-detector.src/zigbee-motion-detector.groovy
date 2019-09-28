@@ -159,6 +159,7 @@ def refresh() {
 
 def configure() {
 	log.debug "configure"
+	def manufacturer = getDataValue("manufacturer")
 	if (manufacturer == "eWeLink") {
 		sendEvent(name: "checkInterval", value:2 * 60 * 60 + 5 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	} else {
