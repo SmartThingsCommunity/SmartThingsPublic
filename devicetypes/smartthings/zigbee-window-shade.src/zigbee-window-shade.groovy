@@ -11,6 +11,7 @@
  *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *	for the specific language governing permissions and limitations under the License.
  */
+import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -82,9 +83,20 @@ private List<Map> collectAttributes(Map descMap) {
 	return descMaps
 }
 
+def installed() {
+	log.debug "installed"
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]))
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description:- ${description}"
+
+	// update existing devices
+	if (!state.supportedWindowShadeCommands) {
+		sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]))
+	}
+
 	if (description?.startsWith("read attr -")) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
 		if (isBindingTableMessage(description)) {
@@ -205,7 +217,6 @@ def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 2 min lag time)
 	log.info "configure()"
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]))
 	log.debug "Configuring Reporting and Bindings."
 
 	def cmds
