@@ -22,19 +22,11 @@ metadata {
 		capability "Thermostat"
 		capability "Temperature Measurement"
 
-		command "setThermostatSetpointUp"
-		command "setThermostatSetpointDown"
-		command "switchMode"
-
 		fingerprint mfr: "0060", prod: "0015", model: "0001", deviceJoinName: "Everspring Thermostatic Radiator Valve", mnmn: "SmartThings", vid: "generic-radiator-thermostat"
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"thermostat", type:"general", width:6, height:4, canChangeIcon: false)  {
-			tileAttribute("device.heatingSetpoint", key: "VALUE_CONTROL") {
-				attributeState("VALUE_UP", action: "setThermostatSetpointUp")
-				attributeState("VALUE_DOWN", action: "setThermostatSetpointDown")
-			}
 			tileAttribute("device.thermostatMode", key: "PRIMARY_CONTROL") {
 				attributeState("off", action:"switchMode", nextState:"...", icon: "st.thermostat.heating-cooling-off")
 				attributeState("heat", action:"switchMode", nextState:"...", icon: "st.thermostat.heat")
@@ -62,8 +54,22 @@ metadata {
 						]
 				)
 			}
+			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+				attributeState("default", label: '${currentValue}', unit: "°", defaultState: true)
+			}
 		}
-
+		controlTile("thermostatMode", "device.thermostatMode", "enum", width: 2 , height: 2, supportedStates: "device.supportedThermostatModes") {
+			state("off", action: "setThermostatMode", label: 'Off', icon: "st.thermostat.heating-cooling-off")
+			state("heat", action: "setThermostatMode", label: 'Heat', icon: "st.thermostat.heat")
+			state("emergency heat", action:"setThermostatMode", label: 'Emergency heat', icon: "st.thermostat.emergency-heat")
+		}
+		controlTile("heatingSetpoint", "device.heatingSetpoint", "slider",
+				sliderType: "HEATING",
+				debouncePeriod: 750,
+				range: "device.heatingSetpointRange",
+				width: 2, height: 2) {
+			state "default", action:"setHeatingSetpoint", label:'${currentValue}', backgroundColor: "#E86D13"
+		}
 		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "battery", label: 'Battery:\n${currentValue}%', unit: "%"
 		}
@@ -71,13 +77,14 @@ metadata {
 			state "refresh", label: 'refresh', action: "refresh.refresh", icon: "st.secondary.refresh-icon"
 		}
 		main "thermostat"
-		details(["thermostat", "battery", "refresh"])
+		details(["thermostat", "thermostatMode", "heatingSetpoint", "battery", "refresh"])
 	}
 }
 
 def initialize() {
 	sendEvent(name: "checkInterval", value: 4 * 60 * 60 + 24 * 60 , displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	sendEvent(name: "supportedThermostatModes", value: thermostatSupportedModes, displayed: false)
+	sendEvent(name: "heatingSetpointRange", value: [minHeatingSetpointTemperature, maxHeatingSetpointTemperature], displayed: false)
 	response(refresh())
 }
 
@@ -150,16 +157,20 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def setThermostatMode(String mode) {
 	def modeValue = 0
-	switch (mode) {
-		case "heat":
-			modeValue = 1
-			break
-		case "emergency heat":
-			modeValue = 11
-			break
-		case "off":
-			modeValue = 0
-			break
+	if (thermostatSupportedModes.contains(mode)) {
+		switch (mode) {
+			case "heat":
+				modeValue = 1
+				break
+			case "emergency heat":
+				modeValue = 11
+				break
+			case "off":
+				modeValue = 0
+				break
+		}
+	} else {
+		log.debug "Unsupported mode ${mode}"
 	}
 
 	[
@@ -183,27 +194,12 @@ def off() {
 
 def setHeatingSetpoint(setpoint) {
 	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
+	setpoint = Math.max(Math.min(setpoint, maxHeatingSetpointTemperature), minHeatingSetpointTemperature)
 	[
 			secure(zwave.thermostatSetpointV2.thermostatSetpointSet([precision: 1, scale: 0, scaledValue: setpoint, setpointType: 1, size: 2])),
 			"delay 2000",
 			secure(zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1))
 	]
-}
-
-def setThermostatSetpointUp() {
-	def setpoint = device.latestValue("heatingSetpoint")
-	if (setpoint < maxHeatingSetpointTemperature) {
-		setpoint = setpoint + (temperatureScale == 'C' ? 0.5 : 1)
-	}
-	setHeatingSetpoint(setpoint)
-}
-
-def setThermostatSetpointDown() {
-	def setpoint = device.latestValue("heatingSetpoint")
-	if (setpoint > minHeatingSetpointTemperature) {
-		setpoint = setpoint - (temperatureScale == 'C' ? 0.5 : 1)
-	}
-	setHeatingSetpoint(setpoint)
 }
 
 def refresh() {
@@ -229,31 +225,27 @@ private secure(cmd) {
 	}
 }
 
-def switchMode() {
-	def currentMode = device.currentValue("thermostatMode")
-	def supportedModes = thermostatSupportedModes
-	if (supportedModes && supportedModes.size()) {
-		def next = { supportedModes[supportedModes.indexOf(it) + 1] ?: supportedModes[0] }
-		def nextMode = next(currentMode)
-		setThermostatMode(nextMode)
+private getMaxHeatingSetpointTemperature() {
+	if (isEverspringRadiatorThermostat()) {
+		temperatureScale == 'C' ? 35 : 95
 	} else {
-		log.warn "supportedModes not defined"
+		temperatureScale == 'C' ? 30 : 86
 	}
 }
 
-private getMaxHeatingSetpointTemperature() {
-	temperatureScale == 'C' ? 30 : 86
-}
-
 private getMinHeatingSetpointTemperature() {
-	temperatureScale == 'C' ? 10 : 50
+	if (isEverspringRadiatorThermostat()) {
+		temperatureScale == 'C' ? 15 : 59
+	} else {
+		temperatureScale == 'C' ? 10 : 50
+	}
 }
 
 private getThermostatSupportedModes() {
 	if (isEverspringRadiatorThermostat()) {
 		["off", "heat", "emergency heat"]
 	} else {
-		[]
+		["off","heat"]
 	}
 }
 
