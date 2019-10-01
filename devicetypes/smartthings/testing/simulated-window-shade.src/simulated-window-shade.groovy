@@ -1,5 +1,5 @@
 /**
- *  Copyright 2018 SmartThings
+ *  Copyright 2018, 2019 SmartThings
  *
  *  Provides a simulated window shade.
  *
@@ -13,11 +13,14 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import groovy.json.JsonOutput
+
 metadata {
 	definition (name: "Simulated Window Shade", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-window-shade") {
 		capability "Actuator"
 		capability "Window Shade"
 		capability "Window Shade Preset"
+		//capability "Switch Level"
 
 		// Commands to use in the simulator
 		command "openPartially"
@@ -30,7 +33,31 @@ metadata {
 		command "unknown"
 	}
 
-	preferences {}
+	preferences {
+		section {
+			input("actionDelay", "number",
+				  title: "Action Delay",
+				  description: "An emulation for how long it takes the window shade to perform the requested action in seconds (1-120).",
+				  range: "1..120", defaultValue: "5", required: true, displayDuringSetup: false)
+		}
+		section {
+			input("supportedCommands", "enum",
+				  title: "Suported Commands",
+				  description: "This controls the value for supportedWindowShadeCommands.", defaultValue: 2, required: true, multiple: false,
+				  options:["1": "open, close",
+						   "2": "open, close, pause",
+						   "3": "open",
+						   "4": "close",
+						   "5": "pause",
+						   "6": "open, pause",
+						   "7": "close, pause",
+						   "8": "<empty list>",
+						   // For testing OCF/mobile client bugs
+						   "9": "open, closed, pause",
+						   "10": "open, closed, close, pause"]
+				 )
+		}
+	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"windowShade", type: "generic", width: 6, height: 4){
@@ -42,9 +69,9 @@ metadata {
 				attributeState "closing", label:'${name}', action:"pause", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partially open"
 				attributeState "unknown", label:'${name}', action:"open", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"opening"
 			}
-			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+			/*tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"setLevel"
-			}
+			}*/
 		}
 
 		valueTile("blank", "device.blank", width: 2, height: 2, decoration: "flat") {
@@ -100,67 +127,68 @@ metadata {
 	}
 }
 
-def parse(String description) {
+private getSupportedCommandsMap() {
+	[
+		"1": ["open", "close"],
+		"2": ["open", "close", "pause"],
+		"3": ["open"],
+		"4": ["close"],
+		"5": ["pause"],
+		"6": ["open", "pause"],
+		"7": ["close", "pause"],
+		"8": [],
+		// For testing OCF/mobile client bugs
+		"9": ["open", "closed", "pause"],
+		"10": ["open", "closed", "close", "pause"]
+	]
 }
+
+private getShadeActionDelay() {
+	(settings.actionDelay != null) ? settings.actionDelay : 5
+}
+
+def installed() {
+	log.debug "installed()"
+
+	updated()
+	opened()
+}
+
+def updated() {
+	log.debug "updated()"
+
+	def commands = (settings.supportedCommands != null) ? settings.supportedCommands : "2"
+
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(supportedCommandsMap[commands]))
+}
+
+def parse(String description) {
+	log.debug "parse(): $description"
+}
+
+// Capability commands
+
+// TODO: Implement a state machine to fine tune the behavior here.
+// Right now, tapping "open" and then "pause" leads to "opening",
+// "partially open", then "open" as the open() command completes.
+// The `runIn()`s below should all call a marshaller to handle the
+// movement to a new state. This will allow for shade level sim, too.
 
 def open() {
 	log.debug "open()"
 	opening()
-	runIn(5, "opened")
+	runIn(shadeActionDelay, "opened")
 }
 
 def close() {
 	log.debug "close()"
 	closing()
-	runIn(5, "closed")
+	runIn(shadeActionDelay, "closed")
 }
 
 def pause() {
 	log.debug "pause()"
 	partiallyOpen()
-}
-
-def openPartially() {
-	log.debug "openPartially()"
-	opening()
-	runIn(5, "partiallyOpen")
-}
-
-def closePartially() {
-	log.debug "closePartially()"
-	closing()
-	runIn(5, "partiallyOpen")
-}
-
-def partiallyOpen() {
-	log.debug "- partially open"
-	sendEvent(name: "windowShade", value: "partially open", isStateChange: true)
-}
-
-def opening() {
-	log.debug "- opening"
-	sendEvent(name: "windowShade", value: "opening", isStateChange: true)
-}
-
-def closing() {
-	log.debug "- closing"
-	sendEvent(name: "windowShade", value: "closing", isStateChange: true)
-}
-
-def opened() {
-	log.debug "- open"
-	sendEvent(name: "windowShade", value: "open", isStateChange: true)
-}
-
-def closed() {
-	log.debug "- closed"
-	sendEvent(name: "windowShade", value: "closed", isStateChange: true)
-}
-
-def unknown() {
-	// TODO: Add some "fuzzing" logic so that this gets hit every now and then?
-	log.debug "- unknown"
-	sendEvent(name: "windowShade", value: "unknown", isStateChange: true)
 }
 
 def presetPosition() {
@@ -174,10 +202,47 @@ def presetPosition() {
 	}
 }
 
-def installed() {
-	opened()
+// Custom test commands
+
+def openPartially() {
+	log.debug "openPartially()"
+	opening()
+	runIn(shadeActionDelay, "partiallyOpen")
 }
 
-def updated() {
-	installed()
+def closePartially() {
+	log.debug "closePartially()"
+	closing()
+	runIn(shadeActionDelay, "partiallyOpen")
+}
+
+def partiallyOpen() {
+	log.debug "windowShade: partially open"
+	sendEvent(name: "windowShade", value: "partially open", isStateChange: true)
+}
+
+def opening() {
+	log.debug "windowShade: opening"
+	sendEvent(name: "windowShade", value: "opening", isStateChange: true)
+}
+
+def closing() {
+	log.debug "windowShade: closing"
+	sendEvent(name: "windowShade", value: "closing", isStateChange: true)
+}
+
+def opened() {
+	log.debug "windowShade: open"
+	sendEvent(name: "windowShade", value: "open", isStateChange: true)
+}
+
+def closed() {
+	log.debug "windowShade: closed"
+	sendEvent(name: "windowShade", value: "closed", isStateChange: true)
+}
+
+def unknown() {
+	// TODO: Add some "fuzzing" logic so that this gets hit every now and then?
+	log.debug "windowShade: unknown"
+	sendEvent(name: "windowShade", value: "unknown", isStateChange: true)
 }
