@@ -23,6 +23,8 @@ metadata {
 		capability "Temperature Measurement"
 
 		fingerprint mfr: "0060", prod: "0015", model: "0001", deviceJoinName: "Everspring Thermostatic Radiator Valve", mnmn: "SmartThings", vid: "generic-radiator-thermostat"
+		//this DTH is sending temperature setpoint commands using Celsius scale and assumes that they'll be handled correctly by device
+		//if new device added to this DTH won't be able to do that, make sure to you'll handle conversion in a right way
 	}
 
 	tiles(scale: 2) {
@@ -83,7 +85,7 @@ metadata {
 
 def initialize() {
 	sendEvent(name: "checkInterval", value: 4 * 60 * 60 + 24 * 60 , displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	sendEvent(name: "supportedThermostatModes", value: thermostatSupportedModes, displayed: false)
+	sendEvent(name: "supportedThermostatModes", value: thermostatSupportedModes.encodeAsJson(), displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: [minHeatingSetpointTemperature, maxHeatingSetpointTemperature], displayed: false)
 	response(refresh())
 }
@@ -119,6 +121,8 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 }
 
+
+
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def value = cmd.batteryLevel == 255 ? 1 : cmd.batteryLevel
 	def map = [name: "battery", value: value, unit: "%"]
@@ -126,7 +130,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
-	def map = [name: "thermostatMode", data:[supportedThermostatModes: thermostatSupportedModes]]
+	def map = [name: "thermostatMode", data:[supportedThermostatModes: thermostatSupportedModes.encodeAsJson()]]
 	switch (cmd.mode) {
 		case 1:
 			map.value = "heat"
@@ -142,12 +146,13 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
-	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, 'C', cmd.precision), unit: temperatureScale)
+	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
+	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	def map = [name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, 'C', cmd.precision), unit: temperatureScale]
-	createEvent(map)
+	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
+	createEvent(name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
