@@ -35,6 +35,7 @@ metadata {
 		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
 		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec LED Bulb" //EU
 		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec LED Bulb" //US
+		fingerprint mfr: "0300", prod: "0003", model: "0003", deviceJoinName: "ilumin RGBW Bulb"
 	}
 
 	simulator {
