@@ -16,7 +16,7 @@
 import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "Simulated Window Shade", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-window-shade") {
+	definition (name: "Simulated Window Shade", namespace: "smartthings/testing", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-window-shade") {
 		capability "Actuator"
 		capability "Window Shade"
 		capability "Window Shade Preset"
