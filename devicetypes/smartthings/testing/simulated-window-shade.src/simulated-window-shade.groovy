@@ -36,26 +36,28 @@ metadata {
 	preferences {
 		section {
 			input("actionDelay", "number",
-				  title: "Action Delay",
-				  description: "An emulation for how long it takes the window shade to perform the requested action in seconds (1-120).",
-				  range: "1..120", defaultValue: "5", required: true, displayDuringSetup: false)
+				title: "Action Delay\n\nAn emulation for how long it takes the window shade to perform the requested action.",
+				description: "In seconds (1-120; default if empty: 5 sec)",
+				range: "1..120", displayDuringSetup: false)
 		}
 		section {
 			input("supportedCommands", "enum",
-				  title: "Suported Commands",
-				  description: "This controls the value for supportedWindowShadeCommands.", defaultValue: 2, required: true, multiple: false,
-				  options:["1": "open, close",
-						   "2": "open, close, pause",
-						   "3": "open",
-						   "4": "close",
-						   "5": "pause",
-						   "6": "open, pause",
-						   "7": "close, pause",
-						   "8": "<empty list>",
-						   // For testing OCF/mobile client bugs
-						   "9": "open, closed, pause",
-						   "10": "open, closed, close, pause"]
-				 )
+				title: "Supported Commands\n\nThis controls the value for supportedWindowShadeCommands.",
+				description: "open, close, pause", defaultValue: "2", multiple: false,
+				options: [
+					"1": "open, close",
+					"2": "open, close, pause",
+					"3": "open",
+					"4": "close",
+					"5": "pause",
+					"6": "open, pause",
+					"7": "close, pause",
+					"8": "<empty list>",
+					// For testing OCF/mobile client bugs
+					"9": "open, closed, pause",
+					"10": "open, closed, close, pause"
+				]
+			)
 		}
 	}
 
