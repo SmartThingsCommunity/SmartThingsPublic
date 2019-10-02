@@ -50,7 +50,7 @@ def getNumberOfButtons() {
 
 def installed() {
     createChildDevices()
-    sendEvent(name: "numberOfButtons", value: numberOfButtons)
+    sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
     sendEvent(name: "supportedButtonValues", value: ["pushed", "held"].encodeAsJson(), displayed: false)
     sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
 }
