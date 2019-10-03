@@ -26,34 +26,31 @@ definition(
 )
 
 preferences {
-	section("Choose the switch/relay that opens (and closes) the gate/door"){
+	section("Choose the switch/relay(s) that opens and closes the gate/door"){
 		input "opener", "capability.switch", title: "Garage/Gate Opener switch (may also close)", required: true
+        input "closer", "capability.switch", title: "Garage/Gate Closing switch ... optional dual switch ONLY if you have two differnt switches", required: false
 	}
-    section("Choose the switch/relay that CLOSES the gate/door ... if different"){
-		input "closer", "capability.switch", title: "Garage/Gate Closing switch ... optional dual switch ONLY if you have two differnt switches", required: false
-	}
-	section("Choose the sensor that senses if the gate/garage is open (and closed"){
+    
+	section("Choose the sensor(s) that senses if the gate/garage is open (and closed"){
 		input "sensor", "capability.contactSensor", title: "Garage/Gate Sensor for when fully CLOSED (closed when closed)", required: true
-	}
-    section("Choose the sensor that senses if the gate/garage is fully OPEN.. optional"){
-		input "sensoropen", "capability.contactSensor", title: "Garage/Gate Sensor for when fully OPEN .. optional dual sensors (closed when fully oopen)", required: false
+        input "sensoropen", "capability.contactSensor", title: "Garage/Gate Sensor for when fully OPEN .. optional dual sensors (closed when fully open)", required: false
 	}
     
 	section("Choose the Virtual Gate/Garage Device "){
 		input "virtualgd", "capability.doorControl", title: "Virtual or Simumated Gate/Garage Door", required: true
+        input "virtualgdbutton", "capability.contactSensor", title: "same as above device .. Virtual or Simumated Gate/Garage sensor", required: true
 	}
     
-	section("Choose the Virtual Gate/Garage Device sensor ... same as above device"){
-		input "virtualgdbutton", "capability.contactSensor", title: "same as above device .. Virtual or Simumated Gate/Garage sensor", required: true
-	}
-    
-    section("Timeout before checking if the opening or closeing correctly?"){
-		input "checkTimeout", "number", title: "Gate/Garage Operation Check Timeout", required: true, defaultValue: 25
-	}
-    section("Lag before sending the close comand?"){
-		input "lag", "number", title: "Gate/Garage Operation pause befor action to get chance for buzzer", required: false //, defaultValue: 5
-	}
-     section( "Notifications" ) {
+    section("Timeout and delays"){
+		input "checkTimeout", "number", title: "Time before checking if the opening or closeing competed correctly... default 40s", required: false //, defaultValue: 25
+		input "lag", "number", title: "Pause befor close to get chance for buzzer/warning..... default 1s", required: false //, defaultValue: 5
+    }
+    section("Closing warning"){
+		input "wlight", "capability.switch", title: "Select a warning light or switch.... only pick each device once", multiple: true, required: false
+        input "walarm", "capability.alarm", title: "Select a warning alarm .... only pick each device once", multiple: true, required: false
+        input "wbuzzer", "capability.tone", title: "Select a warning buzzer.... only pick each device once", multiple: true, required: false
+    }
+    section( "Notifications" ) {
         input("recipients", "contact", title: "Send notifications to") {
             input "sendPushMessage", "enum", title: "Send a push notification?", options: ["Yes", "No"], required: false
             input "phone1", "phone", title: "Send a Text Message?", required: false
@@ -98,15 +95,13 @@ def contactHandleropen(evt){ //only used for 2 sensor setup (open)
 	def msg = ""
     def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
-    
     if(evt.value == "closed"){
     	msg = "sending open comand"
     	virtualgd.open("open") //open
     }
-    
 	mysend("Open Contact sensor event, '${evt.device}' is '${evt.value}',virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', $msg","")
 	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}',virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', '$msg'"    
-}
+}	//2 sensor setup (open)
 
 def contactHandler(evt) {
 	def virtualgdstate = virtualgd.currentContact
@@ -125,6 +120,9 @@ def contactHandler(evt) {
     		virtualgd.open("open")
 		}
 		if("closed" == evt.value) {
+        	//if (wbuzzer){wbuzzer.off()} not sue how to just buzzer 'tone' off?
+        	if (wlight) {wlight.off()}
+            if (walarm) {walarm.off()}
        		virtualgd.close("closed")
    		}
     }
@@ -144,6 +142,9 @@ def virtualgdcontactHandler(evt) {
 	}
 	if("closing" == evt.value) {
     	if (realgdstate != "closed") { // not closed state so close
+        	if (wbuzzer){wbuzzer.beep()}
+        	if (wlight) {wlight.on()}
+            if (walarm) {walarm.both()}
         	if (closer != null){
         		msg = "sending close command to ${closer.label} the actual controler"
         		//closer.on()
@@ -152,18 +153,17 @@ def virtualgdcontactHandler(evt) {
         	else {
         		msg = "sending close command to ${opener.label} the actual controler"
         		//opener.on()
-                runIn( lag ?: 1, "lagopen")
+                runIn( lag ?: 5, "lagopen")
         	}
         }
 	}
-    if("closed" == evt.value) { msg = "closed"}
-    if("open" == evt.value) { msg = "open"}
-    
+    if("closed" == evt.value) { msg = "${evt?.device} closed"}
+    if("open" == evt.value) { msg = "${evt?.device} open"}
     if (msg != ""){
     	mysend("$msg","")
     	log.trace "virtualgdcontactHandler - $msg"
     }
-    runIn(checkTimeout, checkIfActually)
+    runIn(checkTimeout ?: 40, checkIfActually)
 }
 
 def lagclose(){ 
