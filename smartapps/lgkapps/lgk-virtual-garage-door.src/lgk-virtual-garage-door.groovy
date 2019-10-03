@@ -97,35 +97,40 @@ def contactHandleropen(evt){ //only used for 2 sensor setup (open)
     def virtualdoorstate = virtualgd.currentDoor
     if(evt.value == "closed"){
     	msg = "sending open comand"
-    	virtualgd.open("open") //open
+    	virtualgd.open("open") //full open
     }
 	mysend("Open Contact sensor event, '${evt.device}' is '${evt.value}',virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', $msg","")
 	log.trace "contactHandleropen - '${evt?.device} ${evt?.name}' is '${evt.value}',virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', '$msg'"    
-}	//2 sensor setup (open)
+}
 
 def contactHandler(evt) {
 	def virtualgdstate = virtualgd.currentContact
     def virtualdoorstate = virtualgd.currentDoor
-    
+/*    
     if(sensoropen != null){ // if using 2 sensors 'sensoropen' should be closed when the door/gate is open
 		if(evt.value == "closed") {
         	log.info "Dual Sensor setup"
             log.debug "closed sesnor is closed so Garage/Gate is fully closed"
-       		virtualgd.close("closed") //closed
+       		if (wlight) {wlight.off()}
+            if (walarm) {walarm.off()}
+            virtualgd.close("closed") //closed
    		}
 	}
-	else{ // single sensor setup 
+	else{
     	log.info "Single Sensor setup"
-    	if("open" == evt.value) {
+*/
+    	if("open" == evt.value && sensoropen == null) { //ignore open events for dual sensors
+        	log.info "Single Sensor setup Open event"
     		virtualgd.open("open")
 		}
 		if("closed" == evt.value) {
-        	//if (wbuzzer){wbuzzer.off()} not sue how to just buzzer 'tone' off?
+        log.info "Sensor close event, single or dual setup"
+        	//if (wbuzzer){wbuzzer.off()} //not sue how to turn buzzer 'tone' off?
         	if (wlight) {wlight.off()}
             if (walarm) {walarm.off()}
        		virtualgd.close("closed")
    		}
-    }
+//    }
 	mysend("Contact sensor event, virtual contact is '$virtualgdstate' and Garage/Gate is '$virtualdoorstate', sending '${evt?.device} is ${evt?.name}' to simulated device to sync","")
 	log.trace "contactHandler - '${evt?.device} ${evt?.name}' is '${evt.value}' - virtual contact is '$virtualgdstate'and Garage/Gate is '$virtualdoorstate' "
 }
@@ -140,25 +145,22 @@ def virtualgdcontactHandler(evt) {
             opener.on()
      	}
 	}
-	if("closing" == evt.value) {
+	else if("closing" == evt.value) {
     	if (realgdstate != "closed") { // not closed state so close
         	if (wbuzzer){wbuzzer.beep()}
         	if (wlight) {wlight.on()}
             if (walarm) {walarm.both()}
-        	if (closer != null){
+        	if (closer != null){ //2 switches
         		msg = "sending close command to ${closer.label} the actual controler"
-        		//closer.on()
-                runIn( lag ?: 1, "lagclose")
+                runIn( lag ?: 6, "lagclose")
         	}
-        	else {
+        	else { // single switch
         		msg = "sending close command to ${opener.label} the actual controler"
-        		//opener.on()
-                runIn( lag ?: 5, "lagopen")
+                runIn( lag ?: 6, "lagopen")
         	}
         }
 	}
-    if("closed" == evt.value) { msg = "${evt?.device} closed"}
-    if("open" == evt.value) { msg = "${evt?.device} open"}
+    else { msg = "${evt?.device} ${evt.value}"} // open/close events
     if (msg != ""){
     	mysend("$msg","")
     	log.trace "virtualgdcontactHandler - $msg"
