@@ -25,9 +25,6 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 SMA"
 	}
 
@@ -97,7 +94,7 @@ def parse(String description) {
 	def result = map ? createEvent(map) : null
 
     if (description?.startsWith('enroll request')) {
-    	List cmds = enrollResponse()
+        List cmds = zigbee.enrollResponse()
         log.debug "enroll response: ${cmds}"
         result = cmds?.collect { new physicalgraph.device.HubAction(it) }
     }
@@ -252,7 +249,7 @@ def refresh()
 
 	]
 
-	return refreshCmds + enrollResponse()
+	return refreshCmds + zigbee.enrollResponse()
 }
 
 def configure() {
@@ -273,15 +270,6 @@ def configure() {
     return enrollCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
-def enrollResponse() {
-	log.debug "Sending enroll response"
-    [
-
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 1"
-
-    ]
-}
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
