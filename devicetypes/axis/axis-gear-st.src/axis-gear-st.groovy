@@ -308,7 +308,7 @@ def configure() {
 	sendEvent(name: "windowShade", value: "unknown")
 	log.debug "Configuring Reporting and Bindings."
 	sendEvent(name: "checkInterval", value: (2 * 60 * 60 + 10 * 60), displayed: true, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]))
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
 
 	def attrs_refresh = zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_SWBUILDID) +
 						zigbee.readAttribute(CLUSTER_WINDOWCOVERING, WINDOWCOVERING_ATTR_LIFTPERCENTAGE) +
