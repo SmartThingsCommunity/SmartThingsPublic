@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition(name: "Fibaro Motion Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.", ocfDeviceType: "x.com.st.d.sensor.motion") {
+	definition(name: "Fibaro Motion Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.", runLocally: true, minHubCoreVersion: '000.025.0000', executeCommandsLocally: true, ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Illuminance Measurement"
@@ -27,6 +27,7 @@ metadata {
 
 		fingerprint mfr: "010F", prod: "0801", model: "2001"
 		fingerprint mfr: "010F", prod: "0801", model: "1001"
+		fingerprint mfr: "010F", prod: "0801"
 
 	}
 
@@ -117,7 +118,7 @@ metadata {
 
 def installed() {
 	sendEvent(name: "tamper", value: "clear", displayed: false)
-	sendEvent(name: "motionText", value: "Disabled", displayed: false)
+	sendEvent(name: "motionText", value: "X: 0.0\nY: 0.0\nZ: 0.0", displayed: false)
 	sendEvent(name: "motion", value: "inactive", displayed: false)
 	multiStatusEvent("Sync OK.", true, true)
 }
@@ -283,7 +284,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	cmds << encap(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1))
 	cmds << "delay 1200"
 	cmds << encap(zwave.wakeUpV1.wakeUpNoMoreInformation())
-	runIn(1, "syncNext")
+	runIn(1, "syncNext", [overwrite: true, forceForLocallyExecuting: true])
 	[event, response(cmds)]
 }
 
@@ -363,6 +364,10 @@ def configure() {
 	cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
 	cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
 	cmds += zwave.sensorBinaryV2.sensorBinaryGet()
+	cmds += zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 24, size: 1)
+	cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 52)
+	cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 53)
+	cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 54)
 	cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
 
 	encapSequence(cmds, 500)
@@ -396,13 +401,13 @@ private encap(physicalgraph.zwave.Command cmd) {
 private motionEvent(Integer sensorType, value) {
 	logging("${device.displayName} - Executing motionEvent() with parameters: ${sensorType}, ${value}", "debug")
 	def axisMap = [52: "yAxis", 53: "zAxis", 54: "xAxis"]
-	switch (sensorType) {
+	switch (sensorType as Integer) {
 		case 25:
 			sendEvent(name: "motionText", value: "Vibration:\n${value} MMI", displayed: false)
 			break
 		case 52..54:
 			sendEvent(name: axisMap[sensorType], value: value, displayed: false)
-			runIn(2, "axisEvent")
+			runIn(2, "axisEvent", [overwrite: true, forceForLocallyExecuting: true])
 			break
 	}
 }
@@ -459,10 +464,10 @@ def syncNext() {
 		}
 	}
 	if (cmds) {
-		runIn(10, "syncCheck")
+		runIn(10, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 		sendHubCommand(cmds, 1000)
 	} else {
-		runIn(1, "syncCheck")
+		runIn(1, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 

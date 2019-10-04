@@ -2,7 +2,7 @@
  *	Fibaro Dimmer 2
  */
 metadata {
-	definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
+	definition (name: "Fibaro Dimmer 2 ZW5", namespace: "FibarGroup", author: "Fibar Group", runLocally: true, minHubCoreVersion: '000.025.0000', executeCommandsLocally: true, mnmn: "SmartThings", vid:"generic-dimmer-power-energy") {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Energy Meter"
@@ -15,9 +15,11 @@ metadata {
 		command "clearError"
 
 		attribute "errorMode", "string"
+		attribute "scene", "string"
 
 		fingerprint mfr: "010F", prod: "0102", model: "2000"
 		fingerprint mfr: "010F", prod: "0102", model: "1000"
+		fingerprint mfr: "010F", prod: "0102", model: "3000"
 	}
 
 	tiles (scale: 2) {
@@ -148,13 +150,13 @@ def installed(){
 }
 
 def configure(){
-	  sendEvent(name: "switch", value: "off", displayed: "true") //set the initial state to off.
+	sendEvent(name: "switch", value: "off", displayed: "true") //set the initial state to off.
 }
 
 def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
 	logging("${device.displayName} - Executing updated()","info")
-	runIn(3, "syncStart")
+	runIn(3, "syncStart", [overwrite: true, forceForLocallyExecuting: true])
 	state.lastUpdated = now()
 }
 
@@ -163,7 +165,10 @@ def syncStart() {
 	parameterMap().each {
 		if(settings."$it.key" != null) {
 			if (state."$it.key" == null) { state."$it.key" = [value: null, state: "synced"] }
-			if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state in ["notSynced","inProgress"]) {
+			// this parameter (38) is not supported on some earlier firmware versions, so we'll mark it as already synced
+			if ("$it.key" == "levelCorrection" && (!zwaveInfo.ver || (zwaveInfo.ver as float) <= REDUCED_CONFIGURATION_VERSION)) {
+				state."$it.key".state = "synced"
+			} else if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state in ["notSynced","inProgress"]) {
 				state."$it.key".value = settings."$it.key" as Integer
 				state."$it.key".state = "notSynced"
 				syncNeeded = true
@@ -190,10 +195,10 @@ private syncNext() {
 		}
 	}
 	if (cmds) {
-		runIn(10, "syncCheck")
+		runIn(10, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 		sendHubCommand(cmds,1000)
 	} else {
-		runIn(1, "syncCheck")
+		runIn(1, "syncCheck", [overwrite: true, forceForLocallyExecuting: true])
 	}
 }
 
@@ -384,6 +389,12 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
+}
+
 private logging(text, type = "debug") {
 	if (settings.logging == "true") {
 		log."$type" text
@@ -444,6 +455,8 @@ private Map cmdVersions() {
 	[0x5E: 1, 0x86: 1, 0x72: 2, 0x59: 1, 0x73: 1, 0x22: 1, 0x31: 5, 0x32: 3, 0x71: 3, 0x56: 1, 0x98: 1, 0x7A: 2, 0x20: 1, 0x5A: 1, 0x85: 2, 0x26: 3, 0x8E: 2, 0x60: 3, 0x70: 2, 0x75: 2, 0x27: 1]
 }
 
+private getREDUCED_CONFIGURATION_VERSION() {3.04}
+
 private parameterMap() {[
 		[key: "autoStepTime", num: 6, size: 2, type: "enum", options: [
 				1: "10 ms",
@@ -489,5 +502,5 @@ private parameterMap() {[
 				2: "control mode selected automatically (based on auto-calibration)"
 		], def: "2", min: 0, max: 2 , title: "Load control mode", descr: "This parameter allows to set the desired load control mode. The device automatically adjusts correct control mode, but the installer may force its change using this parameter."],
 		[key: "levelCorrection", num: 38, size: 2, type: "number", def: 255, min: 0, max: 255 , title: "Brightness level correction for flickering loads",
-		 descr: "Correction reduces spontaneous flickering of some capacitive load (e.g. dimmable LEDs) at certain brightness levels in 2-wire installation. In countries using ripple-control, correction may cause changes in brightness. In this case it is necessary to disable correction or adjust time of correction for flickering loads. (1-254 – duration of correction in seconds. For further information please see the manual)"]
+		 descr: "[Only supported on device versions > $REDUCED_CONFIGURATION_VERSION] Correction reduces spontaneous flickering of some capacitive load (e.g. dimmable LEDs) at certain brightness levels in 2-wire installation. In countries using ripple-control, correction may cause changes in brightness. In this case it is necessary to disable correction or adjust time of correction for flickering loads. (1-254 – duration of correction in seconds. For further information please see the manual)"]
 ]}

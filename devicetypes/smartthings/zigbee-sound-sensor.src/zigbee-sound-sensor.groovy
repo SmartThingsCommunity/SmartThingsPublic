@@ -179,7 +179,7 @@ def configure() {
 			zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTR, DataType.UINT16, 0x0028) + zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0x00001950))
 
 	//send enroll commands, configures battery reporting to happen every 30 minutes, create binding for check in attribute so check ins will occur
-	return zigbee.enrollResponse() + zigbee.iasZoneConfig(30, 60 * 30) + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + refresh() + enrollCmds
+	return zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 30, null) + zigbee.batteryConfig(60 * 30, 60 * 30 + 1) + zigbee.temperatureConfig(60 * 30, 60 * 30 + 1) + zigbee.configureReporting(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTR, DataType.UINT32, 0, 3600, null) + refresh() + enrollCmds
 }
 
 private boolean isZoneMessage(description) {

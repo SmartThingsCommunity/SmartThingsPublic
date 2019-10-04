@@ -23,9 +23,11 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
+		fingerprint inClusters: "0x62"
 		fingerprint mfr: "010E", prod: "0009", model: "0001", deviceJoinName: "Danalock V3 Smart Lock"
 		fingerprint mfr: "0090", prod: "0003", model: "0446", deviceJoinName: "Kwikset Convert Deadbolt Door Lock" //99140
 		fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Smart Lock Pro"
+		fingerprint mfr: "021D", prod: "0003", model: "0001", deviceJoinName: "Alfred Smart Home Touchscreen Deadbolt" // DB2
 	}
 
 	simulator {
@@ -61,6 +63,22 @@ metadata {
 }
 
 import physicalgraph.zwave.commands.doorlockv1.*
+
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x62: 1,  // Door Lock
+		0x63: 1,  // User Code
+		0x71: 2,  // Alarm
+		0x72: 2,  // Manufacturer Specific
+		0x80: 1,  // Battery
+		0x85: 2,  // Association
+		0x86: 1,  // Version
+		0x98: 1   // Security 0
+	]
+}
 
 /**
  * Called on app installed
@@ -186,7 +204,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [0x98: 1, 0x72: 2, 0x85: 2, 0x86: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -205,7 +223,7 @@ def parse(String description) {
  */
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
 	log.trace "[DTH] Executing 'zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation)' with cmd = $cmd"
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x62: 1, 0x71: 2, 0x80: 1, 0x85: 2, 0x63: 1, 0x98: 1, 0x86: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	}

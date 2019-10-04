@@ -13,7 +13,7 @@ metadata {
 		command "reset"
 		
 		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Wall Plug EU ZW5"
-		fingerprint deviceId: "0x1001", inClusters:"0x5E,0x22,0x59,0x56,0x7A,0x32,0x71,0x73,0x31,0x85,0x70,0x72,0x5A,0x8E,0x25,0x86"
+		fingerprint mfr: "010F", prod: "0602"
 
 	}
 
@@ -293,6 +293,12 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	} else {
 		log.warn "Could not extract crc16 command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {

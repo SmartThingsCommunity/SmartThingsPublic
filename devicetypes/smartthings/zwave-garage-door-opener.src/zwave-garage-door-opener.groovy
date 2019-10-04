@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Garage Door Opener", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
+	definition (name: "Z-Wave Garage Door Opener", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, ocfDeviceType: "oic.d.garagedoor") {
 		capability "Actuator"
 		capability "Door Control"
 		capability "Garage Door Control"
@@ -23,6 +23,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
+		fingerprint inClusters: "0x66, 0x98, 0x71, 0x72"
 		fingerprint deviceId: "0x4007", inClusters: "0x98"
 		fingerprint deviceId: "0x4006", inClusters: "0x98"
 		fingerprint mfr:"014F", prod:"4744", model:"3030", deviceJoinName: "Linear GoControl Garage Door Opener"
@@ -69,11 +70,26 @@ import physicalgraph.zwave.commands.barrieroperatorv1.*
 def installed(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	response(secure(zwave.barrierOperatorV1.barrierOperatorSignalSupportedGet()))
 }
 
 def updated(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x63: 1,  // User Code
+		0x71: 3,  // Notification
+		0x72: 2,  // Manufacturer Specific
+		0x80: 1,  // Battery
+		0x85: 2,  // Association
+		0x98: 1   // Security 0
+	]
 }
 
 def parse(String description) {
@@ -91,7 +107,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [ 0x98: 1, 0x72: 2 ])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -101,7 +117,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x71: 3, 0x80: 1, 0x85: 2, 0x63: 1, 0x98: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)

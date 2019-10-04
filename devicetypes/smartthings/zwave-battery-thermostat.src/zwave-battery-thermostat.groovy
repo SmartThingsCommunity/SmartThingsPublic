@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Battery Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
+	definition (name: "Z-Wave Battery Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat", genericHandler: "Z-Wave") {
 		capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat Heating Setpoint"
@@ -303,7 +303,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 	if(cmd.heat) { supportedModes << "heat" }
 	if(cmd.cool) { supportedModes << "cool" }
 	if(cmd.auto) { supportedModes << "auto" }
-//	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" } // device doesn't actually support this
+	if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" }
 
 	state.supportedModes = supportedModes
 	createEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
@@ -484,14 +484,16 @@ def updateSetpoints() {
 def updateSetpoints(data) {
 	def cmds = []
 	if (data.targetHeatingSetpoint) {
-		cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointSet(
-					setpointType: 1, scale: state.scale, precision: state.precision, scaledValue: data.targetHeatingSetpoint).format())
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 1, scale: state.scale,
+				precision: state.precision, scaledValue: data.targetHeatingSetpoint)
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 1)
 	}
 	if (data.targetCoolingSetpoint) {
-		cmds << new physicalgraph.device.HubAction(zwave.thermostatSetpointV1.thermostatSetpointSet(
-					setpointType: 2, scale: state.scale, precision: state.precision, scaledValue: data.targetCoolingSetpoint).format())
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointSet(setpointType: 2, scale: state.scale,
+				precision: state.precision, scaledValue: data.targetCoolingSetpoint)
+		cmds << zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 2)
 	}
-	sendHubCommand(cmds)
+	sendHubCommand(cmds, 1000)
 }
 
 // thermostatSetpoint is not displayed by any tile as it can't be predictable calculated due to

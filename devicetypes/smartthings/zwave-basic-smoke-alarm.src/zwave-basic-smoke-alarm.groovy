@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Basic Smoke Alarm", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Basic Smoke Alarm", namespace: "smartthings", author: "SmartThings", genericHandler: "Z-Wave") {
 		capability "Smoke Detector"
 		capability "Sensor"
 		capability "Battery"

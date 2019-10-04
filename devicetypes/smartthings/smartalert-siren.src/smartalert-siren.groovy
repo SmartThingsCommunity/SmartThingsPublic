@@ -136,8 +136,7 @@ def parse(String description) {
 	return result
 }
 
-def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
-{
+def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	def switchValue = cmd.value ? "on" : "off"
 	def alarmValue
 	if (cmd.value == 0) {
@@ -158,7 +157,7 @@ def createEvents(physicalgraph.zwave.commands.basicv1.BasicReport cmd)
 	]
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
+def createEvents(physicalgraph.zwave.Command cmd) {
 	log.warn "UNEXPECTED COMMAND: $cmd"
 }
 
@@ -166,5 +165,5 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	secure(zwave.basicV1.basicGet())
+	zwave.basicV1.basicGet().format()
 }

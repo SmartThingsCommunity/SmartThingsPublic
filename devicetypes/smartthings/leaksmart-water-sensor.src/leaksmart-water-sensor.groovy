@@ -17,7 +17,7 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Leaksmart Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", mnmn: "SmartThings", vid: "generic-leak-3") {
+	definition(name: "Leaksmart Water Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", mnmn: "SmartThings", vid: "generic-leak") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Health Check"
@@ -32,8 +32,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name: "water", type: "generic", width: 6, height: 4) {
 			tileAttribute ("device.water", key: "PRIMARY_CONTROL") {
-				attributeState("wet", label:'${name}', icon:"st.alarm.water.wet", backgroundColor:"#3277e5")
-				attributeState("dry", label:'${name}', icon:"st.alarm.water.dry", backgroundColor:"#edbd00")
+				attributeState("wet", label:'${name}', icon:"st.alarm.water.wet", backgroundColor:"#00A0DC")
+				attributeState("dry", label:'${name}', icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
 			}
 		}
 		valueTile("temperature", "device.temperature", width: 2, height: 2) {

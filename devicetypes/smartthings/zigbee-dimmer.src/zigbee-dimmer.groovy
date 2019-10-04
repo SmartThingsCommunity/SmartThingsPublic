@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
+	definition (name: "ZigBee Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, genericHandler: "Zigbee") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Refresh"
@@ -22,15 +22,68 @@ metadata {
 		capability "Health Check"
 		capability "Light"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "Aurora", model: "LCBulb01UK", deviceJoinName: "Aurora AOne Control Dimmer (120w)"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0003", manufacturer: "Aurora", model: "Dimmer", deviceJoinName: "Aurora AOne Control Dimmer (320w)"
+		// Generic
+		fingerprint profileId: "0104", deviceId: "0101", inClusters: "0006, 0008", deviceJoinName: "Generic Dimmable Light"
+
+		// AduroSmart
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", deviceId: "0101", manufacturer: "AduroSmart Eria", model: "AD-DimmableLight3001", deviceJoinName: "Eria ZigBee Dimmable Bulb"
+
+		// Aurora
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "Aurora", model: "LCBulb01UK", deviceJoinName: "Aurora AOne Control Dimmer (120w)", ocfDeviceType: "oic.d.switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0003", manufacturer: "Aurora", model: "Dimmer", deviceJoinName: "Aurora AOne Control Dimmer (320w)", ocfDeviceType: "oic.d.switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0009", outClusters: "0019", manufacturer: "Aurora", model: "FWMPROZXBulb50AU", deviceJoinName: "Aurora MPro"
+		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, FFFF, 1000", outClusters: "0019", manufacturer: "Aurora", model: "FWBulb51AU", deviceJoinName: "Aurora Smart Dimmable"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "Aurora", model: "FWStrip50AU", deviceJoinName: "Aurora Dimmable Strip Controller"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "Aurora", model: "FWGU10Bulb50AU", deviceJoinName: "Aurora Smart Dimmable GU10"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "Aurora", model: "NPD3032", deviceJoinName: "Aurora In-line Dimmer", ocfDeviceType: "oic.d.switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "Aurora", model: "WallDimmerMaster", deviceJoinName: "Aurora Smart Rotary Dimmer", ocfDeviceType: "oic.d.switch"
+
+		// INGENIUM
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0301, FC01", manufacturer: "ubisys", model: "D1 (5503)", deviceJoinName: "INGENIUM ZB Universal Dimming Module ZBM01d"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "Megaman", model: "AD-DimmableLight3001", deviceJoinName: "INGENIUM ZB LED Classic"
+
+		// Innr
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "0019", manufacturer: "innr", model: "RF 263", deviceJoinName: "Innr Smart Filament Bulb Vintage"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "0019", manufacturer: "innr", model: "BF 263", deviceJoinName: "Innr Smart Filament Bulb Vintage"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "0019", manufacturer: "innr", model: "BF 265", deviceJoinName: "Innr Smart Filament Bulb"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0019", manufacturer: "innr", model: "AE 260", deviceJoinName: "Innr Smart Bulb"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "0019", manufacturer: "innr", model: "BE 220", deviceJoinName: "Innr Smart Flood Light White"
+		fingerprint manufacturer: "innr", model: "RF 265", deviceJoinName: "Innr Smart Filament Bulb White" // raw description: 01 0104 0101 01 09 0000 0003 0004 0005 0006 0008 0B05 1000 FC82 01 0019
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "innr", model: "RB 265", deviceJoinName: "Innr Smart Bulb White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "innr", model: "RB 245", deviceJoinName: "Innr Smart Candle White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "innr", model: "RS 225", deviceJoinName: "Innr Smart Spot White"
+
+		// Leedarson
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "Smarthome", model: "S111-201A", deviceJoinName: "Leedarson Dimmable White Bulb A19"
+		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, FFFF, 1000", outClusters: "0019", manufacturer: "LDS", model: "ZBT-DIMLight-GLS0000", deviceJoinName: "Smart Bulb"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "LDS", model: "ZHA-DIMLight-GLS0000", deviceJoinName: "Smart Bulb"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "LDS", model: "ZBT-DIMLight-GLS", deviceJoinName: "Smart Bulb"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "LDS", model: "ZBT-DIMLight-GLS0044", deviceJoinName: "Smart Bulb"
+
+		// Leviton
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL6HD", deviceJoinName: "Leviton Dimmer Switch", ocfDeviceType: "oic.d.switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL3HL", deviceJoinName: "Leviton Lumina RF Plug-In Dimmer", ocfDeviceType: "oic.d.switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL1KD", deviceJoinName: "Leviton Lumina RF Dimmer Switch", ocfDeviceType: "oic.d.switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "ZSD07", deviceJoinName: "Leviton Lumina RF 0-10V Dimming Wall Switch", ocfDeviceType: "oic.d.switch"
+
+		// Müller Licht
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-DimmableLight", deviceJoinName: "Müller Licht Tint Bulb Dimming"
+
+		// OSRAM/Sylvania
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 ON/OFF/DIM", deviceJoinName: "SYLVANIA Smart A19 Soft White"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY A19 ON/OFF/DIM 10 Year", deviceJoinName: "SYLVANIA Smart 10-Year A19"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FF00", outClusters: "0019", manufacturer: "MRVL", model: "MZ100", deviceJoinName: "Wemo Bulb"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05", outClusters: "0019", manufacturer: "OSRAM SYLVANIA", model: "iQBR30", deviceJoinName: "Sylvania Ultra iQ"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY PAR38 ON/OFF/DIM", deviceJoinName: "SYLVANIA Smart PAR38 Soft White"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY BR ON/OFF/DIM", deviceJoinName: "SYLVANIA Smart BR30 Soft White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, 0B05, FC01, FC08", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "A19 W 10 year", deviceJoinName: "SYLVANIA Smart 10Y A19 Soft White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "BR30 W 10 year", deviceJoinName: "SYLVANIA Smart 10Y BR30 Soft White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "PAR38 W 10 year", deviceJoinName: "SYLVANIA Smart 10Y PAR38 Soft White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Edge-lit flushmount", deviceJoinName: "SYLVANIA SMART+ Flush Mount"
+
+		// Ozom
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "LEEDARSON LIGHTING", model: "M350ST-W1R-01", deviceJoinName: "OZOM Dimmable LED Smart Light"
+
+		// Sengled
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-G13", deviceJoinName: "Sengled Element Classic"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-G14", deviceJoinName: "Sengled Element Classic"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-G23", deviceJoinName: "Sengled Element Classic"
@@ -38,20 +91,19 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E12-N13", deviceJoinName: "Sengled Element Classic"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E12-N14", deviceJoinName: "Sengled Element Classic"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E12-N15", deviceJoinName: "Sengled Element Classic"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL6HD", deviceJoinName: "Leviton Dimmer Switch"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL3HL", deviceJoinName: "Leviton Lumina RF Plug-In Dimmer"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL1KD", deviceJoinName: "Leviton Lumina RF Dimmer Switch"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, 0B05, FC01, FC08", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "A19 W 10 year", deviceJoinName: "SYLVANIA Smart 10Y A19 Soft White"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "BR30 W 10 year", deviceJoinName: "SYLVANIA Smart 10Y BR30 Soft White"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "PAR38 W 10 year", deviceJoinName: "SYLVANIA Smart 10Y PAR38 Soft White"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "ZSD07", deviceJoinName: "Leviton Lumina RF 0-10V Dimming Wall Switch"
-		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, FFFF, 1000", outClusters: "0019", manufacturer: "LDS", model: "ZBT-DIMLight-GLS0000", deviceJoinName: "A60 Dim Bulb"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008", outClusters: "0019", manufacturer: "LDS", model: "ZHA-DIMLight-GLS0000", deviceJoinName: "A60 Dim Bulb"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "LDS", model: "ZBT-DIMLight-GLS", deviceJoinName: "A60 Dim Bulb"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0009", outClusters: "0019", manufacturer: "Aurora", model: "FWMPROZXBulb50AU", deviceJoinName: "Aurora MPro"
-		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, FFFF, 1000", outClusters: "0019", manufacturer: "Aurora", model: "FWBulb51AU", deviceJoinName: "Aurora Smart Dimmable"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FEDC", outClusters: "0019", manufacturer: "Aurora", model: "FWGU10Bulb50AU", deviceJoinName: "Aurora Smart Dimmable GU10"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000", outClusters: "000A, 0019", manufacturer: "Aurora", model: "FWGU10Bulb50AU", deviceJoinName: "AOne Smart Dimmable Lamp"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-N13", deviceJoinName: "Sengled Element Classic"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-N14", deviceJoinName: "Sengled Element Classic"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E1A-AC2", deviceJoinName: "Sengled DownLight"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-N13A", deviceJoinName: "Sengled Extra Bright Soft White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E11-N14A", deviceJoinName: "Sengled Extra Bright Daylight"
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E21-N13A", deviceJoinName: "Sengled Soft White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E21-N14A", deviceJoinName: "Sengled Daylight"
+
+		// SmartThings
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "LDS", model: "ZBT-DIMLight-GLS0006", deviceJoinName: "Smart Bulb"
+
+		// Wemo
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FF00", outClusters: "0019", manufacturer: "MRVL", model: "MZ100", deviceJoinName: "Wemo Bulb"
 	}
 
 	tiles(scale: 2) {
@@ -119,7 +171,7 @@ def on() {
 	zigbee.on()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	def additionalCmds = []
 	if (device.getDataValue("model") == "iQBR30" && value.toInteger() > 0) { // Handle iQ bulb not following spec
 		additionalCmds = zigbee.on()

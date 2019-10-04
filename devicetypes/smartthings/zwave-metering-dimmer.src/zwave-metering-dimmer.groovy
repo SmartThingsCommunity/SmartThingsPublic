@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true) {
+	definition (name: "Z-Wave Metering Dimmer", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: true, genericHandler: "Z-Wave") {
 		capability "Switch"
 		capability "Polling"
 		capability "Power Meter"
@@ -38,6 +38,7 @@ metadata {
 		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeotec Nano Dimmer"
 		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeotec Nano Dimmer"
 		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Plug-in Dimmer"
+		fingerprint mfr:"0159", prod:"0001", model:"0055", deviceJoinName: "Qubino Mini Dimmer ZMNHHD1"
 	}
 
 	simulator {
@@ -160,7 +161,7 @@ def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	return result
 }
 
-def handleMeterReport(cmd){
+def handleMeterReport(cmd) {
 	if (cmd.meterType == 1) {
 		if (cmd.scale == 0) {
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
@@ -216,7 +217,7 @@ def refresh() {
 	], 1000)
 }
 
-def setLevel(level) {
+def setLevel(level, rate = null) {
 	if(level > 99) level = 99
 	encapSequence([
 		zwave.basicV1.basicSet(value: level),
@@ -246,18 +247,15 @@ def reset() {
 	])
 }
 
-def meterGet(scale)
-{
+def meterGet(scale) {
 	zwave.meterV2.meterGet(scale)
 }
 
-def meterReset()
-{
+def meterReset() {
 	zwave.meterV2.meterReset()
 }
 
-def normalizeLevel(level)
-{
+def normalizeLevel(level) {
 	// Normalize level between 1 and 100.
 	level == 99 ? 100 : level
 }

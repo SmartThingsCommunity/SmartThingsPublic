@@ -20,7 +20,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Smoke Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-smoke") {
+	definition (name: "Zigbee Smoke Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", vid: "generic-smoke", genericHandler: "Zigbee") {
 		capability "Smoke Detector"
 		capability "Sensor"
 		capability "Battery"
@@ -28,15 +28,18 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "Orvibo Smoke Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
 	}
 
 	tiles {
-		standardTile("smoke", "device.smoke", width: 2, height: 2) {
-			state("clear", label:"Clear", icon:"st.alarm.smoke.clear", backgroundColor:"#ffffff")
-			state("detected", label:"Smoke!", icon:"st.alarm.smoke.smoke", backgroundColor:"#e86d13")
+		multiAttributeTile(name:"smoke", type: "lighting", width: 6, height: 4) {
+			tileAttribute ("device.smoke", key: "PRIMARY_CONTROL") {
+				attributeState("clear", label: "clear", icon: "st.alarm.smoke.clear", backgroundColor: "#ffffff")
+				attributeState("detected", label: "Smoke!", icon: "st.alarm.smoke.smoke", backgroundColor: "#e86d13")
+			}
 		}
-        
+
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label: '${currentValue}% battery', unit: ""
 		}
@@ -52,7 +55,8 @@ metadata {
 
 def installed(){
 	log.debug "installed"
-	refresh()
+
+	response(refresh())
 }
 
 def parse(String description) {
@@ -70,7 +74,7 @@ def parse(String description) {
 	if (description?.startsWith('enroll request')) {
 		List cmds = zigbee.enrollResponse()
 		log.debug "enroll response: ${cmds}"
-		result = cmds?.collect { new physicalgraph.device.HubAction(it)}
+		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
 	return result
 }
@@ -80,7 +84,7 @@ def parseAttrMessage(String description){
 	def map = [:]
 	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap.value) {
 		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
-	} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+	} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
 		def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 		map = translateZoneStatus(zs)
 	}
@@ -109,6 +113,7 @@ private Map getBatteryPercentageResult(rawValue) {
 
 	return result
 }
+
 def getDetectedResult(value) {
 	def detected = value ? 'detected': 'clear'
 	String descriptionText = "${device.displayName} smoke ${detected}"
@@ -125,6 +130,7 @@ def refresh() {
 					zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 	return refreshCmds
 }
+
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
@@ -132,10 +138,13 @@ def ping() {
 	log.debug "ping "
 	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
+
 def configure() {
 	log.debug "configure"
-	sendEvent(name: "checkInterval", value:6 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-
-	return zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) + refresh()
+	sendEvent(name: "checkInterval", value:10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	Integer minReportTime = 0
+	Integer maxReportTime = 180
+	Integer reportableChange = null
+	return refresh() + zigbee.enrollResponse() + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 1200, 0x10) +
+				zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, minReportTime, maxReportTime, reportableChange)
 }
-

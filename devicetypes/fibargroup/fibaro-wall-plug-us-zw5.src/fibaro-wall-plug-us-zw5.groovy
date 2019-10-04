@@ -13,7 +13,7 @@ metadata {
 		command "reset"
 
 		fingerprint mfr: "010F", prod: "1401", model: "2000"
-		fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x55, 0x98, 0x9F, 0x22, 0x56, 0x7A, 0x6C", outClusters: "0x86, 0x25, 0x85, 0x8E, 0x59, 0x72, 0x5A, 0x73, 0x32, 0x70, 0x6C, 0x71, 0x75, 0x60"
+		fingerprint mfr: "010F", prod: "1401"
 
 	}
 
@@ -241,8 +241,10 @@ private createChildDevices() {
 	addChildDevice(
 			"Fibaro Wall Plug USB",
 			"${device.deviceNetworkId}-2",
-			null,
-			[completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false, componentName: "ch2", componentLabel: "Channel 2"]
+			device.hubId,
+			[completedSetup: true,
+			 label: "${device.displayName} (CH2)",
+			 isComponent: false]
 	)
 }
 
@@ -410,6 +412,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	} else {
 		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {
