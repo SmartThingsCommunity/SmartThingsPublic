@@ -52,12 +52,15 @@ metadata {
 		valueTile("shadeLevel", "device.level", width: 4, height: 1) {
 			state "level", label: 'Shade is ${currentValue}% up', defaultState: true
 		}
+		valueTile("batteryLevel", "device.battery", width: 2, height: 2) {
+        		state "battery", label:'${currentValue}% battery', unit:""
+        	}
 		controlTile("levelSliderControl", "device.level", "slider", width:2, height: 1, inactiveLabel: false) {
 			state "level", action:"switch level.setLevel"
 		}
 
 		main "windowShade"
-		details(["windowShade", "contPause", "shadeLevel", "levelSliderControl", "refresh"])
+		details(["windowShade", "contPause", "shadeLevel", "levelSliderControl", "refresh","batteryLevel"])
 	}
 }
 
