@@ -28,11 +28,11 @@ metadata {
 	}
 
 	tiles {
-		standardTile("toggle", "device.door", width: 3, height: 2) {
-			state("closed", label:'${name}', action:"door control.open", icon:"shttps://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Closed%20Small.png", backgroundColor:"#00A0DC", nextState:"opening")
+		standardTile("toggle", "device.door", width: 3, height: 3) {
+			state("closed", label:'${name}', action:"door control.open", icon:"https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Closed%20Small.png", backgroundColor:"#00A0DC", nextState:"opening")
             state("open", label:'${name}', action:"door control.close", icon:"https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Open%20Small.png", backgroundColor:"#e86d13", nextState:"closing")
             state("opening", label:'${name}', icon:"https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Opening%20Small.png", backgroundColor:"#e86d13")
-            state("closing", label:'${name}', icon:"https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Closing%20Small1.png", backgroundColor:"#00A0DC")
+            state("closing", label:'${name}', icon:"https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Closing%20Small1.png", backgroundColor:"#e50000")
 		}
 		standardTile("open", "device.door", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'open', action:"door control.open", icon:"https://raw.githubusercontent.com/Stills00/SmartThingsPublic/master/Gate%20Opening%20Small.png"
