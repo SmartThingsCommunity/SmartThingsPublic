@@ -46,7 +46,7 @@ metadata {
 		fingerprint mfr: "027A", prod: "B112", model: "1F1C", deviceJoinName: "Zooz ZEN22 Dimmer"
 		fingerprint mfr: "027A", prod: "A000", model: "A002", deviceJoinName: "Zooz ZEN27 Dimmer"
 		fingerprint mfr: "027A", prod: "B112", model: "261C", deviceJoinName: "Zooz ZEN24 Dimmer"
-		fingerprint mfr: "0300", prod: "0003", model: "0005", deviceJoinName: "ilumin Dimmable Bulb"
+		fingerprint mfr: "0300", prod: "0003", model: "0005", deviceJoinName: "ilumin Dimmable Bulb", ocfDeviceType: "oic.d.light"
 	}
 
 	simulator {
