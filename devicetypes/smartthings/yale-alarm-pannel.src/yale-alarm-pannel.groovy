@@ -17,7 +17,7 @@ metadata {
         command "postcmd"
 	}
 	tiles {
-		standardTile("mode", "device.mode", inactiveLabel: false, width: 2, height: 2) {
+		standardTile("Amode", "device.Amode", inactiveLabel: false, width: 2, height: 2) {
 			state ("default", label:'${currentValue}', defaultState: true, action: "refresh", icon:"st.security.alarm.alarm", backgroundColor:"#e86d13")
 			state ("Armed-Stay", label:'${name}', action: "switch.off", icon:"st.Home.home4", backgroundColor:"#00a0dc", nextState:"Disarming")
 			state ("Disarmed", label:'${name}', action: "lock", icon:"st.Home.home2", backgroundColor:"#ffffff", nextState:"Arming")
@@ -38,8 +38,8 @@ metadata {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		main (["mode"])
-		details(["mode", "statusaway", "statusstay", "statusdisarm", "refresh"])
+		main (["Amode"])
+		details(["Amode", "statusaway", "statusstay", "statusdisarm", "refresh"])
 	}
 }
 
@@ -95,7 +95,7 @@ def datain(data) {
             if (state.errorCount < 5){runIn(20,refresh)}
         }
         log.info "Refresh (datain) state is ${state.mode}, error are '${state.errorCount}'" //${data?.message}
-		sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Refresh - response '$dmsg'") //isStateChange: false,
+		sendEvent(name: "Amode", value: state.mode, displayed: true, descriptionText: "Refresh - response '$dmsg'") //isStateChange: false,
 
 }
 
@@ -159,7 +159,7 @@ def postcmd(mode){
     	state.mode = 'default'
     }
     log.info "Mode Change state is ${state.mode}, $dmsg, errors are ${state.errorCount}"
-	sendEvent(name: "mode", value: state.mode, displayed: true, descriptionText: "Mode Change to ${state.mode} - $dmsg") //isStateChange: false,
+	sendEvent(name: "Amode", value: state.mode, displayed: true, descriptionText: "Mode Change to ${state.mode} - $dmsg") //isStateChange: false,
 }
 
 // parse events into attributes
