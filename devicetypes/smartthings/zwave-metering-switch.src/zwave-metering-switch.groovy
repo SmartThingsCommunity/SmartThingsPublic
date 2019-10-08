@@ -256,6 +256,7 @@ def configure() {
 	} else if (zwaveInfo.mfr == "014F" && zwaveInfo.prod == "5053" && zwaveInfo.model == "3531") {
 		result << response(encap(zwave.configurationV1.configurationSet(parameterNumber: 13, size: 2, scaledConfigurationValue: 15))) //report kWH every 15 min
 	}
+	result << response(encap(meterReset()))
 	result << response(encap(meterGet(scale: 0)))
 	result << response(encap(meterGet(scale: 2)))
 	result
