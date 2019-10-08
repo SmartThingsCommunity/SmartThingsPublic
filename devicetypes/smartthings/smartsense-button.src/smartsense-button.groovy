@@ -27,8 +27,6 @@ metadata {
         capability "Health Check"
         capability "Sensor"
 
-        command "enrollResponse"
-
         fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "button", deviceJoinName: "Button"
     }
 
