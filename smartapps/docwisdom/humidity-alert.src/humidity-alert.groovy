@@ -61,12 +61,10 @@ def installer(){
 log.info "installer"
 	subscribe(humiditySensor1, "humidity", humidityHandler)
     subscribe(switch1, "switch", switchstate)
-    def lag = timeout*60 ?: 30*60
-    log.debug "lag is $lag" 
 }
 
 def switchstate(evt){
-	log.info "HumSwitchEvt ${evt} is ${evt.value}, App is '${state.appstate}'last humidity was '${state?.humstate}'"
+	log.info "HumSwitchEvt '${evt.device}' is '${evt.value}', App is '${state.appstate}'last humidity was '${state?.humstate}'"
 	state.sstate = evt.value
     if (state.appstate == "on"){
     	if (switch2 != null && switch2?.currentSwitch == "on" ) {
@@ -141,7 +139,7 @@ def humidityHandler(evt) {
         }
         timelag()
 	}
-    log.trace "Hum Event - ${traceaction}, Reported humidity: '${evt.value}%', Switch is-'${state.sstate}', App State is-'${state.appstate}'"
+    log.trace "Humidity Event - ${traceaction}, Reported humidity: '${evt.value}%', Switch is-'${state.sstate}', App State is-'${state.appstate}'"
     sendEvent (name:"Humidity Event",  value:"${humiditySensor1.label} is ${evt.value}% - ${traceaction}")
   }
 }
@@ -163,12 +161,14 @@ def timelag(){
 	runIn (timeout*60 ?: 30*60, timeoff)
 }
 
-def timeoff (){ // don't get a humidity report for 30 min
-	log.warn "timeoff initated no events for 30min"
-    if (state.sstate == "off" && state.appstate == "off"){
-	}
-    else {
-        state.appstate = "off"
-    	switch1?.off()
+def timeoff (){ // don't get a humidity report for 30 min or defined time
+	def timelag = timeout*60 ?: 30*60
+	sendPush( "time off initated no events for '$timelag' min" )
+	log.warn "timeoff initated no events for '$timelag' min" 
+    if (state.appstate == "on"){
+    	state.appstate = "off"
+        if (state.sstate == "on"){
+        	switch1?.off()
+        }
 	}
 }
