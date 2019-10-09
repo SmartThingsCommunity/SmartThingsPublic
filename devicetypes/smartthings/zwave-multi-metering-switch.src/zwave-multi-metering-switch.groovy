@@ -4,7 +4,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -62,14 +62,14 @@ def installed() {
 }
 
 def updated() {
-	sendHubCommand secure(zwave.multiChannelV3.multiChannelEndPointGet())
+	sendHubCommand encap(zwave.multiChannelV3.multiChannelEndPointGet())
 }
 
 def configure() {
 	log.debug "Configure..."
 	response([
-			secure(zwave.multiChannelV3.multiChannelEndPointGet()),
-			secure(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+			encap(zwave.multiChannelV3.multiChannelEndPointGet()),
+			encap(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
 	])
 }
 
@@ -118,26 +118,26 @@ private lateConfigure() {
 	switch(getDeviceModel()) {
 		case "Aeotec Nano Switch":
 			cmds = [
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, configurationValue: [0])),    // resets configuration
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1])),    // enables overheat protection
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [2])),    // send BasicReport CC
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2048)),    // enabling kWh energy reports on ep 1
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 600)),    //... every 10 minutes
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 4096)),    // enabling kWh energy reports on ep 2
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 600)),    //... every 10 minutes
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1) ),    //enables reporting based on wattage change
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 20))    //report any 20W change
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, configurationValue: [0])),			// resets configuration
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 1, configurationValue: [1])),			// enables overheat protection
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [2])),			// send BasicReport CC
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 101, size: 4, scaledConfigurationValue: 2048)),	// enabling kWh energy reports on ep 1
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 111, size: 4, scaledConfigurationValue: 600)),	// ... every 10 minutes
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 102, size: 4, scaledConfigurationValue: 4096)),	// enabling kWh energy reports on ep 2
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 112, size: 4, scaledConfigurationValue: 600)),	// ... every 10 minutes
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 90, size: 1, scaledConfigurationValue: 1) ),		// enables reporting based on wattage change
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 91, size: 2, scaledConfigurationValue: 20))		// report any 20W change
 			]
 			break
 		case "Zooz Switch":
 			cmds = [
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 4, scaledConfigurationValue: 10)),	// makes device report every 5W change
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 4, scaledConfigurationValue: 600)), // enabling power Wattage reports every 10 minutes
-					secure(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 4, scaledConfigurationValue: 600))	// enabling kWh energy reports every 10 minutes
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 2, size: 4, scaledConfigurationValue: 10)),	// makes device report every 5W change
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 4, scaledConfigurationValue: 600)), // enabling power Wattage reports every 10 minutes
+					encap(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 4, scaledConfigurationValue: 600))	// enabling kWh energy reports every 10 minutes
 			]
 			break
 		default:
-			cmds = [secure(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, scaledConfigurationValue: 0))]
+			cmds = [encap(zwave.configurationV1.configurationSet(parameterNumber: 255, size: 1, scaledConfigurationValue: 0))]
 			break
 	}
 	sendHubCommand cmds
@@ -162,27 +162,23 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "Basic ${cmd}" + (ep ? " from endpoint $ep" : "")
-	def value = cmd.value ? "on" : "off"
-
-	if (isZoozZenStripV2()) {
-		// device sends also reports without any endpoint specified, therefore all endpoins must be querried
-		// sometimes it also reports 0.0 Wattage only until it's queried for it, then it starts reporting real values
-		ep ? [changeSwitch(ep, value), response(secureEncap(zwave.meterV3.meterGet(scale: 0), ep))] : [response(refreshBasicGetAll())]
-	} else {
-		ep ? changeSwitch(ep, value) : []
-	}
+	handleSwitchReport(ep, cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
 	log.debug "Binary ${cmd}" + (ep ? " from endpoint $ep" : "")
+	handleSwitchReport(ep, cmd)
+}
+
+private handleSwitchReport(endpoint, cmd) {
 	def value = cmd.value ? "on" : "off"
 
 	if (isZoozZenStripV2()) {
-		// device sends also reports without any endpoint specified, therefore all endpoins must be querried
+		// device also sends reports without any endpoint specified, therefore all endpoints must be queried
 		// sometimes it also reports 0.0 Wattage only until it's queried for it, then it starts reporting real values
-		ep ? [changeSwitch(ep, value), response(secureEncap(zwave.meterV3.meterGet(scale: 0), ep))] : [response(refreshBasicGetAll())]
+		endpoint ? [changeSwitch(endpoint, value), response(encap(zwave.meterV3.meterGet(scale: 0), endpoint))] : [response(refreshAll(false))]
 	} else {
-		ep ? changeSwitch(ep, value) : []
+		endpoint ? changeSwitch(endpoint, value) : []
 	}
 }
 
@@ -196,12 +192,7 @@ private changeSwitch(endpoint, value) {
 	}
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd) {
-	def event = createEvent([isStateChange:  false, descriptionText: "Wattage change has been detected. Refreshing each endpoint"])
-	isAeotec() ? [event, response(refreshAll())] : event
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
+def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
 	log.debug "Meter ${cmd}" + (ep ? " from endpoint $ep" : "")
 	if (ep == 1) {
 		createEvent(createMeterEventMap(cmd))
@@ -210,7 +201,8 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep) {
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(createMeterEventMap(cmd))
 	} else {
-		zwaveEvent(cmd)
+		def event = createEvent([isStateChange:  false, descriptionText: "Wattage change has been detected. Refreshing each endpoint"])
+		isAeotec() ? [event, response(refreshAll())] : event
 	}
 }
 
@@ -253,47 +245,35 @@ def childOnOff(deviceNetworkId, value) {
 
 private onOffCmd(value, endpoint = 1) {
 	delayBetween([
-			secureEncap(zwave.basicV1.basicSet(value: value), endpoint),
-			secureEncap(zwave.basicV1.basicGet(), endpoint),
-			"delay 3000",
-			secureEncap(zwave.meterV3.meterGet(scale: 0), endpoint),
-			secureEncap(zwave.meterV3.meterGet(scale: 2), endpoint)
+		encap(zwave.basicV1.basicSet(value: value), endpoint),
+		encap(zwave.basicV1.basicGet(), endpoint),
+		"delay 3000",
+		encap(zwave.meterV3.meterGet(scale: 0), endpoint),
+		encap(zwave.meterV3.meterGet(scale: 2), endpoint)
 	])
 }
 
-private refreshBasicGetAll() {
-	childDevices.each { childRefreshBasicGet(it.deviceNetworkId) }
-	sendHubCommand refreshBasicGet()
+private refreshAll(includeMeterGet = true) {
+	childDevices.each { childRefresh(it.deviceNetworkId, includeMeterGet) }
+	sendHubCommand refresh(includeMeterGet)
 }
 
-def childRefreshBasicGet(deviceNetworkId) {
+def childRefresh(deviceNetworkId, includeMeterGet = true) {
 	def switchId = getSwitchId(deviceNetworkId)
 	if (switchId != null) {
-		sendHubCommand refreshBasicGet(switchId)
+		sendHubCommand refresh(switchId,includeMeterGet)
 	}
 }
 
-def refreshBasicGet(endpoint = 1) {
-	secureEncap(zwave.basicV1.basicGet(), endpoint)
-}
+def refresh(endpoint = 1, includeMeterGet = true) {
 
-private refreshAll() {
-	childDevices.each { childRefresh(it.deviceNetworkId) }
-	sendHubCommand refresh()
-}
+	def cmds = [encap(zwave.basicV1.basicGet(), endpoint)]
 
-def childRefresh(deviceNetworkId) {
-	def switchId = getSwitchId(deviceNetworkId)
-	if (switchId != null) sendHubCommand refresh(switchId)
-}
-
-def refresh(endpoint = 1) {
-	delayBetween([
-			secureEncap(zwave.basicV1.basicGet(), endpoint),
-			secureEncap(zwave.meterV3.meterGet(scale: 0), endpoint),
-			secureEncap(zwave.meterV3.meterGet(scale: 2), endpoint),
-			"delay 500"
-	], 500)
+	if (includeMeterGet) {
+		cmds << encap(zwave.meterV3.meterGet(scale: 0), endpoint)
+		cmds << encap(zwave.meterV3.meterGet(scale: 2), endpoint)
+	}
+	delayBetween(cmds, 500)
 }
 
 private resetAll() {
@@ -312,8 +292,8 @@ def childReset(deviceNetworkId) {
 def reset(endpoint = 1) {
 	log.debug "Resetting endpoint: ${endpoint}"
 	delayBetween([
-			secureEncap(zwave.meterV3.meterReset(), endpoint),
-			secureEncap(zwave.meterV3.meterGet(scale: 0), endpoint),
+			encap(zwave.meterV3.meterReset(), endpoint),
+			encap(zwave.meterV3.meterGet(scale: 0), endpoint),
 			"delay 500"
 	], 500)
 }
@@ -323,23 +303,17 @@ def getSwitchId(deviceNetworkId) {
 	return (split.length > 1) ? split[1] as Integer : null
 }
 
-private secureEncap(cmd, endpoint = null) {
-	secure(encap(cmd, endpoint))
-}
-
 private encap(cmd, endpoint = null) {
-	if (endpoint) {
-		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
-	} else {
-		cmd
-	}
-}
+	if (cmd) {
+		if (endpoint) {
+			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
+		}
 
-private secure(cmd) {
-	if(zwaveInfo.zw.endsWith("s")) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
-	} else {
-		cmd.format()
+		if (zwaveInfo.zw.endsWith("s")) {
+			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+		} else {
+			cmd.format()
+		}
 	}
 }
 
@@ -349,9 +323,9 @@ private addChildSwitches(numberOfSwitches) {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = device.displayName[0..-2] + "${endpoint}"
 			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
-					completedSetup: true,
-					label         : componentLabel,
-					isComponent   : false
+					completedSetup	: true,
+					label			: componentLabel,
+					isComponent		: false
 			])
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
