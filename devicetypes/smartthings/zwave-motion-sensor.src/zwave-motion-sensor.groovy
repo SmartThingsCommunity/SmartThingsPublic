@@ -67,6 +67,7 @@ def installed() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "tamper", value: "clear", displayed: false)
+	sendEvent(name: "motion", value: "inactive", displayed: false)
 	response(initialPoll())
 }
 
