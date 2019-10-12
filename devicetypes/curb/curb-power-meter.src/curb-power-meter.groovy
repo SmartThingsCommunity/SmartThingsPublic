@@ -15,13 +15,15 @@
  */
 
 metadata {
-    definition(name: "CURB Power Meter", namespace: "curb", author: "Curb") {
+    definition(name: "CURB Power Meter", namespace: "curb", author: "Curb", ocfDeviceType: "x.com.st.d.energymeter") {
         capability "Power Meter"
         capability "Energy Meter"
     }
 
     tiles {
-        multiAttributeTile(name: "power", type: "lighting", width: 2, height: 2, canChangeIcon: false) {
+
+        multiAttributeTile(name: "power", type: "generic", width: 6, height: 4, canChangeIcon: false) {
+
             tileAttribute("device.power", key: "PRIMARY_CONTROL") {
                 attributeState "power",
                     label: '${currentValue} W',
@@ -37,16 +39,13 @@ metadata {
                     ]
             }
             tileAttribute ("device.energy", key: "SECONDARY_CONTROL") {
-                attributeState "energy", label:'${currentValue} kWh this billing period'
+                attributeState "energy", label:'${currentValue} kWh'
             }
         }
         main(["power"])
-        details(["power", "energy"])
+
+        details(["power"])
     }
-}
-
-mappings {
-
 }
 
 def handlePower(value) {

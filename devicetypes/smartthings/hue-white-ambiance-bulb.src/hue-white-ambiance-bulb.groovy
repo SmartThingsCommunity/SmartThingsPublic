@@ -97,7 +97,7 @@ void off() {
     log.trace parent.off(this)
 }
 
-void setLevel(percent) {
+void setLevel(percent, rate = null) {
     log.debug "Executing 'setLevel'"
     if (percent != null && percent >= 0 && percent <= 100) {
         log.trace parent.setLevel(this, percent)

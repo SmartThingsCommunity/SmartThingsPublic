@@ -17,7 +17,6 @@
 metadata {
     definition (name: "Blacklisted Device", namespace: "smartthings", author: "SmartThings") {
         fingerprint profileId: "0104", inClusters: "0000, 0009, 000A, 0101, FC00, 0001", manufacturer:"Yale", model:"Cap", deviceJoinName: "Blacklisted Yale Lock"
-        fingerprint inClusters: "0000, 0003, 0101", manufacturer:"Kwikset", model:"Smartcode", deviceJoinName: "Blacklisted Kwikset Lock"
     }
 
     // UI tile definitions

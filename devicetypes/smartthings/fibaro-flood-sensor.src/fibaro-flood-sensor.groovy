@@ -40,7 +40,7 @@ metadata {
 		capability "Configuration"
 		capability "Battery"
 		capability "Health Check"
-    		capability "Sensor"
+		capability "Sensor"
     
 		command    "resetParams2StDefaults"
 		command    "listCurrentParams"
@@ -171,9 +171,16 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelR
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [:]
 	map.name = "battery"
-	map.value = cmd.batteryLevel > 0 ? cmd.batteryLevel.toString() : 1
 	map.unit = "%"
-	map.displayed = false
+
+	if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
+		map.value = 1
+		map.descriptionText = "${device.displayName} has a low battery"
+		map.isStateChange = true
+	} else {
+		map.value = cmd.batteryLevel
+		map.descriptionText = "Current battery level"
+	}
 	createEvent(map)
 }
 

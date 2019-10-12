@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Aeon Multisensor Gen5", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Multisensor Gen5", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"

@@ -25,9 +25,6 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 SMA"
 	}
 
@@ -36,8 +33,7 @@ metadata {
 	}
 
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
@@ -98,7 +94,7 @@ def parse(String description) {
 	def result = map ? createEvent(map) : null
 
     if (description?.startsWith('enroll request')) {
-    	List cmds = enrollResponse()
+        List cmds = zigbee.enrollResponse()
         log.debug "enroll response: ${cmds}"
         result = cmds?.collect { new physicalgraph.device.HubAction(it) }
     }
@@ -110,6 +106,14 @@ private Map parseCatchAllMessage(String description) {
     def cluster = zigbee.parse(description)
     if (shouldProcessMessage(cluster)) {
         switch(cluster.clusterId) {
+			case 0x0500:
+				Map descMap = zigbee.parseDescriptionAsMap(description)
+				// someone who understands Zigbee better than me should refactor this whole DTH to bring it up to date
+				if (descMap?.attrInt == 0x0002) {
+                    def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+                    resultMap = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
+                }
+				break
             case 0x0001:
             	resultMap = getBatteryResult(cluster.data.last())
                 break
@@ -232,7 +236,7 @@ private Map getContactResult(value) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x0402, 0x0000) // Read the Temperature Cluster
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
 }
 
 def refresh()
@@ -245,12 +249,12 @@ def refresh()
 
 	]
 
-	return refreshCmds + enrollResponse()
+	return refreshCmds + zigbee.enrollResponse()
 }
 
 def configure() {
 	// Device-Watch allows 2 check-in misses from device
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
 	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 		log.debug "Configuring Reporting, IAS CIE, and Bindings."
@@ -266,15 +270,6 @@ def configure() {
     return enrollCmds + zigbee.batteryConfig() + zigbee.temperatureConfig(30, 300) + refresh() // send refresh cmds as part of config
 }
 
-def enrollResponse() {
-	log.debug "Sending enroll response"
-    [
-
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-    "send 0x${device.deviceNetworkId} 1 1"
-
-    ]
-}
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }

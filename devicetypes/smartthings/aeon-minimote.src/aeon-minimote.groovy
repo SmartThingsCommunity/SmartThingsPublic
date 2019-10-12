@@ -15,7 +15,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Aeon Minimote", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Button"
 		capability "Holdable Button"
@@ -23,8 +23,7 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B", outClusters: "0x26,0x2B"
-		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x9B,0x85,0x84", outClusters: "0x26" // old style with numbered buttons
+		fingerprint mfr: "0086", prod: "0001", model:"0003"
 	}
 
 	simulator {
@@ -77,10 +76,10 @@ def buttonEvent(button, held) {
 		log.error "Child device $childDni not found"
 	}
 	if (held) {
-		child?.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
+		if (child) child.sendEvent(name: "button", value: "held", data: [buttonNumber: 1], descriptionText: "$child.displayName was held", isStateChange: true)
 		createEvent(name: "button", value: "held", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was held", isStateChange: true)
 	} else {
-		child?.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
+		if (child) child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true)
 		createEvent(name: "button", value: "pushed", data: [buttonNumber: button], descriptionText: "$device.displayName button $button was pushed", isStateChange: true)
 	}
 }
@@ -148,7 +147,7 @@ def initialize() {
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..4) {
-		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", null,
+		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", device.hubId,
 				[completedSetup: true, label: "${device.displayName} button ${i}",
 				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
 	}

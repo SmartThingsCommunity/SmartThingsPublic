@@ -14,7 +14,7 @@
  *
  */
 metadata {
-    definition (name: "Simulated Dimmable Bulb", namespace: "smartthings/testing", author: "SmartThings") {
+    definition (name: "Simulated Dimmable Bulb", namespace: "smartthings/testing", author: "SmartThings", mnmn: "SmartThings", vid: "generic-dimmer") {
         capability "Health Check"
         capability "Actuator"
         capability "Sensor"
@@ -24,6 +24,9 @@ metadata {
         capability "Switch Level"
         capability "Refresh"
         capability "Configuration"
+
+        command    "markDeviceOnline"
+        command    "markDeviceOffline"
     }
 
     preferences {
@@ -34,8 +37,8 @@ metadata {
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
                 attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
                 attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#FFFFFF", nextState:"turningOn"
-                attributeState "turningOn", label:'Turning On', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"on"
-                attributeState "turningOff", label:'Turning Off', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#FFFFFF", nextState:"off"
+                attributeState "turningOn", label:'Turning On', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#FFFFFF", nextState:"on"
+                attributeState "turningOff", label:'Turning Off', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#00A0DC", nextState:"off"
             }
             tileAttribute ("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", action: "setLevel"
@@ -45,16 +48,22 @@ metadata {
             }
         }
 
-        standardTile("refresh", "device.switch", width: 1, height: 1, inactiveLabel: false, decoration: "flat") {
+        standardTile("refresh", "device.switch", width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
             state "default", label: "",  action:"refresh.refresh", icon:"st.secondary.refresh"
         }
-        valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+        valueTile("reset", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
             state "default", label: "Reset", action: "configure"
         }
 
-        main(["switch"])
-        details(["switch", "refresh", "reset"])
+        standardTile("deviceHealthControl", "device.healthStatus", decoration: "flat", width: 2, height: 2, inactiveLabel: false) {
+            state "online",  label: "ONLINE", backgroundColor: "#00A0DC", action: "markDeviceOffline", icon: "st.Health & Wellness.health9", nextState: "goingOffline", defaultState: true
+            state "offline", label: "OFFLINE", backgroundColor: "#E86D13", action: "markDeviceOnline", icon: "st.Health & Wellness.health9", nextState: "goingOnline"
+            state "goingOnline", label: "Going ONLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+            state "goingOffline", label: "Going OFFLINE", backgroundColor: "#FFFFFF", icon: "st.Health & Wellness.health9"
+        }
 
+        main(["switch"])
+        details(["switch", "refresh", "deviceHealthControl", "reset"])
     }
 }
 
@@ -77,7 +86,7 @@ def parse(String description) {
 
 def installed() {
     log.trace "Executing 'installed'"
-    initialize()
+    configure()
 }
 
 def updated() {
@@ -88,9 +97,6 @@ def updated() {
 //
 // command methods
 //
-def ping() {
-    refresh()
-}
 
 def refresh() {
     log.trace "Executing 'refresh'"
@@ -100,6 +106,11 @@ def refresh() {
 
 def configure() {
     log.trace "Executing 'configure'"
+
+    // for HealthCheck
+    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    markDeviceOnline()
+
     initialize()
 }
 
@@ -130,6 +141,14 @@ def setLevel(value, duration) {
     setLevel(value)
 }
 
+def markDeviceOnline() {
+    setDeviceHealth("online")
+}
+
+def markDeviceOffline() {
+    setDeviceHealth("offline")
+}
+
 private String getSwitch() {
     def switchState = device.currentState("switch")
     return switchState ? switchState.getStringValue() : "off"
@@ -140,6 +159,16 @@ private Integer getLevel() {
     return levelState ? levelState.getIntegerValue() : 100
 }
 
+private setDeviceHealth(String healthState) {
+    log.debug("healthStatus: ${device.currentValue('healthStatus')}; DeviceWatch-DeviceStatus: ${device.currentValue('DeviceWatch-DeviceStatus')}")
+    // ensure healthState is valid
+    List validHealthStates = ["online", "offline"]
+    healthState = validHealthStates.contains(healthState) ? healthState : device.currentValue("healthStatus")
+    // set the healthState
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: healthState)
+    sendEvent(name: "healthStatus", value: healthState)
+}
+
 private initialize() {
     log.trace "Executing 'initialize'"
     sendEvent(name: "switch", value: "off")
@@ -148,7 +177,7 @@ private initialize() {
 
 private Map buildSetLevelEvent(value) {
     Integer intValue = value as Integer
-    Integer newLevel = Math.max(Math.min(intValue, 99), 0)
+    Integer newLevel = Math.max(Math.min(intValue, 100), 0)
     Map eventMap = [name: "level", value: newLevel, unit: "%"]
     return eventMap
 }

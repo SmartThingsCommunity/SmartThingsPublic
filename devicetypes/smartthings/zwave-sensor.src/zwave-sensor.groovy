@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Sensor"
 		capability "Battery"
 		capability "Configuration"
@@ -346,7 +346,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 
 def configure() {
-	if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+	if (zwaveInfo.cc?.contains("84")) {
 		zwave.wakeUpV1.wakeUpNoMoreInformation().format()
 	}
 }

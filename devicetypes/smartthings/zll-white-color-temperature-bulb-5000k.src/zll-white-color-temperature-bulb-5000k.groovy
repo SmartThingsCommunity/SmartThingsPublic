@@ -11,59 +11,70 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-import groovy.transform.Field
-
-@Field Boolean hasConfiguredHealthCheck = false
 
 metadata {
-    definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light") {
+	definition (name: "ZLL White Color Temperature Bulb 5000K", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.023.00001', executeCommandsLocally: true, genericHandler: "ZLL") {
 
-        capability "Actuator"
-        capability "Color Temperature"
-        capability "Configuration"
-        capability "Polling"
-        capability "Refresh"
-        capability "Switch"
-        capability "Switch Level"
-        capability "Health Check"
+		capability "Actuator"
+		capability "Color Temperature"
+		capability "Configuration"
+		capability "Polling"
+		capability "Refresh"
+		capability "Switch"
+		capability "Switch Level"
+		capability "Health Check"
 
-        attribute "colorName", "string"
-        command "setGenericName"
+		attribute "colorName", "string"
 
-        fingerprint profileId: "C05E", deviceId: "0220", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300", outClusters: "0019", manufacturer: "Eaton", model: "Halo_RL5601", deviceJoinName: "Halo RL56"
-    }
+		// Eaton
+		fingerprint profileId: "C05E", deviceId: "0220", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300", outClusters: "0019", manufacturer: "Eaton", model: "Halo_RL5601", deviceJoinName: "Halo RL56"
 
-    // UI tile definitions
-    tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
-            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
-                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
-                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
-            }
-            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"switch level.setLevel"
-            }
-            tileAttribute ("colorName", key: "SECONDARY_CONTROL") {
-                attributeState "colorName", label:'${currentValue}'
-            }
-        }
+		// Ikea
+		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 WS clear 950lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb GU10 WS 400lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E12 WS opal 400lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E26 WS opal 980lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS clear 950lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E14 WS opal 400lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS opal 980lm", deviceJoinName: "IKEA TRÅDFRI White Spectrum LED Bulb", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K"
 
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
+		// Innr
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RS 128 T", deviceJoinName: "Innr Smart Spot Tunable White"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 178 T", deviceJoinName: "Innr Smart Bulb Tunable White"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 148 T", deviceJoinName: "Innr Smart Bulb Tunable White"
+	}
 
-        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..5000)") {
-            state "colorTemperature", action:"color temperature.setColorTemperature"
-        }
-        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "colorTemperature", label: '${currentValue} K'
-        }
+	// UI tile definitions
+	tiles(scale: 2) {
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00A0DC", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+			tileAttribute ("colorName", key: "SECONDARY_CONTROL") {
+				attributeState "colorName", label:'${currentValue}'
+			}
+		}
 
-        main(["switch"])
-        details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
-    }
+		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+
+		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..5000)") {
+			state "colorTemperature", action:"color temperature.setColorTemperature"
+		}
+		valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "colorTemperature", label: '${currentValue} K'
+		}
+
+		main(["switch"])
+		details(["switch", "colorTempSliderControl", "colorTemp", "refresh"])
+	}
 }
 
 // Globals
@@ -73,107 +84,107 @@ private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-    log.debug "description is $description"
-    def event = zigbee.getEvent(description)
-    if (event) {
-        if (event.name == "colorTemperature") {
-            event.unit = "K"
-        }
-        sendEvent(event)
-    }
-    else {
-        log.warn "DID NOT PARSE MESSAGE for description : $description"
-        log.debug zigbee.parseDescriptionAsMap(description)
-    }
+	log.debug "description is $description"
+	def event = zigbee.getEvent(description)
+	if (event) {
+		if (event.name == "colorTemperature") {
+			event.unit = "K"
+			setGenericName(event.value)
+		}
+		sendEvent(event)
+	}
+	else {
+		log.warn "DID NOT PARSE MESSAGE for description : $description"
+		log.debug zigbee.parseDescriptionAsMap(description)
+	}
 }
 
 def off() {
-    zigbee.off() + ["delay 1500"] + zigbee.onOffRefresh()
+	zigbee.off() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
 def on() {
-    zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
+	zigbee.on() + ["delay 1500"] + zigbee.onOffRefresh()
 }
 
-def setLevel(value) {
-    zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()
+def setLevel(value, rate = null) {
+	zigbee.setLevel(value) + zigbee.onOffRefresh() + zigbee.levelRefresh()
 }
 
 def refresh() {
-    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
+	def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
 
-    // Do NOT config if the device is the Eaton Halo_LT01, it responds with "switch:off" to onOffConfig, and maybe other weird things with the others
-    if (!((device.getDataValue("manufacturer") == "Eaton") && (device.getDataValue("model") == "Halo_LT01"))) {
-        cmds += zigbee.onOffConfig() + zigbee.levelConfig()
-    }
+	// Do NOT config if the device is the Eaton Halo_LT01, it responds with "switch:off" to onOffConfig, and maybe other weird things with the others
+	if (!((device.getDataValue("manufacturer") == "Eaton") && (device.getDataValue("model") == "Halo_LT01"))) {
+		cmds += zigbee.onOffConfig() + zigbee.levelConfig()
+	}
 
-    cmds
+	cmds
 }
 
 def poll() {
-    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
+	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
 }
 
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-    return zigbee.levelRefresh()
+	return zigbee.levelRefresh()
 }
 
 def healthPoll() {
-    log.debug "healthPoll()"
-    def cmds = zigbee.onOffRefresh() + zigbee.levelRefresh()
-    cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
+	log.debug "healthPoll()"
+	def cmds = poll()
+	cmds.each{ sendHubCommand(new physicalgraph.device.HubAction(it))}
 }
 
 def configureHealthCheck() {
-    Integer hcIntervalMinutes = 12
-    if (!hasConfiguredHealthCheck) {
-        log.debug "Configuring Health Check, Reporting"
-        unschedule("healthPoll")
-        runEvery5Minutes("healthPoll")
-        // Device-Watch allows 2 check-in misses from device
-        sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-        hasConfiguredHealthCheck = true
-    }
+	Integer hcIntervalMinutes = 12
+	if (!state.hasConfiguredHealthCheck) {
+		log.debug "Configuring Health Check, Reporting"
+		unschedule("healthPoll", [forceForLocallyExecuting: true])
+		runEvery5Minutes("healthPoll", [forceForLocallyExecuting: true])
+		// Device-Watch allows 2 check-in misses from device
+		sendEvent(name: "checkInterval", value: hcIntervalMinutes * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+		state.hasConfiguredHealthCheck = true
+	}
 }
 
 def configure() {
-    log.debug "configure()"
-    configureHealthCheck()
-    // Implementation note: for the Eaton Halo_LT01, it responds with "switch:off" to onOffConfig, so be sure this is before the call to onOffRefresh
-    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
+	log.debug "configure()"
+	configureHealthCheck()
+	// Implementation note: for the Eaton Halo_LT01, it responds with "switch:off" to onOffConfig, so be sure this is before the call to onOffRefresh
+	zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
 }
 
 def updated() {
-    log.debug "updated()"
-    configureHealthCheck()
+	log.debug "updated()"
+	configureHealthCheck()
 }
 
 def setColorTemperature(value) {
-    setGenericName(value)
-    value = value as Integer
-    def tempInMired = (1000000 / value) as Integer
-    def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
+	value = value as Integer
+	def tempInMired = Math.round(1000000 / value)
+	def finalHex = zigbee.swapEndianHex(zigbee.convertToHexString(tempInMired, 4))
 
-    zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +
-    zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
+	zigbee.command(COLOR_CONTROL_CLUSTER, MOVE_TO_COLOR_TEMPERATURE_COMMAND, "$finalHex 0000") +
+	zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE)
 }
 
 //Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
 def setGenericName(value){
-    if (value != null) {
-        def genericName = ""
-        if (value < 3300) {
-            genericName = "Soft White"
-        } else if (value < 4150) {
-            genericName = "Moonlight"
-        } else if (value <= 5000) {
-            genericName = "Cool White"
-        } else {
-            genericName = "Daylight"
-        }
-        sendEvent(name: "colorName", value: genericName, displayed: false)
-    }
+	if (value != null) {
+		def genericName = ""
+		if (value < 3300) {
+			genericName = "Soft White"
+		} else if (value < 4150) {
+			genericName = "Moonlight"
+		} else if (value <= 5000) {
+			genericName = "Cool White"
+		} else {
+			genericName = "Daylight"
+		}
+		sendEvent(name: "colorName", value: genericName, displayed: false)
+	}
 }

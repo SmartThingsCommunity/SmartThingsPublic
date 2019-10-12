@@ -21,7 +21,10 @@ definition(
     category: "SmartThings Labs",
     iconUrl: "http://obycode.com/obything/ObyThingSTLogo.png",
     iconX2Url: "http://obycode.com/obything/ObyThingSTLogo@2x.png",
-    singleInstance: true)
+    singleInstance: true,
+    usesThirdPartyAuthentication: true,
+    pausable: false
+)
 
 
 preferences {

@@ -13,11 +13,15 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
+
 metadata {
         definition (name: "Harmony Activity", namespace: "smartthings", author: "Juan Risso") {
         capability "Switch"
         capability "Actuator"
 		capability "Refresh"
+		capability "Health Check"
 
         command "huboff"
         command "alloff"
@@ -49,6 +53,20 @@ metadata {
 		main "button"
 		details(["button", "refresh", "forceoff", "huboff", "alloff"])
 	}
+}
+
+def initialize() {
+	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "cloud", scheme:"untracked"]), displayed: false)
+}
+
+def installed() {
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 def parse(String description) {
