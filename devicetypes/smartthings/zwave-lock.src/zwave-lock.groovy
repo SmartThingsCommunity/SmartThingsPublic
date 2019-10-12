@@ -1155,7 +1155,7 @@ def unlockWithTimeout() {
  */
 def ping() {
 	log.trace "[DTH] Executing ping() for device ${device.displayName}"
-	runIn(30, followupStateCheck)
+	runIn(30, "followupStateCheck", [forceForLocallyExecuting: true])
 	secure(zwave.doorLockV1.doorLockOperationGet())
 }
 
@@ -1163,7 +1163,7 @@ def ping() {
  * Checks the door lock state. Also, schedules checking of door lock state every one hour.
  */
 def followupStateCheck() {
-	runEvery1Hour(stateCheck)
+	runEvery1Hour(stateCheck, [forceForLocallyExecuting: true])
 	stateCheck()
 }
 
@@ -1171,6 +1171,7 @@ def followupStateCheck() {
  * Checks the door lock state
  */
 def stateCheck() {
+	sendHubCommand(new physicalgraph.device.HubAction(secure(zwave.batteryV1.batteryGet()))) // fix for YRD 446
 	sendHubCommand(new physicalgraph.device.HubAction(secure(zwave.doorLockV1.doorLockOperationGet())))
 }
 
