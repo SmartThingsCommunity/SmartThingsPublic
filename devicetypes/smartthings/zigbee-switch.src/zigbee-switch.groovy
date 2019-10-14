@@ -43,6 +43,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", manufacturer: "REXENSE", model: "RH5006", deviceJoinName: "GDKES Smart Outlet (GDKES-016)", ocfDeviceType: "oic.d.smartplug"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", manufacturer: "REXENSE", model: "RH5005", deviceJoinName: "GDKES Smart Outlet (GDKES-015)", ocfDeviceType: "oic.d.smartplug"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "innr", model: "SP 224", deviceJoinName: "Innr Smart Plug", ocfDeviceType: "oic.d.smartplug"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0095", deviceJoinName: "HONYAR Smart Switch"
 	}
 
 	// simulator metadata
