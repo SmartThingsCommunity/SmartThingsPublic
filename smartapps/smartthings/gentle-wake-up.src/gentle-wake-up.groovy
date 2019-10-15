@@ -30,7 +30,8 @@ definition(
 	description: "Dim your lights up slowly, allowing you to wake up more naturally.",
 	category: "Health & Wellness",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/HealthAndWellness/App-SleepyTime.png",
-	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/HealthAndWellness/App-SleepyTime@2x.png"
+	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/HealthAndWellness/App-SleepyTime@2x.png",
+	pausable: true
 )
 
 preferences {
@@ -237,8 +238,10 @@ def completionPage() {
 		}
 
 		section("Notifications") {
-			input("recipients", "contact", title: "Send notifications to") {
-				input(name: "completionPhoneNumber", type: "phone", title: "Text This Number", description: "Phone number", required: false)
+			input("recipients", "contact", title: "Send notifications to", required: false) {
+				if (completionPhoneNumber) {
+					input(name: "completionPhoneNumber", type: "phone", title: "Text This Number", description: "Phone number", required: false)
+				}
 				input(name: "completionPush", type: "bool", title: "Send A Push Notification", description: "Phone number", required: false)
 			}
 			input(name: "completionMusicPlayer", type: "capability.musicPlayer", title: "Speak Using This Music Player", required: false)
@@ -370,6 +373,7 @@ public def start(source) {
 	setLevelsInState()
 
 	atomicState.running = true
+	atomicState.runCounter = 0
 
 	atomicState.start = new Date().getTime()
 
@@ -384,6 +388,7 @@ public def stop(source) {
 
 	atomicState.running = false
 	atomicState.start = 0
+	atomicState.runCounter = 0
 
 	unschedule("healthCheck")
 }
@@ -454,17 +459,23 @@ def sendStopEvent(source) {
 		eventData.value += "cancelled"
 	}
 
+	// send 100% completion event
+	sendTimeRemainingEvent(100)
+
+	// send a non-displayed 0% completion to reset tiles
+	sendTimeRemainingEvent(0, false)
+
+	// send sessionStatus event last so the event feed is ordered properly
 	sendControllerEvent(eventData)
-	sendTimeRemainingEvent(0)
 }
 
-def sendTimeRemainingEvent(percentComplete) {
+def sendTimeRemainingEvent(percentComplete, displayed = true) {
 	log.trace "sendTimeRemainingEvent(${percentComplete})"
 
 	def percentCompleteEventData = [
 			name: "percentComplete",
 			value: percentComplete as int,
-			displayed: true,
+			displayed: displayed,
 			isStateChange: true
 	]
 	sendControllerEvent(percentCompleteEventData)
@@ -474,7 +485,7 @@ def sendTimeRemainingEvent(percentComplete) {
 	def timeRemainingEventData = [
 			name: "timeRemaining",
 			value: displayableTime(timeRemaining),
-			displayed: true,
+			displayed: displayed,
 			isStateChange: true
 	]
 	sendControllerEvent(timeRemainingEventData)
@@ -513,14 +524,24 @@ private increment() {
 		return
 	}
 
+	if (atomicState.runCounter == null) {
+		atomicState.runCounter = 1
+	} else {
+		atomicState.runCounter = atomicState.runCounter + 1
+	}
 	def percentComplete = completionPercentage()
 
 	if (percentComplete > 99) {
 		percentComplete = 99
 	}
 
-	updateDimmers(percentComplete)
-
+	if (atomicState.runCounter > 100) {
+		log.error "Force stopping Gentle Wakeup due to too many increments"
+		// If increment has already been called 100 times, then stop regardless of state
+		percentComplete = 100
+	} else {
+		updateDimmers(percentComplete)
+	}
 	if (percentComplete < 99) {
 
 		def runAgain = stepDuration()
@@ -608,8 +629,6 @@ private completion() {
 	handleCompletionMessaging()
 
 	handleCompletionModesAndPhrases()
-
-	sendTimeRemainingEvent(100)
 }
 
 private handleCompletionSwitches() {
@@ -761,7 +780,7 @@ String displayableTime(timeRemaining) {
 		return "${minutes}:00"
 	}
 	def fraction = "0.${parts[1]}" as double
-	def seconds = "${60 * fraction as int}".padRight(2, "0")
+	def seconds = "${60 * fraction as int}".padLeft(2, "0")
 	return "${minutes}:${seconds}"
 }
 

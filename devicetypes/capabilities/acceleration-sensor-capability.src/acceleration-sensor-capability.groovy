@@ -23,8 +23,8 @@ metadata {
 
 	tiles {
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
-			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
+			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc")
+			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00A0DC")
 		}
 
 		main "acceleration"

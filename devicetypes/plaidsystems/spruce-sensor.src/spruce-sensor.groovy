@@ -1,5 +1,5 @@
 /**
- *  Spruce Sensor -Pre-release V2 10/8/2015
+ *  Spruce Sensor -updated with SLP3 model number 3/2019
  *
  *  Copyright 2014 Plaid Systems
  *
@@ -14,31 +14,43 @@
  *
  -------10/20/2015 Updates--------
  -Fix/add battery reporting interval to update
- -remove polling and/or refresh(?)
+ -remove polling and/or refresh
+ 
+ -------5/2017 Updates--------
+ -Add fingerprints for SLP
+ -add device health, check every 60mins + 2mins
+ 
+ -------3/2019 Updates--------
+ -Add fingerprints for SLP3
+ -change device health from 62mins to 3 hours
  */
+ 
 metadata {
-	definition (name: "Spruce Sensor", namespace: "plaidsystems", author: "NCauffman") {
+	definition (name: "Spruce Sensor", namespace: "plaidsystems", author: "Plaid Systems") {
 		
 		capability "Configuration"
 		capability "Battery"
         capability "Relative Humidity Measurement"
         capability "Temperature Measurement"
         capability "Sensor"
+        capability "Health Check"
         //capability "Polling"
 		
         attribute "maxHum", "string"
         attribute "minHum", "string"        
         
+        
         command "resetHumidity"
         command "refresh"
         
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Sensor"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Sensor"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Sensor"
 	}
 
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph", title: ""
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-        input "interval", "number", title: "Measurement Interval 1-120 minutes (default: 10 minutes)", description: "Set how often you would like to check soil moisture in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
+        input "interval", "number", title: "Report Interval", description: "How often the device should report in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
         input "resetMinMax", "bool", title: "Reset Humidity min and max", required: false, displayDuringSetup: false
       }
 
@@ -65,7 +77,7 @@ metadata {
 					[value: 64, color: "#44B621"],
 					[value: 80, color: "#3D79D9"],
 					[value: 96, color: "#0A50C2"]
-				]
+				], icon:"st.Weather.weather12"
 		}
         
         valueTile("maxHum", "device.maxHum", canChangeIcon: false, canChangeBackground: false) {
@@ -120,7 +132,7 @@ def parse(String description) {
  	
     //check in configuration change
     if (!device.latestValue('configuration')) result = poll()
-    if (device.latestValue('configuration').toInteger() != interval && interval != null) {  	
+    if (device.latestValue('configuration') as float != interval && interval != null) {
         result = poll()            
     }
  	log.debug "result: $result"
@@ -254,7 +266,8 @@ private Map getTemperatureResult(value) {
 	return [
 		name: 'temperature',
 		value: value,
-		descriptionText: descriptionText
+		descriptionText: descriptionText,
+		unit: temperatureScale
 	]
 }
 
@@ -292,16 +305,25 @@ def setConfig(){
     sendEvent(name: 'configuration',value: configInterval, descriptionText: "Configuration initialized")
 }
 
+def installed(){
+	//check every 62 minutes
+    sendEvent(name: "checkInterval", value: 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+}
+
 //when device preferences are changed
 def updated(){	
     log.debug "device updated"
     if (!device.latestValue('configuration')) configure()
     else{
     	if (resetMinMax == true) resetHumidity()
-        if (device.latestValue('configuration').toInteger() != interval && interval != null){    	
+        if (device.latestValue('configuration') as float != interval && interval != null){
             sendEvent(name: 'configuration',value: 0, descriptionText: "Settings changed and will update at next report. Measure interval set to ${interval} mins")
     	}
     }
+    //check every 62mins or interval + 120s
+    def reportingInterval  = interval * 60 + 2 * 60
+    if (reportingInterval < 3720) reportingInterval = 3720
+    sendEvent(name: "checkInterval", value: reportingInterval, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 //poll

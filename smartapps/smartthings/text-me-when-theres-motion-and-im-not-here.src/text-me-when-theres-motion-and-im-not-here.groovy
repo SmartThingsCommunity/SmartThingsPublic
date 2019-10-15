@@ -50,7 +50,7 @@ def updated() {
 
 def motionActiveHandler(evt) {
 	log.trace "$evt.value: $evt, $settings"
-	
+
 	if (presence1.latestValue("presence") == "not present") {
 		// Don't send a continuous stream of text messages
 		def deltaSeconds = 10
@@ -60,14 +60,14 @@ def motionActiveHandler(evt) {
 		def alreadySentSms = recentEvents.count { it.value && it.value == "active" } > 1
 
 		if (alreadySentSms) {
-			log.debug "SMS already sent to $phone1 within the last $deltaSeconds seconds"
+			log.debug "SMS already sent within the last $deltaSeconds seconds"
 		} else {
             if (location.contactBookEnabled) {
                 log.debug "$motion1 has moved while you were out, sending notifications to: ${recipients?.size()}"
                 sendNotificationToContacts("${motion1.label} ${motion1.name} moved while you were out", recipients)
             }
             else {
-                log.debug "$motion1 has moved while you were out, texting $phone1"
+                log.debug "$motion1 has moved while you were out, sending text"
                 sendSms(phone1, "${motion1.label} ${motion1.name} moved while you were out")
             }
 		}

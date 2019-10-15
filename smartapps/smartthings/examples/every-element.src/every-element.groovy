@@ -202,7 +202,8 @@ def inputSelectionPage() {
 
         section("options variations") {
             paragraph "tap these elements and look at the differences when selecting an option"
-            input(type: "enum", name: "selectionSimple", title: "Simple options", description: "no separators in the selectable options", groupedOptions: addGroup(englishOptions + spanishOptions))
+            input(type: "enum", name: "selectionSimple", title: "Simple options", description: "no separators in the selectable options", options: ["Thing 1", "Thing 2", "(Complicated) Thing 3"])
+            input(type: "enum", name: "selectionSimpleGrouped", title: "Simple (Grouped) options", description: "no separators in the selectable options", groupedOptions: addGroup(englishOptions + spanishOptions))
             input(type: "enum", name: "selectionGrouped", title: "Grouped options", description: "separate groups of options with headers", groupedOptions: groupedOptions)
         }
 
@@ -214,15 +215,15 @@ def inputSelectionPage() {
 
         section("segmented") {
             paragraph "segmented should only work if there are either 2 or 3 options to choose from"
-            input(type: "enum", name: "selectionSegmented1", style: "segmented", title: "1 option", groupedOptions: addGroup(["One"]))
-            input(type: "enum", name: "selectionSegmented4", style: "segmented", title: "4 options", groupedOptions: addGroup(["One", "Two", "Three", "Four"]))
+            input(type: "enum", name: "selectionSegmented1", style: "segmented", title: "1 option", options: ["One"])
+            input(type: "enum", name: "selectionSegmented4", style: "segmented", title: "4 options", options: ["One", "Two", "Three", "Four"])
 
             paragraph "multiple and required will have no effect on segmented selection elements. There will always be exactly 1 option selected"
             input(type: "enum", name: "selectionSegmented2", style: "segmented", title: "2 options", options: ["One", "Two"])
             input(type: "enum", name: "selectionSegmented3", style: "segmented", title: "3 options", options: ["One", "Two", "Three"])
 
             paragraph "specifying defaultValue still works with segmented selection elements"
-            input(type: "enum", name: "selectionSegmentedWithDefault", title: "defaulted to 'two'", groupedOptions: addGroup(["One", "Two", "Three"]), defaultValue: "Two")
+            input(type: "enum", name: "selectionSegmentedWithDefault", style: "segmented", title: "defaulted to 'two'", options: ["One", "Two", "Three"], defaultValue: "Two")
         }
 
         section("required: true") {
@@ -231,6 +232,8 @@ def inputSelectionPage() {
 
         section("multiple: true") {
             input(type: "enum", name: "selectionMultiple", title: "This allows multiple selections", description: "It should look different when nothing is selected", groupedOptions: addGroup(["an option", "another option", "no way, one more?"]), multiple: true)
+            input(type: "enum", name: "selectionMultipleDefault1", title: "This allows multiple selections with a single default", description: "It should look different when nothing is selected", groupedOptions: addGroup(["an option", "another option", "no way, one more?"]), multiple: true, defaultValue: "an option")
+            input(type: "enum", name: "selectionMultipleDefault2", title: "This allows multiple selections with multiple defaults", description: "It should look different when nothing is selected", groupedOptions: addGroup(["an option", "another option", "no way, one more?"]), multiple: true, defaultValue: ["an option", "another option"])
         }
 
         section("with image") {

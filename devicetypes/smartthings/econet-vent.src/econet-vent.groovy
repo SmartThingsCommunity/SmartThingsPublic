@@ -26,11 +26,13 @@ metadata {
 		capability "Sensor"
         capability "Polling"
         capability "Configuration"
+		capability "Health Check"
 
 		command "open"
 		command "close"
 
 		fingerprint deviceId: "0x1100", inClusters: "0x26,0x72,0x86,0x77,0x80,0x20"
+		fingerprint mfr:"0157", prod:"0100", model:"0100", deviceJoinName: "EcoNet Controls Z-Wave Vent"
 	}
 
 	simulator {
@@ -53,13 +55,13 @@ metadata {
 
 	tiles {
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", action:"switch.off", icon:"st.vents.vent-open-text", backgroundColor:"#53a7c0"
+			state "on", action:"switch.off", icon:"st.vents.vent-open-text", backgroundColor:"#00a0dc"
 			state "off", action:"switch.on", icon:"st.vents.vent-closed", backgroundColor:"#ffffff"
 		}
         valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false) {
+		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false, range:"(0..100)") {
 			state "level", action:"switch level.setLevel"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
@@ -83,8 +85,15 @@ def parse(String description) {
     result
 }
 
+def installed() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
 //send the command to stop polling
 def updated() {
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	response("poll stop")
 }
 
@@ -114,7 +123,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelR
 def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def text = "$device.displayName is ${cmd.value ? "open" : "closed"}"
 	def switchEvent = createEvent(name: "switch", value: (cmd.value ? "on" : "off"), descriptionText: text)
-	def levelEvent = createEvent(name:"level", value: cmd.value, unit:"%")
+	def levelEvent = createEvent(name:"level", value: cmd.value == 99 ? 100 : cmd.value , unit:"%")
 	[switchEvent, levelEvent]
 }
 
@@ -167,6 +176,13 @@ def setLevel(value) {
 
 def setLevel(value, duration) {
 	setLevel(value)
+}
+
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	refresh()
 }
 
 def refresh() {

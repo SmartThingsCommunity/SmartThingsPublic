@@ -13,22 +13,30 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "SmartSense Open/Closed Sensor", namespace: "smartthings", author: "SmartThings", category: "C2") {
+	definition(name: "SmartSense Open/Closed Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Zigbee") {
 		capability "Battery"
 		capability "Configuration"
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Temperature Measurement"
 		capability "Health Check"
-
-		command "enrollResponse"
-
+		capability "Sensor"
 
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S"
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3320-L", deviceJoinName: "Iris Contact Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3323-G", deviceJoinName: "Centralite Micro Door Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "Contact Sensor-A", deviceJoinName: "Sylvania SMART+ Contact and Temperature Smart Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 E", deviceJoinName: "Visonic Door/Window Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "4655BC0-R", deviceJoinName: "Ecolink Door/Window Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0003,0019", manufacturer: "iMagic by GreatStar", model: "1116-S", deviceJoinName: "Iris Contact Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Bosch", model: "RFMS-ZBMS", deviceJoinName: "Bosch multi-sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Megaman", model: "MS601/z1", deviceJoinName: "INGENIUM ZB Magnetic ON/OFF Sensor"
+        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Contact Sensor V2.0"
 	}
 
 	simulator {
@@ -36,21 +44,20 @@ metadata {
 	}
 
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
-				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+		multiAttributeTile(name: "contact", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState "open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
+				attributeState "closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC"
 			}
 		}
 
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
-			state "temperature", label:'${currentValue}°',
-				backgroundColors:[
+			state "temperature", label: '${currentValue}°',
+				backgroundColors: [
 					[value: 31, color: "#153591"],
 					[value: 44, color: "#1e9cbb"],
 					[value: 59, color: "#90d2a7"],
@@ -61,196 +68,105 @@ metadata {
 				]
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
-			state "battery", label:'${currentValue}% battery', unit:""
+			state "battery", label: '${currentValue}% battery', unit: ""
 		}
 
 		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-		main (["contact", "temperature"])
-		details(["contact","temperature","battery","refresh"])
+		main(["contact", "temperature"])
+		details(["contact", "temperature", "battery", "refresh"])
 	}
 }
+
+private getIAS_ZONE_TYPE_ATTRIBUTE() { 0x0001 }
+private getIAS_ZONE_TYPE_CONTACT_SWITCH_ATTRIBUTE_VALUE() { 0x0015 }
+private getIAS_ZONE_TYPE_WATER_SENSOR_ATTRIBUTE_VALUE() { 0x002A }
+private getTEMPERATURE_MEASURED_VALUE_ATTRIBUTE() { 0x0000 }
+private getBATTERY_VOLTAGE_VALUE_ATTRIBUTE() { 0x0020 }
+private getPOLL_CONTROL_CLUSTER() { 0x0020 }
+private getCHECK_IN_INTERVAL_ATTRIBUTE() { 0x0000 }
+private getFAST_POLL_TIMEOUT_ATTRIBUTE() { 0x0003 }
+private getSET_LONG_POLL_INTERVAL_CMD() { 0x02 }
+private getSET_SHORT_POLL_INTERVAL_CMD() { 0x03 }
 
 def parse(String description) {
 	log.debug "description: $description"
 
-	Map map = [:]
-	if (description?.startsWith('catchall:')) {
-		map = parseCatchAllMessage(description)
+	Map map = zigbee.getEvent(description)
+	if (!map) {
+		if (description?.startsWith('zone status') || description?.startsWith('zone report')) {
+			map = parseIasMessage(description)
+		} else {
+			Map descMap = zigbee.parseDescriptionAsMap(description)
+			if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
+				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
+				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
+				map = getContactResult(zs.isAlarm1Set() ? "open" : "closed")
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.commandInt == 0x07) {
+				if (descMap.data[0] == "00") {
+					log.debug "IAS ZONE REPORTING CONFIG RESPONSE: $descMap"
+					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+				} else {
+					log.warn "IAS ZONE REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
+				}
+			} else if (descMap?.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == IAS_ZONE_TYPE_ATTRIBUTE && isBoschRadionMultiSensor()) {
+				if (Integer.parseInt(descMap.value, 16) == IAS_ZONE_TYPE_CONTACT_SWITCH_ATTRIBUTE_VALUE) {
+					//multi-sensor is in contact or tilt detector mode - both act as contact sensor so no action is necessary
+				} else if (Integer.parseInt(descMap.value, 16) == IAS_ZONE_TYPE_WATER_SENSOR_ATTRIBUTE_VALUE) {
+					//multi-sensor is in water detector mode, DTH should be changed to water sensor DTH
+					log.debug "Changing DTH type to: SmartSense Moisture Sensor"
+					setDeviceType("SmartSense Moisture Sensor")
+				}
+			}
+		}
+	} else if (map.name == "temperature") {
+		if (tempOffset) {
+			map.value = (int) map.value + (int) tempOffset
+		}
+		map.descriptionText = temperatureScale == 'C' ? '{{ device.displayName }} was {{ value }}°C' : '{{ device.displayName }} was {{ value }}°F'
+		map.translatable = true
 	}
-	else if (description?.startsWith('read attr -')) {
-		map = parseReportAttributeMessage(description)
-	}
-	else if (description?.startsWith('temperature: ')) {
-		map = parseCustomMessage(description)
-	}
-    else if (description?.startsWith('zone status')) {
-    	map = parseIasMessage(description)
-    }
 
 	log.debug "Parse returned $map"
-	def result = map ? createEvent(map) : null
+	def result = map ? createEvent(map) : [:]
 
-    if (description?.startsWith('enroll request')) {
-    	List cmds = enrollResponse()
-        log.debug "enroll response: ${cmds}"
-        result = cmds?.collect { new physicalgraph.device.HubAction(it) }
-    }
-    return result
-}
-
-private Map parseCatchAllMessage(String description) {
-    Map resultMap = [:]
-    def cluster = zigbee.parse(description)
-    if (shouldProcessMessage(cluster)) {
-        switch(cluster.clusterId) {
-            case 0x0001:
-            	resultMap = getBatteryResult(cluster.data.last())
-                break
-
-            case 0x0402:
-                log.debug 'TEMP'
-                // temp is last 2 data values. reverse to swap endian
-                String temp = cluster.data[-2..-1].reverse().collect { cluster.hex1(it) }.join()
-                def value = getTemperature(temp)
-                resultMap = getTemperatureResult(value)
-                break
-        }
-    }
-
-    return resultMap
-}
-
-private boolean shouldProcessMessage(cluster) {
-    // 0x0B is default response indicating message got through
-    // 0x07 is bind message
-    boolean ignoredMessage = cluster.profileId != 0x0104 ||
-        cluster.command == 0x0B ||
-        cluster.command == 0x07 ||
-        (cluster.data.size() > 0 && cluster.data.first() == 0x3e)
-    return !ignoredMessage
-}
-
-private int getHumidity(value) {
-    return Math.round(Double.parseDouble(value))
-}
-
-private Map parseReportAttributeMessage(String description) {
-	Map descMap = (description - "read attr - ").split(",").inject([:]) { map, param ->
-		def nameAndValue = param.split(":")
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
+	if (description?.startsWith('enroll request')) {
+		List cmds = zigbee.enrollResponse()
+		log.debug "enroll response: ${cmds}"
+		result = cmds?.collect { new physicalgraph.device.HubAction(it) }
 	}
-	log.debug "Desc Map: $descMap"
-
-	Map resultMap = [:]
-	if (descMap.cluster == "0402" && descMap.attrId == "0000") {
-		def value = getTemperature(descMap.value)
-		resultMap = getTemperatureResult(value)
-	}
-	else if (descMap.cluster == "0001" && descMap.attrId == "0020") {
-		resultMap = getBatteryResult(Integer.parseInt(descMap.value, 16))
-	}
-
-	return resultMap
+	return result
 }
 
-private Map parseCustomMessage(String description) {
-	Map resultMap = [:]
-	if (description?.startsWith('temperature: ')) {
-		def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
-		resultMap = getTemperatureResult(value)
-	}
-	return resultMap
-}
 
 private Map parseIasMessage(String description) {
-    List parsedMsg = description.split(' ')
-    String msgCode = parsedMsg[2]
-
-    Map resultMap = [:]
-    switch(msgCode) {
-        case '0x0020': // Closed/No Motion/Dry
-        	resultMap = getContactResult('closed')
-            break
-
-        case '0x0021': // Open/Motion/Wet
-        	resultMap = getContactResult('open')
-            break
-
-        case '0x0022': // Tamper Alarm
-            break
-
-        case '0x0023': // Battery Alarm
-            break
-
-        case '0x0024': // Supervision Report
-        	resultMap = getContactResult('closed')
-            break
-
-        case '0x0025': // Restore Report
-        	resultMap = getContactResult('open')
-            break
-
-        case '0x0026': // Trouble/Failure
-            break
-
-        case '0x0028': // Test Mode
-            break
-    }
-    return resultMap
-}
-
-def getTemperature(value) {
-	def celsius = Integer.parseInt(value, 16).shortValue() / 100
-	if(getTemperatureScale() == "C"){
-		return celsius
-	} else {
-		return celsiusToFahrenheit(celsius) as Integer
-	}
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	return zs.isAlarm1Set() ? getContactResult('open') : getContactResult('closed')
 }
 
 private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
 
-    def result = [
-    	name: 'battery'
-    ]
+	def result = [:]
 
 	def volts = rawValue / 10
-	def descriptionText
-    if (rawValue == 0 || rawValue == 255) {}
-    else if (volts > 3.5) {
-		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
-	}
-	else {
+	if (!(rawValue == 0 || rawValue == 255)) {
 		def minVolts = 2.1
-    	def maxVolts = 3.0
+		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		def roundedPct = Math.round(pct * 100)
+		if (roundedPct <= 0)
+			roundedPct = 1
 		result.value = Math.min(100, roundedPct)
 		result.descriptionText = "${linkText} battery was ${result.value}%"
+		result.name = 'battery'
 	}
 
 	return result
-}
-
-private Map getTemperatureResult(value) {
-	log.debug 'TEMP'
-	def linkText = getLinkText(device)
-	if (tempOffset) {
-		def offset = tempOffset as int
-		def v = value as int
-		value = v + offset
-	}
-	def descriptionText = "${linkText} was ${value}°${temperatureScale}"
-	return [
-		name: 'temperature',
-		value: value,
-		descriptionText: descriptionText
-	]
 }
 
 private Map getContactResult(value) {
@@ -258,77 +174,61 @@ private Map getContactResult(value) {
 	def linkText = getLinkText(device)
 	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
 	return [
-		name: 'contact',
-		value: value,
+		name           : 'contact',
+		value          : value,
 		descriptionText: descriptionText
 	]
 }
 
+/**
+ * PING is used by Device-Watch in attempt to reach the Device
+ * */
+def ping() {
+	zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
+}
+
 def refresh() {
 	log.debug "Refreshing Temperature and Battery"
-	def refreshCmds = [
-        "st rattr 0x${device.deviceNetworkId} 1 0x402 0", "delay 200",
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20", "delay 200"
-	]
+	def refreshCmds = zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, TEMPERATURE_MEASURED_VALUE_ATTRIBUTE) +
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE_VALUE_ATTRIBUTE) + zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.enrollResponse()
 
-	return refreshCmds + enrollResponse()
+	return refreshCmds
 }
 
 def configure() {
-	sendEvent(name: "checkInterval", value: 7200, displayed: false)
+	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
-	def configCmds = [
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 1 {${device.zigbeeId}} {}", "delay 500",
-		"zcl global send-me-a-report 1 0x20 0x20 30 21600 {01}",		//checkin time 6 hrs
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-
-		"zdo bind 0x${device.deviceNetworkId} ${endpointId} 1 0x402 {${device.zigbeeId}} {}", "delay 500",
-		"zcl global send-me-a-report 0x402 0 0x29 30 3600 {6400}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 500"
-	]
-    return configCmds + refresh() // send refresh cmds as part of config
+	def cmds = refresh() +
+		zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) +
+		zigbee.batteryConfig() +
+		zigbee.temperatureConfig(30, 60 * 30) +
+		zigbee.enrollResponse()
+	if (isEcolink()) {
+		cmds += configureEcolink()
+	} else if (isBoschRadionMultiSensor()) {
+		cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, IAS_ZONE_TYPE_ATTRIBUTE)
+	}
+	// temperature minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+	// battery minReport 30 seconds, maxReportTime 6 hrs by default
+	return cmds
 }
 
-def enrollResponse() {
-	log.debug "Sending enroll response"
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-	[
-		//Resending the CIE in case the enroll request is sent before CIE is written
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 ${endpointId}", "delay 500",
-		//Enroll Response
-		"raw 0x500 {01 23 00 00 00}",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 200"
-	]
+private configureEcolink() {
+	sendEvent(name: "checkInterval", value: 60 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+
+	def enrollCmds = zigbee.writeAttribute(POLL_CONTROL_CLUSTER, CHECK_IN_INTERVAL_ATTRIBUTE, DataType.UINT32, 0x00001C20) + zigbee.command(POLL_CONTROL_CLUSTER, SET_SHORT_POLL_INTERVAL_CMD, "0200") +
+		zigbee.writeAttribute(POLL_CONTROL_CLUSTER, FAST_POLL_TIMEOUT_ATTRIBUTE, DataType.UINT16, 0x0028) + zigbee.command(POLL_CONTROL_CLUSTER, SET_LONG_POLL_INTERVAL_CMD, "B1040000")
+
+	return zigbee.addBinding(POLL_CONTROL_CLUSTER) + refresh() + enrollCmds
 }
 
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
+private Boolean isEcolink() {
+	device.getDataValue("manufacturer") == "Ecolink"
 }
 
-private hex(value) {
-	new BigInteger(Math.round(value).toString()).toString(16)
-}
-
-private String swapEndianHex(String hex) {
-    reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-    int i = 0;
-    int j = array.length - 1;
-    byte tmp;
-    while (j > i) {
-        tmp = array[j];
-        array[j] = array[i];
-        array[i] = tmp;
-        j--;
-        i++;
-    }
-    return array
+private Boolean isBoschRadionMultiSensor() {
+	device.getDataValue("manufacturer") == "Bosch" && device.getDataValue("model") == "RFMS-ZBMS"
 }

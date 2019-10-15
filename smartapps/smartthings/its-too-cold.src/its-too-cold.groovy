@@ -21,7 +21,8 @@ definition(
     description: "Monitor the temperature and when it drops below your setting get a text and/or turn on a heater or additional appliance.",
     category: "Convenience",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/temp_thermo-switch.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/temp_thermo-switch@2x.png"
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/temp_thermo-switch@2x.png",
+    pausable: true
 )
 
 preferences {
@@ -69,10 +70,10 @@ def temperatureHandler(evt) {
 		def alreadySentSms = recentEvents.count { it.doubleValue <= tooCold } > 1
 
 		if (alreadySentSms) {
-			log.debug "SMS already sent to $phone1 within the last $deltaMinutes minutes"
+			log.debug "SMS already sent within the last $deltaMinutes minutes"
 			// TODO: Send "Temperature back to normal" SMS, turn switch off
 		} else {
-			log.debug "Temperature dropped below $tooCold:  sending SMS to $phone1 and activating $mySwitch"
+			log.debug "Temperature dropped below $tooCold:  sending SMS and activating $mySwitch"
 			def tempScale = location.temperatureScale ?: "F"
 			send("${temperatureSensor1.displayName} is too cold, reporting a temperature of ${evt.value}${evt.unit?:tempScale}")
 			switch1?.on()
