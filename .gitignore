@@ -16,9 +16,6 @@
 .gradletasknamecache	
 .gradle/	
 
-.st-ignore
-*.md
-
 # Mac OS files	
 .DS_Store	
 
