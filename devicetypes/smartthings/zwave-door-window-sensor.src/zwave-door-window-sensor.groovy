@@ -33,6 +33,7 @@ metadata {
 		fingerprint mfr: "0086", prod: "0002", model: "001D", deviceJoinName: "Aeotec Door/Window Sensor (Gen 5)"
 		fingerprint mfr: "0086", prod: "0102", model: "0070", deviceJoinName: "Aeotec Door/Window Sensor 6" //US
 		fingerprint mfr: "0086", prod: "0002", model: "0070", deviceJoinName: "Aeotec Door/Window Sensor 6" //EU
+		fingerprint mfr: "0086", prod: "0202", model: "0070", deviceJoinName: "Aeotec Door/Window Sensor 6" //AU
 		fingerprint mfr: "0086", prod: "0102", model: "0059", deviceJoinName: "Aeotec Recessed Door Sensor"
 		fingerprint mfr: "014A", prod: "0001", model: "0002", deviceJoinName: "Ecolink Door/Window Sensor"
 		fingerprint mfr: "014A", prod: "0001", model: "0003", deviceJoinName: "Ecolink Tilt Sensor"
