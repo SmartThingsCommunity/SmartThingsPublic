@@ -1,24 +1,2 @@
-# Eclipse files
-/.settings	
-/.classpath	
-/.project	
-/eclipse/	
-/target-eclipse	
-
-# IntelliJ files	
-*.iws	
-*.iml	
-.idea	
-/out	
-*.ipr	
-
-# Gradle files	
-.gradletasknamecache	
-.gradle/	
-
-# Mac OS files	
-.DS_Store	
-
-# Build files	
-/build
-devicetypes/axis/desktop.ini
+# Google App Engine generated folder
+appengine-generated/
