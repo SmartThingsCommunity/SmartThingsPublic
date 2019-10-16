@@ -11,6 +11,7 @@
  *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *	for the specific language governing permissions and limitations under the License.
  */
+import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -79,6 +80,11 @@ private List<Map> collectAttributes(Map descMap) {
 		descMaps.addAll(descMap.additionalAttrs)
 	}
 	return descMaps
+}
+
+def installed() {
+	log.debug "installed"
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]))
 }
 
 // Parse incoming device messages to generate events
