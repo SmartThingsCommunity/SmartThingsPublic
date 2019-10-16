@@ -221,7 +221,7 @@ def setLevel(level, rate = null) {
 	if(level > 99) level = 99
 	encapSequence([
 		zwave.basicV1.basicSet(value: level),
-		zwave.switchMultilevelV1.switchMultilevelGet(),
+		zwave.switchMultilevelV1.switchMultilevelGet()
 	], 5000)
 }
 
