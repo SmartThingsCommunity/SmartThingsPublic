@@ -1,5 +1,4 @@
 import groovy.json.JsonOutput
-import groovy.json.JsonOutput
 
 /**
  *  Copyright 2015 SmartThings
