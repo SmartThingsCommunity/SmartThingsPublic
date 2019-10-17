@@ -11,12 +11,11 @@
  *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *	for the specific language governing permissions and limitations under the License.
  */
-
 import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "ZigBee Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade") {
+	definition(name: "ZigBee Window Shade Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade-2") {
 		capability "Actuator"
 		capability "Battery"
 		capability "Configuration"
@@ -27,11 +26,8 @@ metadata {
 
 		command "pause"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0102", outClusters: "0019", model: "E2B0-KR000Z0-HA", deviceJoinName: "SOMFY Blind Controller/eZEX" // SY-IoT201-BD
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.6", deviceJoinName: "Wistar Curtain Motor(CMJ)"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0102", outClusters: "000A", manufacturer: "Feibit Co.Ltd", model: "FTB56-ZT218AK1.8", deviceJoinName: "Wistar Curtain Motor(CMJ)"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "KG0001", deviceJoinName: "Smart Curtain Motor(BCM300D)"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0102", outClusters: "0003", manufacturer: "REXENSE", model: "DY0010", deviceJoinName: "Smart Curtain Motor(DT82TV)"
+		fingerprint manufacturer: "IKEA of Sweden", model: "KADRILJ roller blind", deviceJoinName: "IKEA KADRILJ Blinds" // raw description 01 0104 0202 00 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000
+		fingerprint manufacturer: "IKEA of Sweden", model: "FYRTUR block-out roller blind", deviceJoinName: "IKEA FYRTUR Blinds" // raw description 01 0104 0202 01 09 0000 0001 0003 0004 0005 0020 0102 1000 FC7C 02 0019 1000
 	}
 
 	tiles(scale: 2) {
@@ -53,12 +49,15 @@ metadata {
 		valueTile("shadeLevel", "device.level", width: 4, height: 1) {
 			state "level", label: 'Shade is ${currentValue}% up', defaultState: true
 		}
+		valueTile("batteryLevel", "device.battery", width: 2, height: 2) {
+			state "battery", label:'${currentValue}% battery', unit:""
+		}
 		controlTile("levelSliderControl", "device.level", "slider", width:2, height: 1, inactiveLabel: false) {
 			state "level", action:"switch level.setLevel"
 		}
 
 		main "windowShade"
-		details(["windowShade", "contPause", "shadeLevel", "levelSliderControl", "refresh"])
+		details(["windowShade", "contPause", "shadeLevel", "levelSliderControl", "refresh", "batteryLevel"])
 	}
 }
 
@@ -81,6 +80,11 @@ private List<Map> collectAttributes(Map descMap) {
 		descMaps.addAll(descMap.additionalAttrs)
 	}
 	return descMaps
+}
+
+def installed() {
+	log.debug "installed"
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]))
 }
 
 // Parse incoming device messages to generate events
@@ -149,10 +153,6 @@ def batteryPercentageEventHandler(batteryLevel) {
 	}
 }
 
-def supportsLiftPercentage() {
-	device.getDataValue("manufacturer") != "Feibit Co.Ltd"
-}
-
 def close() {
 	log.info "close()"
 	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_CLOSE)
@@ -200,10 +200,6 @@ def refresh() {
 		cmds = zigbee.readAttribute(zigbee.LEVEL_CONTROL_CLUSTER, ATTRIBUTE_CURRENT_LEVEL)
 	}
 	return cmds
-}
-
-def installed() {
-	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
 }
 
 def configure() {
@@ -256,6 +252,10 @@ private List addHubToGroup(Integer groupAddr) {
 
 private List readDeviceBindingTable() {
 	["zdo mgmt-bind 0x${device.deviceNetworkId} 0", "delay 200"]
+}
+
+def supportsLiftPercentage() {
+	isIkeaKadrilj() || isIkeaFyrtur()
 }
 
 def shouldInvertLiftPercentage() {
