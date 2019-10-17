@@ -141,13 +141,15 @@ def updated() {
 def initialize() {
 	sendEvent(name: "numberOfButtons", value: 4)
 	sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
+	sendEvent(name: "supportedButtonValues", value: ["pushed","held"].encodeAsJson(), displayed: false)
 }
 
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..4) {
-		addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", device.hubId,
+		def child = addChildDevice("Child Button", "${device.deviceNetworkId}/${i}", device.hubId,
 				[completedSetup: true, label: "${device.displayName} button ${i}",
 				 isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
+		child.sendEvent(name: "supportedButtonValues", value: ["pushed","held"].encodeAsJson(), displayed: false)
 	}
 }
