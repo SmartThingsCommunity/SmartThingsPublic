@@ -29,9 +29,10 @@
 include 'asynchttp_v1'
  
 def version() {
-    return "v0.2.3e.20190808"
+    return "v0.2.4e.20191016"
 }
 /*   
+ *	16-Oct-2019 >>> v0.2.4e.20191016 - Added support for multiple thermostats and updated watchdog to only notify once on issue occurrence and resolution.
  *	08-Aug-2019 >>> v0.2.3e.20190808 - Auto-refresh home energy meter and solar power meter if these are Powerwall devices 
  *	28-Jul-2019 >>> v0.2.2e.20190728 - Added support for Griddy and ComEd utility pricing peak period triggers. Added support for Powerwall as a solar and grid meter. 
  *	05-Jul-2019 >>> v0.2.1e.20190705 - Added support for multiple peak control and display devices. Note: update requires these devices to be re-entered in app preferences. 
@@ -100,8 +101,9 @@ private pageMain() {
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification.png"
         }
         section("Critical power generation and consumption devices. Setting devices here will help improve your projected demand estimates.") {
-            input "homeThermostat", "capability.thermostat", required: false, title: "Thermostat"
-            input "powerGenerator1", "capability.powerMeter", required: false, title: "Solar Inverter (if you select the DarwinsDen Powerwall device here, the Demand Manager will the Powerwall's solar power value)"
+            input "homeThermostats", "capability.thermostat", required: false, multiple:	true, title: "Thermostat (if multiple thermostats are selected, the " +
+              "Demand Manager will project future demand estimates based on the operational state of all combined and will sequentially alternate control of each when demand goals are exceeded for a given 30 or 60 minute demand period)."
+            input "powerGenerator1", "capability.powerMeter", required: false, title: "Solar Inverter (if you select the DarwinsDen Powerwall device here, the Demand Manager will use the Powerwall's solar power value)"
         }
 
         section("Tune your data. Refining estimates here will further improve your projected demand estimates.") {
@@ -131,13 +133,13 @@ private pageMain() {
         }
         section("For more information") {
           href(name: "Site", title: "For additional information, or to provide feedback, please visit: DarwinsDen.com/demand",
-             description: "Tap open the demand manager web page on DarwinsDen.com",
+             description: "Tap to open the demand manager web page on DarwinsDen.com",
              required: false,
              url: "https://darwinsden.com/demand/")
        }       
         section("Product Improvement") {
           href(name: "Survey", title: "Please help improve the Demand Manager smart app.",
-             description: "Tap take the Demand Manager Survey",
+             description: "Tap to take the Demand Manager Survey",
              required: false,
              url: "https://www.surveymonkey.com/r/RDFFJQM")
        }
@@ -153,10 +155,9 @@ private pageMain() {
 def pageNominalData() {
     dynamicPage(name: "pageNominalData", title: "This information helps the demand management program predict usage needs into the future when estimating projected demands for each peak cycle",
         install: false, uninstall: false) {
-        section("What is the estimated Watt usage of your air conditioner when it is in use? (default 5000W)... ") {
+        section("What is the estimated Watt usage of your air conditioner when it is in use? Use an average value of a single unit if more than one thermostat/AC unit is being used (default 5000W)... ") {
             input "airCondWatts", "number", required: false, defaultValue: 5000, title: "Estimated Air Conditioner Watts"
         }
-
         section("What is the estimated nominal Watt usage of your home when in normal use? This should not include your main air conditioner since that is accounted for by monitoring your thermostat, but should assume average typical occasional usage of your appliances such as microwave oven, televisions, etc. (default 1000W)...") {
             input "nomUsageWatts", "number", required: false, defaultValue: 1000, title: "Estimated Nominal Home Usage Watts"
         }
@@ -385,7 +386,6 @@ def pageDevicesToControl() {
     }
 }
 
-
 def pageThermostat() {
     dynamicPage(name: "pageThermostat", title: "Manage your thermostat based on demand", install: false, uninstall: false) {
         section(warning()) {
@@ -422,7 +422,7 @@ def pageThermostat() {
 def pageAdvancedSettings() {
     dynamicPage(name: "pageAdvancedSettings", title: "Advanced Settings (General)", install: false, uninstall: false) {
       section("") {
-            input "logLevel", "enum", required: false, title: "IDE Log Level (set log level in SmartThings IDE Live Logging Tob)", options: ["none", "trace", "debug", "info", "warn"]
+            input "logLevel", "enum", required: false, title: "IDE Log Level (set log level in SmartThings IDE Live Logging tab)", options: ["none", "trace", "debug", "info", "warn"]
       }
       section ("Automatically perform device refreshes during peak periods. This may improve usage accuracy data, but result in network congestion. " +
          "Currently applies to selected Home Energy Meter and Thermostat devices. Powerwall devices are automatically rereshed during peak periods regardless of this setting") {
@@ -435,7 +435,8 @@ def pagePrecoolSettings() {
     dynamicPage(name: "pagePrecoolSettings", title: "Pre-cool Settings", install: false, uninstall: false) {
         section("Precool Home to a chosen temperature and return home temperature back when the peak period ends. When used in conjunction with Demand Manager thermostat commanding, " +
             "the pre-cool start time is typically 30 minutes or more before your peak period begins, and the pre-cool return time will typically be the same time " +
-            "that your peak period ends. Note: You may wish to  program your smart thermostat to perform this function itself locally instead of using the precool functions here.") {
+            "that your peak period ends. Note: You may wish to  program your smart thermostat to perform this function itself locally instead of using the precool functions here. " +
+            "Pre-cooling currently only applies to the first thermostat chosen if multiple thermostats are selected.") {
             input "precoolHome", "boolean", required: false, defaultValue: false, title: "Precool"
             input "precoolStartTime", "time", required: false, title: "Pre-cool start time"
             input "precoolStopTime", "time", required: false, title: "Pre-cool return time"
@@ -458,8 +459,8 @@ def pageAdvancedThermostatCommandSettings() {
           options: ["1": "1 Minute", "2":"2 Minutes", "3":"3 Minutes","4":"4 Minutes","5":"5 Minutes","7":"7 Minutes","10":"10 Minutes"]
         }
         section("Thermostat Temperature Rise Scheduling - TRS (Beta): If enabled, TRS adds additional logic to the default (more aggressive) thermostat shutoff behavior in response to demand events." + 
-            "TRS attempts to compromise between your goal demand preference setting, maintaining home temperature comfort, and limiting short air conditioner duty cycles. When enabled, the demand manager will" +
-            " attempt to maintain a slowly increasing cooling temperature setpoint from 1 PM to 8PM. This may result in demands slightly exceeding your demand goal if your goal is aggressive. This requires that the home is pre-cooled to be effective.") {
+            "TRS attempts to maintain home temperature comfort, while also considering your goal demand preference setting and limiting short air conditioner duty cycles. When enabled, the demand manager will" +
+            " attempt to maintain a slowly increasing cooling temperature setpoint from 1 PM to 8 PM. This may result in demands slightly exceeding your demand goal if your goal is aggressive. This requires that the home is pre-cooled to be effective.") {
             input "thermoRiseSchedulingPlan", "enum", required: false, defaultValue: "Off", title: "Choose your TRS temperature rise goal:",
                 options: ["Off": "Off: Do not perform Temperature Rise Scheduling",
                     "Goal78F": "78°F by 8PM (suggested precool to at least 74°/75°)",
@@ -587,8 +588,6 @@ def memUsed() {
 def initialize() {
     log.debug "Initializing Demand Manager"
     atomicState.lastThrottleRunTime = now()
-    atomicState.lastProcessCompletedTime = now()
-    atomicState.lastProcessedTime = now()
     runEvery1Minute(throttleEvents)
     runEvery5Minutes(processWatchDog)
     runEvery1Hour(processWatchDog)
@@ -727,7 +726,9 @@ def turnOnPeakPeriod() {
             dashboardDevice.on()
             peakPeriodOnActions()
             atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
-            //sendNotificationMessage("now entering peak demand period", "demandGeneral")
+            atomicState.thermostatIdToReturn = 0
+            atomicState.thermostatSetLastCycle = 0
+            atomicState.thermostatToControlThisCycle = 0
         }
     } else {
         log.error "Can't turn on peak period switch. Switch not found"
@@ -741,7 +742,6 @@ def turnOffPeakPeriod() {
             dashboardDevice.off()
             peakPeriodOffActions()
             logDebug "now ending peak demand period"
-            //sendNotificationMessage("now ending peak demand period", "demandGeneral")
         }
     } else {
         log.error "Can't turn off peak period switch. Switch not found"
@@ -803,18 +803,19 @@ def stopPeak3Schedule() {
 }
 
 def precoolingStart() {
+    def thermostat = homeThermostats.get(0)
     if (operationMode && operationMode.toString() == "fullControl" && precoolHome?.toBoolean() && atomicState.todayIsPeakUtilityDay.toBoolean()) {
         if (precoolStartTime && precoolStartTemperature) {
             if (precoolStopTime && precoolStopTemperature) {
-                if (homeThermostat.coolingSetpointState.integerValue > precoolStartTemperature) {
+                atomicState.temperaturePriorToPrecool = thermostat.coolingSetpointState.integerValue
+                if (thermostat.coolingSetpointState.integerValue > precoolStartTemperature) {
                     log.debug "commanding thermostat to precool"
                     atomicState.lastThermostatCommandTime = now()
                     atomicState.processingThermostatCommand = true
-                    runIn(30, commandThermostatHandler, [data: [coolingSetpoint: precoolStartTemperature]])
+                    runIn(30, commandThermostatHandler, [data: [coolingSetpoint: precoolStartTemperature, whichThermostat: thermostat.deviceNetworkId]])
                     sendNotificationMessage("Pre-cooling home to ${precoolStartTemperature} °F.", "thermostat")
-                    atomicState.temperaturePriorToPrecool = homeThermostat.coolingSetpointState.integerValue
-                } else {
-                    sendNotificationMessage("Pre-cooling is not required. Current setpoint of ${coolingSetpointState.integerValue} is already " +
+                } else {                    
+                    sendNotificationMessage("Pre-cooling is not required. Current setpoint of ${thermostat.coolingSetpointState.integerValue} is already " +
                         "at or below ${precoolStartTemperature} °F.", "thermostat")
                 }
             } else {
@@ -830,11 +831,12 @@ def precoolingStart() {
 }
 
 def precoolingStop() {
+    def thermostat = homeThermostats.get(0)
     if (operationMode && operationMode?.toString() == "fullControl" && precoolHome?.toBoolean() && precoolStopTemperature && atomicState.todayIsPeakUtilityDay) {
         log.debug "commanding thermostat to stop precool"
         atomicState.lastThermostatCommandTime = now()
         atomicState.processingThermostatCommand = true
-        runIn(30, commandThermostatHandler, [data: [coolingSetpoint: precoolStopTemperature]])
+        runIn(30, commandThermostatHandler, [data: [coolingSetpoint: precoolStopTemperature, whichThermostat: thermostat.deviceNetworkId]])
         def precoolStopNotes = ""
         if (atomicState.temperaturePriorToPrecool != precoolStopTemperature) {
             precoolStopNotes = " Note: Setpoint was ${atomicState.temperaturePriorToPrecool} prior to pre-cool."
@@ -880,7 +882,7 @@ private sendNotificationMessage(message, msgType) {
     def sendNotification = false
     def warning = false
     if (operationMode && operationMode?.toString() != "monitorOnly") {
-        if (msgType == "anomaly" && (!notifyWhenAnomalies?.toBoolean())) {
+        if (msgType == "anomaly" && (notifyWhenAnomalies?.toBoolean())) {
             sendNotification = true
             warning = true
         } else if (msgType == "thermostat" && (notifyWhenThermostatControlled?.toBoolean())) {
@@ -927,9 +929,9 @@ def subscribeDevices() {
     def dashboardDevice = getChildDevice("dashboardDevice")
 
     log.debug "subscribing to Devices"
-    subscribe(homeThermostat, "thermostatOperatingState", immediateEvent)
-    subscribe(homeThermostat, "coolingSetpoint", immediateEvent)
-    subscribe(homeThermostat, "temperature", throttledEvent)
+    subscribe(homeThermostats, "thermostatOperatingState", immediateEvent)
+    subscribe(homeThermostats, "coolingSetpoint", immediateEvent)
+    subscribe(homeThermostats, "temperature", throttledEvent)
     subscribe(powerGenerator1, "power", immediateEvent)
     subscribe(wholeHomePowerMeter, "power", throttledEvent)
     subscribe(dashboardDevice, "switch.on", peakPeriodSwitchEvent)
@@ -943,6 +945,9 @@ def peakPeriodSwitchEvent(evt) {
         if (dashboardDevice.switchState?.stringValue == "on") {
             sendNotificationMessage("Entering utility peak period.", "demandGeneral")
             atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
+            atomicState.thermostatIdToReturn  = 0
+            atomicState.thermostatSetLastCycle = 0
+            atomicState.thermostatToControlThisCycle = 0
             peakPeriodOnActions()
         } else {
             sendNotificationMessage("Ending utility peak period.", "demandGeneral")
@@ -1058,8 +1063,8 @@ def refreshDevicesDuringPeak() {
       }
       
       //Refresh thermostat if set in preferences & in demand relevant situation (attempt to minimize thermostat device processing)
-      if (refreshDevices?.toBoolean() && homeThermostat != null && (atomicState.demandProjectedWatts > atomicState.goalDemandWatts * 0.9)) {
-          homeThermostat.refresh()
+      if (refreshDevices?.toBoolean() && homeThermostats != null && (atomicState.demandProjectedWatts > atomicState.goalDemandWatts * 0.9)) {
+          homeThermostats.refresh()
       }
    }
 }
@@ -1120,7 +1125,7 @@ def recordFinalCyclePeaks () {
      }
      atomicState.lastRecordedPeakDemand = 0
 }
-        
+
 def setCycleStatus() {
     def secondsIntoThisCycle
     def secondsLeftInThisCycle
@@ -1159,6 +1164,7 @@ def setCycleStatus() {
         def demandPeakCurrent = getChildDevice("demandPeakCurrent")
         if (atomicState.nowInPeakUtilityPeriod?.toBoolean()) {
             atomicState.processNewCycleThermo = true
+            atomicState.thermostatToControlThisCycle = 0
         }
         if (demandPeakCurrent) {
             demandPeakCurrent.setPower(atomicState.demandCurrentWatts)
@@ -1215,27 +1221,37 @@ def setDashboardProjectedDemand(data) {
     }
 }
 
-def getPowerWithoutAc() {
+def getProjectedPowerWithoutAc() {
   //reduce solar production estimate by 33% to be conservative
   return (atomicState.nominalUsageWatts - getSolarPower() * 2 / 3).toInteger()
  } 
- 
+
+def getNumberOfActiveCoolingAcUnits()
+{
+   def numberOfActiveUnits = 0
+   for (i in 0 .. homeThermostats.size() - 1) {
+      def thermostat = homeThermostats.get(i)
+      if (thermostat?.thermostatOperatingStateState?.stringValue == 'cooling') {   
+         numberOfActiveUnits = numberOfActiveUnits + 1
+      }
+   }
+   return numberOfActiveUnits
+}
+  
 def estimateHomePower()
 {
-  def homePower = getPowerWithoutAc()
-  if (homeThermostat?.thermostatOperatingStateState?.stringValue == 'cooling') {   
-      homePower = homePower + atomicState.airConditionerWatts.toInteger()
-  }
+  // Estimate based on thermostat operation + solar, and nominal home use
+  def homePower = getProjectedPowerWithoutAc() + getNumberOfActiveCoolingAcUnits() * atomicState.airConditionerWatts.toInteger()
   return homePower.toInteger()
 }
 
 def getCurrentHomePowerWatts() 
 {
     def currentHomePowerWatts = 0
-    if (wholeHomePowerMeter !=null) {
+    if (wholeHomePowerMeter != null) {
         currentHomePowerWatts = wholeHomePowerMeter.powerState.integerValue
     } else {
-      // Estimate based on thermostat operation and nominal home use
+      // Estimate...
       currentHomePowerWatts = estimateHomePower().toInteger()
     }
     //log.debug "returning: ${currentHomePowerWatts.toInteger()}"
@@ -1254,7 +1270,7 @@ def calcCurrentAndProjectedDemand() {
                Math.max(getCurrentHomePowerWatts().toInteger(), 0) * atomicState.deltaIntervalSeconds) / atomicState.secondsIntoThisDemandCycle).toInteger()
     }
     // projected demand
-    demandProjected = ((1.0 * demandCurrent * atomicState.secondsIntoThisDemandCycle + 1.0 * Math.max(getPowerWithoutAc(), 0) *
+    demandProjected = ((1.0 * demandCurrent * atomicState.secondsIntoThisDemandCycle + 1.0 * Math.max(getProjectedPowerWithoutAc(), 0) *
         atomicState.secondsLeftInThisDemandCycle) / (atomicState.cycleTimeMinutes * 60.0)).toInteger()
     def demandPeakCurrent = getChildDevice("demandPeakCurrent")
     if (demandPeakCurrent) {
@@ -1388,53 +1404,55 @@ def getTrsStatusString(setPoint) {
     }
     return statusString
 }
-
-def turnOffThermostat() {
-    logDebug "*******  Shut 'Er Down!...   *********"
-    def currentSetPoint = homeThermostat.coolingSetpointState.integerValue
+     
+def turnOffThermostat(data) {
+    def thermostat = getThermostat(data.whichThermostat)
+    logDebug "*******  Turn Off " + thermostat.displayName + " *********"
+    def currentSetPoint = thermostat.coolingSetpointState.integerValue
     def setPointToCommand = currentSetPoint
     def tempBumpDegrees = 2
     if (thermoRiseSchedulingPlan && thermoRiseSchedulingPlan.toString() != "Off" && getSmartThermoWeightedDeparture(currentSetPoint) < -1) {
         setPointToCommand = setPointToCommand + 1
-        logDebug "Ahead of thermostat schedule. Upping commanded setpoint by 1 to: ${setPointToCommand}"
+        logDebug "Ahead of thermostat schedule. Upping " + thermostat.displayName + " commanded setpoint by 1 to: ${setPointToCommand}"
     }
-    if ((setPointToCommand < homeThermostat.temperatureState.integerValue) &&
+    if ((setPointToCommand < thermostat.temperatureState.integerValue) &&
         (currentSetPoint <= 82)) {
         setPointToCommand = setPointToCommand + 1
         tempBumpDegrees = tempBumpDegrees + 1
-        logDebug "Current temperature is above planned setpoint value. Upping commanded setpoint by 1 to: ${setPointToCommand}"
+        logDebug "Current temperature is above planned setpoint value. Upping " + thermostat.displayName + " commanded setpoint by 1 to: ${setPointToCommand}"
     }
 
     if (setPointToCommand <= atomicState.maximumAllowedTemperature) {
         if (setPointToCommand == currentSetPoint) {
-            sendNotificationMessage("Briefly adjusting thermostat & returning to ${setPointToCommand}F to halt AC. " + getTrsStatusString(setPointToCommand), "thermostat")
+            sendNotificationMessage("Briefly adjusting " + thermostat.displayName + " thermostat & returning to ${setPointToCommand}F to halt AC. " + getTrsStatusString(setPointToCommand), "thermostat")
         } else {
-            sendNotificationMessage("Raising thermost from ${currentSetPoint} to ${setPointToCommand}F to manage demand." + getTrsStatusString(setPointToCommand), "thermostat")
+            sendNotificationMessage("Raising " + thermostat.displayName + " thermost from ${currentSetPoint} to ${setPointToCommand}F to manage demand." + getTrsStatusString(setPointToCommand), "thermostat")
         }
         atomicState.lastThermostatCommandTime = now()
         atomicState.processingThermostatCommand = true
-        commandThermostatWithBump(setPointToCommand, tempBumpDegrees)
+        commandThermostatWithBump(setPointToCommand, tempBumpDegrees, thermostat)
     } else {
-        logDebug "Unexpected condition: Set point to command of ${setPointToCommand} is above max allowed: ${atomicState.maximumAllowedTemperature}. Cannot turn off thermostat."
+        logDebug "Unexpected condition: " + thermostat.displayName + " set point to command of ${setPointToCommand} is above max allowed: ${atomicState.maximumAllowedTemperature}. Cannot turn off thermostat."
     }
 
 }
 
-def turnOnThermostat() {
+def turnOnThermostat(data) {
     logDebug "*******  Crank 'Er Up!... *********"
-    def setPointToCommand = homeThermostat.coolingSetpointState.integerValue
+    def thermostat = getThermostat(data.whichThermostat)
+    def setPointToCommand = thermostat.coolingSetpointState.integerValue
     def tempBumpDegrees = -3
     atomicState.processingThermostatCommand = true
     atomicState.lastThermostatCommandTime = now()
-    commandThermostatWithBump(setPointToCommand, tempBumpDegrees)
-    sendNotificationMessage("Briefly initiating cooling to ensure home will remain comfortable per TRS preference." + getTrsStatusString(setPointToCommand), "thermostat")
+    commandThermostatWithBump(setPointToCommand, tempBumpDegrees, thermostat)
+    sendNotificationMessage("Briefly initiating " + thermostat.displayName + " cooling to ensure home will remain comfortable per TRS preference." + getTrsStatusString(setPointToCommand), "thermostat")
 }
 
-def getTrsAdjustedTargetDemand() {
+def getTrsAdjustedTargetDemand(thermostat) {
     def trsAdjustedTargetDemand
-    if (homeThermostat.coolingSetpointState.stringValue != "") {
+    if (thermostat.coolingSetpointState.stringValue != "") {
         try {
-            def goalAdjustmentWatts = getSmartThermoWeightedDeparture(homeThermostat.coolingSetpointState.integerValue) * 200
+            def goalAdjustmentWatts = getSmartThermoWeightedDeparture(thermostat.coolingSetpointState.integerValue) * 200
             trsAdjustedTargetDemand = atomicState.goalDemandWatts + goalAdjustmentWatts
             if (demandPeakToday && trsAdjustedTargetDemand < demandPeakToday.powerState.integerValue) {
                 if (demandPeakToday.powerState.integerValue < atomicState.goalDemandWatts) {
@@ -1454,12 +1472,88 @@ def getTrsAdjustedTargetDemand() {
     return trsAdjustedTargetDemand
 }
 
+def returnThermostatSetPoint() {
+  if (atomicState.thermostatIdToReturn  != 0) {
+        def thermostatToReturn = getThermostat(atomicState.thermostatIdToReturn)
+        atomicState.thermostatIdToReturn = 0
+        if (returnSetPointAfterCycle?.toBoolean() && returnCycleSetPoint?.toInteger() > 70 &&
+                         returnCycleSetPoint.toInteger() <= atomicState.maximumAllowedTemperature && 
+                             returnCycleSetPoint.toInteger() != thermostatToReturn.coolingSetpointState.integerValue) {  
+           sendNotificationMessage("Returning " + thermostatToReturn.displayName + " to ${returnCycleSetPoint}F at start of new demand cycle.", "thermostat")
+           atomicState.lastThermostatCommandTime = now()
+           atomicState.processingThermostatCommand = true
+           runIn(15, commandThermostatHandler, [data: [coolingSetpoint: returnCycleSetPoint, whichThermostat: thermostatToReturn.deviceNetworkId]])
+        }
+   }
+}
+ 
+def incrementThermostat(startingThermo) {
+     def deviceId 
+     if (homeThermostats) {
+        if (homeThermostats.size() < 2 || startingThermo == null || startingThermo == 0 || 
+            homeThermostats.get(homeThermostats.size()-1).deviceNetworkId == startingThermo) {
+           deviceId = homeThermostats.get(0).deviceNetworkId 
+        } else {
+           for (i in 0 .. homeThermostats.size() - 2) {
+              if (homeThermostats.get(i).deviceNetworkId == startingThermo)  {
+                 deviceId = homeThermostats.get(i + 1).deviceNetworkId   
+              }
+           }
+        }
+     }
+     return deviceId
+}
+  
+def getThermostat (thermostat) {
+    def deviceId
+    if (homeThermostats) {
+       deviceId = homeThermostats.get(0)
+       homeThermostats.each { object ->
+          if (object.deviceNetworkId == thermostat)  {
+            deviceId = object 
+          }
+       }
+    }
+    return deviceId
+}
+ 
+def nextThermostatToControl() {
+    // find a thermostat to control that's ideally currently cooling and is not the thermostat controlled
+    // in the last cycle. 
+    //log.debug "first incrementing: ${getThermostat(atomicState.thermostatSetLastCycle)}"
+    def deviceId = incrementThermostat(atomicState.thermostatSetLastCycle)
+    if (homeThermostats) {
+       for (i in 1 .. homeThermostats.size()) {     
+         if (getThermostat(deviceId).thermostatOperatingStateState.stringValue == 'cooling') {
+           //log.debug "found cooling: ${getThermostat(deviceId)}"
+           exit
+         } else {
+           //log.debug "incrementing: ${getThermostat(deviceId)}"
+           deviceId = incrementThermostat(deviceId)
+         }
+       }
+    }
+    //log.debug "returning: ${getThermostat(deviceId)}"
+    return deviceId
+}   
+            
 def thermostatControls() {
-    if (homeThermostat) {
-        def demandToAttempt = getTrsAdjustedTargetDemand()
+    def thermostat 
+    
+    if (atomicState.thermostatToControlThisCycle) {
+       // Once a thermostat has been controlled for a cycle, stick with it.
+       //log.debug "sticking with last controlled thermostat"
+       thermostat = getThermostat(atomicState.thermostatToControlThisCycle)
+    } else {
+       // find the best candidate next thermostat to control
+       thermostat = getThermostat(nextThermostatToControl())
+    }
+    
+    if (thermostat) {
+        def demandToAttempt = getTrsAdjustedTargetDemand(thermostat)
         // reduce power generators by 1/3 as a conservative estimate since generation status may be lagging or may decrease in the future. 
-        def demandWithoutAirConditioning = Math.max(getPowerWithoutAc(),0)
-        def demandWithAirConditioning = demandWithoutAirConditioning + atomicState.airConditionerWatts
+        def demandWithoutAirConditioning = Math.max(getProjectedPowerWithoutAc(),0)
+        def demandWithAirConditioning = demandWithoutAirConditioning + atomicState.airConditionerWatts*getNumberOfActiveCoolingAcUnits()
         def demandAtEndOfCycleIfAcContinues = (atomicState.demandCurrentWatts * atomicState.secondsIntoThisDemandCycle +
             demandWithAirConditioning * atomicState.secondsNextInterval +
             demandWithoutAirConditioning * (atomicState.secondsLeftInThisDemandCycle - atomicState.secondsNextInterval)) / (atomicState.cycleTimeMinutes.toInteger() * 60)
@@ -1473,9 +1567,9 @@ def thermostatControls() {
         }
         def thermostatIsBusy = atomicState.processingThermostatCommand && ((now() - atomicState.lastThermostatCommandTime) / 1000) < 210
         logDebug "Demand To Attempt: ${demandToAttempt.toInteger()}. Demand If AC Continues: ${demandAtEndOfCycleIfAcContinues.toInteger()}." +
-            " WH To Next Cycle: ${wattHoursToNextCycleWithAc.toInteger()}. Seconds AC To Peak: ${estimatedSecondsOfAcToPeak.toInteger()}." +
-            " AC State: ${homeThermostat.thermostatOperatingStateState.stringValue}. Busy: ${thermostatIsBusy}."
-
+            " WH To Next Cycle: ${wattHoursToNextCycleWithAc.toInteger()}. Seconds AC To Peak: ${estimatedSecondsOfAcToPeak.toInteger()}. " +
+            thermostat.displayName + " AC State: ${thermostat.thermostatOperatingStateState.stringValue}. Busy: ${thermostatIsBusy}."
+ 
         if (atomicState.nowInPeakUtilityPeriod?.toBoolean()) {
             if (atomicState.lastThermostatCommandTime == null) {
                 atomicState.lastThermostatCommandTime = 0. toInteger()
@@ -1489,22 +1583,18 @@ def thermostatControls() {
             if (allowedToCommandThermo && !thermostatIsBusy && ((now() - atomicState.lastThermostatCommandTime) / 1000 > atomicState.minSecsBetweenThermoCommands)) {
                 if (atomicState.processNewCycleThermo?.toBoolean()) {
                     atomicState.processNewCycleThermo = false
-                    if (returnSetPointAfterCycle?.toBoolean() && returnCycleSetPoint?.toInteger() > 70 &&
-                         returnCycleSetPoint.toInteger() <= atomicState.maximumAllowedTemperature && 
-                             returnCycleSetPoint.toInteger() != homeThermostat.coolingSetpointState.integerValue) {                 
-                        logDebug ("setting return temp!")
-                        atomicState.lastThermostatCommandTime = now()
-                        atomicState.processingThermostatCommand = true
-                        runIn(15, commandThermostatHandler, [data: [coolingSetpoint: returnCycleSetPoint]])
-                    }
+                    //*************************
+                    //check to see if thermostat should return to default setpoint at start of new cycle 
+                    //*************************
+                    runIn (1, returnThermostatSetPoint)
                 } else {
-                    if (homeThermostat.thermostatOperatingStateState.stringValue == 'cooling') {
+                    if (thermostat.thermostatOperatingStateState.stringValue == 'cooling') {
                         //log.debug ("cooling!")
                         def acWattsAllowedToContinue = 200
                         if (!atomicState.maximumAllowedTemperature) {
                             atomicState.maximumAllowedTemperature = 83
                         }
-                        if ((homeThermostat.coolingSetpointState.integerValue <= atomicState.maximumAllowedTemperature) &&
+                        if ((thermostat.coolingSetpointState.integerValue <= atomicState.maximumAllowedTemperature) &&
                             (((demandAtEndOfCycleIfAcContinues >= demandToAttempt) &&
                                     (wattHoursToNextCycleWithAc > acWattsAllowedToContinue)) ||
                                 (demandAtEndOfCycleIfAcContinues > demandToAttempt + acWattsAllowedToContinue + 100))) {
@@ -1513,56 +1603,61 @@ def thermostatControls() {
                             //************************
                             atomicState.lastThermostatCommandTime = now()
                             atomicState.processingThermostatCommand = true
-                            runIn(1, turnOffThermostat)
+                            atomicState.thermostatIdToReturn = thermostat.deviceNetworkId
+                            atomicState.thermostatSetLastCycle = thermostat.deviceNetworkId
+                            atomicState.thermostatToControlThisCycle = thermostat.deviceNetworkId
+                            runIn(1, turnOffThermostat, [data: [whichThermostat: thermostat.deviceNetworkId]])
                         }
                     } else {
                         // Thermostat is not cooling, check if the AC should be turned on          
                         if (thermoRiseSchedulingPlan && thermoRiseSchedulingPlan.toString() != "Off" && 
-                           getSmartThermoWeightedDeparture(homeThermostat.temperatureState.integerValue) > 1 &&
+                           getSmartThermoWeightedDeparture(thermostat.temperatureState.integerValue) > 1 &&
                             estimatedSecondsOfAcToPeak > atomicState.secondsLeftInThisDemandCycle * 1.25 &&
-                            homeThermostat.coolingSetpointState.integerValue < homeThermostat.temperatureState.integerValue &&
+                            thermostat.coolingSetpointState.integerValue < thermostat.temperatureState.integerValue &&
                             atomicState.secondsLeftInThisDemandCycle > 60) {
                             //************************
                             //** Turn On Thermostat
                             //************************
                             atomicState.lastThermostatCommandTime = now()
                             atomicState.processingThermostatCommand = true
-                            runIn(1, turnOnThermostat)
+                            runIn(1, turnOnThermostat, [data: [whichThermostat: thermostat.deviceNetworkId]])
                         }
                     }
                 }
             }
         }
-    }
+   }
 }
 
 def verifyThermostatCommandFinal(data) {
     def setPoint = data.coolingSetpoint
-    if (homeThermostat.coolingSetpointState.integerValue != setPoint) {
-        log.debug("Cooling setpoint was not set to ${data.coolingSetpoint} as commanded (currently: ${homeThermostat.coolingSetpointState.integerValue}). Giving Up...")
-        sendNotificationMessage("Warning: Cooling setpoint ${data.coolingSetpoint} could not be verified.", "anomaly")
+    def thermostat = getThermostat(data.whichThermostat)
+    if (thermostat.coolingSetpointState.integerValue != setPoint) {
+        log.debug("Cooling setpoint was not set to ${data.coolingSetpoint} as commanded (currently: ${thermostat.coolingSetpointState.integerValue}). Giving Up...")
+        sendNotificationMessage("Warning: " + thermostat.displayName + " cooling setpoint ${data.coolingSetpoint} could not be verified.", "anomaly")
     } else {
-        log.debug("Confirmed cooling setpoint ${data.coolingSetpoint} is set after two tries.")
+        log.debug("Confirmed " + thermostat.displayName + " cooling setpoint ${data.coolingSetpoint} is set after two tries.")
     }
     atomicState.processingThermostatCommand = false
 }
 
 def verifyThermostatCommand(data) {
     def setPoint = data.coolingSetpoint
-    if (homeThermostat.coolingSetpointState.integerValue != setPoint) {
-        log.debug("Cooling setpoint was not set to ${data.coolingSetpoint} as commanded (currently: ${homeThermostat.coolingSetpointState.integerValue}). Retrying...")
+    def thermostat = getThermostat(data.whichThermostat)
+    if (thermostat.coolingSetpointState.integerValue != setPoint) {
+        log.debug("Cooling setpoint was not set to ${data.coolingSetpoint} as commanded (currently: ${thermostat.coolingSetpointState.integerValue}). Retrying...")
         atomicState.lastThermostatCommandTime = now()
         atomicState.processingThermostatCommand = true
         try {
-            homeThermostat.setCoolingSetpoint(setPoint)
+            thermostat.setCoolingSetpoint(setPoint)
         } catch (Exception e) {
-            log.debug "exception setting setpoint: ${e}"
-            sendNotificationMessage("Warning: thermostat exception in verify when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
+            log.debug "exception setting " + thermostat.displayName + " setpoint: ${e}"
+            sendNotificationMessage("Warning: thermostat exception in verify when attempting to set " + thermostat.displayName + " cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
             throw e
         }
-        runIn(45, verifyThermostatCommandFinal, [data: [coolingSetpoint: setPoint]])
+        runIn(45, verifyThermostatCommandFinal, [data: [coolingSetpoint: setPoint, whichThermostat: thermostat.deviceNetworkId]])
     } else {
-        log.debug("Confirmed cooling setpoint ${data.coolingSetpoint} is set.")
+        log.debug("Confirmed " + thermostat.displayName + " cooling setpoint ${data.coolingSetpoint} is set.")
         atomicState.processingThermostatCommand = false
     }
 }
@@ -1573,42 +1668,42 @@ def commandThermostatHandler(data) {
         return
     }
     def setPoint = data.coolingSetpoint
-    logDebug "Setting Thermostat to ${setPoint}F degrees."
+    def thermostat = getThermostat(data.whichThermostat)
+    logDebug "Setting " + thermostat.displayName + " thermostat to ${setPoint}F degrees."
     atomicState.lastThermostatCommandTime = now()
     atomicState.processingThermostatCommand = true
     try {
-        homeThermostat.setCoolingSetpoint(setPoint)
+        thermostat.setCoolingSetpoint(setPoint)
     } catch (Exception e) {
         log.debug "exception setting setpoint: ${e}"
-        sendNotificationMessage("Warning: thermostat exception in handler when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
-        runIn(45, verifyThermostatCommand, [data: [coolingSetpoint: setPoint]])
+        sendNotificationMessage("Warning: thermostat exception in handler when attempting to set " + thermostat.displayName + " cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
+        runIn(45, verifyThermostatCommand, [data: [coolingSetpoint: setPoint, whichThermostat: thermostat.deviceNetworkId]])
         //throw e
     }
-    runIn(45, verifyThermostatCommand, [data: [coolingSetpoint: setPoint]])
+    runIn(45, verifyThermostatCommand, [data: [coolingSetpoint: setPoint, whichThermostat: thermostat.deviceNetworkId]])
 }
 
-def commandThermostatWithBump(setPoint, degreesBump) {
+def commandThermostatWithBump(setPoint, degreesBump, thermostat) {
     if (!signedRelease || signedRelease != 'I Agree') {
         log.warn "Please accept consent setting in thermostat preferences to allow program to manage the thermostat."
         return
     }
     if (setPoint > atomicState.maximumAllowedTemperature) {
-        logDebug "Unexpected condition: Set point to command of ${setPoint} is above max allowed: ${atomicState.maximumAllowedTemperature}. Cannot command thermostat."
+        logDebug "Unexpected condition: " + thermostat.displayName + " set point to command of ${setPoint} is above max allowed: ${atomicState.maximumAllowedTemperature}. Cannot command thermostat."
         return
     }
-
-    logDebug "Setting Thermostat to ${setPoint}F with bump of ${degreesBump} (${(setPoint + degreesBump)}F)."
+    logDebug "Setting " + thermostat.displayName + " thermostat to ${setPoint}F with bump of ${degreesBump} (${(setPoint + degreesBump)}F)."
     atomicState.lastThermostatCommandTime = now()
     try {
-        homeThermostat.setCoolingSetpoint(setPoint + degreesBump)
+        thermostat.setCoolingSetpoint(setPoint + degreesBump)
     } catch (Exception e) {
-        log.debug "exception setting setpoint: ${e}"
-        sendNotificationMessage("Warning: thermostat exception in bump handler when attempting to set cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
+        log.debug "exception setting setpoint with bump: ${e}"
+        sendNotificationMessage("Warning: thermostat exception in bump handler when attempting to set " + thermostat.displayName + " cooling setpoint to: ${setPoint}. Exception is: ${e}", "anomaly")
         //throw e
     }
     atomicState.processingThermostatCommand = true
     // command final setpoint 
-    runIn(15, commandThermostatHandler, [data: [coolingSetpoint: setPoint]])
+    runIn(15, commandThermostatHandler, [data: [coolingSetpoint: setPoint, whichThermostat: thermostat.deviceNetworkId]])
 }
 
 def toggleColorIndicatorHandler(data) {
@@ -1637,10 +1732,14 @@ def colorIndicatorHandler() {
 }
 
 def checkDeprecated() {
-   if (!atomicState.deprecatedDevicesLogged & (WD200Dimmer1 || WD200Dimmer2 || colorIndicatorDevice1 || colorIndicatorDevice2 ||
+   if (!atomicState?.deprecatedDevicesLogged & (WD200Dimmer1 || WD200Dimmer2 || colorIndicatorDevice1 || colorIndicatorDevice2 ||
          deviceToTurnOffDuringPeak1 || deviceToTurnOffDuringPeak2 || deviceToTurnOffDuringPeakDemand1 || deviceToTurnOffDuringPeakDemand2)) {
        atomicState.deprecatedDevicesLogged = true
-       sendPush ("Demand Manager smart app requires re-entry of display devices and peak period on/off devices in smart app preferences due software update") 
+       sendPush ("Demand Manager smart app requires re-entry of display devices and peak period on/off devices in smart app preferences due to software update") 
+   }
+    if (!atomicState.deprecatedThermostatLogged & !(homeThermostat == null)) {
+       atomicState.deprecatedThermostatLogged = true
+       sendPush ("Demand Manager smart app requires re-entry of thermostat devices in smart app preferences due to software update adding multiple thermostat support") 
    }
 }
 
@@ -1655,10 +1754,9 @@ def homeMeterIsPowerwall() {
            }
       }
    }
-   log.debug "home meter is a powerwall: ${isPowerwall}"
+   //log.debug "home meter is a powerwall: ${isPowerwall}"
    return isPowerwall
 }
-
 
 def solarMeterIsPowerwall() {
    def isPowerwall = false
@@ -1674,8 +1772,7 @@ def solarMeterIsPowerwall() {
    //log.debug "solar meter is a powerwall: ${isPowerwall}"
    return isPowerwall
 }
-    
-    
+     
 def getSolarPower ()
 {
    def solarPower = 0
@@ -1856,11 +1953,25 @@ def processWatchDog() {
     def secondsSinceLastProcessCompleted = (now() - atomicState.lastProcessCompletedTime) / 1000
 
     if (secondsSinceLastProcessed > 290) {
-        sendNotificationMessage("Warning: Demand Manager has not processed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing", "anomaly")
+        if (!atomicState?.processedWarningSent) {
+           sendNotificationMessage("Warning: Demand Manager has not executed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing", "anomaly")
+           atomicState?.processedWarningSent = true
+       }
         runIn(30, rescheduleAllEvents)
-    } else if (secondsSinceLastProcessCompleted > 290) {
-        sendNotificationMessage("Warning: Demand Manager has not successfully run in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing", "anomaly")
-        runIn(30, rescheduleAllEvents)
+    } else {
+        if (secondsSinceLastProcessCompleted > 290) {
+           if (!atomicState?.completedWarningSent) {
+              sendNotificationMessage("Warning: Demand Manager has not successfully completed in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing", "anomaly")
+              atomicState.completedWarningSent = true
+           }
+           runIn(30, rescheduleAllEvents)
+        } else {
+          if (atomicState?.completedWarningSent || atomicState?.processedWarningSent) {
+             sendNotificationMessage("Info: Demand Manager has successfully resumed operation","anomaly")
+             atomicState.completedWarningSent = false 
+             atomicState.processedWarningSent = false
+          }      
+        }
     }
 }
 
