@@ -204,6 +204,7 @@ def configure() {
 
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
 	refresh()
+	updateColor()
 }
 
 def setColorTemperature(value) {
