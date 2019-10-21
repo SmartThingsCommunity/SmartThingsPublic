@@ -33,7 +33,7 @@ metadata {
 				attributeState("turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn")
 			}
 		}
-		tileAttribute("motion", "device.motion", decoration: "flat", width: 2, height: 2) {
+		valueTile("motion", "device.motion", decoration: "flat", width: 2, height: 2) {
 			state("active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC")
 			state("inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#CCCCCC")
 		}
