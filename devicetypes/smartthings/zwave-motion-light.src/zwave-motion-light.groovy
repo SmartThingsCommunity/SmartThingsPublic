@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition(name: "Everpsring Outdoor Floodlight", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mmnm: "SmartThings", vid: "generic-motion-light-sensor") {
+	definition(name: "Z-Wave Motion Light", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mmnm: "SmartThings", vid: "generic-motion-light") {
 		capability "Switch"
 		capability "Motion Sensor"
 		capability "Illuminance Measurement"
@@ -34,8 +34,8 @@ metadata {
 			}
 		}
 		tileAttribute("motion", "device.motion", decoration: "flat", width: 2, height: 2) {
-			attributeState("active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC")
-			attributeState("inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#CCCCCC")
+			state("active", label: 'motion', icon: "st.motion.motion.active", backgroundColor: "#00A0DC")
+			state("inactive", label: 'no motion', icon: "st.motion.motion.inactive", backgroundColor: "#CCCCCC")
 		}
 		valueTile("illuminance", "device.illuminance", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "illuminance", label: '${currentValue} lux', backgroundColors: [
