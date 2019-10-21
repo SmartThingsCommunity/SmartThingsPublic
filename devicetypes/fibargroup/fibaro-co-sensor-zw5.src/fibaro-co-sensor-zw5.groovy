@@ -386,7 +386,7 @@ private parameterMap() {[
 				2: "Exceeding the temperature",
 				3: "Both actions enabled"
 		],
-		 def: "1", title: "Z-Wave notifications",
+		 def: "3", title: "Z-Wave notifications",
 		 descr: "This parameter allows to set actions which result in sending notifications to the HUB"],
 		[key: "highTempTreshold", num: 22, size: 1, type: "enum", options: [
 				50: "120 °F / 50°C",
