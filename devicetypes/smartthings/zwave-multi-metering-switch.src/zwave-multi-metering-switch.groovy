@@ -285,7 +285,7 @@ def refresh(endpoints = [1], includeMeterGet = true) {
 		}
 	}
 
-	delayBetween(cmds, 500)
+	delayBetween(cmds, 200)
 }
 
 private resetAll() {
