@@ -21,3 +21,5 @@
 
 # Build files
 /build
+.MD
+.st-ignore
