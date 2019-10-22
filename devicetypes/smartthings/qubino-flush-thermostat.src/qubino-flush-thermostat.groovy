@@ -99,6 +99,16 @@ metadata {
 		main "thermostat"
 		details(["thermostat", "thermostatMode", "heatingSetpoint", "coolingSetpoint", "refresh", "power", "energy", "changeMode"])
 	}
+
+	preferences {
+		input (
+				title: "Thermostat Mode:",
+				description: "This setting allows to change mode of the device. Remember to unpair to pair device again after change.",
+				name: "paramMode",
+				type: "enum",
+				options: ["Heat", "Cool"]
+		)
+	}
 }
 
 def installed() {
@@ -106,6 +116,11 @@ def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 12 * 60 , displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	sendEvent(name: "setpointRange", value: [minSetpointTemperature, maxSetpointTemperature], displayed: false)
 	response(refresh())
+}
+
+def updated() {
+	if (paramMode)
+		!state.supportedModes.contains(paramMode) ? changeMode() : [:]
 }
 
 def parse(String description) {
@@ -198,7 +213,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	//this device doesn't act like normal thermostat, it can support either 'cool' or 'heat' after configuration
 	if (cmd.parameterNumber == 59 && !state.isThermostatModeSet) {
 		state.supportedModes.add(cmd.scaledConfigurationValue ? "cool" : "heat")
-		state.noSupportedMode = cmd.scaledConfigurationValue ? "heat" : "cool"
 		state.isThermostatModeSet = true
 	}
 	createEvent(name: "supportedThermostatModes", value: state.supportedModes.encodeAsJson(), displayed: false)
