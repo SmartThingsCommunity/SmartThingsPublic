@@ -135,4 +135,3 @@ private getChildCount() {
 		return 3
 	}
 }
-
