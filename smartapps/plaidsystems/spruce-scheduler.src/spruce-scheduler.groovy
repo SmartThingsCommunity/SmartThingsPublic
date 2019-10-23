@@ -1,5 +1,5 @@
 /**
- *  Spruce Scheduler Pre-release V2.54 - Updated 3/2019
+ *  Spruce Scheduler Pre-release V2.55 - Updated 8/2019
  *
  *
  *  Copyright 2015 Plaid Systems
@@ -13,6 +13,12 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+
+-------v2.55-------------------
+-update weather zipcode field to find lat&long if no zipcode found, works in Canada
+-remove zipcode page and move entry to weatherpage
+-correct behavior when no days selected
+-add additional checks for missing location
 
 -------v2.54-------------------
 -update weather to use new weather api
@@ -45,7 +51,6 @@ definition(
 preferences {
     page(name: 'startPage')
     page(name: 'autoPage')
-    page(name: 'zipcodePage')
     page(name: 'weatherPage')
     page(name: 'globalPage')
     page(name: 'contactPage')
@@ -119,8 +124,8 @@ def startPage(){
         }
         
         section(''){
-            href(title: 'Scheduler Version 2.54',
-                  description: "Updated March 2019"
+            href(title: 'Scheduler Version 2.55',
+                  description: "Updated June 2019"
             )
         }
     }
@@ -147,7 +152,6 @@ def globalPage() {
         section('Push Notifications') {
                 input(name: 'notify', type: 'enum', title: 'Select what push notifications to receive.', required: false,
                     multiple: true, metadata: [values: ['Daily', 'Delays', 'Warnings', 'Weather', 'Moisture', 'Events']])
-                //obsolete input('recipients', 'contact', title: 'Send push notifications to', required: false, multiple: true)
                 input(name: 'logAll', type: 'bool', title: 'Log all notices to Hello Home?', defaultValue: 'false', options: ['true', 'false'])
         }
     }
@@ -155,12 +159,8 @@ def globalPage() {
 
 def weatherPage() {
     dynamicPage(name: 'weatherPage', title: 'Weather settings') {
-       section('Location to get weather forecast and conditions:') {
-            href(name: 'hrefWithImage', title: "${zipString()}", page: 'zipcodePage',
-                 description: 'Set local weather station',
-                 required: false,
-                 image: 'http://www.plaidsystems.com/smartthings/rain.png'
-               )
+       section("Location to get weather forecast and conditions:") {
+            input(name: 'zipcode', type: 'text', title: "Zipcode default location: ${getDefaultLocation()}", required: false, submitOnChange: true)
             input 'isRain', 'bool', title: 'Enable Rain check:', metadata: [values: ['true', 'false']]
             input 'rainDelay', 'decimal', title: 'inches of rain that will delay watering, default: 0.2', required: false
             input 'isSeason', 'bool', title: 'Enable Seasonal Weather Adjustment:', metadata: [values: ['true', 'false']]
@@ -168,19 +168,11 @@ def weatherPage() {
     }
 }
 
-def zipcodePage() {
-    return dynamicPage(name: 'zipcodePage', title: 'Spruce weather station setup') {
-        section(''){
-            input(name: 'zipcode', type: 'text', title: 'Zipcode. Default value is current Zip code',
-                defaultValue: getPWSID(), required: false, submitOnChange: true )
-        }
-    }
-}
-
-private String getPWSID() {
-    String PWSID = location.zipCode
-    if (zipcode) PWSID = zipcode
-    return PWSID
+private String getDefaultLocation() {
+    String DefaultLocation = "Not set"
+    if(location?.zipCode) DefaultLocation = location.zipCode
+    if (!location?.zipCode?.isNumber() && location?.latitude && location?.longitude) DefaultLocation = "${location.latitude.floatValue()},${location.longitude.floatValue()}"
+    return DefaultLocation
 }
 
 private String startTimeString(){
@@ -465,14 +457,6 @@ def zonePage() {
     }
 }
 
-// Verify whether a zone is active
-/*//Code for fresh install
-private boolean zoneActive(String zoneStr){
-    if (!zoneNumber) return false
-    if (zoneNumber.contains(zoneStr)) return true    // don't display zones that are not selected
-    return false
-}
-*/
 //code change for ST update file -> change input to zoneNumberEnum
 private boolean zoneActive(z){
     if (!zoneNumberEnum && zoneNumber && zoneNumber >= z.toInteger()) return true
@@ -512,26 +496,23 @@ def zoneSetPage() {
             paragraph image: "http://www.plaidsystems.com/smartthings/st_${state.app}.png",
             title: 'Current Settings',
             "${display("${state.app}")}"
-        }
-
-        section(''){
             input "name${state.app}", 'text', title: 'Zone name?', required: false, defaultValue: "Zone ${state.app}"
         }
-
+        
         section(''){
              href(name: 'tosprinklerSetPage', title: "Sprinkler type: ${setString('zone')}", required: false, page: 'sprinklerSetPage',
                 image: "${getimage("${settings."zone${state.app}"}")}",
                 //description: "Set sprinkler nozzle type or turn zone off")
                 description: 'Sprinkler type descriptions')
              input "zone${state.app}", 'enum', title: 'Sprinkler Type', multiple: false, required: false, defaultValue: 'Off', submitOnChange: true, metadata: [values: ['Off', 'Spray', 'Rotor', 'Drip', 'Master Valve', 'Pump']]
-        }
-
-        section(''){
+         }
+         
+         section(''){
             href(name: 'toplantSetPage', title: "Landscape Select: ${setString('plant')}", required: false, page: 'plantSetPage',
                 image: "${getimage("${settings["plant${state.app}"]}")}",
                 //description: "Set landscape type")
                 description: 'Landscape type descriptions')
-            input "plant${state.app}", 'enum', title: 'Landscape', multiple: false, required: false, submitOnChange: true, metadata: [values: ['Lawn', 'Garden', 'Flowers', 'Shrubs', 'Trees', 'Xeriscape', 'New Plants']]
+             input "plant${state.app}", 'enum', title: 'Landscape', multiple: false, required: false, submitOnChange: true, metadata: [values: ['Lawn', 'Garden', 'Flowers', 'Shrubs', 'Trees', 'Xeriscape', 'New Plants']]
             }
 
         section(''){
@@ -540,8 +521,8 @@ def zoneSetPage() {
                 //description: "Set watering options")
                 description: 'Watering option descriptions')
             input "option${state.app}", 'enum', title: 'Options', multiple: false, required: false, defaultValue: 'Cycle 2x', submitOnChange: true,metadata: [values: ['Slope', 'Sand', 'Clay', 'No Cycle', 'Cycle 2x', 'Cycle 3x']]
-        }
-
+            }
+        
         section(''){
             paragraph image: 'http://www.plaidsystems.com/smartthings/st_sensor_200_r.png',
                       title: 'Moisture sensor settings',
@@ -554,7 +535,7 @@ def zoneSetPage() {
             paragraph image: 'http://www.plaidsystems.com/smartthings/st_timer.png',
                       title: 'Optional: Enter total watering time per week',
                       'This value will replace the calculated time from other settings'
-                input "minWeek${state.app}", 'number', title: 'Minimum water time per week.\nDefault: 0 = autoadjust', description: 'minutes per week', required: false
+                input "minWeek${state.app}", 'number', title: 'Water time per week.\nDefault: 0 = autoadjust', description: 'minutes per week', required: false
                 input "perDay${state.app}", 'number', title: 'Guideline value for time per day, this divides minutes per week into watering days. Default: 20', defaultValue: '20', required: false
         }
     }
@@ -811,10 +792,11 @@ private String getname(String i) {
     if (settings."name${i}") return settings."name${i}" else return "Zone ${i}"
 }
 
-private String zipString() {
-    if (!settings.zipcode) return "${location.zipCode}"
-    if (!settings.zipcode.isNumber()) return "pws:${settings.zipcode}"
-    else return settings.zipcode
+private String zipString() {    
+    if (settings?.zipcode) return settings.zipcode
+    if (location?.zipCode?.isNumber()) return "${location.zipCode}"
+    if (location?.latitude && location?.longitude) return "${location.latitude.floatValue()},${location.longitude.floatValue()}"
+    return "not set"
 }
 
 //app install
@@ -1334,7 +1316,7 @@ def cycleLoop(int i)
               int runToday = 0
               // if manual, or every day allowed, or zone uses a sensor, then we assume we can today
               //  - preCheck() has already verified that today isDay()
-              if ((i == 0) || (state.daysAvailable == 7) || (settings."sensor${zone}")) {
+              if ((i == 0) || /*(state.daysAvailable == 7) ||*/ (settings."sensor${zone}")) {
                   runToday = 1
               }
               else {
@@ -2032,10 +2014,57 @@ def setSeason() {
     }
 }
 
+//TWC functions
+def getCity(){
+	String wzipcode = zipString()
+    String city
+    try {
+			city = getTwcLocation(wzipcode)?.location?.city ?: wzipcode
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			city = "unknown city"
+		}
+    
+    return city
+}
+
+def getConditions(){
+	String wzipcode = zipString()
+    def conditionsData
+    try {
+			conditionsData = getTwcConditions(wzipcode)
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			return null
+		}
+    
+    return conditionsData
+}
+
+def getForecast(){
+	String wzipcode = zipString()
+    def forecastData
+    try {
+			forecastData = getTwcForecast(wzipcode)
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			return null
+		}    
+    
+    return forecastData
+}
+
 //capture today's total rainfall - scheduled for just before midnight each day
 def getRainToday() {
-    def wzipcode = zipString()
-    def conditionsData = getTwcConditions(wzipcode)
+    //def wzipcode = zipString()
+    //def conditionsData = getTwcConditions(wzipcode)
+    def conditionsData = getConditions()
     if (!conditionsData) {
         note('warning', "${app.label}: Please check Zipcode/PWS setting, error: null", 'a')
     } else {
@@ -2055,11 +2084,19 @@ def getRainToday() {
 //check weather, set seasonal adjustment factors, skip today if rainy
 boolean isWeather(){
     if (!settings.isRain && !settings.isSeason) return false
-    String wzipcode = zipString()
-    String city = getTwcLocation(wzipcode).location.city ?: wzipcode
-    def forecastData = getTwcForecast(wzipcode)
-    def conditionsData = getTwcConditions(wzipcode)
-   
+    
+    def city = getCity()
+    def forecastData = getForecast() ?: null
+    def conditionsData = getConditions() ?: null
+    //log.debug forecastData
+    //log.debug conditionsData
+    
+    //if data is null, skip weather adjustments
+    if (!forecastData || !conditionsData) {
+        note('warning', "${app.label}: Please check Zipcode/PWS setting, error: null", 'a')
+        return false
+    }
+        
    	//check if day or night
     int not_today = 0
    	if (forecastData.daypart[0].daypartName[0] != "Today") not_today = 1;
@@ -2128,7 +2165,7 @@ boolean isWeather(){
     }
 
     log.debug 'isWeather(): build report'
-log.debug "${forecastData.daypart[0].temperature[not_today]}"
+	//log.debug "${forecastData.daypart[0].temperature[not_today]}"
     //get highs
        int highToday = 0
        int highTom = 0
