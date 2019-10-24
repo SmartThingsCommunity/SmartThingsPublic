@@ -84,23 +84,46 @@ metadata {
 	}
 }
 
+// Perform a periodic check to ensure that initialization of the device was successful
+def getINIT_VERIFY_CHECK_PERIODIC_SECS() {30}
+def getINIT_VERIFY_CHECK_MAX_ATTEMPTS() {3}
+
 def installed() {
 	log.debug "installed()"
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	state.initializeAttempts = 0
 	initialize()
 }
 
 def updated() {
 	log.debug "updated()"
 	state.configured = false
+	state.initializeAttempts = 0
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
+	log.debug "updated(): Schedule in ${INIT_VERIFY_CHECK_PERIODIC_SECS} secs to verify initilization"
+	runIn(INIT_VERIFY_CHECK_PERIODIC_SECS, "initializeCallback", [overwrite: true, forceForLocallyExecuting: true])
+}
+
+def initializeCallback() {
+	log.debug "initializeCallback()"
+	state.initializeVerifyTimerPending = false
+	initialize()
 }
 
 def initialize() {
-	log.debug "initialize()"
+	if (state.initializeVerifyTimerPending) {
+		log.warn "Initialize(): Verification is pending"
+		return
+	}
+
+	log.debug "initialize (Attempt: ${state.initializeAttempts + 1}/${INIT_VERIFY_CHECK_MAX_ATTEMPTS})"
+	if (state.initializeAttempts >= INIT_VERIFY_CHECK_MAX_ATTEMPTS) {
+		log.warn "Initializition of ${device.displayName} has failed with too many attempts"
+		return
+	}
+	
 	def cmds = []
 
 	if (!device.currentState("alarm")) {
@@ -122,10 +145,15 @@ def initialize() {
 		cmds << getConfigurationCommands()
 	}
 
-	// if there's anything we need to send, send it now, and check again in 12s
+	// if there's anything we need to send, send it now, and check again at a later time
 	if (cmds.size > 0) {
 		sendHubCommand(cmds)
-		runIn(12, "initialize", [overwrite: true, forceForLocallyExecuting: true])
+		state.initializeAttempts = state.initializeAttempts + 1
+		state.initializeVerifyTimerPending = true
+		log.debug "initialize(): Schedule in ${INIT_VERIFY_CHECK_PERIODIC_SECS} secs to verify initilization"
+		runIn(INIT_VERIFY_CHECK_PERIODIC_SECS, "initializeCallback", [overwrite: true, forceForLocallyExecuting: true])
+	} else {
+		log.debug "Initialization is complete!"
 	}
 }
 

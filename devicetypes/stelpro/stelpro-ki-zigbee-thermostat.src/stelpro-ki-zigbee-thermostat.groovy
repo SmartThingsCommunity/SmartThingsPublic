@@ -418,7 +418,7 @@ def validateOperatingStateBugfix(map) {
 	if (state.rawSetpoint != null && state.rawTemp != null) {
 		def oldVal = map.value
 
-		if (state.rawSetpoint <= state.rawTemp) {
+		if (state.rawSetpoint <= state.rawTemp || device.currentValue("thermostatMode") == "off") {
 			map.value = "idle"
 		} else {
 			map.value = "heating"
@@ -429,6 +429,7 @@ def validateOperatingStateBugfix(map) {
 			map.data = [correctedValue: true]
 		}
 	}
+
 	map
 }
 
