@@ -274,7 +274,7 @@ def configure() {
     // enrolls with default periodic reporting until newer 5 min interval is confirmed
     sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
     // Sets up low battery threshold reporting
-    sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, scheme: "TRACKED", checkInterval: 60 * 12, lowBatteryThresholds: [15, 7, 3]])
+    sendEvent(name: "DeviceWatch-Enroll", displayed: false, value: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, scheme: "TRACKED", checkInterval: 60 * 12, lowBatteryThresholds: [15, 7, 3]])
 
     log.debug "Configuring Reporting"
     def configCmds = []
