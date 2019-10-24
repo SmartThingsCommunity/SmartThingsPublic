@@ -127,14 +127,17 @@ def updated() {
 	initialize()
 	if (!childDevices) {
 		createChildDevices()
-	}
-	else if (device.label != state.oldLabel) {
+	} else if (device.label != state.oldLabel) {
 		childDevices.each {
 			def segs = it.deviceNetworkId.split("/")
 			def newLabel = "${device.displayName} button ${segs[-1]}"
 			it.setLabel(newLabel)
 		}
 		state.oldLabel = device.label
+	} else {
+		childDevices.each {
+			it.sendEvent(name: "supportedButtonValues", value: ["pushed","held"].encodeAsJson(), displayed: false)
+		}
 	}
 }
 
