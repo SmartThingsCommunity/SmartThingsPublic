@@ -67,7 +67,6 @@ def installed() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "tamper", value: "clear", displayed: false)
-	sendEvent(name: "motion", value: "inactive", displayed: false)
 	response(initialPoll())
 }
 
@@ -274,6 +273,7 @@ def initialPoll() {
 	}
 	request << zwave.batteryV1.batteryGet()
 	request << zwave.sensorBinaryV2.sensorBinaryGet(sensorType: 0x0C) //motion
+	request << zwave.notificationV3.notificationGet(notificationType: 0x07, event: 0x08) //motion for Everspiring
 	commands(request) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
