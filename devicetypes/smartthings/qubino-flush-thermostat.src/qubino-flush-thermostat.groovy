@@ -13,7 +13,7 @@
  *
  */
 metadata {
-	definition (name: "Qubino Flush Thermostat", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "qubino-thermostat", ocfDeviceType: "oic.d.thermostat") {
+	definition (name: "Qubino Flush Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
 		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Thermostat Heating Setpoint"
@@ -317,7 +317,7 @@ def changeMode() {
 }
 
 private secure(cmd) {
-	if (zwaveInfo.zw.endsWith("s")) {
+	if (zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
