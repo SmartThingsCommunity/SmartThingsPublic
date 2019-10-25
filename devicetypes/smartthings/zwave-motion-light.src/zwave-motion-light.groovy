@@ -68,12 +68,15 @@ def updated() {
 }
 
 def configure() {
-	[
+	def cmds =  [
 			secure(zwave.notificationV3.notificationGet(notificationType: 0x07)),
 			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03)),
-			secure(zwave.switchBinaryV1.switchBinaryGet()),
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 10)) //enables illuminance report every 10 minutes
+			secure(zwave.switchBinaryV1.switchBinaryGet())
 	]
+	if (isEverspringFloodlight()) {
+		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 10)) //enables illuminance report every 10 minutes
+	}
+	cmds
 }
 
 def ping() {
@@ -163,4 +166,8 @@ private secure(cmd) {
 	} else {
 		cmd.format()
 	}
+}
+
+private isEverspringFloodlight() {
+	zwaveInfo.mfr == "0060" && zwaveInfo.prod == "0012"
 }
