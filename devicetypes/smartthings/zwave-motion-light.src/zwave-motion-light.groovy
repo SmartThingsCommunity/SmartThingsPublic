@@ -72,8 +72,12 @@ def configure() {
 			secure(zwave.notificationV3.notificationGet(notificationType: 0x07)),
 			secure(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03)),
 			secure(zwave.switchBinaryV1.switchBinaryGet()),
-			secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 600)) //enables illuminance report every 10 minutes
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 3, size: 2, scaledConfigurationValue: 10)) //enables illuminance report every 10 minutes
 	]
+}
+
+def ping() {
+	response(secure(zwave.switchBinaryV1.switchBinaryGet()))
 }
 
 def parse(String description) {
@@ -154,7 +158,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(cmd) {
-	if(zwaveInfo.zw.endsWith("s")) {
+	if(zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
