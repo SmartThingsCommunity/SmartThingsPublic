@@ -22,7 +22,7 @@ metadata {
 		capability "Configuration"
 		capability "Contact Sensor"
 		capability "Refresh"
-
+        capability "Temperature Measurement"
 		capability "Health Check"
 		capability "Sensor"
 

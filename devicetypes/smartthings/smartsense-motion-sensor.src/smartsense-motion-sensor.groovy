@@ -21,7 +21,7 @@ metadata {
 		capability "Motion Sensor"
 		capability "Configuration"
 		capability "Battery"
-
+        capability "Temperature Measurement"
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
