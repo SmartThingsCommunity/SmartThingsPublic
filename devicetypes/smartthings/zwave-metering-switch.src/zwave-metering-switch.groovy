@@ -30,8 +30,10 @@ metadata {
 		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome On/Off Plug-in Switch", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Smart Switch 6", ocfDeviceType: "oic.d.smartplug"  //US
 		fingerprint mfr: "0086", prod: "0003", model: "0060", deviceJoinName: "Aeotec Smart Switch 6", ocfDeviceType: "oic.d.smartplug"  //EU
+		fingerprint mfr: "0086", prod: "0203", model: "0060", deviceJoinName: "Aeotec Smart Switch 6", ocfDeviceType: "oic.d.smartplug"  //AU
 		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeotec Nano Switch"
 		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeotec Nano Switch"
+		fingerprint mfr: "0086", prod: "0203", model: "0074", deviceJoinName: "Aeotec Nano Switch" //AU
 		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "GoControl Wall-Mounted Outlet", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "014F", prod: "5053", model: "3531", deviceJoinName: "GoControl Plug-in Switch", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "0063", prod: "4F44", model: "3031", deviceJoinName: "GE Direct-Wire Outdoor Switch"
