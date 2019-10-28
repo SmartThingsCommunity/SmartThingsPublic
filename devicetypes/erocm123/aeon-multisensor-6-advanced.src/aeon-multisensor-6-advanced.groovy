@@ -4,7 +4,7 @@
  *   
  *	github: Eric Maycock (erocm123)
  *	email: erocmail@gmail.com
- *	Date: 2018-07-20 5:26 PM
+ *	Date: 2019-10-28 3:05 PM
  *	Copyright Eric Maycock
  *
  *  Code has elements from other community sources @CyrilPeponnet, @Robert_Vandervoort. Greatly reworked and 
@@ -19,6 +19,8 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
+ *
+ *  2019-10-28: Adjusting method of determining firmware specific settings. 
  *
  *  2018-07-20: Added a "region override" option to customize which region the firmware is from (EU, US, AU) if 
  *              the device handler can't detect it on its own. 
@@ -521,40 +523,38 @@ def convertParam(number, value) {
         case 41:
             //Parameter difference between firmware versions
         	if (settings."41".toInteger() != null && device.currentValue("currentFirmware") != null) {
-                if (device.currentValue("currentFirmware") == "1.07" || device.currentValue("currentFirmware") == "1.08" || device.currentValue("currentFirmware") == "1.09") {
-                    if (device.currentValue("currentFirmware") == "1.09" && value < 10) {
-                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
-                        (10 * 256) + 2
+                    if (device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > 1.09) {
+                        if (value < 10) {
+                            logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                            if (getOverride() == "EU")
+                                (10 * 65536) + 256
+                            else
+                                (10 * 65536) + 512
+                        } else {
+                            if (getOverride() == "EU")
+                                (value * 65536) + 256
+                            else
+                                (value * 65536) + 512
+                        }
+                    } else if (device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() >= 1.07 && device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() <= 1.09) {
+                        if (device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() == 1.09 && value < 10) {
+                            logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
+                            if (getOverride() == "EU")
+                                (10 * 256) + 1
+                            else
+                                (10 * 256) + 2
+                        } else {
+                            if (getOverride() == "EU")
+                                (value * 256) + 1
+                            else 
+                                (value * 256) + 2
+                        }
                     } else {
-                        (value * 256) + 2
-                    }
-                } else if (device.currentValue("currentFirmware") == "1.10" || device.currentValue("currentFirmware") == "1.11" || device.currentValue("currentFirmware") == "1.12" || device.currentValue("currentFirmware") == "1.13") {
-                    if (value < 10) {
-                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
-                        (10 * 65536) + 512
-                    } else {
-                        (value * 65536) + 512
-                    }
-                } else if (device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU" || device.currentValue("currentFirmware") == "1.12EU" || device.currentValue("currentFirmware") == "1.13EU") {
-                    if (value < 10) {
-                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
-                        (10 * 65536) + 256
-                    } else {
-                        (value * 65536) + 256
-                    }
-                } else if (device.currentValue("currentFirmware") == "1.07EU" || device.currentValue("currentFirmware") == "1.08EU" || device.currentValue("currentFirmware") == "1.09EU") {
-                    if (device.currentValue("currentFirmware") == "1.09EU" && value < 10) {
-                        logging("Firmware 1.09+ does not allow a setting below 10. If this parameter needs to be updated it will be set to the lowest possible value (10)")
-                        (10 * 256) + 1
-                    } else {
-                        (value * 256) + 1
+                        value
                     }
                 } else {
                     value
-                }	
-            } else {
-                value
-            }
+                }
         break
         case 45:
             //Parameter difference between firmware versions
@@ -663,7 +663,7 @@ def update_needed_settings()
         if ("${it.@setting_type}" == "zwave"){
             if (currentProperties."${it.@index}" == null)
             {
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
+                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0 || device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > maxFirmware()){
                     isUpdateNeeded = "YES"
                     logging("Current value of parameter ${it.@index} is unknown")
                     cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger())
@@ -671,15 +671,15 @@ def update_needed_settings()
             } 
             else if (settings."${it.@index}" != null && cmd2Integer(currentProperties."${it.@index}") != convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
             { 
-                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0){
+                if (device.currentValue("currentFirmware") == null || "${it.@fw}".indexOf(device.currentValue("currentFirmware")) >= 0 || device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > maxFirmware()){
                     isUpdateNeeded = "YES"
 
                     logging("Parameter ${it.@index} will be updated to " + convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()))
                     
                     if (it.@index == "41") {
-                        if (device.currentValue("currentFirmware") == "1.06" || device.currentValue("currentFirmware") == "1.06EU") {
+                        if (device.currentValue("currentFirmware") != null && device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() == 1.06) {
                             cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 2), parameterNumber: it.@index.toInteger(), size: 2)
-                        } else if (device.currentValue("currentFirmware") == "1.10" || device.currentValue("currentFirmware") == "1.10EU" || device.currentValue("currentFirmware") == "1.11EU"  || device.currentValue("currentFirmware") == "1.12EU"  || device.currentValue("currentFirmware") == "1.13EU"  || device.currentValue("currentFirmware") == "1.12" || device.currentValue("currentFirmware") == "1.13") {
+                        } else if (device.currentValue("currentFirmware") != null && device.currentValue("currentFirmware")?.replaceAll("[A-Za-z]", "")?.toFloat() > 1.09) {
                             cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 4), parameterNumber: it.@index.toInteger(), size: 4)
                         } else {
                             cmds << zwave.configurationV1.configurationSet(configurationValue: integer2Cmd(convertParam(it.@index.toInteger(), settings."${it.@index}".toInteger()), 3), parameterNumber: it.@index.toInteger(), size: 3)
