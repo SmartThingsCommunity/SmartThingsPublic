@@ -254,26 +254,38 @@ private onOffCmd(value, endpoint = 1) {
 }
 
 private refreshAll(includeMeterGet = true) {
-	childDevices.each { childRefresh(it.deviceNetworkId, includeMeterGet) }
-	sendHubCommand refresh(includeMeterGet)
+
+	def endpoints = [1]
+
+	childDevices.each {
+		def switchId = getSwitchId(it.deviceNetworkId)
+		if (switchId != null) {
+			endpoints << switchId
+		}
+	}
+	sendHubCommand refresh(endpoints,includeMeterGet)
 }
 
 def childRefresh(deviceNetworkId, includeMeterGet = true) {
 	def switchId = getSwitchId(deviceNetworkId)
 	if (switchId != null) {
-		sendHubCommand refresh(switchId,includeMeterGet)
+		sendHubCommand refresh([switchId],includeMeterGet)
 	}
 }
 
-def refresh(endpoint = 1, includeMeterGet = true) {
+def refresh(endpoints = [1], includeMeterGet = true) {
 
-	def cmds = [encap(zwave.basicV1.basicGet(), endpoint)]
+	def cmds = []
 
-	if (includeMeterGet) {
-		cmds << encap(zwave.meterV3.meterGet(scale: 0), endpoint)
-		cmds << encap(zwave.meterV3.meterGet(scale: 2), endpoint)
+	endpoints.each {
+		cmds << [encap(zwave.basicV1.basicGet(), it)]
+		if (includeMeterGet) {
+			cmds << encap(zwave.meterV3.meterGet(scale: 0), it)
+			cmds << encap(zwave.meterV3.meterGet(scale: 2), it)
+		}
 	}
-	delayBetween(cmds, 500)
+
+	delayBetween(cmds, 200)
 }
 
 private resetAll() {
