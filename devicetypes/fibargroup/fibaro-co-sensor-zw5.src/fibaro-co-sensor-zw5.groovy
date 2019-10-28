@@ -109,7 +109,7 @@ def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
 	logging("${device.displayName} - Executing updated()","info")
 
-	if ( (settings.zwaveNotifications as Integer) >= 2 ) {
+	if ( (settings.zwaveNotifications as Integer) >= 2 || !settings.zwaveNotifications) { //before any configuration change, settings have 'null' values
 		sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	} else {
 		sendEvent(name: "temperatureAlarm", value: null, displayed: false)
@@ -291,7 +291,15 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	logging("${device.displayName} - BatteryReport received, value: ${cmd.batteryLevel}", "info")
-	sendEvent(name: "battery", value: cmd.batteryLevel.toString(), unit: "%", displayed: true)
+	def map = [name: "battery", unit: "%"]
+	if (cmd.batteryLevel == 0xFF) {
+		map.value = 1
+		map.descriptionText = "${device.displayName} has a low battery"
+		map.isStateChange = true
+	} else {
+		map.value = cmd.batteryLevel
+	}
+	sendEvent(map)
 }
 
 def parse(String description) {
