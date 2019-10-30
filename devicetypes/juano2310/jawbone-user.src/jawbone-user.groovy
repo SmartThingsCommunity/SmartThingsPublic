@@ -24,7 +24,7 @@ metadata {
     tiles {
         standardTile("sleeping", "device.sleeping", width: 1, height: 1, canChangeIcon: false, canChangeBackground: false) {
             state("sleeping", label: "Sleeping", icon:"st.Bedroom.bedroom12", backgroundColor:"#ffffff")
-            state("not sleeping", label: "Awake", icon:"st.Health & Wellness.health12", backgroundColor:"#79b821")
+            state("not sleeping", label: "Awake", icon:"st.Health & Wellness.health12", backgroundColor:"#00A0DC")
         }
         standardTile("steps", "device.steps", width: 2, height: 2, canChangeIcon: false, canChangeBackground: false) {
             state("steps", label: '${currentValue} Steps', icon:"st.Health & Wellness.health11", backgroundColor:"#ffffff")                     

@@ -75,7 +75,7 @@ def mainPage() {
 			ifUnset "timeOfDay", "time", title: "At a Scheduled Time", required: false
 		}
 		section{
-			input "actionType", "enum", title: "Action?", required: true, defaultValue: "Custom Message", options: [
+			input "actionType", "enum", title: "Action?", required: true, defaultValue: "Bell 1", options: [
 				"Custom Message",
 				"Bell 1",
 				"Bell 2",
@@ -408,13 +408,16 @@ private loadText() {
 		case "Lightsaber":
 			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/lightsaber.mp3", duration: "10"]
 			break;
-		default:
+		case "Custom Message":
 			if (message) {
 				state.sound = textToSpeech(message instanceof List ? message[0] : message) // not sure why this is (sometimes) needed)
 			}
 			else {
 				state.sound = textToSpeech("You selected the custom message option but did not enter a message in the $app.label Smart App")
 			}
+			break;
+		default:
+			state.sound = [uri: "http://s3.amazonaws.com/smartapp-media/sonos/bell1.mp3", duration: "10"]
 			break;
 	}
 }

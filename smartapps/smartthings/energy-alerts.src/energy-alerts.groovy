@@ -21,7 +21,8 @@ definition(
     category: "Green Living",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Meta/text.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Meta/text@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Meta/text@2x.png"
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Meta/text@2x.png",
+    pausable: true
 )
 
 preferences {
@@ -64,10 +65,12 @@ def meterHandler(evt) {
     def lastValue = atomicState.lastValue as double
     atomicState.lastValue = meterValue
 
+    def dUnit = evt.unit ?: "Watts"
+
     def aboveThresholdValue = aboveThreshold as int
     if (meterValue > aboveThresholdValue) {
     	if (lastValue < aboveThresholdValue) { // only send notifications when crossing the threshold
-		    def msg = "${meter} reported ${evt.value} ${evt.unit} which is above your threshold of ${aboveThreshold}."
+		    def msg = "${meter} reported ${evt.value} ${dUnit} which is above your threshold of ${aboveThreshold}."
     	    sendMessage(msg)
         } else {
 //        	log.debug "not sending notification for ${evt.description} because the threshold (${aboveThreshold}) has already been crossed"
@@ -78,7 +81,7 @@ def meterHandler(evt) {
     def belowThresholdValue = belowThreshold as int
     if (meterValue < belowThresholdValue) {
     	if (lastValue > belowThresholdValue) { // only send notifications when crossing the threshold
-		    def msg = "${meter} reported ${evt.value} ${evt.unit} which is below your threshold of ${belowThreshold}."
+		    def msg = "${meter} reported ${evt.value} ${dUnit} which is below your threshold of ${belowThreshold}."
     	    sendMessage(msg)
         } else {
 //        	log.debug "not sending notification for ${evt.description} because the threshold (${belowThreshold}) has already been crossed"

@@ -16,4 +16,4 @@ include 'api'
 include 'services:webservice'
 */
 
-rootProject.name = 'monninn82/SmartThingsPublic'
+rootProject.name = 'SmartThingsPublic'

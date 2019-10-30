@@ -1,14 +1,23 @@
-.gradle
-/build/
+# Eclipse files
+/.settings
+/.classpath
+/.project
+/eclipse/
+/target-eclipse
 
-# Ignore Gradle GUI config
-gradle-app.setting
+# IntelliJ files
+*.iws
+*.iml
+.idea
+/out
+*.ipr
 
-# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
-!gradle-wrapper.jar
-
-# Cache of project
+# Gradle files
 .gradletasknamecache
+.gradle/
 
-# # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
-# gradle/wrapper/gradle-wrapper.properties
+# Mac OS files
+.DS_Store
+
+# Build files
+/build

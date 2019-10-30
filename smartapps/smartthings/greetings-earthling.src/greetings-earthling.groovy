@@ -47,13 +47,13 @@ preferences {
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-	log.debug "Current mode = ${location.mode}, people = ${people.collect{it.label + ': ' + it.currentPresence}}"
+	// log.debug "Current mode = ${location.mode}, people = ${people.collect{it.label + ': ' + it.currentPresence}}"
 	subscribe(people, "presence", presence)
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-	log.debug "Current mode = ${location.mode}, people = ${people.collect{it.label + ': ' + it.currentPresence}}"
+	// log.debug "Current mode = ${location.mode}, people = ${people.collect{it.label + ': ' + it.currentPresence}}"
 	unsubscribe()
 	subscribe(people, "presence", presence)
 }
@@ -71,11 +71,10 @@ def presence(evt)
 			def person = getPerson(evt)
 			def recentNotPresent = person.statesSince("presence", t0).find{it.value == "not present"}
 			if (recentNotPresent) {
-				log.debug "skipping notification of arrival of ${person.displayName} because last departure was only ${now() - recentNotPresent.date.time} msec ago"
+				log.debug "skipping notification of arrival of Person because last departure was only ${now() - recentNotPresent.date.time} msec ago"
 			}
 			else {
 				def message = "${person.displayName} arrived at home, changing mode to '${newMode}'"
-				log.info message
 				send(message)
 				setLocationMode(newMode)
 			}
@@ -106,6 +105,4 @@ private send(msg) {
             sendSms(phone, msg)
         }
     }
-
-	log.debug msg
 }

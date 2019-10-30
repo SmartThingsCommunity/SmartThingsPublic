@@ -39,8 +39,8 @@ metadata {
 	tiles {
 		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
 			state "off", label: '${name}', icon: "st.switches.switch.off", backgroundColor: "#ffffff", action: "switch.on", nextState: "turningOn"
-			state "turningOn", label: '${name}', icon: "st.switches.switch.on", backgroundColor: "#79b821"
-			state "on", label: '${name}', icon: "st.switches.switch.on", backgroundColor: "#79b821", action: "switch.off", nextState: "turningOff"
+			state "turningOn", label: '${name}', icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
+			state "on", label: '${name}', icon: "st.switches.switch.on", backgroundColor: "#00A0DC", action: "switch.off", nextState: "turningOff"
 			state "turningOff", label: '${name}', icon: "st.switches.switch.off", backgroundColor: "#ffffff"
 		}
 		valueTile("level", "device.level", height: 1, width: 1, inactiveLabel: false) {
@@ -115,7 +115,7 @@ def off() {
 	sendSwitchStateToMC("off")
 }
 
-def setLevel(newLevel) {
+def setLevel(newLevel, rate = null) {
 	def signal = convertLevelToSignal(newLevel as int)
 
 	sendSignalToMC(signal)
