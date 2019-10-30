@@ -96,6 +96,10 @@ def configure() {
 def updated()
 {
     logging("updated()", 1)
+    if (override == true && ipAddress != null && port != null){
+        state.dni = setDeviceNetworkId(ipAddress, port)
+        updateDNI()
+    }
     def cmds = [] 
     cmds = update_needed_settings()
     sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID])
@@ -139,7 +143,7 @@ def parse(description) {
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
     
-    //log.debug "result: ${result}"
+    log.debug "result: ${result}"
     
 
     if (result.containsKey("POWER")) {
@@ -363,7 +367,7 @@ private encodeCredentials(username, password){
 
 private getHeader(userpass = null){
     def headers = [:]
-    log.debug getHostAddress()
+    //log.debug getHostAddress()
     headers.put("Host", getHostAddress())
     headers.put("Content-Type", "application/x-www-form-urlencoded")
     if (userpass != null)
@@ -517,41 +521,6 @@ Default: Off
     <Item label="Off" value="0" />
     <Item label="On" value="1" />
     <Item label="Previous" value="2" />
-</Value>
-<Value type="number" byteSize="1" index="autooff1" label="Auto Off" min="0" max="65536" value="0" setting_type="lan" fw="">
-<Help>
-Automatically turn the switch off after this many seconds.
-Range: 0 to 65536
-Default: 0 (Disabled)
-</Help>
-</Value>
-<Value type="number" byteSize="1" index="wreport" label="W Report Interval" min="0" max="65536" value="60" setting_type="lan" fw="">
-<Help>
-In seconds
-Range: 0 to 65536
-Default: 60
-</Help>
-</Value>
-<Value type="number" byteSize="1" index="vreport" label="V Report Interval" min="0" max="65536" value="60" setting_type="lan" fw="">
-<Help>
-In seconds
-Range: 0 to 65536
-Default: 60
-</Help>
-</Value>
-<Value type="number" byteSize="1" index="areport" label="A Report Interval" min="0" max="65536" value="60" setting_type="lan" fw="">
-<Help>
-In seconds
-Range: 0 to 65536
-Default: 60
-</Help>
-</Value>
-<Value type="number" byteSize="1" index="ureport" label="Uptime Report Interval" min="0" max="65536" value="300" setting_type="lan" fw="">
-<Help>
-Send uptime reports at this interval (in seconds).
-Range: 0 (Disabled) to 65536
-Default: 300
-</Help>
 </Value>
 <Value type="list" index="logLevel" label="Debug Logging Level?" value="0" setting_type="preference" fw="">
 <Help>
