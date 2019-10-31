@@ -240,6 +240,10 @@ def setColor(value) {
 		def rgb = huesatToRGB(value.hue, value.saturation)
 		result << zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite:0, coldWhite:0)
 	}
+	if (device.currentValue("switch") != "on") {
+		result << zwave.basicV1.basicSet(value: 0xFF)
+		result << zwave.switchMultilevelV3.switchMultilevelGet()
+	}
 	result += queryAllColors()
 
 	commands(result)
@@ -257,9 +261,14 @@ def setColorTemperature(temp) {
 	log.debug "setColorTemperature($temp)"
 	def warmValue = ((COLOR_TEMP_MAX - temp) / COLOR_TEMP_DIFF * 255) as Integer
 	def coldValue = 255 - warmValue
-	def cmds = [zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)]
-	cmds += queryAllColors()
-	commands(cmds)
+	def result = []
+	result << zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)
+	if (device.currentValue("switch") != "on") {
+		result << zwave.basicV1.basicSet(value: 0xFF)
+		result << zwave.switchMultilevelV3.switchMultilevelGet()
+	}
+	result += queryAllColors()
+	commands(result)
 }
 
 private queryAllColors() {
