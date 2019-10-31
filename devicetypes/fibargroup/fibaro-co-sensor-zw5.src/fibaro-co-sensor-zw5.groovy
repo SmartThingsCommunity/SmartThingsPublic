@@ -109,7 +109,7 @@ def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
 	logging("${device.displayName} - Executing updated()","info")
 
-	if ( (settings.zwaveNotifications as Integer) >= 2 ) {
+	if ( (settings.zwaveNotifications as Integer) >= 2 || !settings.zwaveNotifications) { //before any configuration change, settings have 'null' values
 		sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	} else {
 		sendEvent(name: "temperatureAlarm", value: null, displayed: false)
@@ -124,8 +124,11 @@ def configure() {
 	sendEvent(name: "coLevel", unit: "ppm", value: 0, displayed: true)
 	sendEvent(name: "carbonMonoxide", value: "clear", displayed: "true")
 	sendEvent(name: "tamper", value: "clear", displayed: "true")
-    // turn on tamper reporting
-	cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: 1, parameterNumber: 2, size: 1)
+	sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
+	// turn on tamper and temperature alarm reporting
+	cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: 3, parameterNumber: 2, size: 1)
+	// turn on acoustic signal on exceeding the temperature alarm
+	cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 4, size: 1)
 	cmds << zwave.batteryV1.batteryGet()
 	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
 	cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
@@ -291,7 +294,15 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	logging("${device.displayName} - BatteryReport received, value: ${cmd.batteryLevel}", "info")
-	sendEvent(name: "battery", value: cmd.batteryLevel.toString(), unit: "%", displayed: true)
+	def map = [name: "battery", unit: "%"]
+	if (cmd.batteryLevel == 0xFF) {
+		map.value = 1
+		map.descriptionText = "${device.displayName} has a low battery"
+		map.isStateChange = true
+	} else {
+		map.value = cmd.batteryLevel
+	}
+	sendEvent(map)
 }
 
 def parse(String description) {
@@ -386,7 +397,7 @@ private parameterMap() {[
 				2: "Exceeding the temperature",
 				3: "Both actions enabled"
 		],
-		 def: "1", title: "Z-Wave notifications",
+		 def: "3", title: "Z-Wave notifications",
 		 descr: "This parameter allows to set actions which result in sending notifications to the HUB"],
 		[key: "highTempTreshold", num: 22, size: 1, type: "enum", options: [
 				50: "120 °F / 50°C",
