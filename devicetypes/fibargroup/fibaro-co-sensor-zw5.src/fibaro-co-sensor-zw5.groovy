@@ -124,8 +124,11 @@ def configure() {
 	sendEvent(name: "coLevel", unit: "ppm", value: 0, displayed: true)
 	sendEvent(name: "carbonMonoxide", value: "clear", displayed: "true")
 	sendEvent(name: "tamper", value: "clear", displayed: "true")
+	sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	// turn on tamper and temperature alarm reporting
 	cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: 3, parameterNumber: 2, size: 1)
+	// turn on acoustic signal on exceeding the temperature alarm
+	cmds << zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 4, size: 1)
 	cmds << zwave.batteryV1.batteryGet()
 	cmds << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
 	cmds << zwave.wakeUpV1.wakeUpNoMoreInformation()
