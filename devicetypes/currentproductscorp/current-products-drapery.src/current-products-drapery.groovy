@@ -49,20 +49,20 @@ metadata {
             state "default", label:"refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         standardTile("reverse",  "device.reverse", decoration: "flat", width: 1, height: 1) {
-        	state "default", label: "Reverse", action: "reverse", icon: "st.secondary.refresh"
+            state "default", label: "Reverse", action: "reverse", icon: "st.secondary.refresh"
         }
         standardTile("toggleSA", "device.switch", decoration: "flat", width: 1, height: 1) {
-        	state "smartAssistOn", label: "SmartAssist Toggle", action: "smartAssistOff", /*backgroundColor: "#00a9ff",*/ nextState: "smartAssistOff"
+            state "smartAssistOn", label: "SmartAssist Toggle", action: "smartAssistOff", /*backgroundColor: "#00a9ff",*/ nextState: "smartAssistOff"
             state "smartAssistOff", label: "SmartAssist Toggle", action: "smartAssistOn", /*backgroundColor: "#ffffff",*/ nextState: "smartAssistOn"
         }
         valueTile("shadeLevel", "device.level", width: 6, height: 1) {
             state "level", label: 'Shade is ${currentValue}% up', defaultState: true
         }
         standardTile("closeButton", "device.level", width: 1, height: 1, decoration: "flat", icon: "none") {
-        	state "default", label: "Close", action: "close", backgroundColor: "#555558"
+            state "default", label: "Close", action: "close", backgroundColor: "#555558"
         }
         standardTile("openButton", "device.level", width: 1, height: 1, decoration: "flat", icon: "none") {
-        	state "default", label: "Open", action: "open", backgroundColor: "#00a0dc"
+            state "default", label: "Open", action: "open", backgroundColor: "#00a0dc"
         }
         controlTile("levelSliderControl", "device.level", "slider", width:4, height: 1, inactiveLabel: false) {
             state "level", action:"switch level.setLevel"
@@ -77,15 +77,15 @@ private getCLUSTER_WINDOW_COVERING() { 0x0102 }
 private getATTRIBUTE_POSITION_LIFT() { 0x0008 }
 
 private List<Map> collectAttributes(Map descMap) {
-	List<Map> descMaps = new ArrayList<Map>()
+    List<Map> descMaps = new ArrayList<Map>()
 
-	descMaps.add(descMap)
+    descMaps.add(descMap)
 
-	if (descMap.additionalAttrs) {
-		descMaps.addAll(descMap.additionalAttrs)
-	}
+    if (descMap.additionalAttrs) {
+        descMaps.addAll(descMap.additionalAttrs)
+    }
 
-	return  descMaps
+    return  descMaps
 }
 
 // Parse incoming device messages to generate events
@@ -124,7 +124,7 @@ def open() {
 }
 
 def setLevel(data) {
-	int intData = data.toInteger()
+    int intData = data.toInteger()
     log.info "setLevel(${intData})"
     zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(intData, 2))
 }
@@ -138,7 +138,7 @@ def pause() {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	log.debug "ping()"
+    log.debug "ping()"
     return refresh()
 }
 
@@ -149,17 +149,17 @@ def refresh() {
 }
 
 def reverse() {
-	log.info "reverse()"
+    log.info "reverse()"
     zigbee.command(0xFC10, 0x23, "02", [mfgCode: 0x9999])
 }
 
 def smartAssistOn() {
-	log.info "smartAssistOn()"
+    log.info "smartAssistOn()"
     zigbee.command(0xFC10, 0x24, "00", [mfgCode: 0x9999])
 }
 
 def smartAssistOff() {
-	log.info "smartAssistOff()"
+    log.info "smartAssistOff()"
     zigbee.command(0xFC10, 0x24, "01", [mfgCode: 0x9999])
 }
 
