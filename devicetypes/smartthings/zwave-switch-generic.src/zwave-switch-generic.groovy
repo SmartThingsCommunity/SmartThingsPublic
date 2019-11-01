@@ -53,6 +53,7 @@ metadata {
 		fingerprint mfr: "027A", prod: "B111", model: "1E1C", deviceJoinName: "Zooz Switch"
 		fingerprint mfr: "027A", prod: "B111", model: "251C", deviceJoinName: "Zooz Switch ZEN23"
 		fingerprint mfr: "0060", prod: "0004", model: "000C", deviceJoinName: "Everspring On/Off Plug", ocfDeviceType: "oic.d.smartplug"
+		fingerprint mfr: "0312", prod: "C000", model: "C001", deviceJoinName: "EVA LOGIK Smart Plug 1CH", ocfDeviceType: "oic.d.smartplug"
 	}
 
 	// simulator metadata
