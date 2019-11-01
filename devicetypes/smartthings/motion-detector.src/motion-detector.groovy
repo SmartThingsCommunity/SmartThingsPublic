@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-9") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Motion Sensor"
