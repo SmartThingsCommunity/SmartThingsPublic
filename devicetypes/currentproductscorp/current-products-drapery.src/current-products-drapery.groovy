@@ -15,7 +15,7 @@ import physicalgraph.zigbee.zcl.DataType
 
 metadata {
     definition(name: "Current Products Drapery", namespace: "CurrentProductsCorp", author: "Current Products", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade") {
-        capability "Actuator"
+//        capability "Actuator"
         capability "Configuration"
         capability "Refresh"
         capability "Window Shade"
@@ -27,7 +27,7 @@ metadata {
         command "smartAssistOn"
         command "smartAssistOff"
 
-        fingerprint profileId: "0x0104", inClusters: "0x0000,0x0001,0x0003,0x0004,0x0005,0x0006,0x0008,0x0020,0x0102,0x0B05,0xFC10,0xFE00,0xFE01,0xFE03,0xFE04,0xFE05,0xFE06,0xFE08,0xFF02", outClusters: "0x0003,0x0019,0xFE03", model: "Track Drapery", deviceJoinName: "CPC Track Drapery"
+        fingerprint profileId: "0x0104", inClusters: "0x0000,0x0001,0x0003,0x0004,0x0005,0x0006,0x0008,0x0020,0x0102,0x0B05,0xFC10,0xFE00,0xFE01,0xFE03,0xFE04,0xFE05,0xFE06,0xFE08,0xFF02", outClusters: "0x0003,0x0019,0xFE03", manufacturer: "Current Products Corp", model: "Track Drapery", deviceJoinName: "CPC Track Drapery"
     }
 
 
@@ -42,11 +42,11 @@ metadata {
                 attributeState "closing", label: 'Closing', action: "pause", icon: "https://s3.amazonaws.com/current-st-icon/curtains_closed.png", backgroundColor: "#ffffff", nextState: "partially closed"
             }
         }
-        standardTile("contPause", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+        standardTile("contPause", "device.switch", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
             state "pause", label:"", icon:'st.sonos.pause-btn', action:'pause', backgroundColor:"#cccccc"
         }
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-            state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+            state "default", label:"refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         standardTile("reverse",  "device.reverse", decoration: "flat", width: 1, height: 1) {
         	state "default", label: "Reverse", action: "reverse", icon: "st.secondary.refresh"
@@ -57,19 +57,19 @@ metadata {
         }
         valueTile("shadeLevel", "device.level", width: 6, height: 1) {
             state "level", label: 'Shade is ${currentValue}% up', defaultState: true
-        }//Testing with something new
+        }
         standardTile("closeButton", "device.level", width: 1, height: 1, decoration: "flat", icon: "none") {
         	state "default", label: "Close", action: "close", backgroundColor: "#555558"
         }
         standardTile("openButton", "device.level", width: 1, height: 1, decoration: "flat", icon: "none") {
         	state "default", label: "Open", action: "open", backgroundColor: "#00a0dc"
-        } //
+        }
         controlTile("levelSliderControl", "device.level", "slider", width:4, height: 1, inactiveLabel: false) {
             state "level", action:"switch level.setLevel"
         }
 
         main "windowShade"
-        details(["windowShade", "openButton", "levelSliderControl", "closeButton", /*"shadeLevel",*/ "contPause", "reverse", "toggleSA"])
+        details(["windowShade", "openButton", "levelSliderControl", "closeButton", /*"shadeLevel",*/ "reverse", "contPause", "toggleSA"])
     }
 }
 
@@ -124,8 +124,9 @@ def open() {
 }
 
 def setLevel(data) {
-    log.info "setLevel()"
-    zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(data, 2))
+	int intData = data.toInteger()
+    log.info "setLevel(${intData})"
+    zigbee.command(CLUSTER_WINDOW_COVERING, 0x05, zigbee.convertToHexString(intData, 2))
 }
 
 def pause() {
