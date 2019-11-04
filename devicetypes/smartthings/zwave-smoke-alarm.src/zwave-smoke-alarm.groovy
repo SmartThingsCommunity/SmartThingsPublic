@@ -22,7 +22,6 @@ metadata {
 		attribute "alarmState", "string"
 
 		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)"
-		fingerprint mfr:"0154", prod:"0004", model:"0010", deviceJoinName: "POPP 10Year Smoke Sensor"
 	}
 
 	simulator {
