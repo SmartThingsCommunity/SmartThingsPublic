@@ -166,10 +166,11 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, sourceEndPoint = null) {
 	def map = [name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, 'C', cmd.precision), unit: temperatureScale]
-	if (map.value != -100.0) {
+	if (map.value != "-100.0") {
 		sendEventToChild(map)
 		createEvent(map)
 	} else {
+		changeTemperatureSensorStatus("offline")
 		response(secureEncap(zwave.configurationV2.configurationGet(parameterNumber: 3)))
 	}
 }
@@ -182,6 +183,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 				addChild()
 			} else {
 				changeTemperatureSensorStatus("online")
+				refreshChild()
 			}
 		} else if (cmd.scaledConfigurationValue == 0 && childDevices) {
 			changeTemperatureSensorStatus("offline")
