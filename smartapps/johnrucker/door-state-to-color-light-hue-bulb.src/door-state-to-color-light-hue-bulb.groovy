@@ -13,7 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
- 
+
 definition(
     name: "Door State to Color Light (Hue Bulb)",
     namespace: "JohnRucker",
@@ -75,9 +75,9 @@ def coopDoorStateHandler(evt) {
             break;
         case "unknown":
         	color = "White"
-            break;        
-    }   
-       
+            break;
+    }
+
 	switch(color) {
 		case "White":
 			hueColor = 52
@@ -116,16 +116,16 @@ def coopDoorStateHandler(evt) {
 		case "Red":
 			hueColor = 100
 			break;
-	}    
-    
+	}
+
     //bulbs*.on()
     bulbs*.setHue(hueColor)
-	bulbs*.setSaturation(saturation)     
-    
+	bulbs*.setSaturation(saturation)
+
     //bulbs.each{
     	//it.on()  // Turn the bulb on when open (this method does not come directly from the colorControl capability)
-    	//it.setLevel(100)  // Make sure the light brightness is 100%       
+    	//it.setLevel(100)  // Make sure the light brightness is 100%
     	//it.setHue(hueColor)
-		//it.setSaturation(saturation) 
-        //}        
+		//it.setSaturation(saturation)
+        //}
 }

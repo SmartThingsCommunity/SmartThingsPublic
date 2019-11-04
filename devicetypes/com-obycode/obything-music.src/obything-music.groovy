@@ -38,7 +38,7 @@ metadata {
 		// Main
 		standardTile("main", "device.status", width: 1, height: 1, canChangeIcon: true) {
 			state "paused", label:'Paused', action:"music Player.play", icon:"st.Electronics.electronics19", nextState:"playing", backgroundColor:"#ffffff"
-			state "playing", label:'Playing', action:"music Player.pause", icon:"st.Electronics.electronics19", nextState:"paused", backgroundColor:"#79b821"
+			state "playing", label:'Playing', action:"music Player.pause", icon:"st.Electronics.electronics19", nextState:"paused", backgroundColor:"#00A0DC"
 		}
 
 		// Row 1

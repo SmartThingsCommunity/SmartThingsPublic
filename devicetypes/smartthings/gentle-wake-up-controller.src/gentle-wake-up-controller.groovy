@@ -31,7 +31,7 @@ metadata {
             tileAttribute("sessionStatus", key: "PRIMARY_CONTROL") {
                 attributeState "cancelled", action: "timed session.start", icon: "http://f.cl.ly/items/322n181j2K3f281r2s0A/playbutton.png", backgroundColor: "#ffffff", nextState: "running"
                 attributeState "stopped", action: "timed session.start", icon: "http://f.cl.ly/items/322n181j2K3f281r2s0A/playbutton.png", backgroundColor: "#ffffff", nextState: "cancelled"
-                attributeState "running", action: "timed session.stop", icon: "http://f.cl.ly/items/0B3y3p2V3X2l3P3y3W09/stopbutton.png", backgroundColor: "#79b821", nextState: "cancelled"
+                attributeState "running", action: "timed session.stop", icon: "http://f.cl.ly/items/0B3y3p2V3X2l3P3y3W09/stopbutton.png", backgroundColor: "#00A0DC", nextState: "cancelled"
             }
             tileAttribute("timeRemaining", key: "SECONDARY_CONTROL") {
                 attributeState "timeRemaining", label:'${currentValue} remaining'
@@ -45,7 +45,7 @@ metadata {
         standardTile("sessionStatusTile", "sessionStatus", width: 1, height: 1, canChangeIcon: true) {
             state "cancelled", label: "Stopped", action: "timed session.start", backgroundColor: "#ffffff", icon: "http://f.cl.ly/items/1J1g0H2P0S1G1f2O1s1s/icon.png"
             state "stopped", label: "Stopped", action: "timed session.start", backgroundColor: "#ffffff", icon: "http://f.cl.ly/items/1J1g0H2P0S1G1f2O1s1s/icon.png"
-            state "running", label: "Running", action: "timed session.stop", backgroundColor: "#79b821", icon: "http://f.cl.ly/items/1J1g0H2P0S1G1f2O1s1s/icon.png"
+            state "running", label: "Running", action: "timed session.stop", backgroundColor: "#00A0DC", icon: "http://f.cl.ly/items/1J1g0H2P0S1G1f2O1s1s/icon.png"
         }
 
         // duration
@@ -121,6 +121,14 @@ def stopDimming() {
 }
 
 def controllerEvent(eventData) {
-    log.trace "controllerEvent"
     sendEvent(eventData)
+    if (eventData.name == "sessionStatus") {
+    	if (eventData.value == "running") {
+            //Set Switch to ON to support Samsung Connect
+            sendEvent(name: "switch", value: "on")
+    	} else {
+            // Set Switch to OFF to support Samsung Connect
+            sendEvent(name: "switch", value: "off")
+        }
+    }
 }

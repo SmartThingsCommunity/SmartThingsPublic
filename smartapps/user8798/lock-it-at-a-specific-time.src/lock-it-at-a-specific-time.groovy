@@ -37,7 +37,7 @@ preferences {
   section( "Notifications" ) {
     input "sendPushMessage", "enum", title: "Send a push notification?", metadata:[values:["Yes", "No"]], required: false
     input "phone", "phone", title: "Send a text message?", required: false
-  } 
+  }
 }
 def installed() {
   schedule(time, "setTimeCallback")
@@ -61,7 +61,7 @@ def doorOpenCheck() {
   def currentState = contact.contactState
   if (currentState?.value == "open") {
     def msg = "${contact.displayName} is open.  Scheduled lock failed."
-    log.info msg
+    log.debug msg
     if (sendPushMessage) {
       sendPush msg
     }
@@ -76,7 +76,7 @@ def doorOpenCheck() {
 
 def lockMessage() {
   def msg = "Locking ${lock.displayName} due to scheduled lock."
-  log.info msg
+  log.debug msg
   if (sendPushMessage) {
     sendPush msg
   }

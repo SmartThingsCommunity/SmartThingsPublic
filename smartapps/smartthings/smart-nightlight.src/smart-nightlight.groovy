@@ -98,7 +98,7 @@ def motionHandler(evt) {
 	else {
 		state.motionStopTime = now()
 		if(delayMinutes) {
-			runIn(delayMinutes*60, turnOffMotionAfterDelay, [overwrite: false])
+			runIn(delayMinutes*60, turnOffMotionAfterDelay, [overwrite: true])
 		} else {
 			turnOffMotionAfterDelay()
 		}

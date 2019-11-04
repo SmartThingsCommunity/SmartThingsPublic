@@ -3,7 +3,7 @@
  *
  *  Author: SmartThings
  */
- 
+
 definition(
     name: "Door Jammed Notification",
     namespace: "JohnRucker",
@@ -17,7 +17,7 @@ definition(
 preferences {
     section("When the door state changes") {
         paragraph "Send a SmartThings notification when the coop's door jammed and did not close."
-		input "doorSensor", "capability.doorControl", title: "Select CoopBoss", required: true, multiple: false            
+		input "doorSensor", "capability.doorControl", title: "Select CoopBoss", required: true, multiple: false
         input("recipients", "contact", title: "Recipients", description: "Send notifications to") {
         	input "phone", "phone", title: "Phone number?", required: true}
 	}
@@ -52,5 +52,5 @@ def coopDoorStateHandler(evt) {
                 sendSms(phone, msg)
             }
         }
-	}        
+	}
 }

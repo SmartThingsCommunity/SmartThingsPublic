@@ -1,21 +1,9 @@
-<<<<<<< HEAD
 // keen home smart vent
 // http://www.keenhome.io
 // SmartThings Device Handler v1.0.0
 
 metadata {
     definition (name: "Keen Home Smart Vent", namespace: "Keen Home", author: "Keen Home") {
-=======
-/**
- *  Keen Home Smart Vent
- *
- *  Author: Keen Home
- *  Date: 2015-06-23
- */
-
-metadata {
-    definition (name: "Keen Home Smart Vent", namespace: "Keen Home", author: "Gregg Altschul") {
->>>>>>> SmartThingsCommunity/DEVC-174-6
         capability "Switch Level"
         capability "Switch"
         capability "Configuration"
@@ -23,6 +11,7 @@ metadata {
         capability "Sensor"
         capability "Temperature Measurement"
         capability "Battery"
+        capability "Health Check"
 
         command "getLevel"
         command "getOnOff"
@@ -30,15 +19,9 @@ metadata {
         command "getBattery"
         command "getTemperature"
         command "setZigBeeIdTile"
-<<<<<<< HEAD
         command "clearObstruction"
-=======
->>>>>>> SmartThingsCommunity/DEVC-174-6
 
-        fingerprint endpoint: "1",
-        profileId: "0104",
-        inClusters: "0000,0001,0003,0004,0005,0006,0008,0020,0402,0403,0B05,FC01,FC02",
-        outClusters: "0019"
+        fingerprint endpoint: "1", profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0006,0008,0020,0402,0403,0B05,FC01,FC02", outClusters: "0019"
     }
 
     // simulator metadata
@@ -55,16 +38,10 @@ metadata {
     // UI tile definitions
     tiles {
         standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-<<<<<<< HEAD
             state "on", action: "switch.off", icon: "st.vents.vent-open-text", backgroundColor: "#53a7c0"
             state "off", action: "switch.on", icon: "st.vents.vent-closed", backgroundColor: "#ffffff"
             state "obstructed", action: "clearObstruction", icon: "st.vents.vent-closed", backgroundColor: "#ff0000"
             state "clearing", action: "", icon: "st.vents.vent-closed", backgroundColor: "#ffff33"
-=======
-            state "on", action:"switch.off", icon:"st.vents.vent-open-text", backgroundColor:"#53a7c0"
-            state "off", action:"switch.on", icon:"st.vents.vent-closed", backgroundColor:"#ffffff"
-            state "obstructed", action: "switch.off", icon:"st.vents.vent-closed", backgroundColor:"#ff0000"
->>>>>>> SmartThingsCommunity/DEVC-174-6
         }
         controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
             state "level", action:"switch level.setLevel"
@@ -194,12 +171,10 @@ private Map parseReportAttributeMessage(String description) {
 private Map parseCustomMessage(String description) {
     Map resultMap = [:]
     if (description?.startsWith('temperature: ')) {
-        // log.debug "${description}"
-        // def value = zigbee.parseHATemperatureValue(description, "temperature: ", getTemperatureScale())
-        // log.debug "split: " + description.split(": ")
-        def value = Double.parseDouble(description.split(": ")[1])
-        // log.debug "${value}"
-        resultMap = makeTemperatureResult(convertTemperature(value))
+        def tempData = description.split(": ")[1].split(" ")
+        def scale = (tempData.length > 1) ? tempData[1] : "C"
+        def value = Double.parseDouble(tempData[0])
+        resultMap = makeTemperatureResult(convertTemperature(value, scale))
     }
     return resultMap
 }
@@ -226,21 +201,12 @@ private Map makeOnOffResult(rawValue) {
 
 private Map makeLevelResult(rawValue) {
     def linkText = getLinkText(device)
-<<<<<<< HEAD
     def value = Integer.parseInt(rawValue, 16)
     def rangeMax = 254
 
     // catch obstruction level
     if (value == 255) {
         log.debug "${linkText} is obstructed"
-=======
-    // log.debug "rawValue: ${rawValue}"
-    def value = Integer.parseInt(rawValue, 16)
-    def rangeMax = 254
-
-    if (value == 255) {
-        log.debug "obstructed"
->>>>>>> SmartThingsCommunity/DEVC-174-6
         // Just return here. Once the vent is power cycled
         // it will go back to the previous level before obstruction.
         // Therefore, no need to update level on the display.
@@ -249,30 +215,9 @@ private Map makeLevelResult(rawValue) {
             value: "obstructed",
             descriptionText: "${linkText} is obstructed. Please power cycle."
         ]
-<<<<<<< HEAD
     }
 
     value = Math.floor(value / rangeMax * 100)
-=======
-    } else if ( device.currentValue("switch") == "obstructed" &&
-                value == 254)  {
-        // When the device is reset after an obstruction, the switch
-        // state will be obstructed and the value coming from the device
-        // will be 254. Since we're not using heating/cooling mode from
-        // the device type handler, we need to bump it down to the lower
-        // (cooling) range
-        sendEvent(makeOnOffResult(1)) // clear the obstructed switch state
-        value = rangeMax
-    }
-    // else if (device.currentValue("switch") == "off") {
-    //     sendEvent(makeOnOffResult(1)) // turn back on if in off state
-    // }
-
-
-    // log.debug "pre-value: ${value}"
-    value = Math.floor(value / rangeMax * 100)
-    // log.debug "post-value: ${value}"
->>>>>>> SmartThingsCommunity/DEVC-174-6
 
     return [
         name: "level",
@@ -325,6 +270,7 @@ private Map makeTemperatureResult(value) {
         name: 'temperature',
         value: "" + value,
         descriptionText: "${linkText} is ${value}°${temperatureScale}",
+        unit: temperatureScale
     ]
 }
 
@@ -334,18 +280,19 @@ private def convertTemperatureHex(value) {
     def celsius = Integer.parseInt(value, 16).shortValue() / 100
     // log.debug "celsius: ${celsius}"
 
-    return convertTemperature(celsius)
+    return convertTemperature(celsius, "C")
 }
 
-private def convertTemperature(celsius) {
-    // log.debug "convertTemperature()"
-
-    if(getTemperatureScale() == "C"){
-        return celsius
+private def convertTemperature(value, scale = "C") {
+    if(getTemperatureScale() == scale){
+        return Math.round(value * 100) / 100
     } else {
-        def fahrenheit = Math.round(celsiusToFahrenheit(celsius) * 100) /100
-        // log.debug "converted to F: ${fahrenheit}"
-        return fahrenheit
+        if (scale == "C") {
+            // Celsius to Fahrenheit
+            return Math.round(celsiusToFahrenheit(value) * 100) /100
+        }
+        // Fahrenheit to Celsius
+        return Math.round(fahrenheitToCelsius(value) * 100) /100
     }
 }
 
@@ -362,7 +309,6 @@ private def makeSerialResult(serial) {
         value: serial,
         descriptionText: "${linkText} has serial ${serial}" ]
 }
-<<<<<<< HEAD
 
 // takes a level from 0 to 100 and translates it to a ZigBee move to level with on/off command
 private def makeLevelCommand(level) {
@@ -387,21 +333,11 @@ def on() {
         return
     }
 
-=======
-/**** COMMAND METHODS ****/
-// def mfgCode() {
-// 	 ["zcl mfg-code 0x115B", "delay 200"]
-// }
-
-def on() {
-    log.debug "on()"
->>>>>>> SmartThingsCommunity/DEVC-174-6
     sendEvent(makeOnOffResult(1))
     "st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
 }
 
 def off() {
-<<<<<<< HEAD
     def linkText = getLinkText(device)
     log.debug "close ${linkText}"
 
@@ -411,14 +347,10 @@ def off() {
         return
     }
 
-=======
-    log.debug "off()"
->>>>>>> SmartThingsCommunity/DEVC-174-6
     sendEvent(makeOnOffResult(0))
     "st cmd 0x${device.deviceNetworkId} 1 6 0 {}"
 }
 
-<<<<<<< HEAD
 def clearObstruction() {
     def linkText = getLinkText(device)
     log.debug "attempting to clear ${linkText} obstruction"
@@ -436,18 +368,10 @@ def clearObstruction() {
         makeLevelCommand(device.currentValue("level")), "delay 500",
         "st cmd 0x${device.deviceNetworkId} 1 0 0 {}", "delay 5000"
     ] + configure()
-=======
-// does this work?
-def toggle() {
-    log.debug "toggle()"
-
-    "st cmd 0x${device.deviceNetworkId} 1 6 2 {}"
->>>>>>> SmartThingsCommunity/DEVC-174-6
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     log.debug "setting level: ${value}"
-<<<<<<< HEAD
     def linkText = getLinkText(device)
 
     // only change the level if the vent is not obstructed
@@ -457,10 +381,6 @@ def setLevel(value) {
         log.error("cannot set level because ${linkText} is obstructed")
         return
     }
-=======
-
-    def linkText = getLinkText(device)
->>>>>>> SmartThingsCommunity/DEVC-174-6
 
     sendEvent(name: "level", value: value)
     if (value > 0) {
@@ -469,7 +389,6 @@ def setLevel(value) {
     else {
         sendEvent(name: "switch", value: "off", descriptionText: "${linkText} is off by setting level to 0")
     }
-<<<<<<< HEAD
 
     makeLevelCommand(value)
 }
@@ -483,36 +402,13 @@ def getOnOff() {
         return []
     }
 
-=======
-    def rangeMax = 254
-    def computedLevel = Math.round(value * rangeMax / 100)
-    log.debug "computedLevel: ${computedLevel}"
-
-    def level = new BigInteger(computedLevel.toString()).toString(16)
-    log.debug "level: ${level}"
-
-    if (level.size() < 2){
-        level = '0' + level
-    }
-
-    "st cmd 0x${device.deviceNetworkId} 1 8 4 {${level} 0000}"
-}
-
-
-def getOnOff() {
-    log.debug "getOnOff()"
-
->>>>>>> SmartThingsCommunity/DEVC-174-6
     ["st rattr 0x${device.deviceNetworkId} 1 0x0006 0"]
 }
 
 def getPressure() {
     log.debug "getPressure()"
-<<<<<<< HEAD
 
     // using a Keen Home specific attribute in the pressure measurement cluster
-=======
->>>>>>> SmartThingsCommunity/DEVC-174-6
     [
         "zcl mfg-code 0x115B", "delay 200",
         "zcl global read 0x0403 0x20", "delay 200",
@@ -522,7 +418,6 @@ def getPressure() {
 
 def getLevel() {
     log.debug "getLevel()"
-<<<<<<< HEAD
 
     // disallow level updates while vent is obstructed
     if (device.currentValue("switch") == "obstructed") {
@@ -530,14 +425,6 @@ def getLevel() {
         return []
     }
 
-=======
-    // rattr = read attribute
-    // 0x${} = device net id
-    // 1 = endpoint
-    // 8 = cluster id (level control, in this case)
-    // 0 = attribute within cluster
-    // sendEvent(name: "level", value: value)
->>>>>>> SmartThingsCommunity/DEVC-174-6
     ["st rattr 0x${device.deviceNetworkId} 1 0x0008 0x0000"]
 }
 
@@ -562,98 +449,51 @@ def setZigBeeIdTile() {
         name: "zigbeeId",
         value: device.zigbeeId,
         descriptionText: "${linkText} has zigbeeId ${device.zigbeeId}" ])
-<<<<<<< HEAD
     return [
-=======
-	return [
->>>>>>> SmartThingsCommunity/DEVC-174-6
         name: "zigbeeId",
         value: device.zigbeeId,
         descriptionText: "${linkText} has zigbeeId ${device.zigbeeId}" ]
 }
 
 def refresh() {
-<<<<<<< HEAD
     getOnOff() +
-=======
-	getOnOff() +
->>>>>>> SmartThingsCommunity/DEVC-174-6
     getLevel() +
     getTemperature() +
     getPressure() +
     getBattery()
 }
 
-<<<<<<< HEAD
 def configure() {
     log.debug "CONFIGURE"
+
+    // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+    // enrolls with default periodic reporting until newer 5 min interval is confirmed
+    sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
     // get ZigBee ID by hidden tile because that's the only way we can do it
     setZigBeeIdTile()
 
     def configCmds = [
         // bind reporting clusters to hub
-=======
-private byte[] reverseArray(byte[] array) {
-    int i = 0;
-    int j = array.length - 1;
-    byte tmp;
-    while (j > i) {
-        tmp = array[j];
-        array[j] = array[i];
-        array[i] = tmp;
-        j--;
-        i++;
-    }
-    return array
-}
-
-private String swapEndianHex(String hex) {
-    reverseArray(hex.decodeHex()).encodeHex()
-}
-
-def configure() {
-    log.debug "CONFIGURE"
-    log.debug "zigbeeId: ${device.hub.zigbeeId}"
-
-    setZigBeeIdTile()
-
-    def configCmds = [
-        // binding commands
->>>>>>> SmartThingsCommunity/DEVC-174-6
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0006 {${device.zigbeeId}} {}", "delay 500",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0008 {${device.zigbeeId}} {}", "delay 500",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0402 {${device.zigbeeId}} {}", "delay 500",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0403 {${device.zigbeeId}} {}", "delay 500",
-<<<<<<< HEAD
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0001 {${device.zigbeeId}} {}", "delay 500"
 
         // configure report commands
         // zcl global send-me-a-report [cluster] [attr] [type] [min-interval] [max-interval] [min-change]
 
         // report with these parameters is preconfigured in firmware, can be overridden here
-=======
-        "zdo bind 0x${device.deviceNetworkId} 1 1 0x0001 {${device.zigbeeId}} {}", "delay 500",
-        
-        // configure report commands
-        // [cluster] [attr] [type] [min-interval] [max-interval] [min-change]
-
-        // mike 2015/06/22: preconfigured; see tech spec
->>>>>>> SmartThingsCommunity/DEVC-174-6
         // vent on/off state - type: boolean, change: 1
         // "zcl global send-me-a-report 6 0 0x10 5 60 {01}", "delay 200",
         // "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 
-<<<<<<< HEAD
         // report with these parameters is preconfigured in firmware, can be overridden here
-=======
-        // mike 2015/06/22: preconfigured; see tech spec
->>>>>>> SmartThingsCommunity/DEVC-174-6
         // vent level - type: int8u, change: 1
         // "zcl global send-me-a-report 8 0 0x20 5 60 {01}", "delay 200",
         // "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 
-<<<<<<< HEAD
         // report with these parameters is preconfigured in firmware, can be overridden here
         // temperature - type: int16s, change: 0xA = 10 = 0.1C
         // "zcl global send-me-a-report 0x0402 0 0x29 60 60 {0A00}", "delay 200",
@@ -666,25 +506,10 @@ def configure() {
         // "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
 
         // report with these parameters is preconfigured in firmware, can be overridden here
-=======
-        // mike 2015/06/22: temp and pressure reports are preconfigured, but
-        //   we'd like to override their settings for our own purposes
-        // temperature - type: int16s, change: 0xA = 10 = 0.1C
-        "zcl global send-me-a-report 0x0402 0 0x29 10 60 {0A00}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-        // mike 2015/06/22: use new custom pressure attribute
-        // pressure - type: int32u, change: 1 = 0.1Pa
-        "zcl mfg-code 0x115B", "delay 200",
-        "zcl global send-me-a-report 0x0403 0x20 0x22 10 60 {010000}", "delay 200",
-        "send 0x${device.deviceNetworkId} 1 1", "delay 1500"
-
-        // mike 2015/06/22: preconfigured; see tech spec
->>>>>>> SmartThingsCommunity/DEVC-174-6
         // battery - type: int8u, change: 1
         // "zcl global send-me-a-report 1 0x21 0x20 60 3600 {01}", "delay 200",
         // "send 0x${device.deviceNetworkId} 1 1", "delay 1500",
     ]
 
-    return configCmds + refresh()
+    return configCmds + zigbee.onOffConfig() + refresh()
 }

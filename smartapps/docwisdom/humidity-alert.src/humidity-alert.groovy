@@ -20,7 +20,8 @@ definition(
     description: "Notify me when the humidity rises above or falls below the given threshold. It will turn on a switch when it rises above the first threshold and off when it falls below the second threshold.",
     category: "Convenience",
     iconUrl: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn",
-    iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x"
+    iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather9-icn?displaySize=2x",
+    pausable: true
 )
 
 
@@ -78,7 +79,7 @@ def humidityHandler(evt) {
 			log.debug "Notification already sent within the last ${deltaMinutes} minutes"
 			
 		} else {
-			log.debug "Humidity Rose Above ${tooHumid}:  sending SMS to $phone1 and activating ${mySwitch}"
+			log.debug "Humidity Rose Above ${tooHumid}:  sending SMS and activating ${mySwitch}"
 			send("${humiditySensor1.label} sensed high humidity level of ${evt.value}")
 			switch1?.on()
 		}
@@ -91,7 +92,7 @@ def humidityHandler(evt) {
 			log.debug "Notification already sent within the last ${deltaMinutes} minutes"
 			
 		} else {
-			log.debug "Humidity Fell Below ${notHumidEnough}:  sending SMS to $phone1 and activating ${mySwitch}"
+			log.debug "Humidity Fell Below ${notHumidEnough}:  sending SMS and activating ${mySwitch}"
 			send("${humiditySensor1.label} sensed high humidity level of ${evt.value}")
 			switch1?.off()
 		}
