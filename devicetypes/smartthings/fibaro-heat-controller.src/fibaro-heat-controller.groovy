@@ -309,10 +309,10 @@ def switchMode() {
 	}
 }
 
-def sendEventToChild(event) {
+def sendEventToChild(event, forced = false) {
 	String childDni = "${device.deviceNetworkId}:2"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	if (state.isChildOnline)
+	if (state.isChildOnline || forced)
 		child?.sendEvent(event)
 }
 
@@ -350,5 +350,5 @@ private getMinHeatingSetpointTemperature() {
 private changeTemperatureSensorStatus(status) {
 	state.isChildOnline = (status == "online")
 	def map = [name: "DeviceWatch-DeviceStatus", value: status]
-	sendEventToChild(map)
+	sendEventToChild(map, true)
 }
