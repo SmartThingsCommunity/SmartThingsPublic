@@ -50,6 +50,7 @@ metadata {
 		fingerprint mfr: "0371", prod: "0103", model: "00AF", deviceJoinName: "Aeotec Smart Switch 7", ocfDeviceType: "oic.d.smartplug"  //US
 		fingerprint mfr: "0060", prod: "0004", model: "000B", deviceJoinName: "Everspring Smart Plug", ocfDeviceType: "oic.d.smartplug"  //US
 		fingerprint mfr: "031E", prod: "0002", model: "0001", deviceJoinName: "Inovelli Switch Red Series" //US
+		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "POPP Smart Outdoor Plug" //EU
 	}
 
 	// simulator metadata
@@ -63,7 +64,7 @@ metadata {
 		}
 		for (int i = 0; i <= 100; i += 10) {
 			status "energy	${i} kWh": new physicalgraph.zwave.Zwave().meterV1.meterReport(
-			   scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
+				scaledMeterValue: i, precision: 3, meterType: 0, scale: 0, size: 4).incomingMessage()
 		}
 
 		// reply messages
