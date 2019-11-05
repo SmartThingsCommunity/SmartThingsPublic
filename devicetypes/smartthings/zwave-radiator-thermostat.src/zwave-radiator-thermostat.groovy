@@ -21,6 +21,7 @@ metadata {
 		capability "Health Check"
 		capability "Thermostat"
 		capability "Temperature Measurement"
+		capability "Configuration"
 
 		fingerprint mfr: "0060", prod: "0015", model: "0001", deviceJoinName: "Everspring Thermostatic Radiator Valve", mnmn: "SmartThings", vid: "generic-radiator-thermostat"
 		//this DTH is sending temperature setpoint commands using Celsius scale and assumes that they'll be handled correctly by device
@@ -98,6 +99,14 @@ def updated() {
 	initialize()
 }
 
+def configure() {
+	def cmds = []
+	if (isEverspringRadiatorThermostat()) {
+		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: 15)) //automatic temperature reports every 15 minutes
+	}
+	return cmds
+}
+
 def parse(String description) {
 	def result = null
 	def cmd = zwave.parse(description)
@@ -120,8 +129,6 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 		createEvent(descriptionText: cmd.toString())
 	}
 }
-
-
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def value = cmd.batteryLevel == 255 ? 1 : cmd.batteryLevel
@@ -223,7 +230,7 @@ def ping() {
 }
 
 private secure(cmd) {
-	if (zwaveInfo.zw.endsWith("s")) {
+	if (zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
