@@ -20,6 +20,8 @@ metadata {
 		fingerprint mfr: "0086", prod: "0004", model: "0075", deviceJoinName: "Aeotec Range Extender 6" //EU
 		fingerprint mfr: "0246", prod: "0001", model: "0001", deviceJoinName: "Iris Z-Wave Range Extender (Smart Plug)"
 		fingerprint mfr: "021F", prod: "0003", model: "0108", deviceJoinName: "Dome Range Extender DMEX1" //US
+		fingerprint mfr: "0371", prod: "0104", model: "00BD", deviceJoinName: "Aeotec Range Extender 7" //US
+		fingerprint mfr: "0371", prod: "0004", model: "00BD", deviceJoinName: "Aeotec Range Extender 7" //EU
 	}
 
 	tiles(scale: 2) {
