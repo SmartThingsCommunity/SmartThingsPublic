@@ -192,9 +192,14 @@ def setColorTemperature(temp) {
 	def warmValue = temp < 5000 ? 255 : 0
 	def coldValue = temp >= 5000 ? 255 : 0
 	def parameterNumber = temp < 5000 ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
-	def cmds = [zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp]),
-				zwave.switchColorV3.switchColorSet(warmWhite: warmValue, coldWhite: coldValue)]
-	commands(cmds) + "delay 7000" + commands(queryAllColors(), 500)
+	def results = []
+	results << zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp])
+	results << zwave.switchColorV3.switchColorSet(warmWhite: warmValue, coldWhite: coldValue)
+	if (device.currentValue("switch") != "on") {
+		results << zwave.basicV1.basicSet(value: 0xFF)
+		results << zwave.switchMultilevelV3.switchMultilevelGet()
+	}
+	commands(results) + "delay 7000" + commands(queryAllColors(), 500)
 }
 
 private queryAllColors() {

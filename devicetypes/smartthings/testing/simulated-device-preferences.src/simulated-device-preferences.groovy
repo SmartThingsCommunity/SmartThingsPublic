@@ -43,7 +43,7 @@ metadata {
 					description: "Enum Description 2 (value options)",
 					options: ["Option 1 Value", "Option 2 Value", "Option 3 Value", "Option 4 Value"],
 					defaultValue: "Option 1 Value",
-					equired: false)
+					required: false)
 			input("enumInput3", "enum",
 					title: "Enum Title 3 (no options)", description: "Enum Description 3 (no options)",
 					required: false)
@@ -59,11 +59,28 @@ metadata {
 					displayDuringSetup: false,
 					type: "paragraph",
 					element: "paragraph")
-			input("intInput", "integer",
-					title: "Integer Title",
-					description: "Integer Description",
+			input("numInput", "number",
+					title: "Number Title (range 1-10)",
+					description: "Number Description (range 1-10)",
 					defaultValue: 5,
 					range: "1..10",
+					required: false)
+			input("numInput2", "number",
+					title: "Number Title (range -10-10)",
+					description: "Number Description (range -10-10)",
+					defaultValue: 5,
+					range: "-10..10",
+					required: false)
+			input("numInput3", "number",
+					title: "Number Title (range *..*)",
+					description: "Number Description (range *..*)",
+					defaultValue: 5,
+					range: "*..*",
+					required: false)
+			input("numInput4", "number",
+					title: "Number Title (no range)",
+					description: "Number Description (no range)",
+					defaultValue: 5,
 					required: false)
 			input("decInput", "decimal",
 					title: "Decimal Title",
@@ -111,7 +128,10 @@ def updated() {
 		enumInput: enumInput,
 		enumInput2: enumInput2,
 		enumInput3: enumInput3,
-		intInput: intInput,
+		numInput: numInput,
+		numInput2: numInput2,
+		numInput3: numInput3,
+		numInput4: numInput4,
 		passInput: passInput,
 		textInput: textInput
 	]

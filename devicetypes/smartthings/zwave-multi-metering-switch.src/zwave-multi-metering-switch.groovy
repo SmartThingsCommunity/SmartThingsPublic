@@ -26,6 +26,7 @@ metadata {
 
 		fingerprint mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
 		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
+		fingerprint mfr:"0086", prod:"0203", model:"0084", deviceJoinName: "Aeotec Nano Switch 1" //AU
 		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Nano Switch 1"
 		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz ZEN Power Strip"
 		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Double Plug"
@@ -254,26 +255,38 @@ private onOffCmd(value, endpoint = 1) {
 }
 
 private refreshAll(includeMeterGet = true) {
-	childDevices.each { childRefresh(it.deviceNetworkId, includeMeterGet) }
-	sendHubCommand refresh(includeMeterGet)
+
+	def endpoints = [1]
+
+	childDevices.each {
+		def switchId = getSwitchId(it.deviceNetworkId)
+		if (switchId != null) {
+			endpoints << switchId
+		}
+	}
+	sendHubCommand refresh(endpoints,includeMeterGet)
 }
 
 def childRefresh(deviceNetworkId, includeMeterGet = true) {
 	def switchId = getSwitchId(deviceNetworkId)
 	if (switchId != null) {
-		sendHubCommand refresh(switchId,includeMeterGet)
+		sendHubCommand refresh([switchId],includeMeterGet)
 	}
 }
 
-def refresh(endpoint = 1, includeMeterGet = true) {
+def refresh(endpoints = [1], includeMeterGet = true) {
 
-	def cmds = [encap(zwave.basicV1.basicGet(), endpoint)]
+	def cmds = []
 
-	if (includeMeterGet) {
-		cmds << encap(zwave.meterV3.meterGet(scale: 0), endpoint)
-		cmds << encap(zwave.meterV3.meterGet(scale: 2), endpoint)
+	endpoints.each {
+		cmds << [encap(zwave.basicV1.basicGet(), it)]
+		if (includeMeterGet) {
+			cmds << encap(zwave.meterV3.meterGet(scale: 0), it)
+			cmds << encap(zwave.meterV3.meterGet(scale: 2), it)
+		}
 	}
-	delayBetween(cmds, 500)
+
+	delayBetween(cmds, 200)
 }
 
 private resetAll() {
