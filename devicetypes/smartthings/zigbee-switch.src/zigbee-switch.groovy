@@ -71,7 +71,8 @@ metadata {
 
 		// SONOFF
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "BASICZBR3", deviceJoinName: "SONOFF Basic (R3 Zigbee)", ocfDeviceType: "oic.d.smartplug"
-
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "S31 Lite zb", deviceJoinName: "S31 Lite zb", ocfDeviceType: "oic.d.smartplug"
+		
 		// Terncy
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Smart Light Socket"
 
