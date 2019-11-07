@@ -153,7 +153,7 @@ private encap(cmd, endpoint = null) {
 		if (endpoint) {
 			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: channelNumber(endpoint)).encapsulate(cmd)
 		}
-		if (zwaveInfo.zw.endsWith("s")) {
+		if (zwaveInfo.zw.contains("s")) {
 			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 		} else {
 			cmd.format()
