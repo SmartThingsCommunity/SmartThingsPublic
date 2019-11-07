@@ -72,7 +72,7 @@ metadata {
 		// Third Reality
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "RealitySwitch Plus"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "RealitySwitch"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006，1000", outClusters: "0019",deviceId: "0x0100", manufacturer: "TreatLife", model: "TreatLife", deviceJoinName: "Smart Light Switch SS01S-Z ", ocfDeviceType: "oic.d.smartplug"
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006，1000", outClusters: "0019",deviceId: "0x0100", manufacturer: "TreatLife12", model: "TreatLife", deviceJoinName: "Smart Light Switch SS01S-Z ", ocfDeviceType: "oic.d.smartplug"
 	}
 
 	// simulator metadata
