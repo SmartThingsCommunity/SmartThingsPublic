@@ -198,7 +198,7 @@ def installed() {
 	response(refresh())
 }
 
-def updated() {
+/*def updated() {
 	// Needed because updated() is being called twice
     def time
     if(state.updatedDate == null){
@@ -220,30 +220,41 @@ def updated() {
         else if(invert.value == true)
             response(reverse())
     //}
+}*/
+
+def updated() {
+    runIn(2, "finishConfiguration", [overwrite: true])
+}
+
+def finishConfiguration() {
+        if (invert.value == false)
+            response(normal())
+        else if(invert.value == true)
+            response(reverse())
 }
 
 def normal() {
-    if(device.currentState("switch").value == "on"){
-    	sendEvent(name: "switch", value: "off")
-        log.warn ("normal-off")
+    if(device.currentState("windowShade").value == "open"){
+    	sendEvent(name: "windowShade", value: "closed")
+        log.warn ("normal-close")
         zigbee.writeAttribute(0xFC00, 0x0000, DataType.BOOLEAN, 0x00)
     }
     else{
-    	sendEvent(name: "switch", value: "on")
-        log.warn ("normal-on")
+    	sendEvent(name: "windowShade", value: "open")
+        log.warn ("normal-open")
         zigbee.writeAttribute(0xFC00, 0x0000, DataType.BOOLEAN, 0x00)
     }   
 }
 
 def reverse() {
-	if(device.currentState("switch").value == "on"){    	
-    	sendEvent(name: "switch", value: "off")
-        log.warn ("reverse-off")
+	if(device.currentState("windowShade").value == "open"){    	
+    	sendEvent(name: "windowShade", value: "closed")
+        log.warn ("reverse-close")
         zigbee.writeAttribute(0xFC00, 0x0000, DataType.BOOLEAN, 0x01)
     }
     else{
-    	sendEvent(name: "switch", value: "on")
-        log.warn ("reverse-on")
+    	sendEvent(name: "windowShade", value: "open")
+        log.warn ("reverse-open")
         zigbee.writeAttribute(0xFC00, 0x0000, DataType.BOOLEAN, 0x01)
     }
 }
