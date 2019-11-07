@@ -86,7 +86,7 @@ metadata {
 }
 
 def initialize() {
-	sendEvent(name: "checkInterval", value: checkInterval , displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: checkInterval , displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "supportedThermostatModes", value: thermostatSupportedModes.encodeAsJson(), displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: [minHeatingSetpointTemperature, maxHeatingSetpointTemperature], displayed: false)
 	response(refresh())
@@ -252,7 +252,7 @@ def configure() {
 }
 
 private secure(cmd) {
-	if (zwaveInfo.zw.endsWith("s")) {
+	if (zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
