@@ -100,6 +100,16 @@ def updated() {
 	initialize()
 }
 
+def configure() {
+	def cmds = []
+	if (isEverspringRadiatorThermostat()) {
+		cmds += secure(zwave.configurationV1.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: 15)) //automatic temperature reports every 15 minutes
+	} else if (isPoppRadiatorThermostat()) {
+		cmds += secure(zwave.wakeUpV2.wakeUpIntervalSet(seconds: 600, nodeid: zwaveHubNodeId))
+	}
+	return cmds
+}
+
 def parse(String description) {
 	def result = null
 	def cmd = zwave.parse(description)
@@ -243,12 +253,6 @@ def refresh() {
 
 def ping() {
 	refresh()
-}
-
-def configure() {
-	if (isPoppRadiatorThermostat()) {
-		secure(zwave.wakeUpV2.wakeUpIntervalSet(seconds: 600, nodeid: zwaveHubNodeId))
-	}
 }
 
 private secure(cmd) {
