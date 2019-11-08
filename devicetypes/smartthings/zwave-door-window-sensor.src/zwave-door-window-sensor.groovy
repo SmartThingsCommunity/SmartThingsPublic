@@ -55,6 +55,8 @@ metadata {
 		fingerprint mfr: "0371", prod: "0102", model: "0007", deviceJoinName: "Aeotec Door/Window Sensor 7" //EU
 		fingerprint mfr: "0371", prod: "0002", model: "0007", deviceJoinName: "Aeotec Door/Window Sensor 7" //US
 		fingerprint mfr: "0060", prod: "0002", model: "0003", deviceJoinName: "Everspring Door/Window Sensor" //US & EU
+		fingerprint mfr: "0371", prod: "0102", model: "00BB", deviceJoinName: "Aeotec Recessed Door Sensor 7" //US
+		fingerprint mfr: "0371", prod: "0002", model: "00BB", deviceJoinName: "Aeotec Recessed Door Sensor 7" //EU
 	}
 
 	// simulator metadata
