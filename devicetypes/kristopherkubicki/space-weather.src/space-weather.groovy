@@ -97,4 +97,3 @@ def refresh() {
 def configure() {
 	poll()
 }
-
