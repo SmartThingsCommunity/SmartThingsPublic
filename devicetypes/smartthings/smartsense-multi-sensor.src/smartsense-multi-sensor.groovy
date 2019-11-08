@@ -71,7 +71,7 @@ metadata {
 		}
 		section {
 			input title: "Motion Sensitivity", description: "This feature allows you to adjust the sensitivity of the sensor to touch, vibration or movement", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input "motionSensitivity", "enum", title: "Sensitivity", description: "Adjust motion sensitivity", options: ["1":"Lowest", "30":"Low", "60":"Medium", "100":"High", "130":"Highest"], defaultValue: "100", displayDuringSetup: false
+			input "motionSensitivity", "enum", title: "Sensitivity", description: "Adjust motion sensitivity", options: ["Lowest", "Low", "Medium", "High", "Highest"], defaultValue: "High", displayDuringSetup: false
 		}
 		section {
 			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", description: "Tap to set", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
@@ -419,13 +419,10 @@ def configure() {
 		*/
 		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x01, [mfgCode: manufacturerCode])
 		// passed as little-endian as a bug-workaround
-		int sensitivity = (0x0276 * 100 / ((motionSensitivity as Integer) ?: 100)) as int // Motion sensitivity is inverse
-		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, DataType.pack(sensitivity, DataType.UINT16, true), [mfgCode: manufacturerCode])
+		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, DataType.pack(smartthingsSensitivityMap[motionSensitivity ?: "High"], DataType.UINT16, true), [mfgCode: manufacturerCode])
 	} else if (device.getDataValue("manufacturer") == "Samjin") { // Current version
 		log.debug "Refreshing Values for manufacturer: Samjin "
-		def y = (180 / -99 * (((motionSensitivity as Integer) ?: 100) - 100) as int) // Motion sensitivity is inverse
-		int sensitivity = 20 + (y > 0 ? y : y/10) // Default is 20 at sensitivity 100 (range from 14 to 200 for sensitivity 130 to 1)
-		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, sensitivity, [mfgCode: manufacturerCode])
+		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, samjinSensitivityMap[motionSensitivity ?: "High"], [mfgCode: manufacturerCode])
 	} else {
 		// Write a motion threshold of 2 * .063g = .126g
 		// Currently due to a Centralite firmware issue, this will cause a read attribute response that
@@ -522,4 +519,26 @@ private shouldUseOldBatteryReporting() {
 
 private hexToInt(value) {
 	new BigInteger(value, 16)
+}
+
+// Motion sensitivity is inverse
+private getSmartthingsSensitivityMap() {
+    [
+        "Lowest": 63000,
+        "Low": 2100,
+        "Medium": 1050,
+        "High": 630,
+        "Highest": 484,
+    ]
+}
+
+// Default is 20 at sensitivity 100 (range from 14 to 200 for sensitivity 130 to 1)
+private getSamjinSensitivityMap() {
+    [
+        "Lowest": 200,
+        "Low": 147,
+        "Medium": 92,
+        "High": 20,
+        "Highest": 14,
+    ]
 }
