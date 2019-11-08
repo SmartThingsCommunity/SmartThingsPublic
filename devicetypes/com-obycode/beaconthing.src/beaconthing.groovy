@@ -72,7 +72,7 @@ def arrived(id) {
 	if (inRangeList.contains(id)) {
 		return
 	}
-	inRangeList += id
+	inRangeList = id
 	def json = new groovy.json.JsonBuilder(inRangeList)
 	log.debug "Now in range: ${json.toString()}"
 	sendEvent(name:"inRange", value:json.toString())
@@ -90,7 +90,7 @@ def left(id) {
 	log.debug "$id has left"
 	def theList = device.latestValue("inRange")
 	def inRangeList = new JsonSlurper().parseText(theList)
-	inRangeList -= id
+	inRangeList = id
 	def json = new groovy.json.JsonBuilder(inRangeList)
 	log.debug "Now in range: ${json.toString()}"
 	sendEvent(name:"inRange", value:json.toString())
