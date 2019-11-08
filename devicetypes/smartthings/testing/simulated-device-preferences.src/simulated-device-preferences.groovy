@@ -47,10 +47,15 @@ metadata {
 			input("enumInput3", "enum",
 					title: "Enum Title 3 (no options)", description: "Enum Description 3 (no options)",
 					required: false)
-			input("boolInput", "boolean",
+			input("booleanInput", "boolean",
 					title: "Boolean Title",
 					description: "Boolean Description",
 					defaultValue: "true",
+					required: false)
+			input("boolInput", "bool",
+					title: "Bool Title",
+					description: "Bool Description",
+					defaultValue: false,
 					required: false)
 		}
 		section {
@@ -123,6 +128,7 @@ def parse(description) {
 
 def updated() {
 	Map newPreferences = [
+		booleanInput: booleanInput,
 		boolInput: boolInput,
 		decInput: decInput,
 		enumInput: enumInput,
