@@ -2,6 +2,5 @@
 .DS_Store
 # Ignore README.md in all subdirectories
 .md
-
 # Ignore /.st-ignore files
 .st-ignore
