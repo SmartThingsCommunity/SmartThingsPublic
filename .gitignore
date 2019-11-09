@@ -1,4 +1,2 @@
-*.css
-*.js
-.css
-.js
+.md
+.st-ignore
