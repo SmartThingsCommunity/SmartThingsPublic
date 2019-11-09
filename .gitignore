@@ -1,2 +1,2 @@
-.md
-.st-ignore
+*.md
+/.st-ignore
