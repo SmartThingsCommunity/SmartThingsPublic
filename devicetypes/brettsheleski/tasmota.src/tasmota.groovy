@@ -134,11 +134,9 @@ def spawnChildDevices(){
         log.debug "GPIO: ${state.gpio}"
         log.debug "Module: ${state.module}"
         
-        def moduleId = state.module.split()[0].toInteger();
-        
+        def moduleId = state.module.keySet()[0].toInteger();
+	    
         def devices = getModuleDevices(moduleId) << getGpioDevices(state.gpio);
-
-        
 
         def existingDevices = getChildDevices();
         def deviceConfig = null;
@@ -308,10 +306,7 @@ def getGpioDevices(gpios){
             continue;
         }
 
-		startIndex = e.value.indexOf('(', 0) + 1;
-		endIndex = e.value.indexOf(')', startIndex);
-
-        switch(e.value.substring(startIndex, endIndex).toLowerCase()){
+	switch(e.value.values()[0].toLowerCase()){
 
 			case "relay1":
 			case "relay1i":
