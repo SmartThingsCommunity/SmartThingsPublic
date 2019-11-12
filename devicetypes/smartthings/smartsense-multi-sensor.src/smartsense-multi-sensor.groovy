@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016 SmartThings
+ *  Copyright 2016 SmartThings, Contribution by RBoy Apps
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -66,6 +66,10 @@ metadata {
 		}
 		section {
 			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		}
+		section {
+			input title: "Motion Sensitivity", description: "This feature allows you to adjust the sensitivity of the sensor to touch, vibration or movement", displayDuringSetup: false, type: "paragraph", element: "paragraph"
+			input "motionSensitivity", "enum", title: "Sensitivity", description: "Adjust motion sensitivity", options: ["Lowest", "Low", "Medium", "High", "Highest"], defaultValue: "High", displayDuringSetup: false
 		}
 		section {
 			input("garageSensor", "enum", title: "Do you want to use this sensor on a garage door?", description: "Tap to set", options: ["Yes", "No"], defaultValue: "No", required: false, displayDuringSetup: false)
@@ -416,10 +420,10 @@ def configure() {
 		*/
 		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x01, [mfgCode: manufacturerCode])
 		// passed as little-endian as a bug-workaround
-		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, "7602", [mfgCode: manufacturerCode])
-	} else if (device.getDataValue("manufacturer") == "Samjin") {
+		configCmds += zigbee.writeAttribute(0xFC02, 0x0002, 0x21, DataType.pack(smartthingsSensitivityMap[motionSensitivity ?: "High"], DataType.UINT16, true), [mfgCode: manufacturerCode])
+	} else if (device.getDataValue("manufacturer") == "Samjin") { // Current version
 		log.debug "Refreshing Values for manufacturer: Samjin "
-		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, 0x14, [mfgCode: manufacturerCode])
+		configCmds += zigbee.writeAttribute(0xFC02, 0x0000, 0x20, samjinSensitivityMap[motionSensitivity ?: "High"], [mfgCode: manufacturerCode])
 	} else {
 		// Write a motion threshold of 2 * .063g = .126g
 		// Currently due to a Centralite firmware issue, this will cause a read attribute response that
@@ -452,8 +456,9 @@ def configure() {
 
 def updated() {
 	log.debug "updated called"
-	log.info "garage value : $garageSensor"
-	if (garageSensor == "Yes") {
+	log.info "garage value : $garageSensor, motion sensitivity : $motionSensitivity"    
+    	def configCmds = []
+    	if (garageSensor == "Yes") {
 		def descriptionText = "Updating device to garage sensor"
 		if (device.latestValue("status") == "open") {
 			sendEvent(name: 'status', value: 'garage-open', descriptionText: descriptionText, translatable: true)
@@ -468,6 +473,11 @@ def updated() {
 			sendEvent(name: 'status', value: 'closed', descriptionText: descriptionText, translatable: true)
 		}
 	}
+    
+	// Update configuration
+	configCmds += configure()
+
+	return response(configCmds)
 }
 
 private hexToSignedInt(hexVal) {
@@ -510,4 +520,26 @@ private shouldUseOldBatteryReporting() {
 
 private hexToInt(value) {
 	new BigInteger(value, 16)
+}
+
+// Motion sensitivity is inverse
+private getSmartthingsSensitivityMap() {
+    [
+        "Lowest": 63000,
+        "Low": 2100,
+        "Medium": 1050,
+        "High": 630,
+        "Highest": 484,
+    ]
+}
+
+// Default is 20 at sensitivity 100 (range from 14 to 200 for sensitivity 130 to 1)
+private getSamjinSensitivityMap() {
+    [
+        "Lowest": 200,
+        "Low": 147,
+        "Medium": 92,
+        "High": 20,
+        "Highest": 14,
+    ]
 }
