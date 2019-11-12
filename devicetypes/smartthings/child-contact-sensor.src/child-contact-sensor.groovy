@@ -15,7 +15,6 @@ metadata {
 	definition(name: "Child Contact Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-contact", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Contact Sensor"
 		capability "Sensor"
-		capability "Battery"
 		capability "Health Check"
 	}
 
@@ -26,12 +25,9 @@ metadata {
 				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
 			}
 		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "battery", label: 'Battery: ${currentValue}%', unit: ""
-		}
 
 		main "contact"
-		details(["contact", "battery"])
+		details(["contact"])
 	}
 }
 
