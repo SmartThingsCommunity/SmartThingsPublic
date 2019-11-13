@@ -1,7 +1,7 @@
 import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "AXIS Gear ST", namespace: "axis", author: "AXIS Labs", ocfDeviceType: "oic.d.blind", vid: "generic-shade-2") {  
+	definition (name: "AXIS Gear ST", namespace: "axis", author: "AXIS Labs", ocfDeviceType: "oic.d.blind", vid: "generic-shade-3") {  
 		capability "Window Shade"
 		capability "Window Shade Preset"
 		capability "Switch Level"
@@ -34,6 +34,7 @@ metadata {
 		//Updated 2018-11-01 - added in configure reporting for refresh button, close when press on partial shade icon, update handler to parse between 0-254 as a percentage
 		//Updated 2019-06-03 - modified to use Window Covering Cluster Commands and versioning tile and backwards compatibility (firmware and app), fingerprinting enabled
 		//Updated 2019-08-09 - minor changes and improvements, onoff state reporting fixed
+		//Updated 2019-11-11 - minor changes
 	}
 	
 	tiles(scale: 2) {
@@ -83,7 +84,7 @@ metadata {
 			state "default", label: "Preset", action:"presetPosition", icon:"st.Home.home2"
 		}
 		preferences {
-			input "preset", "number", title: "Preset percentage (1-100) [Default - 50%]", defaultValue: 50, required: false, displayDuringSetup: true, range:"(1..100)"
+			input "preset", "number", title: "Preset percentage (1-100) [Default - 50%]", defaultValue: 50, required: false, displayDuringSetup: true, range:"1..100"
 		}
 		
 		main(["main"])
