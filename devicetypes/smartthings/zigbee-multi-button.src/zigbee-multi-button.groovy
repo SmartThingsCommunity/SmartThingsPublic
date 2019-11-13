@@ -20,16 +20,21 @@ import physicalgraph.zigbee.zcl.DataType
 metadata {
 	definition (name: "Zigbee Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
 		capability "Actuator"
-		capability "Battery"
+		//capability "Battery"
 		capability "Button"
-		capability "Holdable Button"
+		//capability "Holdable Button"
 		capability "Configuration"
 		capability "Refresh"
-		capability "Sensor"
-		capability "Health Check"
+		//capability "Sensor"
+		//capability "Health Check"
 
 		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
 		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
+         //AduroSmart
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria scene button switch V2.1"
+        fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria scene button switch V2.0"
+        fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "Adurolight_NCC", deviceJoinName: "Eria dimming button switch V2.1"
+        fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "Adurolight_NCC", deviceJoinName: "Eria dimming button switch V2.0"
 	}
 
 	tiles {
@@ -56,6 +61,12 @@ def parse(String description) {
 	if (result.name == "switch") {
 		result = createEvent(descriptionText: "Wake up event came in", isStateChange: true)
 	}
+    if ((device.getDataValue("model") == "Adurolight_NCC") || (device.getDataValue("model") == "ADUROLIGHT_CSC")) {
+        //log.debug "descMap is ${descMap}"
+        def descMap = zigbee.parseDescriptionAsMap(description)
+        log.debug "descMap is ${descMap}"
+        result = parseAduroSmartButtonMessage(descMap)
+    }
 	log.debug "Description ${description} parsed to ${result}"
 	return result
 }
@@ -63,6 +74,7 @@ def parse(String description) {
 def parseAttrMessage(description) {
 	def descMap = zigbee.parseDescriptionAsMap(description)
 	def map = [:]
+    
 	if (descMap?.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.commandInt != 0x07 && descMap?.value) {
 		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 	} else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER && descMap.isClusterSpecific) {
@@ -173,6 +185,7 @@ private addChildButtons(numberOfButtons) {
 	for(def endpoint : 1..numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
+            log.debug "device.displayName is "+device.displayName
 			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
 			def child = addChildDevice("Child Button", childDni, device.getHub().getId(), [
 					completedSetup: true,
@@ -181,6 +194,7 @@ private addChildButtons(numberOfButtons) {
 					componentName : "button$endpoint",
 					componentLabel: "Button $endpoint"
 			])
+            log.debug child
 			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
@@ -204,16 +218,33 @@ private getButtonMap() {[
 				"03" : 1,
 				"04" : 2
 		]
+        ,"ADUROLIGHT_CSC" : [
+                "01" : 1,
+                "02" : 2,
+                "03" : 3,
+                "04" : 4
+        ],
+        "Adurolight_NCC" : [
+                "01" : 1,
+                "02" : 2,
+                "03" : 3,
+                "04" : 4
+        ]
 ]}
 
 private getSupportedButtonValues() {
 	def values = ["pushed", "held"]
+    if ((device.getDataValue("model") == "Adurolight_NCC") || (device.getDataValue("model") == "ADUROLIGHT_CSC")) {
+    	values = ["pushed"]
+    }
 	return values
 }
 
 private getModelNumberOfButtons() {[
 		"3450-L" : 4,
 		"3450-L2" : 4
+        , "ADUROLIGHT_CSC" : 4,
+        "Adurolight_NCC" : 4
 ]}
 
 private getModelBindings(model) {
@@ -222,4 +253,78 @@ private getModelBindings(model) {
 		bindings += zigbee.addBinding(zigbee.ONOFF_CLUSTER, ["destEndpoint" : endpoint])
 	}
 	bindings
+}
+
+private Map parseAduroSmartButtonMessage(Map descMap){
+    def buttonState = ""
+    def buttonNumber = 0
+    if (descMap.clusterInt == 0x0006) {
+        log.debug "descMap 0x0006 is $descMap"
+        buttonState = "pushed"
+        if (descMap.command == "01") {
+            buttonNumber = 1
+        }
+        else if (descMap.command == "00") {
+            buttonNumber = 4
+        }
+        if (buttonNumber !=0) {
+            def childevent = createEvent(name: "button", value: "pushed", isStateChange: true)
+			sendEventToChild(buttonNumber, childevent)
+            def descriptionText = "$device.displayName button $buttonNumber was $buttonState"
+            return createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
+        }
+        else {
+            return [:]
+        }
+    }
+    else if (descMap.clusterInt == 0x0008) {
+        if (descMap.command == "02") {
+            buttonState = "pushed"
+            def data = descMap.data
+            log.debug "descMap 0x0008 is $descMap"
+            def d0 = data[0]
+            //log.debug "d0 is $d0"
+            if (d0 == "00") {
+                buttonNumber = 2
+            }
+            if (d0 == "01") {
+                buttonNumber = 3
+            }
+            //state.buttonNumber = buttonNumber
+            //getButtonResult("press", buttonNumber)
+            state.buttonNumber = buttonNumber
+            state.pressTime = now()
+            def childevent = createEvent(name: "button", value: "pushed", isStateChange: true)
+			sendEventToChild(buttonNumber, childevent)
+            return createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
+        }
+    }else if (descMap.clusterInt == 0xFCCC) {
+        buttonState = "pushed"
+        log.debug "descMap 0xFCCC is $descMap"
+        //log.debug "buttonState is $buttonState"
+        //log.debug "descMap.data is $descMap.data"
+        def list2 = descMap.data
+        //log.debug "list2 is $list2"
+        def keynumber = list2[1]
+        //log.debug "keynumber is $keynumber"
+        if (keynumber == "00") {
+            buttonNumber = 1
+        }
+        if (keynumber == "01") {
+            buttonNumber = 2
+        }
+        if (keynumber == "02") {
+            buttonNumber = 3
+        }
+        if (keynumber == "03") {
+            buttonNumber = 4
+        }
+        def descriptionText = "$device.displayName button $buttonNumber was $buttonState"
+        //log.debug "descriptionText is $descriptionText"
+        state.buttonNumber = buttonNumber
+        state.pressTime = now()
+        def childevent = createEvent(name: "button", value: "pushed", isStateChange: true)
+		sendEventToChild(buttonNumber, childevent)
+        return createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
+    }
 }
