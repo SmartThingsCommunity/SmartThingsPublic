@@ -186,7 +186,10 @@ private addChildButtons(numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
             log.debug "device.displayName is "+device.displayName
-			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
+			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + " ${endpoint}"
+            if ((device.getDataValue("model") == "Adurolight_NCC") || (device.getDataValue("model") == "ADUROLIGHT_CSC")) {
+        		componentLabel = device.displayName + " child button ${endpoint}"
+    		}
 			def child = addChildDevice("Child Button", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : componentLabel,
@@ -268,7 +271,7 @@ private Map parseAduroSmartButtonMessage(Map descMap){
             buttonNumber = 4
         }
         if (buttonNumber !=0) {
-            def childevent = createEvent(name: "button", value: "pushed", isStateChange: true)
+            def childevent = createEvent(name: "button", value: "pushed",data: [buttonNumber: 1], isStateChange: true)
 			sendEventToChild(buttonNumber, childevent)
             def descriptionText = "$device.displayName button $buttonNumber was $buttonState"
             return createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
@@ -294,7 +297,7 @@ private Map parseAduroSmartButtonMessage(Map descMap){
             //getButtonResult("press", buttonNumber)
             state.buttonNumber = buttonNumber
             state.pressTime = now()
-            def childevent = createEvent(name: "button", value: "pushed", isStateChange: true)
+            def childevent = createEvent(name: "button", value: "pushed",data: [buttonNumber: 1], isStateChange: true)
 			sendEventToChild(buttonNumber, childevent)
             return createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
         }
@@ -323,7 +326,7 @@ private Map parseAduroSmartButtonMessage(Map descMap){
         //log.debug "descriptionText is $descriptionText"
         state.buttonNumber = buttonNumber
         state.pressTime = now()
-        def childevent = createEvent(name: "button", value: "pushed", isStateChange: true)
+        def childevent = createEvent(name: "button", value: "pushed",data: [buttonNumber: 1], isStateChange: true)
 		sendEventToChild(buttonNumber, childevent)
         return createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
     }
