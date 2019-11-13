@@ -32,36 +32,7 @@ metadata {
 
 
 		// Generic
-		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0006, 0008, 0300", deviceJoinName: "Generic Color Temperature Light"
-
-		// ABL
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Samsung Electronics", model: "ABL-LIGHT-Z-001", deviceJoinName: "Ultra Thin Wafer", mnmn: "Samsung Electronics", vid: "ABL-LIGHT-Z-001"
-
-		// AduroSmart
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010C", manufacturer: "AduroSmart Eria", model: "AD-ColorTemperature3001", deviceJoinName: "Eria ZigBee Color Temperature Bulb"
-
-		// Aurora/AOne
-		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300, FFFF, FFFF, 1000", outClusters: "0019", manufacturer: "Aurora", model: "TWBulb51AU", deviceJoinName: "Aurora Smart Tuneable White", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Aurora", model: "TWMPROZXBulb50AU", deviceJoinName: "Aurora MPro Smart Tuneable LED", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Aurora", model: "TWStrip50AU", deviceJoinName: "Aurora Tunable Strip Controller", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2500K-6000K"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "0019, 000A", manufacturer: "Aurora", model: "TWGU10Bulb50AU", deviceJoinName: "Aurora GU10 Tuneable Smart Lamp", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FFFF", outClusters: "0019", manufacturer: "Aurora", model: "TWBulb51AU", deviceJoinName: "AOne Smart Tuneable GLS Lamp", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FFFF", outClusters: "0019", manufacturer: "Aurora", model: "TWCLBulb50AU", deviceJoinName: "AOne Smart Tuneable Candle Lamp", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
-
-		// Commercial Electric
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Electric Can Tunable White"
-
-		// Ecosmart
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "The Home Depot", model: "Ecosmart-ZBT-BR30-CCT-Bulb", deviceJoinName: "Ecosmart Bulb"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "The Home Depot", model: "Ecosmart-ZBT-A19-CCT-Bulb", deviceJoinName: "Ecosmart Bulb"
-
-		// INGENIUM
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Megaman", model: "Z3-ColorTemperature", deviceJoinName: "INGENIUM ZB Color Temperature Light"
-
-		// Innr
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "RB 248 T", deviceJoinName: "Innr Smart Candle Comfort", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "RB 278 T", deviceJoinName: "Innr Smart Bulb Comfort", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "RS 228 T", deviceJoinName: "Innr Smart Spot Comfort", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
+		fingerprint profileId: "0104", deviceId: "010C", inClusters: "0006, 0008, 0300"// deviceId 010C = "White color temperature light"
 
 		// OSRAM/SYLVANIA (LEDVANCE)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY BR Tunable White", deviceJoinName: "SYLVANIA Smart BR30 Tunable White"
@@ -78,13 +49,30 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Under Cabinet TW", deviceJoinName: "SYLVANIA Smart Under Cabinet TW"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01", outClusters: "0019", manufacturer: "LEDVANCE", model: "BR30 TW", deviceJoinName: "SYLVANIA Smart+ Adustable White BR30"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, FC01", outClusters: "0019", manufacturer: "LEDVANCE", model: "RT TW", deviceJoinName: "SYLVANIA Smart+ Adustable White RT5/6"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Edge-lit flushmount", deviceJoinName: "SYLVANIA SMART+ Flush Mount"
+
+		// Aurora/AOne
+		fingerprint profileId: "0104", inClusters: "0000, 0004, 0003, 0006, 0008, 0005, 0300, FFFF, FFFF, 1000", outClusters: "0019", manufacturer: "Aurora", model: "TWBulb51AU", deviceJoinName: "Aurora Smart Tuneable White", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Aurora", model: "TWMPROZXBulb50AU", deviceJoinName: "Aurora MPro Smart Tuneable LED", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Aurora", model: "TWStrip50AU", deviceJoinName: "Aurora Tunable Strip Controller", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2500K-6000K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "0019, 000A", manufacturer: "Aurora", model: "TWGU10Bulb50AU", deviceJoinName: "Aurora GU10 Tuneable Smart Lamp", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FFFF", outClusters: "0019", manufacturer: "Aurora", model: "TWBulb51AU", deviceJoinName: "AOne Smart Tuneable GLS Lamp", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FFFF", outClusters: "0019", manufacturer: "Aurora", model: "TWCLBulb50AU", deviceJoinName: "AOne Smart Tuneable Candle Lamp", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
 
 		// Leedarson
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "Smarthome", model: "S111-202A", deviceJoinName: "Leedarson Tunable White Bulb A19"
+		
+		//Ecosmart
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "The Home Depot", model: "Ecosmart-ZBT-BR30-CCT-Bulb", deviceJoinName: "Ecosmart Bulb"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "The Home Depot", model: "Ecosmart-ZBT-A19-CCT-Bulb", deviceJoinName: "Ecosmart Bulb"
 
-		// Muller Licht Tint
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ColorTemperature", deviceJoinName: "Müller Licht Tint White Bulb"
+		// Third Reality
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSL011Z", deviceJoinName: "RealityLight"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSL012Z", deviceJoinName: "RealityLight"
+
+		// Innr
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "RB 248 T", deviceJoinName: "Innr Smart Candle Comfort", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "RB 278 T", deviceJoinName: "Innr Smart Bulb Comfort", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "innr", model: "RS 228 T", deviceJoinName: "Innr Smart Spot Comfort", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
 
 		// Sengled
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "Z01-A19NAE26", deviceJoinName: "Sengled Element Plus"
@@ -92,9 +80,17 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "Z01-A60EAB22", deviceJoinName: "Sengled Element Plus"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0702, 0B05", outClusters: "0019", manufacturer: "sengled", model: "Z01-A60EAE27", deviceJoinName: "Sengled Element Plus"
 
-		// Third Reality
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSL011Z", deviceJoinName: "RealityLight"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "Third Reality, Inc", model: "3RSL012Z", deviceJoinName: "RealityLight"
+		// Commercial Electric
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Electric Can Tunable White"
+
+		// Muller Licht Tint
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ColorTemperature", deviceJoinName: "Müller Licht Tint White Bulb"
+		
+		// Megaman
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "Megaman", model: "Z3-ColorTemperature", deviceJoinName: "INGENIUM ZB Color Temperature Light"
+		
+        //AduroSmart
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", deviceId: "010C", manufacturer: "AduroSmart Eria", model: "AD-ColorTemperature3001", deviceJoinName: "ERIA Tunable White Light Bulb V3.0"
 	}
 
 	// UI tile definitions
