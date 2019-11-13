@@ -17,7 +17,7 @@ import groovy.json.JsonOutput
  */
 
 metadata {
-	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
+	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Button"
 		capability "Battery"
 		capability "Sensor"
