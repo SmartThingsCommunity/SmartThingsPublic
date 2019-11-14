@@ -26,9 +26,9 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "MS01", deviceJoinName: "eWeLink Motion Sensor"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer:"ORVIBO", model:"895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor"
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer:"Megaman", model:"PS601/z1", deviceJoinName: "INGENIUM ZB PIR Sensor"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001, 0009", outClusters: "0019", manufacturer:"Heiman", model:"PIR_TPV16", deviceJoinName: "HEIMAN Motion Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "895a2d80097f4ae2b2d40500d5e03dcc", deviceJoinName: "Orvibo Motion Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "Megaman", model: "PS601/z1", deviceJoinName: "INGENIUM ZB PIR Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000, 0003, 0500, 0001, 0009", outClusters: "0019", manufacturer: "Heiman", model: "PIR_TPV16", deviceJoinName: "HEIMAN Motion Sensor"
 	}
 	simulator {
 		status "active": "zone status 0x0001 -- extended status 0x00"
