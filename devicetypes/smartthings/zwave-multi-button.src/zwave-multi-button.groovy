@@ -124,6 +124,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
+	// Below handler was tested with Aoetec KeyFob and probably will work only with it
 	def value = cmd.sceneId % 2 ? "pushed" : "held"
 	def childId = (int)(cmd.sceneId / 2) + (cmd.sceneId % 2)
 	def description = "Button no. ${childId} was ${value}"
