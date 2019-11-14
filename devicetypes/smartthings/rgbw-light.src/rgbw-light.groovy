@@ -191,11 +191,11 @@ def buildOffOnEvent(cmd){
 }
 
 def on() {
-	commands(buildOffOnEvent(0xFF), 3500)
+	commands(buildOffOnEvent(0xFF), 2400)
 }
 
 def off() {
-	commands(buildOffOnEvent(0x00), 3500)
+	commands(buildOffOnEvent(0x00), 2400)
 }
 
 def refresh() {
