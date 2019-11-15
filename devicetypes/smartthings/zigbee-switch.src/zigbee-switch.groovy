@@ -36,6 +36,9 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", manufacturer: "REXENSE", model: "RH5006", deviceJoinName: "GDKES Smart Outlet (GDKES-016)", ocfDeviceType: "oic.d.smartplug"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", manufacturer: "REXENSE", model: "RH5005", deviceJoinName: "GDKES Smart Outlet (GDKES-015)", ocfDeviceType: "oic.d.smartplug"
 
+		// HEIMAN
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW1L-EFR-3.0", deviceJoinName: "HEIMAN Smart Switch"
+		
 		// HONYAR
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0095", deviceJoinName: "HONYAR Smart Switch"
 
@@ -44,7 +47,6 @@ metadata {
 
 		// INGENIUM
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, FFFF", outClusters: "0019", manufacturer: "MEGAMAN", model: "BSZTM005", deviceJoinName: "INGENIUM ZB Mains Switching Module"
-		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW1L-EFR-3.0", deviceJoinName: "HEIMAN Smart Switch"
 
 		// Innr
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "innr", model: "SP 222", deviceJoinName: "Innr Smart Plug", ocfDeviceType: "oic.d.smartplug"
