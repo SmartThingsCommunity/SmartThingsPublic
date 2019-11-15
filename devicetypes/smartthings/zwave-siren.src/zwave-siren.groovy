@@ -245,9 +245,6 @@ def off() {
 	if (isYale()) {
 		cmds << secure(zwave.switchBinaryV1.switchBinaryGet())
 	}
-	if (isEverspring()) {
-		sendEvent(name: "tamper", value: "clear")
-	}
 	return cmds
 }
 
@@ -405,6 +402,9 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		result << createEvent([name: "alarm", value: isActive ? "both" : "off", displayed: true])
 	} else if (cmd.notificationType == 0x07) { //Tamper Alert
 		switch (cmd.event) {
+			case 0x00: //Tamper switch is pressed more than 3 sec
+				result << createEvent([name: "tamper", value: "clear"])
+				break
 			case 0x03: //Tamper switch is pressed more than 3 sec and released
 				result << createEvent([name: "tamper", value: "detected"])
 				result << createEvent([name: "alarm", value: "both"])
