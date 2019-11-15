@@ -25,6 +25,7 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Switch"
+		capability "Tamper Alert"
 		capability "Health Check"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
@@ -37,7 +38,7 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "1088", deviceJoinName: "NEO Coolcam Siren Alarm"
 		//zw:Fs type:1005 mfr:0129 prod:6F01 model:0001 ver:1.04 zwv:4.33 lib:03 cc:5E,80,5A,72,73,86,70,98 sec:59,2B,71,85,25,7A role:07 ff:8F00 ui:8F00
 		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale External Siren"
-		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Outdoor Solar Siren"
+		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Outdoor Solar Siren", vid: "generic-siren-12"
 	}
 
 	simulator {
@@ -66,6 +67,10 @@ metadata {
 		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
 			state "configure", label: '', action: "configuration.configure", icon: "st.secondary.configure"
 		}
+		valueTile("tamper", "device.tamper", height: 2, width: 2, decoration: "flat") {
+			state "clear", label: 'tamper clear', backgroundColor: "#ffffff"
+			state "detected", label: 'tampered', backgroundColor: "#ffffff"
+		}
 
 		// Yale siren only
 		preferences {
@@ -80,7 +85,7 @@ metadata {
 		}
 
 		main "alarm"
-		details(["alarm", "off", "refresh", "battery", "configure"])
+		details(["alarm", "off", "refresh", "tamper" ,"battery", "configure"])
 	}
 }
 
@@ -101,6 +106,7 @@ def updated() {
 	state.configured = false
 	state.initializeAttempts = 0
 	// Device-Watch simply pings if no device events received for 122min(checkInterval)
+	sendEvent(name: "tamper", value: "clear")
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, isStateChanged: true, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	log.debug "updated(): Schedule in ${INIT_VERIFY_CHECK_PERIODIC_SECS} secs to verify initilization"
 	runIn(INIT_VERIFY_CHECK_PERIODIC_SECS, "initializeCallback", [overwrite: true, forceForLocallyExecuting: true])
@@ -422,6 +428,16 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		}
 		result << createEvent([name: "switch", value: isActive ? "on" : "off", displayed: true])
 		result << createEvent([name: "alarm", value: isActive ? "both" : "off", displayed: true])
+	} else if (cmd.notificationType == 0x07) { //Tamper Alert
+		switch (cmd.event) {
+			case 0x00: //Tamper switch is pressed more than 3 sec
+				result << createEvent([name: "tamper", value: "clear"])
+				break
+			case 0x03: //Tamper switch is pressed more than 3 sec and released
+				result << createEvent([name: "tamper", value: "detected"])
+				result << createEvent([name: "alarm", value: "both"])
+			break
+		}
 	}
 	result
 }
@@ -453,4 +469,8 @@ def isZipato() {
 
 def isUtilitech() {
 	(zwaveInfo?.mfr == "0060" && zwaveInfo?.prod == "000C" && zwaveInfo?.model == "0001")
+}
+
+def isEverspring() {
+	(zwaveInfo?.mfr == "0060" && zwaveInfo?.prod == "000C" && zwaveInfo?.model == "0002")
 }
