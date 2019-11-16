@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -25,12 +26,12 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
+		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402,0405", manufacturer: "eWeLink", model: "TH01", deviceJoinName: "eWeLink Temperature & Humidity Sensor", vid:"SmartThings-smartthings-Xiaomi_Temperature_Humidity_Sensor"
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-S", deviceJoinName: "SmartSense Temp & Humidity Sensor"
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310-G", deviceJoinName: "Centralite Temp & Humidity Sensor"
 		fingerprint profileId: "0104", inClusters: "0001,0003,0020,0402,0B05,FC45", outClusters: "0019,0003", manufacturer: "CentraLite", model: "3310", deviceJoinName: "Temp & Humidity Sensor"
 		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "Heiman", model: "b467083cfc864f5e826459e5d8ea6079", deviceJoinName: "Orvibo Temperature & Humidity Sensor"
 		fingerprint profileId: "0104", deviceId: "0302", inClusters: "0000,0001,0003,0402", manufacturer: "HEIMAN", model: "888a434f3cfc47f29ec4a3a03e9fc442", deviceJoinName: "Orvibo Temperature & Humidity Sensor"
-		fingerprint profileId: "0104",  inClusters: "0000, 0001, 0003, 0009, 0402", manufacturer: "HEIMAN", model: "HT-EM", deviceJoinName: "HEIMAN Temperature & Humidity Sensor"
 	}
 
 	simulator {
@@ -84,11 +85,17 @@ def parse(String description) {
 	if (!map) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
 		if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
-			map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+			if(descMap?.attrInt==0x0021){
+					map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
+				} else {
+					map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+				}
 		} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 			if (descMap.data[0] == "00") {
 				log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
-				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+                if (device.getDataValue("model") != "TH01"){
+					sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+				}
 			} else {
 				log.warn "TEMP REPORTING CONFIG FAILED- error code: ${descMap.data[0]}"
 			}
@@ -107,6 +114,20 @@ def parse(String description) {
 
 	log.debug "Parse returned $map"
 	return map ? createEvent(map) : [:]
+}
+
+def getBatteryPercentageResult(rawValue) {
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
+	def result = [:]
+
+	if (0 <= rawValue && rawValue <= 200) {
+		result.name = 'battery'
+		result.translatable = true
+		result.value = Math.round(rawValue / 2)
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
+	}
+
+	return result
 }
 
 private Map getBatteryResult(rawValue) {
@@ -136,7 +157,12 @@ private Map getBatteryResult(rawValue) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping() {
-	return zigbee.readAttribute(0x0001, 0x0020) // Read the Battery Level
+	if (device.getDataValue("manufacturer") == "eWeLink") {
+		return zigbee.readAttribute(0x0001, 0x0021) // Read the Battery Percent
+	} else {
+		return zigbee.readAttribute(0x0001, 0x0020) // Read the Battery Level
+	}
+	
 }
 
 def refresh() {
@@ -148,7 +174,11 @@ def refresh() {
 		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, [destEndpoint: 0x01])+
 		        zigbee.readAttribute(0x0402, 0x0000, [destEndpoint: 0x01])+
 		        zigbee.readAttribute(0x0405, 0x0000, [destEndpoint: 0x02])
-	} else {
+	} else if (manufacturer == "eWeLink"){
+		return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)+
+		        zigbee.readAttribute(0x0402, 0x0000)+
+		        zigbee.readAttribute(0x0405, 0x0000)
+	}else {
 		return zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0x104E]) +   // New firmware
 		        zigbee.readAttribute(0xFC45, 0x0000, ["mfgCode": 0xC2DF]) +   // Original firmware
 		        zigbee.readAttribute(zigbee.TEMPERATURE_MEASUREMENT_CLUSTER, 0x0000) +
@@ -159,7 +189,7 @@ def refresh() {
 def configure() {
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 7500, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	log.debug "Configuring Reporting and Bindings."
 
@@ -171,11 +201,17 @@ def configure() {
 		        zigbee.temperatureConfig(30, 300) +
 		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
 		        zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
-	} else {
+	} else if (manufacturer == "eWeLink") {
+		return refresh() +
+		        zigbee.temperatureConfig(30, 3600, 2) +
+		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 7200, 10) +
+		        zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 7200, 5)
+	}else {
 		return refresh() +
 		        zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0x104E]) +   // New firmware
 		        zigbee.configureReporting(0xFC45, 0x0000, DataType.UINT16, 30, 3600, 100, ["mfgCode": 0xC2DF]) +   // Original firmware
 		        zigbee.batteryConfig() +
 		        zigbee.temperatureConfig(30, 300)
-	}
+             }
+
 }
