@@ -23,19 +23,19 @@ metadata {
 		capability "Refresh"
 		capability "Window Shade"
 		capability "Health Check"
-        
-        attribute("replay", "enum")
-        attribute("battLife", "enum")
+
+		attribute("replay", "enum")
+		attribute("battLife", "enum")
 
 		//command "pause"
-        command "cont"
+		command "cont"
 
 		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0006, FC00, DC00, 0102,", deviceJoinName: "Curtain", manufacturer: "Rooms Beautiful",  model: "C001"
 	}
     
-    preferences {
-        input name: "invert", type: "bool", title: "Invert Direction", description: "Invert Curtain Direction", defaultValue: false, displayDuringSetup: false, required: true
-    }
+	preferences {
+		input name: "invert", type: "bool", title: "Invert Direction", description: "Invert Curtain Direction", defaultValue: false, displayDuringSetup: false, required: true
+	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"windowShade", type: "generic", width: 6, height: 4) {
@@ -46,11 +46,11 @@ metadata {
 				attributeState "closing", label: 'Closing', action: "open", icon: "http://www.ezex.co.kr/img/st/window_close.png", backgroundColor: "#ffffff", nextState: "closing"
 			}
             
-            tileAttribute ("device.battLife", key: "SECONDARY_CONTROL") {
-                attributeState "full", icon: "https://raw.githubusercontent.com/gearsmotion789/ST-Images/master/full.png"
-                attributeState "medium", icon: "https://raw.githubusercontent.com/gearsmotion789/ST-Images/master/medium.png"
-                attributeState "low", icon: "https://raw.githubusercontent.com/gearsmotion789/ST-Images/master/low.png"
-                attributeState "dead", icon: "https://raw.githubusercontent.com/gearsmotion789/ST-Images/master/dead.png"
+		    	tileAttribute ("device.battLife", key: "SECONDARY_CONTROL") {
+				attributeState "full", icon: "https://raw.githubusercontent.com/gearsmotion789/ST-Images/master/full.png"
+				attributeState "medium", icon: "https://raw.githubusercontent.com/gearsmotion789/ST-Images/master/medium.png"
+				attributeState "low", icon: "https://raw.githubusercontent.com/gearsmotion789/ST-Images/master/low.png"
+				attributeState "dead", icon: "https://raw.githubusercontent.com/gearsmotion789/ST-Images/master/dead.png"
             }
 		}
 		standardTile("contPause", "device.replay", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
