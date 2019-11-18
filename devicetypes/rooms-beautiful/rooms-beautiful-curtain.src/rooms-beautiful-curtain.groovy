@@ -27,7 +27,7 @@ metadata {
 		attribute("replay", "enum")
 		attribute("battLife", "enum")
 
-		// command "pause"
+		//command "pause"
 		command "cont"
 
 		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0006, FC00, DC00, 0102,", deviceJoinName: "Curtain", manufacturer: "Rooms Beautiful",  model: "C001"
