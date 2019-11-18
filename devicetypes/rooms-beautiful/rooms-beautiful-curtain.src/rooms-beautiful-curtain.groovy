@@ -68,9 +68,9 @@ metadata {
 
 // Parse incoming device messages to generate events
 def parse(String description) {
-	// FYI = event.name refers to attribute name & not the tile's name
+    // FYI = event.name refers to attribute name & not the tile's name
 
-	def linkText = getLinkText(device)
+    def linkText = getLinkText(device)
     def event = zigbee.getEvent(description)
     def descMap = zigbee.parseDescriptionAsMap(description)
     def value
@@ -148,7 +148,7 @@ def cont() {
 }
 
 private handleBatteryEvent(volts) {
-	def linkText = getLinkText(device)
+    def linkText = getLinkText(device)
     
     //log.warn "Value of adc: ${volts}"
 
@@ -161,14 +161,14 @@ private handleBatteryEvent(volts) {
         def value = batteryMap[volts]
         if(value != null){
             def minVolts = 25
-			def maxVolts = 30
-			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			def roundedPct = Math.round(pct * 100)
-			def percent = Math.min(100, roundedPct)
+	    def maxVolts = 30
+	    def pct = (volts - minVolts) / (maxVolts - minVolts)
+	    def roundedPct = Math.round(pct * 100)
+	    def percent = Math.min(100, roundedPct)
             
-        	sendEvent(name: "battery", value: percent)
-        	sendEvent(name: "battLife", value: value)
-        	log.debug "${linkText} - Batt: ${value} **** Volts: ${volts/10}v **** Percent: ${percent}%"
+            sendEvent(name: "battery", value: percent)
+            sendEvent(name: "battLife", value: value)
+            log.debug "${linkText} - Batt: ${value} **** Volts: ${volts/10}v **** Percent: ${percent}%"
         } 
     }
 }
@@ -186,7 +186,7 @@ def ping() {
     return refresh()
 }
 
-//	Don't do Device-Watch to prevent 20-30 min read attribute
+// Don't do Device-Watch to prevent 20-30 min read attribute
 def configure() {
     return refresh()
 }
@@ -199,7 +199,7 @@ def installed() {
 }
 
 /*def updated() {
-	// Needed because updated() is being called twice
+    // Needed because updated() is being called twice
     def time
     if(state.updatedDate == null){
     	time = now()
