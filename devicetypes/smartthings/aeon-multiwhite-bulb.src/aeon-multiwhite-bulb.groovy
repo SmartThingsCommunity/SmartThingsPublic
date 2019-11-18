@@ -184,7 +184,7 @@ def setLevel(level, duration) {
 	commands([
 		zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: duration),
 		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], (duration && duration < 12) ? (duration * 1000 + 500) : 3500)
+	], (duration && duration < 12) ? (duration * 1000 + 2000) : 3500)
 }
 
 def setColorTemperature(temp) {
