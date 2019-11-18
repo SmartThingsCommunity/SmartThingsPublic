@@ -71,16 +71,16 @@ metadata {
         }
 
         standardTile("weatherIcon", "device.weatherIcon", decoration: "flat", height: 2, width: 2) {
-            state "00", icon:"https://smartthings-twc-icons.s3.amazonaws.com/00.png", label: ""
-            state "01", icon:"https://smartthings-twc-icons.s3.amazonaws.com/01.png", label: ""
-            state "02", icon:"https://smartthings-twc-icons.s3.amazonaws.com/02.png", label: ""
-            state "03", icon:"https://smartthings-twc-icons.s3.amazonaws.com/03.png", label: ""
-            state "04", icon:"https://smartthings-twc-icons.s3.amazonaws.com/04.png", label: ""
-            state "05", icon:"https://smartthings-twc-icons.s3.amazonaws.com/05.png", label: ""
-            state "06", icon:"https://smartthings-twc-icons.s3.amazonaws.com/06.png", label: ""
-            state "07", icon:"https://smartthings-twc-icons.s3.amazonaws.com/07.png", label: ""
-            state "08", icon:"https://smartthings-twc-icons.s3.amazonaws.com/08.png", label: ""
-            state "09", icon:"https://smartthings-twc-icons.s3.amazonaws.com/09.png", label: ""
+            state "0", icon:"https://smartthings-twc-icons.s3.amazonaws.com/00.png", label: ""
+            state "1", icon:"https://smartthings-twc-icons.s3.amazonaws.com/01.png", label: ""
+            state "2", icon:"https://smartthings-twc-icons.s3.amazonaws.com/02.png", label: ""
+            state "3", icon:"https://smartthings-twc-icons.s3.amazonaws.com/03.png", label: ""
+            state "4", icon:"https://smartthings-twc-icons.s3.amazonaws.com/04.png", label: ""
+            state "5", icon:"https://smartthings-twc-icons.s3.amazonaws.com/05.png", label: ""
+            state "6", icon:"https://smartthings-twc-icons.s3.amazonaws.com/06.png", label: ""
+            state "7", icon:"https://smartthings-twc-icons.s3.amazonaws.com/07.png", label: ""
+            state "8", icon:"https://smartthings-twc-icons.s3.amazonaws.com/08.png", label: ""
+            state "9", icon:"https://smartthings-twc-icons.s3.amazonaws.com/09.png", label: ""
             state "10", icon:"https://smartthings-twc-icons.s3.amazonaws.com/10.png", label: ""
             state "11", icon:"https://smartthings-twc-icons.s3.amazonaws.com/11.png", label: ""
             state "12", icon:"https://smartthings-twc-icons.s3.amazonaws.com/12.png", label: ""
@@ -201,6 +201,10 @@ def installed() {
     runEvery30Minutes(poll)
 }
 
+def updated() {
+    poll
+}
+
 def uninstalled() {
     unschedule()
 }
@@ -274,8 +278,8 @@ def pollUsingZipCode(String zipCode) {
             def icon = f.daypart[0].iconCode[0] ?: f.daypart[0].iconCode[1]
             def value = f.daypart[0].precipChance[0] ?: f.daypart[0].precipChance[1]
             def narrative = f.daypart[0].narrative
-            send(name: "percentPrecip", value: value, unit: "%")
-            send(name: "forecastIcon", value: icon, displayed: false)
+            send(name: "percentPrecip", value: value as String, unit: "%")
+            send(name: "forecastIcon", value: icon as String, displayed: false)
             send(name: "forecastToday", value: narrative[0])
             send(name: "forecastTonight", value: narrative[1])
             send(name: "forecastTomorrow", value: narrative[2])
@@ -427,18 +431,16 @@ private estimateLux(obs, sunriseDate, sunsetDate) {
     else {
         //day
         switch(obs.iconCode) {
-            case '04':
+            case 4:
                 lux = 200
                 break
-            case ['05', '06', '07', '08', '09', '10',
-                  '11', '12', '13','14', '15','17','18','19','20',
-                  '21','22','23','24','25','26']:
+            case 5..26:
                 lux = 1000
                 break
-            case ['27', '28']:
+            case 27..28:
                 lux = 2500
                 break
-            case ['29', '30']:
+            case 29..30:
                 lux = 7500
                 break
             default:

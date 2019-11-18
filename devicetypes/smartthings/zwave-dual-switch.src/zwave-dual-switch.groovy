@@ -28,6 +28,7 @@ metadata {
 		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut: "0x82", ui: "0x8700", deviceJoinName: "Aeotec Dual Nano Switch 1"
 		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Light Switch 1"
 		fingerprint mfr: "0258", prod: "0003", model: "108B", deviceJoinName: "NEO coolcam Light Switch 1"
+		fingerprint mfr: "0312", prod: "C000", model: "C004", deviceJoinName: "EVA LOGIK Smart Plug 2CH 1"
 	}
 
 	// tile definitions
@@ -59,8 +60,7 @@ def installed() {
 	try {
 		String dni = "${device.deviceNetworkId}-ep2"
 		addChildDevice("Z-Wave Binary Switch Endpoint", dni, device.hub.id,
-			[completedSetup: true, label: "${componentLabel}",
-			 isComponent: false, componentName: "ch2", componentLabel: "${componentLabel}"])
+			[completedSetup: true, label: "${componentLabel}", isComponent: false])
 		log.debug "Endpoint 2 (Z-Wave Binary Switch Endpoint) added as $componentLabel"
 	} catch (e) {
 		log.warn "Failed to add endpoint 2 ($desc) as Z-Wave Binary Switch Endpoint - $e"
@@ -160,8 +160,9 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	[:]
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	[descriptionText: "$device.displayName: $cmd", isStateChange: true]
+def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint = null) {
+	if (endpoint == null) log.debug("$device.displayName: $cmd")
+	else log.debug("$device.displayName: $cmd endpoint: $endpoint")
 }
 
 def on() {

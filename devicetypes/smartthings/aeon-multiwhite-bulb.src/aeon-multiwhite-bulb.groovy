@@ -30,6 +30,7 @@ metadata {
 
 		fingerprint mfr: "0371", prod: "0103", model: "0001", deviceJoinName: "Aeon LED Bulb 6 Multi-White" //US
 		fingerprint mfr: "0371", prod: "0003", model: "0001", deviceJoinName: "Aeon LED Bulb 6 Multi-White" //EU
+		fingerprint mfr: "0300", prod: "0003", model: "0004", deviceJoinName: "ilumin Tunable White"
 	}
 
 	simulator {
@@ -191,9 +192,14 @@ def setColorTemperature(temp) {
 	def warmValue = temp < 5000 ? 255 : 0
 	def coldValue = temp >= 5000 ? 255 : 0
 	def parameterNumber = temp < 5000 ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
-	def cmds = [zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp]),
-				zwave.switchColorV3.switchColorSet(warmWhite: warmValue, coldWhite: coldValue)]
-	commands(cmds) + "delay 7000" + commands(queryAllColors(), 500)
+	def results = []
+	results << zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp])
+	results << zwave.switchColorV3.switchColorSet(warmWhite: warmValue, coldWhite: coldValue)
+	if (device.currentValue("switch") != "on") {
+		results << zwave.basicV1.basicSet(value: 0xFF)
+		results << zwave.switchMultilevelV3.switchMultilevelGet()
+	}
+	commands(results) + "delay 7000" + commands(queryAllColors(), 500)
 }
 
 private queryAllColors() {

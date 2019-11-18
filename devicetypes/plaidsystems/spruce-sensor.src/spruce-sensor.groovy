@@ -49,9 +49,8 @@ metadata {
 	}
 
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph", title: ""
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-        input "interval", "number", title: "Measurement Interval 1-120 minutes (default: 10 minutes)", description: "Set how often you would like to check soil moisture in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
+        input "interval", "number", title: "Report Interval", description: "How often the device should report in minutes", range: "1..120", defaultValue: 10, displayDuringSetup: false
         input "resetMinMax", "bool", title: "Reset Humidity min and max", required: false, displayDuringSetup: false
       }
 
@@ -133,7 +132,7 @@ def parse(String description) {
  	
     //check in configuration change
     if (!device.latestValue('configuration')) result = poll()
-    if (device.latestValue('configuration').toInteger() != interval && interval != null) {  	
+    if (device.latestValue('configuration') as float != interval && interval != null) {
         result = poll()            
     }
  	log.debug "result: $result"
@@ -317,7 +316,7 @@ def updated(){
     if (!device.latestValue('configuration')) configure()
     else{
     	if (resetMinMax == true) resetHumidity()
-        if (device.latestValue('configuration').toInteger() != interval && interval != null){    	
+        if (device.latestValue('configuration') as float != interval && interval != null){
             sendEvent(name: 'configuration',value: 0, descriptionText: "Settings changed and will update at next report. Measure interval set to ${interval} mins")
     	}
     }

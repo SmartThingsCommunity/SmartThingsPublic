@@ -132,7 +132,7 @@ def initialize() {
 		cmds += zigbee.readAttribute(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE)
 		cmds += zigbee.readAttribute(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS)
 		cmds += zigbee.enrollResponse()
-		cmds += configureReporting(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS, DataType.BITMAP16, 30, 60*5, null)
+		cmds += zigbee.configureReporting(CLUSTER_IAS_ZONE, IAS_ATTR_ZONE_STATUS, DataType.BITMAP16, 30, 60*5, null)
 	} else {
 		cmds += zigbee.configureReporting(CLUSTER_DOORLOCK, DOORLOCK_ATTR_LOCKSTATE,DataType.ENUM8, 0, 3600, null) 
 		cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING,DataType.UINT8, 600, 21600, 0x01)
@@ -160,8 +160,10 @@ def unlock() {
 def parse(String description) {
 	def result = null
 	if (description) {
-		if (description.startsWith('read attr -')) {
+		if (description?.startsWith('read attr -')) {
 			result = parseAttributeResponse(description)
+		} else if (description?.startsWith('zone report')) {
+			result = parseIasMessage(description)
 		} else {
 			result = parseCommandResponse(description)
 		}
@@ -210,6 +212,12 @@ private def parseAttributeResponse(String description) {
 	}
 	result << createEvent(responseMap)
 	return result
+}
+
+private def parseIasMessage(String description) {
+	ZoneStatus zs = zigbee.parseZoneStatus(description)
+	def responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 55]
+	return responseMap
 }
 
 private def parseCommandResponse(String description) {
@@ -261,7 +269,7 @@ private def parseCommandResponse(String description) {
 		//isBatterySet() == false -> battery is ok -> send value 50
 		//isBatterySet() == true -> battery is low -> send value 5
 		//metadata can receive 2 values: 5 or 50 for C2O lock
-		responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 50]
+		responseMap = [ name: "battery", value: zs.isBatterySet() ? 5 : 55]
 	}
 
 	result << createEvent(responseMap)

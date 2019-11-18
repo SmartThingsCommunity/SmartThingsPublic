@@ -17,21 +17,20 @@ import groovy.json.JsonOutput
  */
 
 metadata {
-	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-6-button") {
+	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Button"
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Configuration"
 
-		/*
-		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob" //EU
-		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob" //US
+		// While adding new device to this DTH, remember to update method getProdNumberOfButtons()
+		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button" //EU
+		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button"  //US
 		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //US
 		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //EU
 		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //US
 		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //EU
-		*/
 	}
 
 	tiles(scale: 2) {
@@ -50,8 +49,9 @@ metadata {
 }
 
 def installed() {
-	runIn(2, "initialize", [overwrite: true])
-	sendEvent(name: "button", value: "pushed", isStateChange: true)
+	sendEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
+	sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
+	initialize()
 }
 
 def updated() {
@@ -72,7 +72,7 @@ def initialize() {
 	}
 	if(childDevices) {
 		def event
-		for(def endpoint : 2..prodNumberOfButtons[zwaveInfo.prod]) {
+		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
 			event = createEvent(name: "button", value: "pushed", isStateChange: true)
 			sendEventToChild(endpoint, event)
 		}
@@ -123,16 +123,22 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
+	// Below handler was tested with Aoetec KeyFob and probably will work only with it
+	def value = cmd.sceneId % 2 ? "pushed" : "held"
+	def childId = (int)(cmd.sceneId / 2) + (cmd.sceneId % 2)
+	def description = "Button no. ${childId} was ${value}"
+	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: childId], isStateChange: true)
+	sendEventToChild(childId, event)
+	return createEvent(descriptionText: description)
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
 	def description = "Button no. ${cmd.sceneNumber} was ${value}"
 	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
-	if(cmd.sceneNumber == 1) {
-		return event
-	} else {
-		sendEventToChild(cmd.sceneNumber, event)
-		return createEvent(descriptionText: description)
-	}
+	sendEventToChild(cmd.sceneNumber, event)
+	return createEvent(descriptionText: description)
 }
 
 def sendEventToChild(buttonNumber, event) {
@@ -177,17 +183,18 @@ private secure(cmd) {
 }
 
 private addChildButtons(numberOfButtons) {
-	for(def endpoint : 2..numberOfButtons) {
+	for(def endpoint : 1..numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : (device.displayName + " ")) + "${endpoint}"
-			addChildDevice("Child Button", childDni, device.getHub().getId(), [
+			def child = addChildDevice("Child Button", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : componentLabel,
 					isComponent   : true,
 					componentName : "button$endpoint",
 					componentLabel: "Button $endpoint"
 			])
+			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
 		}
@@ -205,8 +212,16 @@ private getEventsMap() {[
 private getProdNumberOfButtons() {[
 		"1001" : 6,
 		"0102" : 4,
-		"0002" : 4
+		"0002" : 4,
+		"0101" : 4,
+		"0001" : 4
 ]}
+
+private getSupportedButtonValues() {
+	def values = ["pushed", "held"]
+	if (isFibaro()) values << "double"
+	return values
+}
 
 private isFibaro() {
 	zwaveInfo.mfr?.contains("010F")

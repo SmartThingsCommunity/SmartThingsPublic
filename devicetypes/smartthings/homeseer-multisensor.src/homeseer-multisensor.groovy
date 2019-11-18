@@ -69,7 +69,7 @@ metadata {
 	}
 
 	preferences {
-		input "intervalMins", "number", title: "Multisensor report  (minutes)", description: "Minutes between temperature/illuminance readings", defaultValue: 20, required: false, displayDuringSetup: true
+		input "intervalMins", "number", title: "Report Interval", description: "How often the device should report in minutes", defaultValue: 20, required: false, displayDuringSetup: true
 	}
 }
 

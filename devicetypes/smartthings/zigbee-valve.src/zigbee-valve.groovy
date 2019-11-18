@@ -11,6 +11,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -25,8 +26,7 @@ metadata {
 
         fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0006, 0020, 0B02, FC02", outClusters: "0019", manufacturer: "WAXMAN", model: "leakSMART Water Valve v2.10", deviceJoinName: "leakSMART Valve"
         fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0004, 0005, 0006, 0008, 000F, 0020, 0B02", outClusters: "0003, 0019", manufacturer: "WAXMAN", model: "House Water Valve - MDL-TBD", deviceJoinName: "Waxman House Water Valve"
-        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006, 0500", outClusters: "0019", manufacturer: "", model: "E253-KR0B0ZX-HA", deviceJoinName: "Smart Gas Valve Actuator", mnmn:"SmartThings", vid: "eZEX-gas-valve"
-
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006, 0500", outClusters: "0019", manufacturer: "", model: "E253-KR0B0ZX-HA", deviceJoinName: "Smart Gas Valve Actuator"
     }
 
     // simulator metadata
@@ -114,31 +114,11 @@ def parse(String description) {
             event.value = Math.round(Integer.parseInt(descMap.value, 16) / 2)
             sendEvent(event)
         }
-        else if (descMap.clusterInt == zigbee.IAS_ZONE_CLUSTER && descMap.attrInt == zigbee.ATTRIBUTE_IAS_ZONE_STATUS) {
-            sendBatteryResult(description)
-        }
         else {
             log.warn "DID NOT PARSE MESSAGE for description : $description"
             log.debug descMap
         }
     }
-}
-
-def sendBatteryResult(description) {
-    def result = [:]
-    def descMap = zigbee.parseDescriptionAsMap(description)
-    //IAS Zone Cluster (0x0500) - Zone Status Attribute (0x0002) - BIT 3 (0x0008) : Low Battery 
-    def descValue = Integer.parseInt(descMap.value,16)
-    //normal: sendout 50%,low: sendout 5%,UI metadata will handle 5%->low, 50%->normal.
-    def value = descValue & 0x0008 ?5:50
-    log.debug "$value"
-
-    result.name = 'battery'
-    result.value = value
-    result.descriptionText = "${device.displayName} battery value is ${value}"
-    result.translatable = true
-
-    sendEvent(result)
 }
 
 def open() {
@@ -151,19 +131,14 @@ def close() {
 
 def refresh() {
     log.debug "refresh called"
-    def cmds= []
+
+    def cmds = []
     cmds += zigbee.onOffRefresh()
     cmds += zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE)
+    cmds += zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
     cmds += zigbee.onOffConfig()
     cmds += zigbee.configureReporting(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE, DataType.ENUM8, 5, 21600, 1)
-    if (device.getDataValue("model") == "E253-KR0B0ZX-HA") {
-        cmds += zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-        cmds += zigbee.enrollResponse()
-        cmds += zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 60 * 60, null)
-    } else {
-        cmds += zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
-        cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 600, 21600, 1)
-    }
+    cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 600, 21600, 1)
     return cmds
 }
 
