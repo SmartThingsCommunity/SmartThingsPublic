@@ -120,7 +120,9 @@ def configure() {
 
 def installed() {
 	initialize()
-	createChildDevices()
+	if (!childDevices) {
+		createChildDevices()
+	}
 }
 
 def updated() {
