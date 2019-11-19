@@ -17,13 +17,14 @@ import groovy.json.JsonOutput
  */
 
 metadata {
-	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
+	definition (name: "Z-Wave Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Button"
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Configuration"
 
+		// While adding new device to this DTH, remember to update method getProdNumberOfButtons()
 		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button" //EU
 		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button"  //US
 		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //US
@@ -122,6 +123,16 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	}
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet cmd) {
+	// Below handler was tested with Aoetec KeyFob and probably will work only with it
+	def value = cmd.sceneId % 2 ? "pushed" : "held"
+	def childId = (int)(cmd.sceneId / 2) + (cmd.sceneId % 2)
+	def description = "Button no. ${childId} was ${value}"
+	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: childId], isStateChange: true)
+	sendEventToChild(childId, event)
+	return createEvent(descriptionText: description)
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
 	def description = "Button no. ${cmd.sceneNumber} was ${value}"
@@ -201,7 +212,9 @@ private getEventsMap() {[
 private getProdNumberOfButtons() {[
 		"1001" : 6,
 		"0102" : 4,
-		"0002" : 4
+		"0002" : 4,
+		"0101" : 4,
+		"0001" : 4
 ]}
 
 private getSupportedButtonValues() {
