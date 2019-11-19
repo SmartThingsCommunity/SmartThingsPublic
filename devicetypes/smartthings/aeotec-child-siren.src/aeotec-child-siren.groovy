@@ -15,26 +15,28 @@ metadata {
 	definition(name: "Aeotec Child Siren", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartThings_Siren") {
 		capability "Actuator"
 		capability "Health Check"
-		capability "Alarm"
+		capability "Chime"
 
 	}
 	tiles {
-		standardTile("alarm", "device.alarm", width: 2, height: 2) {
-			state "off", label: 'off', action: 'alarm.strobe', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
-			state "both", label: 'alarm!', action: 'alarm.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#e86d13"
+		multiAttributeTile(name: "chime", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.chime", key: "PRIMARY_CONTROL") {
+				attributeState "off", label: 'chime', action: 'chime.chime', icon: "st.alarm.alarm.alarm", backgroundColor: "#ffffff"
+				attributeState "chime", label: 'off', action: 'chime.off', icon: "st.alarm.alarm.alarm", backgroundColor: "#ff0000"
+			}
 		}
-		standardTile("off", "device.alarm", inactiveLabel: false, decoration: "flat") {
-			state "default", label: '', action: "alarm.off", icon: "st.secondary.off"
+		standardTile("off", "device.chime", inactiveLabel: false, decoration: "flat") {
+			state "default", label: '', action: "chime.off", icon: "st.secondary.off"
 		}
 
-		main "alarm"
-		details(["alarm", "off"])
+		main "chime"
+		details(["chime", "off"])
 	}
 }
 
 def installed() {
 	configureDeviceHealth()
-	sendEvent(name: "alarm", value: "off", isStateChange: true, displayed: false)
+	sendEvent(name: "chime", value: "off", isStateChange: true, displayed: false)
 }
 
 def configureDeviceHealth() {
@@ -49,14 +51,6 @@ def on() {
 	parent.setOnChild(device.deviceNetworkId)
 }
 
-def strobe() {
-	on()
-}
-
-def siren() {
-	on()
-}
-
-def both() {
+def chime() {
 	on()
 }

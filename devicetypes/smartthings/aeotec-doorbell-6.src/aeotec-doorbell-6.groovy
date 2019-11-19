@@ -19,6 +19,7 @@ metadata {
 		capability "Health Check"
 		capability "Tamper Alert"
 		capability "Alarm"
+		capability "Chime"
 
 		fingerprint mfr: "0371", prod: "0003", model: "00A2", deviceJoinName: "Aeotec Doorbell 6"
 	}
@@ -200,12 +201,12 @@ def setOffChild(deviceDni) {
 def resetActiveSound() {
 	String childDni = "${device.deviceNetworkId}:$state.lastTriggeredSound"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent([name: "alarm", value: "off"])
+	child?.sendEvent([name: "chime", value: "off"])
 	sendEvent([name: "alarm", value: "off"])
 }
 
 def setActiveSound(soundId) {
 	String childDni = "${device.deviceNetworkId}:${soundId}"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent([name: "alarm", value: "both"])
+	child?.sendEvent([name: "chime", value: "chime"])
 }
