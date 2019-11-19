@@ -50,6 +50,8 @@ metadata {
 
 		// Commercial Electric
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Electric Can Tunable White"
+		fingerprint manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Electric 4\" LED Smart Recessed Zigbee Downlight" 	  // raw description: 01 0104 0102 00 07 0000 0003 0004 0005 0006 0008 0300 01 0019
+		fingerprint manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Electric 5\"/6\" LED Smart Recessed Zigbee Downlight" // raw description: 01 0104 0102 00 07 0000 0003 0004 0005 0006 0008 0300 01 0019
 
 		// Ecosmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "The Home Depot", model: "Ecosmart-ZBT-BR30-CCT-Bulb", deviceJoinName: "Ecosmart Bulb"
