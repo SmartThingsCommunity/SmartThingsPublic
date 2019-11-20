@@ -176,7 +176,9 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
 	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
-	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
+	def setpoint = Float.parseFloat(convertTemperatureIfNeeded(cmd.scaledValue, deviceTemperatureScale, cmd.precision))
+	state.cachedSetpoint = setpoint
+	createEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
@@ -227,7 +229,7 @@ def off() {
 }
 
 def setHeatingSetpoint(setpoint) {
-	if (isPoppRadiatorThermostat()) {
+	if (isPoppRadiatorThermostat() && device.status == "ONLINE") {
 		sendEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
 	}
 	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
