@@ -110,11 +110,20 @@ def parse(String description) {
 }
 
 def off() {
-    zigbee.off()
+    def cmds = zigbee.off()
+    if (device.getDataValue("model") == "HY0105") {
+        cmds += zigbee.command(zigbee.ONOFF_CLUSTER, 0x00, "", [destEndpoint: 0x02])
+    }
+    return cmds
 }
 
+
 def on() {
-    zigbee.on()
+    def cmds = zigbee.on()
+    if (device.getDataValue("model") == "HY0105") {
+        cmds += zigbee.command(zigbee.ONOFF_CLUSTER, 0x01, "", [destEndpoint: 0x02])
+    }
+    return cmds
 }
 
 /**
