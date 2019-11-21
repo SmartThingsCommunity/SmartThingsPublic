@@ -49,7 +49,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000, FFFF", outClusters: "0019", manufacturer: "Aurora", model: "TWCLBulb50AU", deviceJoinName: "AOne Smart Tuneable Candle Lamp", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
 
 		// Commercial Electric
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Electric Can Tunable White"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "ETI", model: "Zigbee CCT Downlight", deviceJoinName: "Commercial Electric Can Tunable White", vid: "generic-color-temperature-bulb-2700K-5000K"
 
 		// Ecosmart
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "The Home Depot", model: "Ecosmart-ZBT-BR30-CCT-Bulb", deviceJoinName: "Ecosmart Bulb"
