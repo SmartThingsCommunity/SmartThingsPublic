@@ -48,6 +48,7 @@ metadata {
 		fingerprint mfr: "027A", prod: "B112", model: "261C", deviceJoinName: "Zooz ZEN24 Dimmer"
 		fingerprint mfr: "0300", prod: "0003", model: "0005", deviceJoinName: "ilumin Dimmable Bulb", ocfDeviceType: "oic.d.light"
 		fingerprint mfr: "0312", prod: "FF00", model: "FF04", deviceJoinName: "Minoston Smart Dimmer Switch"
+		fingerprint mfr: "0312", prod: "FF00", model: "FF02", deviceJoinName: "Minoston Toggle Dimmer Switch"
 	}
 
 	simulator {
