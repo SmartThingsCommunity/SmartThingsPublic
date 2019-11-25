@@ -130,7 +130,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
 	def description = "Button no. ${childId} was ${value}"
 	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: childId], isStateChange: true)
 	sendEventToChild(childId, event)
-	return createEvent(descriptionText: description)
+	return event
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
@@ -138,7 +138,7 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
 	def description = "Button no. ${cmd.sceneNumber} was ${value}"
 	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
 	sendEventToChild(cmd.sceneNumber, event)
-	return createEvent(descriptionText: description)
+	return event
 }
 
 def sendEventToChild(buttonNumber, event) {
