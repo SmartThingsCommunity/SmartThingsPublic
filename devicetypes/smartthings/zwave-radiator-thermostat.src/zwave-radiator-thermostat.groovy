@@ -136,8 +136,10 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
 	cmd.encapsulatedCommands().collect { encapsulatedCommand ->
-		isPoppRadiatorThermostat() ? zwaveEvent(encapsulatedCommand, true) : zwaveEvent(encapsulatedCommand) 	//in case any future device would support MultiCmdEncap
-	}.flatten()																									//and won't need any special handler, like POPP does
+		isPoppRadiatorThermostat() ? zwaveEvent(encapsulatedCommand, true) : zwaveEvent(encapsulatedCommand) 	
+		//in case any future device would support MultiCmdEncap
+		//and won't need any special handler, like POPP does
+	}.flatten()
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
