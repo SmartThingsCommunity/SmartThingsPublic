@@ -93,6 +93,7 @@ def initialize() {
 }
 
 def installed() {
+	state.isSetpointChangeRequestedByController = false
 	initialize()
 }
 
@@ -135,8 +136,8 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 def zwaveEvent(physicalgraph.zwave.commands.multicmdv1.MultiCmdEncap cmd) {
 	cmd.encapsulatedCommands().collect { encapsulatedCommand ->
-		zwaveEvent(encapsulatedCommand)
-	}.flatten()
+		isPoppRadiatorThermostat() ? zwaveEvent(encapsulatedCommand, true) : zwaveEvent(encapsulatedCommand) 	//in case any future device would support MultiCmdEncap
+	}.flatten()																									//and won't need any special handler, like POPP does
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
@@ -174,11 +175,28 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 	createEvent(map)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
+def updateSetpoint(cmd) {
 	def deviceTemperatureScale = cmd.scale ? 'F' : 'C'
 	def setpoint = Float.parseFloat(convertTemperatureIfNeeded(cmd.scaledValue, deviceTemperatureScale, cmd.precision))
 	state.cachedSetpoint = setpoint
 	createEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
+	if (!state.isSetpointChangeRequestedByController) {
+		updateSetpoint(cmd)
+	} else {
+		[:]
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, isResponseOfWakeUp) {
+	if (state.isSetpointChangeRequestedByController) {
+		state.isSetpointChangeRequestedByController = false
+		updateSetpoint(cmd)
+	} else {
+		[:]
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
@@ -230,6 +248,7 @@ def off() {
 
 def setHeatingSetpoint(setpoint) {
 	if (isPoppRadiatorThermostat() && device.status == "ONLINE") {
+		state.isSetpointChangeRequestedByController = true
 		sendEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
 	}
 	setpoint = temperatureScale == 'C' ? setpoint : fahrenheitToCelsius(setpoint)
