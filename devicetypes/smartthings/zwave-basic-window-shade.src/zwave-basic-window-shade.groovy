@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Basic Window Shade", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Basic Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
 		capability "Stateless Curtain Power Button"
 		capability "Configuration"
 		capability "Actuator"
@@ -68,7 +68,11 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	state.shadeState = cmd.value ? "closing" : "opening"
+	if (!state.ignoreResponse)
+		state.shadeState = cmd.value ? "closing" : "opening"
+
+	state.ignoreResponse = false
+	[:]
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -103,6 +107,7 @@ def close() {
 def pause() {
 	def value = state.shadeState == "opening" ? 0xFF : 0x00
 	def result = state.shadeState != "paused" ? secure(zwave.switchBinaryV1.switchBinarySet(switchValue: value)) : []
+	state.ignoreResponse = true
 	state.shadeState = "paused"
 	result
 }
