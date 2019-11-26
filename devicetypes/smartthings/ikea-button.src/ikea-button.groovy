@@ -29,6 +29,8 @@ metadata {
 
 		fingerprint inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0005, 0006, 0008, 0019, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI remote control", deviceJoinName: "IKEA TRÅDFRI Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_Remote_Control"
 		fingerprint inClusters: "0000, 0001, 0003, 0009, 0102, 1000, FC7C", outClusters: "0003, 0004, 0006, 0008, 0019, 0102, 1000", manufacturer:"IKEA of Sweden", model: "TRADFRI on/off switch", deviceJoinName: "IKEA TRÅDFRI On/Off switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_On/Off_Switch"
+		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI open/close remote", deviceJoinName: "IKEA TRÅDFRI Open/Close Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000
+		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA TRÅDFRI Open/Close Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000
 	}
 
 	tiles {
@@ -48,6 +50,7 @@ metadata {
 
 private getCLUSTER_GROUPS() { 0x0004 }
 private getCLUSTER_SCENES() { 0x0005 }
+private getCLUSTER_WINDOW_COVERING() { 0x0102 }
 
 private getREMOTE_BUTTONS() {
 	[TOP:1,
@@ -60,6 +63,11 @@ private getREMOTE_BUTTONS() {
 private getONOFFSWITCH_BUTTONS() {
 	[TOP:2,
 	 BOTTOM:1]
+}
+
+private getOPENCLOSE_BUTTONS() {
+	[UP:1,
+	 DOWN:2]
 }
 
 private channelNumber(String dni) {
@@ -82,6 +90,13 @@ private getIkeaOnOffSwitchNames() {
 	]
 }
 
+private getIkeaOpenCloseRemoteNames() {
+	[
+		"Up", // Up button
+		"Down" // Down button
+	]
+}
+
 private getButtonLabel(buttonNum) {
 	def label = "Button ${buttonNum}"
 
@@ -89,6 +104,8 @@ private getButtonLabel(buttonNum) {
 		label = ikeaRemoteControlNames[buttonNum - 1]
 	} else if (isIkeaOnOffSwitch()) {
 		label = ikeaOnOffSwitchNames[buttonNum - 1]
+	} else if (isIkeaOpenCloseRemote()) {
+		label = ikeaOpenCloseRemoteNames[buttonNum - 1]
 	}
 
 	return label
@@ -105,7 +122,7 @@ private void createChildButtonDevices(numberOfButtons) {
 
 	for (i in 1..numberOfButtons) {
 		log.debug "Creating child $i"
-		def supportedButtons = (isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) ? ["pushed"] : ["pushed", "held"]
+		def supportedButtons = ((isIkeaRemoteControl() && i == REMOTE_BUTTONS.MIDDLE) || isIkeaOpenCloseRemote()) ? ["pushed"] : ["pushed", "held"]
 		def child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
 				[completedSetup: true, label: getButtonName(i),
 				 isComponent: true, componentName: "button$i", componentLabel: getButtonLabel(i)])
@@ -121,7 +138,7 @@ def installed() {
 
 	if (isIkeaRemoteControl()) {
 		numberOfButtons = 5
-	} else if (isIkeaOnOffSwitch()) {
+	} else if (isIkeaOnOffSwitch() || isIkeaOpenCloseRemote()) {
 		numberOfButtons = 2
 	}
 
@@ -129,7 +146,8 @@ def installed() {
 		createChildButtonDevices(numberOfButtons)
 	}
 
-	sendEvent(name: "supportedButtonValues", value: ["pushed", "held"].encodeAsJSON(), displayed: false)
+	def supportedButtons = isIkeaOpenCloseRemote() ? ["pushed"] : ["pushed", "held"]
+	sendEvent(name: "supportedButtonValues", value: supportedButtons.encodeAsJSON(), displayed: false)
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	numberOfButtons.times {
 		sendEvent(name: "button", value: "pushed", data: [buttonNumber: it+1], displayed: false)
@@ -172,8 +190,9 @@ def parse(String description) {
 			if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == 0x0021) {
 				event = getBatteryEvent(zigbee.convertHexToInt(descMap.value))
 			} else if (descMap.clusterInt == CLUSTER_SCENES ||
-					 descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
-					 descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
+					descMap.clusterInt == zigbee.ONOFF_CLUSTER ||
+					descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER ||
+					descMap.clusterInt == CLUSTER_WINDOW_COVERING) {
 				event = getButtonEvent(descMap)
 			}
 		}
@@ -265,6 +284,15 @@ private Map getButtonEvent(Map descMap) {
 				buttonNumber = ONOFFSWITCH_BUTTONS.TOP
 			}
 		}
+	} else if (isIkeaOpenCloseRemote()){
+		if (descMap.clusterInt == CLUSTER_WINDOW_COVERING) {
+			buttonState = "pushed"
+			if (descMap.commandInt == 0x00) {
+				buttonNumber = OPENCLOSE_BUTTONS.UP
+			} else if (descMap.commandInt == 0x01) {
+				buttonNumber = OPENCLOSE_BUTTONS.DOWN
+			}
+		}
 	}
 
 	if (buttonNumber != 0) {
@@ -284,6 +312,10 @@ private boolean isIkeaRemoteControl() {
 
 private boolean isIkeaOnOffSwitch() {
 	device.getDataValue("model") == "TRADFRI on/off switch"
+}
+
+private boolean isIkeaOpenCloseRemote() {
+	device.getDataValue("model") == "TRADFRI open/close remote"
 }
 
 private Integer getGroupAddrFromBindingTable(description) {
