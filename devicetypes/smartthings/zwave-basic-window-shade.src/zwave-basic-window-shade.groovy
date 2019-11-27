@@ -40,6 +40,17 @@ metadata {
 
 		details(["open","close","pause"])
 	}
+
+	preferences {
+		input (
+				title: "Working direction",
+				description: "In case wiring is wrong, this setting can be changed to fix setup without any manual maintenance.",
+				name: "direction",
+				type: "enum",
+				defaultValue: "Normal",
+				options: ["Normal", "Reversed"]
+		)
+	}
 }
 
 def parse(String description) {
@@ -69,7 +80,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	if (!state.ignoreResponse)
-		state.shadeState = cmd.value ? "closing" : "opening"
+		state.shadeState = (cmd.value == closeValue ? "closing" : "opening")
 
 	state.ignoreResponse = false
 	[:]
@@ -96,16 +107,16 @@ def setButton(button) {
 
 def open() {
 	state.shadeState = "opening"
-	secure(zwave.basicV1.basicSet(value: 0x00))
+	secure(zwave.basicV1.basicSet(value: openValue))
 }
 
 def close() {
 	state.shadeState = "closing"
-	secure(zwave.basicV1.basicSet(value: 0xFF))
+	secure(zwave.basicV1.basicSet(value: closeValue))
 }
 
 def pause() {
-	def value = state.shadeState == "opening" ? 0xFF : 0x00
+	def value = state.shadeState == "opening" ? closeValue : openValue
 	def result = state.shadeState != "paused" ? secure(zwave.switchBinaryV1.switchBinarySet(switchValue: value)) : []
 	state.ignoreResponse = true
 	state.shadeState = "paused"
@@ -121,6 +132,12 @@ def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "availableCurtainPowerButtons", value: ["open", "close", "pause"])
 	state.shadeState = "paused"
+	state.direction = direction ? direction : "Normal"
+}
+
+def updated() {
+	sendHubCommand(pause())
+	state.direction = direction ? direction : "Normal"
 }
 
 def configure() {
@@ -134,4 +151,12 @@ private secure(cmd) {
 	} else {
 		cmd.format()
 	}
+}
+
+private getOpenValue() {
+	state.direction == "Normal" ? 0x00 : 0xFF
+}
+
+private getCloseValue() {
+	state.direction == "Normal" ? 0xFF : 0x00
 }
