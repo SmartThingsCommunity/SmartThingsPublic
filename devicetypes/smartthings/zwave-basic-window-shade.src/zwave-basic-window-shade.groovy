@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Basic Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
+	definition (name: "Z-Wave Basic Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-stateless-curtain") {
 		capability "Stateless Curtain Power Button"
 		capability "Configuration"
 		capability "Actuator"
