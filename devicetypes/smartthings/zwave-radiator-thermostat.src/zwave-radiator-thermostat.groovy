@@ -184,16 +184,10 @@ def updateSetpoint(cmd) {
 	createEvent(name: "heatingSetpoint", value: setpoint, unit: temperatureScale)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, isResponseOfWakeUp = false) {
 	if (!state.isSetpointChangeRequestedByController) {
 		updateSetpoint(cmd)
-	} else {
-		[:]
-	}
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, isResponseOfWakeUp) {
-	if (state.isSetpointChangeRequestedByController) {
+	} else if (isResponseOfWakeUp) {
 		state.isSetpointChangeRequestedByController = false
 		updateSetpoint(cmd)
 	} else {
