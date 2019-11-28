@@ -84,7 +84,11 @@ def parse(String description) {
 	if (!map) {
 		Map descMap = zigbee.parseDescriptionAsMap(description)
 		if (descMap.clusterInt == 0x0001 && descMap.commandInt != 0x07 && descMap?.value) {
-			map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+			if (descMap.attrInt == 0x0021) {
+            			map = getBatteryPercentageResult(Integer.parseInt(descMap.value,16))
+			} else {
+				map = getBatteryResult(Integer.parseInt(descMap.value, 16))
+            		}
 		} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {
 			if (descMap.data[0] == "00") {
 				log.debug "TEMP REPORTING CONFIG RESPONSE: $descMap"
@@ -107,6 +111,21 @@ def parse(String description) {
 
 	log.debug "Parse returned $map"
 	return map ? createEvent(map) : [:]
+}
+
+
+def getBatteryPercentageResult(rawValue) {
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
+	def result = [:]
+
+	if (0 <= rawValue && rawValue <= 200) {
+		result.name = 'battery'
+		result.translatable = true
+		result.value = Math.round(rawValue / 2)
+		result.descriptionText = "${device.displayName} battery was ${result.value}%"
+	}
+
+	return result
 }
 
 private Map getBatteryResult(rawValue) {
