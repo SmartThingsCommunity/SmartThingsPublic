@@ -12,6 +12,8 @@
  *
  */
 
+import groovy.json.JsonOutput
+
 metadata {
 	definition (name: "Z-Wave Basic Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-stateless-curtain") {
 		capability "Stateless Curtain Power Button"
@@ -42,14 +44,19 @@ metadata {
 	}
 
 	preferences {
-		input (
-				title: "Working direction",
+		section {
+			input(title: "Aeotec Nano Shutter settings",
 				description: "In case wiring is wrong, this setting can be changed to fix setup without any manual maintenance.",
-				name: "direction",
-				type: "enum",
-				defaultValue: "Normal",
-				options: ["Normal", "Reversed"]
-		)
+				displayDuringSetup: false,
+				type: "paragraph",
+				element: "paragraph")
+
+			input("reverseDirection", "bool",
+				title: "Reverse working direction",
+				defaultValue: false,
+				displayDuringSetup: false
+			)
+		}
 	}
 }
 
@@ -130,14 +137,14 @@ def ping() {
 def installed() {
 	log.debug "Installed ${device.displayName}"
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	sendEvent(name: "availableCurtainPowerButtons", value: ["open", "close", "pause"])
+	sendEvent(name: "availableCurtainPowerButtons", value: JsonOutput.toJson(["open", "close", "pause"]))
 	state.shadeState = "paused"
-	state.direction = direction ? direction : "Normal"
+	state.reverseDirection = reverseDirection ? reverseDirection : false
 }
 
 def updated() {
 	sendHubCommand(pause())
-	state.direction = direction ? direction : "Normal"
+	state.reverseDirection = reverseDirection ? reverseDirection : false
 }
 
 def configure() {
@@ -146,7 +153,7 @@ def configure() {
 }
 
 private secure(cmd) {
-	if(zwaveInfo.zw.endsWith("s")) {
+	if(zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
@@ -154,9 +161,9 @@ private secure(cmd) {
 }
 
 private getOpenValue() {
-	state.direction == "Normal" ? 0x00 : 0xFF
+	!state.reverseDirection ? 0x00 : 0xFF
 }
 
 private getCloseValue() {
-	state.direction == "Normal" ? 0xFF : 0x00
+	!state.reverseDirection ? 0xFF : 0x00
 }
