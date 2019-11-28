@@ -210,7 +210,7 @@ def configure() {
 
 	def cmds
 	if (supportsLiftPercentage()) {
-		cmds = zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 0, 600, null)
+		cmds = zigbee.configureReporting(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT, DataType.UINT8, 2, 600, null)
 	} else {
 		cmds = zigbee.levelConfig()
 	}
