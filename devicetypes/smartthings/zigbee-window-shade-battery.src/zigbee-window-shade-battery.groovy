@@ -155,28 +155,28 @@ def batteryPercentageEventHandler(batteryLevel) {
 
 def close() {
 	log.info "close()"
-	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_CLOSE)
+	delayBetween([zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE), zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_CLOSE)],100)
 }
 
 def open() {
 	log.info "open()"
-	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_OPEN)
+	delayBetween([zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE), zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_CLOSE)],100)
 }
 
 def setLevel(data, rate = null) {
 	log.info "setLevel()"
-	def cmd
+	def cmds
 	if (supportsLiftPercentage()) {
 		if (shouldInvertLiftPercentage()) {
 			// some devices keeps % level of being closed (instead of % level of being opened)
 			// inverting that logic is needed here
 			data = 100 - data
 		}
-		cmd = zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_GOTO_LIFT_PERCENTAGE, zigbee.convertToHexString(data, 2))
+		cmds = [zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_PAUSE), zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_GOTO_LIFT_PERCENTAGE, zigbee.convertToHexString(data, 2))]
 	} else {
-		cmd = zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, COMMAND_MOVE_LEVEL_ONOFF, zigbee.convertToHexString(Math.round(data * 255 / 100), 2))
+		cmds = zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, COMMAND_MOVE_LEVEL_ONOFF, zigbee.convertToHexString(Math.round(data * 255 / 100), 2))
 	}
-	return cmd
+	delayBetween(cmds,100)
 }
 
 def pause() {
