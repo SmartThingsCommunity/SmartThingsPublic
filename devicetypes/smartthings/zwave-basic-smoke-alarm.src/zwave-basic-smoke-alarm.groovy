@@ -24,6 +24,7 @@ metadata {
 		fingerprint mfr: "026F ", prod: "0001", model: "0001", deviceJoinName: "FireAngel Thermoptek Smoke Alarm"
 		fingerprint mfr: "013C", prod: "0002", model: "001E", deviceJoinName: "Philio Smoke Alarm PSG01"
 		fingerprint mfr: "0154", prod: "0004", model: "0010", deviceJoinName: "POPP 10Year Smoke Sensor"
+		fingerprint mfr: "0154", prod: "0100", model: "0201", deviceJoinName: "POPP Smoke Detector with Siren"
 	}
 
 	simulator {
