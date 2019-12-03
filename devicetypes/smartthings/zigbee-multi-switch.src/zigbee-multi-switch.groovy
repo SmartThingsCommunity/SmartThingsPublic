@@ -5,7 +5,7 @@
  *  use this file except in compliance with the License. You may obtain a copy
  *  of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -27,7 +27,12 @@ metadata {
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo 2 Gang Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Orvibo 3 Gang Switch 1"
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0003", deviceJoinName: "GDKES 3 Gang Switch 1"
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0002", deviceJoinName: "GDKES 2 Gang Switch 1"
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0097", deviceJoinName: "HONYAR 3 Gang Switch 1"
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0096", deviceJoinName: "HONYAR 2 Gang Switch 1"
 	}
 	// simulator metadata
 	simulator {
@@ -58,45 +63,51 @@ metadata {
 }
 
 def installed() {
-	createChildDevices()
-	updateDataValue("onOff", "catchall")
+        createChildDevices()
+        updateDataValue("onOff", "catchall")
+        refresh()
 }
 
 def updated() {
-	log.debug "updated()"
-	updateDataValue("onOff", "catchall")
+        log.debug "updated()"
+        updateDataValue("onOff", "catchall")
+        refresh()
 }
 
-// Parse incoming device messages to generate events
 def parse(String description) {
-	log.debug "description is $description"
-	Map map = zigbee.getEvent(description)
-	if (map) {
-		if (description?.startsWith('on/off')) {
-			log.debug "receive on/off message without endpoint id"
-			sendHubCommand(refresh().collect { new physicalgraph.device.HubAction(it) }, 0)
-		} else {
-			Map descMap = zigbee.parseDescriptionAsMap(description)
-			log.debug "$descMap"
+	Map eventMap = zigbee.getEvent(description)
+	Map eventDescMap = zigbee.parseDescriptionAsMap(description)
 
-			if (descMap?.clusterId == "0006" && descMap.sourceEndpoint == "01") {
-				sendEvent(map)
-			} else if (descMap?.clusterId == "0006") {
-				def childDevice = childDevices.find {
-					it.deviceNetworkId == "$device.deviceNetworkId:${descMap.sourceEndpoint}"
-				}
-				if (childDevice) {
-					childDevice.sendEvent(map)
-				}
+	if (!eventMap && eventDescMap) {
+		eventMap = [:]
+		if (eventDescMap?.clusterId == zigbee.ONOFF_CLUSTER) {
+			eventMap[name] = "switch"
+			eventMap[value] = eventDescMap?.value
+		}
+	}
+
+	if (eventMap) {
+		if (eventDescMap?.sourceEndpoint == "01" || eventDescMap?.endpoint == "01") {
+			sendEvent(eventMap)
+		} else {
+			def childDevice = childDevices.find {
+				it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.sourceEndpoint}" || it.deviceNetworkId == "$device.deviceNetworkId:${eventDescMap.endpoint}"
+			}
+			if (childDevice) {
+				childDevice.sendEvent(eventMap)
+			} else {
+				log.debug "Child device: $device.deviceNetworkId:${eventDescMap.sourceEndpoint} was not found"
 			}
 		}
 	}
 }
 
 private void createChildDevices() {
-	def i = 2
-	addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
-			[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent : false])
+	def x = getChildCount()
+	for (i in 2..x) {
+		addChildDevice("Child Switch Health", "${device.deviceNetworkId}:0${i}", device.hubId,
+			[completedSetup: true, label: "${device.displayName[0..-2]}${i}", isComponent: false])
+	}
 }
 
 private getChildEndpoint(String dni) {
@@ -115,12 +126,14 @@ def off() {
 
 def childOn(String dni) {
 	log.debug(" child on ${dni}")
-	zigbee.command(0x0006, 0x01, "", [destEndpoint: getChildEndpoint(dni)])
+	def childEndpoint = getChildEndpoint(dni)
+	zigbee.command(zigbee.ONOFF_CLUSTER, 0x01, "", [destEndpoint: childEndpoint])
 }
 
 def childOff(String dni) {
 	log.debug(" child off ${dni}")
-	zigbee.command(0x0006, 0x00, "", [destEndpoint: getChildEndpoint(dni)])
+	def childEndpoint = getChildEndpoint(dni)
+	zigbee.command(zigbee.ONOFF_CLUSTER, 0x00, "", [destEndpoint: childEndpoint])
 }
 
 /**
@@ -131,7 +144,16 @@ def ping() {
 }
 
 def refresh() {
-	return zigbee.readAttribute(0x0006, 0x0000, [destEndpoint: 0xFF])
+	if (isOrvibo()) {
+		zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: 0xFF])
+	} else {
+	        def cmds = zigbee.onOffRefresh()
+	        def x = getChildCount()
+	        for (i in 2..x) {
+	        	cmds += zigbee.readAttribute(zigbee.ONOFF_CLUSTER, 0x0000, [destEndpoint: i])
+	        }
+	        return cmds
+	}
 }
 
 def poll() {
@@ -163,6 +185,32 @@ def configureHealthCheck() {
 def configure() {
 	log.debug "configure()"
 	configureHealthCheck()
-	//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
-	return zigbee.writeAttribute(0x0000, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
+
+	if (isOrvibo()) {
+		//the orvibo switch will send out device anounce message at ervery 2 mins as heart beat,setting 0x0099 to 1 will disable it.
+		def cmds = zigbee.writeAttribute(zigbee.BASIC_CLUSTER, 0x0099, 0x20, 0x01, [mfgCode: 0x0000])
+        	cmds += refresh()
+       		return cmds
+	} else {
+		//other devices supported by this DTH in the future
+	        def cmds = zigbee.onOffConfig(0, 120)
+	        def x = getChildCount()
+	        for (i in 2..x) {
+	        	cmds += zigbee.configureReporting(zigbee.ONOFF_CLUSTER, 0x0000, 0x10, 0, 120, null, [destEndpoint: i])
+	        }
+	        cmds += refresh()
+	        return cmds
+	}
+}
+
+private Boolean isOrvibo() {
+	device.getDataValue("manufacturer") == "ORVIBO"
+}
+
+private getChildCount() {
+	if (device.getDataValue("model") == "9f76c9f31b4c4a499e3aca0977ac4494" || device.getDataValue("model") == "HY0003" || device.getDataValue("model") == "HY0097") {
+		return 3
+	} else {
+		return 2
+	}
 }

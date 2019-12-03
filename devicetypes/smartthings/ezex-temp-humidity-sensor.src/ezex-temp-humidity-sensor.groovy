@@ -16,21 +16,20 @@
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition(name: "eZEX Temp & Humidity Sensor", namespace: "smartthings", author: "SmartThings", mnmn:"SmartThings", vid:"generic-humidity") {
+    definition(name: "eZEX Temp & Humidity Sensor", namespace: "smartthings", author: "SmartThings", mnmn:"SmartThings", vid:"generic-humidity-3") {
         capability "Configuration"
         capability "Temperature Measurement"
         capability "Relative Humidity Measurement"
         capability "Sensor"
+        capability "Health Check"
         
         fingerprint profileId: "0104", inClusters: "0000,0003,0402,0405,0500", outClusters: "0019", model: "E282-KR0B0Z1-HA", deviceJoinName: "Smart Temperature/Humidity Sensor (AC Type)"
     }
 
 
     preferences {
-        input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-        input title: "Humidity Offset", description: "This feature allows you to correct any humidity variations by selecting an offset. Ex: If your sensor consistently reports a humidity that's 6% higher then a similiar calibrated sensor, you'd enter \"-6\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-        input "humidityOffset", "number", title: "Humidity Offset in Percent", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
+        input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+        input "humidityOffset", "number", title: "Humidity Offset", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
     }
 
     tiles(scale: 2) {

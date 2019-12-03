@@ -241,8 +241,10 @@ private createChildDevices() {
 	addChildDevice(
 			"Fibaro Wall Plug USB",
 			"${device.deviceNetworkId}-2",
-			null,
-			[completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false, componentName: "ch2", componentLabel: "Channel 2"]
+			device.hubId,
+			[completedSetup: true,
+			 label: "${device.displayName} (CH2)",
+			 isComponent: false]
 	)
 }
 
@@ -410,6 +412,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	} else {
 		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {

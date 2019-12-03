@@ -33,6 +33,7 @@ metadata {
 		fingerprint mfr: "0086", prod: "0002", model: "001D", deviceJoinName: "Aeotec Door/Window Sensor (Gen 5)"
 		fingerprint mfr: "0086", prod: "0102", model: "0070", deviceJoinName: "Aeotec Door/Window Sensor 6" //US
 		fingerprint mfr: "0086", prod: "0002", model: "0070", deviceJoinName: "Aeotec Door/Window Sensor 6" //EU
+		fingerprint mfr: "0086", prod: "0202", model: "0070", deviceJoinName: "Aeotec Door/Window Sensor 6" //AU
 		fingerprint mfr: "0086", prod: "0102", model: "0059", deviceJoinName: "Aeotec Recessed Door Sensor"
 		fingerprint mfr: "014A", prod: "0001", model: "0002", deviceJoinName: "Ecolink Door/Window Sensor"
 		fingerprint mfr: "014A", prod: "0001", model: "0003", deviceJoinName: "Ecolink Tilt Sensor"
@@ -51,6 +52,12 @@ metadata {
 		//zw:S type:0701 mfr:0214 prod:0002 model:0001 ver:6.38 zwv:4.38 lib:06 cc:5E,30,84,80,86,72,71,70,85,59,73,5A role:06 ff:8C06 ui:8C06
 		fingerprint mfr: "0214", prod: "0002", model: "0001", deviceJoinName: "BeSense Door/Window Detector"
 		fingerprint mfr: "0086", prod: "0002", model: "0078", deviceJoinName: "Aeotec Door/Window Sensor Gen5" //EU
+		fingerprint mfr: "0371", prod: "0102", model: "0007", deviceJoinName: "Aeotec Door/Window Sensor 7" //EU
+		fingerprint mfr: "0371", prod: "0002", model: "0007", deviceJoinName: "Aeotec Door/Window Sensor 7" //US          
+    		fingerprint mfr: "0060", prod: "0002", model: "0003", deviceJoinName: "Everspring Door/Window Sensor" //US & EU
+		fingerprint mfr: "0371", prod: "0102", model: "00BB", deviceJoinName: "Aeotec Recessed Door Sensor 7" //US
+		fingerprint mfr: "0371", prod: "0002", model: "00BB", deviceJoinName: "Aeotec Recessed Door Sensor 7" //EU
+    		fingerprint mfr: "0109", prod: "2022", model: "2201", deviceJoinName: "Vision Recessed Door Sensor" //AU
 	}
 
 	// simulator metadata

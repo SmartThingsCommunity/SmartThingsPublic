@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition (name: "Glentronics Connection Module", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Glentronics Connection Module", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-leak-4") {
 		capability "Sensor"
 		capability "Water Sensor"
 		capability "Battery"

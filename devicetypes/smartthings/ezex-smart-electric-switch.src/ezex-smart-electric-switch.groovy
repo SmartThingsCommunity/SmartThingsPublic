@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "eZEX smart electric switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
+    definition (name: "eZEX smart electric switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.energymeter", mnmn: "SmartThings", vid: "generic-switch-power-energy") {
         capability "Energy Meter"
         capability "Power Meter"
         capability "Actuator"
