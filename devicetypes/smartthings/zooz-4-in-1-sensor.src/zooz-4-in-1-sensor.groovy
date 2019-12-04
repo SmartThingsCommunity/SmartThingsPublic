@@ -24,6 +24,7 @@ metadata {
 		capability "Tamper Alert"
 
 		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz 4-in-1 sensor"
+                fingerprint mfr: "0109", prod: "2021", model: "2101", deviceJoinName: "ZP3111US 4-in-1 Motion"
 	}
 
 	tiles(scale: 2) {
