@@ -86,7 +86,7 @@ metadata {
 }
 
 def installed(){
-  sendEvent(name: "checkInterval", value: 21600, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+  sendEvent(name: "checkInterval", value: (21600*2)+10*60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 //UI Support functions
