@@ -178,7 +178,7 @@ void poll() {
 def generateEvent(Map results) {
 	if(results) {
 		def linkText = getLinkText(device)
-		def supportedThermostatModes = ["off"]
+		def supportedThermostatModes = ["off", "cool", "heat", "auto"]
 		def thermostatMode = null
 		def locationScale = getTemperatureScale()
 
