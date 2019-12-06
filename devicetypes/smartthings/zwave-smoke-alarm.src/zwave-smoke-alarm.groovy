@@ -59,6 +59,14 @@ def installed() {
 	def cmds = []
 	createSmokeOrCOEvents("allClear", cmds) // allClear to set inital states for smoke and CO
 	cmds.each { cmd -> sendEvent(cmd) }
+
+	// NOTE: 28.11 hub firmware only associates groupID 1 if the device is Z-Wave Plus. As a workaround, we are going to
+	// associate with group 1 at installed() to circumvent the issue introduced by 28.11
+	// Once the issue in 28.11 is resolved, this change will then need to be removed, but associating twice is not
+	// harmful
+	def hubCmds = [new physicalgraph.device.HubAction(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format())]
+	sendHubCommand(hubCmds)
+	state.setAssociation = true
 }
 
 def updated() {
@@ -75,6 +83,20 @@ def parse(String description) {
 		if (cmd) {
 			zwaveEvent(cmd, results)
 		}
+
+		if (!state.setAssociation)
+		{
+			// This change is to fix the issue introduced in 28.11 where association was not getting set at inclusion
+			// time.
+			//
+			// This change will set the association to group id 1 only once, even for the devices that were added
+			// prior to the 28.11 hub firmware release. The association is set here because not all the device will
+			// support wake up command class, so we are going to set the association once we hear something from the
+			// device which is our clue that the device is awake to receive the message.
+			results << response(zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]))
+			state.setAssociation = true
+		}
+
 	}
 	log.debug "'$description' parsed to ${results.inspect()}"
 	return results
