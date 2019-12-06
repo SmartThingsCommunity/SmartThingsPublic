@@ -12,7 +12,7 @@
  *
  */
 metadata {
-    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Aeon_Home_Energy_Meter") {
+    definition (name: "Zigbee Power Meter", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", ocfDeviceType: "x.com.st.d.energymeter", vid: "SmartThings-smartthings-Aeon_Home_Energy_Meter") {
         capability "Energy Meter"
         capability "Power Meter"
         capability "Refresh"
