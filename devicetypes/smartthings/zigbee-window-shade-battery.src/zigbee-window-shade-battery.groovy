@@ -155,12 +155,12 @@ def batteryPercentageEventHandler(batteryLevel) {
 
 def close() {
 	log.info "close()"
-	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_CLOSE)
+	setLevel(0)
 }
 
 def open() {
 	log.info "open()"
-	zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_OPEN)
+	setLevel(100)
 }
 
 def setLevel(data, rate = null) {
@@ -176,7 +176,7 @@ def setLevel(data, rate = null) {
 	} else {
 		cmd = zigbee.command(zigbee.LEVEL_CONTROL_CLUSTER, COMMAND_MOVE_LEVEL_ONOFF, zigbee.convertToHexString(Math.round(data * 255 / 100), 2))
 	}
-	return cmd
+	cmd
 }
 
 def pause() {
