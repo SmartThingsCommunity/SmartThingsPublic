@@ -50,6 +50,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "FF00", model: "FF04", deviceJoinName: "Minoston Smart Dimmer Switch"
 		fingerprint mfr: "0312", prod: "FF00", model: "FF02", deviceJoinName: "Minoston Toggle Dimmer Switch"
 		fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Evalogik Smart Dimmer Switch"
+		fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Smart Plug Dimmer"
 	}
 
 	simulator {
