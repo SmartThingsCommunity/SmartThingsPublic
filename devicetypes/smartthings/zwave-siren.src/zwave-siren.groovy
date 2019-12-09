@@ -40,6 +40,7 @@ metadata {
 		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale External Siren"
 		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Outdoor Solar Siren", vid: "generic-siren-12"
 		fingerprint mfr: "0154", prod: "0004", model: "0002", deviceJoinName: "POPP Solar Outdoor Siren", vid: "generic-siren-12"
+		fingerprint mfr: "0109", prod: "2005", model: "0518", deviceJoinName: "Vision Outdoor Siren"
 	}
 
 	simulator {
