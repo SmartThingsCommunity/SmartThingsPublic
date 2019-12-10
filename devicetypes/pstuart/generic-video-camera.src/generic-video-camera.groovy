@@ -11,7 +11,7 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
+ *ocfdevicetype: "oic.d.camera"
  */
 metadata {
 	definition (name: "Generic Video Camera", namespace: "pstuart", author: "Patrick Stuart") {
@@ -22,6 +22,8 @@ metadata {
 		capability "Switch"
         capability "Video Clips" //new
         capability "Image Capture" //new
+        capability "Health Check"
+        
         attribute "hubactionMode", "string"
 
 		// custom commands
@@ -126,8 +128,15 @@ def ping() {
 def configure() {
 	log.debug "Executing 'configure'"
     sendEvent(name:"switch", value: "on")
+    sendEvent(name: "stream", value: "")
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
 }
-
+def startStream(anyvar) {
+	log.debug "startstream $anyvar"
+    start()
+}
 def start() {
 	/*   
 	*/
@@ -157,12 +166,14 @@ def getInHomeURL() {
 }
 
 def parse(String description) {
-//log.debug "parsing $description"
+log.debug "parsing $description"
     def map = stringToMap(description)
+    log.debug "parsing $map"
     if (map.tempImageKey) {
         try {
         	log.info "map with temp Image Key  ${map.tempImageKey}"
             storeTemporaryImage(map.tempImageKey, getPictureName())
+            createEvent (name:"image", value: map.tempImageKey)
 		} 
         catch (Exception e) {
             log.error e
@@ -186,6 +197,7 @@ def parse(String description) {
         }
         log.warn " parsing something else - $description"
     }
+    
 }
 
 private getPictureName() {
@@ -220,6 +232,11 @@ def doCmd(path, opt){
     return hubAction
 }
 
+def presetCommand(preset){
+log.trace "presetCmd($preset)"
+presetCmd(preset)
+}
+
 def presetCmd(preset) {
 	log.trace "presetCmd($preset)"
     def parts = settings.unamepass.split(":")
@@ -227,6 +244,7 @@ def presetCmd(preset) {
     def pass = parts[1]
     //TENVIS JPT3815, DericamP2, onvif, LoftekSentinel, Keekoon
    	def presetup = (preset*2) + 29 // Presets must be translated into values internal to the camera. Those values are: 31,33,35,37,39,41,43,45 for presets 1-8 respectively
+    log.debug " tranformed $presetup"
     def path = "/decoder_control.cgi?user=${uname}&pwd=${pass}&command=${presetup}"
     //TENVIS JPT3815
     doCmd(path, false) //false and no image to return
@@ -245,7 +263,7 @@ def burst(){
     		], 2000)
 }
 def take() {
-	log.trace "take"
+    
     def parts = settings.unamepass.split(":")
     def uname = parts[0]
     def pass = parts[1]

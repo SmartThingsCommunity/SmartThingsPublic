@@ -18,18 +18,19 @@
  *  without which i would never have figured this out
  */
 metadata {
-	definition (name: "Eurotronic Spirit TRV", namespace: "dougalAgain", author: "Ed Cann", ocfDeviceType: "oic.d.thermostat", mnmn: "SmartThings", vid: "generic-switch") {
-        capability "Thermostat" // depeciated
-        capability "Temperature Measurement"
-        capability "Battery"
-        capability "Actuator"
-        capability "Refresh"
-        capability "Sensor"
-        capability "Configuration"
-        //capability "Polling"
-        capability "Thermostat Cooling Setpoint"	//attribute- coolingSetpoint	command - setCoolingSetpoint - having both alows extra settings in routines
-        capability "Thermostat Heating Setpoint" 
+	definition (name: "Eurotronic Spirit TRV", namespace: "dougalAgain", author: "Ed Cann", ocfDeviceType: "oic.d.thermostat", vid: "generic-thermostat-1") { //, vid:"SmartThings-smartthings-Z-Wave_Thermostat"
         capability "Thermostat Mode"
+		capability "Refresh"
+		capability "Battery"
+		capability "Thermostat Heating Setpoint"
+		capability "Health Check"
+		capability "Thermostat"
+		capability "Temperature Measurement"
+		capability "Configuration"
+        capability "Actuator"
+        capability "Sensor"
+        capability "Thermostat Cooling Setpoint"	//attribute- coolingSetpoint	command - setCoolingSetpoint - having both alows extra settings in routines
+        capability "Polling"
         capability "Thermostat Operating State"
         capability "Switch"
 
@@ -39,8 +40,6 @@ metadata {
         command "boostoff"
         command "ecoheat"
         command "ecooff"
-//part of switch cap        command "heat"
-//part of switch cap        command "off"
 		command "temperatureUp"
 		command "temperatureDown"
         command "summer" //summer mode to lock out temp changes in summer time
@@ -48,7 +47,6 @@ metadata {
 		attribute "minHeatingSetpoint", "number" //google alex compatability // shuld be part of heating setpoint to test without//	
 		attribute "maxHeatingSetpoint", "number" //google alex compatability // shuld be part of heating setpoint to test without//	
 		attribute "summer", "String" //for feed
-        
         attribute "thermostatTemperatureSetpoint", "String"						//need for google
     
 	fingerprint inClusters: "0x55,0x98"
@@ -117,7 +115,7 @@ metadata {
 			}
 
 			tileAttribute("device.thermostatSetpoint", key: "HEATING_SETPOINT") {
-				attributeState("thermostatSetpoint", label:'${currentValue}', unit:"°C", defaultState: true, backgroundColors:[
+				attributeState("thermostatSetpoint", label:'${currentValue}',  defaultState: true, backgroundColors:[
 					// Celsius setpoint temp colour range
 				[value: 0, color: "#b8c2de"],
 				[value: 10, color: "#bbe1ea"],
@@ -137,17 +135,23 @@ metadata {
 			])
 			}
 		}
-
+		valueTile("battery", "device.battery", inactiveLabel: true, height: 2, width: 2, decoration: "flat") {
+        	state ("battery", label:'${currentValue}%', icon:"st.samsung.da.RC_ic_charge", defaultState: true, backgroundColors:[
+				[value: 100, color: "#44b621"],
+				[value: 50, color: "#f1d801"],
+				[value: 0, color: "#bc2323"],
+			])
+		}
         standardTile("operatingState", "device.thermostatOperatingState", width: 2, height: 2) { // duplication for feed (icons colours)
             state "pending heat", 	label:'${name}', backgroundColor:"#44b621", icon:"st.nest.nest-leaf"
 			state "heating", 		label:'${name}', backgroundColor:"#e86d13",	icon:"st.thermostat.heat" //backgroundColor:"#d04e00"
             state "emergency heat", label:'${name}', backgroundColor:"#bc2323", icon:"st.thermostat.heat"
 			state "idle", 			label:'${name}', backgroundColor:"#00a0dc", icon:"st.thermostat.heating-cooling-off"
 		}
-/*		standardTile("switcher", "device.switch", height: 2, width: 2, decoration: "flat") {
+		standardTile("switcher", "device.switch", height: 2, width: 2, decoration: "flat") {
 			state "off", action:"on", label: "off", icon: "st.thermostat.heating-cooling-off", backgroundColor:"#ffffff"
 			state "on", action:"off", label: "on", icon: "st.thermostat.heat", backgroundColor:"#00a0dc"
-		}*/
+		}
         
         valueTile("temp", "device.temperature", inactiveLabel: true, height: 2, width: 2, decoration: "flat") {
         	state ("temp", label:'${currentValue}°', defaultState: true, backgroundColors:[
@@ -191,20 +195,12 @@ metadata {
 
         standardTile("refresh", "command.refresh", inactiveLabel: false, height: 2, width: 2,
                      decoration: "flat") {
-                state "default", label:'', action:"refresh.refresh",
+                state "default", label:'refresh', action:"refresh.refresh",
                       icon:"st.secondary.refresh"
         }
-
-        valueTile("battery", "device.battery", inactiveLabel: true, height: 2, width: 2, decoration: "flat") {
-        	state ("battery", label:'${currentValue}%', icon:"st.samsung.da.RC_ic_charge", defaultState: true, backgroundColors:[
-				[value: 100, color: "#44b621"],
-				[value: 50, color: "#f1d801"],
-				[value: 0, color: "#bc2323"],
-			])
-		}
         
 		standardTile("boostMode", "device.thermostatMode", height: 2, width: 2, decoration: "flat") {
-			state "default", action:"boost", icon: "st.thermostat.heat"
+			state "default", label:'press for boost', action:"boost", icon: "st.thermostat.heat"
 			state "emergency heat", action:"boostoff", icon: "st.thermostat.heat", backgroundColor:"#bc2323"
 		}
 
@@ -215,18 +211,18 @@ metadata {
 		}
 
 		standardTile("lockMode", "device.protectionState", height: 2, width: 2, decoration: "flat") {
-			state "unlocked", action:"lock", icon: "st.tesla.tesla-locked"
-			state "locked", action:"unlock", icon: "st.tesla.tesla-locked", backgroundColor:"#1e9cbb"
+			state "unlocked", label:'press to lock',action:"lock", icon: "st.tesla.tesla-locked"
+			state "locked", label:'press to unlock',action:"unlock", icon: "st.tesla.tesla-locked", backgroundColor:"#1e9cbb"
 		}
 
 		standardTile("turnOff", "device.thermostatMode", height: 2, width: 2, decoration: "flat") {
-			state "default", action:"off", icon: "st.thermostat.heating-cooling-off"
-            state "off", action:"heat", icon: "st.thermostat.heating-cooling-off", backgroundColor:"#1e9cbb"
+			state "default", label:'press for off', action:"off", icon: "st.thermostat.heating-cooling-off"
+            state "off", label:'press for heat', action:"heat", icon: "st.thermostat.heating-cooling-off", backgroundColor:"#1e9cbb"
 			
 		}
 		
         standardTile("configureAfterSecure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "configure", label:'', action:"configure", icon:"st.secondary.configure"
+			state "configure", label:'config not req', action:"configure", icon:"st.secondary.configure"
             state "configdue", label: "press me", action:"configure", icon:"st.secondary.configure", backgroundColor:"#bc2323"
 		}
 		standardTile("summer", "device.summer", height: 2, width: 2, decoration: "flat") {
@@ -289,7 +285,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
     	case 1:
         	map.name = "temperature"
             map.unit = cmd.scale == 1 ? "F" : "C"
-            state.temperature = cmd.scaledSensorValue.toString()
+            state.temperature = cmd.scaledSensorValue //.toString()
             break;
 		case 2:
         	map.name = "value"
@@ -297,8 +293,8 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
             break;
 	}
     log.info "RepRecived $cmd"
-    //createEvent(map)
-    sendEvent(map)
+    createEvent(map)
+    //sendEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -313,8 +309,8 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
     }
     state.lastBatteryReportReceivedAt = new Date().time // Store time of last battery update so we don't ask every wakeup, see WakeUpNotification handler
     log.info "RepRecived $cmd"
-    //createEvent(map)
-	sendEvent(map)
+    createEvent(map)
+	//sendEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
@@ -361,12 +357,11 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSuppo
 		if(cmd.auto) { supportedModes << "auto" }
 		if(cmd.auxiliaryemergencyHeat) { supportedModes << "emergency heat" } //boost
     	if (cmd.energySaveHeat) { supportedModes << "eco"} //eco //removed 4/2/19 == true)
-	state.supportedModes = supportedModes.toString()
-    //log.info "modes are ${state.supportedModes}"
+	state.supportedModes = supportedModes //.toString()
+    log.info "modes are ${state.supportedModes}"
 	
-	
-    updateDataValue("availableThermostatModes", state.supportedModes.toString())
-    sendEvent(name: "supportedThermostatModes", value: state.supportedModes, displayed: false)
+    //updateDataValue("availableThermostatModes", supportedModes.toString())
+    sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
     log.info "RepRec $cmd, modes are $supportedModes"
 }
 
@@ -385,7 +380,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd){
 	log.info "RepRecived - $cmd - - Valve open '${cmd.value}'%"
-    sendEvent(name: "valve", value: cmd.value, descriptionText: "Valve open '${cmd.value}'%")
+    createEvent(name: "valve", value: cmd.value, unit: "%", descriptionText: "Valve open '${cmd.value}'%")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
@@ -393,48 +388,57 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd){
 	if (cmd.value == 255) { //255 - 0xFF = normall mode
     	state.thermostatMode = "heat"
         state.thermostatOperatingState = "heating"
+        state.switch = "on"
     }
     if (cmd.value == 240){ //240 - 0xF0 = boost
     	state.thermostatMode = "emergency heat"
         state.thermostatOperatingState = "emergency heat"
+        state.switch = "on"
     }
     if (cmd.value == 0){ //0 - 0x00 = eco
     	state.thermostatMode = "cool"
         state.thermostatOperatingState = "pending heat"
+        state.switch = "on"
     }
     if (cmd.value == 15){ //15 - 0x0F = off
     	state.thermostatMode = "off"
         state.thermostatOperatingState = "idle"
+        state.switch = "off"
     }
     //254 - 0xFE = direct valve contol mode
-    
-    event << sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true)
-    event << sendEvent(name: "thermostatOperatingState", value: state.thermostatOperatingState, displayed: true)
+    event << createEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true)
+    event << createEvent(name: "thermostatOperatingState", value: state.thermostatOperatingState, displayed: true)
+    event << createEvent(name: "switch", value: state.switch, displayed: false)
     
 	log.info "RepRecived ${cmd}, ${state.thermostatMode}, ${state.thermostatOperatingState}"
     return event
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd ) {
-    def event = [ ]
+    def event = []
     if (cmd.mode == 1){ //1 normall heat 0x01
     	state.thermostatMode = "heat"
         state.thermostatOperatingState = "heating"
+        state.switch = "on"
     }
     if (cmd.mode == 15){ //15 boost 0x0F
     	state.thermostatMode = "emergency heat"
         state.thermostatOperatingState = "emergency heat"
+        state.switch = "on"
     }
     if (cmd.mode == 11){ //11 eco 11 0x0B
     	state.thermostatMode = "cool"
         state.thermostatOperatingState = "pending heat"
+        state.switch = "on"
     }
     if (cmd.mode == 0){ // 0 off 0x00
     	state.thermostatMode = "off"
         state.thermostatOperatingState = "idle"
+        state.switch = "off"
     }
-    event << sendEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true)
-    event << sendEvent(name: "thermostatOperatingState", value: state.thermostatOperatingState, displayed: true)
+    event << createEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true)
+    event << createEvent(name: "thermostatOperatingState", value: state.thermostatOperatingState, displayed: true)
+    event << createEvent(name: "switch", value: state.switch, displayed: false)
     
 	log.info "RepRecived ${cmd}, ${state.thermostatMode}, ${state.thermostatOperatingState}"
     return event
@@ -446,21 +450,21 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 	state.precision = cmd.precision
     def radiatorSetPoint = cmd.scaledValue
 
-    if (cmd.setpointType == 1 ) { //this is the standard heating setpoint
-		event << sendEvent(name: "nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
-       	event << sendEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
-		event << sendEvent(name: "thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
-        event << sendEvent(name: "thermostatTemperatureSetpoint", value: radiatorSetPoint.toString(), unit: "C", displayed: false)
+    if (cmd.setpointType == 1 ) { //this is the standard heating setpoint //sendEvent
+		event << createEvent(name: "nextHeatingSetpoint", value: radiatorSetPoint, unit: getTemperatureScale(), displayed: true)
+       	event << createEvent(name: "heatingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: true)
+        event << createEvent(name: "coolingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+		event << createEvent(name: "thermostatSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+        event << createEvent(name: "thermostatTemperatureSetpoint", value: radiatorSetPoint.toString(), unit: "C", displayed: false)
 	}
-    if (cmd.setpointType == 11 ) {
-    	event << sendEvent(name: "coolingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
+    if (cmd.setpointType == 11 ) { // this is eco heat setting on this device
+    	//event << createEvent(name: "coolingSetpoint", value: radiatorSetPoint.toString(), unit: getTemperatureScale(), displayed: false)
     }
     log.info "RepRec ${cmd}"
-    return eventList
+    return event //List
 }
 
 def setDeviceLimits() { // for google and amzon compatability
-
 	sendEvent(name:"minHeatingSetpoint", value: settings.tempMin ?: 4, unit: "°C", displayed: false)
 	sendEvent(name:"maxHeatingSetpoint", value: settings.tempMax ?: 28, unit: "°C", displayed: false)
     log.trace "setDeviceLimits - device max/min set"
@@ -591,8 +595,8 @@ def off() {
 }
                            
 def setThermostatMode(mode){
-	if (mode == "on" || mode == "heat" || mode == "auto") { heat() }
-    if (mode == "off") { off()}
+	if (mode == "on" || mode == "heat" || mode == "auto" || mode == "1") { heat() }
+    if (mode == "off" || mode == "0") { off()}
     if (mode == "cool" || mode == "eco") { ecoheat() }
     if (mode == "emergency heat") {boost()}
     //"rush hour" ??
@@ -606,11 +610,12 @@ def refresh() {
 //input "ecoTemp", "number", title: "Eco Heat Temperature", description: "Temperature to heat to in Eco Mode (8 - 28°C)", range: "8..28", displayDuringSetup: false
             
 def updated() {
+sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
     if (!state.updatedLastRanAt || new Date().time >= state.updatedLastRanAt + 2000) {
         state.updatedLastRanAt = new Date().time
         unschedule(refresh)
         unschedule(poll)
-        log.trace "updated"
+        log.trace "updated 1"
         runIn (05, configure)
         sendEvent(name: "configure", value: "configdue", displayed: false)
         switch(refreshRate) {
@@ -644,17 +649,17 @@ def poll() { // If you add the Polling capability to your device type, this comm
 		log.trace "POLL - Asking for battery report as over 1 days since"
        	cmds << zwave.batteryV1.batteryGet()
 	}
-	
-    if (!state.extra || (new Date().time) - state.extra > (30*60000)) {			// mimutes * millseconds these settings shouldnt be needs as device should send response at time of update
-    	cmds <<	zwave.thermostatModeV2.thermostatModeGet()							// get mode
+	//once an hour ask for everything
+    if (!state.extra || (new Date().time) - state.extra > (60*60000)) {			// mimutes * millseconds these settings shouldnt be needs as device should send response at time of update
+    	//cmds <<	zwave.thermostatModeV2.thermostatModeGet()							// get mode
     	cmds <<	zwave.thermostatSetpointV1.thermostatSetpointGet(setpointType: 11) 	// get eco/cool setpoint
     	cmds <<	zwave.basicV1.basicGet()											// get mode (basic)	
-    	state.extra = new Date().time
+    	cmds <<	zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)	// get heating setpoint
+        state.extra = new Date().time
     }
-	
     cmds <<	zwave.sensorMultilevelV1.sensorMultilevelGet()						// get temp
-    cmds <<	zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)	// get heating setpoint
 	cmds << zwave.switchMultilevelV3.switchMultilevelGet()						// valve position
+    cmds <<	zwave.thermostatModeV2.thermostatModeGet()							// get mode
     
     log.trace "POLL $cmds"
     secureSequence (cmds)
