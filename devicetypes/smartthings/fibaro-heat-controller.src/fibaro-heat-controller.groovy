@@ -167,6 +167,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpo
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, sourceEndPoint = null) {
 	def map = [name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, 'C', cmd.precision), unit: temperatureScale]
 	if (map.value != "-100.0") {
+		changeTemperatureSensorStatus("online")
 		sendEventToChild(map)
 		createEvent(map)
 	} else {
@@ -317,7 +318,7 @@ def sendEventToChild(event, forced = false) {
 }
 
 def configureChild() {
-	sendEventToChild(createEvent([name: "checkInterval", value: 6 * 60 * 60 + 36, displayed: false]))
+	sendEventToChild(createEvent(name: "DeviceWatch-Enroll", value: [protocol: "zwave", scheme:"untracked"].encodeAsJson(), displayed: false), true)
 }
 
 private refreshChild() {
