@@ -63,7 +63,7 @@ def updated() {
 def initialize() {
 	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
-	if(isUntrackedAeotec()) {
+	if(isUntrackedAeotec() || isUntrackedFibaro()) {
 		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 	} else {
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -205,9 +205,9 @@ private addChildButtons(numberOfButtons) {
 private getEventsMap() {[
 		0: "pushed",
 		1: "held",
-		//2: "down_hold",
+		2: "down_hold",
 		3: "double",
-		//4: "pushed_3x"
+		4: "pushed_3x"
 ]}
 
 private getProdNumberOfButtons() {[
@@ -220,12 +220,16 @@ private getProdNumberOfButtons() {[
 
 private getSupportedButtonValues() {
 	def values = ["pushed", "held"]
-	if (isFibaro()) values << "double"
+	if (isFibaro()) values += ["double", "down_hold", "pushed_3x"]
 	return values
 }
 
 private isFibaro() {
 	zwaveInfo.mfr?.contains("010F")
+}
+
+private isUntrackedFibaro() {
+	isFibaro() && zwaveInfo.prod?.contains("1001")
 }
 
 private isUntrackedAeotec() {
