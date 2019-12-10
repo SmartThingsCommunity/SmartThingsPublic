@@ -31,6 +31,7 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "DS01", deviceJoinName: "eWeLink Door Sensor"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "Aurora", model: "WindowSensor51AU", deviceJoinName: "Aurora Smart Door/Window Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "HEIMAN", model: "DoorSensor-N", deviceJoinName: "HEIMAN Door Sensor"
 	}
 
 	simulator {
@@ -117,7 +118,7 @@ def refresh() {
 	log.debug "Refreshing  Battery and ZONE Status"
 	def manufacturer = getDataValue("manufacturer")
 	def refreshCmds =  zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS)
-	if (manufacturer == "ORVIBO" || manufacturer == "eWeLink") {
+	if (manufacturer == "ORVIBO" || manufacturer == "eWeLink" || manufacturer == "HEIMAN") {
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021)
 	} else { // this is actually just supposed to be for Aurora, but we'll make it the default as it's more widely supported
 		refreshCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020)
@@ -139,7 +140,7 @@ def configure() {
 	//The electricity attribute is reported without bind and reporting CFG. The TI plan reports the power once in about 10 minutes; the NXP plan reports the electricity once in 20 minutes
 	if (manufacturer == "Aurora") {
 		cmds = zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) + zigbee.batteryConfig()
-	} else if (manufacturer == "eWeLink") {
+	} else if (manufacturer == "eWeLink" || manufacturer == "HEIMAN") {
 		cmds = zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) + zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 600, 1)
 	}
 	cmds += refresh()
