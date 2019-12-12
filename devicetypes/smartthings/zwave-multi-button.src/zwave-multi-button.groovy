@@ -31,6 +31,7 @@ metadata {
 		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //EU
 		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //US
 		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //EU
+		fingerprint mfr: "010F", prod: "1001", model: "3000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button" //AU
 	}
 
 	tiles(scale: 2) {
@@ -62,7 +63,7 @@ def updated() {
 def initialize() {
 	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
-	if(isUntrackedAeotec()) {
+	if(isUntrackedAeotec() || isUntrackedFibaro()) {
 		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 	} else {
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -204,9 +205,9 @@ private addChildButtons(numberOfButtons) {
 private getEventsMap() {[
 		0: "pushed",
 		1: "held",
-		//2: "down_hold",
+		2: "down_hold",
 		3: "double",
-		//4: "pushed_3x"
+		4: "pushed_3x"
 ]}
 
 private getProdNumberOfButtons() {[
@@ -219,12 +220,16 @@ private getProdNumberOfButtons() {[
 
 private getSupportedButtonValues() {
 	def values = ["pushed", "held"]
-	if (isFibaro()) values << "double"
+	if (isFibaro()) values += ["double", "down_hold", "pushed_3x"]
 	return values
 }
 
 private isFibaro() {
 	zwaveInfo.mfr?.contains("010F")
+}
+
+private isUntrackedFibaro() {
+	isFibaro() && zwaveInfo.prod?.contains("1001")
 }
 
 private isUntrackedAeotec() {
