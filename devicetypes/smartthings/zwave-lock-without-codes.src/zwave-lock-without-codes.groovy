@@ -446,8 +446,8 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 		case 18: // Locked with keypad
 			codeID = readCodeSlotId(cmd)
 			map = [ name: "lock", value: "locked" ]
-            map.descriptionText = "Locked by keypad"
-            map.data = [ method: "keypad" ]
+			map.descriptionText = "Locked by keypad"
+			map.data = [ method: "keypad" ]
 			break
 		case 21: // Manually locked
 			map = [ name: "lock", value: "locked", data: [ method: (cmd.alarmLevel == 2) ? "keypad" : "manual" ] ]
