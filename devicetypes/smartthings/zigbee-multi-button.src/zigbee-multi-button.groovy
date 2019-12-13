@@ -18,7 +18,7 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition (name: "Zigbee Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
+	definition (name: "Zigbee Multi Button", namespace: "smartthings", author: "SmartThings", mcdSync: true, ocfDeviceType: "x.com.st.d.remotecontroller") {
 		capability "Actuator"
 		capability "Battery"
 		capability "Button"
