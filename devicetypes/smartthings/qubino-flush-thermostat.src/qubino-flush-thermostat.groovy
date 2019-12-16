@@ -331,9 +331,9 @@ private getCurrentSetpointType() {
 }
 
 private getMaxSetpointTemperature() {
-		temperatureScale == 'C' ? 40 : 104
+		temperatureScale == 'C' ? 80 : 176
 }
 
 private getMinSetpointTemperature() {
-		temperatureScale == 'C' ? -12 : 11
+		temperatureScale == 'C' ? -25 : -13
 }
