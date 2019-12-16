@@ -32,7 +32,7 @@ metadata {
 		}
 
         valueTile("friendlyName", "friendlyName", width: 3, height: 1) {
-			state "friendlyName", label: "Friendly Name: ${currentValue}", backgroundColor: "#ffffff"
+			state "friendlyName", label: 'Friendly Name: ${currentValue}', backgroundColor: "#ffffff"
 		}
 
         valueTile("version", "version", width: 3, height: 1) {
@@ -44,7 +44,7 @@ metadata {
 		}
 
         valueTile("groupTopic", "groupTopic", width: 3, height: 1) {
-			state "groupTopic", label: "Group Topic: ${currentValue}", backgroundColor: "#ffffff"
+			state "groupTopic", label: 'Group Topic: ${currentValue}', backgroundColor: "#ffffff"
 		}
 
         valueTile("ssid1", "ssid1", width: 3, height: 1) {
@@ -64,7 +64,7 @@ metadata {
 		}
 
         valueTile("upTime", "upTime", width: 3, height: 1) {
-			state "upTime", label: "Up Time: ${currentValue}", backgroundColor: "#ffffff"
+			state "upTime", label: 'Up Time: ${currentValue}', backgroundColor: "#ffffff"
 		}
 
         valueTile("vcc", "vcc", width: 3, height: 1) {
