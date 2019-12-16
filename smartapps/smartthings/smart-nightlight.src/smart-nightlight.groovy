@@ -171,4 +171,3 @@ private getSunriseOffset() {
 private getSunsetOffset() {
 	sunsetOffsetValue ? (sunsetOffsetDir == "Before" ? "-$sunsetOffsetValue" : sunsetOffsetValue) : null
 }
-
