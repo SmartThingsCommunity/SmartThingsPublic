@@ -14,6 +14,7 @@
  *
  */
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
 	definition (name: "NYCE Motion Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-2") {
@@ -23,8 +24,6 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
-
-		command "enrollResponse"
 
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3041"
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3043", deviceJoinName: "NYCE Ceiling Motion Sensor"
@@ -52,7 +51,8 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	// device report interval is 0x3600 seconds (230.4 minutes/3.84 hours) so checkinterval is ~that * 2 + 2 minutes
+	initialize()
 }
 
 def parse(String description) {
@@ -165,10 +165,7 @@ private Map parseIasMessage(String description) {
 def refresh()
 {
 	log.debug "refresh called"
-	[
-		"st rattr 0x${device.deviceNetworkId} 1 1 0x20"
-
-	]
+	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) //battery read
 }
 
 def ping() {
@@ -176,52 +173,13 @@ def ping() {
 }
 
 def configure() {
-
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
 	log.debug "Configuring Reporting, IAS CIE, and Bindings."
-	def configCmds = [
-		"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-		"zcl global send-me-a-report 1 0x20 0x20 0x3600 0x3600 {01}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-
-		"zdo bind 0x${device.deviceNetworkId} 1 1 0x001 {${device.zigbeeId}} {}", "delay 1500",
-
-		"raw 0x500 {01 23 00 00 00}", "delay 200",
-		"send 0x${device.deviceNetworkId} 1 1", "delay 1500",
-	]
-	return configCmds + refresh() + enrollResponse() // send refresh cmds as part of config
+	return zigbee.batteryConfig(3600, 3600, 1) +
+			zigbee.enrollResponse() +
+			refresh() +
+			zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 60 * 5, null) // send refresh cmds as part of config
 }
 
-def enrollResponse() {
-	log.debug "Sending enroll response"
-	[
-
-	"raw 0x500 {01 23 00 00 00}", "delay 200",
-	"send 0x${device.deviceNetworkId} 1 1"
-
-	]
-}
-
-private hex(value) {
-	new BigInteger(Math.round(value).toString()).toString(16)
-}
-
-private String swapEndianHex(String hex) {
-	reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-	int i = 0;
-	int j = array.length - 1;
-	byte tmp;
-	while (j > i) {
-		tmp = array[j];
-		array[j] = array[i];
-		array[i] = tmp;
-		j--;
-		i++;
-	}
-	return array
+def initialize(){
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60 * 4 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }

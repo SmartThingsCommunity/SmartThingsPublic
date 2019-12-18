@@ -85,7 +85,7 @@ def parse(String description) {
 	return event ? createEvent(event) : event
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	zigbee.setLevel(value)
 }
 

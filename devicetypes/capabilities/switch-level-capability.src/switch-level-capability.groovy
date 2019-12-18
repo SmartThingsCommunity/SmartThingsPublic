@@ -71,7 +71,7 @@ def off() {
 	'off'
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	"setLevel: $value"
 }
 

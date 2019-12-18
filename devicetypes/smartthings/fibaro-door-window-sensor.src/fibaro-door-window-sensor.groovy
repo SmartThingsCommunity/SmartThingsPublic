@@ -105,11 +105,28 @@
 	}
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x30: 1,  // Sensor Binary
+		0x31: 2,  // Sensor MultiLevel
+		0x56: 1,  // Crc16Encap
+		0x60: 3,  // Multi-Channel
+		0x70: 2,  // Configuration
+		0x72: 2,  // Manufacturer Specific
+		0x80: 1,  // Battery
+		0x84: 1,  // WakeUp
+		0x9C: 1   // Sensor Alarm
+	]
+}
+
 // Parse incoming device messages to generate events 
 def parse(String description)
 {
 	def result = []
-	def cmd = zwave.parse(description, [0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x72: 2, 0x56: 1, 0x60: 3])
+	def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
 		result += zwaveEvent(cmd)
 	}
@@ -119,7 +136,7 @@ def parse(String description)
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 {
-	def versions = [0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x72: 2, 0x60: 3]
+	def versions = commandClassVersions
 	// def encapsulatedCommand = cmd.encapsulatedCommand(versions)
 	def version = versions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)

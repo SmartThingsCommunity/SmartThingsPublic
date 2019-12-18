@@ -1,5 +1,5 @@
 /**
- *  Spruce Scheduler Pre-release V2.53.1 - Updated 11/07/2016, BAB
+ *  Spruce Scheduler Pre-release V2.55 - Updated 8/2019
  *
  *
  *  Copyright 2015 Plaid Systems
@@ -13,6 +13,15 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+
+-------v2.55-------------------
+-update weather zipcode field to find lat&long if no zipcode found, works in Canada
+-remove zipcode page and move entry to weatherpage
+-correct behavior when no days selected
+-add additional checks for missing location
+
+-------v2.54-------------------
+-update weather to use new weather api
 
 -------v2.53.1-------------------
 -ln 210: enableManual string modified
@@ -42,7 +51,6 @@ definition(
 preferences {
     page(name: 'startPage')
     page(name: 'autoPage')
-    page(name: 'zipcodePage')
     page(name: 'weatherPage')
     page(name: 'globalPage')
     page(name: 'contactPage')
@@ -104,7 +112,7 @@ def startPage(){
                 description: "Valve Delay: ${pumpDelayString()} s\n${waterStoppersString()}\nSchedule Sync: ${syncString()}"
             )
         }
-
+        
         section(''){
             href(title: 'Spruce Irrigation Knowledge Base', //page: 'customPage',
                   description: 'Explore our knowledge base for more information on Spruce and Spruce sensors.  Contact form is ' +
@@ -112,6 +120,12 @@ def startPage(){
                 required: false, style:'embedded',
                 image: 'http://www.plaidsystems.com/smartthings/st_spruce_leaf_250f.png',
                 url: 'http://support.spruceirrigation.com'
+            )
+        }
+        
+        section(''){
+            href(title: 'Scheduler Version 2.55',
+                  description: "Updated June 2019"
             )
         }
     }
@@ -138,7 +152,6 @@ def globalPage() {
         section('Push Notifications') {
                 input(name: 'notify', type: 'enum', title: 'Select what push notifications to receive.', required: false,
                     multiple: true, metadata: [values: ['Daily', 'Delays', 'Warnings', 'Weather', 'Moisture', 'Events']])
-                input('recipients', 'contact', title: 'Send push notifications to', required: false, multiple: true)
                 input(name: 'logAll', type: 'bool', title: 'Log all notices to Hello Home?', defaultValue: 'false', options: ['true', 'false'])
         }
     }
@@ -146,12 +159,8 @@ def globalPage() {
 
 def weatherPage() {
     dynamicPage(name: 'weatherPage', title: 'Weather settings') {
-       section('Location to get weather forecast and conditions:') {
-            href(name: 'hrefWithImage', title: "${zipString()}", page: 'zipcodePage',
-                 description: 'Set local weather station',
-                 required: false,
-                 image: 'http://www.plaidsystems.com/smartthings/rain.png'
-               )
+       section("Location to get weather forecast and conditions:") {
+            input(name: 'zipcode', type: 'text', title: "Zipcode default location: ${getDefaultLocation()}", required: false, submitOnChange: true)
             input 'isRain', 'bool', title: 'Enable Rain check:', metadata: [values: ['true', 'false']]
             input 'rainDelay', 'decimal', title: 'inches of rain that will delay watering, default: 0.2', required: false
             input 'isSeason', 'bool', title: 'Enable Seasonal Weather Adjustment:', metadata: [values: ['true', 'false']]
@@ -159,19 +168,11 @@ def weatherPage() {
     }
 }
 
-def zipcodePage() {
-    return dynamicPage(name: 'zipcodePage', title: 'Spruce weather station setup') {
-        section(''){
-            input(name: 'zipcode', type: 'text', title: 'Zipcode. Default value is current Zip code',
-                defaultValue: getPWSID(), required: false, submitOnChange: true )
-        }
-    }
-}
-
-private String getPWSID() {
-    String PWSID = location.zipCode
-    if (zipcode) PWSID = zipcode
-    return PWSID
+private String getDefaultLocation() {
+    String DefaultLocation = "Not set"
+    if(location?.zipCode) DefaultLocation = location.zipCode
+    if (!location?.zipCode?.isNumber() && location?.latitude && location?.longitude) DefaultLocation = "${location.latitude.floatValue()},${location.longitude.floatValue()}"
+    return DefaultLocation
 }
 
 private String startTimeString(){
@@ -217,7 +218,7 @@ private String waterStoppersString(){
         stoppers += ': None\n'
     }
     int cd = 10
-    if (settings.contactDelay && settings.contactDelay > 10) cd = settings.contactDelay.toInteger()
+    if (settings.contactDelay && settings.contactDelay.toInteger() > 10) cd = settings.contactDelay.toInteger()
     stoppers += "Restart Delay: ${cd} secs"
     return stoppers
 }
@@ -282,9 +283,9 @@ private String hhmm(time, fmt = 'h:mm a'){
 }
 
 private String pumpDelayString(){
+
     if (!pumpDelay) return '0' else return pumpDelay as String
-
-
+    
 }
 
 def delayPage() {
@@ -308,8 +309,7 @@ def delayPage() {
                       'the switches are reset.\n\nCaution: if all contacts or switches are left in the stop state, the dependent ' +
                       'schedule(s) will never run.')
             input(name: 'contacts', title: 'Select water delay contact sensors', type: 'capability.contactSensor', multiple: true,
-                required: false, submitOnChange: true)
-            // if (settings.contact) settings.contact = null // 'contact' has been deprecated
+                required: false, submitOnChange: true)            
             if (contacts)
                 input(name: 'contactStop', title: 'Stop watering when sensors are...', type: 'enum', required: (settings.contacts != null),
                     options: ['open', 'closed'], defaultValue: 'open')
@@ -457,14 +457,6 @@ def zonePage() {
     }
 }
 
-// Verify whether a zone is active
-/*//Code for fresh install
-private boolean zoneActive(String zoneStr){
-    if (!zoneNumber) return false
-    if (zoneNumber.contains(zoneStr)) return true    // don't display zones that are not selected
-    return false
-}
-*/
 //code change for ST update file -> change input to zoneNumberEnum
 private boolean zoneActive(z){
     if (!zoneNumberEnum && zoneNumber && zoneNumber >= z.toInteger()) return true
@@ -504,26 +496,23 @@ def zoneSetPage() {
             paragraph image: "http://www.plaidsystems.com/smartthings/st_${state.app}.png",
             title: 'Current Settings',
             "${display("${state.app}")}"
-        }
-
-        section(''){
             input "name${state.app}", 'text', title: 'Zone name?', required: false, defaultValue: "Zone ${state.app}"
         }
-
+        
         section(''){
              href(name: 'tosprinklerSetPage', title: "Sprinkler type: ${setString('zone')}", required: false, page: 'sprinklerSetPage',
                 image: "${getimage("${settings."zone${state.app}"}")}",
                 //description: "Set sprinkler nozzle type or turn zone off")
                 description: 'Sprinkler type descriptions')
              input "zone${state.app}", 'enum', title: 'Sprinkler Type', multiple: false, required: false, defaultValue: 'Off', submitOnChange: true, metadata: [values: ['Off', 'Spray', 'Rotor', 'Drip', 'Master Valve', 'Pump']]
-        }
-
-        section(''){
+         }
+         
+         section(''){
             href(name: 'toplantSetPage', title: "Landscape Select: ${setString('plant')}", required: false, page: 'plantSetPage',
                 image: "${getimage("${settings["plant${state.app}"]}")}",
                 //description: "Set landscape type")
                 description: 'Landscape type descriptions')
-            input "plant${state.app}", 'enum', title: 'Landscape', multiple: false, required: false, submitOnChange: true, metadata: [values: ['Lawn', 'Garden', 'Flowers', 'Shrubs', 'Trees', 'Xeriscape', 'New Plants']]
+             input "plant${state.app}", 'enum', title: 'Landscape', multiple: false, required: false, submitOnChange: true, metadata: [values: ['Lawn', 'Garden', 'Flowers', 'Shrubs', 'Trees', 'Xeriscape', 'New Plants']]
             }
 
         section(''){
@@ -532,8 +521,8 @@ def zoneSetPage() {
                 //description: "Set watering options")
                 description: 'Watering option descriptions')
             input "option${state.app}", 'enum', title: 'Options', multiple: false, required: false, defaultValue: 'Cycle 2x', submitOnChange: true,metadata: [values: ['Slope', 'Sand', 'Clay', 'No Cycle', 'Cycle 2x', 'Cycle 3x']]
-        }
-
+            }
+        
         section(''){
             paragraph image: 'http://www.plaidsystems.com/smartthings/st_sensor_200_r.png',
                       title: 'Moisture sensor settings',
@@ -546,7 +535,7 @@ def zoneSetPage() {
             paragraph image: 'http://www.plaidsystems.com/smartthings/st_timer.png',
                       title: 'Optional: Enter total watering time per week',
                       'This value will replace the calculated time from other settings'
-                input "minWeek${state.app}", 'number', title: 'Minimum water time per week.\nDefault: 0 = autoadjust', description: 'minutes per week', required: false
+                input "minWeek${state.app}", 'number', title: 'Water time per week.\nDefault: 0 = autoadjust', description: 'minutes per week', required: false
                 input "perDay${state.app}", 'number', title: 'Guideline value for time per day, this divides minutes per week into watering days. Default: 20', defaultValue: '20', required: false
         }
     }
@@ -682,29 +671,29 @@ def setPage(i){
 }
 
 private String getaZoneSummary(int zone){
-      if (!settings."zone${zone}" || (settings."zone${zone}" == 'Off')) return "${zone}: Off"
+    if (!settings."zone${zone}" || (settings."zone${zone}" == 'Off')) return "${zone}: Off"
 
-      String daysString = ''
+    String daysString = ''
     int tpw = initTPW(zone)
-      int dpw = initDPW(zone)
-      int runTime = calcRunTime(tpw, dpw)
+    int dpw = initDPW(zone)
+    int runTime = calcRunTime(tpw, dpw)
 
-      if ( !learn && (settings."sensor${zone}")) {
-           daysString = 'if Moisture is low on: '
-         dpw = daysAvailable()
-      }
-      if (days && (days.contains('Even') || days.contains('Odd'))) {
+    if ( !learn && (settings."sensor${zone}")) {
+        daysString = 'if Moisture is low on: '
+        dpw = daysAvailable()
+    }
+    if (days && (days.contains('Even') || days.contains('Odd'))) {
         if (dpw == 1) daysString = 'Every 8 days'
         if (dpw == 2) daysString = 'Every 4 days'
         if (dpw == 4) daysString = 'Every 2 days'
         if (days.contains('Even') && days.contains('Odd')) daysString = 'any day'
-      }
-      else {
+    }
+    else {
         def int[] dpwMap = [0,0,0,0,0,0,0]
-         dpwMap = getDPWDays(dpw)
-         daysString += getRunDays(dpwMap)
-      }
-      return "${zone}: ${runTime} min, ${daysString}"
+        dpwMap = getDPWDays(dpw)
+        daysString += getRunDays(dpwMap)
+    }
+    return "${zone}: ${runTime} min, ${daysString}"
 }
 
 private String getZoneSummary(){
@@ -803,10 +792,11 @@ private String getname(String i) {
     if (settings."name${i}") return settings."name${i}" else return "Zone ${i}"
 }
 
-private String zipString() {
-    if (!settings.zipcode) return "${location.zipCode}"
-    if (!settings.zipcode.isNumber()) return "pws:${settings.zipcode}"
-    else return settings.zipcode
+private String zipString() {    
+    if (settings?.zipcode) return settings.zipcode
+    if (location?.zipCode?.isNumber()) return "${location.zipCode}"
+    if (location?.latitude && location?.longitude) return "${location.latitude.floatValue()},${location.longitude.floatValue()}"
+    return "not set"
 }
 
 //app install
@@ -1064,7 +1054,7 @@ private String getRunDays(day1,day2,day3,day4,day5,day6,day7)
 //start manual schedule
 def manualStart(evt){
     boolean running = attemptRecovery()        // clean up if prior run crashed
-
+	//isWeather()//use for testing
     if (settings.enableManual && !running && (settings.switches.currentStatus != 'pause')){
         if (settings.sync && ( (settings.sync.currentSwitch != 'off') || settings.sync.currentStatus == 'pause') ) {
             note('skipping', "${app.label}: Manual run aborted, ${settings.sync.displayName} appears to be busy", 'a')
@@ -1326,7 +1316,7 @@ def cycleLoop(int i)
               int runToday = 0
               // if manual, or every day allowed, or zone uses a sensor, then we assume we can today
               //  - preCheck() has already verified that today isDay()
-              if ((i == 0) || (state.daysAvailable == 7) || (settings."sensor${zone}")) {
+              if ((i == 0) || /*(state.daysAvailable == 7) ||*/ (settings."sensor${zone}")) {
                   runToday = 1
               }
               else {
@@ -2024,10 +2014,57 @@ def setSeason() {
     }
 }
 
+//TWC functions
+def getCity(){
+	String wzipcode = zipString()
+    String city
+    try {
+			city = getTwcLocation(wzipcode)?.location?.city ?: wzipcode
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			city = "unknown city"
+		}
+    
+    return city
+}
+
+def getConditions(){
+	String wzipcode = zipString()
+    def conditionsData
+    try {
+			conditionsData = getTwcConditions(wzipcode)
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			return null
+		}
+    
+    return conditionsData
+}
+
+def getForecast(){
+	String wzipcode = zipString()
+    def forecastData
+    try {
+			forecastData = getTwcForecast(wzipcode)
+		}
+	catch (e) {
+			log.debug "getTwcLocation exception: $e"
+			// There was a problem obtaining the weather with this zip-code, so fall back to the hub's location and note this for future runs.
+			return null
+		}    
+    
+    return forecastData
+}
+
 //capture today's total rainfall - scheduled for just before midnight each day
 def getRainToday() {
-    def wzipcode = zipString()
-    def conditionsData = getTwcConditions(wzipcode)
+    //def wzipcode = zipString()
+    //def conditionsData = getTwcConditions(wzipcode)
+    def conditionsData = getConditions()
     if (!conditionsData) {
         note('warning', "${app.label}: Please check Zipcode/PWS setting, error: null", 'a')
     } else {
@@ -2047,12 +2084,24 @@ def getRainToday() {
 //check weather, set seasonal adjustment factors, skip today if rainy
 boolean isWeather(){
     if (!settings.isRain && !settings.isSeason) return false
-    String wzipcode = zipString()
-    String city = getTwcLocation(wzipcode).location.city ?: wzipcode
-    def forecastData = getTwcForecast(wzipcode)
-    def conditionsData = getTwcConditions(wzipcode)
-
-    // OK, we have good data, let's start the analysis
+    
+    def city = getCity()
+    def forecastData = getForecast() ?: null
+    def conditionsData = getConditions() ?: null
+    //log.debug forecastData
+    //log.debug conditionsData
+    
+    //if data is null, skip weather adjustments
+    if (!forecastData || !conditionsData) {
+        note('warning', "${app.label}: Please check Zipcode/PWS setting, error: null", 'a')
+        return false
+    }
+        
+   	//check if day or night
+    int not_today = 0
+   	if (forecastData.daypart[0].daypartName[0] != "Today") not_today = 1;
+    
+   	// OK, we have good data, let's start the analysis
     float qpfTodayIn = 0.0
     float qpfTomIn = 0.0
     float popToday = 50.0
@@ -2069,10 +2118,13 @@ boolean isWeather(){
             log.debug 'isWeather(): Unable to get weather forecast.'
             return false
         }
-        qpfTodayIn = forecastData.daypart[0].qpf.toFloat()
-        popToday = forecastData.daypart[0].precipChance.toFloat()
-        qpfTomIn = forecastData.daypart[1].qpf.toFloat()
-        popTom = forecastData.daypart[1].precipChance.toFloat()
+        
+        //log.debug "${forecastData.daypart[0].qpf}"
+        //log.debug "${forecastData.daypart[0].precipChance}"
+        if (forecastData.daypart[0].qpf[not_today]) qpfTodayIn = forecastData.daypart[0].qpf[not_today].toFloat()
+        if (forecastData.daypart[0].precipChance[not_today]) popToday = forecastData.daypart[0].precipChance[not_today].toFloat()
+        if (forecastData.daypart[0].qpf[2]) qpfTomIn = forecastData.daypart[0].qpf[1].toFloat()
+        if (forecastData.daypart[0].precipChance[2]) popTom = forecastData.daypart[0].precipChance[1].toFloat()
         if (qpfTodayIn > 25.0) qpfTodayIn = 25.0
         else if (qpfTodayIn < 0.0) qpfTodayIn = 0.0
         if (qpfTomIn > 25.0) qpfTomIn = 25.0
@@ -2113,12 +2165,12 @@ boolean isWeather(){
     }
 
     log.debug 'isWeather(): build report'
-
+	//log.debug "${forecastData.daypart[0].temperature[not_today]}"
     //get highs
        int highToday = 0
        int highTom = 0
-       highToday = forecastData.daypart[0].temperature[0].toInteger()
-       highTom = forecastData.daypart[1].temperature[0].toInteger()
+       if (forecastData.daypart[0].temperature[not_today]) highToday = forecastData.daypart[0].temperature[not_today].toInteger()
+       if (forecastData.daypart[0].temperature[2]) highTom = forecastData.daypart[0].temperature[2].toInteger()
 
     String weatherString = "${app.label}: ${city} weather:\n TDA: ${highToday}F"
     if (settings.isRain) weatherString = "${weatherString}, ${qpfTodayIn}in rain (${Math.round(popToday)}% PoP)"
@@ -2141,44 +2193,44 @@ boolean isWeather(){
         if (highToday != 0) {
             // is the temp going up or down for the next few days?
             int totalHigh = highToday
-            int j = 1
-            int highs = 1
-            while (j < 4) { // get forecasted high for next 3 days
-                if (forecastData.daypart[j].temperature[0].isNumber()) {
-                    totalHigh += forecastData.daypart[j].temperature[0].toInteger()
+            int j = 2
+            int highs = 1            
+            while (j < 6) { // get forecasted high for next 3 days
+                if (forecastData.daypart[0].temperature[j].isNumber()) {
+                    totalHigh += forecastData.daypart[0].temperature[j].toInteger()
                     highs++
                 }
-                j++
+                j+=2
             }
             if ( highs > 0 ) avgHigh = (totalHigh / highs)
-            heatAdjust = avgHigh / highToday
+            heatAdjust = (avgHigh / highToday).round(2)
         }
         log.debug "highToday ${highToday}, avgHigh ${avgHigh}, heatAdjust ${heatAdjust}"
-
+        
         //get humidity
         int humToday = 0
-        def avehumidity = (forecastData.daypart[0].relativeHumidity[0] + forecastData.daypart[0].relativeHumidity[1])/2
-        if (avehumidity.isNumber())
-            humToday = avehumidity.toInteger()
-
+        int avehumidity = 0
+        log.debug "${forecastData.daypart[0].relativeHumidity[not_today]}"
+        if (forecastData.daypart[0].relativeHumidity[not_today]) humToday = forecastData.daypart[0].relativeHumidity[not_today]
+        
         float humAdjust = 100.0
         float avgHum = humToday.toFloat()
-        if (humToday != 0) {
-            int j = 1
+        
+        if (humToday != 0 && avehumidity != 0) {
+            int j = 2
             int highs = 1
             int totalHum = humToday
-            while (j < 4) {                     // get forcasted humitidty for today and the next 3 days
-                avehumidity = (forecastData.daypart[j].relativeHumidity[0] + forecastData.daypart[j].relativeHumidity[1])/2
-                if (favehumidity.isNumber()) {
-                    totalHum += avehumidity.toInteger()
+            while (j < 6) {                     // get forcasted humitidty for today and the next 3 days                
+                if (forecastData.daypart[0].relativeHumidity[j].isNumber()) {
+                    totalHum += forecastData.daypart[0].relativeHumidity[j]
                     highs++
                 }
-                j++
+                j+=2
             }
             if (highs > 1) avgHum = totalHum / highs
             humAdjust = 1.5 - ((0.5 * avgHum) / humToday)    // basically, half of the delta % between today and today+3 days
         }
-        if (isDebug) log.debug "humToday ${humToday}, avgHum ${avgHum}, humAdjust ${humAdjust}"
+        log.debug "humToday ${humToday}, avgHum ${avgHum}, humAdjust ${humAdjust}"
 
         //daily adjustment - average of heat and humidity factors
         //hotter over next 3 days, more water
@@ -2188,7 +2240,7 @@ boolean isWeather(){
         //
         //Note: these should never get to be very large, and work best if allowed to cumulate over time (watering amount will change marginally
         //        as days get warmer/cooler and drier/wetter)
-           def sa = ((heatAdjust + humAdjust) / 2) * 100.0
+           def sa = ((heatAdjust + humAdjust) / 2)// * 100.0
            state.seasonAdj = sa
            sa = sa - 100.0
         String plus = ''
@@ -2198,20 +2250,22 @@ boolean isWeather(){
         // Apply seasonal adjustment on Monday each week or at install
         if ((getWeekDay() == 1) || (state.weekseasonAdj == 0)) {
             //get daylight
-
              if (conditionsData.sunriseTimeLocal && conditionsData.sunsetTimeLocal) {
                  def hours = new java.text.SimpleDateFormat("HH");
                  def minutes = new java.text.SimpleDateFormat("mm");
                  String nowAsISO = hours.format(new Date());
 
-                int getsunRH = hours.format(conditionsData.sunriseTimeLocal).toInteger()
-                int getsunRM = minutes.format(conditionsData.sunriseTimeLocal).toInteger()
-                int getsunSH = hours.format(conditionsData.sunsetTimeLocal).toInteger()
-                int getsunSM = minutes.format(conditionsData.sunsetTimeLocal).toInteger()
+				def sunriseTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss-SSSS", conditionsData.sunriseTimeLocal)
+                def sunsetTime = Date.parse("yyyy-MM-dd'T'HH:mm:ss-SSSS", conditionsData.sunsetTimeLocal)
+                
+                int getsunRH = hours.format(sunriseTime).toInteger()                
+                int getsunRM = minutes.format(sunriseTime).toInteger()
+                int getsunSH = hours.format(sunsetTime).toInteger()
+                int getsunSM = minutes.format(sunsetTime).toInteger()
 
                 int daylight = ((getsunSH * 60) + getsunSM)-((getsunRH * 60) + getsunRM)
                 if (daylight >= 850) daylight = 850
-
+                
                 //set seasonal adjustment
                 //seasonal q (fudge) factor
                 float qFact = 75.0

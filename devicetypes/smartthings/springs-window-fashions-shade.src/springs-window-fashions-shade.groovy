@@ -11,9 +11,13 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import groovy.json.JsonOutput
+
+
 metadata {
     definition (name: "Springs Window Fashions Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
         capability "Window Shade"
+        capability "Window Shade Preset"
         capability "Battery"
         capability "Refresh"
         capability "Health Check"
@@ -110,6 +114,7 @@ def getCheckInterval() {
 
 def installed() {
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+    sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
     response(refresh())
 }
 
@@ -239,6 +244,11 @@ def setLevel(value, duration = null) {
 
 def presetPosition() {
     zwave.switchMultilevelV1.switchMultilevelSet(value: 0xFF).format()
+}
+
+def pause() {
+    log.debug "pause()"
+    stop()
 }
 
 def stop() {

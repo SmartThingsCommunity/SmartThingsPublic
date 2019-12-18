@@ -26,6 +26,7 @@ metadata {
 		capability "Health Check"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0500,0502", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "SRAC_00.00.00.16TC", deviceJoinName: "Ozom Smart Siren" // Ozom Siren - SRAC-23ZBS
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0009,0500,0502", outClusters: "0003,0019", manufacturer: "Heiman", model: "WarningDevice", deviceJoinName: "HEIMAN Smart Siren"
 	}
 
 	tiles {

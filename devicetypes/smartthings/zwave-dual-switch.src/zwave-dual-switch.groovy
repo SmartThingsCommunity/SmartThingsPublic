@@ -28,6 +28,9 @@ metadata {
 		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut: "0x82", ui: "0x8700", deviceJoinName: "Aeotec Dual Nano Switch 1"
 		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Light Switch 1"
 		fingerprint mfr: "0258", prod: "0003", model: "108B", deviceJoinName: "NEO coolcam Light Switch 1"
+		fingerprint mfr: "0312", prod: "C000", model: "C004", deviceJoinName: "EVA LOGIK Smart Plug 2CH 1"
+		fingerprint mfr: "0312", prod: "FF00", model: "FF05", deviceJoinName: "Minoston Smart Plug 2CH 1"
+		fingerprint mfr: "0312", prod: "C000", model: "C007", deviceJoinName: "Evalogik Outdoor Smart Plug 2CH 1"
 	}
 
 	// tile definitions
@@ -59,8 +62,7 @@ def installed() {
 	try {
 		String dni = "${device.deviceNetworkId}-ep2"
 		addChildDevice("Z-Wave Binary Switch Endpoint", dni, device.hub.id,
-			[completedSetup: true, label: "${componentLabel}",
-			 isComponent: false, componentName: "ch2", componentLabel: "${componentLabel}"])
+			[completedSetup: true, label: "${componentLabel}", isComponent: false])
 		log.debug "Endpoint 2 (Z-Wave Binary Switch Endpoint) added as $componentLabel"
 	} catch (e) {
 		log.warn "Failed to add endpoint 2 ($desc) as Z-Wave Binary Switch Endpoint - $e"
@@ -88,9 +90,28 @@ def configure() {
 	response(commands + refresh())
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x25: 1,  // Switch Binary
+		0x30: 1,  // Sensor Binary
+		0x31: 2,  // Sensor MultiLevel
+		0x32: 3,  // Meter
+		0x56: 1,  // Crc16Encap
+		0x60: 3,  // Multi-Channel
+		0x70: 2,  // Configuration
+		0x84: 1,  // WakeUp
+		0x98: 1,  // Security
+		0x9C: 1   // Sensor Alarm
+	]
+}
+
 def parse(String description) {
 	def result = null
-	def cmd = zwave.parse(description, [0x20: 1, 0x84: 1, 0x98: 1, 0x56: 1, 0x60: 3])
+	def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
@@ -111,7 +132,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand()
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
 	} else {
@@ -131,7 +152,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-	def versions = [0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2]
+	def versions = commandClassVersions
 	def version = versions[cmd.commandClass as Integer]
 	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
 	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
@@ -141,8 +162,9 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	[:]
 }
 
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	[descriptionText: "$device.displayName: $cmd", isStateChange: true]
+def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint = null) {
+	if (endpoint == null) log.debug("$device.displayName: $cmd")
+	else log.debug("$device.displayName: $cmd endpoint: $endpoint")
 }
 
 def on() {

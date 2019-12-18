@@ -13,7 +13,7 @@
  */
 
 metadata {
-	definition(name: "Aeon Multisensor 6", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.020.00008', executeCommandsLocally: true) {
+	definition(name: "Aeon Multisensor 6", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.020.00008', executeCommandsLocally: true, ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
@@ -31,6 +31,7 @@ metadata {
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A"
 		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A"
 		fingerprint mfr: "0086", prod: "0102", model: "0064", deviceJoinName: "Aeotec MultiSensor 6"
+		fingerprint mfr: "0086", prod: "0202", model: "0064", deviceJoinName: "Aeotec MultiSensor 6" //AU
 	}
 
 	simulator {
@@ -69,15 +70,12 @@ metadata {
 	}
 
 	preferences {
-		input description: "Please consult AEOTEC MULTISENSOR 6 operating manual for advanced setting options. You can skip this configuration to use default settings",
-			title: "Advanced Configuration", type: "paragraph", element: "paragraph"
-
 		input "motionDelayTime", "enum", title: "Motion Sensor Delay Time",
 			options: ["20 seconds", "40 seconds", "1 minute", "2 minutes", "3 minutes", "4 minutes"]
 
 		input "motionSensitivity", "enum", title: "Motion Sensor Sensitivity", options: ["maximum", "normal", "minimum", "disabled"]
 
-		input "reportInterval", "enum", title: "Sensors Report Interval",
+		input "reportInterval", "enum", title: "Report Interval", description: "How often the device should report in minutes",
 			options: ["8 minutes", "15 minutes", "30 minutes", "1 hour", "6 hours", "12 hours", "18 hours", "24 hours"]
 	}
 

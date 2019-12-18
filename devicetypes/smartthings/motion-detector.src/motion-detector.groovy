@@ -12,11 +12,14 @@
  *
  */
 metadata {
-	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Motion Detector", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-motion-9") {
+		capability "Actuator"
+		capability "Health Check"
 		capability "Motion Sensor"
 		capability "Sensor"
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0009,0500"
+		fingerprint manufacturer: "Aurora", model: "MotionSensor51AU", deviceJoinName: "Aurora Smart PIR Sensor" //raw description 22 0104 0107 00 03 0000 0003 0406 00
 	}
 
 	// simulator metadata
@@ -32,14 +35,39 @@ metadata {
 				attributeState("active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#00A0DC")
 				attributeState("inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#CCCCCC")
 			}
- 		}
+		}
 		main "motion"
 		details "motion"
 	}
 }
 
+def installed() {
+	initialize()
+	if(isAuroraMotionSensor51AU()) {
+		// Aurora Smart PIR Sensor doesn't report when there is no motion during pairing process
+		// reports are sent only if there is motion detected, so fake event is needed here
+		sendEvent(name: "motion", value: "inactive", displayed: false)
+	}
+}
+
+def updated() {
+	initialize()
+}
+
+def initialize() {
+	if (isTracked()) {
+		// Device-Watch simply pings if no device events received for 12min(checkInterval)
+		log.debug "device tracked"
+		sendEvent(name: "checkInterval", value: 10 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+	} else {
+		log.debug "device untracked"
+		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zigbee", scheme:"untracked"]), displayed: false)
+	}
+}
+
 // Parse incoming device messages to generate events
 def parse(String description) {
+	log.debug "$description"
 	def name = null
 	def value = description
 	def descriptionText = null
@@ -51,11 +79,19 @@ def parse(String description) {
 	}
 
 	def result = createEvent(
-		name: name,
-		value: value,
-		descriptionText: descriptionText
+			name: name,
+			value: value,
+			descriptionText: descriptionText
 	)
 
 	log.debug "Parse returned ${result?.descriptionText}"
 	return result
+}
+
+def isTracked() {
+	return isAuroraMotionSensor51AU()
+}
+
+def isAuroraMotionSensor51AU() {
+	return device.getDataValue("model") == "MotionSensor51AU"
 }

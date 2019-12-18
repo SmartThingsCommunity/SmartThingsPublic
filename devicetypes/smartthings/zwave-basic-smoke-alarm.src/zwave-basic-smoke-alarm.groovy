@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Z-Wave Basic Smoke Alarm", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Basic Smoke Alarm", namespace: "smartthings", author: "SmartThings", genericHandler: "Z-Wave") {
 		capability "Smoke Detector"
 		capability "Sensor"
 		capability "Battery"
@@ -23,6 +23,8 @@ metadata {
 		//zw:S type:0701 mfr:026F prod:0001 model:0001 ver:1.07 zwv:4.24 lib:03 cc:5E,86,72,5A,73,80,71,85,59,84 role:06 ff:8C01 ui:8C01
 		fingerprint mfr: "026F ", prod: "0001", model: "0001", deviceJoinName: "FireAngel Thermoptek Smoke Alarm"
 		fingerprint mfr: "013C", prod: "0002", model: "001E", deviceJoinName: "Philio Smoke Alarm PSG01"
+		fingerprint mfr: "0154", prod: "0004", model: "0010", deviceJoinName: "POPP 10Year Smoke Sensor"
+		fingerprint mfr: "0154", prod: "0100", model: "0201", deviceJoinName: "POPP Smoke Detector with Siren"
 	}
 
 	simulator {

@@ -15,6 +15,7 @@ metadata {
 
 		fingerprint mfr: "010F", prod: "0203", model: "2000"
 		fingerprint mfr: "010F", prod: "0203", model: "1000"
+		fingerprint mfr: "010F", prod: "0203", model: "3000"
 	  }
 
 	tiles (scale: 2) {
@@ -145,7 +146,15 @@ def ping() {
 //Configuration and synchronization
 def updated() {
 	if ( state.lastUpdated && (now() - state.lastUpdated) < 500 ) return
-	initialize()
+	def cmds = initialize()
+	if (device.label != state.oldLabel) {
+		childDevices.each {
+			def newLabel = "${device.displayName} - USB"
+			it.setLabel(newLabel)
+		}
+		state.oldLabel = device.label
+	}
+	return cmds
 }
 
 def initialize() {
@@ -250,13 +259,16 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 
 private createChildDevices() {
 	logging("${device.displayName} - executing createChildDevices()","info")
+	state.oldLabel = device.label
 	try {
 	log.debug "adding child device ....."
 		addChildDevice(
 			"Fibaro Double Switch 2 - USB",
 			"${device.deviceNetworkId}-2",
-			null,
-			[completedSetup: true, label: "${device.displayName} (CH2)", isComponent: false, componentName: "ch2", componentLabel: "Channel 2"]
+			device.hubId,
+			[completedSetup: true,
+			 label: "${device.displayName} (CH2)",
+			 isComponent: false]
 		)
 	} catch (Exception e) {
 		logging("${device.displayName} - error attempting to create child device: "+e, "debug")
@@ -424,6 +436,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	} else {
 		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {

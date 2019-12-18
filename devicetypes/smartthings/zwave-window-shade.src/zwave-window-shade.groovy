@@ -11,9 +11,13 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import groovy.json.JsonOutput
+
+
 metadata {
     definition (name: "Z-Wave Window Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
         capability "Window Shade"
+        capability "Window Shade Preset"
         capability "Battery"
         capability "Refresh"
         capability "Health Check"
@@ -76,7 +80,7 @@ metadata {
         }
 
         preferences {
-            input "preset", "number", title: "Default half-open position (1-100)", defaultValue: 50, required: false, displayDuringSetup: false
+            input "preset", "number", title: "Preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
         }
 
         main(["windowShade"])
@@ -105,6 +109,7 @@ def getCheckInterval() {
 
 def installed() {
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+    sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
     response(refresh())
 }
 
@@ -219,6 +224,11 @@ def setLevel(value, duration = null) {
 
 def presetPosition() {
     setLevel(preset ?: state.preset ?: 50)
+}
+
+def pause() {
+    log.debug "pause()"
+    stop()
 }
 
 def stop() {

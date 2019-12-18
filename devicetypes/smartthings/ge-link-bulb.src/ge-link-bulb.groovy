@@ -198,7 +198,7 @@ def refresh() {
     return refreshCmds + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.onOffConfig()
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
     def cmd
     def delayForRefresh = 500
     if (dimRate && (state?.rate != null)) {

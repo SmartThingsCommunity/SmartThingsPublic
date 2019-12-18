@@ -86,7 +86,7 @@ metadata {
 }
 
 def installed(){
-  sendEvent(name: "checkInterval", value: 21600, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+  sendEvent(name: "checkInterval", value: (21600*2)+10*60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 //UI Support functions
@@ -406,6 +406,12 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 	} else {
 		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
+}
+
+def zwaveEvent(physicalgraph.zwave.Command cmd) {
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
+	[:]
 }
 
 private logging(text, type = "debug") {

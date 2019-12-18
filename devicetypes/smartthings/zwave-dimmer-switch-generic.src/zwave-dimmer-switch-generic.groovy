@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true) {
+	definition(name: "Z-Wave Dimmer Switch Generic", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: true, minHubCoreVersion: '000.019.00012', executeCommandsLocally: true, genericHandler: "Z-Wave") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Health Check"
@@ -30,19 +30,27 @@ metadata {
 		fingerprint mfr: "011A", prod: "0102", model: "0201", deviceJoinName: "Enerwave In-Wall Dimmer"
 		fingerprint mfr: "001D", prod: "0602", model: "0334", deviceJoinName: "Leviton Magnetic Low Voltage Dimmer"
 		fingerprint mfr: "001D", prod: "0401", model: "0334", deviceJoinName: "Leviton 600W Incandescent Dimmer"
-		fingerprint mfr: "0111", prod: "8200", model: "0200", deviceJoinName: "Remotec Technology Plug-In Dimmer"
+		fingerprint mfr: "0111", prod: "8200", model: "0200", deviceJoinName: "Remotec Technology Plug-In Dimmer", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "1104", prod: "001D", model: "0501", deviceJoinName: "Leviton 1000W Incandescant Dimmer"
-		fingerprint mfr: "0039", prod: "5044", model: "3033", deviceJoinName: "Honeywell Z-Wave Plug-in Dimmer (Dual Outlet)"
-		fingerprint mfr: "0039", prod: "5044", model: "3038", deviceJoinName: "Honeywell Z-Wave Plug-in Dimmer"
+		fingerprint mfr: "0039", prod: "5044", model: "3033", deviceJoinName: "Honeywell Z-Wave Plug-in Dimmer (Dual Outlet)", ocfDeviceType: "oic.d.smartplug"
+		fingerprint mfr: "0039", prod: "5044", model: "3038", deviceJoinName: "Honeywell Z-Wave Plug-in Dimmer", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "0039", prod: "4944", model: "3038", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Dimmer"
 		fingerprint mfr: "0039", prod: "4944", model: "3130", deviceJoinName: "Honeywell Z-Wave In-Wall Smart Toggle Dimmer"
 		fingerprint mfr: "001A", prod: "4449", model: "0101", deviceJoinName: "Eaton RF Master Dimmer"
-		fingerprint mfr: "001A", prod: "4449", model: "0003", deviceJoinName: "Eaton RF Dimming Plug-In Module"
+		fingerprint mfr: "001A", prod: "4449", model: "0003", deviceJoinName: "Eaton RF Dimming Plug-In Module", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "014F", prod: "5744", model: "3530", deviceJoinName: "GoControl In-Wall Dimmer"
 		fingerprint mfr: "0307", prod: "4447", model: "3034", deviceJoinName: "Satco In-Wall Dimmer"
 		//zw:L type:1101 mfr:0184 prod:4744 model:3032 ver:5.07 zwv:3.95 lib:03 cc:5E,86,72,5A,85,59,73,26,27,70,7A role:05 ff:8600 ui:8600
-		fingerprint mfr: "0184", prod: "4744", model: "3032", deviceJoinName: "Satco Plug-In Dimmer"
+		fingerprint mfr: "0184", prod: "4744", model: "3032", deviceJoinName: "Satco Plug-In Dimmer", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "0330", prod: "0201", model: "D002", deviceJoinName: "RGBgenie ZW-1001 Z-Wave Dimmer"
+		fingerprint mfr: "027A", prod: "B112", model: "1F1C", deviceJoinName: "Zooz ZEN22 Dimmer"
+		fingerprint mfr: "027A", prod: "A000", model: "A002", deviceJoinName: "Zooz ZEN27 Dimmer"
+		fingerprint mfr: "027A", prod: "B112", model: "261C", deviceJoinName: "Zooz ZEN24 Dimmer"
+		fingerprint mfr: "0300", prod: "0003", model: "0005", deviceJoinName: "ilumin Dimmable Bulb", ocfDeviceType: "oic.d.light"
+		fingerprint mfr: "0312", prod: "FF00", model: "FF04", deviceJoinName: "Minoston Smart Dimmer Switch"
+		fingerprint mfr: "0312", prod: "FF00", model: "FF02", deviceJoinName: "Minoston Toggle Dimmer Switch"
+		fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Evalogik Smart Dimmer Switch"
+		fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Smart Plug Dimmer"
 	}
 
 	simulator {

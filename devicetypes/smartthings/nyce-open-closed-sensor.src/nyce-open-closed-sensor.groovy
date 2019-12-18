@@ -1,21 +1,21 @@
 /**
- *  NYCE Open/Close Sensor
+ *	NYCE Open/Close Sensor
  *
- *  Copyright 2015 NYCE Sensors Inc.
+ *	Copyright 2015 NYCE Sensors Inc.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
+ *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *	in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
+ *	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *	for the specific language governing permissions and limitations under the License.
  *
  */
 
 import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
-
+import physicalgraph.zigbee.zcl.DataType
 
 metadata {
 	definition (name: "NYCE Open/Closed Sensor", namespace: "smartthings", author: "NYCE", mnmn: "SmartThings", vid: "generic-contact-3") {
@@ -26,18 +26,12 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		command "enrollResponse"
-
-
 		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3010", deviceJoinName: "NYCE Door Hinge Sensor"
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
 		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3011", deviceJoinName: "NYCE Door/Window Sensor"
 		fingerprint inClusters: "0000,0001,0003,0406,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
 		fingerprint inClusters: "0000,0001,0003,0500,0020", manufacturer: "NYCE", model: "3014", deviceJoinName: "NYCE Tilt Sensor"
-	}
-
-	simulator {
-
+		fingerprint inClusters: "0000,0001,0003,0020,0500,0B05,FC02", outClusters: "", manufacturer: "sengled", model: "E1D-G73", deviceJoinName: "Sengled Element Door Sensor"
 	}
 
 	tiles(scale: 2) {
@@ -70,12 +64,11 @@ def parse(String description) {
 	log.debug "parse: Parse message: ${description}"
 
 	if (description?.startsWith("enroll request")) {
-		List cmds = enrollResponse()
+		List cmds = zigbee.enrollResponse()
 
 		log.debug "parse: enrollResponse() ${cmds}"
 		listResult = cmds?.collect { new physicalgraph.device.HubAction(it) }
-	}
-	else {
+	} else {
 		if (description?.startsWith("zone status")) {
 			listMap = parseIasMessage(description)
 		}
@@ -120,22 +113,27 @@ private Map parseCatchAllMessage(String description) {
 		if (msgStatus == 0) {
 			switch(cluster.clusterId) {
 				case 0x0500:
-                	Map descMap = zigbee.parseDescriptionAsMap(description)
-					// someone who understands Zigbee better than me should refactor this whole DTH to bring it up to date
+					Map descMap = zigbee.parseDescriptionAsMap(description)
+
 					if (descMap?.attrInt == 0x0002) {
 						resultMap.name = "contact"
 						def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 						resultMap.value = zs.isAlarm1Set() ? "open" : "closed"
 					}
 					break
-				case 0x0001:
-					log.debug 'Battery'
-					resultMap.name = 'battery'
-					log.info "in parse catch all"
-					log.debug "battery value: ${cluster.data.last()}"
-					resultMap.value = getBatteryPercentage(cluster.data.last())
+				case 0x0001:	// power configuration cluster
+					Map descMap = zigbee.parseDescriptionAsMap(description)
+					if(descMap.attrInt == 0x0020) {
+						log.debug 'Battery'
+						resultMap.name = 'battery'
+						resultMap.value = getBatteryPercentage(convertHexToInt(descMap.value))
+					} else if (descMap.attrInt == 0x0021) {
+						log.debug 'Battery'
+						resultMap.name = 'battery'
+						resultMap.value = Math.round(Integer.parseInt(descMap.value, 16)/2)
+					}
 					break
-				case 0x0402:    // temperature cluster
+				case 0x0402:	// temperature cluster
 					if (cluster.command == 0x01) {
 						if(cluster.data[3] == 0x29) {
 							def tempC = Integer.parseInt(cluster.data[-2..-1].reverse().collect{cluster.hex1(it)}.join(), 16) / 100
@@ -150,7 +148,7 @@ private Map parseCatchAllMessage(String description) {
 						log.debug "parseCatchAllMessage: Unhandled Temperature cluster command ${cluster.command}"
 					}
 					break
-				case 0x0405:    // humidity cluster
+				case 0x0405:	// humidity cluster
 					if (cluster.command == 0x01) {
 						if(cluster.data[3] == 0x21) {
 							def hum = Integer.parseInt(cluster.data[-2..-1].reverse().collect{cluster.hex1(it)}.join(), 16) / 100
@@ -170,7 +168,7 @@ private Map parseCatchAllMessage(String description) {
 			}
 		}
 		else {
-			log.debug "parseCatchAllMessage: Message error code: Error code: ${msgStatus}    ClusterID: ${cluster.clusterId}    Command: ${cluster.command}"
+			log.debug "parseCatchAllMessage: Message error code: Error code: ${msgStatus}	 ClusterID: ${cluster.clusterId}	Command: ${cluster.command}"
 		}
 	}
 
@@ -180,20 +178,24 @@ private Map parseCatchAllMessage(String description) {
 private int getBatteryPercentage(int value) {
 	def minVolts = 2.3
 	def maxVolts = 3.1
+
+	if(device.getDataValue("manufacturer") == "sengled") {
+		minVolts = 1.8
+		maxVolts = 2.7
+	}
+
 	def volts = value / 10
 	def pct = (volts - minVolts) / (maxVolts - minVolts)
 
 	//for battery that may have a higher voltage than 3.1V
-	if( pct > 1 )
-	{
+	if( pct > 1 ) {
 		pct = 1
 	}
 
 	//the device actual shut off voltage is 2.25. When it drops to 2.3, there
 	//is actually still 0.05V, which is about 6% of juice left.
 	//setting the percentage to 6% so a battery low warning is issued
-	if( pct <= 0 )
-	{
+	if( pct <= 0 ) {
 		pct = 0.06
 	}
 	return (int)(pct * 100)
@@ -211,20 +213,21 @@ private boolean shouldProcessMessage(cluster) {
 }
 
 private Map parseReportAttributeMessage(String description) {
-	Map descMap = (description - "read attr - ").split(",").inject([:]) {
-		map, param -> def nameAndValue = param.split(":")
-			map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-	}
+	def descMap = zigbee.parseDescriptionAsMap(description)
 	Map resultMap = [:]
 
 	log.debug "parseReportAttributeMessage: descMap ${descMap}"
 
-	switch(descMap.cluster) {
-		case "0001":
-			if(descMap.attrId == "0020") {
+	switch(descMap.clusterInt) {
+		case zigbee.POWER_CONFIGURATION_CLUSTER:
+			if(descMap.attrInt == 0x0020) {
 				log.debug 'Battery'
 				resultMap.name = 'battery'
 				resultMap.value = getBatteryPercentage(convertHexToInt(descMap.value))
+			} else if (descMap.attrInt == 0x0021) {
+				log.debug 'Battery'
+				resultMap.name = 'battery'
+				resultMap.value = Math.round(Integer.parseInt(descMap.value, 16)/2)
 			}
 			break
 		default:
@@ -241,8 +244,6 @@ private List parseIasMessage(String description) {
 	log.debug "parseIasMessage: $description"
 
 	List resultListMap = []
-	Map resultMap_battery = [:]
-	Map resultMap_battery_state = [:]
 	Map resultMap_sensor = [:]
 
 	resultMap_sensor.name = "contact"
@@ -253,36 +254,6 @@ private List parseIasMessage(String description) {
 	log.debug "parseIasMessage: Trouble Status ${zs.trouble}"
 	log.debug "parseIasMessage: Sensor Status ${zs.alarm1}"
 
-	/* 	Comment out this path to check the battery state to avoid overwriting the
-		battery value (Change log #2), but keep these conditions for later use
-	 resultMap_battery_state.name = "battery_state"
-	 if (zs.isTroubleSet()) {
-		 resultMap_battery_state.value = "failed"
-
-		 resultMap_battery.name = "battery"
-		 resultMap_battery.value = 0
-	 }
-	 else {
-		 if (zs.isBatterySet()) {
-			 resultMap_battery_state.value = "low"
-
-			 // to generate low battery notification by the platform
-			 resultMap_battery.name = "battery"
-			 resultMap_battery.value = 15
-		 }
-		 else {
-			 resultMap_battery_state.value = "ok"
-
-			 // to clear the low battery state stored in the platform
-			 // otherwise, there is no notification sent again
-			 resultMap_battery.name = "battery"
-			 resultMap_battery.value = 80
-		 }
-	 }
-	*/
-
-	resultListMap << resultMap_battery_state
-	resultListMap << resultMap_battery
 	resultListMap << resultMap_sensor
 
 	return resultListMap
@@ -299,53 +270,15 @@ def configure() {
 	// Device-Watch allows 2 check-in misses from device
 	sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	String zigbeeEui = swapEndianHex(device.hub.zigbeeEui)
-
-	def enrollCmds = [
-			// Writes CIE attribute on end device to direct reports to the hub's EUID
-			"zcl global write 0x500 0x10 0xf0 {${zigbeeEui}}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1", "delay 500",
-	]
-
-	log.debug "configure: Write IAS CIE"
-	// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
-	return enrollCmds + zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
-}
-
-def enrollResponse() {
-	[
-			// Enrolling device into the IAS Zone
-			"raw 0x500 {01 23 00 00 00}", "delay 200",
-			"send 0x${device.deviceNetworkId} 1 1"
-	]
-}
-
-private hex(value) {
-	new BigInteger(Math.round(value).toString()).toString(16)
-}
-
-private String swapEndianHex(String hex) {
-	reverseArray(hex.decodeHex()).encodeHex()
-}
-
-private byte[] reverseArray(byte[] array) {
-	int i = 0;
-	int j = array.length - 1;
-	byte tmp;
-
-	while (j > i) {
-		tmp = array[j];
-		array[j] = array[i];
-		array[i] = tmp;
-		j--;
-		i++;
+	if(device.getDataValue("manufacturer") == "sengled") {
+		return zigbee.readAttribute(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS) + zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
+		zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 30, 300, null) +
+		zigbee.batteryConfig(30, 300) + zigbee.enrollResponse()
+	} else {
+		// battery minReportTime 30 seconds, maxReportTime 5 min. Reporting interval if no activity
+		return zigbee.enrollResponse() + zigbee.configureReporting(zigbee.IAS_ZONE_CLUSTER, zigbee.ATTRIBUTE_IAS_ZONE_STATUS, DataType.BITMAP16, 0, 60 * 60, null) +
+				zigbee.batteryConfig(30, 300) + refresh() // send refresh cmds as part of config
 	}
-
-	return array
-}
-
-private getEndpointId() {
-	new BigInteger(device.endpointId, 16).toString()
 }
 
 Integer convertHexToInt(hex) {
@@ -353,9 +286,5 @@ Integer convertHexToInt(hex) {
 }
 
 def refresh() {
-	log.debug "Refreshing Battery"
-	def refreshCmds = [
-			"st rattr 0x${device.deviceNetworkId} ${endpointId} 1 0x20", "delay 200"
-	]
-	return refreshCmds + enrollResponse()
+	return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) + zigbee.enrollResponse()
 }

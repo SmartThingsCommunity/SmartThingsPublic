@@ -62,6 +62,7 @@ metadata {
 	}
 
 	preferences {
+		// Philio Siren treats chime as momentary and does NOT provide a status update to us, so DON'T allow this as an alarm sound preference.
 		input "sound", "enum", title: "What sound should play for an alarm event?", description: "Default is 'Emergency'", options: ["Smoke", "Emergency", "Police", "Fire", "Ambulance"]
 		input "duration", "enum", title: "How long should the sound play?", description: "Default is 'Forever'", options: ["Forever", "30 seconds", "1 minute", "2 minutes", "3 minutes", "5 minutes", "10 minutes", "20 minutes", "30 minutes", "45 minutes", "1 hour"]
 	}
@@ -76,6 +77,8 @@ def getSoundMap() {[
 			notificationType: 0x01,
 			event: 0x01
 		],
+	// Philio Siren treats chime as momentary and does NOT provide a status update to us,
+	// so DON'T allow this as an alarm sound preference.
 	Chime: [
 			notificationType: 0x06,
 			event: 0x16
@@ -137,7 +140,10 @@ def installed() {
 	state.duration = defaultDuration
 
 	// Get default values
-	response([secure(zwave.basicV1.basicGet()), secure(zwave.configurationV1.configurationSet(parameterNumber: 31, size: 1, configurationValue: [durationMap[state.duration]]))])
+	response([
+			secure(zwave.basicV1.basicGet()),
+			secure(zwave.configurationV1.configurationSet(parameterNumber: 31, size: 1, configurationValue: [durationMap[state.duration]]))
+		])
 }
 
 def updated() {
@@ -159,9 +165,23 @@ def updated() {
 	response(commands)
 }
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x20: 1,  // Basic
+		0x70: 1,  // Configuration
+		0x85: 2,  // Association
+		0x98: 1,  // Security 0
+	]
+}
+
+
 def parse(String description) {
 	log.debug "parse($description)"
 	def result = null
+
 	if (description.startsWith("Err")) {
 		if (zwInfo?.zw?.contains("s")) {
 			result = createEvent(descriptionText:description, displayed:false)
@@ -175,7 +195,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [0x98: 1, 0x20: 1, 0x70: 1])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -185,7 +205,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x20: 1, 0x85: 2, 0x70: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
@@ -254,17 +274,30 @@ def generateCommand(command) {
 	secure(zwave.notificationV3.notificationReport(notificationType: sound.notificationType, event: sound.event))
 }
 
+def chimeOff() {
+	log.debug "chimeOff()"
+	sendEvent(name: "chime", value: "off")
+
+	// If chime() was called during an alarm event, we need to verify that and reset the alarm,
+	// as the alarm does not properly appear to do that.
+	def currentAlarm = device.currentValue("alarm")
+	if (currentAlarm && currentAlarm != "off") {
+		log.debug "resetting alarm..."
+
+		sendHubCommand(on())
+	}
+}
+
 def chime() {
+	def results = []
 	log.debug "chime!"
 
 	// Chime is kind of special as the alarm treats it as momentary
-	// and thus sends no updates to us, so we'll send this and request an update
+	// and thus sends no updates to us, so we'll send this event and then send an off event soon after.
 	sendEvent(name: "chime", value: "chime")
+	runIn(1, "chimeOff", [overwrite: true])
 
-	[
-		generateCommand("Chime"),
-		secure(zwave.basicV1.basicGet())
-	]
+	generateCommand("Chime")
 }
 
 def on() {
