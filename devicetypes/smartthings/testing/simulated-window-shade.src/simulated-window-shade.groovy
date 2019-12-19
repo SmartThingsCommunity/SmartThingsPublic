@@ -20,7 +20,9 @@ metadata {
 		capability "Actuator"
 		capability "Window Shade"
 		capability "Window Shade Preset"
-		//capability "Switch Level"
+		capability "Switch Level"
+		capability "Window Shade Level"
+		capability "Battery"
 
 		// Commands to use in the simulator
 		command "openPartially"
@@ -31,6 +33,18 @@ metadata {
 		command "opened"
 		command "closed"
 		command "unknown"
+
+		command "shadeLevel0"
+		command "shadeLevel1"
+		command "shadeLevel10"
+		command "shadeLevel50"
+		command "shadeLevel100"
+
+		command "batteryLevel0"
+		command "batteryLevel1"
+		command "batteryLevel10"
+		command "batteryLevel50"
+		command "batteryLevel100"
 	}
 
 	preferences {
@@ -55,7 +69,8 @@ metadata {
 					"8": "<empty list>",
 					// For testing OCF/mobile client bugs
 					"9": "open, closed, pause",
-					"10": "open, closed, close, pause"
+					"10": "open, closed, close, pause",
+					"11": "plain text - not list"
 				]
 			)
 		}
@@ -71,9 +86,9 @@ metadata {
 				attributeState "closing", label:'${name}', action:"pause", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partially open"
 				attributeState "unknown", label:'${name}', action:"open", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"opening"
 			}
-			/*tileAttribute ("device.level", key: "SLIDER_CONTROL") {
-				attributeState "level", action:"setLevel"
-			}*/
+			tileAttribute ("device.windowShadeLevel", key: "SLIDER_CONTROL") {
+				attributeState "shadeLevel", action:"setShadeLevel"
+			}
 		}
 
 		valueTile("blank", "device.blank", width: 2, height: 2, decoration: "flat") {
@@ -141,7 +156,8 @@ private getSupportedCommandsMap() {
 		"8": [],
 		// For testing OCF/mobile client bugs
 		"9": ["open", "closed", "pause"],
-		"10": ["open", "closed", "close", "pause"]
+		"10": ["open", "closed", "close", "pause"],
+		"11": "open"
 	]
 }
 
@@ -154,6 +170,9 @@ def installed() {
 
 	updated()
 	opened()
+
+	shadeLevel100()
+	batteryLevel100()
 }
 
 def updated() {
@@ -204,6 +223,16 @@ def presetPosition() {
 	}
 }
 
+def setShadeLevel(level) {
+	// TODO: Update shade states; simulate opening or closing
+	sendEvent(name: "shadeLevel", value: level, unit: "%")
+	sendEvent(name: "level", value: level, unit: "%")
+}
+
+def setLevel(level, rate = 0) {
+	setShadeLevel(level)
+}
+
 // Custom test commands
 
 def openPartially() {
@@ -247,4 +276,48 @@ def unknown() {
 	// TODO: Add some "fuzzing" logic so that this gets hit every now and then?
 	log.debug "windowShade: unknown"
 	sendEvent(name: "windowShade", value: "unknown", isStateChange: true)
+}
+
+def shadeLevel0() {
+	setShadeLevel(0)
+}
+
+def shadeLevel1() {
+	setShadeLevel(1)
+}
+
+def shadeLevel10() {
+	setShadeLevel(10)
+}
+
+def shadeLevel50() {
+	setShadeLevel(50)
+}
+
+def shadeLevel100() {
+	setShadeLevel(100)
+}
+
+def setBatteryLevel(level) {
+	sendEvent(name: "battery", value: level, unit: "%")
+}
+
+def batteryLevel0() {
+	setBatteryLevel(0)
+}
+
+def batteryLevel1() {
+	setBatteryLevel(1)
+}
+
+def batteryLevel10() {
+	setBatteryLevel(10)
+}
+
+def batteryLevel50() {
+	setBatteryLevel(50)
+}
+
+def batteryLevel100() {
+	setBatteryLevel(100)
 }
