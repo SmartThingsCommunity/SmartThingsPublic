@@ -224,9 +224,18 @@ def presetPosition() {
 }
 
 def setShadeLevel(level) {
+	def normalizedLevel = min(100, max(0, level))
+	def lastLevel = device.currentValue("shadeLevel") ?: 100
+
 	// TODO: Update shade states; simulate opening or closing
-	sendEvent(name: "shadeLevel", value: level, unit: "%")
-	sendEvent(name: "level", value: level, unit: "%")
+	sendEvent(name: "shadeLevel", value: normalizedLevel, unit: "%")
+	sendEvent(name: "level", value: normalizedLevel, unit: "%")
+
+	if (normalizedLevel > 0) {
+		opened()
+	} else {
+		closed()
+	}
 }
 
 def setLevel(level, rate = 0) {
