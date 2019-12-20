@@ -22,8 +22,6 @@ metadata {
 		capability "Battery"
 
 		fingerprint profileId: "FC01", deviceId: "0139"
-
-		attribute "status", "string"
 	}
 
 	simulator {
@@ -112,17 +110,6 @@ private List parseSingleMessage(description) {
 	def results = []
 	results << createEvent(
 		name: "contact",
-		value: value,
-		unit: null,
-		linkText: linkText,
-		descriptionText: descriptionText,
-		handlerName: handlerName,
-		isStateChange: isStateChange,
-		displayed: displayed(description, isStateChange)
-	)
-
-	results << createEvent(
-		name: "status",
 		value: value,
 		unit: null,
 		linkText: linkText,
@@ -299,17 +286,6 @@ private List getContactResult(part, description) {
 			handlerName: handlerName,
 			isStateChange: isStateChange,
 			displayed:false
-	)
-
-	results << createEvent(
-			name: "status",
-			value: value,
-			unit: null,
-			linkText: linkText,
-			descriptionText: descriptionText,
-			handlerName: handlerName,
-			isStateChange: isStateChange,
-			displayed: displayed(description, isStateChange)
 	)
 
 	results

@@ -25,8 +25,6 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 
-		attribute "status", "string"
-		attribute "door", "string"
 	}
 
 	simulator {
@@ -48,15 +46,7 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"status", type: "generic", width: 6, height: 4){
-			tileAttribute ("device.status", key: "PRIMARY_CONTROL") {
-				attributeState "closed", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#00A0DC", nextState:"opening"
-				attributeState "open", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing"
-				attributeState "opening", label:'${name}', icon:"st.doors.garage.garage-opening", backgroundColor:"#e86d13"
-				attributeState "closing", label:'${name}', icon:"st.doors.garage.garage-closing", backgroundColor:"#00A0DC"
-			}
-		}
-		standardTile("contact", "device.contact", width: 2, height: 2) {
+		standardTile("contact", "device.contact", width: 6, height: 4) {
 			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
 			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
 		}
@@ -74,8 +64,8 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-		main(["status", "contact", "acceleration"])
-		details(["status", "contact", "acceleration", "temperature", "3axis", "battery"])
+		main(["contact", "acceleration"])
+		details(["contact", "contact", "acceleration", "temperature", "3axis", "battery"])
 	}
 
 	preferences {
@@ -217,14 +207,10 @@ private List parseOrientationMessage(String description) {
 
 	if (absValueZ > 825) {
 		results << createEvent(name: "contact", value: "open", unit: "")
-		results << createEvent(name: "status", value: "open", unit: "")
-		results << createEvent(name: "door", value: "open", unit: "")
 		log.debug "STATUS: open"
 	}
 	else if (absValueZ < 100) {
 		results << createEvent(name: "contact", value: "closed", unit: "")
-		results << createEvent(name: "status", value: "closed", unit: "")
-		results << createEvent(name: "door", value: "closed", unit: "")
 		log.debug "STATUS: closed"
 	}
 
