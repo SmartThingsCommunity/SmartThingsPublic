@@ -29,6 +29,7 @@ metadata {
                 fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "HY0048", deviceJoinName: "情景开关 1", vid: "generic-4-button-alt"
                 fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "0106-G", deviceJoinName: "情景开关 1", vid: "generic-6-button-alt"
                 fingerprint profileId: "0104", inClusters: "0000, 0005", outClusters: "0000, 0005, 0017", manufacturer: "ORVIBO", model: "cef8701bb8664a67a83033c071ef05f2", deviceJoinName: "情景开关 1", vid: "generic-3-button-alt"
+                fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "E-SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Scene Keypad", vid: "generic-4-button-alt"
 
     }
 
@@ -58,13 +59,15 @@ def parse(String description) {
 
 def parseAttrMessage(description) {
 	def descMap = zigbee.parseDescriptionAsMap(description)    
-	if (descMap?.clusterInt == 0x0017 || descMap?.clusterInt == 0xFE05) {
+	if (descMap?.clusterInt == 0x0017 || descMap?.clusterInt == 0xFE05 || descMap?.clusterInt == 0xFC80) {
 	        def event = [:]
                 def buttonNumber
                 if (descMap?.clusterInt == 0x0017) {
-       			buttonNumber = Integer.valueOf(descMap.data[0]) 
+				buttonNumber = Integer.valueOf(descMap.data[0])
                 } else if (descMap?.clusterInt == 0xFE05) {
-       			buttonNumber = Integer.valueOf(descMap?.value)
+				buttonNumber = Integer.valueOf(descMap?.value)
+                } else if(descMap?.clusterInt == 0xFC80) {
+				buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 1
                 }
        		log.debug "Number is ${buttonNumber}"
                 event = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: "pushed", isStateChange: true)
@@ -129,7 +132,7 @@ private addChildButtons(numberOfButtons) {
 private getChildCount() {
 	if (device.getDataValue("model") == "0106-G") {
 		return 6
-	} else if (device.getDataValue("model") == "HY0048") {
+	} else if (device.getDataValue("model") == "HY0048" || device.getDataValue("model") == "E-SceneSwitch-EM-3.0") {
 		return 4
 	} else if (device.getDataValue("model") == "cef8701bb8664a67a83033c071ef05f2") {
 		return 3
