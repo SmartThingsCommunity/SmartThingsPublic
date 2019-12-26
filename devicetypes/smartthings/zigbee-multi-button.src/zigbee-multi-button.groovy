@@ -30,6 +30,7 @@ metadata {
 
 		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
 		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Scene Keypad", vid: "generic-4-button-alt"
 	}
 
 	tiles {
@@ -67,7 +68,18 @@ def parseAttrMessage(description) {
 		map = getBatteryPercentageResult(Integer.parseInt(descMap.value, 16))
 	} else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER && descMap.isClusterSpecific) {
 		map = getButtonEvent(descMap)
-	}
+	} else if(descMap?.clusterInt == 0xFC80) {
+		def buttonNumber
+		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 1
+       
+		log.debug "Number is ${buttonNumber}"
+		def event = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: "pushed", isStateChange: true)
+		if (buttonNumber != 1) {
+			sendEventToChild(buttonNumber, event)
+		} else {
+			sendEvent(event)
+		}
+   	}
 	map
 }
 
@@ -146,6 +158,7 @@ def configure() {
 def installed() {
 	sendEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
 	sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
+	
 	initialize()
 }
 
@@ -157,6 +170,7 @@ def initialize() {
 	def numberOfButtons = modelNumberOfButtons[device.getDataValue("model")]
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+    
 	if(!childDevices) {
 		addChildButtons(numberOfButtons)
 	}
@@ -207,13 +221,19 @@ private getButtonMap() {[
 ]}
 
 private getSupportedButtonValues() {
-	def values = ["pushed", "held"]
+	def values
+	if (device.getDataValue("model") == "SceneSwitch-EM-3.0") {
+		values = ["pushed"]
+	} else {
+		values = ["pushed", "held"]
+	}
 	return values
 }
 
 private getModelNumberOfButtons() {[
 		"3450-L" : 4,
-		"3450-L2" : 4
+		"3450-L2" : 4,
+		"SceneSwitch-EM-3.0" : 4
 ]}
 
 private getModelBindings(model) {
