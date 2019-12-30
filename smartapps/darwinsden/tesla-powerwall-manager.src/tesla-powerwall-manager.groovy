@@ -24,10 +24,11 @@
 include 'asynchttp_v1'
 
 def version() {
-    return "v0.1.5e.20190906"
+    return "v0.1.6e.20191230"
 }
 
 /* 
+ *	30-Dec-2019 >>> v0.1.6e.20191230 - Increased reserve percentage value options 
  *	06-Sep-2019 >>> v0.1.5e.20190906 - Updated watchdog to only notify once when issue first occurs and when resolved 
  *	13-Aug-2019 >>> v0.1.4e.20190813 - Added grid/outage status display, notifications, and device on/off controls 
  *	09-Aug-2019 >>> v0.1.3e.20190809 - Added reserve% scheduling & polling interval preferences
@@ -141,7 +142,8 @@ def schedule1Options() {
         section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
            input "schedule1Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule1Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
+                	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
            input "schedule1Time", "time", required: false, title: "At what time?"
            input "schedule1Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -154,7 +156,8 @@ def schedule2Options() {
         section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
            input "schedule2Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule2Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
+                	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
            input "schedule2Time", "time", required: false, title: "At what time?"
            input "schedule2Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -167,7 +170,8 @@ def schedule3Options() {
         section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
            input "schedule3Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule3Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
+                	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
            input "schedule3Time", "time", required: false, title: "At what time?"
            input "schedule3Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -180,7 +184,8 @@ def schedule4Options() {
         section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
            input "schedule4Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule4Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
+                	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
            input "schedule4Time", "time", required: false, title: "At what time?"
            input "schedule4Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -193,7 +198,8 @@ def schedule5Options() {
         section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
            input "schedule5Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule5Reserve", "enum", required: false, title: "Reserve % to set",
-                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","25":"25%","50":"50%","75":"75%","90":"90%","100":"100%"]
+                options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
+                	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
            input "schedule5Time", "time", required: false, title: "At what time?"
            input "schedule5Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
