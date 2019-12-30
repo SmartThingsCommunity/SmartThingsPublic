@@ -46,15 +46,9 @@ metadata {
 		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
 			state "colorTemperature", action:"color temperature.setColorTemperature"
 		}
-		valueTile("colorName", "device.colorName", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "colorName", label: '${currentValue}'
-		}
-		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
 
 		main(["switch"])
-		details(["switch", "colorTempSliderControl", "colorName", "refresh"])
+		details(["switch", "colorTempSliderControl"])
 	}
 }
 
