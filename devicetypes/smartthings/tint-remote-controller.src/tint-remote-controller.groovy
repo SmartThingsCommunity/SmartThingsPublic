@@ -25,7 +25,7 @@ metadata {
 		capability "Light"
 
 		// Muller Licht
-        fingerprint inClusters: "0000, 0003, 1000", outClusters: "0003, 0004, 0006, 0008, 0300, 1000, 0019, 0000", manufacturer: "MLI",  model: "ZBT-Remote-ALL-RGBW", deviceJoinName: "Tint Remote Control"
+		fingerprint inClusters: "0000, 0003, 1000", outClusters: "0003, 0004, 0006, 0008, 0300, 1000, 0019, 0000", manufacturer: "MLI",  model: "ZBT-Remote-ALL-RGBW", deviceJoinName: "Tint Remote Control"
 	}
 
 	tiles(scale: 2) {
@@ -61,31 +61,29 @@ private getSTEP_COMMAND() { 0x02 }
 private getWRITE_ATTRIBUTES_COMMAND() { 0x02 }
 
 def parse(String description) {
-    def event = zigbee.getEvent(description)
+	def event = zigbee.getEvent(description)
 	def result = []
-    if (event) {
-        log.debug "Creating event: ${event}"
-       result = createEvent(event)
-    } else {
-        if (isAttrOrCmdMessage(description)) {
-            result = parseAttrCmdMessage(description)
-        } else {
-            log.warn "Unhandled message came in"
-        }
-    }
+	if (event) {
+		log.debug "Creating event: ${event}"
+		result = createEvent(event)
+	} else {
+		if (isAttrOrCmdMessage(description)) {
+			result = parseAttrCmdMessage(description)
+		} else {
+			log.warn "Unhandled message came in"
+		}
+	}
 	log.debug "Parse returned: ${result}"
 	return result
 }
 
 private parseAttrCmdMessage(description) {
-    def descMap = zigbee.parseDescriptionAsMap(description)
-    if (descMap.clusterInt == zigbee.POWER_CONFIGURATION_CLUSTER && descMap.attrInt == BATTERY_VOLTAGE_ATTRIBUTE) {
-        getBatteryEvent(zigbee.convertHexToInt(descMap.value))
-    } else if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
-        getOnOffEvent()
-    } else if (descMap.clusterInt == zigbee.COLOR_CONTROL_CLUSTER && descMap.commandInt == MOVE_TO_COLOR_COMMAND) {
-        getColorEvent(descMap)
-    } else if (descMap.clusterInt == zigbee.COLOR_CONTROL_CLUSTER && descMap.commandInt == MOVE_TO_COLOR_TEMPERATURE_COMMAND) {
+	def descMap = zigbee.parseDescriptionAsMap(description)
+	if (descMap.clusterInt == zigbee.ONOFF_CLUSTER) {
+		getOnOffEvent()
+	} else if (descMap.clusterInt == zigbee.COLOR_CONTROL_CLUSTER && descMap.commandInt == MOVE_TO_COLOR_COMMAND) {
+		getColorEvent(descMap)
+	} else if (descMap.clusterInt == zigbee.COLOR_CONTROL_CLUSTER && descMap.commandInt == MOVE_TO_COLOR_TEMPERATURE_COMMAND) {
 		getColorTemperatureEvent(descMap)
 	} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER && descMap.commandInt == STEP_COMMAND) {
 		getLevelEvent(descMap)
@@ -97,18 +95,18 @@ private parseAttrCmdMessage(description) {
 }
 
 private isAttrOrCmdMessage(description) {
-    (description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))
+	(description?.startsWith("catchall:")) || (description?.startsWith("read attr -"))
 }
 
 private getOnOffEvent() {
-    state.onOffValue = (state.onOffValue == "off" ? "on" : "off")
-    createEvent(name: "switch", value: state.onOffValue)
+	state.onOffValue = (state.onOffValue == "off" ? "on" : "off")
+	createEvent(name: "switch", value: state.onOffValue)
 }
 
 private getColorEvent(descMap) {
-    def CurrentX = Integer.parseInt(descMap.data[1] + descMap.data[0], 16)
-    def CurrentY = Integer.parseInt(descMap.data[3] + descMap.data[2], 16)
-    def HS = color_xyYtoHSV(CurrentX, CurrentY)
+	def CurrentX = Integer.parseInt(descMap.data[1] + descMap.data[0], 16)
+	def CurrentY = Integer.parseInt(descMap.data[3] + descMap.data[2], 16)
+	def HS = color_xyYtoHSV(CurrentX, CurrentY)
 	return [
 		createEvent(name: "hue", value: HS.H * 100),
 		createEvent(name: "saturation", value: 100)
@@ -193,28 +191,28 @@ def installed() {
 }
 
 private color_xyYtoHSV(CurrentX, CurrentY) { 
-    // Sources:
-    // https://en.wikipedia.org/wiki/CIE_1931_color_space
-    // http://wiki.nuaj.net/index.php/Color_Transforms
-    // Note: X, Y, Z are tristimulus values, where CurrentX and CurrentY are Zigbee'ss own representation of normalized x and y
-    def x = CurrentX / 65536
-    def y = CurrentY / 65536
-    def z = 1 - x - y
-    def Y = 1
-    def X = (Y / y) * x
-    def Z = (Y / y) * z
-    def RGB = colorXYZtoRGB(X, Y, Z)
-    colorRGBtoHSV(RGB)
+	// Sources:
+	// https://en.wikipedia.org/wiki/CIE_1931_color_space
+	// http://wiki.nuaj.net/index.php/Color_Transforms
+	// Note: X, Y, Z are tristimulus values, where CurrentX and CurrentY are Zigbee'ss own representation of normalized x and y
+	def x = CurrentX / 65536
+	def y = CurrentY / 65536
+	def z = 1 - x - y
+	def Y = 1
+	def X = (Y / y) * x
+	def Z = (Y / y) * z
+	def RGB = colorXYZtoRGB(X, Y, Z)
+	colorRGBtoHSV(RGB)
 }
 
 private colorXYZtoRGB(X, Y, Z) {
-    def R = X * 3.2406 + Y * -1.5372 + Z * -0.4986
-    def G = X * -0.9689 + Y * 1.8758 + Z * 0.0415
-    def B = X * 0.0557 + Y * -0.2040 + Z * 1.0570
+	def R = X * 3.2406 + Y * -1.5372 + Z * -0.4986
+	def G = X * -0.9689 + Y * 1.8758 + Z * 0.0415
+	def B = X * 0.0557 + Y * -0.2040 + Z * 1.0570
 	R = R > 0.0031308 ? 1.055*Math.pow(R, 1/2.4) - 0.055 : 12.92*R;
-    G = G > 0.0031308 ? 1.055*Math.pow(G, 1/2.4) - 0.055 : 12.92*G;
-    B = B > 0.0031308 ? 1.055*Math.pow(B, 1/2.4) - 0.055 : 12.92*B;
-    clipAndScaleRGBifNedded(R, G, B)
+	G = G > 0.0031308 ? 1.055*Math.pow(G, 1/2.4) - 0.055 : 12.92*G;
+	B = B > 0.0031308 ? 1.055*Math.pow(B, 1/2.4) - 0.055 : 12.92*B;
+	clipAndScaleRGBifNedded(R, G, B)
 }
 
 private clipAndScaleRGBifNedded(R, G, B) {
@@ -229,33 +227,33 @@ private clipAndScaleRGBifNedded(R, G, B) {
 }
 
 private colorRGBtoHSV(RGB) {
-    def min = RGB.values().min()
-    def max = RGB.values().max()
-    def delta = max - min
-    def H, S
-    if (delta == 0) {
-        H = 0
-        S = 0
-    } else {
-        S = delta / max
-        def delta_R = ( ( ( max - RGB.R ) / 6 ) + ( max / 2 ) ) / max
-        def delta_G = ( ( ( max - RGB.G ) / 6 ) + ( max / 2 ) ) / max
-        def delta_B = ( ( ( max - RGB.B ) / 6 ) + ( max / 2 ) ) / max
-        if (RGB.R == max) {
-            H = delta_B - delta_G
-        } else if (RGB.G == max) {
-            H = ( 1 / 3 ) + delta_R - delta_B
-        } else if (RGB.B == max) {
-            H = ( 2 / 3 ) + delta_G - delta_R
-        }
+	def min = RGB.values().min()
+	def max = RGB.values().max()
+	def delta = max - min
+	def H, S
+	if (delta == 0) {
+		H = 0
+		S = 0
+	} else {
+		S = delta / max
+		def delta_R = ( ( ( max - RGB.R ) / 6 ) + ( max / 2 ) ) / max
+		def delta_G = ( ( ( max - RGB.G ) / 6 ) + ( max / 2 ) ) / max
+		def delta_B = ( ( ( max - RGB.B ) / 6 ) + ( max / 2 ) ) / max
+		if (RGB.R == max) {
+			H = delta_B - delta_G
+		} else if (RGB.G == max) {
+			H = ( 1 / 3 ) + delta_R - delta_B
+		} else if (RGB.B == max) {
+			H = ( 2 / 3 ) + delta_G - delta_R
+		}
 
-        if (H < 0) {
-            H += 1
-        } else if (H > 1) {
-            H -= 1
-        }
-    }
-    [H: H, S: S]
+		if (H < 0) {
+			H += 1
+		} else if (H > 1) {
+			H -= 1
+		}
+	}
+	[H: H, S: S]
 }
 
 private addChildButtons(numberOfButtons) {
@@ -264,11 +262,11 @@ private addChildButtons(numberOfButtons) {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : (device.displayName + " ")) + "${endpoint}"
 			def child = addChildDevice("Child Button", childDni, device.getHub().getId(), [
-					completedSetup: true,
-					label         : componentLabel,
-					isComponent   : true,
-					componentName : "button$endpoint",
-					componentLabel: "Button $endpoint"
+				completedSetup	: true,
+				label			: componentLabel,
+				isComponent		: true,
+				componentName	: "button$endpoint",
+				componentLabel	: "Button $endpoint"
 			])
 			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 		} catch(Exception e) {
