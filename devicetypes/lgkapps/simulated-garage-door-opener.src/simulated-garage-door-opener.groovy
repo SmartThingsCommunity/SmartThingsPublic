@@ -11,33 +11,23 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
+ *	
  */
 metadata {
-	definition (name: "Simulated Garage Door Opener", namespace: "lgkapps", author: "SmartThings & Mark-C",ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade") {
-		capability "Actuator"
-		capability "Door Control"
-        capability "Garage Door Control"
+	definition (name: "Simulated Garage Door Opener", namespace: "lgkapps", author: "SmartThings & Mark-C") {  
+        capability "Actuator"
+		capability "Garage Door Control"
 		capability "Contact Sensor"
 		capability "Sensor"
 		capability "Health Check"
-// google compatability testing        
-        capability "Valve"
-        capability "Window Shade"
-        attribute "OpenableState", "String"
-        attribute "openPercent", "number"
-        command "OpenClose"
-        command "up"
-        command "down"
-//testing end
+        capability "Door Control"
+        
 	}
 
-	simulator {
-		
-	}
 
 	tiles {
 		standardTile("toggle", "device.door", width: 3, height: 2) {
+        	state("unknown", label:'${name}', action:"door control.open", icon:"st.doors.garage.garage-closed", backgroundColor:"#00A0DC", nextState:"opening")
 			state("closed", label:'${name}', action:"door control.open", icon:"st.doors.garage.garage-closed", backgroundColor:"#00A0DC", nextState:"opening")
             state("open", label:'${name}', action:"door control.close", icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing")
             state("opening", label:'${name}', action:"door control.close", icon:"st.doors.garage.garage-opening", backgroundColor:"#e86d13", nextState:"closing")
@@ -61,20 +51,6 @@ metadata {
 		details(["toggle", "open", "close", "contact"])
 	}
 }
-def OpenClose(opper){
-log.debug "openclose $opper"
-	if (opper == "100"){ open()}
-    else { closes()}
-}
-def setLevel(opper){
-log.debug "setlevel $opper"
-	if (opper == "100"){ open()}
-    else { close()}
-}
-
-def parse(String description) {
-	log.trace "parse($description)"
-}
 
 def open(contactvar) {
 log.debug "open = $contactvar"
@@ -83,7 +59,7 @@ log.debug "open = $contactvar"
     }
     else {
     sendEvent(name: "door", value: "opening")
-    sendEvent(name: "OpenableState", value: "opening")
+    //sendEvent(name: "OpenableState", value: "opening")
     }
 }
 
@@ -94,7 +70,7 @@ log.debug "close = $contactvar"
     }
     else {
     sendEvent(name: "door", value: "closing")
-    sendEvent(name: "OpenableState", value: "closing")
+    //sendEvent(name: "OpenableState", value: "closing")
     }
 }
 
@@ -102,8 +78,8 @@ def finishOpening() {
 	def event = [ ]
     event <<	sendEvent(name: "door", value: "open")
     event <<	sendEvent(name: "contact", value: "open")
-    event <<	sendEvent(name: "openPercent", value: "100")
-    event <<	sendEvent(name: "OpenableState", value: "open")
+    //event <<	sendEvent(name: "openPercent", value: "100")
+    //event <<	sendEvent(name: "OpenableState", value: "open")
     event
 }
 
@@ -111,8 +87,8 @@ def finishClosing() {
 	def event = [ ]
 	event <<	sendEvent(name: "door", value: "closed")
     event <<	sendEvent(name: "contact", value: "closed")
-    event <<	sendEvent(name: "openPercent", value: "0")
-    event <<	sendEvent(name: "OpenableState", value: "closed")
+    //event <<	sendEvent(name: "openPercent", value: "0")
+    //event <<	sendEvent(name: "OpenableState", value: "closed")
 	event
 }
 
@@ -128,9 +104,24 @@ def updated() {
 
 private initialize() {
 	log.trace "Executing 'initialize'"
-	sendEvent(name: "openPercent", value: "0")
-    sendEvent(name: "OpenableState", value: "closed")
+	//sendEvent(name: "openPercent", value: "0")
+    //sendEvent(name: "OpenableState", value: "closed")
 	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
 	sendEvent(name: "healthStatus", value: "online")
 	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+    sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
+def OpenClose(opper){
+log.debug "openclose $opper"
+	if (opper == "100"){ open()}
+    else { closes()}
+}
+def setLevel(opper){
+log.debug "setlevel $opper"
+	if (opper == "100"){ open()}
+    else { close()}
+}
+
+def up() { open() }
+def down() { close()}
+def parse(String description) { log.trace "parse($description)" }
