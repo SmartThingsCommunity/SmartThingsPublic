@@ -133,11 +133,12 @@ def humidityHandler(evt) {
     	if (state.sstate == "off" && state.appstate == "on"){
         	traceaction = "MID - Switch off but app still on, turning on again, reset timer"
         	switch1?.on()
+            timelag()
      	}
-        else {
+        else if (state.appstate == "on"){
         	traceaction = "MID - No action but reset timer"
-        }
         timelag()
+        }
 	}
     log.trace "Humidity Event - ${traceaction}, Reported humidity: '${evt.value}%', Switch is-'${state.sstate}', App State is-'${state.appstate}'"
     sendEvent (name:"Humidity Event",  value:"${humiditySensor1.label} is ${evt.value}% - ${traceaction}")
