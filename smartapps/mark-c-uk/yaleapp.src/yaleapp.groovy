@@ -289,7 +289,7 @@ def getDeviceData() { // get details for adding
     httpGet(getPanelStatus) { response ->
     	def respstatus = response?.status
         def respdata = response?.data
-		//log.debug "get device data - pannel ${response.status}"
+//log.debug "get device data - pannel ${response.status} ---- ${respdata} -------- ${response}"
         if (respstatus == 200){
         	def respmsg = response?.data?.message
         	if (state.currentError != null) {
@@ -329,7 +329,7 @@ private send(msg) {
 }
 //	----- ARM DISARM REFRESH -----
 def ArmDisRef(mode){
-	//log.debug "Incoming Mode CMD $mode "
+	log.debug "Incoming Mode CMD ${mode.value} "
 	def paramsMode = [
 			uri: "https://mob.yalehomesystem.co.uk/yapi/api/panel/mode/",
 			body: [area: 1, mode: "${mode.value}"],
@@ -349,7 +349,7 @@ def ArmDisRef(mode){
             if (state.currentError != null) {
 				state.currentError = null
             }
-            log.info "Mode $mode - '$respstatus' - '$respmsg' " 
+            log.info "Mode $mode - '$respstatus' - '$respmsg' $respdata" 
             if (respmsg != 'OK!'){
                	send("Alarm mode change to '$mode' issue, message $respmsg") //if door left open
             }
@@ -409,11 +409,11 @@ def checkError() {
     send("error ${errMsg}, count is ${state.errorCount}")
 	if (state.errorCount < 6) {
 		sendEvent (name: "ErrHandling", value: "Handle comms error attempt ${state.errorCount} - $errMsg")
-		getDevices()
-		if (state.currentError == null) {
-			log.info "getDevices successful. token is good."
-			return
-		}
+		//getDevices()
+		//if (state.currentError == null) {
+		//	log.info "getDevices successful. token is good."
+		//	return
+		//}
 		log.error "${errMsg} error while attempting getDevices.  Will attempt getToken"
 		getToken()
 		if (state.currentError == null) {
