@@ -1,7 +1,7 @@
 /**
  *  Tesla Powerwall Manager 
  * 
- *  Copyright 2019 DarwinsDen.com
+ *  Copyright 2019, 2020 DarwinsDen.com
  *  
  *  ****** WARNING ****** USE AT YOUR OWN RISK!
  *  This software was developed in the hopes that it will be useful to others, however, 
@@ -24,10 +24,11 @@
 include 'asynchttp_v1'
 
 def version() {
-    return "v0.1.6e.20191230"
+    return "v0.1.7e.20200103"
 }
 
 /* 
+ *	03-Jan-2020 >>> v0.1.7e.20200103 - Added access token refresh & command post retry logic 
  *	30-Dec-2019 >>> v0.1.6e.20191230 - Increased reserve percentage value options 
  *	06-Sep-2019 >>> v0.1.5e.20190906 - Updated watchdog to only notify once when issue first occurs and when resolved 
  *	13-Aug-2019 >>> v0.1.4e.20190813 - Added grid/outage status display, notifications, and device on/off controls 
@@ -226,7 +227,6 @@ def pageDevicesToControl() {
     }
 }
 
-
 def actionsValid (modeSetting, reserveSetting) {
      return (modeSetting && modeSetting.toString() != "No Action") || (reserveSetting && reserveSetting.toString() != "No Action")
 }
@@ -261,9 +261,7 @@ def getOptionsString (modeSetting,reserveSetting,timeSetting,daysSetting)
         else {
            optionsString = "No actions scheduled"
         } 
-
-        
-    return optionsString
+        return optionsString
 }
         
 def pageSchedules() {
@@ -425,8 +423,6 @@ def verifyPowerwalls() {
                          "Id: ${state.pwId}\n" + 
                          "Site Id: ${state.energySiteId}"   
                 }
-                   
- 
             } 
          } else {
             return dynamicPage(name: "verifyPowerwalls", title: "Tesla", install: false, uninstall: true, nextPage: "") {
@@ -434,7 +430,6 @@ def verifyPowerwalls() {
                     paragraph "Please go back and check your username and password"
                 }
             }
- 
         }
         
     } catch (Exception e) {
@@ -452,8 +447,15 @@ private getId() {"81527cff06843c8634fdc09e8ac0abefb46ac849f38fe1e431c2ef21067963
 private getSecret() {"c7257eb71a564034f9419ee651c7d0e5f7aa6bfbd18bafb5c5c033b093bb2fa3"}
 private getAgent() {"darwinsden"}
 
-private getToken() {
-    if (!state.access_token) {
+def getToken() {
+	if (!state.access_token) {
+		refreshToken()
+	}
+	state.access_token
+}
+
+def refreshToken() {
+      def tokenExpirationSeconds
       try {
         if (state.refresh_token) {
             try {
@@ -469,9 +471,12 @@ private getToken() {
                     ]
                 ]) {
                     resp ->
+                        log.debug "Refresh token data: created at ${resp.data.created_at} and expires in ${resp.data.expires_in}"
                         state.access_token = resp.data.access_token
                         state.refresh_token = resp.data.refresh_token
-                }
+                        state.token_expires_in = resp.data.expires_in
+                        state.schedule_refresh_token = true
+                 }
             } catch (groovyx.net.http.HttpResponseException e) {
                 log.warn e
                 state.access_token = null
@@ -495,20 +500,22 @@ private getToken() {
                 ]
             ]) {
                 resp ->
+                log.debug "Access token data: created at ${resp.data.created_at} and expires in ${resp.data.expires_in}"            
                 state.accessTokenValid = true
                 state.access_token = resp.data.access_token
                 state.refresh_token = resp.data.refresh_token
+                state.token_expires_in = resp.data.expires_in
+                state.schedule_refresh_token = true
             }
         }
     } catch (Exception e) {
         state.accessTokenValid = false
         log.error "Unhandled exception getting token: $e"
      }
-    }
-    return state.access_token
 }
 
 private resetAccountAccess () {
+   log.debug "resetting account tokens"
    state.refresh_token = null
    state.access_token = null
    state.accessTokenValid = false
@@ -524,7 +531,7 @@ private httpAuthAsyncGet (handlerMethod, String path) {
          asynchttp_v1.get(handlerMethod, requestParameters)
     } 
     catch (e) {
-       log.error "Http Get failed: ${e}"
+       log.error "Http Async Get failed: ${e}"
     }
 }
 
@@ -548,8 +555,11 @@ private httpAuthGet(String path, Closure closure) {
     }
 }
 
-private httpAuthPost (Map params = [:], String path, Closure closure) {
+private httpAuthPost (Map params = [:], String path, Closure closure, Integer attempt = null) {
+    
     log.debug "Command: ${params}"
+    def tryCount = attempt ?: 1
+    log.debug "attempt is: ${tryCount}"
     try {
         def requestParameters = [
             uri: url,
@@ -573,6 +583,15 @@ private httpAuthPost (Map params = [:], String path, Closure closure) {
 
     } catch (groovyx.net.http.HttpResponseException e) {
         log.error "Request failed for path: ${path}.  ${e.response?.data}"
+        if (tryCount < 2)
+        {
+           log.debug "retrying Post"
+           if (e.response.getStatus()==401) {
+             log.debug "Refreshing token"
+             refreshToken() 
+           }
+           httpAuthPost (params, path, closure, tryCount+1)
+        }
     }
 }
 
@@ -729,9 +748,9 @@ def checkBatteryNotifications (data) {
 }
           
 def processSiteResponse(response, callData) {
-    log.debug "processing site data response"
+  log.debug "processing site data response"
+  if (!response.hasError()) {
     def data = response.json.response
-    //log.debug "${data}"
     def pwDevice = getChildDevice("powerwallDashboard")
     if (pwDevice) {
         def strategy = data.tou_settings.optimization_strategy
@@ -757,10 +776,18 @@ def processSiteResponse(response, callData) {
     } else {
         log.debug("No Powerwall device to update")
     }
+   } else {
+       log.warn "response received error: ${response.getErrorMessage()}"
+       if (response.getStatus() == 401) {
+           log.debug "Refreshing token"
+           refreshToken()
+       }
+   } 
 }
 
 def processPowerwallResponse(response, callData) {
-    log.debug "processing powerwall response"
+  log.debug "processing powerwall response"
+  if (!response.hasError()) {
     def data=response.json.response
     //log.debug "${data}"   
     def child = getChildDevice("powerwallDashboard")
@@ -841,6 +868,13 @@ def processPowerwallResponse(response, callData) {
         //log.debug "grid status is: ${data.grid_status}"         
     }
     state.lastCompletedTime = now()
+   } else {
+      log.warn "response received error: ${response.getErrorMessage()}"
+      if (response.getStatus() == 401) {
+           log.debug "Refreshing token"
+           refreshToken()
+      }
+   } 
 }
           
 def processOffGridActions () 
@@ -995,6 +1029,7 @@ def processWatchdog() {
         if (!state?.processedWarningSent) {
            sendNotificationMessage("Warning: Powerwall Manager has not executed in ${(secondsSinceLastProcessed/60).toInteger()} minutes. Reinitializing","anomaly")
            state.processedWarningSent = true
+           refreshToken()
         }
         runIn(30, initialize)
     } else {
@@ -1002,6 +1037,7 @@ def processWatchdog() {
           if (!state?.completedWarningSent) {
               sendNotificationMessage("Warning: Powerwall Manager has not successfully received and processed data in ${(secondsSinceLastProcessCompleted/60).toInteger()} minutes. Reinitializing","anomaly")
               state.completedWarningSent = true
+              refreshToken()
           }
           runIn(30, initialize)
        } else {
@@ -1012,7 +1048,6 @@ def processWatchdog() {
           }      
        }
     }
-
 }
 
 def processMain () {
@@ -1028,5 +1063,12 @@ def processMain () {
         state.lastStateRunTime = now()
         runIn (1, requestPwData)
         runIn (10, requestSiteData)
+        
+        if (state?.schedule_refresh_token && state.refresh_token != null && state.token_expires_in != null) {  
+           def daysUntilRefresh = state.token_expires_in/3600/24 - 2 //Two days before due (seconds to days)
+           log.debug "Scheduling Token refresh in ${daysUntilRefresh.toInteger()} days."
+           runOnce(new Date() + daysUntilRefresh.toInteger(), refreshToken)
+           state.schedule_refresh_token = false
+        }
     }
 }
