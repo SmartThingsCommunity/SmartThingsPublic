@@ -121,7 +121,6 @@ private getSATURATION_COMMAND() { 0x03 }
 private getMOVE_TO_HUE_AND_SATURATION_COMMAND() { 0x06 }
 private getCOLOR_CONTROL_CLUSTER() { 0x0300 }
 private getATTRIBUTE_COLOR_TEMPERATURE() { 0x0007 }
-private getATTRIBUTE_COLOR_MODE() { 0x0008 }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
@@ -150,15 +149,6 @@ def parse(String description) {
 			else if(zigbeeMap.attrInt == ATTRIBUTE_SATURATION){ //Saturation Attribute
 				state.saturationValue = Math.round(zigbee.convertHexToInt(zigbeeMap.value) / 0xfe * 100)
 				runIn(5, updateColor, [overwrite: true])
-			}
-			else if (zigbeeMap.attrInt == ATTRIBUTE_COLOR_MODE){ //Color Mode Attribute
-				def value = Integer.parseInt(zigbeeMap.value, 16)
-				if (value == 0x00) {
-					runIn(5, updateColor, [overwrite: true])
-				}
-				else if(value == 0x02){
-					sendEvent(name: "colorTemperature", value: device.currentValue("colorTemperature"))
-				}
 			}
 		}
 		else if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07) {
@@ -202,7 +192,6 @@ def refresh() {
 			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_TEMPERATURE) +
 			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_HUE) +
 			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_SATURATION) +
-			zigbee.readAttribute(COLOR_CONTROL_CLUSTER, ATTRIBUTE_COLOR_MODE) +
 			zigbee.onOffConfig(0, 300) +
 			zigbee.levelConfig()
 }
