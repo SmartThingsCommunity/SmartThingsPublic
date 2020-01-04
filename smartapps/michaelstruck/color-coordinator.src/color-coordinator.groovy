@@ -31,8 +31,7 @@ definition(
 )
 
 preferences {
-    page(name: "mainPage")
-    page(name: "pageAbout", title: "About ${textAppName()}", install: null, uninstall: true, nextPage: null)
+	page name: "mainPage"
 }
 
 def mainPage() {
@@ -56,15 +55,13 @@ def mainPage() {
 	}
 }
 
-def pageAbout() {
-    dynamicPage(name: "pageAbout", title: "About ${textAppName()}", install: false, uninstall: true, nextPage: null) {
-        section {
-            paragraph "${textVersion()}\n${textCopyright()}\n\n${textLicense()}\n"
-        }
-        section("Instructions") {
-            paragraph textHelp()
-        }
-    }
+page(name: "pageAbout", title: "About ${textAppName()}", uninstall: true) {
+	section {
+    	paragraph "${textVersion()}\n${textCopyright()}\n\n${textLicense()}\n"
+	}
+	section("Instructions") {
+		paragraph textHelp()
+	}
 }
 
 def installed() {
