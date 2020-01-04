@@ -28,9 +28,12 @@ metadata {
 
 		command "reset"
 
-		fingerprint inClusters: "0x26,0x33,0x98"
-		fingerprint deviceId: "0x11", inClusters: "0x98,0x33"
-		fingerprint deviceId: "0x1102", inClusters: "0x98"
+		fingerprint mfr: "0371", inClusters: "0x26,0x33,0x98"
+		fingerprint mfr: "0371", deviceId: "0x11", inClusters: "0x98,0x33"
+		fingerprint mfr: "0371", deviceId: "0x1102", inClusters: "0x98"
+		fingerprint inClusters: "0x26,0x33,0x98", deviceJoinName: "Z-Wave Color Bulb"
+		fingerprint deviceId: "0x11", inClusters: "0x98,0x33", deviceJoinName: "Z-Wave Color Bulb"
+		fingerprint deviceId: "0x1102", inClusters: "0x98", deviceJoinName: "Z-Wave Color Bulb"
 	}
 
 	simulator {
@@ -68,7 +71,7 @@ metadata {
 }
 
 def updated() {
-	response(refresh())
+	response(command(zwave.switchColorV3.switchColorSupportedGet()) + refresh())
 }
 
 def parse(description) {
