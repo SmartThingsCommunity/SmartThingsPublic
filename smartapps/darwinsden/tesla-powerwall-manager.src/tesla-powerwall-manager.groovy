@@ -21,13 +21,12 @@
  *
  */
 
-include 'asynchttp_v1'
-
 def version() {
-    return "v0.1.7e.20200103"
+    return "v0.1.8e.20200104"
 }
 
 /* 
+ *	04-Jan-2020 >>> v0.1.8e.20200104 - Updated async http call for cross-platform support with Hubitat & SmartThings
  *	03-Jan-2020 >>> v0.1.7e.20200103 - Added access token refresh & command post retry logic 
  *	30-Dec-2019 >>> v0.1.6e.20191230 - Increased reserve percentage value options 
  *	06-Sep-2019 >>> v0.1.5e.20190906 - Updated watchdog to only notify once when issue first occurs and when resolved 
@@ -225,6 +224,25 @@ def pageDevicesToControl() {
                 title: "Turn the above selected devices back on after grid outage is over?"
         }
     }
+}
+
+
+Boolean hubIsSt() { 
+    return (getHubType() == "SmartThings") 
+}
+
+private getHubType() {
+    def hubType = "SmartThings"
+    if(state.hubType == null) {
+        try { 
+             include 'asynchttp_v1'
+           } 
+           catch (e) { 
+              hubType = "Hubitat"  
+            }
+        state.hubType = hubType
+    }
+    return state.hubType
 }
 
 def actionsValid (modeSetting, reserveSetting) {
@@ -474,7 +492,8 @@ def refreshToken() {
                         log.debug "Refresh token data: created at ${resp.data.created_at} and expires in ${resp.data.expires_in}"
                         state.access_token = resp.data.access_token
                         state.refresh_token = resp.data.refresh_token
-                        state.token_expires_in = resp.data.expires_in
+                        def Long tokenExpiresOn = resp.data.created_at + resp.data.expires_in
+                        state.token_expires_on = tokenExpiresOn
                         state.schedule_refresh_token = true
                  }
             } catch (groovyx.net.http.HttpResponseException e) {
@@ -504,9 +523,10 @@ def refreshToken() {
                 state.accessTokenValid = true
                 state.access_token = resp.data.access_token
                 state.refresh_token = resp.data.refresh_token
-                state.token_expires_in = resp.data.expires_in
+                def Long tokenExpiresOn = resp.data.created_at + resp.data.expires_in
+                state.token_expires_on = tokenExpiresOn
                 state.schedule_refresh_token = true
-            }
+             }
         }
     } catch (Exception e) {
         state.accessTokenValid = false
@@ -528,7 +548,12 @@ private httpAuthAsyncGet (handlerMethod, String path) {
             uri: url,
             path: path,
             headers: ['User-Agent': agent, Authorization: "Bearer ${token}"]]
-         asynchttp_v1.get(handlerMethod, requestParameters)
+         if(hubIsSt()) {
+            include 'asynchttp_v1'
+            asynchttp_v1.get(handlerMethod, requestParameters)
+        } else { 
+            asynchttpGet(handlerMethod, requestParameters)
+        }
     } 
     catch (e) {
        log.error "Http Async Get failed: ${e}"
@@ -672,6 +697,11 @@ def initialize() {
     runEvery1Hour(processWatchdog)
     runEvery3Hours(processWatchdog)
     runIn (5, processMain)
+    
+    if (state.refresh_token != null && state.token_expires_on != null) {
+       state.schedule_refresh_token = true
+    }
+    
 }
 
 private createDeviceForPowerwall() {
@@ -1064,10 +1094,12 @@ def processMain () {
         runIn (1, requestPwData)
         runIn (10, requestSiteData)
         
-        if (state?.schedule_refresh_token && state.refresh_token != null && state.token_expires_in != null) {  
-           def daysUntilRefresh = state.token_expires_in/3600/24 - 2 //Two days before due (seconds to days)
-           log.debug "Scheduling Token refresh in ${daysUntilRefresh.toInteger()} days."
-           runOnce(new Date() + daysUntilRefresh.toInteger(), refreshToken)
+        if (state?.schedule_refresh_token && state.refresh_token != null && state.token_expires_on != null) {  
+           Long refreshDateEpoch = state.token_expires_on.toLong() * 1000
+           //log.debug "it is ${refreshDateEpoch}"
+           def refreshDate = new Date(refreshDateEpoch) - 2 // Two days before due
+           log.debug "Scheduling Token refresh on ${refreshDate}."
+           runOnce(refreshDate, refreshToken)
            state.schedule_refresh_token = false
         }
     }
