@@ -46,9 +46,11 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		standardTile("contact", "device.contact", width: 6, height: 4) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00A0DC")
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13"
+				attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
+			}
 		}
 		standardTile("acceleration", "device.acceleration", decoration: "flat", width: 2, height: 2) {
 			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00A0DC")
@@ -65,7 +67,7 @@ metadata {
 		}
 
 		main(["contact", "acceleration"])
-		details(["contact", "contact", "acceleration", "temperature", "3axis", "battery"])
+		details(["contact", "acceleration", "temperature", "3axis", "battery"])
 	}
 
 	preferences {

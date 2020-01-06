@@ -284,8 +284,7 @@ private List getContactResult(part, description) {
 			linkText: linkText,
 			descriptionText: descriptionText,
 			handlerName: handlerName,
-			isStateChange: isStateChange,
-			displayed:false
+			isStateChange: isStateChange
 	)
 
 	results
