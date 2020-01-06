@@ -72,9 +72,11 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		standardTile("contact", "device.contact", width: 6, height: 4) {
-			state("open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
-			state("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+				state("open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				state("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
+			}
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
 			state("active", label: 'Active', icon: "st.motion.acceleration.active", backgroundColor: "#00a0dc")
@@ -261,7 +263,7 @@ private List<Map> translateZoneStatus(ZoneStatus zs) {
 		def value = zs.isAlarm1Set() ? 'open' : 'closed'
 		log.debug "Contact: ${device.displayName} value = ${value}"
 		def descriptionText = value == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
-		results << [name: 'contact', value: value, descriptionText: descriptionText, displayed: false, translatable: true]
+		results << [name: 'contact', value: value, descriptionText: descriptionText, translatable: true]
 	}
 
 	return results
@@ -350,7 +352,7 @@ List<Map> garageEvent(zValue) {
 	}
 	if (contactValue != null) {
 		def descriptionText = contactValue == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
-		results << [name: 'contact', value: contactValue, descriptionText: descriptionText, displayed: false, translatable: true]
+		results << [name: 'contact', value: contactValue, descriptionText: descriptionText, translatable: true]
 	}
 	results
 }
