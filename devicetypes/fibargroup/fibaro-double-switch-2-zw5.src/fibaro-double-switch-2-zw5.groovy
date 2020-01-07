@@ -92,13 +92,17 @@ def off(){
 }
 
 def childOn() {
-	sendHubCommand(response(encap(zwave.basicV1.basicSet(value: 255),2)))
-	sendHubCommand(response(encap(zwave.switchBinaryV1.switchBinaryGet(),2)))
+	def cmds = []
+	cmds << response(encap(zwave.basicV1.basicSet(value: 255),2))
+	cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(),2))
+    sendHubCommand(cmds, 1000)
 }
 
 def childOff() {
-	sendHubCommand(response(encap(zwave.basicV1.basicSet(value: 0),2)))
-	sendHubCommand(response(encap(zwave.switchBinaryV1.switchBinaryGet(),2)))
+	def cmds = []
+	cmds << response(encap(zwave.basicV1.basicSet(value: 0),2))
+	cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(),2))
+	sendHubCommand(cmds, 1000)
 }
 
 def reset() {
