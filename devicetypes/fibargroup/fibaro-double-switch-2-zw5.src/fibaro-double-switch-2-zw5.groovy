@@ -95,7 +95,7 @@ def childOn() {
 	def cmds = []
 	cmds << response(encap(zwave.basicV1.basicSet(value: 255),2))
 	cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(),2))
-    sendHubCommand(cmds, 1000)
+	sendHubCommand(cmds, 1000)
 }
 
 def childOff() {
