@@ -631,7 +631,9 @@ private def handleBatteryAlarmReport(cmd) {
 	def map = null
 	switch(cmd.zwaveAlarmEvent) {
 		case 0x01: //power has been applied, check if the battery level updated
-			result << response(secure(zwave.batteryV1.batteryGet()))
+            state.queryBattery = true
+			result << "delay 1200"
+			result << response(secure(zwave.batteryV1.batteryGet())
 			break;
 		case 0x0A:
 			map = [ name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true, data: [ lockName: deviceName ] ]
@@ -643,7 +645,7 @@ private def handleBatteryAlarmReport(cmd) {
 			// delegating it to handleAlarmReportUsingAlarmType
 			return handleAlarmReportUsingAlarmType(cmd)
 	}
-	result << createEvent(map)
+	if (map != null) result << createEvent(map)
 	result
 }
 
@@ -768,6 +770,8 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 130:  // Batteries replaced
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
+			result << "delay 1200"
+			result << response(secure(zwave.batteryV1.batteryGet()))
 			break
 		case 131: // Disabled user entered at keypad
 			map = [ descriptionText: "Code ${cmd.alarmLevel} is disabled", isStateChange: false ]
