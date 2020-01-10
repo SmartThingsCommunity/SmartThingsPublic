@@ -631,9 +631,9 @@ private def handleBatteryAlarmReport(cmd) {
 	def map = null
 	switch(cmd.zwaveAlarmEvent) {
 		case 0x01: //power has been applied, check if the battery level updated
-            state.queryBattery = true
+			state.queryBattery = true
 			result << "delay 1200"
-			result << response(secure(zwave.batteryV1.batteryGet())
+			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
 		case 0x0A:
 			map = [ name: "battery", value: 1, descriptionText: "Battery level critical", displayed: true, data: [ lockName: deviceName ] ]
