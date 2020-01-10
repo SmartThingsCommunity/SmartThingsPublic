@@ -22,10 +22,11 @@
  */
 
 def version() {
-    return "v0.1.8e.20200104"
+    return "v0.2.0e.20200110"
 }
 
 /* 
+ *	10-Jan-2020 >>> v0.2.0e.20200110 - Push notification support for Hubitat
  *	04-Jan-2020 >>> v0.1.8e.20200104 - Updated async http call for cross-platform support with Hubitat & SmartThings
  *	03-Jan-2020 >>> v0.1.7e.20200103 - Added access token refresh & command post retry logic 
  *	30-Dec-2019 >>> v0.1.6e.20191230 - Increased reserve percentage value options 
@@ -67,17 +68,17 @@ private pageMain() {
                 title: "PowerWall Manager", required: false, image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/pwLogoAlphaCentered.png"
         }
         section("Tesla Account Information") {
-           href "accountInfo", title: "Account Information..", description: "", required: (!userEmail || !userPw), image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon.png"
+           href "accountInfo", title: "Account Information..", description: "", required: (!userEmail || !userPw), image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon120.png"
         }
         section("Preferences") {
             href "pageNotifications", title: "Notification Preferences..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification.png"
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification120.png"
             href "pageSchedules", title: "Schedules..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar.png"
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/calendar120.png"
             href "pageDevicesToControl", title: "Turn off devices during a grid outage..", description: "", required: false,
                 image: "http://cdn.device-icons.smartthings.com/Home/home30-icn@2x.png"
             href "pagePwPreferences", title: "Powerwall Manager Preferences..", description: "", required: false,
-                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog.png"
+                image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/cog120.png"
         }    
         section("For more information") {
           href(name: "Site", title: "For more information, questions, or to provide feedback, please visit: DarwinsDen.com/powerwall",
@@ -130,8 +131,11 @@ def pageNotifications() {
             input "notifyWhenAnomalies", "boolean", required: false, defaultValue: true, title: "Notify when anomalies are encountered in the Powerwall Manager SmartApp"
         }
         
-        section("Notification method (push notifications are via ST app) and phone number if text/SMS messages are selected") {
+        section("Notification method (push notifications are via mobile app) and phone number if text/SMS messages are selected") {
             input "notificationMethod", "enum", required: false, defaultValue: "push", title: "Notification Method", options: ["none", "text", "push", "text and push"]
+            if (!hubIsSt()) {
+                 input(name: "notifyDevices", type: "capability.notification", title: "Send to these notification devices", required: false, multiple: true, submitOnChange: true)
+            }
             input "phoneNumber", "phone", title: "Phone number for text messages", description: "Phone Number", required: false
         }
     }
@@ -211,8 +215,11 @@ def pagePwPreferences() {
     dynamicPage(name: "pagePwPreferences", title: "Powerwall Manager Preferences", install: false, uninstall: false) {
         section("") {
            input "pollingPeriod", "enum", required: false, title: "Powerwall polling interval", defaultValue: "10 minutes",
-                options: ["Do not poll","5 minutes","10 minutes","30 minutes","1 hour"]
+                options: ["Do not poll","5 minutes","10 minutes","30 minutes","1 hour"]        
         }
+        section("") {
+            input "logLevel", "enum", required: false, title: "IDE Log Level (set log level in web IDE live logging tab)", options: ["none", "trace", "debug", "info", "warn"]
+      }
     }
 }
 
@@ -543,7 +550,9 @@ private resetAccountAccess () {
  
 private httpAuthAsyncGet (handlerMethod, String path) {
     try {
-         log.debug "Async requesting: ${path}"
+         if (logLevel == "debug" | logLevel == "trace") {
+            log.debug "Async requesting: ${path}"
+         }
          def requestParameters = [
             uri: url,
             path: path,
@@ -630,8 +639,17 @@ private sendNotificationMessage(message, msgType=null) {
             sendSmsMessage(phoneNumber.toString(), message)
            }
        }
-       if (sendPushMessage == true) {
-           sendPush(message)
+       if (sendPushMessage) {
+            if (hubIsSt()) { 
+                 sendPush(message)
+            } else {
+                 // Hubitat
+                 if (notifyDevices != null) {
+				      notifyDevices.each {						
+					     it.deviceNotification(message)
+                      }
+                 }
+            }
        }
     }
 }
@@ -778,7 +796,9 @@ def checkBatteryNotifications (data) {
 }
           
 def processSiteResponse(response, callData) {
-  log.debug "processing site data response"
+  if (logLevel == "debug" | logLevel == "trace") {
+     log.debug "processing site data response"
+  }
   if (!response.hasError()) {
     def data = response.json.response
     def pwDevice = getChildDevice("powerwallDashboard")
@@ -816,7 +836,9 @@ def processSiteResponse(response, callData) {
 }
 
 def processPowerwallResponse(response, callData) {
-  log.debug "processing powerwall response"
+  if (logLevel == "debug" | logLevel == "trace") {
+     log.debug "processing powerwall response"
+  }
   if (!response.hasError()) {
     def data=response.json.response
     //log.debug "${data}"   
