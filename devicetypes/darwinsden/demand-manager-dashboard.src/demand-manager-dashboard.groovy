@@ -2,7 +2,7 @@
  *  Demand Manager Dashboard
  *
  *  Author: Darwin@DarwinsDen.com
- *  Copyright 2018 - All rights reserved
+ *  Copyright 2018, 2020 - All rights reserved
  *  
  *  This software was developed in the hopes that it will be useful to others, however, 
  *  it is distributed on an "AS IS" BASIS, WITOUT WARRANTIES OR GUARANTEES OF ANY KIND, either express or implied. 
@@ -12,6 +12,8 @@
  * 
  *  The developer retains all rights, title, copyright, and interest, including all copyright, patent rights, and trade secrets 
  *  associated with the algorthms, and technologies used herein. 
+ *
+ *	10-Jan-2020 >>> v0.1.1e.20200110 - Updated for Hubitat compatibility
  * 
  */
 metadata {
@@ -20,18 +22,18 @@ metadata {
         capability "Refresh"  
         capability "Energy Meter"
 		capability "Power Meter"
-        
-        command setCurrentDemand
-        command setProjectedDemand
-        command setMode
-        command setGoalDemand
-        command setPeakDayDemand
-        command setPeakMonthDemand
-        command setMessage
-        command setCycleMinutes
-        command resetDay
-        command resetMonth
-        
+       
+        command "setCurrentDemand"
+        command "setProjectedDemand"
+        command "setMode"
+        command "setGoalDemand"
+        command "setPeakDayDemand"
+        command "setPeakMonthDemand"
+        command "setMessage"
+        command "setCycleMinutes"
+        command "resetDay"
+        command "resetMonth" 
+  
         attribute "projectedStatus", "enum"
         attribute "mode", "string"
         attribute "status", "string"
@@ -47,10 +49,6 @@ metadata {
         attribute "message1Time", "string"
         attribute "message2Time", "string"
     }
-
-	// simulator metadata
-	simulator {
-	}
 
 	// UI tile definitions
 	tiles(scale: 2) {
