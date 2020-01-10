@@ -55,6 +55,12 @@ metadata {
 				range: "1..120", displayDuringSetup: false)
 		}
 		section {
+			input("presetPos", "number",
+				title: "Preset Position\n\nBlah blah blah",
+				description: "Preset Position (0-100; default if empty: 50%)",
+				range: "0..100", displayDuringSetup: false)
+		}
+		section {
 			input("supportedCommands", "enum",
 				title: "Supported Commands\n\nThis controls the value for supportedWindowShadeCommands.",
 				description: "open, close, pause", defaultValue: "2", multiple: false,
@@ -164,6 +170,9 @@ private getSupportedCommandsMap() {
 private getShadeActionDelay() {
 	(settings.actionDelay != null) ? settings.actionDelay : 5
 }
+private getShadePresetPos() {
+	(settings.presetPos != null) ? settings.presetPos : 50
+}
 
 def installed() {
 	log.debug "installed()"
@@ -180,11 +189,18 @@ def updated() {
 
 	def commands = (settings.supportedCommands != null) ? settings.supportedCommands : "2"
 
-	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(supportedCommandsMap[commands]))
+	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(supportedCommandsMap[commands]), isStateChange: true)
 }
 
 def parse(String description) {
 	log.debug "parse(): $description"
+}
+
+// Just a utility function to send level events; emulates a parse event that would contain the shade level
+private updateShadeLevel(level) {
+	log.debug "shadeLevel: ${level}"
+	sendEvent(name: "shadeLevel", value: level, unit: "%", isStateChange: true)
+	sendEvent(name: "level", value: level, unit: "%", isStateChange: true)	
 }
 
 // Capability commands
@@ -224,12 +240,12 @@ def presetPosition() {
 }
 
 def setShadeLevel(level) {
+	log.debug "setShadeLevel(${level})"
 	def normalizedLevel = min(100, max(0, level))
 	def lastLevel = device.currentValue("shadeLevel") ?: 100
 
 	// TODO: Update shade states; simulate opening or closing
-	sendEvent(name: "shadeLevel", value: normalizedLevel, unit: "%")
-	sendEvent(name: "level", value: normalizedLevel, unit: "%")
+	updateShadeLevel(normalizedLevel)
 
 	if (normalizedLevel > 0) {
 		opened()
@@ -239,6 +255,7 @@ def setShadeLevel(level) {
 }
 
 def setLevel(level, rate = 0) {
+	log.debug "setLevel(${level})"
 	setShadeLevel(level)
 }
 
@@ -259,6 +276,7 @@ def closePartially() {
 def partiallyOpen() {
 	log.debug "windowShade: partially open"
 	sendEvent(name: "windowShade", value: "partially open", isStateChange: true)
+	//updateShadeLevel(random() % 99)
 }
 
 def opening() {
@@ -274,11 +292,13 @@ def closing() {
 def opened() {
 	log.debug "windowShade: open"
 	sendEvent(name: "windowShade", value: "open", isStateChange: true)
+	updateShadeLevel(100)
 }
 
 def closed() {
 	log.debug "windowShade: closed"
 	sendEvent(name: "windowShade", value: "closed", isStateChange: true)
+	updateShadeLevel(0)
 }
 
 def unknown() {
@@ -308,7 +328,8 @@ def shadeLevel100() {
 }
 
 def setBatteryLevel(level) {
-	sendEvent(name: "battery", value: level, unit: "%")
+	log.debug "battery: ${level}"
+	sendEvent(name: "battery", value: level, unit: "%", isStateChange: true)
 }
 
 def batteryLevel0() {
