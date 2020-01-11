@@ -13,6 +13,7 @@
  *  The developer retains all rights, title, copyright, and interest, including all copyright, patent rights, and trade secrets 
  *  associated with the algorthms, and technologies used herein. 
  *
+ *	11-Jan-2020 >>> v0.1.2e.20200111 - Added attributes for current and projected demand
  *	10-Jan-2020 >>> v0.1.1e.20200110 - Updated for Hubitat compatibility
  * 
  */
@@ -41,7 +42,9 @@ metadata {
         attribute "goal", "number"
         attribute "peakDayDemand", "number"
         attribute "peakMonthDemand", "number"
-        attribute "peakMonthDemandStatus", "string"
+        attribute "peakMonthDemandStatus", "string"          
+        attribute "currentDemand", "string"   
+        attribute "projectedDemand", "string"       
         attribute "timeDaySet", "string"
         attribute "timeMonthSet", "string"
         attribute "message1", "string"
