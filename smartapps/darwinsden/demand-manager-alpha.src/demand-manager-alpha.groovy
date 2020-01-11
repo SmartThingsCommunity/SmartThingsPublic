@@ -27,10 +27,10 @@
  */
  
 def version() {
-    return "v0.3.0e.20200110"
+    return "v0.3.1e.20200111"
 }
 /*   
- *	10-Jan-2020 >>> v0.3.0e.20200110 - Initial basic cross-platform support for Hubitat.
+ *	10-Jan-2020 >>> v0.3.1e.20200111 - Initial basic cross-platform support for Hubitat.
  *	16-Oct-2019 >>> v0.2.4e.20191016 - Added support for multiple thermostats and updated watchdog to only notify once on issue occurrence and resolution.
  *	08-Aug-2019 >>> v0.2.3e.20190808 - Auto-refresh home energy meter and solar power meter if these are Powerwall devices 
  *	28-Jul-2019 >>> v0.2.2e.20190728 - Added support for Griddy and ComEd utility pricing peak period triggers. Added support for Powerwall as a solar and grid meter. 
@@ -272,7 +272,7 @@ def pageDisplayIndicators() {
 
     def wD200Dimmers = [
 		name:				"wD200Dimmers",
-		type:				"capability.indicator",
+		type:				"capability.switchLevel",
 		title:				"Select your HomeSeer WD200+ dimmers",
 		multiple:			true,
 		required:			false
@@ -1894,12 +1894,12 @@ def setIndicatorDevices() {
             if (atomicState.demandProjectedWatts > atomicState.goalDemandWatts * 1.1) {
                 blinkDuration = 400
             }
+            if (blinkDuration != atomicState.lastBlinkDuration) {
+               logDebug "setting led blink duration to: ${blinkDuration}"
+               runIn(3, wd200LedBlinkHandler, [data: [duration: blinkDuration]])
+            }
         }
 
-        if (blinkDuration != atomicState.lastBlinkDuration) {
-            logDebug "setting led blink duration to: ${blinkDuration}"
-            runIn(3, wd200LedBlinkHandler, [data: [duration: blinkDuration]])
-        }
         //color=4
         //level=6
         if (color != atomicState.lastLedColor || level != atomicState.lastLedLevel || blink != atomicState.lastLedBlink) {
@@ -1911,7 +1911,15 @@ def setIndicatorDevices() {
 
 def wd200LedBlinkHandler(data) {
     def blinkDuration = data.duration
-    wD200Dimmers.setBlinkDurationMilliseconds(blinkDuration)
+    if (wD200Dimmers) {
+		wD200Dimmers.each {						
+            if (it.hasCommand("setBlinkDurationMilliseconds")) {
+                it.setBlinkDurationMilliseconds(blinkDuration)
+            } else if (it.hasCommand("setBlinkDurationMS")) {
+                it.setBlinkDurationMS(blinkDuration)
+            }
+         }
+    }
     atomicState.lastBlinkDuration = blinkDuration
 }
 
@@ -1922,7 +1930,15 @@ def setWD200LED(led, data) {
         color = 0
         blink = 0
     }
-    wD200Dimmers.setStatusLed(led, color, blink)
+    if (wD200Dimmers) {
+		wD200Dimmers.each {						
+            if (it.hasCommand("setStatusLed")) {
+                it.setStatusLed(led, color, blink)
+            } else if (it.hasCommand("setStatusLED")) {
+                it.setStatusLED(led.toString(), color.toString(), blink.toString())
+            }
+         }
+    }
 }
 
 def setWD200Led7(dataIn) {
