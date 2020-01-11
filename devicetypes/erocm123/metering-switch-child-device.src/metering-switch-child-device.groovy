@@ -1,5 +1,5 @@
 /**
- *  Switch Child Device
+ *  Metering Switch Child Device
  *
  *  Copyright 2017 Eric Maycock
  *
@@ -14,11 +14,15 @@
  *
  */
 metadata {
-	definition (name: "Switch Child Device", namespace: "erocm123", author: "Eric Maycock", vid: "generic-switch") {
+	definition (name: "Metering Switch Child Device", namespace: "erocm123", author: "Eric Maycock", vid:"generic-switch-power-energy") {
 		capability "Switch"
 		capability "Actuator"
 		capability "Sensor"
+        capability "Energy Meter"
+        capability "Power Meter"
         capability "Refresh"
+        
+        command "reset"
 	}
 
 	tiles {
@@ -30,9 +34,18 @@ metadata {
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
 		}
+        valueTile("power", "device.power", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} W'
+	    }
+        valueTile("energy", "device.energy", decoration: "flat", width: 2, height: 2) {
+			state "default", label:'${currentValue} kWh'
+	    }
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		    state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
         }
+        standardTile("reset", "device.energy", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		    state "default", label:'reset kWh', action:"reset"
+	    }
 	}
 }
 
@@ -46,4 +59,8 @@ void off() {
 
 void refresh() {
 	parent.childRefresh(device.deviceNetworkId)
+}
+
+void reset() {
+	parent.childReset(device.deviceNetworkId)
 }
