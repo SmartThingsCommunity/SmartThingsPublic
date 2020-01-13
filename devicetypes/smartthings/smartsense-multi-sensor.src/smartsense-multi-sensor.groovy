@@ -34,6 +34,7 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05,FC02", outClusters: "0019", manufacturer: "CentraLite", model: "3321-S", deviceJoinName: "Multipurpose Sensor"
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "SmartThings", model: "multiv4", deviceJoinName: "Multipurpose Sensor"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "Samjin", model: "multi", deviceJoinName: "Multipurpose Sensor"
+		fingerprint profileId: "0104,0402", inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0003,0019", manufacturer: "Sercomm Corp.", model: "SZ-DWS04", deviceJoinName: "Door Window Sensor"
 
 		attribute "status", "string"
 	}
