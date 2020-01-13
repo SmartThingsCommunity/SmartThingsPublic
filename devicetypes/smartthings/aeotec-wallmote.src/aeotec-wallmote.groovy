@@ -145,7 +145,7 @@ def createChildDevices() {
             child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
                     [completedSetup: true, label: "${device.displayName} button ${i}",
                      isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
-            child.sendEvent(name: "supportedButtonValues", value: ["pushed", "held"].encodeAsJson(), displayed: false)
+            child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJson(), displayed: false)
             child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true, displayed: false)
         }
     }
