@@ -184,7 +184,7 @@ def initialize() {
 }
 
 private addChildButtons(numberOfButtons) {
-	for(def endpoint : 1..numberOfButtons) {
+	for(def endpoint : 2..numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
