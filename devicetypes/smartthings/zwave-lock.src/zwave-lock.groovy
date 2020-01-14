@@ -238,7 +238,7 @@ def doConfigure() {
 def parse(String description) {
 	log.trace "[DTH] Executing 'parse(String description)' for device ${device.displayName} with description = $description"
 
-	def result = null
+	def result = []
 	if (description.startsWith("Err")) {
 		if (state.sec) {
 			result = createEvent(descriptionText:description, isStateChange:true, displayed:false)
@@ -255,6 +255,9 @@ def parse(String description) {
 		def cmd = zwave.parse(description, [ 0x98: 1, 0x62: 1, 0x63: 1, 0x71: 2, 0x72: 2, 0x80: 1, 0x85: 2, 0x86: 1 ])
 		if (cmd) {
 			result = zwaveEvent(cmd)
+		}
+		if (state.queryBattery) {
+			result << response(secure(zwave.batteryV1.batteryGet()))
 		}
 	}
 	log.info "[DTH] parse() - returning result=$result"
@@ -770,6 +773,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 130:  // Batteries replaced
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
+			state.queryBattery = true
 			result << "delay 1200"
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break
@@ -1040,6 +1044,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.descriptionText = "Battery is at ${cmd.batteryLevel}%"
 	}
 	state.lastbatt = now()
+	state.queryBattery = false
 	createEvent(map)
 }
 
