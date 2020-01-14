@@ -188,7 +188,7 @@ def configure() {
     // Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
     // enrolls with default periodic reporting until newer 5 min interval is confirmed
     // Sets up low battery threshold reporting
-    sendEvent(name: "DeviceWatch-Enroll", displayed: false, value: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, scheme: "TRACKED", checkInterval: 6 * 60 * 60 + 1 * 60, offlinePingable: "1"])
+    sendEvent(name: "DeviceWatch-Enroll", displayed: false, value: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, scheme: "TRACKED", checkInterval: 6 * 60 * 60 + 1 * 60, offlinePingable: "1"].encodeAsJSON())
 
     return zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0020) +
 		   zigbee.enrollResponse() + 
