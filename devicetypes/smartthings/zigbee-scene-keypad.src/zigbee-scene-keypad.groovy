@@ -107,7 +107,7 @@ def installed() {
 	if (childDevices) {
 		def event
 		for (def endpoint : 1..device.currentValue("numberOfButtons")) {
-			event = createEvent(name: "button", value: "pushed", isStateChange: true)
+			event = createEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
 			sendEventToChild(endpoint, event)
 		}
 	}
