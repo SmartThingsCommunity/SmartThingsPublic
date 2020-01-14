@@ -84,7 +84,7 @@ metadata {
 			state "default", label: "Preset", action:"presetPosition", icon:"st.Home.home2"
 		}
 		preferences {
-			input "preset", "number", title: "Preset percentage (1-100) [Default - 50%]", defaultValue: 50, required: false, displayDuringSetup: true, range:"1..100"
+			input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, required: false, displayDuringSetup: true, range:"1..100"
 		}
 		
 		main(["main"])
