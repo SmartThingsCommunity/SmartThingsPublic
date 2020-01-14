@@ -104,9 +104,9 @@ def installed() {
 	if (!childDevices) {
 		addChildButtons(numberOfButtons)
 	}
-    if(childDevices) {
+	if (childDevices) {
 		def event
-		for(def endpoint : 1..device.currentValue("numberOfButtons")) {
+		for (def endpoint : 1..device.currentValue("numberOfButtons")) {
 			event = createEvent(name: "button", value: "pushed", isStateChange: true)
 			sendEventToChild(endpoint, event)
 		}
@@ -125,16 +125,16 @@ def initialize() {
 }
 
 private addChildButtons(numberOfButtons) {
-	for(def endpoint : 2..numberOfButtons) {
+	for (def endpoint : 2..numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
-			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
+			def childLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
 			def child = addChildDevice("Child Button", childDni, device.getHub().getId(), [
 					completedSetup: true,
-					label         : componentLabel,
+					label         : childLabel,
 					isComponent   : true,
 					componentName : "button$endpoint",
-					componentLabel: "Button $endpoint"
+					childLabel: "Button $endpoint"
 			])
 			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 		} catch(Exception e) {
