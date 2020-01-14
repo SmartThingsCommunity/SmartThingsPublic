@@ -134,7 +134,7 @@ private addChildButtons(numberOfButtons) {
 					label         : childLabel,
 					isComponent   : true,
 					componentName : "button$endpoint",
-					childLabel: "Button $endpoint"
+					componentLabel: "Button $endpoint"
 			])
 			child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJSON(), displayed: false)
 		} catch(Exception e) {
