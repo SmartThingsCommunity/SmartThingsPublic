@@ -17,7 +17,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-    definition(name: "Zigbee Non-Holdable Button", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-button-4", ocfDeviceType: "x.com.st.d.remotecontroller") {
+    definition(name: "Zigbee Non-Holdable Button", namespace: "smartthings", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-button-2", ocfDeviceType: "x.com.st.d.remotecontroller") {
         capability "Configuration"
         capability "Battery"
         capability "Refresh"
