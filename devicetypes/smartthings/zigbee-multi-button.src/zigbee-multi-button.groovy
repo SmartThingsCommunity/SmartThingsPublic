@@ -70,11 +70,11 @@ def parseAttrMessage(description) {
 		map = getButtonEvent(descMap)
 	} else if(descMap?.clusterInt == 0xFC80) {
 		def buttonNumber
-		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 1
+		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 0
        
 		log.debug "Number is ${buttonNumber}"
 		def event = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: "pushed", isStateChange: true)
-		if (buttonNumber != 1) {
+		if (buttonNumber != 0) {
 			sendEventToChild(buttonNumber, event)
 		} else {
 			sendEvent(event)
@@ -233,7 +233,7 @@ private getSupportedButtonValues() {
 private getModelNumberOfButtons() {[
 		"3450-L" : 4,
 		"3450-L2" : 4,
-		"SceneSwitch-EM-3.0" : 4
+		"SceneSwitch-EM-3.0" : 3
 ]}
 
 private getModelBindings(model) {
