@@ -85,7 +85,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	def endpoint = cmd.sourceEndPoint
-	if (endpoint == state.lastTriggeredSound) {
+	if (endpoint == state.lastTriggeredSound && encapsulatedCommand != null) {
 		zwaveEvent(encapsulatedCommand)
 	}
 }
@@ -151,8 +151,8 @@ private addChildren(numberOfSounds) {
 
 private encap(cmd, endpoint = null) {
 	if (cmd) {
-		if (endpoint) {
-			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: channelNumber(endpoint)).encapsulate(cmd)
+		if (endpoint && endpoint > 1) {
+			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
 		}
 		if (zwaveInfo.zw.contains("s")) {
 			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
@@ -189,20 +189,28 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 
 def setOnChild(deviceDni) {
 	resetActiveSound()
-	sendHubCommand encap(zwave.basicV1.basicSet(value: 0xFF), deviceDni)
+	sendHubCommand encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(deviceDni))
 	state.lastTriggeredSound = channelNumber(deviceDni)
 	setActiveSound(state.lastTriggeredSound)
 }
 
 def setOffChild(deviceDni) {
-	sendHubCommand encap(zwave.basicV1.basicSet(value: 0x00), deviceDni)
+	sendHubCommand encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(deviceDni))
 }
 
 def resetActiveSound() {
-	String childDni = "${device.deviceNetworkId}:$state.lastTriggeredSound"
-	def child = childDevices.find { it.deviceNetworkId == childDni }
-	child?.sendEvent([name: "chime", value: "off"])
+	if (state.lastTriggeredSound > 1) {
+		String childDni = "${device.deviceNetworkId}:$state.lastTriggeredSound"
+		def child = childDevices.find { it.deviceNetworkId == childDni }
+
+		setOffChild(childDni)
+		child?.sendEvent([name: "chime", value: "off"])
+		child?.sendEvent([name: "alarm", value: "off"])
+	} else {
+		sendHubCommand(onOffCmd(0x00))
+	}
 	sendEvent([name: "alarm", value: "off"])
+	sendEvent([name: "chime", value: "off"])
 }
 
 def setActiveSound(soundId) {
