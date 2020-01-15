@@ -206,6 +206,23 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     [:]
 }
 
+// MultiChannelCmdEncap and MultiInstanceCmdEncap are ways that devices
+// can indicate that a message is coming from one of multiple subdevices
+// or "endpoints" that would otherwise be indistinguishable
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+    def map = [ name: "switch", type: "physical" ]
+
+	if (cmd.commandClass == 37){
+        if (cmd.parameter == [0]) {
+            map.value = "off"
+        }
+        if (cmd.parameter == [255]) {
+            map.value = "on"
+        }
+        createEvent(map)
+    }
+}
+
 def on() {
     logging("on()", 1)
     commands([
