@@ -22,10 +22,11 @@
  */
 
 def version() {
-    return "v0.2.0e.20200110"
+    return "v0.2.1e.20200116"
 }
 
 /* 
+ *	16-Jan-2020 >>> v0.2.1e.20200116 - Additional command retry/error checking logic. Hubitat battery% compatibility update.
  *	10-Jan-2020 >>> v0.2.0e.20200110 - Push notification support for Hubitat
  *	04-Jan-2020 >>> v0.1.8e.20200104 - Updated async http call for cross-platform support with Hubitat & SmartThings
  *	03-Jan-2020 >>> v0.1.7e.20200103 - Added access token refresh & command post retry logic 
@@ -442,7 +443,7 @@ def verifyPowerwalls() {
              }
         }
        } else if (state.foundPowerwalls) {
-            return dynamicPage(name: "verifyPowerwalls", title: "Tap 'Save' to complete installation/update.", install: true, uninstall: false) {
+            return dynamicPage(name: "verifyPowerwalls", title: "Tap 'Save/Done' to complete installation/update.", install: true, uninstall: false) {
                 section("Found Powerwall(s): ") {
                     paragraph "Name: ${state.siteName}\n" +
                          "Id: ${state.pwId}\n" + 
@@ -589,11 +590,10 @@ private httpAuthGet(String path, Closure closure) {
     }
 }
 
-private httpAuthPost (Map params = [:], String path, Closure closure, Integer attempt = null) {
-    
-    log.debug "Command: ${params}"
+private httpAuthPost (Map params = [:], String cmdName, String path, Closure closure, Integer attempt = null) {
+    //cmdName is descriptive name for logging/notification
     def tryCount = attempt ?: 1
-    log.debug "attempt is: ${tryCount}"
+    log.debug "Command: ${cmdName}, Params: ${params}, Attempt: ${tryCount}"
     try {
         def requestParameters = [
             uri: url,
@@ -611,20 +611,28 @@ private httpAuthPost (Map params = [:], String path, Closure closure, Integer at
                 }
             } else {
                 httpPost(requestParameters) {
-                    resp -> closure(resp)
+                    resp -> closure(resp)    
                 }
             }
+            state.cmdFailedSent = false
 
     } catch (groovyx.net.http.HttpResponseException e) {
-        log.error "Request failed for path: ${path}.  ${e.response?.data}"
-        if (tryCount < 2)
+        log.error "Request failed attempt ${tryCount} for path: ${path}. ${e.response?.data}"
+        if (tryCount < 3)
         {
            log.debug "retrying Post"
+           //debug notification message below. comment out for production
+           //sendNotificationMessage("Failed command: ${params} after ${tryCount} tries. Retrying..") 
            if (e.response.getStatus()==401) {
              log.debug "Refreshing token"
              refreshToken() 
            }
-           httpAuthPost (params, path, closure, tryCount+1)
+           httpAuthPost (params, cmdName, path, closure, tryCount+1)
+        } else {
+            if (!state.cmdFailedSent) {
+                sendNotificationMessage("Powerwall Manager: Failed command: ${cmdName} after ${tryCount} tries.")
+                state.cmdFailedSent = true
+            }  
         }
     }
 }
@@ -769,13 +777,13 @@ def checkBatteryNotifications (data) {
        if (data.batteryPercent - data.reservePercent < 5) {
           def status
           if (data.batteryPercent <= data.reservePercent) {
-              status = "has reached"
+              status = "has reached or droppped below"
           } else {
               status = "is approaching"
           }
           if (state.timeOfLastReserveNotification == null) {
             state.timeOfLastReserveNotification = now()
-            sendNotificationMessage("Powerwall battery level of ${data.batteryPercent.round(1)}% ${status} ${data.reservePercent}% reserve level.")   
+            sendNotificationMessage("Powerwall battery level of ${Math.round(data.batteryPercent*10)/10}% ${status} ${data.reservePercent}% reserve level.")   
            } 
         } else if (state.timeOfLastReserveNotification != null && now() - state.timeOfLastReserveNotification >= 30 * 60 * 1000) {
              //reset for new notification if alert condition no longer exists and it's been at least 30 minutes since last notification
@@ -786,7 +794,7 @@ def checkBatteryNotifications (data) {
        if (data.batteryPercent <= lowerLimitNotificationValue.toFloat()) {
           if (state.timeOfLastLimitNotification == null) {
             state.timeOfLastLimitNotification = now()
-            sendNotificationMessage("Powerwall battery level of ${data.batteryPercent.round(1)}% dropped below notification limit of ${lowerLimitNotificationValue}%.")  
+            sendNotificationMessage("Powerwall battery level of ${Math.round(data.batteryPercent*10)/10}% dropped below notification limit of ${lowerLimitNotificationValue}%.")  
           } 
        } else if (state.timeOfLastLimitNotification != null && now() - state.timeOfLastLimitNotification >= 30 * 60 * 1000) {
             //reset for new notification if alert condition no longer exists and it's been at least 30 minutes since last notification
@@ -859,7 +867,7 @@ def processPowerwallResponse(response, callData) {
         {
             def batteryPercent = data.energy_left.toFloat() / data.total_pack_energy.toFloat() * 100.0
             updateIfChanged(child, "battery", batteryPercent.toInteger())
-            updateIfChanged(child, "batteryPercent", batteryPercent.round(1))
+            updateIfChanged(child, "batteryPercent", Math.round (batteryPercent*10)/10)
             runIn(1, checkBatteryNotifications, [data: [batteryPercent: batteryPercent, reservePercent: data.backup.backup_reserve_percent.toInteger()]])
         }
    
@@ -972,8 +980,8 @@ def requestPwData() {
 }
 
 def commandOpMode(data) {
-    log.debug "commanding opMode to ${data.mode}"
-    httpAuthPost(body:[default_real_mode:data.mode],"/api/1/energy_sites/${state.energySiteId}/operation",{ resp ->
+    //log.debug "commanding opMode to ${data.mode}"
+    httpAuthPost(body:[default_real_mode:data.mode],"${data.mode} mode","/api/1/energy_sites/${state.energySiteId}/operation",{ resp ->
         //log.debug "${resp.data}"
     }
     )
@@ -1019,7 +1027,7 @@ def commandTouStrategy(data)
     }
    
     def commands = [tou_settings:[optimization_strategy:data.strategy,schedule:latestSchedule]]
-    httpAuthPost(body:commands,"/api/1/energy_sites/${state.energySiteId}/time_of_use_settings", 
+    httpAuthPost(body:commands,"${data.strategy}","/api/1/energy_sites/${state.energySiteId}/time_of_use_settings", 
       { resp -> //log.debug "${resp.data}"
          //log.debug "TOU strategy command sent"
       })
@@ -1040,8 +1048,8 @@ def setTbcCostSaving(child) {
 }
 
 def commandBackupReservePercent(data) {
-   log.debug "commanding reserve to ${data.reservePercent}%"
-   httpAuthPost(body:[backup_reserve_percent:data.reservePercent],"/api/1/energy_sites/${state.energySiteId}/backup", { resp ->
+   //log.debug "commanding reserve to ${data.reservePercent}%"
+   httpAuthPost(body:[backup_reserve_percent:data.reservePercent],"reserve ${data.reservePercent}%","/api/1/energy_sites/${state.energySiteId}/backup", { resp ->
       }
     )
    runIn(2, requestPwData)
