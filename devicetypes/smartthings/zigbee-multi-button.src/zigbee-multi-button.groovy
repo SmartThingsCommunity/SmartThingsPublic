@@ -30,7 +30,7 @@ metadata {
 
 		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
 		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Scene Keypad", vid: "generic-4-button"
+		fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Scene Keypad", vid: "generic-4-button-alt"
 	}
 
 	tiles {
@@ -70,11 +70,11 @@ def parseAttrMessage(description) {
 		map = getButtonEvent(descMap)
 	} else if(descMap?.clusterInt == 0xFC80) {
 		def buttonNumber
-		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 1
+		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger())
        
 		log.debug "Number is ${buttonNumber}"
 		def event = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: "pushed", isStateChange: true)
-		if (buttonNumber != 1) {
+		if (buttonNumber != 0) {
 			sendEventToChild(buttonNumber, event)
 		} else {
 			sendEvent(event)
@@ -233,7 +233,7 @@ private getSupportedButtonValues() {
 private getModelNumberOfButtons() {[
 		"3450-L" : 4,
 		"3450-L2" : 4,
-		"SceneSwitch-EM-3.0" : 4
+		"SceneSwitch-EM-3.0" : 3
 ]}
 
 private getModelBindings(model) {
