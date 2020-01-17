@@ -42,6 +42,7 @@ metadata {
 		fingerprint mfr: "0154", prod: "0004", model: "0002", deviceJoinName: "POPP Solar Outdoor Siren", vid: "generic-siren-12"
 		fingerprint mfr: "0109", prod: "2005", model: "0518", deviceJoinName: "Vision Outdoor Siren", vid: "generic-siren-12"
 		fingerprint mfr: "0258", prod: "0003", model: "6088", deviceJoinName: "NEO Coolcam Siren Alarm"//AU
+		fingerprint mfr: "0258", prod: "0600", model: "1028", deviceJoinName: "NEO Coolcam Siren Alarm"//MY
 	}
 
 	simulator {
