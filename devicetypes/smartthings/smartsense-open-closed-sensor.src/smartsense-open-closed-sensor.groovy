@@ -39,6 +39,7 @@ metadata {
         //AduroSmart
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Contact Sensor V2.1", mnmn: "SmartThings", vid: "generic-contact-3"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "ADUROLIGHT", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Contact Sensor V2.0", mnmn: "SmartThings", vid: "generic-contact-3"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-DWS04", deviceJoinName: "Sercomm Door Window Sensor", mnmn: "SmartThings", vid: "generic-contact"
 	}
 
 	simulator {
