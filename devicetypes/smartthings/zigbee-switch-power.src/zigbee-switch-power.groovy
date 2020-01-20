@@ -51,6 +51,9 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "0051", inClusters: "0000, 0003, 0004, 0005, 0006, 0B04, 1000, 0702", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "AD-SmartPlug3001", deviceJoinName: "Eria Zigbee Smart Plug"
 		fingerprint profileId: "0104", deviceId: "010A", inClusters: "0000, 0003, 0004, 0005, 0006, 1000", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "BPU3", deviceJoinName: "Eria Zigbee On/Off Plug"
 		fingerprint profileId: "0104", deviceId: "0101", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 1000", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "BDP3001", deviceJoinName: "Eria Zigbee Dimmable Plug"
+		
+		//EZEX
+		fingerprint profileId: "0104", deviceId: "0051", inClusters: "0000, 0003, 0004, 0006, 0B04, 0702", outClusters: "0019", manufacturer: "EZEX", model: "E210-KR210Z1-HA", deviceJoinName: "EZEX Plug"
 	}
 
 	tiles(scale: 2) {
