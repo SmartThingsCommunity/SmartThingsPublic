@@ -37,11 +37,11 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW2L-EFR-3.0", deviceJoinName: "HEIMAN 2 Gang Switch 1"
 		
 		// EZEX
-		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR2N0Z0-HA", deviceJoinName: "EZEX Switch"
-		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR3N0Z0-HA", deviceJoinName: "EZEX Switch"
-		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR4N0Z0-HA", deviceJoinName: "EZEX Switch"
-		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR5N0Z0-HA", deviceJoinName: "EZEX Switch"
-		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR6N0Z0-HA", deviceJoinName: "EZEX Switch"
+		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR2N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR3N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR4N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR5N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+		fingerprint profileId: "0104", deviceId: "0100", endpoint: "01", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR6N0Z0-HA", deviceJoinName: "EZEX Switch 1"
 	}
 	// simulator metadata
 	simulator {
