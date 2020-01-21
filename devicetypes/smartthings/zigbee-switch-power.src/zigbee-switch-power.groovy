@@ -31,7 +31,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000, 0702, 0003, 0009, 0B04, 0006, 0004, 0005, 0002", outClusters: "0000, 0019, 000A, 0003, 0406", manufacturer: "Develco Products A/S", model: "Smart16ARelay51AU", deviceJoinName: "Aurora Smart Inline Relay"
 		fingerprint profileId: "0104", inClusters: "0000, 0702, 0003, 0009, 0B04, 0006, 0004, 0005, 0002", outClusters: "0000, 0019, 000A, 0003, 0406", manufacturer: "Aurora", model: "Smart16ARelay51AU", deviceJoinName: "Aurora Smart Inline Relay"
 
-		//EZEX
+		// EZEX
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006, 0B04, 0702", outClusters: "0019", manufacturer: "EZEX", model: "E210-KR210Z1-HA", deviceJoinName: "EZEX Plug"
 
 		// GE/Jasco
