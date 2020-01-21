@@ -51,7 +51,7 @@ metadata {
 		}
 
 		main "smoke"
-		details(["smoke", "battery"])
+		details(["smoke", "co", "battery"])
 	}
 }
 
