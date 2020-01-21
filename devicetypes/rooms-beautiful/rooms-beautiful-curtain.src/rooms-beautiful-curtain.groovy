@@ -29,7 +29,6 @@ metadata {
 		attribute("replay", "enum")
 		attribute("battLife", "enum")
 
-		command "pause"
 		command "cont"
 
 		fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0006, FC00, DC00, 0102", deviceJoinName: "Curtain", manufacturer: "Rooms Beautiful",  model: "C001"
@@ -71,6 +70,11 @@ metadata {
 	}
 }
 
+private getCLUSTER_WINDOW_COVERING() { 0x0102 }
+private getCOMMAND_GOTO_LIFT_PERCENTAGE() { 0x05 }
+private getATTRIBUTE_POSITION_LIFT() { 0x0008 }
+private getBATTERY_VOLTAGE() { 0x0020 }
+
 // Parse incoming device messages to generate events
 def parse(String description) {
 	// FYI = event.name refers to attribute name & not the tile's name
@@ -106,28 +110,24 @@ def parse(String description) {
 		}
         
 		switch(descMap.clusterInt) {
-			case 0x0001:
-				if(attrId == 0x0020)
+			case zigbee.POWER_CONFIGURATION_CLUSTER:
+				if(attrId == BATTERY_VOLTAGE)
 					handleBatteryEvent(value)
 				break;
-			case 0x0102:
-            	if(attrId == 0x0008){
+			case CLUSTER_WINDOW_COVERING:
+            	if(attrId == ATTRIBUTE_POSITION_LIFT){
                 	log.info "${linkText} - Level: ${value}"
                 	sendEvent(name: "level", value: value)
                     
-                    /*if (value == 0 || value == 100) {
+                    if (value == 0 || value == 100) {
                     	sendEvent(name: "switch", value: value == 0 ? "off" : "on")
                         sendEvent(name: "windowShade", value: value == 0 ? "closed" : "open")                        
-                    } else {
-                        //log.debug "${linkText} - Replay: ${device.currentState("replay").value}"
-                    	sendEvent(name: "windowShade", value: "partially open")
-                    }*/
-                    if (value > 0 && value < 100){
+                    }
+                    else if (value > 0 && value < 100){
                     	sendEvent(name: "replay", value: "cont")
                         sendEvent(name: "windowShade", value: "partially open")
                     }
                 }
-                sendEvent(name: "level", value: value)
 				break;
 			case 0xFC00:
 				if(description?.startsWith('read attr -'))
@@ -171,13 +171,13 @@ def open() {
 }
 
 def pause() {
-	zigbee.command(0x0102, 0x02) +
+	zigbee.command(CLUSTER_WINDOW_COVERING, 0x02) +
 	sendEvent(name: "replay", value: "cont") +
     sendEvent(name: "windowShade", value: "partially open")
 }
 
 def cont() {
-	zigbee.command(0x0102, 0x02) +
+	zigbee.command(CLUSTER_WINDOW_COVERING, 0x02) +
 	sendEvent(name: "replay", value: "pause")
 }
 
@@ -193,9 +193,9 @@ def setLevel(value) {
     log.trace ("Time: ${time}")
         
     if (time > 1000 ){
-        zigbee.command(0x0102, 0x05, zigbee.convertToHexString(100-value, 2)) +
-        sendEvent(name: "level", value: value) +
-        log.debug("Setting level to: ${value}")
+    	log.debug("Setting level to: ${value}")
+        zigbee.command(CLUSTER_WINDOW_COVERING, COMMAND_GOTO_LIFT_PERCENTAGE, zigbee.convertToHexString(100-value, 2)) +
+        sendEvent(name: "level", value: value)        
     }
 }
 
@@ -216,17 +216,17 @@ private handleBatteryEvent(volts) {
 			def roundedPct = Math.round(pct * 100)
 			def percent = Math.min(100, roundedPct)
 
-			sendEvent(name: "battery", value: percent)
-			sendEvent(name: "battLife", value: value)
 			log.info "${linkText} - Batt: ${value} **** Volts: ${volts/10}v **** Percent: ${percent}%"
+			sendEvent(name: "battery", value: percent)
+			sendEvent(name: "battLife", value: value)			
 		}
 	}
 }
 
 def refresh() {
 	zigbee.onOffRefresh() +
-    zigbee.readAttribute(0x0102, 0x0008) 	// Window Lift Percentage Attribute
-	zigbee.readAttribute(0x0001, 0x0020) +	// Battery Voltage Attribute
+    zigbee.readAttribute(CLUSTER_WINDOW_COVERING, ATTRIBUTE_POSITION_LIFT) +	// Window Lift Percentage Attribute
+	zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE) +	// Battery Voltage Attribute
 
 	// For Diagnostics
 	zigbee.readAttribute(0xFC00, 0x0000) +	// Invert CLuster
