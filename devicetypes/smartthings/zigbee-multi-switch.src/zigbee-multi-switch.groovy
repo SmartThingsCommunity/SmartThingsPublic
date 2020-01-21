@@ -27,6 +27,13 @@ metadata {
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
+		// EZEX
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR2N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR3N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR4N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR5N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", manufacturer: "EZEX", model: "E220-KR6N0Z0-HA", deviceJoinName: "EZEX Switch 1"
+
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo 2 Gang Switch 1"
 		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Orvibo 3 Gang Switch 1"
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0003", deviceJoinName: "GDKES 3 Gang Switch 1"
@@ -212,6 +219,16 @@ private Boolean isOrvibo() {
 private getChildCount() {
 	if (device.getDataValue("model") == "9f76c9f31b4c4a499e3aca0977ac4494" || device.getDataValue("model") == "HY0003" || device.getDataValue("model") == "HY0097" || device.getDataValue("model") == "HS2SW3L-EFR-3.0" ) {
 		return 3
+	} else if (device.getDataValue("model") == "E220-KR2N0Z0-HA") {
+		return 2
+	} else if (device.getDataValue("model") == "E220-KR3N0Z0-HA") {
+		return 3
+	} else if (device.getDataValue("model") == "E220-KR4N0Z0-HA") {
+		return 4
+	} else if (device.getDataValue("model") == "E220-KR5N0Z0-HA") {
+		return 5
+	} else if (device.getDataValue("model") == "E220-KR6N0Z0-HA") {
+		return 6 
 	} else {
 		return 2
 	}
