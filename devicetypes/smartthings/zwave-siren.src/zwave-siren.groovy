@@ -40,7 +40,7 @@ metadata {
 		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale External Siren"
 		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Outdoor Solar Siren", vid: "generic-siren-12"
 		fingerprint mfr: "0154", prod: "0004", model: "0002", deviceJoinName: "POPP Solar Outdoor Siren", vid: "generic-siren-12"
-		fingerprint mfr: "0109", prod: "2005", model: "0518", deviceJoinName: "Vision Outdoor Siren"    
+		fingerprint mfr: "0109", prod: "2005", model: "0518", deviceJoinName: "Vision Outdoor Siren", vid: "generic-siren-12"
 		fingerprint mfr: "0258", prod: "0003", model: "6088", deviceJoinName: "NEO Coolcam Siren Alarm"//AU
 	}
 
@@ -77,13 +77,13 @@ metadata {
 
 		// Yale siren only
 		preferences {
-			input name: "alarmLength", type: "number", title: "Alarm length", range: "1..10"
+			input name: "alarmLength", type: "number", title: "Alarm length", description: "This setting does not apply to all devices", range: "1..10"
 			// defaultValue: 10
-			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash"
+			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash", description: "This setting does not apply to all devices"
 			// defaultValue: false
-			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec.)", range: "0..25"
+			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec.)", description: "This setting does not apply to all devices", range: "0..25"
 			// defaultValue: 0
-			input name: "tamper", type: "bool", title: "Tamper alert"
+			input name: "tamper", type: "bool", title: "Tamper alert", description: "This setting does not apply to all devices"
 			// defaultValue: false
 		}
 
