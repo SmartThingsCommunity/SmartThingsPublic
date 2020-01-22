@@ -43,6 +43,7 @@ metadata {
 
 		// IKEA
 		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WW 806lm", deviceJoinName: "IKEA TRÅDFRI LED Bulb" // raw description 01 0104 0101 01 07 0000 0003 0004 0005 0006 0008 1000 04 0005 0019 0020 1000
+		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WW clear 250lm", deviceJoinName: "IKEA TRÅDFRI LED Bulb" //raw desc: 01 0104 0101 01 07 0000 0003 0004 0005 0006 0008 1000 04 0005 0019 0020 1000
 
 		// INGENIUM
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0301, FC01", manufacturer: "ubisys", model: "D1 (5503)", deviceJoinName: "INGENIUM ZB Universal Dimming Module ZBM01d"
