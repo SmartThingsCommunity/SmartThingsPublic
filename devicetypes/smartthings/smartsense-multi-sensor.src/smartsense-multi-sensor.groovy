@@ -74,8 +74,8 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4) {
 			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-				state("open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
-				state("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
+				attributeState("open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
 			}
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
