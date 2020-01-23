@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	22-Jul-2020 >>> v0.1.4e.20200122 - Added stormwatch enable/disable commands
  *	12-Aug-2019 >>> v0.1.3e.20190812 - Added grid/outage status/display
  *	29-Jul-2019 >>> v0.1.2e.20190729 - Disable reserve percent controls in backup-only mode
  *	23-Jul-2019 >>> v0.1.1e.20190723 - Initial beta release
@@ -51,6 +52,8 @@ metadata {
         command "setSelfPoweredMode"
         command "setTbcBalanced"
         command "setTbcCostSaving"
+        command "enableStormwatch"
+        command "disableStormwatch"
     }
 
     preferences {}
@@ -177,6 +180,14 @@ def setTbcCostSaving() {
     parent.setTbcCostSaving(this)
 }
 
+def enableStormwatch() {
+    parent.enableStormwatch(this)
+}
+
+def disableStormwatch() {
+    parent.disableStormwatch(this)
+}
+
 def setBackupReservePercent(value) {
     parent.setBackupReservePercent(this, value)
 }
@@ -226,9 +237,15 @@ def updated() {
 }
 
 def refresh() {
-    log.debug "Executing refresh"
+    //log.debug "Executing refresh"
     def status = parent.refresh(this)
 }
+
+def poll() {
+  logDebug "poll()"
+  def status = parent.refresh(this)
+}
+
 
 def initialize() {
     log.debug "initializing PW device"
