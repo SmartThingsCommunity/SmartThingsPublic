@@ -22,10 +22,11 @@
  */
 
 def version() {
-    return "v0.2.1e.20200116"
+    return "v0.2.2e.20200122"
 }
 
 /* 
+ *	22-Jan-2020 >>> v0.2.2e.20200122 - Added Stormwatch on/off scheduling.
  *	16-Jan-2020 >>> v0.2.1e.20200116 - Additional command retry/error checking logic. Hubitat battery% compatibility update.
  *	10-Jan-2020 >>> v0.2.0e.20200110 - Push notification support for Hubitat
  *	04-Jan-2020 >>> v0.1.8e.20200104 - Updated async http call for cross-platform support with Hubitat & SmartThings
@@ -144,11 +145,12 @@ def pageNotifications() {
 
 def schedule1Options() {
     dynamicPage(name: "schedule1Options", title: "Schedule 1", install: false, uninstall: false) {
-        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
            input "schedule1Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule1Reserve", "enum", required: false, title: "Reserve % to set",
                 options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
                 	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
+           input "schedule1Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch","Disable Stormwatch"]
            input "schedule1Time", "time", required: false, title: "At what time?"
            input "schedule1Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -158,11 +160,12 @@ def schedule1Options() {
 
 def schedule2Options() {
     dynamicPage(name: "schedule2Options", title: "Schedule 2", install: false, uninstall: false) {
-        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
            input "schedule2Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule2Reserve", "enum", required: false, title: "Reserve % to set",
                 options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
                 	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
+           input "schedule2Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch","Disable Stormwatch"]
            input "schedule2Time", "time", required: false, title: "At what time?"
            input "schedule2Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -172,11 +175,12 @@ def schedule2Options() {
 
 def schedule3Options() {
     dynamicPage(name: "schedule3Options", title: "Schedule 3", install: false, uninstall: false) {
-        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
            input "schedule3Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule3Reserve", "enum", required: false, title: "Reserve % to set",
                 options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
                 	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
+           input "schedule3Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch","Disable Stormwatch"]
            input "schedule3Time", "time", required: false, title: "At what time?"
            input "schedule3Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -186,11 +190,12 @@ def schedule3Options() {
 
 def schedule4Options() {
     dynamicPage(name: "schedule4Options", title: "Schedule 4", install: false, uninstall: false) {
-        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
            input "schedule4Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule4Reserve", "enum", required: false, title: "Reserve % to set",
                 options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
                 	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
+           input "schedule4Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch","Disable Stormwatch"]
            input "schedule4Time", "time", required: false, title: "At what time?"
            input "schedule4Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -200,11 +205,12 @@ def schedule4Options() {
 
 def schedule5Options() {
     dynamicPage(name: "schedule5Options", title: "Schedule 5", install: false, uninstall: false) {
-        section("Reserve setting only applies to Self-Powered and Backup-Only modes") {
+         section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
            input "schedule5Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "schedule5Reserve", "enum", required: false, title: "Reserve % to set",
                 options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
                 	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
+           input "schedule5Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch","Disable Stormwatch"]
            input "schedule5Time", "time", required: false, title: "At what time?"
            input "schedule5Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
@@ -253,18 +259,18 @@ private getHubType() {
     return state.hubType
 }
 
-def actionsValid (modeSetting, reserveSetting) {
-     return (modeSetting && modeSetting.toString() != "No Action") || (reserveSetting && reserveSetting.toString() != "No Action")
+def actionsValid (modeSetting, reserveSetting,stormwatchSetting) {
+     return (modeSetting && modeSetting.toString() != "No Action") || (reserveSetting && reserveSetting.toString() != "No Action" || (stormwatchSetting && stormwatchSetting.toString() != "No Action"))
 }
 
 def scheduleValid (timeSetting,daysSetting) {
      return timeSetting != null && daysSetting != null && daysSetting.size() > 0
 }
 
-def getOptionsString (modeSetting,reserveSetting,timeSetting,daysSetting)
+def getOptionsString (modeSetting,reserveSetting,stormwatchSetting,timeSetting,daysSetting)
 {
         def optionsString = ''
-        if (actionsValid (modeSetting, reserveSetting)) {
+        if (actionsValid (modeSetting, reserveSetting,stormwatchSetting)) {
            if (scheduleValid (timeSetting, daysSetting)) {
               if (modeSetting && modeSetting.toString() != "No Action") {
                  optionsString = "Mode: " + modeSetting.toString()
@@ -274,6 +280,12 @@ def getOptionsString (modeSetting,reserveSetting,timeSetting,daysSetting)
                      optionsString = optionsString + ',\n'
                  }
                  optionsString = optionsString + "Reserve: " + reserveSetting.toString() + '%'
+              }
+              if (stormwatchSetting && stormwatchSetting.toString() != "No Action") {
+                 if (optionsString != '') {
+                     optionsString = optionsString + ',\n'
+                 }
+                 optionsString = optionsString + stormwatchSetting.toString()
               }
               def timeFormat = new java.text.SimpleDateFormat("hh:mm a")
               def isoDatePattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
@@ -293,23 +305,23 @@ def getOptionsString (modeSetting,reserveSetting,timeSetting,daysSetting)
 def pageSchedules() {
     dynamicPage(name: "pageSchedules", title: "Powerwall setting changes are subject to Powerwall processing rules and may not immediately take effect at the time they are commanded.", install: false, uninstall: false) {
         def optionsString
-        optionsString = getOptionsString(schedule1Mode, schedule1Reserve, schedule1Time, schedule1Days)
+        optionsString = getOptionsString(schedule1Mode, schedule1Reserve, schedule1Stormwatch, schedule1Time, schedule1Days)
         section("Schedule 1") {
             href "schedule1Options", title: "${optionsString}", description: ""
         }
-        optionsString = getOptionsString(schedule2Mode, schedule2Reserve, schedule2Time, schedule2Days)
+        optionsString = getOptionsString(schedule2Mode, schedule2Reserve, schedule2Stormwatch, schedule2Time, schedule2Days)
         section("Schedule 2") {
             href "schedule2Options", title: "${optionsString}", description: ""
         }
-        optionsString = getOptionsString(schedule3Mode, schedule3Reserve, schedule3Time, schedule3Days)
+        optionsString = getOptionsString(schedule3Mode, schedule3Reserve, schedule3Stormwatch, schedule3Time, schedule3Days)
         section("Schedule 3") {
             href "schedule3Options", title: "${optionsString}", description: ""
         }
-        optionsString = getOptionsString(schedule4Mode, schedule4Reserve, schedule4Time, schedule4Days)
+        optionsString = getOptionsString(schedule4Mode, schedule4Reserve, schedule4Stormwatch, schedule4Time, schedule4Days)
         section("Schedule 4") {
             href "schedule4Options", title: "${optionsString}", description: ""
         }
-        optionsString = getOptionsString(schedule5Mode, schedule5Reserve, schedule5Time, schedule5Days)
+        optionsString = getOptionsString(schedule5Mode, schedule5Reserve, schedule5Stormwatch,schedule5Time, schedule5Days)
         section("Schedule 5") {
             href "schedule5Options", title: "${optionsString}", description: ""
         }
@@ -317,7 +329,7 @@ def pageSchedules() {
 }
 
 def setSchedules() {
-    if (actionsValid (schedule1Mode, schedule1Reserve)) {
+    if (actionsValid (schedule1Mode, schedule1Reserve, schedule1Stormwatch)) {
         if (scheduleValid (schedule1Time, schedule1Days)) {
             log.debug "scheduling mode 1"
             schedule(schedule1Time.toString(), processSchedule1)
@@ -327,7 +339,7 @@ def setSchedules() {
         }
     }
     
-    if (actionsValid (schedule2Mode, schedule2Reserve)) {
+    if (actionsValid (schedule2Mode, schedule2Reserve, schedule2Stormwatch)) {
         if (scheduleValid (schedule2Time, schedule2Days)) {
             log.debug "scheduling mode 2"
             schedule(schedule2Time.toString(), processSchedule2)
@@ -337,7 +349,7 @@ def setSchedules() {
         }
     }
     
-    if (actionsValid (schedule3Mode, schedule3Reserve)) {
+    if (actionsValid (schedule3Mode, schedule3Reserve, schedule3Stormwatch)) {
         if (scheduleValid (schedule3Time, schedule3Days)) {
             log.debug "scheduling mode 3"
             schedule(schedule3Time.toString(), processSchedule3)
@@ -347,7 +359,7 @@ def setSchedules() {
         }
     }
     
-    if (actionsValid (schedule4Mode, schedule4Reserve)) {
+    if (actionsValid (schedule4Mode, schedule4Reserve, schedule4Stormwatch)) {
         if (scheduleValid (schedule4Time, schedule4Days)) {
             log.debug "scheduling mode 4"
             schedule(schedule4Time.toString(), processSchedule4)
@@ -356,7 +368,7 @@ def setSchedules() {
             sendNotificationMessage(message, "anomaly")
         }
     }
-    if (actionsValid (schedule5Mode, schedule5Reserve)) {
+    if (actionsValid (schedule5Mode, schedule5Reserve, schedule5Stormwatch)) {
         if (scheduleValid (schedule5Time, schedule5Days)) {
             log.debug "scheduling mode 5"
             schedule(schedule5Time.toString(), processSchedule5)
@@ -376,7 +388,7 @@ def getTheDay() {
     return day
 }
 
-def commandPwFromSchedule (mode, reserve, scheduledDays) {
+def commandPwFromSchedule (mode, reserve, stormwatch, scheduledDays) {
     def day = getTheDay()
     if (scheduledDays?.contains(day)) { 
         def pwDevice = getChildDevice("powerwallDashboard")
@@ -404,6 +416,15 @@ def commandPwFromSchedule (mode, reserve, scheduledDays) {
               sendNotificationMessage(errMessage, "anomaly")  
            }
         }
+        if (stormwatch && stormwatch.toString() != "No Action") {
+           if (stormwatch.toString()=="Enable Stormwatch") {
+              runIn(15,commandStormwatchEnable)
+              message = message + " Enabling Stormwatch."
+           } else if (stormwatch.toString()=="Disable Stormwatch") {
+              message = message + " Disabling Stormwatch."
+              runIn(15,commandStormwatchDisable)
+           } 
+        }
         if (notifyOfSchedules?.toBoolean()) {
                sendNotificationMessage(message)     
         }   
@@ -412,25 +433,25 @@ def commandPwFromSchedule (mode, reserve, scheduledDays) {
   
 def processSchedule1 () {
     log.debug "processing Mode 1 schedule"
-    commandPwFromSchedule (schedule1Mode, schedule1Reserve, schedule1Days)
+    commandPwFromSchedule (schedule1Mode, schedule1Reserve, schedule1Stormwatch, schedule1Days)
 }
 
 def processSchedule2 () {
     log.debug "processing Mode 2 schedule"
-    commandPwFromSchedule (schedule2Mode, schedule2Reserve, schedule2Days)
+    commandPwFromSchedule (schedule2Mode, schedule2Reserve, schedule2Stormwatch, schedule2Days)
 }
 def processSchedule3 () {
     log.debug "processing Mode 3 schedule"
-    commandPwFromSchedule (schedule3Mode, schedule3Reserve, schedule3Days)
+    commandPwFromSchedule (schedule3Mode, schedule3Reserve, schedule3Stormwatch, schedule3Days)
 }
 def processSchedule4 () {
     log.debug "processing Mode 4 schedule"
-    commandPwFromSchedule (schedule4Mode, schedule4Reserve, schedule4Days)
+    commandPwFromSchedule (schedule4Mode, schedule4Reserve, schedule4Stormwatch, schedule4Days)
 }
 
 def processSchedule5 () {
     log.debug "processing Mode 5 schedule"
-    commandPwFromSchedule (schedule5Mode, schedule5Reserve, schedule5Days)
+    commandPwFromSchedule (schedule5Mode, schedule5Reserve, schedule5Stormwatch, schedule5Days)
 }
 
 def verifyPowerwalls() {
@@ -777,7 +798,7 @@ def checkBatteryNotifications (data) {
        if (data.batteryPercent - data.reservePercent < 5) {
           def status
           if (data.batteryPercent <= data.reservePercent) {
-              status = "has reached or droppped below"
+              status = "is at or below"
           } else {
               status = "is approaching"
           }
@@ -835,7 +856,7 @@ def processSiteResponse(response, callData) {
         log.debug("No Powerwall device to update")
     }
    } else {
-       log.warn "response received error: ${response.getErrorMessage()}"
+       log.warn "Site response received error: ${response.getErrorMessage()}"
        if (response.getStatus() == 401) {
            log.debug "Refreshing token"
            refreshToken()
@@ -929,7 +950,7 @@ def processPowerwallResponse(response, callData) {
     }
     state.lastCompletedTime = now()
    } else {
-      log.warn "response received error: ${response.getErrorMessage()}"
+      log.warn "Powerwall response received error: ${response.getErrorMessage()}"
       if (response.getStatus() == 401) {
            log.debug "Refreshing token"
            refreshToken()
@@ -991,17 +1012,17 @@ def commandOpMode(data) {
 
 def setSelfPoweredMode(child) {
 	child.sendEvent(name: "currentOpState", value: "Pending Self-Powered", displayed: false)
-    runIn(2,commandOpMode,[data: [mode: "self_consumption"]])
+    runIn(1,commandOpMode,[data: [mode: "self_consumption"]])
 }
 
 def setTimeBasedControlMode(child) {
 	child.sendEvent(name: "currentOpState", value: "Pending Time-Based", displayed: false)
-    runIn(2,commandOpMode,[data: [mode: "autonomous"]])
+    runIn(1,commandOpMode,[data: [mode: "autonomous"]])
 }
 
 def setBackupOnlyMode(child) {
 	child.sendEvent(name: "currentOpState", value: "Pending Backup-Only", displayed: false)
-    runIn(2,commandOpMode,[data: [mode: "backup"]])
+    runIn(1,commandOpMode,[data: [mode: "backup"]])
 }
 
 def commandTouStrategy(data)
@@ -1064,9 +1085,41 @@ def setBackupReservePercent(child, value) {
        log.debug "Backup reserve percent of: ${value} not sent. Must be between 0 and 100"
     }
 }
+
+def commandStormwatchEnable() {
+   httpAuthPost(body:[enabled:true],"stormwatch mode enable","/api/1/energy_sites/${state.energySiteId}/storm_mode", 
+      { resp -> //log.debug "${resp.data}"
+         //log.debug "Stormwatch enable command sent"
+      })
+    runIn(3, requestPwData)
+    runIn (30, processWatchdog)
+}
+
+def commandStormwatchDisable() {
+    //log.debug "commanding stormwatch disable"
+    httpAuthPost(body:[enabled:false],"stormwatch mode enable","/api/1/energy_sites/${state.energySiteId}/storm_mode", 
+      { resp -> //log.debug "${resp.data}"
+         //log.debug "Stormwatch disable command sent"
+      })
+    runIn(2, requestPwData)
+    runIn (30, processWatchdog)
+}
+
+def enableStormwatch(child) {
+    log.debug "commanding stormwatch on"
+    runIn(2,commandStormwatchEnable)
+}
+
+def disableStormwatch(child) {
+    log.debug "commanding stormwatch off"
+    runIn(2,commandStormwatchDisable)
+
+}
         
 def refresh(child) {
-    log.debug "refresh requested"
+    if (logLevel == "debug" | logLevel == "trace") {
+       log.debug "refresh requested"
+    }
     runIn(1, processMain)  
     runIn (30, processWatchdog)
 }
