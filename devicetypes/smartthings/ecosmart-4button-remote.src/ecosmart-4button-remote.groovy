@@ -58,17 +58,26 @@ private getButtonName(buttonNum) {
 private void createChildButtonDevices(numberOfButtons) {
 	state.oldLabel = device.label
 
+	def existingChildren = getChildDevices()
+
 	log.debug "Creating $numberOfButtons children"
 
 	for (i in 1..numberOfButtons) {
-		log.debug "Creating child $i"
-		def child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
-				[completedSetup: true, label: getButtonName(i),
-				 isComponent: true, componentName: "button$i", componentLabel: "Button ${i}"])
+		def newChildNetworkId = "${device.deviceNetworkId}:${i}"
+		def childExists = (existingChildren.find {child -> child.getDeviceNetworkId() == newChildNetworkId} != NULL)
 
-		child.sendEvent(name: "supportedButtonValues", value: ["pushed"].encodeAsJSON(), displayed: false)
-		child.sendEvent(name: "numberOfButtons", value: 1, displayed: false)
-		child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
+		if (!childExists) {
+			log.debug "Creating child $i"
+			def child = addChildDevice("Child Button", newChildNetworkId, device.hubId,
+					[completedSetup: true, label: getButtonName(i),
+					 isComponent: true, componentName: "button$i", componentLabel: "Button ${i}"])
+
+			child.sendEvent(name: "supportedButtonValues", value: ["pushed"].encodeAsJSON(), displayed: false)
+			child.sendEvent(name: "numberOfButtons", value: 1, displayed: false)
+			child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
+		} else {
+			log.debug "Child $i already exists, not creating"
+		}
 	}
 }
 
