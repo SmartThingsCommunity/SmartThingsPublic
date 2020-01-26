@@ -277,7 +277,7 @@ def off() {
 	],5000)
 }
 
-def setLevel (value) {
+def setLevel (value, rate=null) {
 	log.debug "setLevel >> value: $value"
 	def valueaux = value as Integer
 	def level = Math.max(Math.min(valueaux, 99), 0)
