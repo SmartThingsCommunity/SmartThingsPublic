@@ -98,6 +98,8 @@ metadata {
 
 		//Ikea
 		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS clear 806lm", deviceJoinName: "IKEA TRÅDFRI LED Bulb", mnmn: "SmartThings", vid: "generic-color-temperature-2700K-4000K" // raw desc: 01 0104 010C 01 08 0000 0003 0004 0005 0006 0008 0300 1000 04 0005 0019 0020 1000
+		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS opal 1000lm", deviceJoinName: "IKEA TRÅDFRI LED Bulb" , mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K" //01 0104 010C 01 09 0000 0003 0004 0005 0006 0008 0300 1000 FC7C 04 0005 0019 0020 1000
+
 	}
 
 	// UI tile definitions
