@@ -13,10 +13,10 @@
  *
  */
 metadata {
-	definition (name: "Qubino Flush Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
+	definition (name: "Qubino Flush Thermostat Cool", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat") {
 		capability "Thermostat"
 		capability "Thermostat Mode"
-		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Cooling Setpoint"
 		capability "Thermostat Operating State"
 		capability "Temperature Measurement"
 		capability "Power Meter"
@@ -26,15 +26,13 @@ metadata {
 		capability "Health Check"
 
 		command "changeMode"
-
-		fingerprint mfr: "0159", prod: "0005", model: "0054", deviceJoinName: "Qubino Flush On/Off Thermostat 2"
 	}
 
 	tiles(scale: 2) {
 		multiAttributeTile(name:"thermostat", type:"general", width:6, height:4, canChangeIcon: false)  {
 			tileAttribute("device.thermostatMode", key: "PRIMARY_CONTROL") {
 				attributeState("off", icon: "st.thermostat.heating-cooling-off")
-				attributeState("heat", icon: "st.thermostat.heat")
+				attributeState("cool", icon: "st.thermostat.emergency-heat")
 			}
 			tileAttribute("device.temperature", key: "SECONDARY_CONTROL") {
 				attributeState("temperature", label:'${currentValue}°', icon: "st.alarm.temperature.normal",
@@ -64,14 +62,14 @@ metadata {
 		}
 		controlTile("thermostatMode", "device.thermostatMode", "enum", width: 2 , height: 2, supportedStates: "device.supportedThermostatModes") {
 			state("off", action: "setThermostatMode", label: 'Off', icon: "st.thermostat.heating-cooling-off")
-			state("heat", action: "setThermostatMode", label: 'Heat', icon: "st.thermostat.heat")
+			state("cool", action: "setThermostatMode", label: 'Cool', icon: "st.thermostat.cool")
 		}
-		controlTile("heatingSetpoint", "device.heatingSetpoint", "slider",
-				sliderType: "HEATING",
+		controlTile("coolingSetpoint", "device.coolingSetpoint", "slider",
+				sliderType: "COOLING",
 				debouncePeriod: 750,
 				range: "device.setpointRange",
 				width: 2, height: 2) {
-			state "default", action:"setHeatingSetpoint", label:'${currentValue}', backgroundColor: "#E86D13"
+			state "default", action:"setCoolingSetpoint", label:'${currentValue}', backgroundColor: "#55D4ED"
 		}
 		standardTile("refresh", "command.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "refresh", label: 'refresh', action: "refresh.refresh", icon: "st.secondary.refresh-icon"
@@ -96,7 +94,7 @@ metadata {
 				description: "This setting allows to change mode of the device. Remember to unpair and pair device again after change.",
 				name: "paramMode",
 				type: "enum",
-                defaultValue: "Heat",
+                defaultValue: "Cool",
 				options: ["Heat", "Cool"]
 		)
 	}
@@ -143,8 +141,8 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_OFF:
 			map.value = "off"
 			break
-		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_HEAT:
-			map.value = "heat"
+		case physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport.MODE_COOL:
+			map.value = "cool"
 			break
 	}
 	createEvent(map)
@@ -152,7 +150,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 
 def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
 	def map = [:]
-	map.name = "heatingSetpoint"
+	map.name = "coolingSetpoint"
 	map.value = convertTemperatureIfNeeded(cmd.scaledValue, cmd.scale ? 'F' : 'C', cmd.precision)
 	map.unit = temperatureScale
 	createEvent(map)
@@ -164,8 +162,8 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatoperatingstatev2.Thermosta
 		case physicalgraph.zwave.commands.thermostatoperatingstatev1.ThermostatOperatingStateReport.OPERATING_STATE_IDLE:
 			map.value = "idle"
 			break
-		case physicalgraph.zwave.commands.thermostatoperatingstatev1.ThermostatOperatingStateReport.OPERATING_STATE_HEATING:
-			map.value = "heating"
+		case physicalgraph.zwave.commands.thermostatoperatingstatev1.ThermostatOperatingStateReport.OPERATING_STATE_COOLING:
+			map.value = "cooling"
 			break
 	}
 	createEvent(map)
@@ -186,19 +184,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	createEvent(name: "temperature", value: convertTemperatureIfNeeded(cmd.scaledSensorValue, deviceTemperatureScale, cmd.precision), unit: temperatureScale)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	state.supportedModes = ["off"]
-	//this device doesn't act like normal thermostat, it can support either 'cool' or 'heat' after configuration
-	if (cmd.parameterNumber == 59 && !state.isThermostatModeSet) {
-        if (cmd.scaledConfigurationValue) {
-            setDeviceType("Qubino Flush Thermostat Cool")
-        }
-		state.supportedModes.add(cmd.scaledConfigurationValue ? "cool" : "heat")
-		state.isThermostatModeSet = true
-	}
-	createEvent(name: "supportedThermostatModes", value: state.supportedModes.encodeAsJson(), displayed: false)
-}
-
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	log.warn "Unhandled command: ${cmd}"
 	[:]
@@ -210,9 +195,6 @@ def setThermostatMode(String mode) {
 		switch (mode) {
 			case "off":
 				modeValue = physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSet.MODE_OFF
-				break
-			case "heat":
-				modeValue = physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSet.MODE_HEAT
 				break
 			case "cool":
 				modeValue = physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeSet.MODE_COOL
@@ -230,15 +212,7 @@ def setThermostatMode(String mode) {
 }
 
 def setTemperatureSetpoint(temperatureSetpoint) {
-	if (state.supportedModes.contains("heat")) {
-		sendHubCommand(setHeatingSetpoint(temperatureSetpoint))
-	} else {
-		sendHubCommand(setCoolingSetpoint(temperatureSetpoint))
-	}
-}
-
-def heat() {
-	setThermostatMode("heat")
+	sendHubCommand(setCoolingSetpoint(temperatureSetpoint))
 }
 
 def cool() {
@@ -247,10 +221,6 @@ def cool() {
 
 def off() {
 	setThermostatMode("off")
-}
-
-def setHeatingSetpoint(setpoint) {
-	updateSetpoint(setpoint, physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointSet.SETPOINT_TYPE_HEATING_1)
 }
 
 def setCoolingSetpoint(setpoint) {
@@ -268,7 +238,8 @@ def updateSetpoint(setpoint, setpointType) {
 }
 
 def configure() {
-	secure(zwave.configurationV1.configurationGet(parameterNumber: 59))
+    state.supportedModes = ["off", "cool"]
+	createEvent(name: "supportedThermostatModes", value: state.supportedModes.encodeAsJson(), displayed: false)
 }
 
 def refresh() {
