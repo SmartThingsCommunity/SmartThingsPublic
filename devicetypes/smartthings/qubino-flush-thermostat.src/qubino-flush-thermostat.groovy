@@ -104,6 +104,7 @@ metadata {
 
 def installed() {
 	state.isThermostatModeSet = false
+    state.supportedModes = ["off"]
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 12 * 60 , displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	sendEvent(name: "setpointRange", value: [minSetpointTemperature, maxSetpointTemperature], displayed: false)
 	response(refresh())
@@ -187,13 +188,12 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	state.supportedModes = ["off"]
 	//this device doesn't act like normal thermostat, it can support either 'cool' or 'heat' after configuration
 	if (cmd.parameterNumber == 59 && !state.isThermostatModeSet) {
+        state.supportedModes.add(cmd.scaledConfigurationValue ? "cool" : "heat")
         if (cmd.scaledConfigurationValue) {
             setDeviceType("Qubino Flush Thermostat Cool")
         }
-		state.supportedModes.add(cmd.scaledConfigurationValue ? "cool" : "heat")
 		state.isThermostatModeSet = true
 	}
 	createEvent(name: "supportedThermostatModes", value: state.supportedModes.encodeAsJson(), displayed: false)
