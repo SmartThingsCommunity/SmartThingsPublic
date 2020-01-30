@@ -634,7 +634,7 @@ private def handleBatteryAlarmReport(cmd) {
 	def map = null
 	switch(cmd.zwaveAlarmEvent) {
 		case 0x01: //power has been applied, check if the battery level updated
-			state.queryBattery = true
+			runIn(1, setQueryBattery)
 			result << "delay 1200"
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
@@ -773,7 +773,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 130:  // Batteries replaced
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
-			state.queryBattery = true
+            runIn(1, setQueryBattery)
 			result << "delay 1200"
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break
@@ -1806,4 +1806,9 @@ def readCodeSlotId(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		return cmd.eventParameter[2]
 	}
 	return cmd.alarmLevel
+}
+
+
+private setQueryBattery() {
+	state.queryBattery = true
 }
