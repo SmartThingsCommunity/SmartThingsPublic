@@ -39,9 +39,9 @@ metadata {
 		command "heatLevelUp"
 		command "heatLevelDown"
 
-        fingerprint manufacturer: "Sinope Technologies", model: "TH1123ZB", deviceJoinName: "Sinope TH1123ZB Thermostat"
+        fingerprint manufacturer: "Sinope Technologies", model: "TH1123ZB", deviceJoinName: "Sinope Thermostat" //Sinope TH1123ZB Thermostat
             
-        fingerprint manufacturer: "Sinope Technologies", model: "TH1124ZB", deviceJoinName: "Sinope TH1124ZB Thermostat" 
+        fingerprint manufacturer: "Sinope Technologies", model: "TH1124ZB", deviceJoinName: "Sinope Thermostat"  //Sinope TH1124ZB Thermostat
 
  	}
 

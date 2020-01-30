@@ -16,8 +16,8 @@ metadata {
 
         capability "Battery"
 
-        fingerprint mfr:"026E", prod:"5643", model:"5A31", deviceJoinName: "2 Button Window Remote"
-        fingerprint mfr:"026E", prod:"4252", model:"5A31", deviceJoinName: "3 Button Window Remote"
+        fingerprint mfr:"026E", prod:"5643", model:"5A31", deviceJoinName: "SpringsWindowFashions Remote" //2 Button Window Remote //SpringsWindowFashions Remote
+        fingerprint mfr:"026E", prod:"4252", model:"5A31", deviceJoinName: "SpringsWindowFashions Remote" //3 Button Window Remote //SpringsWindowFashions Remote
     }
 
     simulator {
