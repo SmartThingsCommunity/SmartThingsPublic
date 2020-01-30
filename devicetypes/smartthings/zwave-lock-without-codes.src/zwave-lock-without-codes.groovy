@@ -447,6 +447,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	}
 	state.lastbatt = now()
 	state.queryBattery = false
+	unschedule("setQueryBattery")
 	if (cmd.batteryLevel == 0 && device.latestValue("battery") > 20) {
 		// Danalock reports 00 when batteries are changed. We do not know what is the real level at this point.
 		// We will ignore this level to mimic normal operation of the device (battery level is refreshed only when motor is operating)

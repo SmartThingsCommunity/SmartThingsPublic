@@ -773,7 +773,7 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 130:  // Batteries replaced
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
-            runIn(1, setQueryBattery)
+			runIn(1, setQueryBattery)
 			result << "delay 1200"
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break
@@ -1045,6 +1045,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	}
 	state.lastbatt = now()
 	state.queryBattery = false
+    unschedule("setQueryBattery")
 	createEvent(map)
 }
 
