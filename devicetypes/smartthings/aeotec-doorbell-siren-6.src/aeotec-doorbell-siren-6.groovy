@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition(name: "Aeotec Doorbell 6", namespace: "SmartThings", author: "SmartThings", mcdSync: true,  mnmn: "SmartThings", vid: "generic-8-sound") {
+	definition(name: "Aeotec Doorbell Siren 6", namespace: "SmartThings", author: "SmartThings", mcdSync: true,  mnmn: "SmartThings", vid: "generic-8-sound") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Tamper Alert"
@@ -136,7 +136,7 @@ private addChildren(numberOfSounds) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
 
-			addChildDevice("Aeotec Child Siren", childDni, device.getHub().getId(), [
+			addChildDevice("Aeotec Doorbell Siren Child", childDni, device.getHub().getId(), [
 					completedSetup: true,
 					label         : "$device.displayName Sound $endpoint",
 					isComponent   : true,
