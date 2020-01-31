@@ -27,10 +27,10 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0005, 0006, 0008, 0019, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI remote control", deviceJoinName: "IKEA Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_Remote_Control" //IKEA TRÅDFRI Remote
-		fingerprint inClusters: "0000, 0001, 0003, 0009, 0102, 1000, FC7C", outClusters: "0003, 0004, 0006, 0008, 0019, 0102, 1000", manufacturer:"IKEA of Sweden", model: "TRADFRI on/off switch", deviceJoinName: "IKEA Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_On/Off_Switch" //IKEA TRÅDFRI On/Off switch
-		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
-		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000 //IKEA TRÅDFRI Open/Close Remote
+		fingerprint inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0005, 0006, 0008, 0019, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI remote control", deviceJoinName: "IKEA TRÅDFRI Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_Remote_Control"
+		fingerprint inClusters: "0000, 0001, 0003, 0009, 0102, 1000, FC7C", outClusters: "0003, 0004, 0006, 0008, 0019, 0102, 1000", manufacturer:"IKEA of Sweden", model: "TRADFRI on/off switch", deviceJoinName: "IKEA TRÅDFRI On/Off switch", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_On/Off_Switch"
+		fingerprint manufacturer: "IKEA of Sweden", model: "TRADFRI open/close remote", deviceJoinName: "IKEA TRÅDFRI Open/Close Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000
+		fingerprint manufacturer: "KE", model: "TRADFRI open/close remote", deviceJoinName: "IKEA TRÅDFRI Open/Close Remote", mnmn: "SmartThings", vid: "SmartThings-smartthings-IKEA_TRADFRI_open/close_remote" // raw description 01 0104 0203 01 07 0000 0001 0003 0009 0020 1000 FC7C 07 0003 0004 0006 0008 0019 0102 1000
 	}
 
 	tiles {

@@ -20,7 +20,7 @@ metadata {
 		capability "Sensor"
 
 		fingerprint deviceId: "0x1000", inClusters: "0x25,0x72,0x86,0x71,0x22,0x70"
-		fingerprint mfr:"0084", prod:"0213", model:"0215", deviceJoinName: "FortrezZ Valve" //FortrezZ Water Valve
+		fingerprint mfr:"0084", prod:"0213", model:"0215", deviceJoinName: "FortrezZ Water Valve"
 	}
 
 	// simulator metadata

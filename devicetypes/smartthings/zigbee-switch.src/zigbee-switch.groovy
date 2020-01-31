@@ -26,62 +26,62 @@ metadata {
 		fingerprint profileId: "0104", deviceId: "010A", inClusters: "0006", deviceJoinName: "Generic On/Off Plug", ocfDeviceType: "oic.d.smartplug"
 
 		// Centralite
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "Centralite Systems", model: "4200-C", deviceJoinName: "Centralite Outlet", ocfDeviceType: "oic.d.smartplug" //Centralite Smart Outlet
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "Centralite Systems", model: "4200-C", deviceJoinName: "Centralite Smart Outlet", ocfDeviceType: "oic.d.smartplug"
 
 		// eWeLink
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "eWeLink", model: "SA-003-Zigbee", deviceJoinName: "EWeLink Outlet", ocfDeviceType: "oic.d.smartplug" //eWeLink SmartPlug (SA-003)
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "eWeLink", model: "SA-003-Zigbee", deviceJoinName: "eWeLink SmartPlug (SA-003)", ocfDeviceType: "oic.d.smartplug"
 
 		// GDKES
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0001", deviceJoinName: "GDKES Switch" //GDKES Smart Switch
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", manufacturer: "REXENSE", model: "RH5006", deviceJoinName: "GDKES Outlet", ocfDeviceType: "oic.d.smartplug" //GDKES Smart Outlet (GDKES-016)
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", manufacturer: "REXENSE", model: "RH5005", deviceJoinName: "GDKES Outlet", ocfDeviceType: "oic.d.smartplug" //GDKES Smart Outlet (GDKES-015)
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0001", deviceJoinName: "GDKES Smart Switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", manufacturer: "REXENSE", model: "RH5006", deviceJoinName: "GDKES Smart Outlet (GDKES-016)", ocfDeviceType: "oic.d.smartplug"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0702, 0B04", manufacturer: "REXENSE", model: "RH5005", deviceJoinName: "GDKES Smart Outlet (GDKES-015)", ocfDeviceType: "oic.d.smartplug"
 
 		// HEIMAN
-		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW1L-EFR-3.0", deviceJoinName: "HEIMAN Switch" //HEIMAN Smart Switch
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW1L-EFR-3.0", deviceJoinName: "HEIMAN Smart Switch"
 		
 		// HONYAR
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0095", deviceJoinName: "HONYAR Switch" //HONYAR Smart Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0095", deviceJoinName: "HONYAR Smart Switch"
 
 		// IKEA
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FC7C", outClusters: "0005, 0019, 0020", manufacturer:"IKEA of Sweden", model: "TRADFRI control outlet", deviceJoinName: "IKEA Outlet", ocfDeviceType: "oic.d.smartplug" //IKEA TRÅDFRI control outlet
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, FC7C", outClusters: "0005, 0019, 0020", manufacturer:"IKEA of Sweden", model: "TRADFRI control outlet", deviceJoinName: "IKEA TRÅDFRI control outlet", ocfDeviceType: "oic.d.smartplug"
 
 		// INGENIUM
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, FFFF", outClusters: "0019", manufacturer: "MEGAMAN", model: "BSZTM005", deviceJoinName: "INGENIUM ZB Mains Switching Module"
 
 		// Innr
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "innr", model: "SP 222", deviceJoinName: "Innr Outlet", ocfDeviceType: "oic.d.smartplug" //Innr Smart Plug
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "innr", model: "SP 224", deviceJoinName: "Innr Outlet", ocfDeviceType: "oic.d.smartplug" //Innr Smart Plug //Innr Outlet
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "innr", model: "SP 222", deviceJoinName: "Innr Smart Plug", ocfDeviceType: "oic.d.smartplug"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "innr", model: "SP 224", deviceJoinName: "Innr Smart Plug", ocfDeviceType: "oic.d.smartplug"
 
 		// Lowes Iris
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006, 0402, 0B05, FC01, FC02", outClusters: "0003, 0019", manufacturer: "iMagic by GreatStar", model: "1113-S", deviceJoinName: "Iris Outlet", ocfDeviceType: "oic.d.smartplug" //Iris Smart Plug
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006, 0402, 0B05, FC01, FC02", outClusters: "0003, 0019", manufacturer: "iMagic by GreatStar", model: "1113-S", deviceJoinName: "Iris Smart Plug", ocfDeviceType: "oic.d.smartplug"
 
 		// Leviton
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0003, 0006, 0019, 0406", manufacturer: "Leviton", model: "ZSS-10", deviceJoinName: "Leviton Switch" //Leviton Switch
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "000A", manufacturer: "HAI", model: "65A21-1", deviceJoinName: "Leviton Switch" //Leviton Wireless Load Control Module-30amp
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL15A", deviceJoinName: "Leviton Switch", ocfDeviceType: "oic.d.smartplug" //Leviton Lumina RF Plug-In Appliance Module
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL15S", deviceJoinName: "Leviton Switch" //Leviton Lumina RF Switch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0003, 0006, 0019, 0406", manufacturer: "Leviton", model: "ZSS-10", deviceJoinName: "Leviton Switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "000A", manufacturer: "HAI", model: "65A21-1", deviceJoinName: "Leviton Wireless Load Control Module-30amp"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL15A", deviceJoinName: "Leviton Lumina RF Plug-In Appliance Module", ocfDeviceType: "oic.d.smartplug"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0003, 0006, 0008, 0019, 0406", manufacturer: "Leviton", model: "DL15S", deviceJoinName: "Leviton Lumina RF Switch"
 
 		// Orvibo
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "095db3379e414477ba6c2f7e0c6aa026", deviceJoinName: "Orvibo Switch" //Orvibo Smart Switch
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "fdd5fce51a164c7ab73b2f4d8d84c88e", deviceJoinName: "Orvibo Outlet", ocfDeviceType: "oic.d.smartplug" //Orvibo Smart Outlet
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "095db3379e414477ba6c2f7e0c6aa026", deviceJoinName: "Orvibo Smart Switch"
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "fdd5fce51a164c7ab73b2f4d8d84c88e", deviceJoinName: "Orvibo Smart Outlet", ocfDeviceType: "oic.d.smartplug"
 
 		// OSRAM/SYLVANIA
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Plug 01", deviceJoinName: "OSRAM Outlet", ocfDeviceType: "oic.d.smartplug" //OSRAM SMART+ Plug
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05, FC01, FC08", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "PLUG", deviceJoinName: "SYLVANIA Outlet", ocfDeviceType: "oic.d.smartplug" //SYLVANIA SMART+ Smart Plug
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 1000, 0B04, FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Plug 01", deviceJoinName: "OSRAM SMART+ Plug", ocfDeviceType: "oic.d.smartplug"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05, FC01, FC08", outClusters: "0003, 0019", manufacturer: "LEDVANCE", model: "PLUG", deviceJoinName: "SYLVANIA SMART+ Smart Plug", ocfDeviceType: "oic.d.smartplug"
 
 		// sengled
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E1C-NB6", deviceJoinName: "Sengled Outlet", ocfDeviceType: "oic.d.smartplug" //Sengled Element Outlet
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E1C-NB6", deviceJoinName: "Sengled Element Outlet", ocfDeviceType: "oic.d.smartplug"
 
 		// SONOFF
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "BASICZBR3", deviceJoinName: "SONOFF Switch", ocfDeviceType: "oic.d.smartplug" //SONOFF Basic (R3 Zigbee)
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "S31 Lite zb", deviceJoinName: "SONOFF Switch", ocfDeviceType: "oic.d.smartplug" //S31 Lite zb
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "BASICZBR3", deviceJoinName: "SONOFF Basic (R3 Zigbee)", ocfDeviceType: "oic.d.smartplug"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "S31 Lite zb", deviceJoinName: "S31 Lite zb", ocfDeviceType: "oic.d.smartplug"
 		
 		// Terncy
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Light" //Terncy Smart Light Socket
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0006", outClusters: "0019", manufacturer: "", model: "TERNCY-LS01", deviceJoinName: "Terncy Smart Light Socket"
 
 		// Third Reality
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "ThirdReality Switch" //RealitySwitch Plus
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "ThirdReality Switch" //RealitySwitch
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS008Z", deviceJoinName: "RealitySwitch Plus"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0019", manufacturer: "Third Reality, Inc", model: "3RSS007Z", deviceJoinName: "RealitySwitch"
 	}
 
 	// simulator metadata

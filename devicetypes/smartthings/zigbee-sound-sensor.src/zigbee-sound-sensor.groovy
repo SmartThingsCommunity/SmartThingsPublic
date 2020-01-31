@@ -27,7 +27,7 @@ metadata {
 		capability "Sound Sensor"
 		capability "Temperature Measurement"
 
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "FFZB1-SM-ECO", deviceJoinName: "Ecolink Siren" //Ecolink Firefighter
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "FFZB1-SM-ECO", deviceJoinName: "Ecolink Firefighter"
 	}
 
 	tiles(scale: 2) {

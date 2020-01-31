@@ -24,8 +24,8 @@ metadata {
         capability "Sensor"
         capability "Health Check"
 
-        fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Switch", mnmn: "SmartThings", vid: "generic-4-button" //Aeotec Wallmote Quad
-        fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Switch", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
+        fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Wallmote Quad", mnmn: "SmartThings", vid: "generic-4-button"
+        fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Wallmote", mnmn: "SmartThings", vid: "generic-2-button"
     }
 
     tiles(scale: 2) {

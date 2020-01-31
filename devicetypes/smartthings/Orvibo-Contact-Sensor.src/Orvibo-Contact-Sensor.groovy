@@ -28,10 +28,10 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 		capability "Sensor"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "DS01", deviceJoinName: "eWeLink Open/Closed Sensor" //eWeLink Door Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0003", manufacturer: "eWeLink", model: "DS01", deviceJoinName: "eWeLink Door Sensor"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "ORVIBO", model: "e70f96b3773a4c9283c6862dbafb6a99"
-		fingerprint inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "Aurora", model: "WindowSensor51AU", deviceJoinName: "Aurora Open/Closed Sensor" //Aurora Smart Door/Window Sensor
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "HEIMAN", model: "DoorSensor-N", deviceJoinName: "HEIMAN Open/Closed Sensor" //HEIMAN Door Sensor
+		fingerprint inClusters: "0000,0001,0003,000F,0020,0500", outClusters: "000A,0019", manufacturer: "Aurora", model: "WindowSensor51AU", deviceJoinName: "Aurora Smart Door/Window Sensor"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001", manufacturer: "HEIMAN", model: "DoorSensor-N", deviceJoinName: "HEIMAN Door Sensor"
 	}
 
 	simulator {

@@ -29,19 +29,19 @@ metadata {
 		capability "Health Check"
 
 		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
-		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "NeoCoolcam Siren" //NEO Coolcam Siren Alarm
-		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren" //Dome Siren
-		fingerprint mfr: "0060", prod: "000C", model: "0001", deviceJoinName: "Utilitech Siren" //Utilitech Siren
+		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "NEO Coolcam Siren Alarm"
+		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren"
+		fingerprint mfr: "0060", prod: "000C", model: "0001", deviceJoinName: "Utilitech Siren"
 		//zw:F type:1005 mfr:0131 prod:0003 model:1083 ver:2.17 zwv:6.02 lib:06 cc:5E,9F,55,73,86,85,8E,59,72,5A,25,71,87,70,80,6C role:07 ff:8F00 ui:8F00
-		fingerprint mfr: "0131", prod: "0003", model: "1083", deviceJoinName: "Zipato Siren" //Zipato Siren Alarm
+		fingerprint mfr: "0131", prod: "0003", model: "1083", deviceJoinName: "Zipato Siren Alarm"
 		//zw:F type:1005 mfr:0258 prod:0003 model:1088 ver:2.94 zwv:4.38 lib:06 cc:5E,86,72,5A,73,70,85,59,25,71,87,80 role:07 ff:8F00 ui:8F00 (EU)
-		fingerprint mfr: "0258", prod: "0003", model: "1088", deviceJoinName: "NeoCoolcam Siren" //NEO Coolcam Siren Alarm //NeoCoolcam Siren
+		fingerprint mfr: "0258", prod: "0003", model: "1088", deviceJoinName: "NEO Coolcam Siren Alarm"
 		//zw:Fs type:1005 mfr:0129 prod:6F01 model:0001 ver:1.04 zwv:4.33 lib:03 cc:5E,80,5A,72,73,86,70,98 sec:59,2B,71,85,25,7A role:07 ff:8F00 ui:8F00
-		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale Siren" //Yale External Siren
-		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Siren", vid: "generic-siren-12" //Everspring Outdoor Solar Siren
-		fingerprint mfr: "0154", prod: "0004", model: "0002", deviceJoinName: "POPP Siren", vid: "generic-siren-12" //POPP Solar Outdoor Siren
-		fingerprint mfr: "0109", prod: "2005", model: "0518", deviceJoinName: "Vision Siren", vid: "generic-siren-12" //Vision Outdoor Siren
-		fingerprint mfr: "0258", prod: "0003", model: "6088", deviceJoinName: "NeoCoolcam Siren"//AU //NEO Coolcam Siren Alarm //NeoCoolcam Siren
+		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale External Siren"
+		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Outdoor Solar Siren", vid: "generic-siren-12"
+		fingerprint mfr: "0154", prod: "0004", model: "0002", deviceJoinName: "POPP Solar Outdoor Siren", vid: "generic-siren-12"
+		fingerprint mfr: "0109", prod: "2005", model: "0518", deviceJoinName: "Vision Outdoor Siren", vid: "generic-siren-12"
+		fingerprint mfr: "0258", prod: "0003", model: "6088", deviceJoinName: "NEO Coolcam Siren Alarm"//AU
 	}
 
 	simulator {

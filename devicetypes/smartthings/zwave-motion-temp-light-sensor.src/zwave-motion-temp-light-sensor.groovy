@@ -26,9 +26,9 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Configuration"
 
-		fingerprint mfr:"0371", prod:"0002", model:"0005", deviceJoinName: "Aeotec TriSensor"	//ZW005-C EU //Aeotec TriSensor
-		fingerprint mfr:"0371", prod:"0102", model:"0005", deviceJoinName: "Aeotec TriSensor" 	//ZW005-A US //Aeotec TriSensor
-	        fingerprint mfr:"0371", prod:"0202", model:"0005", deviceJoinName: "Aeotec TriSensor" 	//ZW005-B AU //Aeotec TriSensor
+		fingerprint mfr:"0371", prod:"0002", model:"0005", deviceJoinName: "Aeotec TriSensor"	//ZW005-C EU
+		fingerprint mfr:"0371", prod:"0102", model:"0005", deviceJoinName: "Aeotec TriSensor" 	//ZW005-A US
+	        fingerprint mfr:"0371", prod:"0202", model:"0005", deviceJoinName: "Aeotec TriSensor" 	//ZW005-B AU
 	}
 
 	tiles(scale: 2) {

@@ -23,7 +23,7 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "Aurora", model: "Remote50AU", deviceJoinName: "Aurora Remote/Button" //Aurora Wireless Wall Remote
+		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "Aurora", model: "Remote50AU", deviceJoinName: "Aurora Wireless Wall Remote"
 		fingerprint profileId: "0104", inClusters: "0000,1000,0003", outClusters: "0003,0004,0005,0006,0008,1000,0019", manufacturer: "LDS", model: "ZBT-DIMController-D0800", deviceJoinName: "Müller Licht Tint Mobile Switch"
 	}
 
