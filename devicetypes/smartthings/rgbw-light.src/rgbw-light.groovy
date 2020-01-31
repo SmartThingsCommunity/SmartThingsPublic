@@ -31,11 +31,11 @@ metadata {
 
 		fingerprint inClusters: "0x26,0x33"
 		fingerprint inClusters: "0x33"
-		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
-		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
-		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec LED Bulb" //EU
-		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec LED Bulb" //US
-		fingerprint mfr: "0300", prod: "0003", model: "0003", deviceJoinName: "ilumin RGBW Bulb"
+		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec Light" //US //Aeotec LED Strip
+		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec Light" //EU //Aeotec LED Strip
+		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec Light" //EU //Aeotec LED Bulb
+		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec Light" //US //Aeotec LED Bulb
+		fingerprint mfr: "0300", prod: "0003", model: "0003", deviceJoinName: "Ilumin Light" //ilumin RGBW Bulb
 	}
 
 	simulator {

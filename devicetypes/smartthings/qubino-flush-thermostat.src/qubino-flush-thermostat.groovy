@@ -28,7 +28,7 @@ metadata {
 
 		command "changeMode"
 
-		fingerprint mfr: "0159", prod: "0005", model: "0054", deviceJoinName: "Qubino Flush On/Off Thermostat 2"
+		fingerprint mfr: "0159", prod: "0005", model: "0054", deviceJoinName: "Qubino Thermostat" //Qubino Flush On/Off Thermostat 2
 	}
 
 	tiles(scale: 2) {

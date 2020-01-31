@@ -16,8 +16,8 @@ metadata {
 	definition (name: "Zigbee Range Extender", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.networking", mnmn: "SmartThings", vid: "SmartThings-smartthings-Z-Wave_Range_Extender") {
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0009, 0B05, 1000, FC7C", outClusters: "0019, 0020, 1000",  manufacturer: "IKEA of Sweden",  model: "TRADFRI signal repeater", deviceJoinName: "TRÅDFRI Signal Repeater"
-		fingerprint profileId: "0104", inClusters: "0000, 0003", outClusters: "0019",  manufacturer: "Smartenit, Inc",  model: "ZB3RE", deviceJoinName: "Smartenit Range Extender"
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0009, 0B05, 1000, FC7C", outClusters: "0019, 0020, 1000",  manufacturer: "IKEA of Sweden",  model: "TRADFRI signal repeater", deviceJoinName: "IKEA Range Extender" //TRÅDFRI Signal Repeater
+		fingerprint profileId: "0104", inClusters: "0000, 0003", outClusters: "0019",  manufacturer: "Smartenit, Inc",  model: "ZB3RE", deviceJoinName: "Smartenit Range Extender" //Smartenit Range Extender
 		fingerprint profileId: "0104", inClusters: "0000, 0003, DC00, FC01", manufacturer: "Rooms Beautiful",  model: "R001", deviceJoinName: "Range Extender"
 	}
 

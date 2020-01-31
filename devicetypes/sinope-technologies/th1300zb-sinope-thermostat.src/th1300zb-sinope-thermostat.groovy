@@ -51,7 +51,7 @@ preferences {
 		command "heatLevelUp"
 		command "heatLevelDown"
 		
-		fingerprint manufacturer: "Sinope Technologies", model: "TH1300ZB", deviceJoinName: "Sinope TH1300ZB Thermostat"
+		fingerprint manufacturer: "Sinope Technologies", model: "TH1300ZB", deviceJoinName: "Sinope Thermostat" //Sinope TH1300ZB Thermostat
 	}
 
 	//--------------------------------------------------------------------------------------------------------

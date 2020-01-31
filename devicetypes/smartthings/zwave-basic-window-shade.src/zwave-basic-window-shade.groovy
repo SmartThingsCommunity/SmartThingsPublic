@@ -25,8 +25,8 @@ metadata {
 		command "close"
 		command "pause"
 
-		fingerprint mfr:"0086", prod:"0003", model:"008D", deviceJoinName: "Aeotec Nano Shutter"
-		fingerprint mfr:"0086", prod:"0103", model:"008D", deviceJoinName: "Aeotec Nano Shutter"
+		fingerprint mfr:"0086", prod:"0003", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
+		fingerprint mfr:"0086", prod:"0103", model:"008D", deviceJoinName: "Aeotec Window Treatment" //Aeotec Nano Shutter
 	}
 
 	tiles(scale: 2) {

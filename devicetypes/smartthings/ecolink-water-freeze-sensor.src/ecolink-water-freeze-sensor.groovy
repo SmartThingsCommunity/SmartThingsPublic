@@ -22,7 +22,7 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-		fingerprint mfr: "014A", prod: "0005", model: "0010", deviceJoinName: "Ecolink Water/Freeze Sensor"
+		fingerprint mfr: "014A", prod: "0005", model: "0010", deviceJoinName: "Ecolink Water Leak Sensor" //Ecolink Water/Freeze Sensor
 	}
 
 	simulator {

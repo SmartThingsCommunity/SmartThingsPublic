@@ -23,11 +23,11 @@ metadata {
         capability "Health Check"
         capability "Temperature Measurement"
 
-        fingerprint mfr:"015D", prod:"2003", model:"B41C", deviceJoinName: "Inovelli Door/Temp Sensor"
-        fingerprint mfr:"0312", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Door/Temp Sensor"
-        fingerprint mfr:"015D", prod:"2003", model:"C11C", deviceJoinName: "Inovelli Door/Temp Sensor"
-        fingerprint mfr:"015D", prod:"C100", model:"C100", deviceJoinName: "Inovelli Door/Temp Sensor"
-        fingerprint mfr:"0312", prod:"C100", model:"C100", deviceJoinName: "Inovelli Door/Temp Sensor"
+        fingerprint mfr:"015D", prod:"2003", model:"B41C", deviceJoinName: "Innoveli Multiporpose Sensor" //Inovelli Door/Temp Sensor
+        fingerprint mfr:"0312", prod:"2003", model:"C11C", deviceJoinName: "Innoveli Multiporpose Sensor" //Inovelli Door/Temp Sensor //Innoveli Multiporpose Sensor
+        fingerprint mfr:"015D", prod:"2003", model:"C11C", deviceJoinName: "Innoveli Multiporpose Sensor" //Inovelli Door/Temp Sensor //Innoveli Multiporpose Sensor
+        fingerprint mfr:"015D", prod:"C100", model:"C100", deviceJoinName: "Innoveli Multiporpose Sensor" //Inovelli Door/Temp Sensor //Innoveli Multiporpose Sensor
+        fingerprint mfr:"0312", prod:"C100", model:"C100", deviceJoinName: "Innoveli Multiporpose Sensor" //Inovelli Door/Temp Sensor //Innoveli Multiporpose Sensor
     }
 
     preferences {

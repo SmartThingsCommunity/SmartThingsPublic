@@ -30,7 +30,7 @@ metadata {
 
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "Heiman", model: "b5db59bfd81e4f1f95dc57fdbba17931", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0009", outClusters: "0019", manufacturer: "HEIMAN", model: "98293058552c49f38ad0748541ee96ba", deviceJoinName: "欧瑞博 烟雾报警器(SF21)"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502", outClusters: "0019", manufacturer: "HEIMAN", model: "SmokeSensor-EM", deviceJoinName: "HEIMAN Smoke Sensor (HS1SA-E)"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502", outClusters: "0019", manufacturer: "HEIMAN", model: "SmokeSensor-EM", deviceJoinName: "HEIMAN Smoke/Fire Detector" //HEIMAN Smoke Sensor (HS1SA-E)
 		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500,0502,0B05", outClusters: "0019", manufacturer: "HEIMAN", model: "SmokeSensor-N-3.0", deviceJoinName: "HEIMAN Smoke Sensor (HS3SA)"
 
 	}
