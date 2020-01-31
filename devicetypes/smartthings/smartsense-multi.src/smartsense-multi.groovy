@@ -22,8 +22,6 @@ metadata {
 		capability "Battery"
 
 		fingerprint profileId: "FC01", deviceId: "0139"
-
-		attribute "status", "string"
 	}
 
 	simulator {
@@ -45,7 +43,7 @@ metadata {
 	}
 
 	preferences {
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
@@ -112,17 +110,6 @@ private List parseSingleMessage(description) {
 	def results = []
 	results << createEvent(
 		name: "contact",
-		value: value,
-		unit: null,
-		linkText: linkText,
-		descriptionText: descriptionText,
-		handlerName: handlerName,
-		isStateChange: isStateChange,
-		displayed: displayed(description, isStateChange)
-	)
-
-	results << createEvent(
-		name: "status",
 		value: value,
 		unit: null,
 		linkText: linkText,
@@ -297,19 +284,7 @@ private List getContactResult(part, description) {
 			linkText: linkText,
 			descriptionText: descriptionText,
 			handlerName: handlerName,
-			isStateChange: isStateChange,
-			displayed:false
-	)
-
-	results << createEvent(
-			name: "status",
-			value: value,
-			unit: null,
-			linkText: linkText,
-			descriptionText: descriptionText,
-			handlerName: handlerName,
-			isStateChange: isStateChange,
-			displayed: displayed(description, isStateChange)
+			isStateChange: isStateChange
 	)
 
 	results

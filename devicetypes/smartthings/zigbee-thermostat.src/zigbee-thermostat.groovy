@@ -146,7 +146,7 @@ private parseAttrMessage(description) {
 	descMap.additionalAttrs.each {
 		attrData << [cluster: descMap.clusterInt, attribute: it.attrInt, value: it.value]
 	}
-	attrData.each {
+	attrData.findAll( {it.value != null} ).each {
 		def map = [:]
 		if (it.cluster == THERMOSTAT_CLUSTER) {
 			if (it.attribute == LOCAL_TEMPERATURE) {

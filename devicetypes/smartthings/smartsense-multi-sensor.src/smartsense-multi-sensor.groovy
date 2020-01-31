@@ -35,7 +35,6 @@ metadata {
 		fingerprint inClusters: "0000,0001,0003,000F,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "SmartThings", model: "multiv4", deviceJoinName: "Multipurpose Sensor"
 		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,FC02", outClusters: "0019", manufacturer: "Samjin", model: "multi", deviceJoinName: "Multipurpose Sensor"
 
-		attribute "status", "string"
 	}
 
 	simulator {
@@ -73,17 +72,11 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name: "status", type: "generic", width: 6, height: 4) {
-			tileAttribute("device.status", key: "PRIMARY_CONTROL") {
-				attributeState "open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13"
-				attributeState "closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc"
-				attributeState "garage-open", label: 'Open', icon: "st.doors.garage.garage-open", backgroundColor: "#e86d13"
-				attributeState "garage-closed", label: 'Closed', icon: "st.doors.garage.garage-closed", backgroundColor: "#00a0dc"
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4) {
+			tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
 			}
-		}
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label: 'Open', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
-			state("closed", label: 'Closed', icon: "st.contact.contact.closed", backgroundColor: "#00a0dc")
 		}
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2) {
 			state("active", label: 'Active', icon: "st.motion.acceleration.active", backgroundColor: "#00a0dc")
@@ -110,8 +103,8 @@ metadata {
 		}
 
 
-		main(["status", "acceleration", "temperature"])
-		details(["status", "acceleration", "temperature", "battery", "refresh"])
+		main(["contact", "acceleration", "temperature"])
+		details(["contact", "acceleration", "temperature", "battery", "refresh"])
 	}
 }
 
@@ -270,8 +263,7 @@ private List<Map> translateZoneStatus(ZoneStatus zs) {
 		def value = zs.isAlarm1Set() ? 'open' : 'closed'
 		log.debug "Contact: ${device.displayName} value = ${value}"
 		def descriptionText = value == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
-		results << [name: 'contact', value: value, descriptionText: descriptionText, displayed: false, translatable: true]
-		results << [name: 'status', value: value, descriptionText: descriptionText, translatable: true]
+		results << [name: 'contact', value: value, descriptionText: descriptionText, translatable: true]
 	}
 
 	return results
@@ -353,18 +345,14 @@ List<Map> garageEvent(zValue) {
 	List<Map> results = []
 	def absValue = zValue.abs()
 	def contactValue = null
-	def garageValue = null
 	if (absValue > 900) {
 		contactValue = 'closed'
-		garageValue = 'garage-closed'
 	} else if (absValue < 100) {
 		contactValue = 'open'
-		garageValue = 'garage-open'
 	}
 	if (contactValue != null) {
 		def descriptionText = contactValue == 'open' ? '{{ device.displayName }} was opened' : '{{ device.displayName }} was closed'
-		results << [name: 'contact', value: contactValue, descriptionText: descriptionText, displayed: false, translatable: true]
-		results << [name: 'status', value: garageValue, descriptionText: descriptionText, translatable: true]
+		results << [name: 'contact', value: contactValue, descriptionText: descriptionText, translatable: true]
 	}
 	results
 }
@@ -448,26 +436,6 @@ def configure() {
 	configCmds += zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryAttr)
 
 	return configCmds
-}
-
-def updated() {
-	log.debug "updated called"
-	log.info "garage value : $garageSensor"
-	if (garageSensor == "Yes") {
-		def descriptionText = "Updating device to garage sensor"
-		if (device.latestValue("status") == "open") {
-			sendEvent(name: 'status', value: 'garage-open', descriptionText: descriptionText, translatable: true)
-		} else if (device.latestValue("status") == "closed") {
-			sendEvent(name: 'status', value: 'garage-closed', descriptionText: descriptionText, translatable: true)
-		}
-	} else {
-		def descriptionText = "Updating device to open/close sensor"
-		if (device.latestValue("status") == "garage-open") {
-			sendEvent(name: 'status', value: 'open', descriptionText: descriptionText, translatable: true)
-		} else if (device.latestValue("status") == "garage-closed") {
-			sendEvent(name: 'status', value: 'closed', descriptionText: descriptionText, translatable: true)
-		}
-	}
 }
 
 private hexToSignedInt(hexVal) {

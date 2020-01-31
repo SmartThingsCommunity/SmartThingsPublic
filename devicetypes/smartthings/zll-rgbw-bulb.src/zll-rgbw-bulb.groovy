@@ -35,11 +35,14 @@ metadata {
 		// AduroSmart
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF, 0019", outClusters: "0019", deviceId: "0210", manufacturer: "AduroSmart Eria", model: "ZLL-ExtendedColor", deviceJoinName: "Eria ZLL RGBW Bulb"
 
+		// GLEDOPTO
+		fingerprint manufacturer: "GLEDOPTO", model: "GL-C-008", deviceJoinName: "Gledopto RGB+CCT LED Controller" // raw description 0B C05E 0210 02 07 0000 0003 0004 0005 0006 0008 0300 00
+
 		// INGENIUM
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FFFF", outClusters: "0019", manufacturer: "Megaman", model: "ZLL-ExtendedColor", deviceJoinName: "INGENIUM ZB RGBW Light"
 
 		// Innr
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 185 C", deviceJoinName: "Innr Smart Bulb Color"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 185 C", deviceJoinName: "Innr Smart Bulb Color", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-1800K-6500K"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "FL 130 C", deviceJoinName: "Innr Flex Light Color"
 
 		// OSRAM
@@ -49,7 +52,7 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Flex RGBW", deviceJoinName: "OSRAM SMART+ Flex RGBW"
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Gardenpole RGBW-Lightify", deviceJoinName: "OSRAM SMART+ Gardenpole RGBW"
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Outdoor Flex RGBW", deviceJoinName: "OSRAM SMART+ Outdoor Flex RGBW"
-		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Indoor Flex RGBW", deviceJoinName: "OSRAM SMART+ Indoor Flex RGBW", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
+		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Indoor Flex RGBW", deviceJoinName: "OSRAM SMART+ Indoor Flex RGBW", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb-2000K-6500K"
 
 		// Philips Hue
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019", manufacturer: "Philips", model: "LCT001", deviceJoinName: "Philips Hue A19"

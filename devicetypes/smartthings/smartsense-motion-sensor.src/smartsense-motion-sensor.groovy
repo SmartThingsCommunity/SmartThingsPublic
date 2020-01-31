@@ -59,7 +59,7 @@ metadata {
 			])
 		}
 		section {
-			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+			input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
 		}
 	}
 
@@ -124,7 +124,7 @@ def parse(String description) {
 					def battMap = descMaps.find { it.attrInt == 0x0021 }
 
 					if (battMap) {
-						map = getBatteryPercentageResult(Integer.parseInt(battMap.value, 16))
+						map = getBatteryPercentageResultSamjin(Integer.parseInt(battMap.value, 16))
 					}
 				} else {
 					def battMap = descMaps.find { it.attrInt == 0x0020 }
@@ -244,18 +244,16 @@ private Map getBatteryResult(rawValue) {
 	return result
 }
 
-private Map getBatteryPercentageResult(rawValue) {
-	log.debug "Battery Percentage rawValue = ${rawValue} -> ${rawValue / 2}%"
-	def result = [:]
+private Map getBatteryPercentageResultSamjin(rawValue) {
+	// This formula was provided by Samjin to effectively adjust the minimum voltage required for operation from 2.1V -> 2.4V
+	BigDecimal rawPercentage = rawValue - (200 - rawValue) / 2
+	Integer percentage = Math.min(100, Math.max(Math.round(rawPercentage / 2), 0))
 
-	if (0 <= rawValue && rawValue <= 200) {
-		result.name = 'battery'
-		result.translatable = true
-		result.descriptionText = "{{ device.displayName }} battery was {{ value }}%"
-		result.value = Math.round(rawValue / 2)
-	}
-
-	return result
+	log.debug "Battery Percentage rawValue = ${rawValue} -> ${percentage}%"
+	return [name: 'battery',
+			translatable: true,
+			descriptionText: "{{ device.displayName }} battery was {{ value }}%",
+			value: percentage]
 }
 
 private Map getMotionResult(value) {
