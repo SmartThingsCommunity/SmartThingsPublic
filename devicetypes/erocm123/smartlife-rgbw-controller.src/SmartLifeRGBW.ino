@@ -533,14 +533,34 @@ unsigned int rand_interval(unsigned int min, unsigned int max)
 }
 
 void relayToggle() {
-  if (digitalRead(KEY_PIN) == LOW) {
+  if (digitalRead(KEY_PIN) == LOW && state == HIGH) {
+    //First set the counters that the switch is released
     current_low = millis();
     state = LOW;
+
+    //If it has been held for 20-30s then do a partial reset
+    if ((current_high - current_low) >= 20000 && (current_high - current_low) < 30000)
+    {
+      if (Settings.resetType == 1 || Settings.resetType == 3) {
+        Settings.longPress = true;
+        SaveSettings();
+        ESP.restart();
+      }
+    }
+    //Otherwise if it has been held for 30-60s then do a full reset
+    else if ((current_high - current_low) >= 30000 && (current_high - current_low) < 60000)
+    {
+      if (Settings.resetType == 1 || Settings.resetType == 3) {
+        Settings.reallyLongPress = true;
+        SaveSettings();
+        ESP.restart();
+      }
+    }
   }
-  if (digitalRead(KEY_PIN == HIGH) && state == LOW)
+  if (digitalRead(KEY_PIN) == HIGH && state == LOW)
   {
     current_high = millis();
-    if ((current_high - current_low) > (Settings.debounce ? Settings.debounce : debounceDelay) && (current_high - current_low) < 10000)
+    if ((current_high - current_low) > (Settings.debounce ? Settings.debounce : debounceDelay))
     {
       state = HIGH;
       run_program = false;
@@ -558,22 +578,6 @@ void relayToggle() {
         //Check if we should forward the request to another device
         check_if_forward_request();
         needUpdate = true;
-      }
-    }
-    else if ((current_high - current_low) >= 10000 && (current_high - current_low) < 20000)
-    {
-      if (Settings.resetType == 1 || Settings.resetType == 3) {
-        Settings.longPress = true;
-        SaveSettings();
-        ESP.restart();
-      }
-    }
-    else if ((current_high - current_low) >= 20000 && (current_high - current_low) < 60000)
-    {
-      if (Settings.resetType == 1 || Settings.resetType == 3) {
-        Settings.reallyLongPress = true;
-        SaveSettings();
-        ESP.restart();
       }
     }
   }
@@ -1499,7 +1503,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -1519,7 +1523,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -1542,7 +1546,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -1566,7 +1570,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -2463,7 +2467,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -2490,7 +2494,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -2516,7 +2520,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -2542,7 +2546,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -2568,7 +2572,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
@@ -2594,7 +2598,7 @@ void setup()
     check_if_forward_request();
 
     //If we received this request from outside of ST, then lets update ST
-    byte current_add[4] = {server->client().remoteIP()};
+    byte current_add[4] = {server->client().remoteIP()[0], server->client().remoteIP()[1], server->client().remoteIP()[2], server->client().remoteIP()[3]};
     if ((current_add[0] != Settings.haIP[0]) || (current_add[1] != Settings.haIP[1]) || (current_add[2] != Settings.haIP[2]) || (current_add[3] != Settings.haIP[3])) {
       needUpdate = true;
     }
