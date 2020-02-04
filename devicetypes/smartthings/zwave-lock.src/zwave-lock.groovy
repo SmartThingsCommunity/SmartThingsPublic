@@ -238,7 +238,7 @@ def doConfigure() {
 def parse(String description) {
 	log.trace "[DTH] Executing 'parse(String description)' for device ${device.displayName} with description = $description"
 
-	def result = null
+	def result = []
 	if (description.startsWith("Err")) {
 		if (state.sec) {
 			result = createEvent(descriptionText:description, isStateChange:true, displayed:false)
@@ -255,6 +255,9 @@ def parse(String description) {
 		def cmd = zwave.parse(description, [ 0x98: 1, 0x62: 1, 0x63: 1, 0x71: 2, 0x72: 2, 0x80: 1, 0x85: 2, 0x86: 1 ])
 		if (cmd) {
 			result = zwaveEvent(cmd)
+		}
+		if (state.queryBattery) {
+			result << response(secure(zwave.batteryV1.batteryGet()))
 		}
 	}
 	log.info "[DTH] parse() - returning result=$result"
@@ -631,6 +634,8 @@ private def handleBatteryAlarmReport(cmd) {
 	def map = null
 	switch(cmd.zwaveAlarmEvent) {
 		case 0x01: //power has been applied, check if the battery level updated
+			runIn(1, setQueryBattery)
+			result << "delay 1200"
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
 		case 0x0A:
@@ -643,7 +648,7 @@ private def handleBatteryAlarmReport(cmd) {
 			// delegating it to handleAlarmReportUsingAlarmType
 			return handleAlarmReportUsingAlarmType(cmd)
 	}
-	result << createEvent(map)
+	if (map != null) result << createEvent(map)
 	result
 }
 
@@ -768,6 +773,9 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 130:  // Batteries replaced
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
+			runIn(1, setQueryBattery)
+			result << "delay 1200"
+			result << response(secure(zwave.batteryV1.batteryGet()))
 			break
 		case 131: // Disabled user entered at keypad
 			map = [ descriptionText: "Code ${cmd.alarmLevel} is disabled", isStateChange: false ]
@@ -1036,6 +1044,8 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.descriptionText = "Battery is at ${cmd.batteryLevel}%"
 	}
 	state.lastbatt = now()
+	state.queryBattery = false
+    unschedule("setQueryBattery")
 	createEvent(map)
 }
 
@@ -1797,4 +1807,9 @@ def readCodeSlotId(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		return cmd.eventParameter[2]
 	}
 	return cmd.alarmLevel
+}
+
+
+private setQueryBattery() {
+	state.queryBattery = true
 }
