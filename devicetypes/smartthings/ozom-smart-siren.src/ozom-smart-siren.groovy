@@ -125,9 +125,18 @@ def configure() {
 	return cmds	
 }
 
+def both() {
+	log.debug "both()"
+	on()
+}
+
 def siren() {
 	log.debug "siren()"
 	on()
+}
+
+def strobe() {
+	log.warn "strobe() is not supported by this device"
 }
 
 def on() {
