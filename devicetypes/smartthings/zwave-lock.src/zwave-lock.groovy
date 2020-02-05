@@ -631,6 +631,7 @@ private def handleBatteryAlarmReport(cmd) {
 	def map = null
 	switch(cmd.zwaveAlarmEvent) {
 		case 0x01: //power has been applied, check if the battery level updated
+			runIn(1, setQueryBattery, [overwrite: true, forceForLocallyExecuting: true])
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
 		case 0x0A:
@@ -768,6 +769,8 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 130:  // Batteries replaced
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
+			runIn(1, setQueryBattery, [overwrite: true, forceForLocallyExecuting: true])
+			result << response(secure(zwave.batteryV1.batteryGet()))
 			break
 		case 131: // Disabled user entered at keypad
 			map = [ descriptionText: "Code ${cmd.alarmLevel} is disabled", isStateChange: false ]
@@ -1036,6 +1039,8 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.descriptionText = "Battery is at ${cmd.batteryLevel}%"
 	}
 	state.lastbatt = now()
+	state.queryBattery = false
+	unschedule("setQueryBattery", [forceForLocallyExecuting: true])
 	createEvent(map)
 }
 
@@ -1797,4 +1802,16 @@ def readCodeSlotId(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		return cmd.eventParameter[2]
 	}
 	return cmd.alarmLevel
+}
+
+private setQueryBattery() {
+	state.queryBattery = true
+	runIn(1, queryBattery, [overwrite: true, forceForLocallyExecuting: true])
+}
+
+private queryBattery() {
+	if (state.queryBattery) {
+		runIn(10, queryBattery, [overwrite: true, forceForLocallyExecuting: true])
+		response(secure(zwave.batteryV1.batteryGet()))
+	}
 }
