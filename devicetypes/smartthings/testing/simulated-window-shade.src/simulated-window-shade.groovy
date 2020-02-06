@@ -16,7 +16,7 @@
 import groovy.json.JsonOutput
 
 metadata {
-	definition (name: "Simulated Window Shade", namespace: "smartthings/testing", author: "SmartThings", runLocally: false, mnmn: "SmartThings", vid: "generic-window-shade") {
+	definition (name: "Simulated Window Shade", namespace: "smartthings/testing", author: "SmartThings", runLocally: false) {
 		capability "Actuator"
 		capability "Window Shade"
 		capability "Window Shade Preset"
@@ -55,10 +55,10 @@ metadata {
 				range: "1..120", displayDuringSetup: false)
 		}
 		section {
-			input("presetPos", "number",
-				title: "Preset Position\n\nBlah blah blah",
-				description: "Preset Position (0-100; default if empty: 50%)",
-				range: "0..100", displayDuringSetup: false)
+			input "preset", "number",
+				title: "Preset position",
+				description: "Set the window shade preset position",
+				defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
 		}
 		section {
 			input("supportedCommands", "enum",
@@ -230,27 +230,24 @@ def pause() {
 
 def presetPosition() {
 	log.debug "presetPosition()"
-	if (device.currentValue("windowShade") == "open") {
-		closePartially()
-	} else if (device.currentValue("windowShade") == "closed") {
-		openPartially()
-	} else {
-		partiallyOpen()
-	}
+
+	setShadeLevel(preset ?: 50)
 }
 
 def setShadeLevel(level) {
 	log.debug "setShadeLevel(${level})"
-	def normalizedLevel = min(100, max(0, level))
+	def normalizedLevel = Math.min(100, Math.max(0, level))
 	def lastLevel = device.currentValue("shadeLevel") ?: 100
 
 	// TODO: Update shade states; simulate opening or closing
 	updateShadeLevel(normalizedLevel)
 
-	if (normalizedLevel > 0) {
-		opened()
+	if (normalizedLevel == 100) {
+		opened(false)
+	} else if (normalizedLevel > 0) {
+		partiallyOpen(false)
 	} else {
-		closed()
+		closed(false)
 	}
 }
 
@@ -273,10 +270,14 @@ def closePartially() {
 	runIn(shadeActionDelay, "partiallyOpen")
 }
 
-def partiallyOpen() {
+def partiallyOpen(updateLevel = true) {
 	log.debug "windowShade: partially open"
 	sendEvent(name: "windowShade", value: "partially open", isStateChange: true)
-	//updateShadeLevel(random() % 99)
+	/* // Will check ramifications before uncommenting
+	if (updateLevel) {
+		updateShadeLevel(random() % 99)
+	}
+	*/
 }
 
 def opening() {
@@ -289,16 +290,22 @@ def closing() {
 	sendEvent(name: "windowShade", value: "closing", isStateChange: true)
 }
 
-def opened() {
+def opened(updateLevel = true) {
 	log.debug "windowShade: open"
 	sendEvent(name: "windowShade", value: "open", isStateChange: true)
-	updateShadeLevel(100)
+
+	if (updateLevel) {
+		updateShadeLevel(100)
+	}
 }
 
-def closed() {
+def closed(updateLevel = true) {
 	log.debug "windowShade: closed"
 	sendEvent(name: "windowShade", value: "closed", isStateChange: true)
-	updateShadeLevel(0)
+
+	if (updateLevel) {
+		updateShadeLevel(0)
+	}
 }
 
 def unknown() {
