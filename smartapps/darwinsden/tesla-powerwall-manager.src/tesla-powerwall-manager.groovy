@@ -787,7 +787,7 @@ private httpAuthPost (Map params = [:], String cmdName, String path, Closure clo
         {
            log.debug "retrying Post"
            //debug notification message below. comment out for production
-           sendNotificationMessage("Failed command: ${params} after ${tryCount} tries. Retrying..") 
+           //sendNotificationMessage("Failed command: ${params} after ${tryCount} tries. Retrying..") 
            if (e.response.getStatus()==401) {
              log.debug "Refreshing token"
              refreshToken() 
@@ -864,9 +864,9 @@ private removeChildDevices(delete) {
         deleteChildDevice(it.deviceNetworkId)
     }
 }
-
+    
 def initialize() {
-
+    log.debug ("Initializing Powerwall Manager")
     createDeviceForPowerwall()
 
     unsubscribe()
@@ -970,10 +970,13 @@ def checkBatteryNotifications (data) {
      }
 
      def day = getTheDay()
-     if (aboveTriggerEnabled?.toBoolean() && aboveTriggerDays?.contains(day) && aboveTriggerValue) {
+     if (aboveTriggerEnabled?.toBoolean() && aboveTriggerValue) {
         if (data.batteryPercent >= aboveTriggerValue.toFloat()) {
-            if (state.timeOfLastAboveTrigger == null) {
-              state.timeOfLastAboveTrigger = now()
+            //new trigger allowed only if conditon has been reset and it's been at least 30 minutes since last trigger
+            if (aboveTriggerDays?.contains(day) && (state.aboveTriggerReset == null || state.aboveTriggerReset.toBoolean()) && 
+                (state.timeOfLastAboveTrigger == null || now() - state.timeOfLastAboveTrigger >= 30 * 60 * 1000)) {
+                state.timeOfLastAboveTrigger = now()
+                state.aboveTriggerReset = false
                 def triggerMessage = "Powerwall ${Math.round(data.batteryPercent*10)/10}% battery level is at or above ${aboveTriggerValue}% trigger."
                 if (actionsValid(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy,aboveTriggerDevicesToOn)) {
                    def message = commandPwActions (aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy)
@@ -987,9 +990,9 @@ def checkBatteryNotifications (data) {
                      sendNotificationMessage(triggerMessage)     
                 }   
             }
-       } else if (state.timeOfLastAboveTrigger != null && now() - state.timeOfLastAboveTrigger >= 30 * 60 * 1000) {
-            //reset for new trigger if condition no longer exists and it's been at least 30 minutes since last trigger
-            state.timeOfLastAboveTrigger = null
+       } else {
+            //reset for new trigger
+            state.aboveTriggerReset = true
       }
      }
     
