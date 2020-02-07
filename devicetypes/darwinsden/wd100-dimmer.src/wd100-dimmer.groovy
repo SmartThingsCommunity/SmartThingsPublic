@@ -22,6 +22,7 @@
  *
  *	Changelog:
  *
+ *  1.07 (02/07/2020) - Corrected git pull merge error for setLev command rate update
  *  1.06 (04/19/2019) - Added rate argument for setLevel for cloud integrations
  *  1.05 (05/06/2018) - Request dim level on hold to improve dim level status. Removed call to set switch status off on hold release.
  *  1.04 (05/04/2018) - Remove call to set switch to off when held down
@@ -297,9 +298,9 @@ def setLevel (value, rate=null) {
 }
 
 // Add rate argument for setLevel for cloud integrations
-def setLevel(value, duration) {
-	setLevel (value)
-}
+//def setLevel(value, duration) {
+//	setLevel (value)
+//}
 
 def poll() {
 	zwave.switchMultilevelV1.switchMultilevelGet().format()
