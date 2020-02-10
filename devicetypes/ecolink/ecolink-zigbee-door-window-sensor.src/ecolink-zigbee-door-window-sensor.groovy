@@ -30,7 +30,7 @@ metadata {
         attribute "tamper", "enum", ["detected", "clear"]
 
 		//fingerprints
-        fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "DWZB1-ECO"//, deviceJoinName: "Ecolink Door/Window"
+        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "DWZB1-ECO"//, deviceJoinName: "Ecolink Door/Window"
 
 	}
 
@@ -238,6 +238,6 @@ def configure() {
     				  zigbee.writeAttribute(0x0020, 0x0003, 0x21, 0x0028) + zigbee.command(0x0020, 0x02, "B1040000"))
                       
     //send enroll response, create binding for polling cluster, configure polling of the device, and read device status attributes
-    //return zigbee.enrollResponse() + createPollingBinding + refresh() + enrollCmds
-	return createPollingBinding + refresh() + enrollCmds
+    return zigbee.enrollResponse() + createPollingBinding + refresh() + enrollCmds
+	//return createPollingBinding + refresh() + enrollCmds
 }
