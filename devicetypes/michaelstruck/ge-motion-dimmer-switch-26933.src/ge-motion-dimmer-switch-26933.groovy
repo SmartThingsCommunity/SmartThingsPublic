@@ -8,7 +8,7 @@
  *
  *  Version 1.0.6 2/11/20 
  *
- *  Version 1.0.6 (2/11/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Mordan!
+ *  Version 1.0.6 (2/11/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Morgon!
  *  Version 1.0.5 (12/4/18) - Removed logging to reduce Zwave traffic; optimized button triple press  
  *  Version 1.0.4b (10/15/18) - Changed to triple push for options for switches to activate special functions.
  *  Version 1.0.3 (8/21/18) - Changed the setLevel mode to boolean
