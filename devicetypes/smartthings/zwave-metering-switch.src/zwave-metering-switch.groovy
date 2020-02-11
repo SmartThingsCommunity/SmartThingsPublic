@@ -51,6 +51,7 @@ metadata {
 		fingerprint mfr: "0060", prod: "0004", model: "000B", deviceJoinName: "Everspring Smart Plug", ocfDeviceType: "oic.d.smartplug"  //US
 		fingerprint mfr: "031E", prod: "0002", model: "0001", deviceJoinName: "Inovelli Switch Red Series" //US
 		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "POPP Smart Outdoor Plug", ocfDeviceType: "oic.d.smartplug" //EU
+		fingerprint mfr: "010F", prod: "1F01", model: "1000", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug" //EU //Fibaro walli Outlet
 	}
 
 	// simulator metadata
