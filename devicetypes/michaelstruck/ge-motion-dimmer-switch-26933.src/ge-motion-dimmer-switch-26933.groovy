@@ -1,13 +1,14 @@
 /**
  *  GE Motion Dimmer Switch (Model 26933) DTH
  *
- *  Copyright © 2018 Michael Struck
+ *  Copyright © 2020 Michael Struck
  *  Original Author: Matt Lebaugh (@mlebaugh)
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.5 12/4/18 
+ *  Version 1.0.6 2/11/20 
  *
+ *  Version 1.0.6 (2/11/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Mordan!
  *  Version 1.0.5 (12/4/18) - Removed logging to reduce Zwave traffic; optimized button triple press  
  *  Version 1.0.4b (10/15/18) - Changed to triple push for options for switches to activate special functions.
  *  Version 1.0.3 (8/21/18) - Changed the setLevel mode to boolean
@@ -310,7 +311,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
     	result << createEvent([name:"LightSense", value: value, displayed:true, isStateChange:true])
     } else if (cmd.parameterNumber == 15) {
     	def value = config == 0 ? "Disabled" : config == 1 ? "10 sec" : config == 2 ? "20 sec" : config == 3 ? "30 sec" : config == 4 ? "45 sec" : "27 minute" 
-    	result << createEvent([name:"ResetCycle", value: value, displayed:true, isStateChange:true])
+        result << createEvent([name:"ResetCycle", value: value, displayed:true, isStateChange:true])
     } else if (cmd.parameterNumber == 3) {
     	if (config == 1 ) {
         	result << createEvent([name:"operatingMode", value: "Manual", displayed:true, isStateChange:true])
@@ -607,11 +608,11 @@ def updated() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 14)
 	//param 15 reset cycle
 	if (settings.resetcycle) {
-		cmds << zwave.configurationV1.configurationSet(configurationValue: [settings.resetcycle.toInteger()], parameterNumber: 15, size: 1)
+		cmds << zwave.configurationV1.configurationSet(configurationValue: [0, settings.resetcycle.toInteger()], parameterNumber: 15, size: 2)
 		cmds << zwave.configurationV1.configurationGet(parameterNumber: 15)
 	}
     else {
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 15, size: 1)
+        cmds << zwave.configurationV1.configurationSet(configurationValue: [0,2], parameterNumber: 15, size: 2)
        	cmds << zwave.configurationV1.configurationGet(parameterNumber: 15)
     }
     //param 3 operating mode (no default...no entry=no change)
@@ -762,4 +763,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.5 (12/04/18)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.6 (02/11/20)") }
