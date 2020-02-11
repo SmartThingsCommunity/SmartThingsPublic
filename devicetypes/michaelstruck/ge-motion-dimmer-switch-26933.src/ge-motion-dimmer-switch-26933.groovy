@@ -6,9 +6,9 @@
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.6 2/11/20 
+ *  Version 1.0.6a 2/11/20 
  *
- *  Version 1.0.6 (2/11/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Morgon!
+ *  Version 1.0.6a (2/11/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Morgon!
  *  Version 1.0.5 (12/4/18) - Removed logging to reduce Zwave traffic; optimized button triple press  
  *  Version 1.0.4b (10/15/18) - Changed to triple push for options for switches to activate special functions.
  *  Version 1.0.3 (8/21/18) - Changed the setLevel mode to boolean
@@ -134,6 +134,7 @@ metadata {
                     "2" : "20 sec (Default)",
                     "3" : "30 sec",
                     "4" : "45 sec",
+                    "5" : "60 sec",
                     "110" : "27 mins"
                 ]
             )           
@@ -310,7 +311,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		def value = config == 0 ? "Disabled" : "Enabled"
     	result << createEvent([name:"LightSense", value: value, displayed:true, isStateChange:true])
     } else if (cmd.parameterNumber == 15) {
-    	def value = config == 0 ? "Disabled" : config == 1 ? "10 sec" : config == 2 ? "20 sec" : config == 3 ? "30 sec" : config == 4 ? "45 sec" : "27 minute" 
+    	def value = config == 0 ? "Disabled" : config == 1 ? "10 sec" : config == 2 ? "20 sec" : config == 3 ? "30 sec" : config == 4 ? "45 sec" : config==5 ? "60 sec" : "27 minute" 
         result << createEvent([name:"ResetCycle", value: value, displayed:true, isStateChange:true])
     } else if (cmd.parameterNumber == 3) {
     	if (config == 1 ) {
@@ -763,4 +764,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.6 (02/11/20)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.6a (02/11/20)") }
