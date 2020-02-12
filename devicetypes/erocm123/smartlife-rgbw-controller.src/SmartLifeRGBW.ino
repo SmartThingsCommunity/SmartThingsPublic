@@ -538,7 +538,7 @@ void relayToggle() {
     state = LOW;
   
     //Button has been pressed hence toggle lights as a first step
-    if ((current_high - current_low) > (Settings.debounce ? Settings.debounce : debounceDelay))
+    if ((current_low - current_high) > (Settings.debounce ? Settings.debounce : debounceDelay))
     {
       run_program = false;
       if (getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2) == "0000000000") {
