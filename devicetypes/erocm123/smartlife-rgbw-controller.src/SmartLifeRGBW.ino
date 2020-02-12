@@ -536,7 +536,7 @@ void relayToggle() {
   if (digitalRead(KEY_PIN) == LOW && state == HIGH) {
     current_low = millis();
     state = LOW;
-	
+  
     //Button has been pressed hence toggle lights as a first step
     if ((current_high - current_low) > (Settings.debounce ? Settings.debounce : debounceDelay))
     {
@@ -562,7 +562,8 @@ void relayToggle() {
   if (digitalRead(KEY_PIN) == HIGH && state == LOW)
   {
     current_high = millis();
-	
+    state = HIGH;
+  
     //Button has now been released so lets check if it has been held for 10-30s to trigger the reset process
     if ((current_high - current_low) >= 10000 && (current_high - current_low) < 30000)
     {
