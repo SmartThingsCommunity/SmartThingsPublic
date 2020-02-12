@@ -540,7 +540,6 @@ void relayToggle() {
     //Button has been pressed hence toggle lights as a first step
     if ((current_high - current_low) > (Settings.debounce ? Settings.debounce : debounceDelay))
     {
-      state = HIGH;
       run_program = false;
       if (getHex(RED) + getHex(GREEN) + getHex(BLUE) + getHex(W1) + getHex(W2) == "0000000000") {
         String transition = Settings.defaultTransition == 2? "false" : "true";
