@@ -534,11 +534,10 @@ unsigned int rand_interval(unsigned int min, unsigned int max)
 
 void relayToggle() {
   if (digitalRead(KEY_PIN) == LOW && state == HIGH) {
-    //First set the counters that the switch is released
     current_low = millis();
     state = LOW;
 	
-	//Button has been pressed hence toggle lights as a first step
+    //Button has been pressed hence toggle lights as a first step
     if ((current_high - current_low) > (Settings.debounce ? Settings.debounce : debounceDelay))
     {
       state = HIGH;
@@ -564,9 +563,8 @@ void relayToggle() {
   {
     current_high = millis();
 	
-	//Button has now been released
-    //If it has been held for 20-30s then do a partial reset
-    if ((current_high - current_low) >= 20000 && (current_high - current_low) < 30000)
+    //Button has now been released so lets check if it has been held for 10-30s to trigger the reset process
+    if ((current_high - current_low) >= 10000 && (current_high - current_low) < 30000)
     {
       if (Settings.resetType == 1 || Settings.resetType == 3) {
         Settings.longPress = true;
@@ -574,7 +572,7 @@ void relayToggle() {
         ESP.restart();
       }
     }
-    //Otherwise if it has been held for 30-60s then do a full reset
+    //Otherwise if it has been held for 30-60s so do a full reset
     else if ((current_high - current_low) >= 30000 && (current_high - current_low) < 60000)
     {
       if (Settings.resetType == 1 || Settings.resetType == 3) {
