@@ -537,29 +537,8 @@ void relayToggle() {
     //First set the counters that the switch is released
     current_low = millis();
     state = LOW;
-
-    //If it has been held for 20-30s then do a partial reset
-    if ((current_high - current_low) >= 20000 && (current_high - current_low) < 30000)
-    {
-      if (Settings.resetType == 1 || Settings.resetType == 3) {
-        Settings.longPress = true;
-        SaveSettings();
-        ESP.restart();
-      }
-    }
-    //Otherwise if it has been held for 30-60s then do a full reset
-    else if ((current_high - current_low) >= 30000 && (current_high - current_low) < 60000)
-    {
-      if (Settings.resetType == 1 || Settings.resetType == 3) {
-        Settings.reallyLongPress = true;
-        SaveSettings();
-        ESP.restart();
-      }
-    }
-  }
-  if (digitalRead(KEY_PIN) == HIGH && state == LOW)
-  {
-    current_high = millis();
+	
+	//Button has been pressed hence toggle lights as a first step
     if ((current_high - current_low) > (Settings.debounce ? Settings.debounce : debounceDelay))
     {
       state = HIGH;
@@ -578,6 +557,30 @@ void relayToggle() {
         //Check if we should forward the request to another device
         check_if_forward_request();
         needUpdate = true;
+      }
+    }
+  }
+  if (digitalRead(KEY_PIN) == HIGH && state == LOW)
+  {
+    current_high = millis();
+	
+	//Button has now been released
+    //If it has been held for 20-30s then do a partial reset
+    if ((current_high - current_low) >= 20000 && (current_high - current_low) < 30000)
+    {
+      if (Settings.resetType == 1 || Settings.resetType == 3) {
+        Settings.longPress = true;
+        SaveSettings();
+        ESP.restart();
+      }
+    }
+    //Otherwise if it has been held for 30-60s then do a full reset
+    else if ((current_high - current_low) >= 30000 && (current_high - current_low) < 60000)
+    {
+      if (Settings.resetType == 1 || Settings.resetType == 3) {
+        Settings.reallyLongPress = true;
+        SaveSettings();
+        ESP.restart();
       }
     }
   }
