@@ -52,7 +52,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "AA00", model: "AA02", deviceJoinName: "Evalogik Smart Dimmer Switch"
 		fingerprint mfr: "0312", prod: "C000", model: "C002", deviceJoinName: "Evalogik Smart Plug Dimmer"
 		fingerprint mfr: "010F", prod: "1C01", model: "1000", deviceJoinName: "Fibaro Dimmer"
-    }
+	}
 
 	simulator {
 		status "on": "command: 2003, payload: FF"
