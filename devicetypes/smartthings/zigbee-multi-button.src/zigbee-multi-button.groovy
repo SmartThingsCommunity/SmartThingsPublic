@@ -76,7 +76,6 @@ def parseAttrMessage(description) {
 		def event = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: "pushed", isStateChange: true)
 		if (buttonNumber == 1) {
 			sendEvent(event)
-			sendEventToChild(buttonNumber, event)
 		}
 		sendEventToChild(buttonNumber, event)
    	}
