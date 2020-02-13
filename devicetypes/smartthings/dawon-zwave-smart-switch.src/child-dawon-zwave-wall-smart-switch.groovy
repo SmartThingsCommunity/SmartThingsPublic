@@ -1,5 +1,5 @@
 /**
- *  Copyright 2018 SmartThings
+ *  Copyright 2020 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -37,7 +37,7 @@ metadata {
 
 def installed() {
 	// This is set to a default value, but it is the responsibility of the parent to set it to a more appropriate number
-	sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	child.sendEvent(name: "checkInterval", value: 30 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	refresh()
 }
 
@@ -59,3 +59,8 @@ def refresh() {
 def ping() {
 	refresh()
 }
+
+def uninstalled() {
+	parent.delete()
+}
+
