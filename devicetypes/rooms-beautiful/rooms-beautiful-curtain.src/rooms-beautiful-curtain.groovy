@@ -136,7 +136,7 @@ def parse(String description) {
                 }
                 break;
             case 0xFC00:
-                if (description ? .startsWith('read attr -'))
+                if (description?.startsWith('read attr -'))
                     log.info "${linkText} - Inverted: ${value}"
                 else
                     log.debug "${linkText} - Inverted set to: ${invert}"
