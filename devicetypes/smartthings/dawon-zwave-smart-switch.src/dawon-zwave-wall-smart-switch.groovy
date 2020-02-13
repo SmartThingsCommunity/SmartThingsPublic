@@ -1,5 +1,5 @@
 /**
- *  Copyright 2018 SmartThings
+ *  Copyright 2020 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -28,7 +28,7 @@ metadata {
 	simulator {
 	}
 
-preferences {
+	preferences {
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 		input "humidityOffset", "number", title: "Humidity Offset", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
 	}
@@ -61,17 +61,30 @@ preferences {
 
 def installed() {
 	log.info "Installed called '${device.displayName}'"
-	configure()
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	initialize()
 }
 
 def updated() {
 	log.info "updated called"
-	configure()
+	// Device-Watch simply pings if no device events received for 32min(checkInterval)
+	initialize()
+	try {
+		if (!state.MSR) {
+			response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+		}
+	} catch (e) {
+		log.warn e
+	}
+}
+
+def initialize() {
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def configure() {
 	log.info "configure called"
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	def msrdata = getDataValue("MSR")
 	def commands = []
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
@@ -112,7 +125,6 @@ private getCommandClassVersions() {
 		0x56: 1,  // Crc16Encap
 		0x60: 3,  // Multi-Channel
 		0x70: 2,  // Configuration
-		0x84: 1,  // WakeUp
 		0x98: 1,  // Security
 		0x9C: 1,  // Sensor Alarm
 		0x71: 3   // Notification
@@ -166,16 +178,6 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	if (cmd.notificationType == 0x08) {
 		def value = cmd.event== 0x03? "on" : "off"
 		endpoint ? result = changeSwitch(endpoint, value) : []
-	} else if (cmd.notificationType == 0x04) {
-		def map = [name: "tamper"]
-		if (cmd.event == 0x02 || cmd.event == 0x04) {
-			map.value = detected
-		} else if (cmd.event == 0x06) {
-			map.value = clear
-		}
-		log.debug "NotificationReport eventmap: ${map}"
-		result << createEvent(map)
-		result
 	}
 }
 
@@ -214,14 +216,6 @@ def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelR
 	result << createEvent(map)
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-	log.info "VersionReport called, ${cmd}"
-	def fw = "${cmd.applicationVersion}.${cmd.applicationSubVersion}"
-	updateDataValue("fw", fw)
-	def text = "${device.displayName}: firmware version: $fw, Z-Wave version: ${cmd.zWaveProtocolVersion}.${cmd.zWaveProtocolSubVersion}"
-	createEvent(descriptionText: text, isStateChange: false)
-}
-
 def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint = null) {
 	log.info "***** Unhandled Command called, cmd '${cmd}', endpoint '${endpoint}' *****"
 	[descriptionText: "Unhandled $device.displayName: $cmd", isStateChange: true]
@@ -231,18 +225,15 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint = null) {
 /**
  * PING is used by Device-Watch in attempt to reach the Device
  * */
-def ping() {
+def ping(endpoint = null) {
 	log.info "ping called"
-	refresh()
+	refresh(endpoint)
 }
 
 def refresh(endpoint) {
 	log.info "refresh called: endpint '${endpoint}' "
 	if(endpoint) {
-		delayBetween([
-		secureEncap(zwave.basicV1.basicGet(), endpoint),
-		"delay 500"
-		], 500)
+		secureEncap(zwave.basicV1.basicGet(), endpoint)
 	} else {
 		def commands = []
 		commands << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1)
@@ -254,7 +245,6 @@ def refresh(endpoint) {
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd){
 	log.info "ConfigurationReport called: ${cmd}"
 	def result = []
-	def map = [:]
 	switch (cmd.parameterNumber) {
 		case 1:
 			state.tempOffset = cmd.scaledConfigurationValue
@@ -263,34 +253,21 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 			state.humidityOffset = cmd.scaledConfigurationValue
 			break
 	}
-	log.debug "ConfigurationReport event: ${map}"
 	result <<  createEvent(name: "configReport", value: "${state.tempOffset}, ${state.humidityOffset}%")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, endpoint = null) {
 	log.info "MultiChannelEndPointReport called: cmd '${cmd}'"
 	if(!childDevices) {
-		if (isDawonWallSmartSwitch3()) {
-			addChildSwitches(3)
-		} else if (isDawonWallSmartSwitch2()) {
-			addChildSwitches(2)
-		} else if (isDawonWallSmartSwitch1()) {
-			addChildSwitches(1)
+		def type = isDawonWallSmartSwitch()
+		log.debug "MultiChannelEndPointReport: type '${type}'"
+		if (type) {
+			addChildSwitches(type)
 		} else {
 			log.debug "child endpoint=$cmd.endPoints"
 			addChildSwitches(cmd.endPoints)
 		}
 	}
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	log.info "ManufacturerSpecificReport called: cmd '${cmd}'"
-	log.debug "manufacturerId:   ${cmd.manufacturerId}"
-	log.debug "productId:        ${cmd.productId}"
-	log.debug "productTypeId:    ${cmd.productTypeId}"
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
 }
 
 private sendCommands(cmds, delay=1000) {
@@ -303,10 +280,13 @@ private commands(commands, delay=200) {
 	delayBetween(commands.collect{ command(it) }, delay)
 }
 
+
 private secure(cmd) {
 	log.info "secure called"
-	if(zwaveInfo.zw.endsWith("s")) {
+	if (zwaveInfo?.zw?.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else if (zwaveInfo?.cc?.contains("56")){
+		zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
 	} else {
 		cmd.format()
 	}
@@ -348,24 +328,22 @@ def childRefresh(deviceNetworkId) {
 	if (switchId != null) sendHubCommand refresh(switchId)
 }
 
-def isDawonWallSmartSwitch3() {
-	return zwaveInfo.prod.equals("0063")
-}
-
-def isDawonWallSmartSwitch2() {
-	return zwaveInfo.prod.equals("0062")
-}
-
-def isDawonWallSmartSwitch1() {
-	return zwaveInfo.prod.equals("0061")
+private isDawonWallSmartSwitch() {
+	if (zwaveInfo.prod.equals("0063")) {
+		return 3
+	} else if (zwaveInfo.prod.equals("0062")) {
+		return 2
+	} else if (zwaveInfo.prod.equals("0061")) {
+		return 1
+	} else {
+		return 0
+	}
+	return 0
 }
 
 private onOffCmd(value, endpoint) {
 	log.info "onOffCmd called: val:${value}, ep:${endpoint}"
-	delayBetween([
-		secureEncap(zwave.basicV1.basicSet(value: value), endpoint),
-		"delay 500"
-	], 500)
+	secureEncap(zwave.basicV1.basicSet(value: value), endpoint)
 }
 
 def getSwitchId(deviceNetworkId) {
@@ -390,3 +368,4 @@ private addChildSwitches(numberOfSwitches) {
 		}
 	}
 }
+
