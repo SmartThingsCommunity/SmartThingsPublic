@@ -56,7 +56,7 @@ def updated() {
 }
 
 def configure() {
-    [
+	[
         secure(zwave.notificationV3.notificationGet(notificationType: 0x07)),
         secure(zwave.switchBinaryV1.switchBinaryGet())
 	]
