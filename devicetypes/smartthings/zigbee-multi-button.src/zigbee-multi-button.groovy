@@ -73,11 +73,9 @@ def parseAttrMessage(description) {
 		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 1
        
 		log.debug "Number is ${buttonNumber}"
-		def event = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: "pushed", isStateChange: true)
-		if (buttonNumber == 1) {
-			sendEvent(event)
-		}
-		sendEventToChild(buttonNumber, event)
+		def descriptionText = (device.displayName.endsWith(' 1') ? "${device.displayName[0..-2]} button" : "${device.displayName}") + " ${buttonNumber} was pushed"
+		sendEventToChild(buttonNumber, createEvent(name: "button", value: "pushed", descriptionText: descriptionText, isStateChange: true))
+		map = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
    	}
 	map
 }
