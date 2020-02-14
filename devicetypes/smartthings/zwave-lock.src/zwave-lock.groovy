@@ -133,7 +133,7 @@ def installed() {
  * and check again.
  */
 def scheduleInstalledCheck() {
-	runIn(120, installedCheck, [forceForLocallyExecuting: true])
+	runIn(120, "installedCheck", [forceForLocallyExecuting: true])
 }
 
 def installedCheck() {
@@ -631,6 +631,8 @@ private def handleBatteryAlarmReport(cmd) {
 	def map = null
 	switch(cmd.zwaveAlarmEvent) {
 		case 0x01: //power has been applied, check if the battery level updated
+			log.debug "Batteries replaced. Queueing a battery get."
+			runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
 		case 0x0A:
@@ -768,6 +770,9 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 			break
 		case 130:  // Batteries replaced
 			map = [ descriptionText: "Batteries replaced", isStateChange: true ]
+			log.debug "Batteries replaced. Queueing a battery check."
+			runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
+			result << response(secure(zwave.batteryV1.batteryGet()))
 			break
 		case 131: // Disabled user entered at keypad
 			map = [ descriptionText: "Code ${cmd.alarmLevel} is disabled", isStateChange: false ]
@@ -1036,6 +1041,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 		map.descriptionText = "Battery is at ${cmd.batteryLevel}%"
 	}
 	state.lastbatt = now()
+	unschedule("queryBattery")
 	createEvent(map)
 }
 
@@ -1156,7 +1162,7 @@ def unlockWithTimeout() {
  */
 def ping() {
 	log.trace "[DTH] Executing ping() for device ${device.displayName}"
-	runIn(30, followupStateCheck)
+	runIn(30, "followupStateCheck")
 	secure(zwave.doorLockV1.doorLockOperationGet())
 }
 
@@ -1797,4 +1803,13 @@ def readCodeSlotId(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 		return cmd.eventParameter[2]
 	}
 	return cmd.alarmLevel
+}
+
+private queryBattery() {
+	log.debug "Running queryBattery"
+	if (!state.lastbatt || now() - state.lastbatt > 10*1000) {
+		log.debug "It's been more than 10s since battery was updated after a replacement. Querying battery."
+		runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
+		response(secure(zwave.batteryV1.batteryGet()))
+	}
 }
