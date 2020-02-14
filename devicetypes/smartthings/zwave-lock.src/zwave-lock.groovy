@@ -1808,7 +1808,7 @@ def readCodeSlotId(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 private queryBattery() {
 	log.debug "Running queryBattery"
 	if (!state.lastbatt || now() - state.lastbatt > 10*1000) {
-		log.debug "It's been more than 10s since battery was updated after a replacment. Querying battery."
+		log.debug "It's been more than 10s since battery was updated after a replacement. Querying battery."
 		runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
 		response(secure(zwave.batteryV1.batteryGet()))
 	}

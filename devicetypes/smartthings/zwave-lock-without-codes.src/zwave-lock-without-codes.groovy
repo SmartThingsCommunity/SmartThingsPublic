@@ -406,6 +406,7 @@ private def handleBatteryAlarmReport(cmd) {
 	def map = null
 	switch (cmd.zwaveAlarmEvent) {
 		case 0x01: //power has been applied, check if the battery level updated
+			log.debug "Batteries replaced. Queueing a battery get."
 			runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
 			result << response(secure(zwave.batteryV1.batteryGet()))
 			break;
@@ -694,7 +695,7 @@ private Boolean secondsPast(timestamp, seconds) {
 private queryBattery() {
 	log.debug "Running queryBattery"
 	if (!state.lastbatt || now() - state.lastbatt > 10*1000) {
-		log.debug "It's been more than 10s since battery was updated after a replacment. Querying battery."
+		log.debug "It's been more than 10s since battery was updated after a replacement. Querying battery."
 		runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
 		response(secure(zwave.batteryV1.batteryGet()))
 	}
