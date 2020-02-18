@@ -24,7 +24,7 @@ metadata {
 
 		fingerprint deviceId: "0x0101", inClusters: "0x86,0x72,0x70,0x80,0x84,0x85"
 		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec Key Fob"
-		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Panic Button"
+		fingerprint mfr: "0086", prod: "0001", model: "0026", deviceJoinName: "Aeotec Panic Button", mnmn: "SmartThings", vid: "generic-button-2"
 	}
 
 	simulator {
