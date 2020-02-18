@@ -45,15 +45,6 @@ metadata {
     }
 
     preferences {
-        input (
-                title: "Fibaro Single Switch 2 ZW5 manual",
-                description: "Tap to view the manual.",
-                image: "http://manuals.fibaro.com/wp-content/uploads/2016/08/switch2_icon.jpg",
-                url: "http://manuals.fibaro.com/content/manuals/en/FGS-2x3/FGS-2x3-EN-T-v1.2.pdf",
-                type: "href",
-                element: "href"
-        )
-
         parameterMap().each {
             input (
                     title: "${it.num}. ${it.title}",
