@@ -58,17 +58,12 @@ metadata {
 
 def installed() {
 	log.info "Installed called '${device.displayName}'"
-	// Device-Watch simply pings if no device events received for 32min(checkInterval)
-	initialize()
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {
 	log.info "updated called"
 	configure()
-}
-
-def initialize() {
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def configure() {
@@ -138,7 +133,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 	log.info "zwaveEvent SecurityMessageEncapsulation called: ${cmd}, ${endpoint}"
 	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	if (encapsulatedCommand) {
-		waveEvent(encapsulatedCommand)
+		zwaveEvent(encapsulatedCommand)
 	} else {
 		log.warn "Unable to extract encapsulatedCommand from $cmd"
 		createEvent(descriptionText: cmd.toString())
@@ -170,8 +165,9 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)
-	}
-	[:]
+	} else {
+        log.warn "Unable to extract CRC16 command from $cmd"
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
@@ -207,8 +203,21 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint = null) {
  * PING is used by Device-Watch in attempt to reach the Device
  * */
 def ping(endpoint = null) {
-	log.info "ping called"
-	refresh(endpoint)
+	log.info "ping called: endpoint '${endpoint}'"
+	if(endpoint) {
+		refresh(endpoint)
+	} else {
+		refresh()
+		def numberOfChild = getNumberOfChildFromModel()
+		log.debug "ping: numberOfChild '${numberOfChild}'"
+		for(def ep : 1..numberOfChild) {
+			try {
+				refresh(ep)
+			} catch(Exception e) {
+				log.warn "ping Exception: ${e}"
+			}
+		}
+	}
 }
 
 def refresh(endpoint = null) {
@@ -225,7 +234,6 @@ def refresh(endpoint = null) {
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd){
 	log.info "zwaveEvent ConfigurationReport called: ${cmd}"
-	def result = []
 	switch (cmd.parameterNumber) {
 		case 1:
 			state.tempOffset = cmd.scaledConfigurationValue
@@ -234,16 +242,16 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 			state.humidityOffset = cmd.scaledConfigurationValue
 			break
 	}
-	result <<  createEvent(name: "configReport", value: "${state.tempOffset}, ${state.humidityOffset}%")
+	log.debug "zwaveEvent ConfigurationReport: value: '${state.tempOffset}', '${state.humidityOffset}%'"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, endpoint = null) {
 	log.info "zwaveEvent MultiChannelEndPointReport called: cmd '${cmd}'"
 	if(!childDevices) {
-		def type = getNumberOfChildFromModel()
-		log.debug "MultiChannelEndPointReport: type '${type}'"
-		if (type) {
-			addChildSwitches(type)
+		def numberOfChild = getNumberOfChildFromModel()
+		log.debug "MultiChannelEndPointReport: numberOfChild '${numberOfChild}'"
+		if (numberOfChild) {
+			addChildSwitches(numberOfChild)
 		} else {
 			log.debug "child endpoint=$cmd.endPoints"
 			addChildSwitches(cmd.endPoints)
@@ -258,7 +266,7 @@ def childOn(deviceNetworkId) {
 }
 
 def childOff(deviceNetworkId) {
-	log.info "childOff called: deviceNetworkId '${deviceNetworkId}', value '${value}'"
+	log.info "childOff called: deviceNetworkId '${deviceNetworkId}'"
 	def switchId = getSwitchId(deviceNetworkId)
 	if (switchId != null) sendHubCommand onOffCmd(0x00, switchId)
 }
@@ -269,27 +277,22 @@ private sendCommands(cmds, delay=1000) {
 	sendHubCommand(cmds, delay)
 }
 
-private commands(commands, delay=200) {
-	log.info "commands called: commands '${commands}', delay '${delay}'"
-	delayBetween(commands.collect{ command(it) }, delay)
-}
-
 private secureEncap(cmd, endpoint = null) {
 	log.info "secureEncap called"
 
-	def CmdEncap = []
+	def cmdEncap = []
 	if (endpoint) {
-		CmdEncap = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
+		cmdEncap = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd)
 	} else {
-		CmdEncap = cmd
+		cmdEncap = cmd
 	}
 
 	if (zwaveInfo?.zw?.contains("s")) {
-		zwave.securityV1.securityMessageEncapsulation().encapsulate(CmdEncap).format()
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmdEncap).format()
 	} else if (zwaveInfo?.cc?.contains("56")){
-		zwave.crc16EncapV1.crc16Encap().encapsulate(CmdEncap).format()
+		zwave.crc16EncapV1.crc16Encap().encapsulate(cmdEncap).format()
 	} else {
-		CmdEncap.format()
+		cmdEncap.format()
 	}
 	
 }
@@ -298,10 +301,11 @@ private changeSwitch(endpoint, value) {
 	log.info "changeSwitch called: vlaue: '${value}', endpoint: '${endpoint}'"
 	def result = []
 	if(endpoint) {
-		String childDni = "${device.deviceNetworkId}/$endpoint"
+		String childDni = "${device.deviceNetworkId}:$endpoint"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		log.debug "changeSwitch: endpoint '${endpoint}', value: '${value}')"
 		result << child.sendEvent(name: "switch", value: value)
+		log.debug "changeSwitch: result '${result}'"
 	}
 	result
 }
@@ -326,7 +330,7 @@ private onOffCmd(value, endpoint) {
 
 private getSwitchId(deviceNetworkId) {
 	log.info "getSwitchId called: ${deviceNetworkId}"
-	def split = deviceNetworkId?.split("/")
+	def split = deviceNetworkId?.split(":")
 	return (split.length > 1) ? split[1] as Integer : null
 }
 
@@ -334,13 +338,13 @@ private addChildSwitches(numberOfSwitches) {
 	log.info "addChildSwitches called: numberOfSwitches '${numberOfSwitches}'"
 	for(def endpoint : 1..numberOfSwitches) {
 		try {
-			String childDni = "${device.deviceNetworkId}/$endpoint"
+			String childDni = "${device.deviceNetworkId}:$endpoint"
 			def componentLabel = "Dawon Smart Switch${endpoint}"
 			def child = addChildDevice("Child Switch", childDni, device.hubId,
 				[completedSetup: true, label: componentLabel, isComponent: false])
-			child.sendEvent(name: "switch", value: "off")
+			childOff(childDni)
 		} catch(Exception e) {
-			log.warn "Exception: ${e}"
+			log.warn "addChildSwitches Exception: ${e}"
 		}
 	}
 }
