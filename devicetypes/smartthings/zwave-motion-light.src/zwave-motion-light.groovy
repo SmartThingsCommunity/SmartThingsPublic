@@ -57,8 +57,8 @@ def updated() {
 
 def configure() {
 	[
-        secure(zwave.notificationV3.notificationGet(notificationType: 0x07)),
-        secure(zwave.switchBinaryV1.switchBinaryGet())
+		secure(zwave.notificationV3.notificationGet(notificationType: 0x07)),
+		secure(zwave.switchBinaryV1.switchBinaryGet())
 	]
 }
 
@@ -115,9 +115,9 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
 	if (cmd.notificationType == 0x07) {
-		if (cmd.event == 0x08) {                 // detected
+		if (cmd.event == 0x08) {				// detected
 			createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
-		} else if (cmd.event == 0x00) {          // inactive
+		} else if (cmd.event == 0x00) {			// inactive
 			createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
 		}
 	}
