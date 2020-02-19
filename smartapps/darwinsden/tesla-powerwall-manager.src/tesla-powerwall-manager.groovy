@@ -22,10 +22,11 @@
  */
 
 def version() {
-    return "v0.2.3e.20200131"
+    return "v0.2.4e.20200219"
 }
 
 /* 
+ *	19-Feb-2020 >>> v0.2.4e.20200219 - Added battery charge % triggers time and day restriction options.
  *	31-Jan-2020 >>> v0.2.3e.20200131 - Added battery charge % triggers & TBC Strategy scheduling.
  *	22-Jan-2020 >>> v0.2.2e.20200122 - Added Stormwatch on/off scheduling.
  *	16-Jan-2020 >>> v0.2.1e.20200116 - Additional command retry/error checking logic. Hubitat battery% compatibility update.
@@ -68,6 +69,7 @@ preferences {
     page(name: "schedule7Options")
     page(name: "pagePwPreferences")
     page(name: "pageDevicesToControl")
+    page(name: "triggerRestrictions")
 }
 
 private pageMain() {
@@ -160,18 +162,23 @@ def pageNotifications() {
     }
 }
 
+
+def hideMoreSchedOptions (opt1, opt2, opt3) {
+   return (opt1 == null || opt1 == "No Action") && (opt2 == null || opt2 == "No Action") && (opt3 == null || opt3 == "No Action")
+}
+
 def schedule1Options() {
     dynamicPage(name: "schedule1Options", title: "Schedule 1", install: false, uninstall: false) {
-        section("Reserve % setting only applies when in Self-Powered and Time-Based Control modes") {
+        section("") {
            input "schedule1Mode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
-           input "schedule1Reserve", "enum", required: false, title: "Reserve % to set",
+           input "schedule1Reserve", "enum", required: false, title: "Reserve % to set (Self-Powered & TBC modes)",
                 options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
                 	"55":"55%","60":"60%","65":"65%","70":"70%","75":"75%","80":"80%","85":"85%","90":"90%","95":"95%","100":"100%"]
+           input "schedule1Strategy", "enum", required: false, title: "Time-Based Control Strategy to set", options: ["No Action", "Cost Saving","Balanced"]
            input "schedule1Stormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch","Disable Stormwatch"]
-           input "schedule1Strategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving","Balanced"]
-           input "schedule1Time", "time", required: false, title: "At what time?"
            input "schedule1Days", "enum", required: false, title: "On which days...", multiple: true,
                 options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
+           input "schedule1Time", "time", required: false, title: "At what time?"
         }
     }
 }
@@ -294,37 +301,85 @@ def pageDevicesToControl() {
     }
 }
 
+def appendOnNewLine (message, textToAdd) {
+    def newMessage = ''
+    if (message != '') {
+           newMessage = message + "\n"
+     }
+    return newMessage + textToAdd
+}
+
 def pageTriggers() {
     dynamicPage(name: "pageTriggers", title: "Powerwall battery charge % level above/below actions.", install: false, uninstall: false) {
         def timeSetting = "N/A"
+        def enableTriggers = "N/A"
+        def triggerDaysNA = "N/A"
+        //state.timeOfLastBelowTrigger = null
+        //state.timeOfLastAboveTrigger = null
+
         def message = ""
         if (aboveTriggerValue && aboveTriggerEnabled?.toBoolean()) {
-            def optionsString = getOptionsString(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, aboveTriggerDevicesToOn, timeSetting, aboveTriggerDays)
+            def optionsString = getOptionsString(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy, aboveTriggerDevicesToOn, timeSetting, triggerDaysNA)
             message = "Execute these actions when Powerwall charge level rises above ${aboveTriggerValue?.toString()}%:\n" + optionsString 
-            if (aboveTriggerDays?.size()> 0 && !actionsValid (aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy,aboveTriggerDevicesToOn)) {
+            if (!actionsValid (aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy,aboveTriggerDevicesToOn,enableTriggers)) {
                 message = message + "\nNotification will be sent if enabled in preferences."
             }
         } else {
              message = "No charge level % upper trigger enabled.."
         }
-        section("Choose actions to execute when the Powerwall battery charge % rises above a pre-defined level.") {
+        section("Choose actions to execute when the Powerwall battery charge % rises above a pre-defined level:") {
             href "aboveTriggerOptions", title: "${message}", description: ""
         }
         if (belowTriggerValue && belowTriggerEnabled?.toBoolean()) {
-            def optionsString = getOptionsString(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff, timeSetting, belowTriggerDays)
+            def optionsString = getOptionsString(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff, timeSetting, triggerDaysNA)
             message = "Execute these actions when Powerwall charge level drops below ${belowTriggerValue?.toString()}%:\n" + optionsString 
-            if (aboveTriggerDays?.size()> 0 && !actionsValid (belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff)) {
+            if (!actionsValid (belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy, belowTriggerDevicesToOff,enableTriggers)) {
                 message = message + "\nNotification will be sent if enabled in preferences."
             }
         } else {
              message = "No charge level % lower trigger enabled.."
         }
-        section("Choose actions to execute when the Powerwall battery charge % drops below a pre-defined level.") {
+        section("Choose actions to execute when the Powerwall battery charge % drops below a pre-defined level:") {
             href "belowTriggerOptions", title: "${message}", description: ""
+        }
+        def restrictMessage = ''
+        if (triggerRestrictPeriod1?.toBoolean() && triggerStartTime1 && triggerStopTime1) {
+            restrictMessage = appendOnNewLine (restrictMessage, "Trigger Period 1: " + formatTimeString(triggerStartTime1) + " to " + formatTimeString(triggerStopTime1))
+        }
+        if (triggerRestrictPeriod2?.toBoolean() && triggerStartTime2 && triggerStopTime2) {
+            restrictMessage = appendOnNewLine (restrictMessage, "Trigger Period 2: " + formatTimeString(triggerStartTime2) + " to " + formatTimeString(triggerStopTime2))
+        }
+        if (triggerRestrictDays?.toBoolean() && triggerDays?.size() > 0) {
+             restrictMessage = appendOnNewLine (restrictMessage, triggerDays.toString())
+        }
+        if (restrictMessage == '') {
+            restrictMessage = "No optional schedule restrictions defined.."
+        }                  
+        section("Restrict these triggers to specific times/days (optional):") {
+            href "triggerRestrictions", title: "${restrictMessage}", description: ""
         }
     }
 }
 
+def triggerRestrictions() {
+    dynamicPage(name: "triggerRestrictions", title: "Battery Charge % Level Trigger period restrictions", install: false, uninstall: false) {
+        section("") {
+           input "triggerRestrictDays", "bool", required: false, defaultValue: false, title: "Restrict % battery trigger actions to specified days"
+           input "triggerDays", "enum", required: false, title: "Only on these days...", multiple: true,
+                options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
+            
+        }
+         section("Restrict % battery trigger actions to specified time periods:") {
+           input "triggerRestrictPeriod1", "bool", required: false, defaultValue: false, title: "Enable Time Period 1"
+           input "triggerStartTime1", "time", required: false, title: "Time Period 1 Start Time"
+           input "triggerStopTime1", "time", required: false, title: "Time Period 1 End Time"
+           input "triggerRestrictPeriod2", "bool", required: false, defaultValue: false, title: "Enable Time Period 2"
+           input "triggerStartTime2", "time", required: false, title: "Time Period 2 Start Time"
+           input "triggerStopTime2", "time", required: false, title: "Time Period 2 Stop Time"
+        }
+    }
+}
+            
 def aboveTriggerOptions() {
     dynamicPage(name: "aboveTriggerOptions", title: "Above Battery Charge % Level Trigger Options", install: false, uninstall: false) {
         section("") {
@@ -337,18 +392,15 @@ def aboveTriggerOptions() {
            input "aboveTriggerStormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch","Disable Stormwatch"]
            input "aboveTriggerStrategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving","Balanced"]
            input "aboveTriggerDevicesToOn", "capability.switch", title: "Devices that should be turned on when charge level % rises above defined trigger", required: false, multiple: true
-           input "aboveTriggerDays", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
         }
-        //state.timeOfLastAboveTrigger = null
     }
 }
 
 def belowTriggerOptions() {
     dynamicPage(name: "belowTriggerOptions", title: "Below Battery Charge % Level Trigger Options", install: false, uninstall: false) {
         section("") {
-           input "belowTriggerValue", "number", required: false, title: "Actions will trigger when charge level % drops below this value"
            input "belowTriggerEnabled", "bool", required: false, defaultValue: false, title: "Enable these actions"
+           input "belowTriggerValue", "number", required: false, title: "Actions will trigger when charge level % drops below this value"
            input "belowTriggerMode", "enum", required: false, title: "Mode to set", options: ["No Action", "Backup-Only","Self-Powered", "Time-Based Control"]
            input "belowTriggerReserve", "enum", required: false, title: "Reserve % to set",
                 options: ["No Action":"No Action", "0":"0%","5":"5%","10":"10%","15":"15%","20":"20%","25":"25%","30":"30%","35":"35%","40":"40%","45":"45%","50":"50%",
@@ -356,10 +408,7 @@ def belowTriggerOptions() {
            input "belowTriggerStormwatch", "enum", required: false, title: "Stormwatch enable/disable", options: ["No Action", "Enable Stormwatch","Disable Stormwatch"]
            input "belowTriggerStrategy", "enum", required: false, title: "Time-Based Control Strategy", options: ["No Action", "Cost Saving","Balanced"]
            input "belowTriggerDevicesToOff", "capability.switch", title: "Devices that should be turned off when charge level % drops below defined trigger", required: false, multiple: true
-           input "belowTriggerDays", "enum", required: false, title: "On which days...", multiple: true,
-                options: ["Monday", "Tuesday", "Wednesday", "Thursday","Friday","Saturday","Sunday"]
         }
-        //state.timeOfLastBelowTrigger = null
     }
 }
 
@@ -381,40 +430,43 @@ private getHubType() {
     return state.hubType
 }
 
-def actionsValid (modeSetting, reserveSetting, stormwatchSetting, strategySetting, devicesToControl) {
+def actionsValid (modeSetting, reserveSetting, stormwatchSetting, strategySetting, devicesToControl, enableTriggers, peakSwitch=null) {
      return ((modeSetting && modeSetting.toString() != "No Action") || 
          (reserveSetting && reserveSetting.toString() != "No Action") || 
              (stormwatchSetting && stormwatchSetting.toString() != "No Action") || 
              (strategySetting && strategySetting.toString() != "No Action") ||
-               (devicesToControl && devicesToControl.toString() != "N/A" && devicesToControl.size() > 0))
+               (devicesToControl && devicesToControl.toString() != "N/A" && devicesToControl.size() > 0) ||
+                  (enableTriggers && enableTriggers.toString() != "No Action") ||
+                  (peakSwitch && peakSwitch.toString() != "No Action"))
 }
 
 def scheduleValid (timeSetting,daysSetting) {
-     return timeSetting != null && daysSetting != null && daysSetting.size() > 0
+     return timeSetting != null && daysSetting != null && (daysSetting.size() > 0 || daysSetting.toString() == "N/A")
+}
+
+def formatTimeString(timeSetting) {
+      def timeFormat = new java.text.SimpleDateFormat("hh:mm a")
+      def isoDatePattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+      def isoTime = new java.text.SimpleDateFormat(isoDatePattern).parse(timeSetting.toString())
+      return timeFormat.format(isoTime).toString()
 }
 
 def getOptionsString (modeSetting,reserveSetting,stormwatchSetting,strategySetting,controlDevices,timeSetting,daysSetting)
 {
         def optionsString = ''
-        if (actionsValid (modeSetting, reserveSetting, stormwatchSetting, strategySetting, controlDevices)) {
+        if (actionsValid (modeSetting, reserveSetting, stormwatchSetting, strategySetting, controlDevices, enableTriggers)) {
            if (scheduleValid (timeSetting, daysSetting)) {
               if (modeSetting && modeSetting.toString() != "No Action") {
                  optionsString = "Mode: " + modeSetting.toString()
               }
               if (reserveSetting && reserveSetting.toString() != "No Action") {
-                 if (optionsString != '') {
-                     optionsString = optionsString + ',\n'
-                 }
-                 optionsString = optionsString + "Reserve: " + reserveSetting.toString() + '%'
+                  optionsString = appendOnNewLine (optionsString, "Reserve: " + reserveSetting.toString() + '%')
               }
               if (stormwatchSetting && stormwatchSetting.toString() != "No Action") {
-                 if (optionsString != '') {
-                     optionsString = optionsString + ',\n'
-                 }
-                 if (stormwatchSetting.toString() == "Enable Stormwatch") {    
-                    optionsString = optionsString + "Stormwatch: Enable" 
+                  if (stormwatchSetting.toString() == "Enable Stormwatch") {    
+                    optionsString = appendOnNewLine (optionsString, "Stormwatch: Enable")
                  } else if (stormwatchSetting.toString() == "Disable Stormwatch") {
-                   optionsString = optionsString + "Stormwatch: Disable"
+                    optionsString = appendOnNewLine (optionsString, "Stormwatch: Disable")
                  }
               }
               if (strategySetting && strategySetting.toString() != "No Action") {
@@ -429,14 +481,23 @@ def getOptionsString (modeSetting,reserveSetting,stormwatchSetting,strategySetti
                  }
                  optionsString = optionsString + "Control Devices"
               }
+              if (enableTriggers && enableTriggers.toString() != "No Action") {
+                 if (optionsString != '') {
+                     optionsString = optionsString + ',\n'
+                 }
+                 optionsString = optionsString + "Battery Charge % actions: " + enableTriggers.toString()
+              }
               def timeString = ''
               if (timeSetting != "N/A") {
-                 def timeFormat = new java.text.SimpleDateFormat("hh:mm a")
-                 def isoDatePattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
-                 def isoTime = new java.text.SimpleDateFormat(isoDatePattern).parse(timeSetting.toString())
-                 timeString = timeFormat.format(isoTime).toString() + ' '
+                 timeString = formatTimeString(timeSetting) + ' '
               }
-              optionsString = optionsString + '\n' +  timeString + daysSetting
+              def dayString = ''
+              if (daysSetting != "N/A") {
+                  dayString = daysSetting.toString()
+              }
+              if (timeString != '' || dayString != '') {
+                 optionsString = optionsString + '\n' +  timeString + dayString
+              }
            } else {
                optionsString = "No time or days scheduled"
            }
@@ -482,9 +543,9 @@ def pageSchedules() {
     }
 }
 
-def instantiatSchedule(mode,reserve,stormwatch,strategy,time,days,callback) {
+def instantiatSchedule(mode,reserve,stormwatch,strategy,peakSwitch,time,days,callback) {
     def devices = "N/A"
-    if (actionsValid (mode, reserve, stormwatch, strategy, devices)) {
+    if (actionsValid (mode, reserve, stormwatch, strategy, devices, enableTriggers, peakSwitch)) {
         if (scheduleValid (time, days)) {
             log.debug "scheduling ${callback.toString()}"
             schedule(time.toString(), callback)
@@ -496,13 +557,13 @@ def instantiatSchedule(mode,reserve,stormwatch,strategy,time,days,callback) {
 }
 
 def setSchedules() {
-    instantiatSchedule(schedule1Mode,schedule1Reserve,schedule1Stormwatch,schedule1Strategy,schedule1Time,schedule1Days,processSchedule1)
-    instantiatSchedule(schedule2Mode,schedule2Reserve,schedule2Stormwatch,schedule2Strategy,schedule2Time,schedule2Days,processSchedule2)
-    instantiatSchedule(schedule3Mode,schedule3Reserve,schedule3Stormwatch,schedule3Strategy,schedule3Time,schedule3Days,processSchedule3)
-    instantiatSchedule(schedule4Mode,schedule4Reserve,schedule4Stormwatch,schedule4Strategy,schedule4Time,schedule4Days,processSchedule4)
-    instantiatSchedule(schedule5Mode,schedule5Reserve,schedule5Stormwatch,schedule5Strategy,schedule5Time,schedule5Days,processSchedule5)
-    instantiatSchedule(schedule6Mode,schedule6Reserve,schedule6Stormwatch,schedule6Strategy,schedule6Time,schedule6Days,processSchedule6)
-    instantiatSchedule(schedule7Mode,schedule7Reserve,schedule7Stormwatch,schedule7Strategy,schedule7Time,schedule7Days,processSchedule7)
+    instantiatSchedule(schedule1Mode,schedule1Reserve,schedule1Stormwatch,schedule1Strategy,schedule1PeakSwitch,schedule1Time,schedule1Days,processSchedule1)
+    instantiatSchedule(schedule2Mode,schedule2Reserve,schedule2Stormwatch,schedule2Strategy,schedule2PeakSwitch,schedule2Time,schedule2Days,processSchedule2)
+    instantiatSchedule(schedule3Mode,schedule3Reserve,schedule3Stormwatch,schedule3Strategy,schedule3PeakSwitch,schedule3Time,schedule3Days,processSchedule3)
+    instantiatSchedule(schedule4Mode,schedule4Reserve,schedule4Stormwatch,schedule4Strategy,schedule4PeakSwitch,schedule4Time,schedule4Days,processSchedule4)
+    instantiatSchedule(schedule5Mode,schedule5Reserve,schedule5Stormwatch,schedule5Strategy,schedule5PeakSwitch,schedule5Time,schedule5Days,processSchedule5)
+    instantiatSchedule(schedule6Mode,schedule6Reserve,schedule6Stormwatch,schedule6Strategy,schedule6PeakSwitch,schedule6Time,schedule6Days,processSchedule6)
+    instantiatSchedule(schedule7Mode,schedule7Reserve,schedule7Stormwatch,schedule7Strategy,schedule7PeakSwitch,schedule7Time,schedule7Days,processSchedule7)
 }    
 
 def getTheDay() {
@@ -517,14 +578,34 @@ def getTheDay() {
 def commandPwFromSchedule (mode, reserve, stormwatch, strategy, scheduledDays) {
     def day = getTheDay()
     if (scheduledDays?.contains(day)) {       
-        def message = commandPwActions (mode, reserve, stormwatch, strategy)
+        def message = commandPwActions (mode, reserve, stormwatch, strategy, chargeTriggers)
         if (notifyOfSchedules?.toBoolean()) {
           sendNotificationMessage("Performing scheduled Powerwall actions. " + message)     
         }   
     }
 }
 
-def commandPwActions (mode, reserve, stormwatch, strategy) {
+//Hubitat compatibility
+private timeOfDayIsBetween(fromDate, toDate, checkDate, timeZone)     {
+     return (!checkDate.before(toDateTime(fromDate)) && !checkDate.after(toDateTime(toDate)))
+}
+
+def triggerPeriodActive() {
+    def day = getTheDay()
+    def daysAreSet = triggerRestrictDays?.toBoolean() && triggerDays?.size() > 0 
+    def dayIsActive = daysAreSet && triggerDays?.contains(day)
+    def aPeriodIsSet = (triggerRestrictPeriod1?.toBoolean() || triggerRestrictPeriod2?.toBoolean())
+    def aPeriodIsActive = (triggerRestrictPeriod1?.toBoolean() && timeOfDayIsBetween(triggerStartTime1, triggerStopTime1,new Date(), location.timeZone)) ||
+            (triggerRestrictPeriod2?.toBoolean() && timeOfDayIsBetween (triggerStartTime2, triggerStopTime2,new Date(), location.timeZone))
+    //Valid conditions:
+    // 1) day matches & period active
+    // 2) day matches & no periods declared
+    // 3) no day is set & period active
+    // 4) no day is set & no periods declared 
+    return ((dayIsActive && (aPeriodIsActive || !aPeriodIsSet)) || (!daysAreSet && (aPeriodIsActive || !aPeriodIsSet)))        
+}
+        
+def commandPwActions (mode, reserve, stormwatch, strategy, enableChargeTriggers) {
         def pwDevice = getChildDevice("powerwallDashboard")
         def message = ""
         if (mode && mode.toString() != "No Action") {
@@ -568,6 +649,14 @@ def commandPwActions (mode, reserve, stormwatch, strategy) {
               def errMessage = "Unexpected condition processing scheduled strategy change: ${strategy.toString()}"
               sendNotificationMessage(errMessage, "anomaly")  
            }
+        }
+        if (enableChargeTriggers && enableChargeTriggers.toString() != "No Action") {
+           if (enableChargeTriggers.toString()=="Turn On Peak") {
+              message = message + " Virtual Peak Switch: On."
+           } else if (stormwatch.toString()=="Disable Triggers") {
+              message = message + " Virtual Peak Switch: Off."
+    
+           } 
         }
         return message
 }
@@ -758,7 +847,7 @@ private httpAuthGet(String path, Closure closure) {
 private httpAuthPost (Map params = [:], String cmdName, String path, Closure closure, Integer attempt = null) {
     //cmdName is descriptive name for logging/notification
     def tryCount = attempt ?: 1
-    log.debug "Command: ${cmdName}, Params: ${params}, Attempt: ${tryCount}"
+    log.debug "Command: ${cmdName}, Body: ${params?.body}, Attempt: ${tryCount}"
     try {
         def requestParameters = [
             uri: url,
@@ -864,9 +953,9 @@ private removeChildDevices(delete) {
         deleteChildDevice(it.deviceNetworkId)
     }
 }
-    
+
 def initialize() {
-    log.debug ("Initializing Powerwall Manager")
+
     createDeviceForPowerwall()
 
     unsubscribe()
@@ -969,17 +1058,15 @@ def checkBatteryNotifications (data) {
         }
      }
 
-     def day = getTheDay()
-     if (aboveTriggerEnabled?.toBoolean() && aboveTriggerValue) {
+     if (aboveTriggerValue) {
         if (data.batteryPercent >= aboveTriggerValue.toFloat()) {
-            //new trigger allowed only if conditon has been reset and it's been at least 30 minutes since last trigger
-            if (aboveTriggerDays?.contains(day) && (state.aboveTriggerReset == null || state.aboveTriggerReset.toBoolean()) && 
-                (state.timeOfLastAboveTrigger == null || now() - state.timeOfLastAboveTrigger >= 30 * 60 * 1000)) {
+          if (state.timeOfLastAboveTrigger == null) {
+              if (triggerPeriodActive() && aboveTriggerEnabled) {
                 state.timeOfLastAboveTrigger = now()
-                state.aboveTriggerReset = false
+                def enableTriggers = "N/A"
                 def triggerMessage = "Powerwall ${Math.round(data.batteryPercent*10)/10}% battery level is at or above ${aboveTriggerValue}% trigger."
-                if (actionsValid(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy,aboveTriggerDevicesToOn)) {
-                   def message = commandPwActions (aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy)
+                if (actionsValid(aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy,aboveTriggerDevicesToOn,enableTriggers)) {
+                   def message = commandPwActions (aboveTriggerMode, aboveTriggerReserve, aboveTriggerStormwatch, aboveTriggerStrategy,enableTriggers)
                    if (aboveTriggerDevicesToOn?.size() > 0) {  
                       message = message + " Turning on devices."
                       runIn (1, processAboveTriggerDeviceActions)
@@ -988,21 +1075,24 @@ def checkBatteryNotifications (data) {
                 } 
                 if (notifyOfSchedules?.toBoolean()) {
                      sendNotificationMessage(triggerMessage)     
-                }   
+                }
+              }
             }
-       } else {
-            //reset for new trigger
-            state.aboveTriggerReset = true
-      }
-     }
-    
-     if (belowTriggerEnabled?.toBoolean() && belowTriggerDays?.contains(day) && belowTriggerValue) {
-        if (data.batteryPercent <= belowTriggerValue.toFloat()) {
-            if (state.timeOfLastBelowTrigger == null) {
+          } else if (state.timeOfLastAboveTrigger != null && now() - state.timeOfLastAboveTrigger >= 30 * 60 * 1000) {
+            //reset for new trigger if condition no longer exists and it's been at least 30 minutes since last trigger
+            state.timeOfLastAboveTrigger = null
+         }
+       }
+
+       if (belowTriggerValue) {
+         if (data.batteryPercent <= belowTriggerValue.toFloat()) {
+           if (state.timeOfLastBelowTrigger == null) {
+              if (triggerPeriodActive() && belowTriggerEnabled) {
                 state.timeOfLastBelowTrigger = now()
+                def enableTriggers = "N/A"
                 def triggerMessage = "Powerwall ${Math.round(data.batteryPercent*10)/10}% battery level is at or below ${belowTriggerValue}% trigger."
-                if (actionsValid(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy,belowTriggerDevicesToOff)) {
-                   def message = commandPwActions (belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy)
+                if (actionsValid(belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy,belowTriggerDevicesToOff,enableTriggers)) {
+                   def message = commandPwActions (belowTriggerMode, belowTriggerReserve, belowTriggerStormwatch, belowTriggerStrategy,enableTriggers)
                    if (belowTriggerDevicesToOff?.size() > 0) {  
                       message = message + " Turning off devices."
                       runIn (1, processBelowTriggerDeviceActions)
@@ -1011,13 +1101,14 @@ def checkBatteryNotifications (data) {
                 } 
                 if (notifyOfSchedules?.toBoolean()) {
                      sendNotificationMessage(triggerMessage)     
-                }   
+                }
+              }
             }
-       } else if (state.timeOfLastBelowTrigger != null && now() - state.timeOfLastBelowTrigger >= 30 * 60 * 1000) {
+         } else if (state.timeOfLastBelowTrigger != null && now() - state.timeOfLastBelowTrigger >= 30 * 60 * 1000) {
             //reset for new trigger if condition no longer exists and it's been at least 30 minutes since last trigger
             state.timeOfLastBelowTrigger = null
-      }
-    }
+        }
+     } 
 }
           
 def processSiteResponse(response, callData) {
