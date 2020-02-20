@@ -25,7 +25,7 @@ metadata {
 		capability "Configuration"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0500,0502", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "SRAC_00.00.00.16TC", deviceJoinName: "Ozom Smart Siren" // Ozom Siren - SRAC-23ZBS
+		fingerprint profileId: "0104", inClusters: "0000,0003,0500,0502", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "SRAC_00.00.00.16TC", vid: "generic-siren-8", deviceJoinName: "Ozom Smart Siren" // Ozom Siren - SRAC-23ZBS
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0009,0500,0502", outClusters: "0003,0019", manufacturer: "Heiman", model: "WarningDevice", deviceJoinName: "HEIMAN Smart Siren"
 	}
 
@@ -50,6 +50,13 @@ private getATTRIBUTE_IAS_ZONE_STATUS() { 0x0002 }
 
 private getCOMMAND_IAS_WD_START_WARNING() { 0x00 }
 private getCOMMAND_DEFAULT_RESPONSE() { 0x0B }
+
+private getMODE_SIREN() { "13" }
+private getMODE_STROBE() { "04" }
+private getMODE_BOTH() { "17" }
+private getMODE_OFF() { "00" }
+private getSTROBE_DUTY_CYCLE() { "40" }
+private getSTROBE_LEVEL() { "03" }
 
 private getALARM_OFF() { 0x00 }
 private getALARM_SIREN() { 0x01 }
@@ -143,7 +150,7 @@ def both() {
 	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
 	state.lastDuration = warningDuration
 
-	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "17", DataType.pack(warningDuration, DataType.UINT16), "40", "03")
+	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, MODE_BOTH, DataType.pack(warningDuration, DataType.UINT16), STROBE_DUTY_CYCLE, STROBE_LEVEL)
 }
 
 def siren() {
@@ -154,7 +161,7 @@ def siren() {
 	state.lastDuration = warningDuration
 
 	// start warning, burglar mode, no strobe, siren very high
-	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "13", DataType.pack(warningDuration, DataType.UINT16), "00", "00")
+	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, MODE_SIREN, DataType.pack(warningDuration, DataType.UINT16), "00", "00")
 }
 
 def strobe() {
@@ -164,7 +171,7 @@ def strobe() {
 	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
 	state.lastDuration = warningDuration
 
-	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "04", DataType.pack(warningDuration, DataType.UINT16), "40", "03")
+	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, MODE_STROBE, DataType.pack(warningDuration, DataType.UINT16), STROBE_DUTY_CYCLE, STROBE_LEVEL)
 }
 
 def off() {
