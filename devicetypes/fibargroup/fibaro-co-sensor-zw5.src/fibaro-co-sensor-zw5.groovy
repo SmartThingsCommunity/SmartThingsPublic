@@ -92,7 +92,7 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 86520, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 43632, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {
