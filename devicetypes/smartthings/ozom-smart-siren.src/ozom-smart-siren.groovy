@@ -18,7 +18,7 @@ import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "Ozom Smart Siren", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-siren-8", ocfDeviceType: "x.com.st.d.siren") {
+	definition(name: "Ozom Smart Siren", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-siren-2", ocfDeviceType: "x.com.st.d.siren") {
 		capability "Actuator"
 		capability "Alarm"
 		capability "Switch"
@@ -51,13 +51,25 @@ private getATTRIBUTE_IAS_ZONE_STATUS() { 0x0002 }
 private getCOMMAND_IAS_WD_START_WARNING() { 0x00 }
 private getCOMMAND_DEFAULT_RESPONSE() { 0x0B }
 
+private getALARM_OFF() { 0x00 }
+private getALARM_SIREN() { 0x01 }
+private getALARM_STROBE() { 0x02 }
+private getALARM_BOTH() { 0x03 }
+
 def turnOffAlarmTile(){
 	sendEvent(name: "alarm", value: "off")
 	sendEvent(name: "switch", value: "off")
 }
 
-def turnOnAlarmTile(){
-	sendEvent(name: "alarm", value: "siren")
+def turnOnAlarmTile(cmd){
+	log.debug "turn on alarm tile ${cmd}"
+	if (cmd == ALARM_SIREN){
+		sendEvent(name: "alarm", value: "siren")
+	} else if (cmd == ALARM_STROBE){
+		sendEvent(name: "alarm", value: "strobe")
+	} else if (cmd == ALARM_BOTH){
+		sendEvent(name: "alarm", value: "both")
+	}
 	sendEvent(name: "switch", value: "on")
 }
 
@@ -89,8 +101,8 @@ def parse(String description) {
 					Boolean isSuccess = Integer.parseInt(data[-1], 16) == 0
 					Integer receivedCommand = Integer.parseInt(data[-2], 16)
 					if (receivedCommand == COMMAND_IAS_WD_START_WARNING && isSuccess){
-						if(state.alarmOn){
-							turnOnAlarmTile()
+						if(state.alarmCmd != ALARM_OFF){
+							turnOnAlarmTile(state.alarmCmd)
 							runIn(state.lastDuration, turnOffAlarmTile)
 						} else {
 							turnOffAlarmTile()
@@ -127,22 +139,17 @@ def configure() {
 
 def both() {
 	log.debug "both()"
-	on()
+	state.alarmCmd = ALARM_BOTH
+	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
+	state.lastDuration = warningDuration
+
+	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "17", DataType.pack(warningDuration, DataType.UINT16), "40", "03")
 }
 
 def siren() {
 	log.debug "siren()"
-	on()
-}
 
-def strobe() {
-	log.warn "strobe() is not supported by this device"
-}
-
-def on() {
-	log.debug "on()"
-
-	state.alarmOn = true
+	state.alarmCmd = ALARM_SIREN
 	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
 	state.lastDuration = warningDuration
 
@@ -150,9 +157,19 @@ def on() {
 	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "13", DataType.pack(warningDuration, DataType.UINT16), "00", "00")
 }
 
+def strobe() {
+	log.debug "strobe()"
+
+	state.alarmCmd = ALARM_STROBE
+	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
+	state.lastDuration = warningDuration
+
+	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "04", DataType.pack(warningDuration, DataType.UINT16), "40", "03")
+}
+
 def off() {
 	log.debug "off()"
 
-	state.alarmOn = false
+	state.alarmCmd = ALARM_OFF
 	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "00", "0000", "00", "00")
 }
