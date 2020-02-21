@@ -177,8 +177,13 @@ def strobe() {
 def on() {
 	log.debug "on()"
 
-	// some siren devices only support siren mode, so put siren() here instead of both()
-	siren()
+	def manufacturer = device.getDataValue("manufacturer")
+
+	if (manufacturer == "ClimaxTechnology"){
+		siren()
+	} else{
+		both()
+	}
 }
 
 def off() {
