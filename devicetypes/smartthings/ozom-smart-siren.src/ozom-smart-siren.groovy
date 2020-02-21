@@ -174,6 +174,13 @@ def strobe() {
 	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, MODE_STROBE, DataType.pack(warningDuration, DataType.UINT16), STROBE_DUTY_CYCLE, STROBE_LEVEL)
 }
 
+def on() {
+	log.debug "on()"
+
+	// some siren devices only support siren mode, so put siren() here instead of both()
+	siren()
+}
+
 def off() {
 	log.debug "off()"
 
