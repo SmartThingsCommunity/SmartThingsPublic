@@ -240,19 +240,19 @@ def setColor(value) {
     	toggleTiles("off")
 
     if (( value.size() == 2) && (value.hue != null) && (value.saturation != null)) { //assuming we're being called from outside of device (App)
-    	def rgb = hslToRGB(value.hue, value.saturation, 0.5)
-        value.hex = rgbToHex(rgb)
-        value.rh = hex(rgb.r)
-        value.gh = hex(rgb.g)
-        value.bh = hex(rgb.b)
+    	def rgb = ColorUtil.hslToRgb(value.hue, value.saturation, 0.5)
+        value.hex = ColorUtil.rgbToHex(rgb)
+        value.rh = hex(rgb[0])
+        value.gh = hex(rgb[1])
+        value.bh = hex(rgb[2])
     }
 
     if ((value.size() == 3) && (value.hue != null) && (value.saturation != null) && (value.level)) { //user passed in a level value too from outside (App)
-    	def rgb = hslToRGB(value.hue, value.saturation, 0.5)
-        value.hex = rgbToHex(rgb)
-        value.rh = hex(rgb.r * value.level/100)
-        value.gh = hex(rgb.g * value.level/100)
-        value.bh = hex(rgb.b * value.level/100)
+    	def rgb = ColorUtil.hslToRgb(value.hue, value.saturation, 0.5)
+        value.hex = ColorUtil.rgbToHex(rgb)
+        value.rh = hex(rgb[0] * value.level/100)
+        value.gh = hex(rgb[1] * value.level/100)
+        value.bh = hex(rgb[2] * value.level/100)
     }
 
     if (( value.size() == 1) && (value.hex)) { //being called from outside of device (App) with only hex
@@ -689,40 +689,6 @@ def rgbToHex(rgb) {
     def hexColor = "#${r}${g}${b}"
 
     hexColor
-}
-
-def hslToRGB(float var_h, float var_s, float var_l) {
-	float h = var_h / 100
-    float s = var_s / 100
-    float l = var_l
-
-    def r = 0
-    def g = 0
-    def b = 0
-
-	if (s == 0) {
-    	r = l * 255
-        g = l * 255
-        b = l * 255
-	} else {
-    	float var_2 = 0
-    	if (l < 0.5) {
-        	var_2 = l * (1 + s)
-        } else {
-        	var_2 = (l + s) - (s * l)
-        }
-
-        float var_1 = 2 * l - var_2
-
-        r = 255 * hueToRgb(var_1, var_2, h + (1 / 3))
-        g = 255 * hueToRgb(var_1, var_2, h)
-        b = 255 * hueToRgb(var_1, var_2, h - (1 / 3))
-    }
-
-    def rgb = [:]
-    rgb = [r: r, g: g, b: b]
-
-    rgb
 }
 
 def hueToRgb(v1, v2, vh) {
