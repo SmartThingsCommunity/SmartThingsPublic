@@ -70,11 +70,11 @@ def turnOffAlarmTile() {
 
 def turnOnAlarmTile(cmd) {
 	log.debug "turn on alarm tile ${cmd}"
-	if (cmd == ALARM_SIREN){
+	if (cmd == ALARM_SIREN) {
 		sendEvent(name: "alarm", value: "siren")
-	} else if (cmd == ALARM_STROBE){
+	} else if (cmd == ALARM_STROBE) {
 		sendEvent(name: "alarm", value: "strobe")
-	} else if (cmd == ALARM_BOTH){
+	} else if (cmd == ALARM_BOTH) {
 		sendEvent(name: "alarm", value: "both")
 	}
 	sendEvent(name: "switch", value: "on")
@@ -179,7 +179,7 @@ def on() {
 
 	if (isOzomSiren()) {
 		siren()
-	} else{
+	} else {
 		both()
 	}
 }
