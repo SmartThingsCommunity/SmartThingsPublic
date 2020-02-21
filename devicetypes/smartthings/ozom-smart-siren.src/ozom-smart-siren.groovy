@@ -177,9 +177,7 @@ def strobe() {
 def on() {
 	log.debug "on()"
 
-	def manufacturer = device.getDataValue("manufacturer")
-
-	if (manufacturer == "ClimaxTechnology"){
+	if (isOzomSiren()){
 		siren()
 	} else{
 		both()
@@ -191,4 +189,8 @@ def off() {
 
 	state.alarmCmd = ALARM_OFF
 	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, "00", "0000", "00", "00")
+}
+
+private isOzomSiren() {
+	device.getDataValue("manufacturer") == "ClimaxTechnology"
 }
