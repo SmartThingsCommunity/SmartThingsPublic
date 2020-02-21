@@ -63,12 +63,12 @@ private getALARM_SIREN() { 0x01 }
 private getALARM_STROBE() { 0x02 }
 private getALARM_BOTH() { 0x03 }
 
-def turnOffAlarmTile(){
+def turnOffAlarmTile() {
 	sendEvent(name: "alarm", value: "off")
 	sendEvent(name: "switch", value: "off")
 }
 
-def turnOnAlarmTile(cmd){
+def turnOnAlarmTile(cmd) {
 	log.debug "turn on alarm tile ${cmd}"
 	if (cmd == ALARM_SIREN){
 		sendEvent(name: "alarm", value: "siren")
@@ -108,7 +108,7 @@ def parse(String description) {
 					Boolean isSuccess = Integer.parseInt(data[-1], 16) == 0
 					Integer receivedCommand = Integer.parseInt(data[-2], 16)
 					if (receivedCommand == COMMAND_IAS_WD_START_WARNING && isSuccess){
-						if(state.alarmCmd != ALARM_OFF){
+						if (state.alarmCmd != ALARM_OFF) {
 							turnOnAlarmTile(state.alarmCmd)
 							runIn(state.lastDuration, turnOffAlarmTile)
 						} else {
@@ -177,7 +177,7 @@ def strobe() {
 def on() {
 	log.debug "on()"
 
-	if (isOzomSiren()){
+	if (isOzomSiren()) {
 		siren()
 	} else{
 		both()
