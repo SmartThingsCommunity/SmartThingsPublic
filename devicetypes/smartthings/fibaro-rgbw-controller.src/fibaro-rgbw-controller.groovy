@@ -35,6 +35,7 @@
 		capability "Health Check"
 
 		fingerprint mfr: "010F", prod: "0900"
+		fingerprint deviceId: "0x1101", inClusters: "0x27,0x72,0x86,0x26,0x60,0x70,0x32,0x31,0x85,0x33"
 	}
 
 	simulator {
@@ -295,7 +296,7 @@ def huesatToRGB(hue, sat) {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (zwaveInfo?.zw?.endsWith("s"))  {
+	if (zwaveInfo?.zw?.contains("s"))  {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
