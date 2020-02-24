@@ -28,15 +28,15 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Iris KeyFob
-		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Iris KeyFob
-		fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Remote Control", vid: "generic-4-button" //HEIMAN Scene Keypad
+		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Scene Keypad", vid: "generic-4-button"
 
 		//AduroSmart
-		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria scene button switch V2.1
-		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria scene button switch V2.0
-		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "Adurolight_NCC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria dimming button switch V2.1
-		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "Adurolight_NCC", deviceJoinName: "Eria Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Eria dimming button switch V2.0
+		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria scene button switch V2.1", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria scene button switch V2.0", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "Adurolight_NCC", deviceJoinName: "Eria dimming button switch V2.1", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "Adurolight_NCC", deviceJoinName: "Eria dimming button switch V2.0", mnmn: "SmartThings", vid: "generic-4-button"
 	}
 
 	tiles {
@@ -75,6 +75,8 @@ def parseAttrMessage(description) {
 	} else if (isAduroSmartRemote()) {
 		map = parseAduroSmartButtonMessage(descMap)
     	} else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER && descMap.isClusterSpecific) {
+		map = getButtonEvent(descMap)
+	} else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER && descMap.isClusterSpecific) {
 		map = getButtonEvent(descMap)
 	} else if (descMap?.clusterInt == 0x0005) {
 		def buttonNumber
@@ -196,8 +198,7 @@ private addChildButtons(numberOfButtons) {
 	for(def endpoint : 1..numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
-			def componentLabel = getButtonName() + "${endpoint}"
-
+			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
 			if (isAduroSmartRemote()) {
 				componentLabel = device.displayName + " - ${endpoint}"
 			}
@@ -271,11 +272,6 @@ private getModelBindings(model) {
 	bindings
 }
 
-private getButtonName() {
-	def values = device.displayName.endsWith(' 1') ? "${device.displayName[0..-2]}" : "${device.displayName}"
-	return values
-}
-
 private Map parseAduroSmartButtonMessage(Map descMap){
 	def buttonState = "pushed"
 	def buttonNumber = 0
@@ -284,6 +280,8 @@ private Map parseAduroSmartButtonMessage(Map descMap){
 		    buttonNumber = 1
 		} else if (descMap.command == "00") {
 		    buttonNumber = 4
+		} else {
+		    return [:]
 		}
 	} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
 		if (descMap.command == "02") {
@@ -291,7 +289,7 @@ private Map parseAduroSmartButtonMessage(Map descMap){
 		    def d0 = data[0]
 		    if (d0 == "00") {
 			buttonNumber = 2
-		    } else if (d0 == "01") {
+		    }else if (d0 == "01") {
 			buttonNumber = 3
 		    }
 		}
@@ -314,17 +312,3 @@ def isAduroSmartRemote(){
 }
 
 def getADUROSMART_SPECIFIC_CLUSTER() {0xFCCC}
-
-private getCLUSTER_GROUPS() { 0x0004 }
-
-private List addHubToGroup(Integer groupAddr) {
-	["st cmd 0x0000 0x01 ${CLUSTER_GROUPS} 0x00 {${zigbee.swapEndianHex(zigbee.convertToHexString(groupAddr,4))} 00}",
-	 "delay 200"]
-}
-
-def isHeimanButton(){
-	device.getDataValue("model") == "SceneSwitch-EM-3.0"
-}
-
-
-
