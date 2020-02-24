@@ -146,32 +146,40 @@ def configure() {
 
 def both() {
 	log.debug "both()"
-	state.alarmCmd = ALARM_BOTH
-	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
-	state.lastDuration = warningDuration
-
-	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, MODE_BOTH, DataType.pack(warningDuration, DataType.UINT16), STROBE_DUTY_CYCLE, STROBE_LEVEL)
+	startCmd(ALARM_BOTH)
 }
 
 def siren() {
 	log.debug "siren()"
-
-	state.alarmCmd = ALARM_SIREN
-	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
-	state.lastDuration = warningDuration
-
-	// start warning, burglar mode, no strobe, siren very high
-	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, MODE_SIREN, DataType.pack(warningDuration, DataType.UINT16), "00", "00")
+	startCmd(ALARM_SIREN)
 }
 
 def strobe() {
 	log.debug "strobe()"
+	startCmd(ALARM_SIREN)
+}
 
-	state.alarmCmd = ALARM_STROBE
+def startCmd(cmd) {
+	log.debug "start command ${cmd}"
+
+	state.alarmCmd = cmd
 	def warningDuration = state.maxDuration ? state.maxDuration : DEFAULT_MAX_DURATION
 	state.lastDuration = warningDuration
 
-	zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, MODE_STROBE, DataType.pack(warningDuration, DataType.UINT16), STROBE_DUTY_CYCLE, STROBE_LEVEL)
+	def paramMode;
+	def paramDutyCycle = STROBE_DUTY_CYCLE;
+	def paramStrobeLevel = STROBE_LEVEL;
+	if (cmd == ALARM_SIREN) {
+		paramMode = MODE_SIREN
+		paramDutyCycle = "00"
+		paramStrobeLevel = "00"
+	} else if (cmd == ALARM_STROBE) {
+		paramMode = MODE_STROBE
+	} else if (cmd == ALARM_BOTH) {
+		paramMode = MODE_BOTH
+	}
+    
+    zigbee.command(IAS_WD_CLUSTER, COMMAND_IAS_WD_START_WARNING, paramMode, DataType.pack(warningDuration, DataType.UINT16), paramDutyCycle, paramStrobeLevel)
 }
 
 def on() {
