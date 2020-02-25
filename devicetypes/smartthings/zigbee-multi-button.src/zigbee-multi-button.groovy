@@ -81,12 +81,9 @@ def parseAttrMessage(description) {
 		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 1
        
 		log.debug "Number is ${buttonNumber}"
-		def event = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: "pushed", isStateChange: true)
-		if (buttonNumber != 1) {
-			sendEventToChild(buttonNumber, event)
-		} else {
-			sendEvent(event)
-		}
+		def descriptionText = getButtonName() + " ${buttonNumber} was pushed"
+		sendEventToChild(buttonNumber, createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true))
+		map = createEvent(name: "button", value: "pushed", data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
    	}
 	map
 }
@@ -109,7 +106,7 @@ def getButtonResult(buttonState, buttonNumber = 1) {
 			return event
 		} else {
 			buttonState = timeDiff < holdTime ? "pushed" : "held"
-			def descriptionText = (device.displayName.endsWith(' 1') ? "${device.displayName[0..-2]} button" : "${device.displayName}") + " ${buttonNumber} was ${buttonState}"
+			def descriptionText = getButtonName() + " ${buttonNumber} was ${buttonState}"
 			event = createEvent(name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true)
 			sendEventToChild(buttonNumber, event)
 			return createEvent(descriptionText: descriptionText)
@@ -195,7 +192,8 @@ private addChildButtons(numberOfButtons) {
 	for(def endpoint : 1..numberOfButtons) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
-			def componentLabel = (device.displayName.endsWith(' 1') ? device.displayName[0..-2] : device.displayName) + "${endpoint}"
+			def componentLabel = getButtonName() + "${endpoint}"
+
 			if (isAduroSmartRemote()) {
 				componentLabel = device.displayName + " - ${endpoint}"
 			}
@@ -261,6 +259,11 @@ private getModelBindings(model) {
 			zigbee.addBinding(zigbee.LEVEL_CONTROL_CLUSTER, ["destEndpoint" : 3])
 	}
 	bindings
+}
+
+private getButtonName() {
+	def values = device.displayName.endsWith(' 1') ? "${device.displayName[0..-2]}" : "${device.displayName}"
+	return values
 }
 
 private Map parseAduroSmartButtonMessage(Map descMap){
