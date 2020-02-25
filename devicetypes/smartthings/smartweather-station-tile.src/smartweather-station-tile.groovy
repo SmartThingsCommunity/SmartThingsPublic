@@ -22,6 +22,9 @@ metadata {
         capability "Temperature Measurement"
         capability "Relative Humidity Measurement"
         capability "Ultraviolet Index"
+		capability "Wind Speed"
+        capability "stclassic.Wind"
+        capability "stclassic.Smart Weather"
         capability "Sensor"
         capability "Refresh"
 
