@@ -76,8 +76,6 @@ def parseAttrMessage(description) {
 		map = parseAduroSmartButtonMessage(descMap)
     	} else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER && descMap.isClusterSpecific) {
 		map = getButtonEvent(descMap)
-	} else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER && descMap.isClusterSpecific) {
-		map = getButtonEvent(descMap)
 	} else if(descMap?.clusterInt == 0xFC80) {
 		def buttonNumber
 		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 1
@@ -273,8 +271,6 @@ private Map parseAduroSmartButtonMessage(Map descMap){
 		    buttonNumber = 1
 		} else if (descMap.command == "00") {
 		    buttonNumber = 4
-		} else {
-		    return [:]
 		}
 	} else if (descMap.clusterInt == zigbee.LEVEL_CONTROL_CLUSTER) {
 		if (descMap.command == "02") {
@@ -282,7 +278,7 @@ private Map parseAduroSmartButtonMessage(Map descMap){
 		    def d0 = data[0]
 		    if (d0 == "00") {
 			buttonNumber = 2
-		    }else if (d0 == "01") {
+		    } else if (d0 == "01") {
 			buttonNumber = 3
 		    }
 		}
