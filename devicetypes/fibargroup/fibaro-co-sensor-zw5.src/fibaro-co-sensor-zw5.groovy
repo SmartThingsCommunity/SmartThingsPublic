@@ -67,16 +67,6 @@ metadata {
 	}
 
 	preferences {
-
-		input (
-				title: "Fibaro CO Sensor ZW5 manual",
-				description: "Tap to view the manual.",
-				image: "http://manuals.fibaro.com/wp-content/uploads/2017/07/co_icon.png",
-				url: "http://manuals.fibaro.com/content/manuals/en/FGCD-001/FGCD-001-EN-T-v1.1.pdf",
-				type: "href",
-				element: "href"
-		)
-
 		parameterMap().findAll{(it.num as Integer) != 54}.each {
 			input (
 					title: "${it.num}. ${it.title}",
@@ -102,7 +92,7 @@ metadata {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: 86520, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 12 * 60 * 60 + 8 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def updated() {

@@ -143,7 +143,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd, sourceE
 	result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeReport cmd, sourceEndPoint = null) {
 	def mode
 	switch (cmd.mode) {
 		case 1:
@@ -160,7 +160,7 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatmodev2.ThermostatModeRepor
 	createEvent(name: "thermostatMode", value: mode, data: [supportedThermostatModes: state.supportedModes])
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.thermostatsetpointv2.ThermostatSetpointReport cmd, sourceEndPoint = null) {
 	createEvent(name: "heatingSetpoint", value: convertTemperatureIfNeeded(cmd.scaledValue, 'C', cmd.precision), unit: temperatureScale)
 }
 
