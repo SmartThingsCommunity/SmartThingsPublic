@@ -72,16 +72,6 @@ metadata {
 	}
 		
 	preferences {
-		
- 		input (
-			title: "Fibaro Door/Window Sensor 2",
-			description: "Tap to view the manual.",
-			image: "http://manuals.fibaro.com/wp-content/uploads/2017/05/dws2.jpg",
-			url: "http://manuals.fibaro.com/content/manuals/en/FGDW-002/FGDW-002-EN-T-v1.0.pdf",
-			type: "href",
-			element: "href"
-		)
-		
 		input (
 			title: "Wake up interval",
 			description: "How often should your device automatically sync with the HUB. The lower the value, the shorter the battery life.\n0 or 1-18 (in hours)",
