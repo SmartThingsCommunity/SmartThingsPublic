@@ -1,0 +1,244 @@
+{
+  "name": "Smart Weather",
+  "attributes": {
+    "localSunrise": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "localSunset": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "localSunrise": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "city": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "weather": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "wind": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string",
+            "enum": ["KPH", "MPH"],
+            "default": "KPH"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value",
+        "unit"
+      ]
+    },
+    "windVector": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "feelsLike": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "title": "TemperatureValue",
+            "type": "number",
+            "minimum": -460,
+            "maximum": 10000
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "F",
+              "C"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value",
+        "unit"
+      ]
+    },
+    "percentPercip": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "title": "IntegerPercent",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "%"
+            ],
+            "default": "%"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "alert": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "lastUpdate": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "uvDescription": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "forecastToday": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "forecastTonight": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "forecastTomorrow": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    }
+  },
+  "commands": {
+  }
+}
