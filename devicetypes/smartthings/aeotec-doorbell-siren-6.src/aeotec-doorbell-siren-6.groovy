@@ -129,16 +129,17 @@ def both() {
 def ping() {
 	def cmds =
 			[
-					encap(zwave.basicV1.basicReport()),
 					encap(zwave.basicV1.basicGet())
 			]
-	cmds
+	sendHubCommand (cmds)
 }
+
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	if(cmd.value == 0) {
-		keepChildOnline()
+	if (cmd.value == 0) {
+        keepChildAndParentOnline()
 	}
 }
+
 def refresh() {
 	ping()
 }
@@ -231,7 +232,7 @@ def setActiveSound(soundId) {
 	child?.sendEvent([name: "chime", value: "chime"])
 }
 
-def keepChildOnline() {
+def keepChildAndParentOnline() {
 	/*
 	Method to make children online when checkInterval will be called.
 	*/
@@ -239,7 +240,9 @@ def keepChildOnline() {
 		def soundNumber = i
 		String childDni = "${device.deviceNetworkId}:$soundNumber"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
-		child?.sendEvent(name: "alarm", value: "off")
-		child?.sendEvent(name: "chime", value: "off")
+		child?.sendEvent(name: "alarm", value: "off", displayed: false)
+		child?.sendEvent(name: "chime", value: "off", displayed: false)
 	}
+    sendEvent(name: "alarm", value: "off", displayed: false)
+    sendEvent(name: "chime", value: "off", displayed: false)
 }
