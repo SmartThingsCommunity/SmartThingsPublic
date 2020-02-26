@@ -697,7 +697,7 @@ private queryBattery() {
 	if (!state.lastbatt || now() - state.lastbatt > 10*1000) {
 		log.debug "It's been more than 10s since battery was updated after a replacement. Querying battery."
 		runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
-		response(secure(zwave.batteryV1.batteryGet()))
+		sendHubCommand(secure(zwave.batteryV1.batteryGet()))
 	}
 }
 
