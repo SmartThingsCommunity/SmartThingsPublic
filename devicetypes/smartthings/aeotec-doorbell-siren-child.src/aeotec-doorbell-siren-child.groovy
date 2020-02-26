@@ -45,10 +45,6 @@ def off() {
 	parent.setOffChild(device.deviceNetworkId)
 }
 
-def ping() {
-	parent.ping()
-}
-
 def on() {
 	parent.setOnChild(device.deviceNetworkId)
 }

@@ -137,6 +137,7 @@ def ping() {
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	if (cmd.value == 0) {
         keepChildAndParentOnline()
+        sendEvent(name: "alarm", value: "off", displayed: false)
 	}
 }
 
@@ -240,9 +241,6 @@ def keepChildAndParentOnline() {
 		def soundNumber = i
 		String childDni = "${device.deviceNetworkId}:$soundNumber"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
-		child?.sendEvent(name: "alarm", value: "off", displayed: false)
 		child?.sendEvent(name: "chime", value: "off", displayed: false)
 	}
-    sendEvent(name: "alarm", value: "off", displayed: false)
-    sendEvent(name: "chime", value: "off", displayed: false)
 }
