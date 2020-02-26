@@ -1,5 +1,5 @@
 /**
- *	Copyright 2019 SmartThings
+ *	Copyright 2020 SmartThings
  *
  *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *	in compliance with the License. You may obtain a copy of the License at:
@@ -36,16 +36,17 @@ metadata {
 }
 
 def installed() {
-	configureDeviceHealth()
 	sendEvent(name: "chime", value: "off", isStateChange: true, displayed: false)
-}
-
-def configureDeviceHealth() {
+	sendEvent(name: "alarm", value: "off", isStateChange: true, displayed: false)
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false)
 }
 
 def off() {
 	parent.setOffChild(device.deviceNetworkId)
+}
+
+def ping() {
+	parent.ping()
 }
 
 def on() {

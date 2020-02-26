@@ -1,7 +1,7 @@
 /**
  * 	Aeotec Doorbell 6
  *
- * 	Copyright 2019 SmartThings
+ * 	Copyright 2020 SmartThings
  *
  * 	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * 	in compliance with the License. You may obtain a copy of the License at:
@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition(name: "Aeotec Doorbell Siren 6", namespace: "SmartThings", author: "SmartThings", mcdSync: true,  mnmn: "SmartThings", vid: "generic-8-sound") {
+	definition(name: "Aeotec Doorbell Siren 6", namespace: "smartthings", author: "SmartThings", mcdSync: true,  mnmn: "SmartThings", vid: "generic-8-sound") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Tamper Alert"
@@ -38,9 +38,12 @@ metadata {
 			state "clear", label: 'tamper clear', backgroundColor: "#ffffff"
 			state "detected", label: 'tampered', backgroundColor: "#ffffff"
 		}
+		standardTile("refresh", "command.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "refresh", label: '', action: "refresh.refresh", icon: "st.secondary.refresh-icon"
+		}
 
 		main "alarm"
-		details(["alarm", "off", "tamper"])
+		details(["alarm", "off", "tamper", "refresh"])
 	}
 }
 
@@ -76,10 +79,6 @@ def parse(String description) {
 	}
 	log.debug "Parse returned: ${result.inspect()}"
 	return result
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	createEvent(name: "alarm", value: cmd.value ? "both" : "off")
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
@@ -128,7 +127,20 @@ def both() {
 }
 
 def ping() {
-	encap(zwave.basicV1.basicGet())
+	def cmds =
+			[
+					encap(zwave.basicV1.basicReport()),
+					encap(zwave.basicV1.basicGet())
+			]
+	cmds
+}
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+	if(cmd.value == 0) {
+		keepChildOnline()
+	}
+}
+def refresh() {
+	ping()
 }
 
 private addChildren(numberOfSounds) {
@@ -217,4 +229,17 @@ def setActiveSound(soundId) {
 	String childDni = "${device.deviceNetworkId}:${soundId}"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
 	child?.sendEvent([name: "chime", value: "chime"])
+}
+
+def keepChildOnline() {
+	/*
+	Method to make children online when checkInterval will be called.
+	*/
+	for (def i : 2..numberOfSounds) {
+		def soundNumber = i
+		String childDni = "${device.deviceNetworkId}:$soundNumber"
+		def child = childDevices.find { it.deviceNetworkId == childDni }
+		child?.sendEvent(name: "alarm", value: "off")
+		child?.sendEvent(name: "chime", value: "off")
+	}
 }
