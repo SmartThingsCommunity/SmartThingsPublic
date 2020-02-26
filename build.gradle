@@ -138,3 +138,10 @@ slackSendMessage {
         text: messageText
     )
 }
+
+task configure(type: Exec) {
+    File attributeFile = new File("${projectDir}/.git/info/attributes")
+    attributeFile.write("*.groovy filter=tabspace\n")
+    commandLine "git", "config", "filter.tabspace.clean", "'unexpand -t 2'"
+    commandLine "git", "config", "core.hooksPath", ".githooks"
+}
