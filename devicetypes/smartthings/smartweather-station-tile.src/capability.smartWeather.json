@@ -29,20 +29,6 @@
         "value"
       ]
     },
-    "localSunrise": {
-      "schema": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
-    },
     "city": {
       "schema": {
         "type": "object",
