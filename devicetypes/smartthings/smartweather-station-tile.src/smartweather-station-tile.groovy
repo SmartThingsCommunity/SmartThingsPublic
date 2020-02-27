@@ -458,7 +458,7 @@ private send(Map map) {
 
     log.debug "WUSTATION: event: $map"
     sendEvent(map)
-    if (map.name && !eventConversion.hasKey(map.name)) {
+    if (map.name && eventConversion.containsKey(map.name)) {
         map.name = eventConversion[map.name]
 
         log.debug "WUSTATION: event: $map"
