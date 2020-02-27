@@ -430,8 +430,9 @@ private localDate(timeZone) {
     df.format(new Date())
 }
 
+// Create the new custom capability event if needed,
+// but also send a legacy custom event for any DM-backed SmartApps using them.
 private send(Map map) {
-    log.debug "WUSTATION: event: $map"
     def eventConversion = [
             "localSunrise": "stsmartweather.astronomicalData.localSunrise",
             "localSunset": "stsmartweather.astronomicalData.localSunset",
@@ -455,9 +456,12 @@ private send(Map map) {
             "forecastTomorrow": "stsmartweather.weatherForecast.forecastTomorrow"
         ]
 
+    log.debug "WUSTATION: event: $map"
     sendEvent(map)
     if (map.name && !eventConversion.hasKey(map.name)) {
         map.name = eventConversion[map.name]
+
+        log.debug "WUSTATION: event: $map"
         sendEvent(map)
     }
 }
