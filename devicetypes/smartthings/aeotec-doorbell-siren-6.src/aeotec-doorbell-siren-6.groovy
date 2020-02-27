@@ -135,8 +135,8 @@ def ping() {
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	if (cmd.value == 0) {
-		keepChildOnline()
-        sendEvent(name: "alarm", value: "off", displayed: false)
+		keepChildrenOnline()
+		sendEvent(name: "alarm", value: "off", displayed: false)
 	}
 }
 
@@ -232,7 +232,7 @@ def setActiveSound(soundId) {
 	child?.sendEvent([name: "chime", value: "chime"])
 }
 
-def keepChildOnline() {
+def keepChildrenOnline() {
 	/*
 	Method to make children online when checkInterval will be called.
 	*/
