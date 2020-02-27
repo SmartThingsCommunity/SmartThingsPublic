@@ -89,8 +89,10 @@ def parse(String description) {
 
 	if (event) {
 		if (event.name == "power") {
-			def value = (event.value as Integer) / 10
-			event = createEvent(name: event.name, value: value, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true)
+			def div = device.getDataValue("divisor")
+			div = div ? (div as int) : 10
+			def powerValue = (event.value as Integer)/div
+			event = createEvent(name: event.name, value: powerValue, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true)
 		} else if (event.name == "switch") {
 			def descriptionText = event.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
 			event = createEvent(name: event.name, value: event.value, descriptionText: descriptionText, translatable: true)
@@ -133,6 +135,11 @@ def refresh() {
 }
 
 def configure() {
+	// Setting proper divisor for Aurora AOne 13A Smart Plug
+	def deviceModel = device.getDataValue("model")
+	def divisorValue = deviceModel == "SingleSocket50AU" ? "1" : "10"
+	device.updateDataValue("divisor", divisorValue)
+
 	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
 	// enrolls with default periodic reporting until newer 5 min interval is confirmed
 	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
