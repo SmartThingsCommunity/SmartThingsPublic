@@ -23,7 +23,15 @@ metadata {
         capability "Relative Humidity Measurement"
         capability "Ultraviolet Index"
         capability "Wind Speed"
-        capability "stcustom.Smart Weather"
+        capability "stsmartweather.Wind Speed" // "Wind Speed" only supports m/s unit
+        capability "stsmartweather.Wind Direction"
+        capability "stsmartweather.Apparent Temperature"
+        capability "stsmartweather.Astronomical Data"
+        capability "stsmartweather.Percipitation"
+        capability "stsmartweather.Ultraviolet Description"
+        capability "stsmartweather.Weather Alert"
+        capability "stsmartweather.Weather Forecast"
+        capability "stsmartweather.Weather Summary"
         capability "Sensor"
         capability "Refresh"
 
@@ -240,22 +248,22 @@ def pollUsingZipCode(String zipCode) {
         // TODO def weatherIcon = obs.icon_url.split("/")[-1].split("\\.")[0]
 
         send(name: "temperature", value: obs.temperature, unit: tempUnits)
-        send(name: "stcustom.smartWeather.feelsLike", value: obs.temperatureFeelsLike, unit: tempUnits)
+        send(name: "feelsLike", value: obs.temperatureFeelsLike, unit: tempUnits)
 
         send(name: "humidity", value: obs.relativeHumidity, unit: "%")
-        send(name: "stcustom.smartWeather.weather", value: obs.wxPhraseShort)
+        send(name: "weather", value: obs.wxPhraseShort)
         send(name: "weatherIcon", value: obs.iconCode as String, displayed: false)
-        send(name: "stcustom.smartWeather.wind", value: obs.windSpeed as String, unit: windUnits) // as String because of bug in determining state change of 0 numbers
-        send(name: "stcustom.smartWeather.windVector", value: "${obs.windDirectionCardinal} ${obs.windSpeed} ${windUnits}")
+        send(name: "wind", value: obs.windSpeed as String, unit: windUnits) // as String because of bug in determining state change of 0 numbers
+        send(name: "windVector", value: "${obs.windDirectionCardinal} ${obs.windSpeed} ${windUnits}")
         log.trace "Getting location info"
         def loc = getTwcLocation(zipCode).location
         def cityValue = "${loc.city}, ${loc.adminDistrictCode} ${loc.countryCode}"
         if (cityValue != device.currentValue("city")) {
-            send(name: "stcustom.smartWeather.city", value: cityValue, isStateChange: true)
+            send(name: "city", value: cityValue, isStateChange: true)
         }
 
         send(name: "ultravioletIndex", value: obs.uvIndex)
-        send(name: "stcustom.smartWeather.uvDescription", value: obs.uvDescription)
+        send(name: "uvDescription", value: obs.uvDescription)
 
         def dtf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
 
@@ -269,8 +277,8 @@ def pollUsingZipCode(String zipCode) {
 
         def localSunrise = "${tf.format(sunriseDate)}"
         def localSunset = "${tf.format(sunsetDate)}"
-        send(name: "stcustom.smartWeather.localSunrise", value: localSunrise, descriptionText: "Sunrise today is at $localSunrise")
-        send(name: "stcustom.smartWeather.localSunset", value: localSunset, descriptionText: "Sunset today at is $localSunset")
+        send(name: "localSunrise", value: localSunrise, descriptionText: "Sunrise today is at $localSunrise")
+        send(name: "localSunset", value: localSunset, descriptionText: "Sunset today at is $localSunset")
 
         send(name: "illuminance", value: estimateLux(obs, sunriseDate, sunsetDate))
 
@@ -280,11 +288,11 @@ def pollUsingZipCode(String zipCode) {
             def icon = f.daypart[0].iconCode[0] ?: f.daypart[0].iconCode[1]
             def value = f.daypart[0].precipChance[0] ?: f.daypart[0].precipChance[1]
             def narrative = f.daypart[0].narrative
-            send(name: "stcustom.smartWeather.percentPrecip", value: value as String, unit: "%")
+            send(name: "percentPrecip", value: value as String, unit: "%")
             send(name: "forecastIcon", value: icon as String, displayed: false)
-            send(name: "stcustom.smartWeather.forecastToday", value: narrative[0])
-            send(name: "stcustom.smartWeather.forecastTonight", value: narrative[1])
-            send(name: "stcustom.smartWeather.forecastTomorrow", value: narrative[2])
+            send(name: "forecastToday", value: narrative[0])
+            send(name: "forecastTonight", value: narrative[1])
+            send(name: "forecastTomorrow", value: narrative[2])
         }
         else {
             log.warn "Forecast not found"
@@ -301,11 +309,11 @@ def pollUsingZipCode(String zipCode) {
                 if (alert.expireTimeLocal && !msg.contains(" until ")) {
                     msg += " until ${parseAlertTime(alert.expireTimeLocal).format("E hh:mm a", TimeZone.getTimeZone(alert.expireTimeLocalTimeZone))}"
                 }
-                send(name: "stcustom.smartWeather.alert", value: msg, descriptionText: msg)
+                send(name: "alert", value: msg, descriptionText: msg)
             }
         }
         else {
-            send(name: "stcustom.smartWeather.alert", value: "No current alerts", descriptionText: msg)
+            send(name: "alert", value: "No current alerts", descriptionText: msg)
         }
     }
     else {
@@ -329,31 +337,31 @@ def pollUsingPwsId(String stationId) {
         def obs = obsWrapper.observations[0]
         def dataScale = obs.imperial ? 'imperial' : 'metric'
         send(name: "temperature", value: convertTemperature(obs[dataScale].temp, dataScale, tempUnits), unit: tempUnits)
-        send(name: "stcustom.smartWeather.feelsLike", value: convertTemperature(obs[dataScale].windChill, dataScale, tempUnits), unit: tempUnits)
+        send(name: "feelsLike", value: convertTemperature(obs[dataScale].windChill, dataScale, tempUnits), unit: tempUnits)
 
         send(name: "humidity", value: obs.humidity, unit: "%")
-        send(name: "stcustom.smartWeather.weather", value: "n/a")
+        send(name: "weather", value: "n/a")
         send(name: "weatherIcon", value: null as String, displayed: false)
-        send(name: "stcustom.smartWeather.wind", value: convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits) as String, unit: windUnits) // as String because of bug in determining state change of 0 numbers
-        send(name: "stcustom.smartWeather.windVector", value: "${obs.winddir}° ${convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits)} ${windUnits}")
+        send(name: "wind", value: convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits) as String, unit: windUnits) // as String because of bug in determining state change of 0 numbers
+        send(name: "windVector", value: "${obs.winddir}° ${convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits)} ${windUnits}")
         def cityValue = obs.neighborhood
         if (cityValue != device.currentValue("city")) {
-            send(name: "stcustom.smartWeather.city", value: cityValue, isStateChange: true)
+            send(name: "city", value: cityValue, isStateChange: true)
         }
 
         send(name: "ultravioletIndex", value: obs.uv)
-        send(name: "stcustom.smartWeather.uvDescription", value: "n/a")
+        send(name: "uvDescription", value: "n/a")
 
-        send(name: "stcustom.smartWeather.localSunrise", value: "n/a", descriptionText: "Sunrise is not supported when using PWS")
-        send(name: "stcustom.smartWeather.localSunset", value: "n/a", descriptionText: "Sunset is not supported when using PWS")
+        send(name: "localSunrise", value: "n/a", descriptionText: "Sunrise is not supported when using PWS")
+        send(name: "localSunset", value: "n/a", descriptionText: "Sunset is not supported when using PWS")
         send(name: "illuminance", value: null)
 
         // Forecast not supported
-        send(name: "stcustom.smartWeather.percentPrecip", value: "n/a", unit: "%")
+        send(name: "percentPrecip", value: "n/a", unit: "%")
         send(name: "forecastIcon", value: null, displayed: false)
-        send(name: "stcustom.smartWeather.forecastToday", value: "n/a")
-        send(name: "stcustom.smartWeather.forecastTonight", value: "n/a")
-        send(name: "stcustom.smartWeather.forecastTomorrow", value: "n/a")
+        send(name: "forecastToday", value: "n/a")
+        send(name: "forecastTonight", value: "n/a")
+        send(name: "forecastTomorrow", value: "n/a")
         log.warn "Forecast not supported when using PWS"
 
         // Alerts
@@ -367,11 +375,11 @@ def pollUsingPwsId(String stationId) {
                 if (alert.expireTimeLocal && !msg.contains(" until ")) {
                     msg += " until ${parseAlertTime(alert.expireTimeLocal).format("E hh:mm a", TimeZone.getTimeZone(alert.expireTimeLocalTimeZone))}"
                 }
-                send(name: "stcustom.smartWeather.alert", value: msg, descriptionText: msg)
+                send(name: "alert", value: msg, descriptionText: msg)
             }
         }
         else {
-            send(name: "stcustom.smartWeather.alert", value: "No current alerts", descriptionText: msg)
+            send(name: "alert", value: "No current alerts", descriptionText: msg)
         }
     }
     else {
@@ -420,9 +428,36 @@ private localDate(timeZone) {
     df.format(new Date())
 }
 
-private send(map) {
+private send(Map map) {
     log.debug "WUSTATION: event: $map"
+    def eventConversion = [
+            "localSunrise": "stsmartweather.astronomicalData.localSunrise",
+            "localSunset": "stsmartweather.astronomicalData.localSunset",
+            "city": "stsmartweather.astronomicalData.city",
+            "timeZoneOffset": "stsmartweather.astronomicalData.timeZoneOffset",
+            "weather": "stsmartweather.weatherSummary.weather",
+            "wind": "stsmartweather.windSpeed.wind",
+            "windVector": "stsmartweather.windDirection.windVector",
+            "weatherIcon": "stsmartweather.weatherSummary.weatherIcon",
+            "forecastIcon": "stsmartweather.weatherForecast.forecastIcon",
+            "feelsLike": "stsmartweather.apparentTemperature.feelsLike",
+            "percentPrecip": "stsmartweather.percipitation.percentPrecip",
+            "alert": "stsmartweather.weatherAlert.alert",
+            "alertKeys": "stsmartweather.weatherAlert.alertKeys",
+            "sunriseDate": "stsmartweather.astronomicalData.sunriseDate",
+            "sunsetDate": "stsmartweather.astronomicalData.sunsetDate",
+            "lastUpdate": "stsmartweather.smartWeather.lastUpdate",
+            "uvDescription": "stsmartweather.ultravioletDescription.uvDescription",
+            "forecastToday": "stsmartweather.weatherForecast.forecastToday",
+            "forecastTonight": "stsmartweather.weatherForecast.forecastTonight",
+            "forecastTomorrow": "stsmartweather.weatherForecast.forecastTomorrow"
+        ]
+
     sendEvent(map)
+    if (map.name && !eventConversion.hasKey(map.name)) {
+        map.name = eventConversion[map.name]
+        sendEvent(map)
+    }
 }
 
 private estimateLux(obs, sunriseDate, sunsetDate) {

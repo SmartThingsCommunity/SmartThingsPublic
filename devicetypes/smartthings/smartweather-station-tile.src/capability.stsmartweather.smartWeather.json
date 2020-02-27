@@ -29,6 +29,34 @@
         "value"
       ]
     },
+    "sunriseDate": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "sunsetDate": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
     "city": {
       "schema": {
         "type": "object",
@@ -43,7 +71,49 @@
         "value"
       ]
     },
+    "timeZoneOffset": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
     "weather": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "weatherIcon": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "forecastIcon": {
       "schema": {
         "type": "object",
         "properties": {
