@@ -26,7 +26,7 @@ metadata {
 	}
 
 	preferences {
-		input "periodOffset", "number", title: "Reporting period Offset", description: "Adjust reporting period by this many degrees", range: "*..*", displayDuringSetup: false
+		input "periodOffset", "number", title: "Reporting periodOffset", description: "Adjust reporting periodOffset by this many degrees", range: "*..*", displayDuringSetup: false
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 		input "humidityOffset", "number", title: "Humidity Offset", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
 	}
@@ -211,7 +211,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd, endpoint = null) {
  * */
 def ping(endpoint = null) {
 	log.info "ping called: endpoint '${endpoint}' state '${state}'"
-	log.debug "pint : device.currentValue : " + device.currentValue("DeviceWatch-DeviceStatus")
+	log.debug "ping : device.currentValue : " + device.currentValue("DeviceWatch-DeviceStatus")
 	if(endpoint) {
 		refresh(endpoint)
 	} else {
@@ -219,11 +219,7 @@ def ping(endpoint = null) {
 		def numberOfChild = getNumberOfChildFromModel()
 		log.debug "ping: numberOfChild '${numberOfChild}'"
 		for(def ep : 1..numberOfChild) {
-			try {
-				refresh(ep)
-			} catch(Exception e) {
-				log.warn "ping Exception: ${e}"
-			}
+			refresh(ep)
 		}
 	}
 }
@@ -308,7 +304,7 @@ private secureEncap(cmd, endpoint = null) {
 }
 
 private changeSwitch(endpoint, value) {
-	log.info "changeSwitch called: vlaue: '${value}', endpoint: '${endpoint}'"
+	log.info "changeSwitch called: value: '${value}', endpoint: '${endpoint}'"
 	def result = []
 	if(endpoint) {
 		String childDni = "${device.deviceNetworkId}:$endpoint"
