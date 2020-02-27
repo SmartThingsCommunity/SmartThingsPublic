@@ -1,7 +1,21 @@
 {
   "name": "Smart Weather",
   "attributes": {
-    "lastUpdate": {
+    "alert": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "alertKeys": {
       "schema": {
         "type": "object",
         "properties": {

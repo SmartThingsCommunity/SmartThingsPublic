@@ -1,18 +1,24 @@
 {
   "name": "Smart Weather",
   "attributes": {
-    "lastUpdate": {
+    "wind": {
       "schema": {
         "type": "object",
         "properties": {
           "value": {
             "type": "string"
+          },
+          "unit": {
+            "type": "string",
+            "enum": ["KPH", "MPH"],
+            "default": "KPH"
           }
         },
         "additionalProperties": false
       },
       "required": [
-        "value"
+        "value",
+        "unit"
       ]
     }
   },

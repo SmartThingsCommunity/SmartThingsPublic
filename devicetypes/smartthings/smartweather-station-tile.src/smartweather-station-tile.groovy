@@ -23,7 +23,7 @@ metadata {
         capability "Relative Humidity Measurement"
         capability "Ultraviolet Index"
         capability "Wind Speed"
-        capability "stsmartweather.Wind Speed" // "Wind Speed" only supports m/s unit
+        capability "stsmartweather.Wind Speed" // "Wind Speed" only supports m/s unit, however we want to create both events
         capability "stsmartweather.Wind Direction"
         capability "stsmartweather.Apparent Temperature"
         capability "stsmartweather.Astronomical Data"
@@ -35,6 +35,8 @@ metadata {
         capability "Sensor"
         capability "Refresh"
 
+        // While we have created a custom capability for these attributes,
+        // they will remain to support any custom DataManagement based SmartApps using them.
         attribute "localSunrise", "string"
         attribute "localSunset", "string"
         attribute "city", "string"
@@ -76,7 +78,7 @@ metadata {
                     ]
         }
 
-        valueTile("feelsLike", "device.stcustom.smartWeather.feelsLike", decoration: "flat", height: 1, width: 2) {
+        valueTile("feelsLike", "device.stcustom.apparentTemperature.feelsLike", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Feels like ${currentValue}°'
         }
 
@@ -136,27 +138,27 @@ metadata {
             state "default", label:'${currentValue}% humidity'
         }
 
-        valueTile("wind", "device.stcustom.smartWeather.windVector", decoration: "flat", height: 1, width: 2) {
+        valueTile("wind", "device.stcustom.windDirection.windVector", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Wind\n${currentValue}'
         }
 
-        valueTile("weather", "device.stcustom.smartWeather.weather", decoration: "flat", height: 1, width: 2) {
+        valueTile("weather", "device.stcustom.weatherSummary.weather", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}'
         }
 
-        valueTile("city", "device.stcustom.smartWeather.city", decoration: "flat", height: 1, width: 2) {
+        valueTile("city", "device.stcustom.astronomicalData.city", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}'
         }
 
-        valueTile("percentPrecip", "device.stcustom.smartWeather.percentPrecip", decoration: "flat", height: 1, width: 2) {
+        valueTile("percentPrecip", "device.stcustom.percipitation.percentPrecip", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}% precip'
         }
 
-        valueTile("ultravioletIndex", "device.stcustom.smartWeather.uvDescription", decoration: "flat", height: 1, width: 2) {
+        valueTile("ultravioletIndex", "device.stcustom.ultravioletDescription.uvDescription", decoration: "flat", height: 1, width: 2) {
             state "default", label:'UV ${currentValue}'
         }
 
-        valueTile("alert", "device.stcustom.smartWeather.alert", decoration: "flat", height: 2, width: 6) {
+        valueTile("alert", "device.stcustom.weatherAlert.alert", decoration: "flat", height: 2, width: 6) {
             state "default", label:'${currentValue}'
         }
 
@@ -164,11 +166,11 @@ metadata {
             state "default", label: "", action: "refresh", icon:"st.secondary.refresh"
         }
 
-        valueTile("rise", "device.stcustom.smartWeather.localSunrise", decoration: "flat", height: 1, width: 2) {
+        valueTile("rise", "device.stcustom.astronomicalData.localSunrise", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Sunrise ${currentValue}'
         }
 
-        valueTile("set", "device.stcustom.smartWeather.localSunset", decoration: "flat", height: 1, width: 2) {
+        valueTile("set", "device.stcustom.astronomicalData.localSunset", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Sunset ${currentValue}'
         }
 
@@ -176,15 +178,15 @@ metadata {
             state "default", label:'${currentValue} lux'
         }
 
-        valueTile("today", "device.stcustom.smartWeather.forecastToday", decoration: "flat", height: 1, width: 3) {
+        valueTile("today", "device.stcustom.weatherForecast.forecastToday", decoration: "flat", height: 1, width: 3) {
             state "default", label:'Today:\n${currentValue}'
         }
 
-        valueTile("tonight", "device.stcustom.smartWeather.forecastTonight", decoration: "flat", height: 1, width: 3) {
+        valueTile("tonight", "device.stcustom.weatherForecast.forecastTonight", decoration: "flat", height: 1, width: 3) {
             state "default", label:'Tonight:\n${currentValue}'
         }
 
-        valueTile("tomorrow", "device.stcustom.smartWeather.forecastTomorrow", decoration: "flat", height: 1, width: 3) {
+        valueTile("tomorrow", "device.stcustom.weatherForecast.forecastTomorrow", decoration: "flat", height: 1, width: 3) {
             state "default", label:'Tomorrow:\n${currentValue}'
         }
 
