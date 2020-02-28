@@ -74,15 +74,15 @@ def configure() {
 	def commands = []
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	log.debug "configure: commands '${commands}'"
-	log.debug "configure: periodOffset '${periodOffset}'"
+	log.debug "configure: reportingInterval '${reportingInterval}'"
 	log.debug "configure: tempOffset '${tempOffset}'"
 	log.debug "configure: humidityOffset '${humidityOffset}'"
 
-	if (periodOffset != null) {
-		commands << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: periodOffset as int)
+	if (reportingInterval != null) {
+		commands << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: (reportingInterval as int)*60) // sec -> min
 	}
 	if (tempOffset != null) {
-		commands << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: tempOffset as int)
+		commands << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: (tempOffset as int)*10) // 0.1 -> 1
 	}
 	if (humidityOffset != null) {
 		commands << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: humidityOffset as int)
@@ -216,11 +216,6 @@ def ping(endpoint = null) {
 		refresh(endpoint)
 	} else {
 		refresh()
-		def numberOfChild = getNumberOfChildFromModel()
-		log.debug "ping: numberOfChild '${numberOfChild}'"
-		for(def ep : 1..numberOfChild) {
-			refresh(ep)
-		}
 	}
 }
 
@@ -240,7 +235,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	log.info "zwaveEvent ConfigurationReport called: ${cmd}"
 	switch (cmd.parameterNumber) {
 		case 1:
-			state.periodOffset = cmd.scaledConfigurationValue
+			state.reportingInterval = cmd.scaledConfigurationValue
 			break
 		case 2:
 			state.tempOffset = cmd.scaledConfigurationValue
@@ -249,7 +244,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 			state.humidityOffset = cmd.scaledConfigurationValue
 			break
 	}
-	log.debug "zwaveEvent ConfigurationReport: periodOffset '${state.periodOffset}', tempOffset '${state.tempOffset}', humidityOffset '${state.humidityOffset}%'"
+	log.debug "zwaveEvent ConfigurationReport: reportingInterval '${state.reportingInterval}', tempOffset '${state.tempOffset}', humidityOffset '${state.humidityOffset}%'"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, endpoint = null) {
