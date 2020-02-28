@@ -1,7 +1,7 @@
 {
-  "name": "Percipitation",
+  "name": "Precipitation",
   "attributes": {
-    "percentPercip": {
+    "percentPrecip": {
       "schema": {
         "type": "object",
         "properties": {
