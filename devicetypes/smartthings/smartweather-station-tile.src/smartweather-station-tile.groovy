@@ -22,12 +22,12 @@ metadata {
         capability "Temperature Measurement"
         capability "Relative Humidity Measurement"
         capability "Ultraviolet Index"
-        capability "Wind Speed"
+        //capability "Wind Speed" // Not in production yet
         capability "stsmartweather.Wind Speed" // "Wind Speed" only supports m/s unit, however we want to create both events
         capability "stsmartweather.Wind Direction"
         capability "stsmartweather.Apparent Temperature"
         capability "stsmartweather.Astronomical Data"
-        capability "stsmartweather.Percipitation"
+        capability "stsmartweather.Precipitation"
         capability "stsmartweather.Ultraviolet Description"
         capability "stsmartweather.Weather Alert"
         capability "stsmartweather.Weather Forecast"
@@ -78,7 +78,7 @@ metadata {
                     ]
         }
 
-        valueTile("feelsLike", "device.stsmartweather.apparentTemperature.feelsLike", decoration: "flat", height: 1, width: 2) {
+        valueTile("feelsLike", "device.feelsLike", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Feels like ${currentValue}°'
         }
 
@@ -138,27 +138,27 @@ metadata {
             state "default", label:'${currentValue}% humidity'
         }
 
-        valueTile("wind", "device.stsmartweather.windDirection.windVector", decoration: "flat", height: 1, width: 2) {
+        valueTile("wind", "device.windVector", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Wind\n${currentValue}'
         }
 
-        valueTile("weather", "device.stsmartweather.weatherSummary.weather", decoration: "flat", height: 1, width: 2) {
+        valueTile("weather", "device.weather", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}'
         }
 
-        valueTile("city", "device.stsmartweather.astronomicalData.city", decoration: "flat", height: 1, width: 2) {
+        valueTile("city", "device.city", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}'
         }
 
-        valueTile("percentPrecip", "device.stsmartweather.percipitation.percentPrecip", decoration: "flat", height: 1, width: 2) {
+        valueTile("percentPrecip", "device.percentPrecip", decoration: "flat", height: 1, width: 2) {
             state "default", label:'${currentValue}% precip'
         }
 
-        valueTile("ultravioletIndex", "device.stsmartweather.ultravioletDescription.uvDescription", decoration: "flat", height: 1, width: 2) {
+        valueTile("ultravioletIndex", "device.uvDescription", decoration: "flat", height: 1, width: 2) {
             state "default", label:'UV ${currentValue}'
         }
 
-        valueTile("alert", "device.stsmartweather.weatherAlert.alert", decoration: "flat", height: 2, width: 6) {
+        valueTile("alert", "device.alert", decoration: "flat", height: 2, width: 6) {
             state "default", label:'${currentValue}'
         }
 
@@ -166,11 +166,11 @@ metadata {
             state "default", label: "", action: "refresh", icon:"st.secondary.refresh"
         }
 
-        valueTile("rise", "device.stsmartweather.astronomicalData.localSunrise", decoration: "flat", height: 1, width: 2) {
+        valueTile("rise", "device.localSunrise", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Sunrise ${currentValue}'
         }
 
-        valueTile("set", "device.stsmartweather.astronomicalData.localSunset", decoration: "flat", height: 1, width: 2) {
+        valueTile("set", "device.localSunset", decoration: "flat", height: 1, width: 2) {
             state "default", label:'Sunset ${currentValue}'
         }
 
@@ -178,19 +178,19 @@ metadata {
             state "default", label:'${currentValue} lux'
         }
 
-        valueTile("today", "device.stsmartweather.weatherForecast.forecastToday", decoration: "flat", height: 1, width: 3) {
+        valueTile("today", "device.forecastToday", decoration: "flat", height: 1, width: 3) {
             state "default", label:'Today:\n${currentValue}'
         }
 
-        valueTile("tonight", "device.stsmartweather.weatherForecast.forecastTonight", decoration: "flat", height: 1, width: 3) {
+        valueTile("tonight", "device.forecastTonight", decoration: "flat", height: 1, width: 3) {
             state "default", label:'Tonight:\n${currentValue}'
         }
 
-        valueTile("tomorrow", "device.stsmartweather.weatherForecast.forecastTomorrow", decoration: "flat", height: 1, width: 3) {
+        valueTile("tomorrow", "device.forecastTomorrow", decoration: "flat", height: 1, width: 3) {
             state "default", label:'Tomorrow:\n${currentValue}'
         }
 
-        valueTile("lastUpdate", "device.stsmartweather.smartWeather.lastUpdate", decoration: "flat", height: 1, width: 3) {
+        valueTile("lastUpdate", "device.lastUpdate", decoration: "flat", height: 1, width: 3) {
             state "default", label:'Last update:\n${currentValue}'
         }
 
@@ -223,7 +223,7 @@ def uninstalled() {
 
 // handle commands
 def poll() {
-    log.info "WUSTATION: Executing 'poll', location: ${location.name}"
+    log.debug "WUSTATION: Executing 'poll', location: ${location.name}"
     if (stationId) {
         pollUsingPwsId(stationId.toUpperCase())
     } else {
@@ -254,8 +254,8 @@ def pollUsingZipCode(String zipCode) {
 
         send(name: "humidity", value: obs.relativeHumidity, unit: "%")
         send(name: "weather", value: obs.wxPhraseShort)
-        send(name: "weatherIcon", value: obs.iconCode as String, displayed: false)
-        send(name: "wind", value: obs.windSpeed as String, unit: windUnits) // as String because of bug in determining state change of 0 numbers
+        send(name: "weatherIcon", value: obs.iconCode, displayed: false)
+        send(name: "wind", value: obs.windSpeed, unit: windUnits)
         send(name: "windVector", value: "${obs.windDirectionCardinal} ${obs.windSpeed} ${windUnits}")
         log.trace "Getting location info"
         def loc = getTwcLocation(zipCode).location
@@ -270,7 +270,7 @@ def pollUsingZipCode(String zipCode) {
         def dtf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
 
         def sunriseDate = dtf.parse(obs.sunriseTimeLocal)
-        log.info "'${obs.sunriseTimeLocal}'"
+        log.debug "'${obs.sunriseTimeLocal}'"
 
         def sunsetDate = dtf.parse(obs.sunsetTimeLocal)
 
@@ -288,13 +288,14 @@ def pollUsingZipCode(String zipCode) {
         def f = getTwcForecast(zipCode)
         if (f) {
             def icon = f.daypart[0].iconCode[0] ?: f.daypart[0].iconCode[1]
-            def value = f.daypart[0].precipChance[0] ?: f.daypart[0].precipChance[1]
+            def precip = f.daypart[0].precipChance[0] ?: f.daypart[0].precipChance[1]
             def narrative = f.daypart[0].narrative
-            send(name: "percentPrecip", value: value as String, unit: "%")
-            send(name: "forecastIcon", value: icon as String, displayed: false)
-            send(name: "forecastToday", value: narrative[0])
-            send(name: "forecastTonight", value: narrative[1])
-            send(name: "forecastTomorrow", value: narrative[2])
+
+            send(name: "percentPrecip", value: precip, unit: "%")
+            send(name: "forecastIcon", value: icon, displayed: false)
+            send(name: "forecastToday", value: narrative[0] ?: "-")
+            send(name: "forecastTonight", value: narrative[1] ?: "-")
+            send(name: "forecastTomorrow", value: narrative[2] ?: "-")
         }
         else {
             log.warn "Forecast not found"
@@ -343,8 +344,8 @@ def pollUsingPwsId(String stationId) {
 
         send(name: "humidity", value: obs.humidity, unit: "%")
         send(name: "weather", value: "n/a")
-        send(name: "weatherIcon", value: null as String, displayed: false)
-        send(name: "wind", value: convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits) as String, unit: windUnits) // as String because of bug in determining state change of 0 numbers
+        send(name: "weatherIcon", value: null, displayed: false)
+        send(name: "wind", value: convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits), unit: windUnits)
         send(name: "windVector", value: "${obs.winddir}° ${convertWindSpeed(obs[dataScale].windSpeed, dataScale, tempUnits)} ${windUnits}")
         def cityValue = obs.neighborhood
         if (cityValue != device.currentValue("city")) {
@@ -444,7 +445,7 @@ private send(Map map) {
             "weatherIcon": "stsmartweather.weatherSummary.weatherIcon",
             "forecastIcon": "stsmartweather.weatherForecast.forecastIcon",
             "feelsLike": "stsmartweather.apparentTemperature.feelsLike",
-            "percentPrecip": "stsmartweather.percipitation.percentPrecip",
+            "percentPrecip": "stsmartweather.precipitation.percentPrecip",
             "alert": "stsmartweather.weatherAlert.alert",
             "alertKeys": "stsmartweather.weatherAlert.alertKeys",
             "sunriseDate": "stsmartweather.astronomicalData.sunriseDate",
@@ -456,13 +457,14 @@ private send(Map map) {
             "forecastTomorrow": "stsmartweather.weatherForecast.forecastTomorrow"
         ]
 
-    log.debug "WUSTATION: event: $map"
+    //log.trace "WUSTATION: event: $map"
     sendEvent(map)
     if (map.name && eventConversion.containsKey(map.name)) {
-        map.name = eventConversion[map.name]
+        def newMap = map.clone()
+        newMap.name = eventConversion[map.name]
 
-        log.debug "WUSTATION: event: $map"
-        sendEvent(map)
+        //log.trace "WUSTATION: NEW event: $newMap"
+        sendEvent(newMap)
     }
 }
 
