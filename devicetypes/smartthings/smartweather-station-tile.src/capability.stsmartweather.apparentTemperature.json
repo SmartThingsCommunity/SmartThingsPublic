@@ -19,12 +19,12 @@
             ]
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value",
-        "unit"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value",
+          "unit"
+        ]
+      }
     }
   },
   "commands": {

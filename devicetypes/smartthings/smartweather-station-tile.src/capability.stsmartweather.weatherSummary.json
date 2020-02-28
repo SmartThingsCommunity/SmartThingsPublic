@@ -9,11 +9,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
     },
     "weatherIcon": {
       "schema": {
@@ -23,11 +23,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
     }
   },
   "commands": {

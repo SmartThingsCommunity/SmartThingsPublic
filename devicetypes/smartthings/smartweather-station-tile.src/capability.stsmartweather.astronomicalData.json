@@ -9,11 +9,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
     },
     "localSunset": {
       "schema": {
@@ -23,11 +23,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
     },
     "sunriseDate": {
       "schema": {
@@ -37,11 +37,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
     },
     "sunsetDate": {
       "schema": {
@@ -51,11 +51,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
     },
     "city": {
       "schema": {
@@ -65,11 +65,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
     },
     "timeZoneOffset": {
       "schema": {
@@ -79,11 +79,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
-      },
-      "required": [
-        "value"
-      ]
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ]
+      }
     }
   },
   "commands": {
