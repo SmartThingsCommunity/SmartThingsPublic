@@ -25,7 +25,7 @@ def version() {
 }
 
 /* 
- *	02-Feb-2020 >>> v0.2.6e.20200302 - Correct mobile notifications
+ *	02-Mar-2020 >>> v0.2.6e.20200302 - Correct mobile notifications
  *	29-Feb-2020 >>> v0.2.5e.20200229 - Additional http command and query error checks. Added option to pause automations.
  *	19-Feb-2020 >>> v0.2.4e.20200219 - Added battery charge % triggers time and day restriction options.
  *	31-Jan-2020 >>> v0.2.3e.20200131 - Added battery charge % triggers & TBC Strategy scheduling.
