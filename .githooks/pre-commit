@@ -1,11 +1,16 @@
 #!/bin/bash
 
-STASH_NAME="pre-commit-$(date +%s)"
-git stash save -q --keep-index $STASH_NAME
+# STASH_NAME="pre-commit-$(date +%s)"
+# git stash save -q --keep-index $STASH_NAME
 
-git diff --cached --name-only
+CHANGED_DTHS=$(git diff --cached --name-only | grep .*.groovy)
+echo $CHANGED_DTHS
+ERRORS = $(groovyc $CHANGED_DTHS 2>&1 | grep ".groovy:")
+echo $ERRORS
 
-STASHES=$(git stash list)
-if [[ $STASHES == "$STASH_NAME" ]]; then
-  git stash pop -q
-fi
+# STASHES=$(git stash list)
+# if [[ $STASHES == "$STASH_NAME" ]]; then
+#   git stash pop -q
+# fi
+
+#echo "rejected" && exit 1
