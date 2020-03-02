@@ -21,10 +21,11 @@
  *
  */
 def version() {
-    return "v0.2.5e.20200229"
+    return "v0.2.6e.20200302"
 }
 
 /* 
+ *	02-Feb-2020 >>> v0.2.6e.20200302 - Correct mobile notifications
  *	29-Feb-2020 >>> v0.2.5e.20200229 - Additional http command and query error checks. Added option to pause automations.
  *	19-Feb-2020 >>> v0.2.4e.20200219 - Added battery charge % triggers time and day restriction options.
  *	31-Jan-2020 >>> v0.2.3e.20200131 - Added battery charge % triggers & TBC Strategy scheduling.
@@ -1005,23 +1006,23 @@ private sendNotificationMessage(message, msgType = null) {
     log.debug "notification message: ${message}"
     if (msgType == null || msgType != "anomaly" || notifyWhenAnomalies?.toBoolean()) {
         if (hubIsSt()) {
-            def sendPushMessage = (!notificationMethod || (notificationMethod.toString() == "push" || notificationMethod.toString() == "text and push"))
-            def sendTextMessage = (notificationMethod?.toString() == "text" || notificationMethod?.toString() == "text and push")
-            if (sendTextMessage == true) {
+           def sendPushMessage = (!notificationMethod || (notificationMethod.toString() == "push" || notificationMethod.toString() == "text and push"))
+           def sendTextMessage = (notificationMethod?.toString() == "text" || notificationMethod?.toString() == "text and push")
+           if (sendTextMessage == true) {
                if (phoneNumber) {
                   sendSmsMessage(phoneNumber.toString(), message)
                }
-            if (sendPushMessage) {
-                sendPush(message)
-            }
-         } else {
-             // Hubitat
-             if (notifyDevices != null) {
-                 notifyDevices.each {
-                     it.deviceNotification(message)
-                 }
-             }
-         }
+           }
+           if (sendPushMessage) {
+               sendPush(message)
+           }
+        } else {
+           // Hubitat
+           if (notifyDevices != null) {
+               notifyDevices.each {
+                   it.deviceNotification(message)
+               }
+           }
       }
     }
 }
