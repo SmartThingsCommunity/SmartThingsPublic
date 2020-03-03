@@ -46,16 +46,6 @@ metadata {
 	}
 
 	preferences {
-
-		input (
-				title: "Fibaro Wall Plug manual",
-				description: "Tap to view the manual.",
-				image: "https://s3-eu-west-1.amazonaws.com/fibaro-smartthings/wallPlugUS/plug_us_blue.png",
-				//url: "http://manuals.fibaro.com/content/manuals/en/FGWPEF-102/FGWPEF-102-EN-A-v2.0.pdf",
-				type: "href",
-				element: "href"
-		)
-
 		parameterMap().each {
 			input (
 					title: "${it.num}. ${it.title}",
