@@ -59,8 +59,12 @@ metadata {
 }
 
 def installed() {
-	log.info "Installed called '${device.displayName}'"
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	log.info "Installed called '${device.displayName}', reportingInterval '${reportingInterval}'"
+	if (reportingInterval != null) {
+		sendEvent(name: "checkInterval", value: 2 * (reportingInterval as int) + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	} else {
+		sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	}
 }
 
 def updated() {
