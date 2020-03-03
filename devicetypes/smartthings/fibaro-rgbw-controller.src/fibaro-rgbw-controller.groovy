@@ -241,7 +241,7 @@ def setColor(value) {
 
 	if (( value.size() == 2) && (value.hue != null) && (value.saturation != null)) { //assuming we're being called from outside of device (App)
 		def rgb = colorUtil.hslToRgb(value.hue, value.saturation, 0.5)
-		value.hex = colorUtil.rgbToHex(rgb)
+		value.hex = colorUtil.rgbToHex(*rgb)
 		value.rh = hex(rgb[0])
 		value.gh = hex(rgb[1])
 		value.bh = hex(rgb[2])
@@ -249,7 +249,7 @@ def setColor(value) {
 
 	if ((value.size() == 3) && (value.hue != null) && (value.saturation != null) && (value.level)) { //user passed in a level value too from outside (App)
 		def rgb = colorUtil.hslToRgb(value.hue, value.saturation, 0.5)
-		value.hex = colorUtil.rgbToHex(rgb)
+		value.hex = colorUtil.rgbToHex(*rgb)
 		value.rh = hex(rgb[0] * value.level/100)
 		value.gh = hex(rgb[1] * value.level/100)
 		value.bh = hex(rgb[2] * value.level/100)
