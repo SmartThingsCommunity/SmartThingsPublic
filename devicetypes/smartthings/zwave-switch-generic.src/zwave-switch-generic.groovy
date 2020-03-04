@@ -19,7 +19,6 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-		capability "Light"
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
 		fingerprint mfr: "001D", prod: "1A02", model: "0334", deviceJoinName: "Leviton Appliance Module", ocfDeviceType: "oic.d.smartplug"
@@ -60,6 +59,7 @@ metadata {
 		fingerprint mfr: "0312", prod: "C000", model: "C003", deviceJoinName: "Evalogik Outdoor Smart Plug", ocfDeviceType: "oic.d.smartplug"
 		fingerprint mfr: "0312", prod: "FF00", model: "FF03", deviceJoinName: "Minoston Smart On/Off Switch"
 		fingerprint mfr: "0312", prod: "C000", model: "CO05", deviceJoinName: "Evalogik Mini Outdoor Smart Plug", ocfDeviceType: "oic.d.smartplug"
+		fingerprint mfr: "031E", prod: "0004", model: "0001", deviceJoinName: "Inovelli Switch"
 	}
 
 	// simulator metadata
