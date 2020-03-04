@@ -74,16 +74,20 @@ def updated() {
 
 def configure() {
 	log.info "configure called"
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+		log.debug "configure: reportingInterval '${reportingInterval}'"
+	if (reportingInterval != null) {
+		sendEvent(name: "checkInterval", value: 2 * (reportingInterval as int)*60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID]) // (reportingInterval as int)*60 : input value unit is minutes
+	} else {
+		sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	}
 	def commands = []
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	log.debug "configure: commands '${commands}'"
-	log.debug "configure: reportingInterval '${reportingInterval}'"
 	log.debug "configure: tempOffset '${tempOffset}'"
 	log.debug "configure: humidityOffset '${humidityOffset}'"
 
 	if (reportingInterval != null) {
-		commands << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: (reportingInterval as int)*60) // sec -> min
+		commands << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: (reportingInterval as int)*60) // (reportingInterval as int)*60 : input value unit is minutes
 	}
 	if (tempOffset != null) {
 		commands << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: (tempOffset as int)*10) // 0.1 -> 1
