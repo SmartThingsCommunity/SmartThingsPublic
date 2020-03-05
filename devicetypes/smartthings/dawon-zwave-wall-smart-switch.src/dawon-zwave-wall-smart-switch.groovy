@@ -26,9 +26,9 @@ metadata {
 	}
 
 	preferences {
-		input "reportingInterval", "number", title: "Reporting interval", description: "How often the device should report in minutes", range: "*..*", displayDuringSetup: false
-		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-		input "humidityOffset", "number", title: "Humidity Offset", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
+		input "reportingInterval", "number", title: "Reporting interval", defaultValue: 10, description: "How often the device should report in minutes", range: "*..*", displayDuringSetup: false // default value set to 10 minutes
+		input "tempOffset", "number", title: "Temperature Offset", defaultValue: 2, description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false // default value 2 ¡Æ
+		input "humidityOffset", "number", title: "Humidity Offset", defaultValue: 10, description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false // default value 10 %
 	}
 
 	tiles(scale: 2) {
