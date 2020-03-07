@@ -15,6 +15,7 @@ metadata {
 	definition (name: "Z-Wave Battery Thermostat", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.thermostat", genericHandler: "Z-Wave") {
 		capability "Actuator"
 		capability "Temperature Measurement"
+		capability "Thermostat"
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Cooling Setpoint"
 		capability "Thermostat Operating State"
