@@ -259,7 +259,7 @@ private void createChildDevices() {
 				device.hubId,
 				[completedSetup: true,
 				 label: "${device.displayName} (CH${i})",
-				 isComponent: true,
+				 isComponent: false,
 				 componentName: "ep$i",
 				 componentLabel: "Channel $i"
 		])
