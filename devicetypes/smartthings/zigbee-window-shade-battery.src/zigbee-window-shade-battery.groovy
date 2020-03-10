@@ -15,7 +15,7 @@ import groovy.json.JsonOutput
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
-	definition(name: "ZigBee Window Shade Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade-2") {
+	definition(name: "ZigBee Window Shade Battery", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "generic-shade-3") {
 		capability "Actuator"
 		capability "Battery"
 		capability "Configuration"
