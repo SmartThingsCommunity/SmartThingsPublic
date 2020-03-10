@@ -247,14 +247,16 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		case 1:
 			state.reportingInterval = cmd.scaledConfigurationValue
 			break
+		/*
 		case 2:
 			state.tempOffset = cmd.scaledConfigurationValue
 			break
 		case 3:
 			state.humidityOffset = cmd.scaledConfigurationValue
 			break
+		*/
 	}
-	log.debug "zwaveEvent ConfigurationReport: reportingInterval '${state.reportingInterval}', tempOffset '${state.tempOffset}', humidityOffset '${state.humidityOffset}%'"
+	//log.debug "zwaveEvent ConfigurationReport: reportingInterval '${state.reportingInterval}', tempOffset '${state.tempOffset}', humidityOffset '${state.humidityOffset}%'"
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, endpoint = null) {
