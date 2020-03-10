@@ -26,9 +26,9 @@ metadata {
 	}
 
 	preferences {
-		input "reportingInterval", "number", title: "Reporting interval", defaultValue: 10, description: "How often the device should report in minutes", range: "*..*", displayDuringSetup: false // default value set to 10 minutes
-		input "tempOffset", "number", title: "Temperature Offset", defaultValue: 2, description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false // default value 2 ¡Æ
-		input "humidityOffset", "number", title: "Humidity Offset", defaultValue: 10, description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false // default value 10 %
+		input "reportingInterval", "number", title: "Reporting interval", defaultValue: 10, description: "How often the device should report in minutes", range: "1..60", displayDuringSetup: false // default value set to 10 minutes, range 1~60 minutes
+		//input "tempOffset", "number", title: "Temperature Offset", defaultValue: 2, description: "Adjust temperature by this many degrees", range: "1..100", displayDuringSetup: false // default value 2 °<= Dawon DNS don't want to this configuration item changing for power consumption saving.
+		//input "humidityOffset", "number", title: "Humidity Offset", defaultValue: 10, description: "Adjust humidity by this percentage", range: "1..100", displayDuringSetup: false // default value 10 % <= Dawon DNS don't want to this configuration item changing for power consumption saving.
 	}
 
 	tiles(scale: 2) {
@@ -83,21 +83,23 @@ def configure() {
 	def commands = []
 	commands << zwave.multiChannelV3.multiChannelEndPointGet()
 	log.debug "configure: commands '${commands}'"
-	log.debug "configure: tempOffset '${tempOffset}'"
-	log.debug "configure: humidityOffset '${humidityOffset}'"
+	//log.debug "configure: tempOffset '${tempOffset}'"
+	//log.debug "configure: humidityOffset '${humidityOffset}'"
 
 	if (reportingInterval != null) {
 		commands << zwave.configurationV1.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: (reportingInterval as int)*60) // (reportingInterval as int)*60 : input value unit is minutes
 	}
+	/*
 	if (tempOffset != null) {
 		commands << zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: (tempOffset as int)*10) // 0.1 -> 1
 	}
 	if (humidityOffset != null) {
 		commands << zwave.configurationV1.configurationSet(parameterNumber: 3, size: 1, scaledConfigurationValue: humidityOffset as int)
 	}
+	*/
 	commands << zwave.configurationV1.configurationGet(parameterNumber: 1)
-	commands << zwave.configurationV1.configurationGet(parameterNumber: 2)
-	commands << zwave.configurationV1.configurationGet(parameterNumber: 3)
+	//commands << zwave.configurationV1.configurationGet(parameterNumber: 2)
+	//commands << zwave.configurationV1.configurationGet(parameterNumber: 3)
 
 	commands << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) // temperature
 	commands << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) // humidity
