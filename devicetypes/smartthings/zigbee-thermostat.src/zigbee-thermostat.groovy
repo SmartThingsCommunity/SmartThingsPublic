@@ -440,7 +440,7 @@ def fanOn() {
 
 private setSetpoint(degrees, setpointAttr, degreesMin, degreesMax) {
 	if (degrees != null && setpointAttr != null && degreesMin != null && degreesMax != null) {
-		def normalized = Math.min(degreesMax, Math.max(degrees, degreesMin))
+		def normalized = Math.min(degreesMax as Double, Math.max(degrees as Double, degreesMin as Double))
 		def celsius = (temperatureScale == "C") ? normalized : fahrenheitToCelsius(normalized)
 		celsius = (celsius as Double).round(2)
 
