@@ -16,6 +16,11 @@
  *  Date: 2015-7-12
  */
 
+private getAEOTEC_LED6_MFR() { "0371" }
+private getAEOTEC_LED6_PROD_US() { "0103" }
+private getAEOTEC_LED6_PROD_EU() { "0003" }
+private getAEOTEC_LED6_MODEL() { "0002" }
+
 metadata {
 	definition (name: "RGBW Light", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb") {
 		capability "Switch Level"
@@ -65,8 +70,10 @@ metadata {
 		// Manufacturer and model-specific fingerprints.
 		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
 		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
-		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec LED Bulb" //EU
 		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec LED Bulb" //US
+		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec LED Bulb" //EU
+		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_US, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec LED Bulb 6" //US
+		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_EU, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec LED Bulb 6" //EU
 		fingerprint mfr: "0300", prod: "0003", model: "0003", deviceJoinName: "ilumin RGBW Bulb"
 		fingerprint mfr: "031E", prod: "0005", model: "0001", deviceJoinName: "ilumin RGBW Bulb"
 	}
@@ -122,6 +129,8 @@ private getCOLD_WHITE() { "coldWhite" }
 private getRGB_NAMES() { [RED, GREEN, BLUE] }
 private getWHITE_NAMES() { [WARM_WHITE, COLD_WHITE] }
 private getCOLOR_NAMES() { RGB_NAMES + WHITE_NAMES }
+private getSWITCH_VALUE_ON() { 0xFF } // Per Z-Wave, this multilevel switch value commands state-transition to on.  This will restore the most-recent non-zero value cached in the device.
+private getSWITCH_VALUE_OFF() { 0 } // Per Z-Wave, this multilevel switch value commands state-transition to off.  This will not clobber the most-recent non-zero value cached in the device.
 private MIN(a, b) { a < b ? a : b }
 private MAX(a, b) { a > b ? a : b }
 private BOUND(x, floor, ceiling) { x < floor ? floor : x > ceiling ? ceiling : x }
@@ -214,22 +223,28 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	[linkText: linkText, descriptionText: "$linkText: $cmd", displayed: false]
 }
 
+private emitMultiLevelSet(level, duration=1) {
+	log.debug "setLevel($level, $duration)"
+	duration = duration < 128 ? duration : 127 + Math.round(duration / 60) // See Z-Wave duration encodinbg
+	duration = Math.min(duration, 0xFE) // 0xFF is a special code for factory default; bound to 0xFE
+	def tcallback = Math.min(duration * 1000 + 2500, 12000) // how long should we wait to read back?  we can't wait forever
+	commands([
+		zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: duration),
+		zwave.switchMultilevelV3.switchMultilevelGet(),
+	], tcallback)
+}
+
 def on() {
-	// Per Z-Wave spec, this multilevel switch set value commands state-transition
-	// to on.  This will restore the most-recent non-zero value cached in the device.
-	def ON = 0xFF
-	commands([zwave.switchMultilevelV3.switchMultilevelSet(value: ON),
-	         zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 3500)
+	emitMultiLevelSet(SWITCH_VALUE_ON)
 }
 
 def off() {
-	// Per Z-Wave spec, this multilevel switch set value commands state-transition
-	// to off.  This will not clobber the most-recent non-zero value cached in the device.
-	def OFF = 0
-	commands([zwave.switchMultilevelV3.switchMultilevelSet(value: OFF),
-	         zwave.switchMultilevelV3.switchMultilevelGet(),
-	], 3500)
+	emitMultiLevelSet(SWITCH_VALUE_OFF)
+}
+
+def setLevel(level, duration=1) {
+	level = Math.max(Math.min(level, 99), 1) // See Z-Wave level encoding
+	emitMultiLevelSet(level, duration)
 }
 
 def refresh() {
@@ -239,18 +254,6 @@ def refresh() {
 def ping() {
 	log.debug "ping().."
 	refresh()
-}
-
-def setLevel(level, duration=1) {
-	log.debug "setLevel($level, $duration)"
-	level = Math.max(Math.min(level, 99), 1) // See Z-Wave level encoding
-	duration = duration < 128 ? duration : 127 + Math.round(duration / 60) // See Z-Wave duration encodinbg
-	duration = Math.min(duration, 0xFE) // 0xFF is a special code for factory default; bound to 0xFE
-	def tcallback = Math.min(duration * 1000 + 2500, 12000) // how long should we wait to read back?  we can't wait forever
-	commands([
-		zwave.switchMultilevelV3.switchMultilevelSet(value: level, dimmingDuration: duration),
-		zwave.switchMultilevelV3.switchMultilevelGet(),
-	], tcallback)
 }
 
 def setSaturation(percent) {
@@ -277,12 +280,35 @@ def setColor(value) {
 	} else {
 		state.staged << value.subMap("hue", "saturation") // stage ST hue and saturation attributes
 		def hex = colorUtil.hsvToHex(Math.round(value.hue) as int, Math.round(value.saturation) as int) // convert to hex
-		state.staged << [color: hex] // statge ST RGB color attribute
+		state.staged << [color: hex] // stage ST RGB color attribute
 		rgb = colorUtil.hexToRgb(hex) // separate RGB elements for zwave setter
 	}
 	commands([zwave.switchColorV3.switchColorSet(red: rgb[0], green: rgb[1], blue: rgb[2], warmWhite: 0, coldWhite: 0),
 	          zwave.switchColorV3.switchColorGet(colorComponent: RGB_NAMES[0]), // event-publish callback is on any of the RGB responses, so only need to GET one of these
 	], 3500)
+}
+
+private emitTemperatureSet(temp, cmds) {
+	// Restrict temp to legal bounds.
+	temp = BOUND(temp, COLOR_TEMP_MIN, COLOR_TEMP_MAX)
+	// Add our staging dictionary to state.
+	if (state.staged == null) {
+		state.staged = [:]
+	}
+	// Stage ST colorTemperature attribute.
+	state.staged << [colorTemperature: temp]
+	// Emit our command.  Follow up with callback-trigger getter.  Our
+	// event-publish callback is on any of the while-level responses,
+	// so we only need to GET one of these these.  Make sure that we
+	// only have delay immediately before the callback trigger getter.
+	if (cmds.size() > 1) {
+		def prologue = cmds.init()
+		cmds = cmds.tail()
+		commands(prologue, 0) // emit in quick succession
+	}
+	def epilogue = cmds
+	epilogue << zwave.switchColorV3.switchColorGet(colorComponent: WHITE_NAMES[0])
+	commands(epilogue, 3500) // only delay before callback getter
 }
 
 private tempToZwaveWarmWhite(temp) {
@@ -298,17 +324,49 @@ private tempToZwaveColdWhite(temp) {
 	coldValue
 }
 
-def setColorTemperature(temp) {
-	log.debug "setColorTemperature($temp)"
+private setZwaveColorTemperature(temp) {
 	def warmValue = tempToZwaveWarmWhite(temp)
 	def coldValue = tempToZwaveColdWhite(temp)
-	if (state.staged == null) {
-		state.staged = [:]
+	emitTemperatureSet(temp, [zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue)])
+}
+
+private setAeotecLed6ColorTemperature(temp) {
+	temp = BOUND(temp, COLOR_TEMP_MIN, COLOR_TEMP_MAX)
+	def warmValue = temp < 5000 ? 255 : 0
+	def coldValue = temp >= 5000 ? 255 : 0
+	def WARM_WHITE_CONFIG = 0x51
+	def COLD_WHITE_CONFIG = 0x52
+	def parameterNumber = temp < 5000 ? WARM_WHITE_CONFIG : COLD_WHITE_CONFIG
+	// The Aeotec bulbs require special handling for temperature crossfade
+	// due to their imposition of precedence for warm white (highest
+	// precedence) and cold white (next highest precedence) channels,
+	// and due to their use of manufacturer specific temperature config
+	// commands.
+	//
+	// To be successful, we must:
+	//
+	//     * stage valid cold or warm temp with Aeotec-specific config 0x51 or 0x52
+	//     * set inverse channel intensity to 0 and desired channel to 255 - note this clobbers temp
+	//     * re-apply cold or warm temp with Aeotec-specific config 0x51 or 0x52
+	emitTemperatureSet(temp, [zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp]),
+	                          zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue),
+	                          zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp])])
+}
+
+def isAeotecLed6() {
+	(   (zwaveInfo?.mfr?.equals(AEOTEC_LED6_MFR) && zwaveInfo?.prod?.equals(AEOTEC_LED6_PROD_US) && zwaveInfo?.model?.equals(AEOTEC_LED6_MODEL))
+	 || (zwaveInfo?.mfr?.equals(AEOTEC_LED6_MFR) && zwaveInfo?.prod?.equals(AEOTEC_LED6_PROD_EU) && zwaveInfo?.model?.equals(AEOTEC_LED6_MODEL)))
+}
+
+def setColorTemperature(temp) {
+	log.debug "setColorTemperature($temp)"
+	if (isAeotecLed6()) {
+		// Call the special Aeotec LED Bulb 6 setter.
+		// The default Z-Wave temperature setter won't work for this bulb.
+		setAeotecLed6ColorTemperature(temp)
+	} else {
+		setZwaveColorTemperature(temp)
 	}
-	state.staged << [colorTemperature: temp] // stage ST colorTemperature attribute
-	commands([zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue),
-	          zwave.switchColorV3.switchColorGet(colorComponent: WHITE_NAMES[0]), // event-publish callback is on any of the while-level responses, so only need to GET one of these these
-	], 3500)
 }
 
 private queryAllColors() {
