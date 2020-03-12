@@ -131,9 +131,7 @@ private getWHITE_NAMES() { [WARM_WHITE, COLD_WHITE] }
 private getCOLOR_NAMES() { RGB_NAMES + WHITE_NAMES }
 private getSWITCH_VALUE_ON() { 0xFF } // Per Z-Wave, this multilevel switch value commands state-transition to on.  This will restore the most-recent non-zero value cached in the device.
 private getSWITCH_VALUE_OFF() { 0 } // Per Z-Wave, this multilevel switch value commands state-transition to off.  This will not clobber the most-recent non-zero value cached in the device.
-private MIN(a, b) { a < b ? a : b }
-private MAX(a, b) { a > b ? a : b }
-private BOUND(x, floor, ceiling) { x < floor ? floor : x > ceiling ? ceiling : x }
+private BOUND(x, floor, ceiling) { Math.max(Math.min(x, ceiling), floor) }
 
 def updated() {
 	log.debug "updated().."
@@ -243,7 +241,7 @@ def off() {
 }
 
 def setLevel(level, duration=1) {
-	level = Math.max(Math.min(level, 99), 1) // See Z-Wave level encoding
+	level = BOUND(level, 1, 99) // See Z-Wave level encoding
 	emitMultiLevelSet(level, duration)
 }
 
@@ -301,26 +299,24 @@ private emitTemperatureSet(temp, cmds) {
 	// event-publish callback is on any of the while-level responses,
 	// so we only need to GET one of these these.  Make sure that we
 	// only have delay immediately before the callback trigger getter.
-	if (cmds.size() > 1) {
-		def prologue = cmds.init()
-		cmds = cmds.tail()
-		commands(prologue, 0) // emit in quick succession
-	}
-	def epilogue = cmds
-	epilogue << zwave.switchColorV3.switchColorGet(colorComponent: WHITE_NAMES[0])
-	commands(epilogue, 3500) // only delay before callback getter
+	def prologue = cmds.init() // grab all but last
+	def epilogue = [] << cmds.last() // grab last
+	epilogue << zwave.switchColorV3.switchColorGet(colorComponent: WHITE_NAMES[0]) // append callback get
+	def rv = prologue.size() > 0 ? commands(prologue, 0) : [] // collect formatted prologue; check for empty; empty is OK, but can't be passed to commands()
+	rv << commands(epilogue, 3500) // collect formatted epilogue; only delay immediately before callback getter
+	return rv // return formatted command array to execute
 }
 
 private tempToZwaveWarmWhite(temp) {
 	temp = BOUND(temp, COLOR_TEMP_MIN, COLOR_TEMP_MAX)
 	def warmValue = ((COLOR_TEMP_MAX - temp) / COLOR_TEMP_DIFF * WHITE_MAX) as Integer
-	warmValue = MAX(WHITE_MIN, warmValue)
+	warmValue = Math.max(WHITE_MIN, warmValue)
 	warmValue
 }
 
 private tempToZwaveColdWhite(temp) {
 	def coldValue = (WHITE_MAX - tempToZwaveWarmWhite(temp))
-	coldValue = MAX(WHITE_MIN, coldValue)
+	coldValue = Math.max(WHITE_MIN, coldValue)
 	coldValue
 }
 
@@ -345,11 +341,9 @@ private setAeotecLed6ColorTemperature(temp) {
 	//
 	// To be successful, we must:
 	//
-	//     * stage valid cold or warm temp with Aeotec-specific config 0x51 or 0x52
 	//     * set inverse channel intensity to 0 and desired channel to 255 - note this clobbers temp
-	//     * re-apply cold or warm temp with Aeotec-specific config 0x51 or 0x52
-	emitTemperatureSet(temp, [zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp]),
-	                          zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue),
+	//     * then apply desired cold or warm temp with Aeotec-specific config 0x51 or 0x52
+	emitTemperatureSet(temp, [zwave.switchColorV3.switchColorSet(red: 0, green: 0, blue: 0, warmWhite: warmValue, coldWhite: coldValue),
 	                          zwave.configurationV1.configurationSet([parameterNumber: parameterNumber, size: 2, scaledConfigurationValue: temp])])
 }
 
