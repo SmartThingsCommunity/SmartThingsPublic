@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Wall Double Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy", genericHandler: "Z-Wave") {
+	definition (name: "Fibaro Walli Double Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy", genericHandler: "Z-Wave") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Health Check"
@@ -227,8 +227,7 @@ private getCommandClassVersions() {
 def configure() {
 	log.debug "Configure..."
 	response([
-			encap(zwave.multiChannelV3.multiChannelEndPointGet()),
-			encap(zwave.manufacturerSpecificV2.manufacturerSpecificGet())
+			encap(zwave.multiChannelV3.multiChannelEndPointGet())
 	])
 }
 
@@ -276,13 +275,6 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 	response([
 			refreshAll()
 	])
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, ep = null) {
-	def mfr = Integer.toHexString(cmd.manufacturerId)
-	def model = Integer.toHexString(cmd.productId)
-	updateDataValue("mfr", mfr)
-	updateDataValue("model", model)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd, ep = null) {
@@ -411,14 +403,9 @@ def refresh(endpoints = [1], includeMeterGet = true) {
 	def cmds = []
 	endpoints.each {
 		cmds << [encap(zwave.basicV1.basicGet(), it)]
-		//cmds << encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: 2, parameterNumber: 11, size: 1))
-		//cmds << encap(zwave.configurationV2.configurationGet(parameterNumber: 11))
-
-		//state.currentPreferencesState."ledFrame–ColourWhenOn".value = 2
-
 		if (includeMeterGet) {
-			//cmds << encap(zwave.meterV3.meterGet(scale: 0), it)
-			//cmds << encap(zwave.meterV3.meterGet(scale: 2), it)
+			cmds << encap(zwave.meterV3.meterGet(scale: 0), it)
+			cmds << encap(zwave.meterV3.meterGet(scale: 2), it)
 		}
 	}
 	delayBetween(cmds, 200)
@@ -469,7 +456,7 @@ private addChildSwitches(numberOfSwitches) {
 	for (def endpoint : 2..numberOfSwitches) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
-			def componentLabel = device.displayName[0..-2] + "${endpoint}"
+			def componentLabel = device.displayName + "-${endpoint}"
 			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
 					completedSetup	: true,
 					label			: componentLabel,
@@ -490,13 +477,13 @@ private getParameterMap() {[
 		description: "This parameter determines how the device will react in the event of power supply failure (e.g. power outage). The parameter is not relevant for outputs set to pulse mode (parameter 150/151 set to 2)."
 	],
 	[
-		name: "LED frame – power limit", key: "ledFrame–PowerLimit", type: "range",
+		name: "LED frame - power limit", key: "ledFrame-PowerLimit", type: "range",
 		parameterNumber: 10, size: 4, defaultValue: 36800,
 		range: "500..36800",
 		 description: "This parameter determines maximum active power. Exceeding it results in the LED frame flashing violet. Function is active only when parameter 11 is set to 8 or 9."
 	],
 	[
-			name: "LED frame – colour when ON", key: "ledFrame–ColourWhenOn", type: "enum",
+			name: "LED frame - colour when ON", key: "ledFrame-ColourWhenOn", type: "enum",
 			parameterNumber: 11, size: 1, defaultValue: 1,
 			values: [
 					0: "LED disabled",
@@ -513,7 +500,7 @@ private getParameterMap() {[
 			description: "This parameter defines the LED colour when thedevice is ON. When set to 8 or 9, LED frame colour will change depending on he measured power and parameter 10. Other colours are set permanently and do not depend on power consumption."
 	],
 	[
-		name: "LED frame – colour when OFF", key: "ledFrame–ColourWhenOff", type: "enum",
+		name: "LED frame - colour when OFF", key: "ledFrame-ColourWhenOff", type: "enum",
 		parameterNumber: 12, size: 1, defaultValue: 0,
 		values: [
 			0: "LED disabled",
@@ -528,13 +515,13 @@ private getParameterMap() {[
 		description: "This parameter defines the LED colour when the device is OFF."
 	],
 	[
-		name: "LED frame – brightness", key: "ledFrame–Brightness", type: "range",
+		name: "LED frame - brightness", key: "ledFrame-Brightness", type: "range",
 		parameterNumber: 13, size: 1, defaultValue: 100,
 		range: "1..102",
 		description: "This parameter allows to adjust the LED frame brightness."
 	],
 	[
-		name: "First channel – operating mode", key: "firstChannel–OperatingMode", type: "enum",
+		name: "First channel - operating mode", key: "firstChannel-OperatingMode", type: "enum",
 		parameterNumber: 150, size: 1, defaultValue: 0,
 		values: [
 			0: "standard operation",
@@ -544,7 +531,7 @@ private getParameterMap() {[
 		description: "This parameter allows to choose operating for the 1st channel ."
 	],
 	[
-		name: "Second channel – operating mode", key: "secondChannel–OperatingMode", type: "enum",
+		name: "Second channel - operating mode", key: "secondChannel-OperatingMode", type: "enum",
 		parameterNumber: 151, size: 1, defaultValue: 0,
 		values: [
 			0: "standard operation",
@@ -586,43 +573,43 @@ private getParameterMap() {[
 		description: "This parameter allows to set time parameter used in timed modes for 2nd channel (parameter 151). Delay time for switching off or duration of the pulse."
 	],
 	/*[
-		name: "First channel – Switch ON value sent to 2nd and 3rd association groups", key: "firstChannel–SwitchOnValueSentTo2NdAnd3RdAssociationGroups", type: "range",
+		name: "First channel - Switch ON value sent to 2nd and 3rd association groups", key: "firstChannel-SwitchOnValueSentTo2NdAnd3RdAssociationGroups", type: "range",
 		parameterNumber: 156, size: 2, defaultValue: 255,
 		range: "255",
 		description: "This parameter defines value sent with Switch ON command to devices associated in 2nd and 3rd association group for manual changes of Endpoint 1 state."
 	],
 	[
-		name: "First channel – Switch OFF value sent to 2nd and 3rd association groups", key: "firstChannel–SwitchOffValueSentTo2NdAnd3RdAssociationGroups", type: "range",
+		name: "First channel - Switch OFF value sent to 2nd and 3rd association groups", key: "firstChannel-SwitchOffValueSentTo2NdAnd3RdAssociationGroups", type: "range",
 		parameterNumber: 157, size: 2, defaultValue: 0,
 		range: "255",
 		description: "This parameter defines value sent with Switch OFF command to devices associated in 2nd and 3rd association group for manual changes of Endpoint 1 state."
 	],
 	[
-		name: "First channel – Double Click value sent to 2nd and 3rd association groups", key: "firstChannel–DoubleClickValueSentTo2NdAnd3RdAssociationGroups", type: "range",
+		name: "First channel - Double Click value sent to 2nd and 3rd association groups", key: "firstChannel-DoubleClickValueSentTo2NdAnd3RdAssociationGroups", type: "range",
 		parameterNumber: 158, size: 2, defaultValue: 99,
 		range: "255",
 		description: "This parameter defines value sent with Double Click command to devices associated in 2nd and 3rd association group for manual changes of Endpoint 1 state."
 	],
 	[
-		name: "Second channel – Switch ON value sent to 4th and 5th association groups", key: "secondChannel–SwitchOnValueSentTo4ThAnd5ThAssociationGroups", type: "range",
+		name: "Second channel - Switch ON value sent to 4th and 5th association groups", key: "secondChannel-SwitchOnValueSentTo4ThAnd5ThAssociationGroups", type: "range",
 		parameterNumber: 159, size: 2, defaultValue: 255,
 		range: "255",
 		description: "This parameter defines value sent with Switch ON command to devices associated in 4th and  5th association group for manual changes of Endpoint 2 state."
 	],
 	[
-		name: "Second channel – Switch OFF value sent to 4th and 5th association groups", key: "secondChannel–SwitchOffValueSentTo4ThAnd5ThAssociationGroups", type: "range",
+		name: "Second channel - Switch OFF value sent to 4th and 5th association groups", key: "secondChannel-SwitchOffValueSentTo4ThAnd5ThAssociationGroups", type: "range",
 		parameterNumber: 160, size: 2, defaultValue: 0,
 		range: "255",
 		description: "This parameter defines value sent with Switch OFF command to devices associated in 4th and 5th association group for manual changes of Endpoint 2 state."
 	],
 	[
-		name: "Second channel – Double Click value sent to 4th and 5th association groups", key: "secondChannel–DoubleClickValueSentTo4ThAnd5ThAssociationGroups", type: "range",
+		name: "Second channel - Double Click value sent to 4th and 5th association groups", key: "secondChannel-DoubleClickValueSentTo4ThAnd5ThAssociationGroups", type: "range",
 		parameterNumber: 161, size: 2, defaultValue: 99,
 		range: "255",
 		description: "This parameter defines value sent with Double Click command to devices associated in 4th and 5th association group for manual changes of Endpoint 2 state."
 	],*/
 	[
-		name: "First channel – overload safety switch", key: "firstChannel–OverloadSafetySwitch", type: "boolRange",
+		name: "First channel - overload safety switch", key: "firstChannel-OverloadSafetySwitch", type: "boolRange",
 		parameterNumber: 2, size: 4, defaultValue: 0,
 		range: "10..45000", disableValue: 0,
 		description: "This function allows to turn off the controlled device in case of exceeding the defined power. Controlled device can be turned back on via button or sending a control frame."
@@ -652,7 +639,7 @@ private getParameterMap() {[
 		description: "This parameter allows reversing the operation of Q1 and Q2 without changing the wiring (e.g. in case of invalid connection). Changing orientation turns both outputs off."
 	],
 	[
-		name: "Second channel – overload safety switch", key: "secondChannel–OverloadSafetySwitch", type: "boolRange",
+		name: "Second channel - overload safety switch", key: "secondChannel-OverloadSafetySwitch", type: "boolRange",
 		parameterNumber: 3, size: 4, defaultValue: 0,
 		range: "10..36200", disableValue: 0,
 		description: "This function allows to turn off the controlled device in case of exceeding the defined power. Controlled device can be turned back on via button or sending a control frame."
@@ -714,13 +701,13 @@ private getParameterMap() {[
 		description: "This parameter determines to which alarm frames and how the device should react. The parameters consist of 4 bytes, three most significant bytes are set according to the official Z-Wave protocol specification."
 	],
 	[
-		name: "Alarm configuration – duration", key: "alarmConfiguration–Duration", type: "range",
+		name: "Alarm configuration - duration", key: "alarmConfiguration-Duration", type: "range",
 		parameterNumber: 35, size: 2, defaultValue: 600,
 		range: "1..32400",
 		description: "This parameter defines duration of alarm sequence.  When time set in this parameter elapses, alarm is cancelled, LED frame and relay restore normal operation, but do not recover state from before the alarm."
 	],
 	[
-		name: "First button – scenes sent", key: "firstButton–ScenesSent", type: "enum",
+		name: "First button - scenes sent", key: "firstButton-ScenesSent", type: "enum",
 		parameterNumber: 40, size: 1, defaultValue: 0,
 		values: [
 			1: "Key pressed 1 time",
@@ -731,7 +718,7 @@ private getParameterMap() {[
 		description: "This parameter determines which actions result in sending scene IDs assigned to them. Values can be combined (e.g. 1+2=3 means that scenes for single and double click are sent). Enabling scenes for triple click disables entering the device in learn mode by triple clicking."
 	],
 	[
-		name: "Second button – scenes sent", key: "secondButton–ScenesSent", type: "enum",
+		name: "Second button - scenes sent", key: "secondButton-ScenesSent", type: "enum",
 		parameterNumber: 41, size: 1, defaultValue: 0,
 		values: [
 			1: "Key pressed 1 time",
@@ -742,56 +729,56 @@ private getParameterMap() {[
 		description: "This parameter determines which actions result in sending scene IDs assigned to them. Values can be combined (e.g. 1+2=3 means that scenes for single and double click are sent). Enabling scenes for triple click disables entering the device in learn mode by triple clicking."
 	],*/
 	[
-		name: "Power reports – include self-consumption", key: "powerReports–IncludeSelf-Consumption", type: "boolean",
+		name: "Power reports - include self-consumption", key: "powerReports-IncludeSelf-Consumption", type: "boolean",
 		parameterNumber: 60, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "Self-consumption not included",
 		optionActive: 1, activeDescription: "Self-consumption included",
 		description: "This parameter determines whether the power measurements should include power consumed by the device itself."
 	],
 	[
-		name: "Power reports for first channel – on change", key: "powerReportsForFirstChannel–OnChange", type: "boolRange",
+		name: "Power reports for first channel - on change", key: "powerReportsForFirstChannel-OnChange", type: "boolRange",
 		parameterNumber: 61, size: 2, defaultValue: 15,
 		range: "1..500", disableValue: 0,
 		description: "This parameter defines minimal change (from the last reported) in measured power that results in sending new report. For loads under 50W the parameter is irrelevant, report are sent every 5W change."
 	],
 	[
-		name: "Power reports for first channel – periodic", key: "powerReportsForFirstChannel–Periodic", type: "boolRange",
+		name: "Power reports for first channel - periodic", key: "powerReportsForFirstChannel-Periodic", type: "boolRange",
 		parameterNumber: 62, size: 2, defaultValue: 3600,
 		range: "30..32400", disableValue: 0,
 		description: "This parameter defines reporting interval for measured power. Periodic reports are independent from changes in value (parameter 61)."
 	],
 	[
-		name: "Power reports for second channel – on change", key: "powerReportsForSecondChannel–OnChange", type: "boolRange",
+		name: "Power reports for second channel - on change", key: "powerReportsForSecondChannel-OnChange", type: "boolRange",
 		parameterNumber: 63, size: 2, defaultValue: 15,
 		range: "1..500", disableValue: 0,
 		description: "This parameter defines minimal change (from the last reported) in measured power that results in sending new report. For loads under 50W the parameter is irrelevant, report are sent every 5W change."
 	],
 	[
-		name: "Power reports for second channel – periodic", key: "powerReportsForSecondChannel–Periodic", type: "boolRange",
+		name: "Power reports for second channel - periodic", key: "powerReportsForSecondChannel-Periodic", type: "boolRange",
 		parameterNumber: 64, size: 2, defaultValue: 3600,
 		range: "30..32400", disableValue: 0,
 		description: "This parameter defines reporting interval for measured power. Periodic reports are independent from changes in value (parameter 63)."
 	],
 	[
-		name: "Energy reports for first channel – on change", key: "energyReportsForFirstChannel–OnChange", type: "boolRange",
+		name: "Energy reports for first channel - on change", key: "energyReportsForFirstChannel-OnChange", type: "boolRange",
 		parameterNumber: 65, size: 2, defaultValue: 10,
 		range: "1..500", disableValue: 0,
 		description: "This parameter defines minimal change (from the last reported) in measured energy that results in sending new report."
 	],
 	[
-		name: "Energy reports for first channel – periodic", key: "energyReportsForFirstChannel–Periodic", type: "boolRange",
+		name: "Energy reports for first channel - periodic", key: "energyReportsForFirstChannel-Periodic", type: "boolRange",
 		parameterNumber: 66, size: 2, defaultValue: 3600,
 		range: "30..32400", disableValue: 0,
 		description: "This parameter defines reporting interval for measured energy. Periodic reports are independent from changes in value (parameter 66)."
 	],
 	[
-		name: "Energy reports for second channel – on change", key: "energyReportsForSecondChannel–OnChange", type: "boolRange",
+		name: "Energy reports for second channel - on change", key: "energyReportsForSecondChannel-OnChange", type: "boolRange",
 		parameterNumber: 67, size: 2, defaultValue: 10,
 		range: "1..500", disableValue: 0,
 		description: "This parameter defines minimal change (from the last reported) in measured energy that results in sending new report."
 	],
 	[
-		name: "Energy reports for second channel – periodic", key: "energyReportsForSecondChannel–Periodic", type: "boolRange",
+		name: "Energy reports for second channel - periodic", key: "energyReportsForSecondChannel-Periodic", type: "boolRange",
 		parameterNumber: 68, size: 2, defaultValue: 3600,
 		range: "30..32400", disableValue: 0,
 		description: "This parameter defines reporting interval for measured energy. Periodic reports are independent from changes in value (parameter 67)."
