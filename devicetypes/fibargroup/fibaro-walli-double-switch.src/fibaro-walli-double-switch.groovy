@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Walli Double Switch", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy", genericHandler: "Z-Wave") {
+	definition (name: "Fibaro Walli Double Switch", namespace: "fibargroup", author: "SmartThings", mnmn: "SmartThings", vid: "generic-switch-power-energy", genericHandler: "Z-Wave") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Health Check"
@@ -208,19 +208,19 @@ private getCommandValue(preference) {
  */
 private getCommandClassVersions() {
 	[
-			0x20: 1,  // Basic
-			0x25: 1,  // Switch Binary
-			0x30: 1,  // Sensor Binary
-			0x31: 2,  // Sensor MultiLevel
-			0x32: 3,  // Meter
-			0x56: 1,  // Crc16Encap
-			0x60: 3,  // Multi-Channel
-			0x70: 2,  // Configuration
-			0x72: 2,  // Manufacturer Specific
-			0x73: 1,  // Powerlevel
-			0x84: 1,  // WakeUp
-			0x86: 2,  // Version
-			0x98: 2   // Security
+		0x20: 1,  // Basic
+		0x25: 1,  // Switch Binary
+		0x30: 1,  // Sensor Binary
+		0x31: 2,  // Sensor MultiLevel
+		0x32: 3,  // Meter
+		0x56: 1,  // Crc16Encap
+		0x60: 3,  // Multi-Channel
+		0x70: 2,  // Configuration
+		0x72: 2,  // Manufacturer Specific
+		0x73: 1,  // Powerlevel
+		0x84: 1,  // WakeUp
+		0x86: 2,  // Version
+		0x98: 2   // Security
 	]
 }
 
@@ -273,7 +273,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 		addChildSwitches(cmd.endPoints)
 	}
 	response([
-			refreshAll()
+		refreshAll()
 	])
 }
 
@@ -371,11 +371,11 @@ def childOnOff(deviceNetworkId, value) {
 
 private onOffCmd(value, endpoint = 1) {
 	delayBetween([
-			encap(zwave.basicV1.basicSet(value: value), endpoint),
-			encap(zwave.basicV1.basicGet(), endpoint),
-			"delay 3000",
-			encap(zwave.meterV3.meterGet(scale: 0), endpoint),
-			encap(zwave.meterV3.meterGet(scale: 2), endpoint)
+		encap(zwave.basicV1.basicSet(value: value), endpoint),
+		encap(zwave.basicV1.basicGet(), endpoint),
+		"delay 3000",
+		encap(zwave.meterV3.meterGet(scale: 0), endpoint),
+		encap(zwave.meterV3.meterGet(scale: 2), endpoint)
 	])
 }
 
@@ -427,9 +427,9 @@ def childReset(deviceNetworkId) {
 def reset(endpoint = 1) {
 	log.debug "Resetting endpoint: ${endpoint}"
 	delayBetween([
-			encap(zwave.meterV3.meterReset(), endpoint),
-			encap(zwave.meterV3.meterGet(scale: 0), endpoint),
-			"delay 500"
+		encap(zwave.meterV3.meterReset(), endpoint),
+		encap(zwave.meterV3.meterGet(scale: 0), endpoint),
+		"delay 500"
 	], 500)
 }
 
@@ -456,11 +456,11 @@ private addChildSwitches(numberOfSwitches) {
 	for (def endpoint : 2..numberOfSwitches) {
 		try {
 			String childDni = "${device.deviceNetworkId}:$endpoint"
-			def componentLabel = device.displayName + "-${endpoint}"
+			def componentLabel = device.displayName + " ${endpoint}"
 			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
-					completedSetup	: true,
-					label			: componentLabel,
-					isComponent		: false
+				completedSetup	: true,
+				label			: componentLabel,
+				isComponent		: false
 			])
 		} catch(Exception e) {
 			log.debug "Exception: ${e}"
@@ -480,24 +480,24 @@ private getParameterMap() {[
 		name: "LED frame - power limit", key: "ledFrame-PowerLimit", type: "range",
 		parameterNumber: 10, size: 4, defaultValue: 36800,
 		range: "500..36800",
-		 description: "This parameter determines maximum active power. Exceeding it results in the LED frame flashing violet. Function is active only when parameter 11 is set to 8 or 9."
+		description: "This parameter determines maximum active power. Exceeding it results in the LED frame flashing violet. Function is active only when parameter 11 is set to 8 or 9."
 	],
 	[
-			name: "LED frame - colour when ON", key: "ledFrame-ColourWhenOn", type: "enum",
-			parameterNumber: 11, size: 1, defaultValue: 1,
-			values: [
-					0: "LED disabled",
-					1: "White",
-					2: "Red",
-					3: "Green",
-					4: "Blue",
-					5: "Yellow",
-					6: "Cyan",
-					7: "Magenta",
-					8: "colour changes smoothly depending on measured power",
-					9: "colour changes in steps depending on measured power"
-			],
-			description: "This parameter defines the LED colour when thedevice is ON. When set to 8 or 9, LED frame colour will change depending on he measured power and parameter 10. Other colours are set permanently and do not depend on power consumption."
+		name: "LED frame - colour when ON", key: "ledFrame-ColourWhenOn", type: "enum",
+		parameterNumber: 11, size: 1, defaultValue: 1,
+		values: [
+			0: "LED disabled",
+			1: "White",
+			2: "Red",
+			3: "Green",
+			4: "Blue",
+			5: "Yellow",
+			6: "Cyan",
+			7: "Magenta",
+			8: "colour changes smoothly depending on measured power",
+			9: "colour changes in steps depending on measured power"
+		],
+		description: "This parameter defines the LED colour when thedevice is ON. When set to 8 or 9, LED frame colour will change depending on he measured power and parameter 10. Other colours are set permanently and do not depend on power consumption."
 	],
 	[
 		name: "LED frame - colour when OFF", key: "ledFrame-ColourWhenOff", type: "enum",
@@ -648,10 +648,10 @@ private getParameterMap() {[
 		name: "Alarm configuration - 1st slot", key: "alarmConfiguration-1StSlot", type: "enum",
 		parameterNumber: 30, size: 4, defaultValue: 0,
 		values: [
-			1: "[MSB] – Notification Type",
+			1: "[MSB] - Notification Type",
 			2: "Notification Value",
 			3: "Event/State Parameters",
-			4: "[LSB] – action"
+			4: "[LSB] - action"
 		],
 		description: "This parameter determines to which alarm frames and how the device should react. The parameters consist of 4 bytes, three most significant bytes are set according to the official Z-Wave protocol specification."
 	],
@@ -659,10 +659,10 @@ private getParameterMap() {[
 		name: "Alarm configuration - 2nd slot", key: "alarmConfiguration-2NdSlot", type: "enum",
 		parameterNumber: 31, size: 4, defaultValue: 0,
 		values: [
-			1: "[MSB] – Notification Type",
+			1: "[MSB] - Notification Type",
 			2: "Notification Value",
 			3: "Event/State Parameters",
-			4: "[LSB] – action"
+			4: "[LSB] - action"
 		],
 		description: "This parameter determines to which alarm frames and how the device should react. The parameters consist of 4 bytes, three most significant bytes are set according to the official Z-Wave protocol specification."
 	],
@@ -670,10 +670,10 @@ private getParameterMap() {[
 		name: "Alarm configuration - 3rd slot", key: "alarmConfiguration-3RdSlot", type: "enum",
 		parameterNumber: 32, size: 4, defaultValue: 0,
 		values: [
-			1: "[MSB] – Notification Type",
+			1: "[MSB] - Notification Type",
 			2: "Notification Value",
 			3: "Event/State Parameters",
-			4: "[LSB] – action"
+			4: "[LSB] - action"
 		],
 		description: "This parameter determines to which alarm frames and how the device should react. The parameters consist of 4 bytes, three most significant bytes are set according to the official Z-Wave protocol specification."
 	],
@@ -682,10 +682,10 @@ private getParameterMap() {[
 		parameterNumber: 33, size: 4, defaultValue: 0,
 		values: [
 			0: "Notification Type",
-			1: "[MSB] – Notification Type",
+			1: "[MSB] - Notification Type",
 			2: "Notification Status",
 			3: "Event/State Parameters",
-			4: "[LSB] – action"
+			4: "[LSB] - action"
 		],
 		description: "This parameter determines to which alarm frames and how the device should react. The parameters consist of 4 bytes, three most significant bytes are set according to the official Z-Wave protocol specification."
 	],
@@ -693,7 +693,7 @@ private getParameterMap() {[
 		name: "Alarm configuration - 5th slot", key: "alarmConfiguration-5ThSlot", type: "enum",
 		parameterNumber: 34, size: 4, defaultValue: 0,
 		values: [
-			1: "[MSB] – Notification Type",
+			1: "[MSB] - Notification Type",
 			2: "Notification Status",
 			3: "Event/State Parameters",
 			4: "[LSB] - action"
