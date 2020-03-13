@@ -43,6 +43,7 @@ metadata {
 		fingerprint mfr: "0109", prod: "2005", model: "0518", deviceJoinName: "Vision Outdoor Siren"
 		fingerprint mfr: "0258", prod: "0003", model: "6088", deviceJoinName: "NEO Coolcam Siren Alarm"//AU
 		fingerprint mfr: "0258", prod: "0600", model: "1028", deviceJoinName: "NEO Coolcam Siren Alarm"//MY
+		fingerprint mfr: "0109", prod: "2009", model: "0908", deviceJoinName: "Vision Indoor Siren"
 	}
 
 	simulator {
