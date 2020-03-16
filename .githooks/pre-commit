@@ -1,11 +1,6 @@
 #!/bin/bash
 
-STASH_NAME="pre-commit-$(date +%s)"
-git stash save -q --keep-index $STASH_NAME
-
-CHANGED_DTHS=$(git diff --cached --name-only | grep .*.groovy)
 ERROR_COUNT=0
-# echo $CHANGED_DTHS
 while IFS= read -r DTH; do
   echo "Verifying $DTH"
   ERRORS=$(groovyc $DTH 2>&1 | grep ".groovy:")
@@ -19,11 +14,6 @@ while IFS= read -r DTH; do
   fi
   echo "======================================================================="
 done < <(git diff --cached --name-only | grep .*.groovy)
-
-STASHES=$(git stash list)
-if [[ $STASHES == "$STASH_NAME" ]]; then
-  git stash pop -q
-fi
 
 if [[ $ERROR_COUNT -gt 0 ]]; then
   echo "rejected" && exit 1
