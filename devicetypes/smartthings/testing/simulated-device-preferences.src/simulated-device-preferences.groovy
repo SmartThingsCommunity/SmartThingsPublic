@@ -39,13 +39,23 @@ metadata {
 					defaultValue: "Option1Key",
 					required: false)
 			input("enumInput2", "enum",
-					title: "Enum Title 2 (value options)",
-					description: "Enum Description 2 (value options)",
+					title: "Enum Title 2 (List of options)",
+					description: "Enum Description 2 (List of options)",
 					options: ["Option 1 Value", "Option 2 Value", "Option 3 Value", "Option 4 Value"],
 					defaultValue: "Option 1 Value",
 					required: false)
 			input("enumInput3", "enum",
 					title: "Enum Title 3 (no options)", description: "Enum Description 3 (no options)",
+					required: false)
+			input("enumInput4", "enum",
+					title: "Enum Title 4 (Lists of Maps options)",
+					description: "Enum Description 4 (Lists of Maps options)",
+					options: [
+							["Option 1 Value":"Option 1 Value"],
+							["Option 2 Value":"Option 2 Value"],
+							["Option 3 Value":"Option 3 Value"],
+							["Option 4 Value":"Option 4 Value"]],
+					defaultValue: "Option 1 Value",
 					required: false)
 			input("booleanInput", "boolean",
 					title: "Boolean Title",
@@ -134,6 +144,7 @@ def updated() {
 		enumInput: enumInput,
 		enumInput2: enumInput2,
 		enumInput3: enumInput3,
+		enumInput4: enumInput4,
 		numInput: numInput,
 		numInput2: numInput2,
 		numInput3: numInput3,
@@ -141,8 +152,11 @@ def updated() {
 		passInput: passInput,
 		textInput: textInput
 	]
-	log.debug "Current preferences: ${state.preferences}"
-	log.debug "New preferences: ${newPreferences}"
+	newPreferences.each { k, v ->
+		if (state.preferences[k] != v) {
+			log.debug "Updating '$k' ${state.preferences[k]} -> $v"
+		}
+	}
 	state.preferences = newPreferences
 }
 

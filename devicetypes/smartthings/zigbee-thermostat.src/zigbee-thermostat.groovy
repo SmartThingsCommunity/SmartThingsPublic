@@ -439,33 +439,23 @@ def fanOn() {
 			zigbee.readAttribute(FAN_CONTROL_CLUSTER, FAN_MODE)
 }
 
-def setCoolingSetpoint(degrees) {
-	if (degrees != null) {
-		def celsius = (temperatureScale == "C") ? degrees : fahrenheitToCelsius(degrees)
+private setSetpoint(degrees, setpointAttr, degreesMin, degreesMax) {
+	if (degrees != null && setpointAttr != null && degreesMin != null && degreesMax != null) {
+		def normalized = Math.min(degreesMax as Double, Math.max(degrees as Double, degreesMin as Double))
+		def celsius = (temperatureScale == "C") ? normalized : fahrenheitToCelsius(normalized)
 		celsius = (celsius as Double).round(2)
-		return zigbee.writeAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, hex(celsius * 100)) +
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT)
+
+		return zigbee.writeAttribute(THERMOSTAT_CLUSTER, setpointAttr, DataType.INT16, hex(celsius * 100)) +
+				zigbee.readAttribute(THERMOSTAT_CLUSTER, setpointAttr)
 	}
 }
 
+def setCoolingSetpoint(degrees) {
+	setSetpoint(degrees, COOLING_SETPOINT, coolingSetpointRange[0], coolingSetpointRange[1])
+}
+
 def setHeatingSetpoint(degrees) {
-	if (degrees != null) {
-		def celsius = (temperatureScale == "C") ? degrees : fahrenheitToCelsius(degrees)
-		celsius = (celsius as Double).round(2)
-
-		// The LUX KONOz is designed around Farenheit and doesn't show decimal temperatures.
-		// The lowest supported heating setpoint is 45F which is 7.22C. It displays 7C. We round
-		// 7.22C elsewhere to 7C. So, we want to check to make sure if the user sets 7C we send 7.22C.
-		// Same for the upper bounds of the heating setpoint.
-		if (celsius < heatingSetpointRange[0]) {
-			celsius = heatingSetpointRange[0]
-		} else if (celsius > heatingSetpointRange[1]) {
-			celsius = heatingSetpointRange[1]
-		}
-
-		return zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, hex(celsius * 100)) +
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT)
-	}
+	setSetpoint(degrees, HEATING_SETPOINT, heatingSetpointRange[0], heatingSetpointRange[1])
 }
 
 private hex(value) {
