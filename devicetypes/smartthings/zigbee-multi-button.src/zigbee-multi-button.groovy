@@ -231,12 +231,12 @@ private getButtonMap() {[
 				"03" : 1,
 				"04" : 2
 		],
-        "SceneSwitch-EM-3.0" : [
+		"SceneSwitch-EM-3.0" : [
 				"01" : 1,
-                "02" : 2,
-                "03" : 3,
-                "04" : 4
-        ]
+				"02" : 2,
+				"03" : 3,
+				"04" : 4
+		]
 ]}
 
 private getSupportedButtonValues() {
