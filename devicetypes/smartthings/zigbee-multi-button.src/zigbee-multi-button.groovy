@@ -76,7 +76,7 @@ def parseAttrMessage(description) {
 		map = parseAduroSmartButtonMessage(descMap)
     	} else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER && descMap.isClusterSpecific) {
 		map = getButtonEvent(descMap)
-	} else if(descMap?.clusterInt == 0x0005) {
+	} else if (descMap?.clusterInt == 0x0005) {
 		def buttonNumber
 		buttonNumber = buttonMap[device.getDataValue("model")][descMap.data[2]]
        
