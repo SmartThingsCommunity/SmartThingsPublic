@@ -591,7 +591,7 @@ private getParameterMap() {[
 		range: "1..255", disableValue: 0,
 		description: "This parameter defines detection delay for the burnt out bulb (parameter 161) and overload (parameter 2)."
 	],
-	[
+	/*[
 		name: "First button – Switch ON value sent to 2nd and 3rd association groups", key: "firstButton–SwitchOnValueSentTo2NdAnd3RdAssociationGroups", type: "range",
 		parameterNumber: 163, size: 2, defaultValue: 255,
 		range: "0..255",
@@ -603,9 +603,11 @@ private getParameterMap() {[
 	[
 		name: "Second button – Switch OFF value sent to 2nd and 3rd association groups", key: "secondButton–SwitchOffValueSentTo2NdAnd3RdAssociationGroups", type: "range",
 		parameterNumber: 164, size: 2, defaultValue: 0,
-		range: "254",
-		description: "This parameter defines value sent with Switch OFF command to devices associated in 2nd and 3rd association group."
-	],
+		range: "0..254",
+		description: "This parameter defines value sent with Switch OFF command to devices associated in 2nd and 3rd association group." +
+                "0 to 99 (Default) - value sent\n" +
+                "254 - send value equal to the current level"
+	],*/
 	[
 		name: "Double click – set level", key: "doubleClick–SetLevel", type: "range",
 		parameterNumber: 165, size: 1, defaultValue: 99,
