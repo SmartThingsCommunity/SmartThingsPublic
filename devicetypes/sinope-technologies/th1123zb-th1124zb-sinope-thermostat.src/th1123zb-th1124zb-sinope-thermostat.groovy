@@ -442,8 +442,6 @@ def refresh() {
 		
         sendZigbeeCommands(cmds)
 		refresh_misc() 
-        refresh_misc()	
-		refresh_misc() 
 	}
 	else {
         traceEvent(settings.logFilter, "updated(): Ran within last 5 seconds so aborting", settings.trace, get_LOG_TRACE())
