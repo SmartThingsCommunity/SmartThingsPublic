@@ -76,9 +76,9 @@ def parseAttrMessage(description) {
 		map = parseAduroSmartButtonMessage(descMap)
     	} else if (descMap?.clusterInt == zigbee.ONOFF_CLUSTER && descMap.isClusterSpecific) {
 		map = getButtonEvent(descMap)
-	} else if(descMap?.clusterInt == 0xFC80) {
+	} else if (descMap?.clusterInt == 0x0005) {
 		def buttonNumber
-		buttonNumber = Integer.valueOf(descMap?.command[1].toInteger()) + 1
+		buttonNumber = buttonMap[device.getDataValue("model")][descMap.data[2]]
        
 		log.debug "Number is ${buttonNumber}"
 		def descriptionText = getButtonName() + " ${buttonNumber} was pushed"
@@ -154,10 +154,14 @@ def ping() {
 
 def configure() {
 	def bindings = getModelBindings(device.getDataValue("model"))
-	return zigbee.onOffConfig() +
+	def cmds = zigbee.onOffConfig() +
 			zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, batteryVoltage, DataType.UINT8, 30, 21600, 0x01) +
 			zigbee.enrollResponse() +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, batteryVoltage) + bindings
+	if (isHeimanButton())
+		cmds += zigbee.writeAttribute(0x0000, 0x0012, DataType.BOOLEAN, 0x01) +
+		addHubToGroup(0x000F) + addHubToGroup(0x0010) + addHubToGroup(0x0011) + addHubToGroup(0x0012)
+	return cmds
 }
 
 def installed() {
@@ -226,6 +230,12 @@ private getButtonMap() {[
 				"02" : 3,
 				"03" : 1,
 				"04" : 2
+		],
+		"SceneSwitch-EM-3.0" : [
+				"01" : 1,
+				"02" : 2,
+				"03" : 3,
+				"04" : 4
 		]
 ]}
 
@@ -304,3 +314,17 @@ def isAduroSmartRemote(){
 }
 
 def getADUROSMART_SPECIFIC_CLUSTER() {0xFCCC}
+
+private getCLUSTER_GROUPS() { 0x0004 }
+
+private List addHubToGroup(Integer groupAddr) {
+	["st cmd 0x0000 0x01 ${CLUSTER_GROUPS} 0x00 {${zigbee.swapEndianHex(zigbee.convertToHexString(groupAddr,4))} 00}",
+	 "delay 200"]
+}
+
+def isHeimanButton(){
+	device.getDataValue("model") == "SceneSwitch-EM-3.0"
+}
+
+
+
