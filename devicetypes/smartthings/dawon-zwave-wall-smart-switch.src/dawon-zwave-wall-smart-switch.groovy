@@ -158,6 +158,14 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, endpoint = null) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	log.info "zwaveEvent MultiChannelCmdEncap called: '${cmd}'  endpoint '${endpoint}'"
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	log.debug "MultiChannelCmdEncap: encapsulatedCommand '${encapsulatedCommand}'"
