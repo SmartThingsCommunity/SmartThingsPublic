@@ -25,6 +25,8 @@ metadata {
 		fingerprint mfr: "0371", prod: "0103", model: "00A2", deviceJoinName: "Aeotec Doorbell 6" //US
 		fingerprint mfr: "0371", prod: "0003", model: "00A4", deviceJoinName: "Aeotec Siren 6" //EU
 		fingerprint mfr: "0371", prod: "0103", model: "00A4", deviceJoinName: "Aeotec Siren 6" //US
+		fingerprint mfr: "0371", prod: "0203", model: "00A4", deviceJoinName: "Aeotec Siren 6" //AU
+		fingerprint mfr: "0371", prod: "0203", model: "00A2", deviceJoinName: "Aeotec Doorbell 6" //AU
 	}
 
 	tiles {
@@ -53,7 +55,8 @@ metadata {
 private getNumberOfSounds() {
 	def numberOfSounds = [
 			"0003" : 8, //Aeotec Doorbell/Siren EU
-			"0103" : 8 //Aeotec Doorbell/Siren US
+			"0103" : 8, //Aeotec Doorbell/Siren US
+			"0203" : 8 //Aeotec Doorbell/Siren AU
 	]
 	return numberOfSounds[zwaveInfo.prod] ?: 1
 }
@@ -86,6 +89,14 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	def endpoint = cmd.sourceEndPoint
 	if (endpoint == state.lastTriggeredSound && encapsulatedCommand != null) {
