@@ -12,8 +12,8 @@ metadata {
 
 		command "reset"
 		
-		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Wall Plug EU ZW5"
-		fingerprint mfr: "010F", prod: "0602"
+		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Outlet" //Fibaro Wall Plug EU ZW5
+		fingerprint mfr: "010F", prod: "0602", deviceJoinName: "Outlet"
 
 	}
 

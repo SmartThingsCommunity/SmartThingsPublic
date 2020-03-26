@@ -14,9 +14,9 @@ metadata {
 
 		attribute "coLevel", "number"
 
-		fingerprint mfr: "010F", prod: "1201", model: "1000"
-		fingerprint mfr: "010F", prod: "1201", model: "1001"
-		fingerprint mfr: "010F", prod: "1201"
+		fingerprint mfr: "010F", prod: "1201", model: "1000", deviceJoinName: "Smoke Detector"
+		fingerprint mfr: "010F", prod: "1201", model: "1001", deviceJoinName: "Smoke Detector"
+		fingerprint mfr: "010F", prod: "1201", deviceJoinName: "Smoke Detector"
 	}
 
 	tiles (scale: 2) {

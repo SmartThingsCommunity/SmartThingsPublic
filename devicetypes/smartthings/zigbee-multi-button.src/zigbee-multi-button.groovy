@@ -28,15 +28,15 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Iris KeyFob", mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Scene Keypad", vid: "generic-4-button"
+		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-4-button" //Iris KeyFob
+		fingerprint inClusters: "0000, 0001, 0003, 0007, 0020, 0B05", outClusters: "0003, 0006, 0019", manufacturer: "CentraLite", model:"3450-L2", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-4-button" //Iris KeyFob
+		fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "SceneSwitch-EM-3.0", deviceJoinName: "Button", vid: "generic-4-button" //HEIMAN Scene Keypad
 
 		//AduroSmart
-		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria scene button switch V2.1", mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "ADUROLIGHT_CSC", deviceJoinName: "Eria scene button switch V2.0", mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "Adurolight_NCC", deviceJoinName: "Eria dimming button switch V2.1", mnmn: "SmartThings", vid: "generic-4-button"
-		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "Adurolight_NCC", deviceJoinName: "Eria dimming button switch V2.0", mnmn: "SmartThings", vid: "generic-4-button"
+		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "ADUROLIGHT_CSC", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-4-button" //Eria scene button switch V2.1
+		fingerprint inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", outClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "ADUROLIGHT_CSC", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-4-button" //Eria scene button switch V2.0
+		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "AduroSmart Eria", model: "Adurolight_NCC", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-4-button" //Eria dimming button switch V2.1
+		fingerprint inClusters: "0000, 0003, 0008, FCCC, 1000", outClusters: "0003, 0004, 0006, 0008, FCCC, 1000", manufacturer: "ADUROLIGHT", model: "Adurolight_NCC", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-4-button" //Eria dimming button switch V2.0
 	}
 
 	tiles {

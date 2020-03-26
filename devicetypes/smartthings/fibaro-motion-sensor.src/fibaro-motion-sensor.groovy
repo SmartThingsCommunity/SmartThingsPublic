@@ -54,8 +54,8 @@
 		command "test"
 		command "configure"
 
-		fingerprint mfr:"010F", prod:"0800", model:"2001"
-		fingerprint mfr:"010F", prod:"0800", model:"1001"
+		fingerprint mfr:"010F", prod:"0800", model:"2001", deviceJoinName: "Motion Sensor"
+		fingerprint mfr:"010F", prod:"0800", model:"1001", deviceJoinName: "Motion Sensor"
 	}
 
 	simulator {

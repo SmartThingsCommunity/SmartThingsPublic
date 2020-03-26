@@ -25,9 +25,9 @@ metadata {
 		capability "Health Check"
 		capability "Three Axis"
 
-		fingerprint mfr: "010F", prod: "0801", model: "2001"
-		fingerprint mfr: "010F", prod: "0801", model: "1001"
-		fingerprint mfr: "010F", prod: "0801"
+		fingerprint mfr: "010F", prod: "0801", model: "2001", deviceJoinName: "Motion Sensor"
+		fingerprint mfr: "010F", prod: "0801", model: "1001", deviceJoinName: "Motion Sensor"
+		fingerprint mfr: "010F", prod: "0801", deviceJoinName: "Motion Sensor"
 
 	}
 

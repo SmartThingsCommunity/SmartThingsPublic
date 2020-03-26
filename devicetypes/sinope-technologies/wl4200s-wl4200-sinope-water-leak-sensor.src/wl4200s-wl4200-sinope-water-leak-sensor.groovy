@@ -29,8 +29,8 @@ metadata {
         
         attribute "sensor", "enum", ["disconnected", "connected"] //this attribute is used by the "sensor" tile
 
-        fingerprint manufacturer: "Sinope Technologies", model: "WL4200", deviceJoinName: "WL4200"
-        fingerprint manufacturer: "Sinope Technologies", model: "WL4200S", deviceJoinName: "WL4200S"
+        fingerprint manufacturer: "Sinope Technologies", model: "WL4200", deviceJoinName: "Water Leak Sensor" //WL4200
+        fingerprint manufacturer: "Sinope Technologies", model: "WL4200S", deviceJoinName: "Water Leak Sensor" //WL4200S
 	}
 
 	tiles(scale: 2) {

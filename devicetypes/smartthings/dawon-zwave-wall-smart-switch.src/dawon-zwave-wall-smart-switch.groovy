@@ -20,9 +20,9 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint mfr: "018C", prod: "0061", model: "0001", deviceJoinName: "Dawon Temp/Humidity Sensor" // addChildDevice "Dawon Smart Switch${endpoint}" 1
-		fingerprint mfr: "018C", prod: "0062", model: "0001", deviceJoinName: "Dawon Temp/Humidity Sensor" // addChildDevice "Dawon Smart Switch${endpoint}" 2
-		fingerprint mfr: "018C", prod: "0063", model: "0001", deviceJoinName: "Dawon Temp/Humidity Sensor" // addChildDevice "Dawon Smart Switch${endpoint}" 3
+		fingerprint mfr: "018C", prod: "0061", model: "0001", deviceJoinName: "Multipurpose Sensor" // addChildDevice "Dawon Smart Switch${endpoint}" 1 //Dawon Temp/Humidity Sensor
+		fingerprint mfr: "018C", prod: "0062", model: "0001", deviceJoinName: "Multipurpose Sensor" // addChildDevice "Dawon Smart Switch${endpoint}" 2 //Dawon Temp/Humidity Sensor
+		fingerprint mfr: "018C", prod: "0063", model: "0001", deviceJoinName: "Multipurpose Sensor" // addChildDevice "Dawon Smart Switch${endpoint}" 3 //Dawon Temp/Humidity Sensor
 	}
 
 	preferences {

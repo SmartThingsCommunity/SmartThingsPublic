@@ -17,9 +17,9 @@ metadata {
 		attribute "errorMode", "string"
 		attribute "scene", "string"
 
-		fingerprint mfr: "010F", prod: "0102", model: "2000"
-		fingerprint mfr: "010F", prod: "0102", model: "1000"
-		fingerprint mfr: "010F", prod: "0102", model: "3000"
+		fingerprint mfr: "010F", prod: "0102", model: "2000", deviceJoinName: "Dimmer Switch"
+		fingerprint mfr: "010F", prod: "0102", model: "1000", deviceJoinName: "Dimmer Switch"
+		fingerprint mfr: "010F", prod: "0102", model: "3000", deviceJoinName: "Dimmer Switch"
 	}
 
 	tiles (scale: 2) {
