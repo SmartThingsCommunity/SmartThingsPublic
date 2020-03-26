@@ -338,11 +338,11 @@ private changeSwitch(endpoint, value) {
 }
 
 private getNumberOfChildFromModel() {
-	if (zwaveInfo.prod.equals("0063")|zwaveInfo.prod.equals("0066")|zwaveInfo.prod.equals("0059")) {
+	if (zwaveInfo.prod.equals("0063")||zwaveInfo.prod.equals("0066")||zwaveInfo.prod.equals("0059")) {
 		return 3
-	} else if (zwaveInfo.prod.equals("0062")|zwaveInfo.prod.equals("0065")|zwaveInfo.prod.equals("0058")) {
+	} else if (zwaveInfo.prod.equals("0062")||zwaveInfo.prod.equals("0065")||zwaveInfo.prod.equals("0058")) {
 		return 2
-	} else if (zwaveInfo.prod.equals("0061")|zwaveInfo.prod.equals("0064")|zwaveInfo.prod.equals("0057")) {
+	} else if (zwaveInfo.prod.equals("0061")||zwaveInfo.prod.equals("0064")||zwaveInfo.prod.equals("0057")) {
 		return 1
 	} else {
 		return 0
