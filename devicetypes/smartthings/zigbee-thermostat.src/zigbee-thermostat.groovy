@@ -4,13 +4,11 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
- *	CentraLite Thermostat
  *
  *	Author: SRPOL
  *	Date: 2018-10-15
@@ -37,7 +35,8 @@ metadata {
 		capability "Sensor"
 
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019",  manufacturer: "LUX", model: "KONOZ", deviceJoinName: "LUX KONOz Thermostat"
-        fingerprint profileId: "0104", inClusters: "0000,0003,0020,0201,0202,0405", outClusters: "0019, 0402", manufacturer: "Umbrela", model: "Thermostat", deviceJoinName: "Umbrela UTee"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0020,0201,0202,0405", outClusters: "0019, 0402", manufacturer: "Umbrela", model: "Thermostat", deviceJoinName: "Umbrela UTee"
+		fingerprint manufacturer: "Danfoss", model: "eTRV0100", deviceJoinName: "Thermostat", vid: "generic-radiator-thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019
 	}
 
 	tiles {
@@ -225,9 +224,9 @@ private parseAttrMessage(description) {
 				 * 					0 – Electric / B
 				 * 					1 – Gas / O
 				 */
-				def cooling = 	   intValue & 0b00000011
-				def heating = 	  (intValue & 0b00001100) >>> 2
-				def heatingType = (intValue & 0b00010000) >>> 4
+				def cooling = 		 intValue & 0b00000011
+				def heating = 		(intValue & 0b00001100) >>> 2
+				def heatingType = 	(intValue & 0b00010000) >>> 4
 				def supportedModes = ["off"]
 
 				if (cooling != 0x03) {
@@ -261,8 +260,8 @@ private parseAttrMessage(description) {
 				state.supportedFanModes = FAN_MODE_SEQUENCE_MAP[it.value]
 			}
 		} else if (it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER) {
-			if (it.attribute == BATTERY_VOLTAGE) {
-				map = getBatteryPercentage(Integer.parseInt(it.value, 16))
+			if (it.attribute == BATTERY_VOLTAGE || it.attribute == BATTERY_PERCENTAGE_REMAINING) {
+				map = getBatteryPercentage(Integer.parseInt(it.value, 16), it.attribute)
 			} else if (it.attribute == BATTERY_ALARM_STATE) {
 				map = getPowerSource(it.value)
 			}
@@ -279,11 +278,16 @@ private parseAttrMessage(description) {
 def installed() {
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
-	state.supportedThermostatModes = ["off", "heat", "cool", "emergency heat"]
-	state.supportedFanModes = ["on", "auto"]
+	if(isDanfossAlly()) {
+		state.supportedThermostatModes = ["heat"]
+	} else {
+		state.supportedThermostatModes = ["off", "heat", "cool", "emergency heat"]
+		state.supportedFanModes = ["on", "auto"]
+		sendEvent(name: "supportedThermostatFanModes", value: JsonOutput.toJson(state.supportedFanModes), displayed: false)
+		sendEvent(name: "coolingSetpointRange", value: coolingSetpointRange, displayed: false)
+	}
+
 	sendEvent(name: "supportedThermostatModes", value: JsonOutput.toJson(state.supportedThermostatModes), displayed: false)
-	sendEvent(name: "supportedThermostatFanModes", value: JsonOutput.toJson(state.supportedFanModes), displayed: false)
-	sendEvent(name: "coolingSetpointRange", value: coolingSetpointRange, displayed: false)
 	sendEvent(name: "heatingSetpointRange", value: heatingSetpointRange, displayed: false)
 }
 
@@ -298,6 +302,7 @@ def refresh() {
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_RUNNING_STATE) +
 			zigbee.readAttribute(FAN_CONTROL_CLUSTER, FAN_MODE) +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE) +
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING) +
 			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_ALARM_STATE)
 }
 
@@ -310,30 +315,40 @@ def configure() {
 	def startValues = zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 0x07D0) +
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 0x0A28)
 
+	if (isDanfossAlly()) {
+		// setting Min/Max HeatSetPointLimits for Danfoss Ally - MinHeatSetpointLimit: 500 (0x01F4), MaxHeatSetpointLimit: 3500 (0x0DAC)
+		startValues += zigbee.writeAttribute(THERMOSTAT_CLUSTER, MIN_HEAT_SETPOINT_LIMIT, DataType.INT16, 0x01F4) +
+				zigbee.writeAttribute(THERMOSTAT_CLUSTER, MAX_HEAT_SETPOINT_LIMIT, DataType.INT16, 0x0DAC)
+	}
+
 	return binding + startValues + zigbee.batteryConfig() + refresh()
 }
 
-def getBatteryPercentage(rawValue) {
+def getBatteryPercentage(rawValue, attribute) {
 	def result = [:]
 
 	result.name = "battery"
 
-	if (rawValue == 0) {
-		sendEvent(name: "powerSource", value: "mains", descriptionText: "${device.displayName} is connected to mains")
-		result.value = 100
-		result.descriptionText = "${device.displayName} is powered by external source."
-	} else {
-		def volts = rawValue / 10
-		def minVolts = 5
-		def maxVolts = 6.5
-		def pct = (volts - minVolts) / (maxVolts - minVolts)
-		def roundedPct = Math.round(pct * 100)
-		if (roundedPct < 0) {
-			roundedPct = 0
+	if (attribute == BATTERY_VOLTAGE) {
+		if (rawValue == 0) {
+			sendEvent(name: "powerSource", value: "mains", descriptionText: "${device.displayName} is connected to mains")
+			result.value = 100
+			result.descriptionText = "${device.displayName} is powered by external source."
+		} else {
+			def volts = rawValue / 10
+			def minVolts = 5
+			def maxVolts = 6.5
+			def pct = (volts - minVolts) / (maxVolts - minVolts)
+			def roundedPct = Math.round(pct * 100)
+			if (roundedPct < 0) {
+				roundedPct = 0
+			}
+			result.value = Math.min(100, roundedPct)
 		}
-		result.value = Math.min(100, roundedPct)
-		result.descriptionText = "${device.displayName} battery has ${result.value}%"
+	} else if (attribute == BATTERY_PERCENTAGE_REMAINING) {
+		result.value = Math.min(100, rawValue)
 	}
+	result.descriptionText = "${device.displayName} battery has ${result?.value}%"
 
 	return result
 }
@@ -470,12 +485,20 @@ private boolean isLuxKONOZ() {
 	device.getDataValue("model") == "KONOZ"
 }
 
+private boolean isDanfossAlly() {
+	device.getDataValue("model") == "eTRV0100"
+}
+
 // TODO: Get these from the thermostat; for now they are set to match the UI metadata
 def getCoolingSetpointRange() {
 	(getTemperatureScale() == "C") ? [10, 35] : [50, 95]
 }
 def getHeatingSetpointRange() {
-	(getTemperatureScale() == "C") ? [7.22, 32.22] : [45, 90]
+	if (isDanfossAlly()) {
+		(getTemperatureScale() == "C") ? [4, 35] : [39, 95]
+	} else {
+		(getTemperatureScale() == "C") ? [7.22, 32.22] : [45, 90]
+	}
 }
 
 private getTHERMOSTAT_CLUSTER() { 0x0201 }
@@ -483,6 +506,8 @@ private getLOCAL_TEMPERATURE() { 0x0000 }
 private getTHERMOSTAT_SYSTEM_CONFIG() { 0x0009 } // Optional attribute
 private getCOOLING_SETPOINT() { 0x0011 }
 private getHEATING_SETPOINT() { 0x0012 }
+private getMIN_HEAT_SETPOINT_LIMIT() { 0x0015 }
+private getMAX_HEAT_SETPOINT_LIMIT() { 0x0016 }
 private getTHERMOSTAT_RUNNING_MODE() { 0x001E }
 private getCONTROL_SEQUENCE_OF_OPERATION() { 0x001B } // Mandatory attribute
 private getCONTROL_SEQUENCE_OF_OPERATION_MAP() {
@@ -537,4 +562,5 @@ private getFAN_MODE_MAP() {
 }
 
 private getBATTERY_VOLTAGE() { 0x0020 }
+private getBATTERY_PERCENTAGE_REMAINING() { 0x0021 }
 private getBATTERY_ALARM_STATE() { 0x003E }
