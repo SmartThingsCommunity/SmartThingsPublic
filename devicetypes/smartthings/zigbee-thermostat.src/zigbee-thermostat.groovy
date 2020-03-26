@@ -351,11 +351,12 @@ def getBatteryPercentage(rawValue, attribute) {
 				roundedPct = 0
 			}
 			result.value = Math.min(100, roundedPct)
+            result.descriptionText = "${device.displayName} battery has ${result?.value}%"
 		}
 	} else if (attribute == BATTERY_PERCENTAGE_REMAINING) {
 		result.value = Math.min(100, rawValue)
+        result.descriptionText = "${device.displayName} battery has ${result?.value}%"
 	}
-	result.descriptionText = "${device.displayName} battery has ${result?.value}%"
 
 	return result
 }
