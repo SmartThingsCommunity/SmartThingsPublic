@@ -254,4 +254,3 @@ void updateWindowShade() {
     	httpError(400, "$command is not a valid command")
     }
 }
-// TODO: implement event handlers
