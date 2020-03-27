@@ -116,7 +116,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 			def allOff = true
 			childDevices.each {
 				n->
-					if (n.currentState("switch") && n.currentState("switch").value != "off") allOff = false
+					if (n.currentState("switch") != null && n.currentState("switch").value != "off") allOff = false
 			}
 			if (allOff) {
 				event = [createEvent([name: "switch", value: "off"])]
