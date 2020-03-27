@@ -1,5 +1,5 @@
 defaults: &defaults
-  working_directory: ~/SmartThingsCommunity/SmartThingsPublic
+  working_directory: ~/monninn82/SmartThingsPublic
   docker:
     - image: smartthings-docker-build.jfrog.io/releng/build-common:latest
       auth:
