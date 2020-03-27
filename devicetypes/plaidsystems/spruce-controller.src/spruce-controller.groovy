@@ -746,4 +746,3 @@ def z16on() {
 def z16off() {
 	"st cmd 0x${device.deviceNetworkId} 17 6 0 {}"    
 }
-

@@ -508,4 +508,3 @@ private parameterMap() {[
 		descr: "If temperature is lower than set value, low temperature alarm will be triggered."]
 	]
 }
-

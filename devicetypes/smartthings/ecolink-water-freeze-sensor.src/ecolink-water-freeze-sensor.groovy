@@ -189,4 +189,3 @@ def freezeSensorValueEvent(value) {
 	def eventValue = value ? "freeze" : "cleared"
 	createEvent(name: "temperatureAlarm", value: eventValue, descriptionText: "$device.displayName is $eventValue")
 }
-

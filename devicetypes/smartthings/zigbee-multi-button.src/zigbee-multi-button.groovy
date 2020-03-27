@@ -325,6 +325,3 @@ private List addHubToGroup(Integer groupAddr) {
 def isHeimanButton(){
 	device.getDataValue("model") == "SceneSwitch-EM-3.0"
 }
-
-
-
