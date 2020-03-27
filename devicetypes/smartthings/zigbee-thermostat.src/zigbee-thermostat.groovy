@@ -4,7 +4,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *		    http://www.apache.org/licenses/LICENSE-2.0
+ *			http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -260,8 +260,12 @@ private parseAttrMessage(description) {
 				state.supportedFanModes = FAN_MODE_SEQUENCE_MAP[it.value]
 			}
 		} else if (it.cluster == zigbee.POWER_CONFIGURATION_CLUSTER) {
-			if (it.attribute == BATTERY_VOLTAGE || it.attribute == BATTERY_PERCENTAGE_REMAINING) {
-				map = getBatteryPercentage(Integer.parseInt(it.value, 16), it.attribute)
+			if (it.attribute == BATTERY_VOLTAGE) {
+				map = getBatteryPercentage(Integer.parseInt(it.value, 16))
+			} else if (it.attribute == BATTERY_PERCENTAGE_REMAINING) {
+				map.name = "battery"
+				map.value = Math.min(100, Integer.parseInt(it.value, 16))
+				map.descriptionText = "${device.displayName} battery has ${map.value}%"
 			} else if (it.attribute == BATTERY_ALARM_STATE) {
 				map = getPowerSource(it.value)
 			}
@@ -301,16 +305,16 @@ def refresh() {
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_MODE) +
 			zigbee.readAttribute(THERMOSTAT_CLUSTER, THERMOSTAT_RUNNING_STATE) +
 			zigbee.readAttribute(FAN_CONTROL_CLUSTER, FAN_MODE) +
-            zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_ALARM_STATE) +
-            getBatteryRemainingCommand()
+			zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_ALARM_STATE) +
+			getBatteryRemainingCommand()
 }
 
 def getBatteryRemainingCommand() {
-    if (isDanfossAlly()) {
-        zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING)
-    } else {
-        zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE)
-    }
+	if (isDanfossAlly()) {
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_PERCENTAGE_REMAINING)
+	} else {
+		zigbee.readAttribute(zigbee.POWER_CONFIGURATION_CLUSTER, BATTERY_VOLTAGE)
+	}
 }
 
 def ping() {
@@ -319,43 +323,39 @@ def ping() {
 
 def configure() {
 	def binding = zigbee.addBinding(THERMOSTAT_CLUSTER) + zigbee.addBinding(FAN_CONTROL_CLUSTER)
-	def startValues = zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 0x07D0) +
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 0x0A28)
+	def startValues = zigbee.writeAttribute(THERMOSTAT_CLUSTER, HEATING_SETPOINT, DataType.INT16, 0x07D0)
 
 	if (isDanfossAlly()) {
 		// setting Min/Max HeatSetPointLimits for Danfoss Ally - MinHeatSetpointLimit: 500 (0x01F4), MaxHeatSetpointLimit: 3500 (0x0DAC)
 		startValues += zigbee.writeAttribute(THERMOSTAT_CLUSTER, MIN_HEAT_SETPOINT_LIMIT, DataType.INT16, 0x01F4) +
 				zigbee.writeAttribute(THERMOSTAT_CLUSTER, MAX_HEAT_SETPOINT_LIMIT, DataType.INT16, 0x0DAC)
+	} else {
+		startValues += zigbee.writeAttribute(THERMOSTAT_CLUSTER, COOLING_SETPOINT, DataType.INT16, 0x0A28)
 	}
 
 	return binding + startValues + zigbee.batteryConfig() + refresh()
 }
 
-def getBatteryPercentage(rawValue, attribute) {
+def getBatteryPercentage(rawValue) {
 	def result = [:]
 
 	result.name = "battery"
 
-	if (attribute == BATTERY_VOLTAGE) {
-		if (rawValue == 0) {
-			sendEvent(name: "powerSource", value: "mains", descriptionText: "${device.displayName} is connected to mains")
-			result.value = 100
-			result.descriptionText = "${device.displayName} is powered by external source."
-		} else {
-			def volts = rawValue / 10
-			def minVolts = 5
-			def maxVolts = 6.5
-			def pct = (volts - minVolts) / (maxVolts - minVolts)
-			def roundedPct = Math.round(pct * 100)
-			if (roundedPct < 0) {
-				roundedPct = 0
-			}
-			result.value = Math.min(100, roundedPct)
-            result.descriptionText = "${device.displayName} battery has ${result?.value}%"
+	if (rawValue == 0) {
+		sendEvent(name: "powerSource", value: "mains", descriptionText: "${device.displayName} is connected to mains")
+		result.value = 100
+		result.descriptionText = "${device.displayName} is powered by external source."
+	} else {
+		def volts = rawValue / 10
+		def minVolts = 5
+		def maxVolts = 6.5
+		def pct = (volts - minVolts) / (maxVolts - minVolts)
+		def roundedPct = Math.round(pct * 100)
+		if (roundedPct < 0) {
+			roundedPct = 0
 		}
-	} else if (attribute == BATTERY_PERCENTAGE_REMAINING) {
-		result.value = Math.min(100, rawValue)
-        result.descriptionText = "${device.displayName} battery has ${result?.value}%"
+		result.value = Math.min(100, roundedPct)
+		result.descriptionText = "${device.displayName} battery has ${result.value}%"
 	}
 
 	return result
