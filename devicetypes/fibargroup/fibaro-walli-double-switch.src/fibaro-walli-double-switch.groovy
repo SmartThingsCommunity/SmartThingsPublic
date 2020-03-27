@@ -24,7 +24,7 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr: "010F", prod: "1B01", model: "1000", deviceJoinName: "Fibaro Switch" //Raw Description zw:Ls type:1001 mfr:010F prod:1B01 model:1000 ver:5.01 zwv:6.02 lib:03 cc:5E,55,98,9F,56,6C,22 sec:25,85,8E,59,86,72,5A,73,32,70,71,75,5B,7A,60 role:05 ff:9D00 ui:9D00 epc:2
+		fingerprint mfr: "010F", prod: "1B01", model: "1000", deviceJoinName: "Switch" //Fibaro Walli Double Switch FGWDSEU-221, Raw Description zw:Ls type:1001 mfr:010F prod:1B01 model:1000 ver:5.01 zwv:6.02 lib:03 cc:5E,55,98,9F,56,6C,22 sec:25,85,8E,59,86,72,5A,73,32,70,71,75,5B,7A,60 role:05 ff:9D00 ui:9D00 epc:2
 	}
 
 	tiles(scale: 2){
