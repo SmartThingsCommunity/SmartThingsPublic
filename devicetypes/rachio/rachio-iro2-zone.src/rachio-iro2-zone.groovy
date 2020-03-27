@@ -17,7 +17,7 @@
 
 import java.text.SimpleDateFormat
 
-def devVer() { return "2.0.0" }
+def devVer() { return "3.0.0" }
 
 metadata {
     definition (name: "Rachio Zone", namespace: "rachio", author: "Rachio") {
@@ -27,56 +27,6 @@ metadata {
         capability "Valve"
         capability "Sensor"
         capability "Health Check"
-
-        attribute "zoneNumber", "number"
-        attribute "zoneName", "string"
-        attribute "watering", "string"
-
-        attribute "zoneSquareFeet", "number"
-        attribute "zoneWaterTime", "number"
-        attribute "zoneTotalDuration", "number"
-        attribute "rootZoneDepth", "number"
-        attribute "availableWater", "string"
-
-        attribute "efficiency", "string"
-        attribute "maxRuntime", "number"
-        attribute "saturatedDepthOfWater", "string"
-        attribute "depthOfWater", "string"
-
-        //current_schedule data
-        attribute "scheduleType", "string"
-        
-        attribute "zoneDuration", "number"
-        attribute "zoneElapsed", "number"
-        attribute "zoneStartDate", "string"
-        attribute "zoneCycleCount", "number"
-
-        //custom nozzle data
-        attribute "nozzleName", "string"
-
-        //custom soil data
-        attribute "soilName", "string"
-
-        //custom slope data
-        attribute "slopeName", "string"
-
-        //custom crop data
-        attribute "cropName", "string"
-
-        //custom shade data
-        attribute "shadeName", "string"
-        attribute "inStandby", "string"
-        attribute "lastUpdatedDt", "string"
-
-        command "stopWatering"
-        command "decZoneWaterTime"
-        command "incZoneWaterTime"
-        command "setZoneWaterTime", ["number"]
-        command "startZone"
-
-        command "open"
-        command "close"
-        command "pause"
     }
 
     simulator {
@@ -86,84 +36,14 @@ metadata {
     tiles (scale: 2){
         multiAttributeTile(name: "valveTile", type: "generic", width: 6, height: 4) {
             tileAttribute("device.watering", key: "PRIMARY_CONTROL" ) {
-                attributeState "off", label: 'Off', action: "open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"updating"
+                attributeState "off", label: 'Off', action: "open", icon: "st.valves.water.closed", backgroundColor: "#ffffff", nextState:"on"
                 attributeState "offline", label: 'Offline', icon: "st.valves.water.closed", backgroundColor: "#cccccc"
-                attributeState "disabled", label: 'Disabled', icon: "st.valves.water.closed", backgroundColor: "#cccccc"
-                attributeState "standby", label: 'Standby Mode', icon: "st.valves.water.closed", backgroundColor: "#cccccc"
-                attributeState "on", label: 'Watering', action: "close", icon: "st.valves.water.open", backgroundColor: "#00a0dc", nextState: "updating"
-                attributeState "updating", label:"Working"
+                attributeState "on", label: 'Watering', action: "close", icon: "st.valves.water.open", backgroundColor: "#00a0dc", nextState: "off"
             }
-            tileAttribute("device.zoneRunStatus", key: "SECONDARY_CONTROL") {
-                attributeState("default", label:'${currentValue}')
-            }
-        }
-        valueTile("zoneName", "device.zoneName", inactiveLabel: true, width: 3, height: 1, decoration: "flat", wordWrap: true) {
-            state("default", label: 'Zone:\n${currentValue}')
-        }
-
-        valueTile("blank11", "device.blank", width: 1, height: 1, decoration: "flat") {
-            state("default", label: '')
-        }
-        
-        //zone Water time control
-        valueTile("scheduleType", "device.scheduleType", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state("default", label: 'Schedule Type:\n${currentValue}')
-        }
-        valueTile("efficiency", "device.efficiency", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state("default", label: 'Efficiency:\n${currentValue}')
-        }
-        valueTile("zoneSquareFeet", "device.zoneSquareFeet", inactiveLabel: false, width: 2 , height: 1, decoration: "flat") {
-            state "default", label: 'Zone Area\n${currentValue} sq ft'
-        }
-        standardTile("leftZoneTimeButton", "device.zoneWaterTime", inactiveLabel: false, decoration: "flat") {
-            state "default", action:"decZoneWaterTime", icon:"st.thermostat.thermostat-left"
-        }
-        valueTile("zoneWaterTime", "device.zoneWaterTime", width: 2, height: 1, decoration: "flat") {
-            state "default", label:'Manual Zone Time:\n${currentValue} Minutes'
-        }
-        controlTile("zoneWaterTimeSliderTile", "device.zoneWaterTime", "slider", width: 4, height: 1, range:'(0..60)') {
-            state "default", label: 'Manual Zone Time', action:"setZoneWaterTime"
-        }
-        standardTile("rightZoneTimeButton", "device.zoneWaterTime", inactiveLabel: false, decoration: "flat") {
-            state "default", action:"incZoneWaterTime", icon:"st.thermostat.thermostat-right"
-        }
-        valueTile("zoneWaterTimeVal", "device.zoneWaterTime", inactiveLabel: false, width: 2 , height: 1, decoration: "flat") {
-            state "default", label: 'Water Time\n${currentValue} Minutes'
-        }
-        valueTile("startZoneTile", "device.zoneWaterTime", inactiveLabel: false, width: 2 , height: 1, decoration: "flat") {
-            state "default", label: 'Run This Zone\n${currentValue} Minutes', action:'startZone'
-        }
-
-        //nozzle Tiles
-        valueTile("nozzleName", "device.nozzleName", inactiveLabel: true, width: 2, height: 1, decoration: "flat") {
-            state "default", label: 'Nozzle:\n${currentValue}'
-        }
-        //Soil Tiles
-        valueTile("soilName", "device.soilName", inactiveLabel: true, width: 2, height: 1, decoration: "flat") {
-            state "default", label: 'Soil:\n${currentValue}'
-        }
-        //Slope Tiles
-        valueTile("slopeName", "device.slopeName", inactiveLabel: true, width: 2, height: 1, decoration: "flat") {
-            state "default", label: 'Slope:\n${currentValue}'
-        }
-        //Crop Tiles
-        valueTile("cropName", "device.cropName", inactiveLabel: true, width: 2, height: 1, decoration: "flat") {
-            state "default", label: 'Crop:\n${currentValue}'
-        }
-        //Shade Tiles
-        valueTile("shadeName", "device.shadeName", inactiveLabel: true, width: 2, height: 1, decoration: "flat") {
-            state "default", label: 'Shade:\n${currentValue}'
-        }
-
-        standardTile("refresh", "device.power", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-            state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
-        standardTile("zoneImage", "device.zoneImage", inactiveLabel: false, width: 1, height: 1, decoration: "flat") {
-            state "default", label: '', icon: "http://media.rach.io/images/zone/default/default_zone.jpg"
         }
     }
     main "valveTile"
-    details(["valveTile", "zoneImage", "zoneName", "scheduleType", "nozzleName", "soilName", "slopeName", "cropName", "shadeName", "zoneSquareFeet", "leftZoneTimeButton", "zoneWaterTime", "rightZoneTimeButton", "startZoneTile", "lastUpdatedDt", "refresh"])
+    details(["valveTile"])
 }
 
 // parse events into attributes
@@ -173,7 +53,6 @@ def parse(String description) {
 
 def initialize() {
     sendEvent(name: "DeviceWatch-Enroll", value: groovy.json.JsonOutput.toJson(["protocol":"cloud", "scheme":"untracked"]), displayed: false)
-
     verifyDataAttr()
 }
 
@@ -398,7 +277,7 @@ def scheduleDataEvent(data) {
     def elapsedDuration = data?.zoneStartDate ? getDurationMinDesc(Math.round(timeDiff)) : 0
     def wateringDuration = zoneDuration ? getDurationMinDesc(zoneDuration) : 0
     def zoneRunStatus = ((!zoneStartDate && !zoneDuration) || (zoneId != device.deviceNetworkId)) ?
-            "Status: Idle" : "${curSchedType == "automatic" ? "Scheduled" : "Manual"} Watering: ${elapsedDuration} of ${wateringDuration} Minutes"    
+            "Status: Idle" : "${curSchedType == "automatic" ? "Scheduled" : "Manual"} Watering: ${elapsedDuration} of ${wateringDuration} Minutes"
     def zoneCycleCount = (zoneId != device.deviceNetworkId && !data?.totalCycleCount) ? 0 : data?.totalCycleCount
 
     sendEvent(name: 'scheduleType', value: curSchedType?.capitalize(), displayed: true)
