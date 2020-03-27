@@ -28,7 +28,7 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr: "010F", prod: "1C01", model: "1000", deviceJoinName: "Dimmer" // raw description: zw:Ls type:1101 mfr:010F prod:1C01 model:1000 ver:5.01 zwv:6.02 lib:03 cc:5E,55,98,56,6C,22 sec:26,85,8E,59,86,72,5A,73,32,70,71,75,5B,7A role:05 ff:9C00 ui:9C00
+		fingerprint mfr: "010F", prod: "1C01", model: "1000", deviceJoinName: "Dimmer Switch" //Fibaro Walli Dimmer FGWDEU-111,  raw description: zw:Ls type:1101 mfr:010F prod:1C01 model:1000 ver:5.01 zwv:6.02 lib:03 cc:5E,55,98,56,6C,22 sec:26,85,8E,59,86,72,5A,73,32,70,71,75,5B,7A role:05 ff:9C00 ui:9C00
 	}
 
 	tiles(scale: 2) {
