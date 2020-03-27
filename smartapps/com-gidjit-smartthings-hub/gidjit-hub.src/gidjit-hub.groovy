@@ -19,9 +19,7 @@ definition(
     author: "Matthew Page",
     description: "Act as an endpoint so user's of Gidjit can quickly access and control their devices and execute routines. Users can do this quickly as Gidjit filters these actions  based on their environment",
     category: "Convenience",
-    iconUrl: "http://www.gidjit.com/appicon.png",
-    iconX2Url: "http://www.gidjit.com/appicon@2x.png",
-    iconX3Url: "http://www.gidjit.com/appicon@3x.png",
+    iconUrl: "https://is3-ssl.mzstatic.com/image/thumb/Purple113/v4/c4/06/35/c4063557-2f24-377a-0a92-a3db51eae63b/AppIcon-0-0-1x_U007emarketing-0-0-0-10-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/1200x630wa.png",
     oauth: [displayName: "Gidjit", displayLink: "www.gidjit.com"])
 
 preferences(oauthPage: "deviceAuthorization") {

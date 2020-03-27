@@ -19,8 +19,9 @@ definition(
     author: "obycode",
     description: "Use this free SmartApp in conjunction with the ObyThing Music app for your Mac to control and automate music and more with iTunes and SmartThings.",
     category: "SmartThings Labs",
-    iconUrl: "http://obycode.com/obything/ObyThingSTLogo.png",
-    iconX2Url: "http://obycode.com/obything/ObyThingSTLogo@2x.png",
+    iconUrl: "http://beaconthingsapp.com/images/Icon-60.png",
+    iconX2Url: "http://beaconthingsapp.com/images/Icon-60@2x.png",
+    iconX3Url: "http://beaconthingsapp.com/images/Icon-60@3x.png",
     singleInstance: true,
     usesThirdPartyAuthentication: true,
     pausable: false
