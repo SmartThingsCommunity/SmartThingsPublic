@@ -22,9 +22,9 @@
 # Build files
 /build
 
-/devicetypes/smartthings/*.src/README.md/
-/devicetypes/smartthings/*.src/*.json
-/devicetypes/smartthings/*.src/.st-ignore
-/smartapps/smartthings/*.src/README.md/
-/smarrtapps/smartthings/*.src/*.json
-/smartapps/smartthings/*.src/.st-ignore
+devicetypes/smartthings/*.src/README.md/
+devicetypes/smartthings/*.src/*.json
+devicetypes/smartthings/*.src/.st-ignore
+smartapps/smartthings/*.src/README.md/
+smarrtapps/smartthings/*.src/*.json
+smartapps/smartthings/*.src/.st-ignore
