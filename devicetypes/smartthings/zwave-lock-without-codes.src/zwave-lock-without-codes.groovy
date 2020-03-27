@@ -437,7 +437,6 @@ private def handleAlarmReportUsingAlarmType(cmd) {
 	def result = []
 	def map = null
 	def deviceName = device.displayName
-	lockCodes = loadLockCodes()
 	switch(cmd.alarmType) {
 		case 9:
 		case 17:
