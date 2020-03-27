@@ -21,3 +21,7 @@
 
 # Build files
 /build
+
+/devicetypes/smartthings/*.md
+/devicetypes/smartthings/*.json
+/smartapps/smartthings/*.md
