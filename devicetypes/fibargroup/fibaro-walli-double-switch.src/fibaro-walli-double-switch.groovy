@@ -267,7 +267,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	// Preferences template end
 }
 
-// cmd.endPoints includes the USB ports but we don't want to expose them as child devices since they cannot be controlled so hardcode to just include the outlets
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
 	if(!childDevices) {
 		addChildSwitches(cmd.endPoints)
