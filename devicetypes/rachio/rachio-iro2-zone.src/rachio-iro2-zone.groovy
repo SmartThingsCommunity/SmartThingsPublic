@@ -17,7 +17,7 @@
 
 import java.text.SimpleDateFormat
 
-def devVer() { return "3.0.0" }
+def devVer() { return "2.0.0" }
 
 metadata {
     definition (name: "Rachio Zone", namespace: "rachio", author: "Rachio") {
