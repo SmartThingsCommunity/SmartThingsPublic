@@ -21,6 +21,7 @@ metadata {
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Health Check"
 	}
 
 	simulator {
@@ -29,10 +30,10 @@ metadata {
 
 	tiles {
 		standardTile("toggle", "device.door", width: 2, height: 2) {
-			state("closed", label:'${name}', action:"door control.open", icon:"st.doors.garage.garage-closed", backgroundColor:"#79b821", nextState:"opening")
-			state("open", label:'${name}', action:"door control.close", icon:"st.doors.garage.garage-open", backgroundColor:"#ffa81e", nextState:"closing")
-			state("opening", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#ffe71e")
-			state("closing", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#ffe71e")
+			state("closed", label:'${name}', action:"door control.open", icon:"st.doors.garage.garage-closed", backgroundColor:"#00A0DC", nextState:"opening")
+			state("open", label:'${name}', action:"door control.close", icon:"st.doors.garage.garage-open", backgroundColor:"#e86d13", nextState:"closing")
+			state("opening", label:'${name}', icon:"st.doors.garage.garage-closed", backgroundColor:"#e86d13")
+			state("closing", label:'${name}', icon:"st.doors.garage.garage-open", backgroundColor:"#00A0DC")
 			
 		}
 		standardTile("open", "device.door", inactiveLabel: false, decoration: "flat") {
@@ -69,4 +70,22 @@ def finishOpening() {
 def finishClosing() {
     sendEvent(name: "door", value: "closed")
     sendEvent(name: "contact", value: "closed")
+}
+
+def installed() {
+	log.trace "Executing 'installed'"
+	initialize()
+}
+
+def updated() {
+	log.trace "Executing 'updated'"
+	initialize()
+}
+
+private initialize() {
+	log.trace "Executing 'initialize'"
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
 }

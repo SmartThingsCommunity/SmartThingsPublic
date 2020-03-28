@@ -31,7 +31,7 @@ metadata {
 	tiles {
 		standardTile("button", "device.switch", width: 2, height: 2, canChangeIcon: true) {
 			state "off", label: 'Off', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "on"
-			state "on", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "off"
+			state "on", label: 'On', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC", nextState: "off"
 		}
 		main "button"
 		details "button"

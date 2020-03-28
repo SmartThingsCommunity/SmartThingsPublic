@@ -16,13 +16,14 @@ metadata {
 		capability "Actuator"
 		capability "Valve"
 		capability "Sensor"
+		capability "Health Check"
 	}
 
 	// tile definitions
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2, canChangeIcon: true) {
-			state "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#e86d13"
-			state "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#53a7c0"
+			state "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
+			state "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
@@ -34,8 +35,25 @@ metadata {
 }
 
 def installed() {
+	log.trace "Executing 'installed'"
+	initialize()
+
 	sendEvent(name: "contact", value: "closed")
 }
+
+def updated() {
+	log.trace "Executing 'updated'"
+	initialize()
+}
+
+private initialize() {
+	log.trace "Executing 'initialize'"
+
+	sendEvent(name: "DeviceWatch-DeviceStatus", value: "online")
+	sendEvent(name: "healthStatus", value: "online")
+	sendEvent(name: "DeviceWatch-Enroll", value: [protocol: "cloud", scheme:"untracked"].encodeAsJson(), displayed: false)
+}
+
 
 def open() {
 	sendEvent(name: "contact", value: "open")

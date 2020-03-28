@@ -23,7 +23,7 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("unknown", "device.unknown", width: 2, height: 2) {
-			state(name:"default", icon:"st.unknown.unknown.unknown", backgroundColor:"#767676", label: "Unknown")
+			state(name:"default", icon:"st.unknown.unknown.unknown", backgroundColor:"#ffffff", label: "Unknown")
 		}
 
 		main "unknown"

@@ -54,8 +54,8 @@ metadata {
 
 	tiles {
 		standardTile("acceleration", "device.acceleration", width: 2, height: 2, canChangeIcon: true) {
-			state "active", label:'active', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0"
-			state "inactive", label:'inactive', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff"
+			state "active", label:'active', icon:"st.motion.acceleration.active", backgroundColor:"#00A0DC"
+			state "inactive", label:'inactive', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc"
 		}
 		valueTile("temperature", "device.temperature", canChangeIcon: false)
 			{
@@ -75,11 +75,11 @@ metadata {
 			state "humidity", label:'${currentValue}% RH', unit:""
 		}
 		standardTile("sound", "device.sound", inactiveLabel: false) {
-			state "active", label: "noise", unit:"", icon: "st.alarm.beep.beep", backgroundColor: "#53a7c0"
-			state "inactive", label: "quiet", unit:"", icon: "st.alarm.beep.beep", backgroundColor: "#ffffff"
+			state "active", label: "noise", unit:"", icon: "st.alarm.beep.beep", backgroundColor: "#00A0DC"
+			state "inactive", label: "quiet", unit:"", icon: "st.alarm.beep.beep", backgroundColor: "#cccccc"
 		}
 		standardTile("light", "device.light", inactiveLabel: false, canChangeIcon: true) {
-			state "active", label: "light", unit:"", icon: "st.illuminance.illuminance.bright", backgroundColor: "#53a7c0"
+			state "active", label: "light", unit:"", icon: "st.illuminance.illuminance.bright", backgroundColor: "#00A0DC"
 			state "inactive", label: "dark", unit:"", icon: "st.illuminance.illuminance.dark", backgroundColor: "#B2B2B2"
 		}
 		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, canChangeIcon: false) {

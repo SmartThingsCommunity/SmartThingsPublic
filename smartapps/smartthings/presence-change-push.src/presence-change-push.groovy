@@ -41,10 +41,10 @@ def updated() {
 
 def presenceHandler(evt) {
 	if (evt.value == "present") {
-		log.debug "${presence.label ?: presence.name} has arrived at the ${location}"
+		// log.debug "${presence.label ?: presence.name} has arrived at the ${location}"
     	sendPush("${presence.label ?: presence.name} has arrived at the ${location}")
 	} else if (evt.value == "not present") {
-		log.debug "${presence.label ?: presence.name} has left the ${location}"
+		// log.debug "${presence.label ?: presence.name} has left the ${location}"
     	sendPush("${presence.label ?: presence.name} has left the ${location}")
 	}
 }
