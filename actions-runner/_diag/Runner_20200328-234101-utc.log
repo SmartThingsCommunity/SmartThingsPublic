@@ -1,0 +1,85 @@
+[2020-03-28 23:41:01Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-03-28 23:41:01Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-03-28 23:41:01Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-03-28 23:41:01Z INFO Listener] Version: 2.165.2
+[2020-03-28 23:41:01Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-03-28 23:41:01Z INFO Listener] Culture: en-US
+[2020-03-28 23:41:01Z INFO Listener] UI Culture: en-US
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:41:01Z INFO Listener] Validating directory permissions for: 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:41:01Z INFO CommandLineParser] Parse
+[2020-03-28 23:41:01Z INFO CommandLineParser] Parsing 5 args
+[2020-03-28 23:41:01Z INFO CommandLineParser] parsing argument
+[2020-03-28 23:41:01Z INFO CommandLineParser] HasArgs: False
+[2020-03-28 23:41:01Z INFO CommandLineParser] Adding Command: remove
+[2020-03-28 23:41:01Z INFO CommandLineParser] parsing argument
+[2020-03-28 23:41:01Z INFO CommandLineParser] HasArgs: True
+[2020-03-28 23:41:01Z INFO CommandLineParser] arg: url
+[2020-03-28 23:41:01Z INFO CommandLineParser] parsing argument
+[2020-03-28 23:41:01Z INFO CommandLineParser] HasArgs: True
+[2020-03-28 23:41:01Z INFO CommandLineParser] Adding option 'url': 'https://github.com/monninn/SmartThingsPublic'
+[2020-03-28 23:41:01Z INFO CommandLineParser] parsing argument
+[2020-03-28 23:41:01Z INFO CommandLineParser] HasArgs: True
+[2020-03-28 23:41:01Z INFO CommandLineParser] arg: token
+[2020-03-28 23:41:01Z INFO CommandLineParser] parsing argument
+[2020-03-28 23:41:01Z INFO CommandLineParser] HasArgs: True
+[2020-03-28 23:41:01Z INFO CommandLineParser] Adding option 'token': '***'
+[2020-03-28 23:41:01Z INFO Listener] Arguments parsed
+[2020-03-28 23:41:01Z INFO Runner] ExecuteCommand
+[2020-03-28 23:41:01Z INFO ConfigurationStore] currentAssemblyLocation: D:\monninn-github\old-repository\actions-runner\bin\Runner.Listener.dll
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:41:01Z INFO ConfigurationStore] binPath: D:\monninn-github\old-repository\actions-runner\bin
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:41:01Z INFO ConfigurationStore] RootFolder: D:\monninn-github\old-repository\actions-runner
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:41:01Z INFO HostContext] Well known config file 'Runner': 'D:\monninn-github\old-repository\actions-runner\.runner'
+[2020-03-28 23:41:01Z INFO ConfigurationStore] ConfigFilePath: D:\monninn-github\old-repository\actions-runner\.runner
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:41:01Z INFO HostContext] Well known config file 'Credentials': 'D:\monninn-github\old-repository\actions-runner\.credentials'
+[2020-03-28 23:41:01Z INFO ConfigurationStore] CredFilePath: D:\monninn-github\old-repository\actions-runner\.credentials
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:41:01Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:41:01Z INFO HostContext] Well known config file 'Service': 'D:\monninn-github\old-repository\actions-runner\.service'
+[2020-03-28 23:41:01Z INFO ConfigurationStore] ServiceConfigFilePath: D:\monninn-github\old-repository\actions-runner\.service
+[2020-03-28 23:41:01Z INFO CommandSettings] Flag 'help': 'False'
+[2020-03-28 23:41:01Z INFO CommandSettings] Flag 'version': 'False'
+[2020-03-28 23:41:01Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-03-28 23:41:01Z INFO CommandSettings] Command 'configure': 'False'
+[2020-03-28 23:41:01Z INFO CommandSettings] Command 'remove': 'True'
+[2020-03-28 23:41:01Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-03-28 23:41:01Z INFO ConfigurationStore] IsServiceConfigured: False
+[2020-03-28 23:41:01Z INFO ConfigurationStore] IsConfigured()
+[2020-03-28 23:41:01Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-28 23:41:01Z INFO ConfigurationStore] HasCredentials()
+[2020-03-28 23:41:01Z INFO ConfigurationStore] stored True
+[2020-03-28 23:41:01Z INFO ConfigurationStore] Read setting file: 302 chars
+[2020-03-28 23:41:01Z INFO CommandSettings] Arg 'token': '***'
+[2020-03-28 23:41:01Z INFO CommandSettings] Remove token from Arg dictionary.
+[2020-03-28 23:41:03Z INFO ConfigurationManager] Http response code: OK from 'POST https://api.github.com/repos/monninn/SmartThingsPublic/actions-runners/registration'
+[2020-03-28 23:41:03Z INFO ConfigurationManager] cred retrieved via GitHub auth
+[2020-03-28 23:41:03Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:41:03Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:41:03Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:41:03Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:41:03Z INFO ConfigurationManager] Server deployment type: Hosted
+[2020-03-28 23:41:03Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-28 23:41:03Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:41:03Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-28 23:41:03Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:41:03Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-28 23:41:03Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:41:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:41:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:41:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:41:04Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:41:05Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:41:05Z INFO Terminal] WRITE LINE: 
+[2020-03-28 23:41:05Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:41:05Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:41:05Z INFO HostContext] Well known config file 'RSACredentials': 'D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams'
+[2020-03-28 23:41:05Z INFO RSAEncryptedFileKeyManager] Deleting RSA key parameters file D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams
+[2020-03-28 23:41:05Z INFO Terminal] WRITE LINE: 

@@ -1,0 +1,130 @@
+[2020-03-28 23:42:09Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-03-28 23:42:09Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-03-28 23:42:09Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-03-28 23:42:09Z INFO Listener] Version: 2.165.2
+[2020-03-28 23:42:09Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-03-28 23:42:09Z INFO Listener] Culture: en-US
+[2020-03-28 23:42:09Z INFO Listener] UI Culture: en-US
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:42:09Z INFO Listener] Validating directory permissions for: 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:42:09Z INFO CommandLineParser] Parse
+[2020-03-28 23:42:09Z INFO CommandLineParser] Parsing 1 args
+[2020-03-28 23:42:09Z INFO CommandLineParser] parsing argument
+[2020-03-28 23:42:09Z INFO CommandLineParser] HasArgs: False
+[2020-03-28 23:42:09Z INFO CommandLineParser] Adding Command: run
+[2020-03-28 23:42:09Z INFO Listener] Arguments parsed
+[2020-03-28 23:42:09Z INFO Runner] ExecuteCommand
+[2020-03-28 23:42:09Z INFO ConfigurationStore] currentAssemblyLocation: D:\monninn-github\old-repository\actions-runner\bin\Runner.Listener.dll
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:42:09Z INFO ConfigurationStore] binPath: D:\monninn-github\old-repository\actions-runner\bin
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:42:09Z INFO ConfigurationStore] RootFolder: D:\monninn-github\old-repository\actions-runner
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:42:09Z INFO HostContext] Well known config file 'Runner': 'D:\monninn-github\old-repository\actions-runner\.runner'
+[2020-03-28 23:42:09Z INFO ConfigurationStore] ConfigFilePath: D:\monninn-github\old-repository\actions-runner\.runner
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:42:09Z INFO HostContext] Well known config file 'Credentials': 'D:\monninn-github\old-repository\actions-runner\.credentials'
+[2020-03-28 23:42:09Z INFO ConfigurationStore] CredFilePath: D:\monninn-github\old-repository\actions-runner\.credentials
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:42:09Z INFO HostContext] Well known config file 'Service': 'D:\monninn-github\old-repository\actions-runner\.service'
+[2020-03-28 23:42:09Z INFO ConfigurationStore] ServiceConfigFilePath: D:\monninn-github\old-repository\actions-runner\.service
+[2020-03-28 23:42:09Z INFO CommandSettings] Flag 'help': 'False'
+[2020-03-28 23:42:09Z INFO CommandSettings] Flag 'version': 'False'
+[2020-03-28 23:42:09Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-03-28 23:42:09Z INFO CommandSettings] Command 'configure': 'False'
+[2020-03-28 23:42:09Z INFO CommandSettings] Command 'remove': 'False'
+[2020-03-28 23:42:09Z INFO CommandSettings] Command 'warmup': 'False'
+[2020-03-28 23:42:09Z INFO ConfigurationManager] LoadSettings
+[2020-03-28 23:42:09Z INFO ConfigurationStore] IsConfigured()
+[2020-03-28 23:42:09Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-28 23:42:09Z INFO ConfigurationManager] Is configured: True
+[2020-03-28 23:42:09Z INFO ConfigurationStore] Read setting file: 302 chars
+[2020-03-28 23:42:09Z INFO ConfigurationManager] Settings Loaded
+[2020-03-28 23:42:09Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-03-28 23:42:09Z INFO ConfigurationStore] IsServiceConfigured: True
+[2020-03-28 23:42:09Z INFO CommandSettings] Command 'run': 'True'
+[2020-03-28 23:42:09Z INFO ConfigurationStore] IsConfigured()
+[2020-03-28 23:42:09Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-28 23:42:09Z INFO ConfigurationManager] Is configured: True
+[2020-03-28 23:42:09Z INFO Runner] Try determine runner startup type base on console redirects.
+[2020-03-28 23:42:09Z INFO Runner] Set runner startup type - Manual
+[2020-03-28 23:42:09Z INFO CommandSettings] Flag 'once': 'False'
+[2020-03-28 23:42:09Z INFO Runner] RunAsync
+[2020-03-28 23:42:09Z INFO ConfigurationManager] LoadSettings
+[2020-03-28 23:42:09Z INFO ConfigurationStore] IsConfigured()
+[2020-03-28 23:42:09Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-28 23:42:09Z INFO ConfigurationManager] Is configured: True
+[2020-03-28 23:42:09Z INFO ConfigurationManager] Settings Loaded
+[2020-03-28 23:42:09Z INFO MessageListener] {
+  "AgentId": 24,
+  "AgentName": "X2JCJAB8C5",
+  "PoolId": 1,
+  "PoolName": "Default",
+  "ServerUrl": "https://pipelines.actions.githubusercontent.com/oPTqmPn939GbLlpjSZRiFhnoKKE2vkIaWo3n2Fd9JDOicD1Kx4/",
+  "GitHubUrl": "https://github.com/monninn/SmartThingsPublic",
+  "WorkFolder": "_work"
+}
+[2020-03-28 23:42:09Z INFO MessageListener] Loading Credentials
+[2020-03-28 23:42:09Z INFO ConfigurationStore] HasCredentials()
+[2020-03-28 23:42:09Z INFO ConfigurationStore] stored True
+[2020-03-28 23:42:09Z INFO CredentialManager] GetCredentialProvider
+[2020-03-28 23:42:09Z INFO CredentialManager] Creating type OAuth
+[2020-03-28 23:42:09Z INFO CredentialManager] Creating credential type: OAuth
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\old-repository\actions-runner\bin'
+[2020-03-28 23:42:09Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\old-repository\actions-runner'
+[2020-03-28 23:42:09Z INFO HostContext] Well known config file 'RSACredentials': 'D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams'
+[2020-03-28 23:42:09Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams
+[2020-03-28 23:42:09Z INFO MessageListener] Attempt to create session.
+[2020-03-28 23:42:09Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-28 23:42:09Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-28 23:42:09Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:42:09Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-28 23:42:09Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:42:09Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-28 23:42:09Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-28 23:42:10Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:42:10Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:42:10Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-28 23:42:10Z INFO MessageListener] VssConnection created
+[2020-03-28 23:42:10Z INFO Terminal] WRITE LINE: 
+[2020-03-28 23:42:10Z INFO Terminal] WRITE LINE: 
+[2020-03-28 23:42:10Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: 9a2c53dc-4945-49dd-90d4-deaf2260d169
+ActivityId: 5ded1953-fb6c-4c0c-afac-c463b877ce86
+X-TFS-Session: 3d8f13d0-c65f-44b5-a609-6d0ff74af99c
+X-VSS-E2EID: 98cd66c1-e790-4b1e-b4e8-8c18d0f839f8
+X-VSS-SenderDeploymentId: 193695a0-0dcd-ade4-f810-b10ad24a9829
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: AD86B6A1C3F9411AA287E986BC97BA86 Ref B: CHGEDGE1308 Ref C: 2020-03-28T23:42:09Z
+Date: Sat, 28 Mar 2020 23:42:08 GMT
+
+[2020-03-28 23:42:10Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams
+[2020-03-28 23:42:10Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams
+[2020-03-28 23:42:11Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-03-28 23:42:11Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/oPTqmPn939GbLlpjSZRiFhnoKKE2vkIaWo3n2Fd9JDOicD1Kx4/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: 4CD481EE239A4EFFA1257484CC32D778 Ref B: CHGEDGE1308 Ref C: 2020-03-28T23:42:10Z
+[2020-03-28 23:42:11Z ERR  MessageListener] Catch exception during create session.
+[2020-03-28 23:42:11Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-28 23:42:11Z INFO MessageListener] The session for this runner already exists.
+[2020-03-28 23:42:11Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-28 23:42:11Z INFO MessageListener] The session conflict exception haven't reached retry limit.
+[2020-03-28 23:42:11Z ERR  Terminal] WRITE ERROR: 2020-03-28 23:42:11Z: Runner connect error: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.. Retrying until reconnected.
+[2020-03-28 23:42:11Z INFO MessageListener] Sleeping for 30 seconds before retrying.
+[2020-03-28 23:42:19Z INFO Terminal] WRITE LINE: Exiting...
+[2020-03-28 23:42:19Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-03-28 23:42:19Z INFO ConfigurationStore] IsServiceConfigured: True
+[2020-03-28 23:42:19Z INFO Runner] Received Ctrl-C signal, stop Runner.Listener and Runner.Worker.
+[2020-03-28 23:42:19Z INFO HostContext] Runner will be shutdown for UserCancelled
+[2020-03-28 23:42:19Z INFO Listener] Runner execution been cancelled.

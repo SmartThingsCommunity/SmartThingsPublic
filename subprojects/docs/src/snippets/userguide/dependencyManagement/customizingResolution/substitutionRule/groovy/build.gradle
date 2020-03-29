@@ -1,0 +1,20 @@
+// Need to have at least one configuration declared, otherwise the rules are never evaluated
+configurations {
+    conf
+}
+
+// tag::module_to_project_substitution[]
+configurations.all {
+    resolutionStrategy.dependencySubstitution {
+        substitute module("org.utils:api") because "we work with the unreleased development version" with project(":api")
+        substitute module("org.utils:util:2.5") with project(":util")
+    }
+}
+// end::module_to_project_substitution[]
+// tag::project_to_module_substitution[]
+configurations.all {
+    resolutionStrategy.dependencySubstitution {
+        substitute project(":api") because "we use a stable version of org.utils:api" with module("org.utils:api:1.3")
+    }
+}
+// end::project_to_module_substitution[]
