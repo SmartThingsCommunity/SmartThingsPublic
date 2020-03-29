@@ -1,1 +1,0 @@
-rootProject = "bom-import"

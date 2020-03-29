@@ -1,5 +1,0 @@
-task sayHello {
-    doLast {
-        ant.echo message: 'Hello!'
-    }
-}

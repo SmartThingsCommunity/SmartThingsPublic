@@ -331,3 +331,102 @@ Date: Sun, 29 Mar 2020 00:36:45 GMT
 [2020-03-29 00:36:47Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams
 [2020-03-29 00:36:48Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
 [2020-03-29 00:42:39Z INFO MessageListener] No message retrieved from session '7964566e-53d3-4ad4-a87a-2aa1b8d5aa15' within last 30 minutes.
+[2020-03-29 01:12:44Z INFO MessageListener] No message retrieved from session '7964566e-53d3-4ad4-a87a-2aa1b8d5aa15' within last 30 minutes.
+[2020-03-29 01:16:58Z WARN GitHubActionsService] Attempt 1 of GET request to https://pipelines.actions.githubusercontent.com/oPTqmPn939GbLlpjSZRiFhnoKKE2vkIaWo3n2Fd9JDOicD1Kx4/_apis/distributedtask/pools/1/messages?sessionId=7964566e-53d3-4ad4-a87a-2aa1b8d5aa15 failed (HTTP Status: ServiceUnavailable, AFD Ref: Ref A: E683FA06B56E42F6B31A507DD833DAF6 Ref B: CHGEDGE1414 Ref C: 2020-03-29T01:16:53Z). The operation will be retried in 10.814 seconds.
+[2020-03-29 01:32:11Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: ef1255ba-04b5-4ff9-9072-fc6d5428a043
+ActivityId: 6b1f836f-7e1e-4388-99f6-607b35051ac0
+X-TFS-Session: 3078c511-15b8-4226-b302-86b8694f28a7
+X-VSS-E2EID: df8beffd-73a7-4522-a6b6-43734968c634
+X-VSS-SenderDeploymentId: 193695a0-0dcd-ade4-f810-b10ad24a9829
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 2CD28CEF89AB4E529B548D7D486D8FF9 Ref B: CHGEDGE1414 Ref C: 2020-03-29T01:32:10Z
+Date: Sun, 29 Mar 2020 01:32:09 GMT
+
+[2020-03-29 01:32:11Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams
+[2020-03-29 01:32:12Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-03-29 01:43:04Z INFO MessageListener] No message retrieved from session '7964566e-53d3-4ad4-a87a-2aa1b8d5aa15' within last 30 minutes.
+[2020-03-29 01:44:04Z WARN GitHubActionsService] GET request to https://pipelines.actions.githubusercontent.com/oPTqmPn939GbLlpjSZRiFhnoKKE2vkIaWo3n2Fd9JDOicD1Kx4/_apis/distributedtask/pools/1/messages?sessionId=7964566e-53d3-4ad4-a87a-2aa1b8d5aa15 timed out after 60 seconds.
+[2020-03-29 01:44:04Z ERR  MessageListener] Catch exception during get next message.
+[2020-03-29 01:44:04Z ERR  MessageListener] System.TimeoutException: The HTTP request timed out after 00:01:00.
+ ---> System.Threading.Tasks.TaskCanceledException: The operation was canceled.
+ ---> System.IO.IOException: Unable to read data from the transport connection: The I/O operation has been aborted because of either a thread exit or an application request..
+ ---> System.Net.Sockets.SocketException (995): The I/O operation has been aborted because of either a thread exit or an application request.
+   --- End of inner exception stack trace ---
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.GetResult(Int16 token)
+   at System.Net.Security.SslStream.<FillBufferAsync>g__InternalFillBufferAsync|215_0[TReadAdapter](TReadAdapter adap, ValueTask`1 task, Int32 min, Int32 initial)
+   at System.Net.Security.SslStream.ReadAsyncInternal[TReadAdapter](TReadAdapter adapter, Memory`1 buffer)
+   at System.Net.Http.HttpConnection.SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnection.SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
+   at System.Net.Http.AuthenticationHelper.SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, Boolean isProxyAuth, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithRetryAsync(HttpRequestMessage request, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.AuthenticationHelper.SendWithAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, Boolean preAuthenticate, Boolean isProxyAuth, Boolean doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
+   at System.Net.Http.DecompressionHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at GitHub.Services.Common.VssHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at GitHub.Services.Common.VssHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at GitHub.Services.Common.VssHttpRetryMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.FinishSendAsyncBuffered(Task`1 sendTask, HttpRequestMessage request, CancellationTokenSource cts, Boolean disposeCts)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.GetNextMessageAsync(CancellationToken token)
+[2020-03-29 01:44:04Z ERR  MessageListener] #####################################################
+[2020-03-29 01:44:04Z ERR  MessageListener] System.Threading.Tasks.TaskCanceledException: The operation was canceled.
+ ---> System.IO.IOException: Unable to read data from the transport connection: The I/O operation has been aborted because of either a thread exit or an application request..
+ ---> System.Net.Sockets.SocketException (995): The I/O operation has been aborted because of either a thread exit or an application request.
+   --- End of inner exception stack trace ---
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.GetResult(Int16 token)
+   at System.Net.Security.SslStream.<FillBufferAsync>g__InternalFillBufferAsync|215_0[TReadAdapter](TReadAdapter adap, ValueTask`1 task, Int32 min, Int32 initial)
+   at System.Net.Security.SslStream.ReadAsyncInternal[TReadAdapter](TReadAdapter adapter, Memory`1 buffer)
+   at System.Net.Http.HttpConnection.SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at System.Net.Http.HttpConnection.SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
+   at System.Net.Http.AuthenticationHelper.SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, Boolean isProxyAuth, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.HttpConnectionPool.SendWithRetryAsync(HttpRequestMessage request, Boolean doRequestAuth, CancellationToken cancellationToken)
+   at System.Net.Http.AuthenticationHelper.SendWithAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, Boolean preAuthenticate, Boolean isProxyAuth, Boolean doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
+   at System.Net.Http.DecompressionHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at GitHub.Services.Common.VssHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+[2020-03-29 01:44:04Z ERR  MessageListener] #####################################################
+[2020-03-29 01:44:04Z ERR  MessageListener] System.IO.IOException: Unable to read data from the transport connection: The I/O operation has been aborted because of either a thread exit or an application request..
+ ---> System.Net.Sockets.SocketException (995): The I/O operation has been aborted because of either a thread exit or an application request.
+   --- End of inner exception stack trace ---
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.GetResult(Int16 token)
+   at System.Net.Security.SslStream.<FillBufferAsync>g__InternalFillBufferAsync|215_0[TReadAdapter](TReadAdapter adap, ValueTask`1 task, Int32 min, Int32 initial)
+   at System.Net.Security.SslStream.ReadAsyncInternal[TReadAdapter](TReadAdapter adapter, Memory`1 buffer)
+   at System.Net.Http.HttpConnection.SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
+[2020-03-29 01:44:04Z ERR  MessageListener] #####################################################
+[2020-03-29 01:44:04Z ERR  MessageListener] System.Net.Sockets.SocketException (995): The I/O operation has been aborted because of either a thread exit or an application request.
+[2020-03-29 01:44:04Z INFO MessageListener] Retriable exception: The HTTP request timed out after 00:01:00.
+[2020-03-29 01:44:04Z ERR  Terminal] WRITE ERROR: 2020-03-29 01:44:04Z: Runner connect error: The HTTP request timed out after 00:01:00.. Retrying until reconnected.
+[2020-03-29 01:44:04Z INFO RunnerServer] Refresh MessageQueue VssConnection to get on a different AFD node.
+[2020-03-29 01:44:04Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-29 01:44:04Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-29 01:44:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-29 01:44:04Z INFO MessageListener] Sleeping for 16.505 seconds before retrying.
+[2020-03-29 01:45:11Z INFO Terminal] WRITE LINE: 2020-03-29 01:45:11Z: Runner reconnected.
+[2020-03-29 02:13:36Z INFO MessageListener] No message retrieved from session '7964566e-53d3-4ad4-a87a-2aa1b8d5aa15' within last 30 minutes.
+[2020-03-29 02:27:48Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: 9a2c53dc-4945-49dd-90d4-deaf2260d169
+ActivityId: 5dc4e540-fb6c-4c0c-afac-c463b877ce86
+X-TFS-Session: 3078c511-15b8-4226-b302-86b8694f28a7
+X-VSS-E2EID: 3043f97c-6a46-4b85-9cbb-7a6af1813663
+X-VSS-SenderDeploymentId: 193695a0-0dcd-ade4-f810-b10ad24a9829
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: F82AEBA970C746948B869D790C5C647E Ref B: CHGEDGE1018 Ref C: 2020-03-29T02:27:46Z
+Date: Sun, 29 Mar 2020 02:27:46 GMT
+
+[2020-03-29 02:27:48Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\old-repository\actions-runner\.credentials_rsaparams
+[2020-03-29 02:27:49Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
