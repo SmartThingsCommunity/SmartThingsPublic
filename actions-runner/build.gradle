@@ -16,8 +16,8 @@ buildscript {
         jcenter()
         maven {
             credentials {
-                username smartThingsArtifactoryUserName
-                password smartThingsArtifactoryPassword
+                username PsmartThingsArtifactoryUserName
+                password PsmartThingsArtifactoryPassword
             }
             url "https://smartthings.jfrog.io/smartthings/libs-release-local"
         }
@@ -29,8 +29,8 @@ repositories {
     jcenter()
     maven {
         credentials {
-            username smartThingsArtifactoryUserName
-            password smartThingsArtifactoryPassword
+            username PsmartThingsArtifactoryUserName
+            password PsmartThingsArtifactoryPassword
         }
         url "https://smartthings.jfrog.io/smartthings/libs-release-local"
     }
