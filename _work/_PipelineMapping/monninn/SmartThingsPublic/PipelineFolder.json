@@ -1,0 +1,12 @@
+﻿{
+  "repositoryName": "monninn/SmartThingsPublic",
+  "pipelineDirectory": "SmartThingsPublic",
+  "workspaceDirectory": "SmartThingsPublic\\SmartThingsPublic",
+  "repositories": {
+    "monninn/SmartThingsPublic": {
+      "repositoryPath": "SmartThingsPublic\\SmartThingsPublic",
+      "lastRunOn": "03/29/2020 11:12:59 -05:00"
+    }
+  },
+  "lastRunOn": "03/29/2020 11:14:42 -05:00"
+}
