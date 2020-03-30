@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -20,4 +20,4 @@ jobs:
         with:
           java-version: 1.8
       - name: Run the Gradle package task
-        run: ./gradlew -b ci.gradle package
+        run: gradlew.bat
