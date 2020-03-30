@@ -58,12 +58,12 @@ metadata {
 }
 
 def initialize() {
-	if (zwaveInfo.mfr.equals("0086"))
-		// 8 hour (+ 2 minutes) ping for Aeotec
+	if (zwaveInfo.mfr.equals("0086") || zwaveInfo.mfr.equals("021F") || zwaveInfo.mfr.equals("0258"))
+	// 8 hour (+ 2 minutes) ping for Aeotec, NEO Coolcam and Dome
 		sendEvent(name: "checkInterval", value: (8 * 60 * 60) + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	else
-		// 12 hours for other devices
-		sendEvent(name: "checkInterval", value: (2 * 12 + 2) * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// 12 hours (+ 2 minutes) for other devices
+		sendEvent(name: "checkInterval", value: (12 * 60 * 60) + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 def installed() {
@@ -84,6 +84,9 @@ def configure() {
 		// Tell sensor to send us battery information instead of USB power information
 		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x5E, scaledConfigurationValue: 1, size: 1))
 		response(delayBetween(commands, 1000) + ["delay 20000", encap(zwave.wakeUpV1.wakeUpNoMoreInformation())])
+	} else if (zwaveInfo.mfr.equals("021F") || zwaveInfo.mfr.equals("0258")) {
+		// wakeUpInterval set to 4 h for NEO Coolcam and Dome
+		zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
 	}
 }
 
