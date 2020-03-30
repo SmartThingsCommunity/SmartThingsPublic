@@ -24,7 +24,7 @@ metadata {
         capability "Power Meter"
         capability "Health Check"
 
-		fingerprint manufacturer: "Sinope Technologies", model: "RM3250ZB", deviceJoinName: "Switch" //RM3250ZB
+		fingerprint manufacturer: "Sinope Technologies", model: "RM3250ZB", deviceJoinName: "Sinope Switch" //RM3250ZB
     }
 
     tiles(scale: 2) {

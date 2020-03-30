@@ -21,7 +21,7 @@ metadata {
 		command "poll"
 
 		fingerprint deviceId: "0x08", inClusters: "0x43,0x40,0x44,0x31,0x80,0x85,0x60", deviceJoinName: "Thermostat"
-		fingerprint mfr:"0098", prod:"6401", model:"0107", deviceJoinName: "Thermostat" //2Gig CT100 Programmable Thermostat
+		fingerprint mfr:"0098", prod:"6401", model:"0107", deviceJoinName: "2Gig Thermostat" //2Gig CT100 Programmable Thermostat
 		fingerprint mfr:"0098", prod:"6501", model:"000C", deviceJoinName: "Thermostat" //Radio Thermostat CT101
 	}
 

@@ -26,32 +26,32 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x25,0x32", deviceJoinName: "Switch"
-		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Switch" //Aeotec Micro Smart Switch
-		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug" //Dome On/Off Plug-in Switch
-		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Aeotec Smart Switch 6
-		fingerprint mfr: "0086", prod: "0003", model: "0060", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //Aeotec Smart Switch 6
-		fingerprint mfr: "0086", prod: "0203", model: "0060", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug"  //AU //Aeotec Smart Switch 6
-		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Switch" //Aeotec Nano Switch
-		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Switch" //Aeotec Nano Switch
-		fingerprint mfr: "0086", prod: "0203", model: "0074", deviceJoinName: "Switch" //AU //Aeotec Nano Switch
-		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug" //GoControl Wall-Mounted Outlet
-		fingerprint mfr: "014F", prod: "5053", model: "3531", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug" //GoControl Plug-in Switch
-		fingerprint mfr: "0063", prod: "4F44", model: "3031", deviceJoinName: "Switch" //GE Direct-Wire Outdoor Switch
-		fingerprint mfr: "0258", prod: "0003", model: "0087", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug" //NEO Coolcam Power plug
-		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug" // EU //Fibaro Wall Plug ZW5
-		fingerprint mfr: "010F", prod: "1801", model: "1000", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug"// UK //Fibaro Wall Plug ZW5
-		fingerprint mfr: "0086", prod: "0003", model: "004E", deviceJoinName: "Switch" //EU //Aeotec Heavy Duty Smart Switch
-		fingerprint mfr: "0086", prod: "0103", model: "004E", deviceJoinName: "Switch" //US //Aeotec Heavy Duty Smart Switch
+		fingerprint mfr: "0086", prod: "0003", model: "0012", deviceJoinName: "Aeotec Switch" //Aeotec Micro Smart Switch
+		fingerprint mfr: "021F", prod: "0003", model: "0087", deviceJoinName: "Dome Outlet", ocfDeviceType: "oic.d.smartplug" //Dome On/Off Plug-in Switch
+		fingerprint mfr: "0086", prod: "0103", model: "0060", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Aeotec Smart Switch 6
+		fingerprint mfr: "0086", prod: "0003", model: "0060", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //Aeotec Smart Switch 6
+		fingerprint mfr: "0086", prod: "0203", model: "0060", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //AU //Aeotec Smart Switch 6
+		fingerprint mfr: "0086", prod: "0103", model: "0074", deviceJoinName: "Aeotec Switch" //Aeotec Nano Switch
+		fingerprint mfr: "0086", prod: "0003", model: "0074", deviceJoinName: "Aeotec Switch" //Aeotec Nano Switch
+		fingerprint mfr: "0086", prod: "0203", model: "0074", deviceJoinName: "Aeotec Switch" //AU //Aeotec Nano Switch
+		fingerprint mfr: "014F", prod: "574F", model: "3535", deviceJoinName: "GoControl Outlet", ocfDeviceType: "oic.d.smartplug" //GoControl Wall-Mounted Outlet
+		fingerprint mfr: "014F", prod: "5053", model: "3531", deviceJoinName: "GoControl Outlet", ocfDeviceType: "oic.d.smartplug" //GoControl Plug-in Switch
+		fingerprint mfr: "0063", prod: "4F44", model: "3031", deviceJoinName: "GE Switch" //GE Direct-Wire Outdoor Switch
+		fingerprint mfr: "0258", prod: "0003", model: "0087", deviceJoinName: "NEO Coolcam Outlet", ocfDeviceType: "oic.d.smartplug" //NEO Coolcam Power plug
+		fingerprint mfr: "010F", prod: "0602", model: "1001", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug" // EU //Fibaro Wall Plug ZW5
+		fingerprint mfr: "010F", prod: "1801", model: "1000", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug"// UK //Fibaro Wall Plug ZW5
+		fingerprint mfr: "0086", prod: "0003", model: "004E", deviceJoinName: "Aeotec Switch" //EU //Aeotec Heavy Duty Smart Switch
+		fingerprint mfr: "0086", prod: "0103", model: "004E", deviceJoinName: "Aeotec Switch" //US //Aeotec Heavy Duty Smart Switch
 		//zw:L type:1001 mfr:0258 prod:0003 model:1087 ver:3.94 zwv:4.05 lib:03 cc:5E,72,86,85,59,5A,73,70,25,27,71,32,20 role:05 ff:8700 ui:8700
-		fingerprint mfr: "0258", prod: "0003", model: "1087", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //NEO Coolcam Power Plug
-		fingerprint mfr: "027A", prod: "0101", model: "000D", deviceJoinName: "Switch" //Zooz Power Switch
-		fingerprint mfr: "0159", prod: "0002", model: "0054", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug" //Qubino Smart Plug
-		fingerprint mfr: "0371", prod: "0003", model: "00AF", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //Aeotec Smart Switch 7
-		fingerprint mfr: "0371", prod: "0103", model: "00AF", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Aeotec Smart Switch 7
-		fingerprint mfr: "0060", prod: "0004", model: "000B", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Everspring Smart Plug
-		fingerprint mfr: "031E", prod: "0002", model: "0001", deviceJoinName: "Switch" //US //Inovelli Switch Red Series
-		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug" //EU //POPP Smart Outdoor Plug
-		fingerprint mfr: "010F", prod: "1F01", model: "1000", deviceJoinName: "Outlet", ocfDeviceType: "oic.d.smartplug" //EU //Fibaro walli Outlet //Fibaro Outlet
+		fingerprint mfr: "0258", prod: "0003", model: "1087", deviceJoinName: "NEO Coolcam Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //NEO Coolcam Power Plug
+		fingerprint mfr: "027A", prod: "0101", model: "000D", deviceJoinName: "Zooz Switch" //Zooz Power Switch
+		fingerprint mfr: "0159", prod: "0002", model: "0054", deviceJoinName: "Qubino Outlet", ocfDeviceType: "oic.d.smartplug" //Qubino Smart Plug
+		fingerprint mfr: "0371", prod: "0003", model: "00AF", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //EU //Aeotec Smart Switch 7
+		fingerprint mfr: "0371", prod: "0103", model: "00AF", deviceJoinName: "Aeotec Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Aeotec Smart Switch 7
+		fingerprint mfr: "0060", prod: "0004", model: "000B", deviceJoinName: "Everspring Outlet", ocfDeviceType: "oic.d.smartplug"  //US //Everspring Smart Plug
+		fingerprint mfr: "031E", prod: "0002", model: "0001", deviceJoinName: "Inovelli Switch" //US //Inovelli Switch Red Series
+		fingerprint mfr: "0154", prod: "0003", model: "000A", deviceJoinName: "POPP Outlet", ocfDeviceType: "oic.d.smartplug" //EU //POPP Smart Outdoor Plug
+		fingerprint mfr: "010F", prod: "1F01", model: "1000", deviceJoinName: "Fibaro Outlet", ocfDeviceType: "oic.d.smartplug" //EU //Fibaro walli Outlet //Fibaro Outlet
 	}
 
 	// simulator metadata

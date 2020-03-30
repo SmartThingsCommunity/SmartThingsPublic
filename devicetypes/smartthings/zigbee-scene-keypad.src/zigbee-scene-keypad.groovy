@@ -26,10 +26,10 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-                fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "HY0048", deviceJoinName: "Button", vid: "generic-4-button-alt" //GDKES Scene Keypad
-                fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "0106-G", deviceJoinName: "Button", vid: "generic-6-button-alt" //GDKES Scene Keypad
-                fingerprint profileId: "0104", inClusters: "0000, 0005", outClusters: "0000, 0005, 0017", manufacturer: "ORVIBO", model: "cef8701bb8664a67a83033c071ef05f2", deviceJoinName: "Button", vid: "generic-3-button-alt" //ORVIBO Scene Keypad
-                fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "E-SceneSwitch-EM-3.0", deviceJoinName: "Button", vid: "generic-4-button-alt" //HEIMAN Scene Keypad
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "HY0048", deviceJoinName: "GDKES Remote Control", vid: "generic-4-button-alt" //GDKES Scene Keypad
+                fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005", outClusters: "0003, 0004, 0005", manufacturer: "REXENSE", model: "0106-G", deviceJoinName: "GDKES Remote Control", vid: "generic-6-button-alt" //GDKES Scene Keypad
+                fingerprint profileId: "0104", inClusters: "0000, 0005", outClusters: "0000, 0005, 0017", manufacturer: "ORVIBO", model: "cef8701bb8664a67a83033c071ef05f2", deviceJoinName: "ORVIBO Remote Control", vid: "generic-3-button-alt" //ORVIBO Scene Keypad
+                fingerprint profileId: "0104", inClusters: "0004", outClusters: "0000, 0001, 0003, 0004, 0005, 0B05", manufacturer: "HEIMAN", model: "E-SceneSwitch-EM-3.0", deviceJoinName: "HEIMAN Remote Control", vid: "generic-4-button-alt" //HEIMAN Scene Keypad
 
     }
 

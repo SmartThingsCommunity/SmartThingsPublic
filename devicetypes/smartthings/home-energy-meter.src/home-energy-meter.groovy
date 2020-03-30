@@ -21,8 +21,8 @@ metadata {
 
 		command "reset"
 
-		fingerprint deviceId: "0x3103", inClusters: "0x32", deviceJoinName: "Energy Monitoring"
-		fingerprint inClusters: "0x32", deviceJoinName: "Energy Monitoring"
+		fingerprint deviceId: "0x3103", inClusters: "0x32", deviceJoinName: "Energy Monitor"
+		fingerprint inClusters: "0x32", deviceJoinName: "Energy Monitor"
 	}
 
 	// simulator metadata

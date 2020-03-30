@@ -26,20 +26,20 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S", deviceJoinName: "Multipurpose Sensor"
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300", deviceJoinName: "Multipurpose Sensor"
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3320-L", deviceJoinName: "Multipurpose Sensor" //Iris Contact Sensor
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3323-G", deviceJoinName: "Multipurpose Sensor" //Centralite Micro Door Sensor
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "Contact Sensor-A", deviceJoinName: "Multipurpose Sensor" //Sylvania SMART+ Contact and Temperature Smart Sensor
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 E", deviceJoinName: "Multipurpose Sensor" //Visonic Door/Window Sensor
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "4655BC0-R", deviceJoinName: "Multipurpose Sensor" //Ecolink Door/Window Sensor
-		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0003,0019", manufacturer: "iMagic by GreatStar", model: "1116-S", deviceJoinName: "Multipurpose Sensor" //Iris Contact Sensor
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Bosch", model: "RFMS-ZBMS", deviceJoinName: "Multipurpose Sensor" //Bosch multi-sensor
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Megaman", model: "MS601/z1", deviceJoinName: "Multipurpose Sensor" //INGENIUM ZB Magnetic ON/OFF Sensor
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S", deviceJoinName: "SmartSense Open/Closed Sensor"
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300", deviceJoinName: "SmartSense Open/Closed Sensor"
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3320-L", deviceJoinName: "Iris Open/Closed Sensor" //Iris Contact Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3323-G", deviceJoinName: "Centralite Open/Closed Sensor" //Centralite Micro Door Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "Contact Sensor-A", deviceJoinName: "SYLVANIA Open/Closed Sensor" //Sylvania SMART+ Contact and Temperature Smart Sensor
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Visonic", model: "MCT-340 E", deviceJoinName: "Visonic Open/Closed Sensor" //Visonic Door/Window Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "4655BC0-R", deviceJoinName: "Ecolink Open/Closed Sensor" //Ecolink Door/Window Sensor
+		fingerprint inClusters: "0000,0001,0003,0020,0402,0500,0B05,FC01,FC02", outClusters: "0003,0019", manufacturer: "iMagic by GreatStar", model: "1116-S", deviceJoinName: "Iris Open/Closed Sensor" //Iris Contact Sensor
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Bosch", model: "RFMS-ZBMS", deviceJoinName: "Bosch Open/Closed Sensor" //Bosch multi-sensor
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Megaman", model: "MS601/z1", deviceJoinName: "INGENIUM Open/Closed Sensor" //INGENIUM ZB Magnetic ON/OFF Sensor
         //AduroSmart
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "CSW_ADUROLIGHT", deviceJoinName: "Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.1
-        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "ADUROLIGHT", model: "CSW_ADUROLIGHT", deviceJoinName: "Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.0
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-DWS04", deviceJoinName: "Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact" //Sercomm Door Window Sensor
+        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "AduroSmart Eria", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.1
+        fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "ADUROLIGHT", model: "CSW_ADUROLIGHT", deviceJoinName: "ERIA Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Contact Sensor V2.0
+		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "Sercomm Corp.", model: "SZ-DWS04", deviceJoinName: "Sercomm Open/Closed Sensor", mnmn: "SmartThings", vid: "generic-contact" //Sercomm Door Window Sensor
 	}
 
 	simulator {

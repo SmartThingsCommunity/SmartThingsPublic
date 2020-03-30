@@ -26,8 +26,8 @@ metadata {
         capability "Power Source"
         capability "Health Check"
         
-        fingerprint  manufacturer: "Sinope Technologies", model: "VA4200WZ", deviceJoinName: "Valve" //VA4200WZ
-        fingerprint  manufacturer: "Sinope Technologies", model: "VA4200ZB", deviceJoinName: "Valve" //VA4200ZB
+        fingerprint  manufacturer: "Sinope Technologies", model: "VA4200WZ", deviceJoinName: "Sinope Valve" //VA4200WZ
+        fingerprint  manufacturer: "Sinope Technologies", model: "VA4200ZB", deviceJoinName: "Sinope Valve" //VA4200ZB
     }
 
     tiles(scale: 2) {

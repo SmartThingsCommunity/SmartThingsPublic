@@ -47,10 +47,10 @@ metadata {
 		command    "updateZwaveParam"
 		command    "test"
 
-		fingerprint deviceId: "0xA102", inClusters: "0x30,0x9C,0x60,0x85,0x8E,0x72,0x70,0x86,0x80,0x84", deviceJoinName: "Water Leak Sensor"
-		fingerprint mfr:"010F", prod:"0000", model:"2002", deviceJoinName: "Water Leak Sensor"
-		fingerprint mfr:"010F", prod:"0000", model:"1002", deviceJoinName: "Water Leak Sensor"
-		fingerprint mfr:"010F", prod:"0B00", model:"1001", deviceJoinName: "Water Leak Sensor"
+		fingerprint deviceId: "0xA102", inClusters: "0x30,0x9C,0x60,0x85,0x8E,0x72,0x70,0x86,0x80,0x84", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr:"010F", prod:"0000", model:"2002", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr:"010F", prod:"0000", model:"1002", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr:"010F", prod:"0B00", model:"1001", deviceJoinName: "Fibaro Water Leak Sensor"
 	}
 
 	simulator {

@@ -32,14 +32,14 @@ metadata {
 		command "reset"
 
 		fingerprint inClusters: "0x26,0x32", deviceJoinName: "Dimmer Switch"
-		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Dimmer Switch" //Aeotec Micro Smart Dimmer 2E
-		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Dimmer Switch"  //US //Aeotec Smart Dimmer 6
-		fingerprint mfr:"0086", prod:"0003", model:"0063", deviceJoinName: "Dimmer Switch" //EU //Aeotec Smart Dimmer 6
-		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Dimmer Switch" //Aeotec Nano Dimmer
-		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Dimmer Switch" //Aeotec Nano Dimmer
-		fingerprint mfr:"0086", prod:"0203", model:"006F", deviceJoinName: "Dimmer Switch" //AU //Aeotec Nano Dimmer
-		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "Dimmer Switch" //GoControl Plug-in Dimmer
-		fingerprint mfr:"0159", prod:"0001", model:"0055", deviceJoinName: "Dimmer Switch" //Qubino Mini Dimmer ZMNHHD1
+		fingerprint mfr:"0086", prod:"0003", model:"001B", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec Micro Smart Dimmer 2E
+		fingerprint mfr:"0086", prod:"0103", model:"0063", deviceJoinName: "Aeotec Dimmer Switch"  //US //Aeotec Smart Dimmer 6
+		fingerprint mfr:"0086", prod:"0003", model:"0063", deviceJoinName: "Aeotec Dimmer Switch" //EU //Aeotec Smart Dimmer 6
+		fingerprint mfr:"0086", prod:"0103", model:"006F", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec Nano Dimmer
+		fingerprint mfr:"0086", prod:"0003", model:"006F", deviceJoinName: "Aeotec Dimmer Switch" //Aeotec Nano Dimmer
+		fingerprint mfr:"0086", prod:"0203", model:"006F", deviceJoinName: "Aeotec Dimmer Switch" //AU //Aeotec Nano Dimmer
+		fingerprint mfr:"014F", prod:"5044", model:"3533", deviceJoinName: "GoControl Dimmer Switch" //GoControl Plug-in Dimmer
+		fingerprint mfr:"0159", prod:"0001", model:"0055", deviceJoinName: "Qubino Dimmer Switch" //Qubino Mini Dimmer ZMNHHD1
 	}
 
 	simulator {

@@ -22,26 +22,26 @@ metadata {
 		capability "Configuration"
 		capability "Refresh"
 		capability "Health Check"
-		capability "Switch 1"
+		capability "Switch"
 
 		command "childOn", ["string"]
 		command "childOff", ["string"]
 
 		// EZEX
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z0-HA", deviceJoinName: "Switch 1" //EZEX Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z0-HA", deviceJoinName: "Switch 1" //EZEX Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z0-HA", deviceJoinName: "Switch 1" //EZEX Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z0-HA", deviceJoinName: "Switch 1" //EZEX Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z0-HA", deviceJoinName: "Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR2N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR3N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR4N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR5N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006", outClusters: "0006, 000A, 0019", model: "E220-KR6N0Z0-HA", deviceJoinName: "eZEX Switch 1" //EZEX Switch 1
 
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Switch 1" //Orvibo 2 Gang Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Switch 1" //Orvibo 3 Gang Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0003", deviceJoinName: "Switch 1" //GDKES 3 Gang Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0002", deviceJoinName: "Switch 1" //GDKES 2 Gang Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0097", deviceJoinName: "Switch 1" //HONYAR 3 Gang Switch 1
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0096", deviceJoinName: "Switch 1" //HONYAR 2 Gang Switch 1
-		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW3L-EFR-3.0", deviceJoinName: "Switch 1" //HEIMAN 3 Gang Switch 1
-		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW2L-EFR-3.0", deviceJoinName: "Switch 1" //HEIMAN 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "074b3ffba5a045b7afd94c47079dd553", deviceJoinName: "Orvibo Switch 1" //Orvibo 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0005, 0004, 0006", outClusters: "0000", manufacturer: "ORVIBO", model: "9f76c9f31b4c4a499e3aca0977ac4494", deviceJoinName: "Orvibo Switch 1" //Orvibo 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0003", deviceJoinName: "GDKES Switch 1" //GDKES 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0005, 0004, 0006", manufacturer: "REXENSE", model: "HY0002", deviceJoinName: "GDKES Switch 1" //GDKES 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0097", deviceJoinName: "HONYAR Switch 1" //HONYAR 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", manufacturer: "REX", model: "HY0096", deviceJoinName: "HONYAR Switch 1" //HONYAR 2 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW3L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 3 Gang Switch 1
+		fingerprint profileId: "0104", inClusters: "0005, 0004, 0006", outClusters: "0003, 0019", manufacturer: "HEIMAN", model: "HS2SW2L-EFR-3.0", deviceJoinName: "HEIMAN Switch 1" //HEIMAN 2 Gang Switch 1
 	}
 	// simulator metadata
 	simulator {

@@ -27,7 +27,7 @@ metadata {
 		capability "Sensor"
 		capability "Configuration"
 
-		fingerprint manufacturer: "015D", prod: "0651", model: "F51C", deviceJoinName: "Switch" //Zooz ZEN 20 Power Strip
+		fingerprint manufacturer: "015D", prod: "0651", model: "F51C", deviceJoinName: "Zooz Switch" //Zooz ZEN 20 Power Strip
 	}
 
 	tiles {

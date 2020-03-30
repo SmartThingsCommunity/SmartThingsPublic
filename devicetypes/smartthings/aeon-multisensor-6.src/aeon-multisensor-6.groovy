@@ -28,10 +28,10 @@ metadata {
 
 		attribute "batteryStatus", "string"
 
-		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A", deviceJoinName: "Motion Sensor"
-		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A", deviceJoinName: "Motion Sensor"
-		fingerprint mfr: "0086", prod: "0102", model: "0064", deviceJoinName: "Motion Sensor" //Aeotec MultiSensor 6
-		fingerprint mfr: "0086", prod: "0202", model: "0064", deviceJoinName: "Motion Sensor" //AU //Aeotec MultiSensor 6
+		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A", outClusters: "0x5A", deviceJoinName: "Aeon Multipurpose Sensor"
+		fingerprint deviceId: "0x2101", inClusters: "0x5E,0x86,0x72,0x59,0x85,0x73,0x71,0x84,0x80,0x30,0x31,0x70,0x7A,0x5A", deviceJoinName: "Aeon Multipurpose Sensor"
+		fingerprint mfr: "0086", prod: "0102", model: "0064", deviceJoinName: "Aeotec Multipurpose Sensor" //Aeotec MultiSensor 6
+		fingerprint mfr: "0086", prod: "0202", model: "0064", deviceJoinName: "Aeotec Multipurpose Sensor" //AU //Aeotec MultiSensor 6
 	}
 
 	simulator {

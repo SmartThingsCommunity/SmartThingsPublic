@@ -23,9 +23,9 @@ metadata {
         capability "Sensor"
         capability "Health Check"
 
-        fingerprint mfr: "0086", model: "0082", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-4-button" //Aeotec Wallmote Quad
-        fingerprint mfr: "0086", model: "0081", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
-        fingerprint mfr: "0060", model: "0003", deviceJoinName: "Button", mnmn: "SmartThings", vid: "generic-2-button" //Everspring Wall Switch
+        fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Aeotec Wallmote Quad
+        fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
+        fingerprint mfr: "0060", model: "0003", deviceJoinName: "Everspring Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Everspring Wall Switch
     }
 
     tiles(scale: 2) {

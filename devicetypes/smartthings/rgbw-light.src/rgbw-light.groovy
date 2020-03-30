@@ -68,14 +68,14 @@ metadata {
 		fingerprint deviceId: "0x1102", inClusters: "0x26,0x33", deviceJoinName: "Light" //Z-Wave RGBW Bulb
 
 		// Manufacturer and model-specific fingerprints.
-		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Light" //US //Aeotec LED Strip
-		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Light" //EU //Aeotec LED Strip
-		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Light" //US //Aeotec LED Bulb
-		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Light" //EU //Aeotec LED Bulb
-		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_US, model: AEOTEC_LED6_MODEL, deviceJoinName: "Light" //US //Aeotec LED Bulb 6
-		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_EU, model: AEOTEC_LED6_MODEL, deviceJoinName: "Light" //EU //Aeotec LED Bulb 6
-		fingerprint mfr: "0300", prod: "0003", model: "0003", deviceJoinName: "Light" //ilumin RGBW Bulb
-		fingerprint mfr: "031E", prod: "0005", model: "0001", deviceJoinName: "Light" //ilumin RGBW Bulb
+		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec Light" //US //Aeotec LED Strip
+		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec Light" //EU //Aeotec LED Strip
+		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec Light" //US //Aeotec LED Bulb
+		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec Light" //EU //Aeotec LED Bulb
+		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_US, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec Light" //US //Aeotec LED Bulb 6
+		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_EU, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec Light" //EU //Aeotec LED Bulb 6
+		fingerprint mfr: "0300", prod: "0003", model: "0003", deviceJoinName: "ilumin Light" //ilumin RGBW Bulb
+		fingerprint mfr: "031E", prod: "0005", model: "0001", deviceJoinName: "ilumin Light" //ilumin RGBW Bulb
 	}
 
 	simulator {

@@ -18,7 +18,7 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		fingerprint mfr: "001E", prod: "0004", model: "0001", deviceJoinName: "Motion Sensor"
+		fingerprint mfr: "001E", prod: "0004", model: "0001", deviceJoinName: "EZmultiPli Multipurpose Sensor"
 	}
 
 	simulator {

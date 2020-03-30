@@ -22,11 +22,11 @@ metadata {
 		capability "Tamper Alert"
 		capability "Temperature Alarm"
 
-		fingerprint mfr:"010F", prod:"0C02", model:"1002", deviceJoinName: "Smoke Detector"
-		fingerprint mfr:"010F", prod:"0C02", model:"4002", deviceJoinName: "Smoke Detector"
-		fingerprint mfr:"010F", prod:"0C02", model:"1003", deviceJoinName: "Smoke Detector"
-		fingerprint mfr:"010F", prod:"0C02", deviceJoinName: "Smoke Detector"
-		fingerprint mfr:"010F", prod:"0C02", model:"3002", deviceJoinName: "Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"1002", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"4002", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"1003", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"3002", deviceJoinName: "Fibaro Smoke Detector"
 	}
 	simulator {
 		//battery
