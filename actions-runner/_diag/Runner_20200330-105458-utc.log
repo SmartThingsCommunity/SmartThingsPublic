@@ -1,0 +1,323 @@
+[2020-03-30 10:54:58Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-03-30 10:54:58Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-03-30 10:54:58Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-03-30 10:54:58Z INFO Listener] Version: 2.165.2
+[2020-03-30 10:54:58Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-03-30 10:54:58Z INFO Listener] Culture: en-US
+[2020-03-30 10:54:58Z INFO Listener] UI Culture: en-US
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:54:58Z INFO Listener] Validating directory permissions for: 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:54:58Z INFO CommandLineParser] Parse
+[2020-03-30 10:54:58Z INFO CommandLineParser] Parsing 1 args
+[2020-03-30 10:54:58Z INFO CommandLineParser] parsing argument
+[2020-03-30 10:54:58Z INFO CommandLineParser] HasArgs: False
+[2020-03-30 10:54:58Z INFO CommandLineParser] Adding Command: run
+[2020-03-30 10:54:58Z INFO Listener] Arguments parsed
+[2020-03-30 10:54:58Z INFO Runner] ExecuteCommand
+[2020-03-30 10:54:58Z INFO ConfigurationStore] currentAssemblyLocation: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin\Runner.Listener.dll
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:54:58Z INFO ConfigurationStore] binPath: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:54:58Z INFO ConfigurationStore] RootFolder: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:54:58Z INFO HostContext] Well known config file 'Runner': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.runner'
+[2020-03-30 10:54:58Z INFO ConfigurationStore] ConfigFilePath: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.runner
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:54:58Z INFO HostContext] Well known config file 'Credentials': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials'
+[2020-03-30 10:54:58Z INFO ConfigurationStore] CredFilePath: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:54:58Z INFO HostContext] Well known config file 'Service': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.service'
+[2020-03-30 10:54:58Z INFO ConfigurationStore] ServiceConfigFilePath: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.service
+[2020-03-30 10:54:58Z INFO CommandSettings] Flag 'help': 'False'
+[2020-03-30 10:54:58Z INFO CommandSettings] Flag 'version': 'False'
+[2020-03-30 10:54:58Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-03-30 10:54:58Z INFO CommandSettings] Command 'configure': 'False'
+[2020-03-30 10:54:58Z INFO CommandSettings] Command 'remove': 'False'
+[2020-03-30 10:54:58Z INFO CommandSettings] Command 'warmup': 'False'
+[2020-03-30 10:54:58Z INFO ConfigurationManager] LoadSettings
+[2020-03-30 10:54:58Z INFO ConfigurationStore] IsConfigured()
+[2020-03-30 10:54:58Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-30 10:54:58Z INFO ConfigurationManager] Is configured: True
+[2020-03-30 10:54:58Z INFO ConfigurationStore] Read setting file: 301 chars
+[2020-03-30 10:54:58Z INFO ConfigurationManager] Settings Loaded
+[2020-03-30 10:54:58Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-03-30 10:54:58Z INFO ConfigurationStore] IsServiceConfigured: True
+[2020-03-30 10:54:58Z INFO CommandSettings] Command 'run': 'True'
+[2020-03-30 10:54:58Z INFO ConfigurationStore] IsConfigured()
+[2020-03-30 10:54:58Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-30 10:54:58Z INFO ConfigurationManager] Is configured: True
+[2020-03-30 10:54:58Z INFO Runner] Try determine runner startup type base on console redirects.
+[2020-03-30 10:54:58Z INFO Runner] Set runner startup type - Manual
+[2020-03-30 10:54:58Z INFO CommandSettings] Flag 'once': 'False'
+[2020-03-30 10:54:58Z INFO Runner] RunAsync
+[2020-03-30 10:54:58Z INFO ConfigurationManager] LoadSettings
+[2020-03-30 10:54:58Z INFO ConfigurationStore] IsConfigured()
+[2020-03-30 10:54:58Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-30 10:54:58Z INFO ConfigurationManager] Is configured: True
+[2020-03-30 10:54:58Z INFO ConfigurationManager] Settings Loaded
+[2020-03-30 10:54:58Z INFO MessageListener] {
+  "AgentId": 2,
+  "AgentName": "X2JCJAB8C5",
+  "PoolId": 1,
+  "PoolName": "Default",
+  "ServerUrl": "https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/",
+  "GitHubUrl": "https://github.com/monninn/SmartThingsPublic",
+  "WorkFolder": "_work"
+}
+[2020-03-30 10:54:58Z INFO MessageListener] Loading Credentials
+[2020-03-30 10:54:58Z INFO ConfigurationStore] HasCredentials()
+[2020-03-30 10:54:58Z INFO ConfigurationStore] stored True
+[2020-03-30 10:54:58Z INFO CredentialManager] GetCredentialProvider
+[2020-03-30 10:54:58Z INFO CredentialManager] Creating type OAuth
+[2020-03-30 10:54:58Z INFO CredentialManager] Creating credential type: OAuth
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:54:58Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:54:58Z INFO HostContext] Well known config file 'RSACredentials': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials_rsaparams'
+[2020-03-30 10:54:58Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials_rsaparams
+[2020-03-30 10:54:58Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:54:58Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:54:58Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:54:58Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:54:58Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:54:58Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:54:58Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:54:58Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:54:59Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:54:59Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:54:59Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:54:59Z INFO MessageListener] VssConnection created
+[2020-03-30 10:54:59Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:54:59Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:54:59Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: ef1255ba-04b5-4ff9-9072-fc6d5428a043
+ActivityId: 6afcf4cd-7e1e-4388-99f6-607b35051ac0
+X-TFS-Session: 1bbfa3df-73a9-4c77-9394-10db0bcd9d97
+X-VSS-E2EID: 0952c392-04b5-4de1-8b88-615ffe54b837
+X-VSS-SenderDeploymentId: 193695a0-0dcd-ade4-f810-b10ad24a9829
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 7088E2D9258441B6B06A7C29B2065E09 Ref B: CHGEDGE1014 Ref C: 2020-03-30T10:54:55Z
+Date: Mon, 30 Mar 2020 10:54:55 GMT
+
+[2020-03-30 10:54:59Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials_rsaparams
+[2020-03-30 10:54:59Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials_rsaparams
+[2020-03-30 10:55:00Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-03-30 10:55:00Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: 39D0D7C9AB57422798C2272915B30652 Ref B: CHGEDGE1014 Ref C: 2020-03-30T10:54:56Z
+[2020-03-30 10:55:00Z ERR  MessageListener] Catch exception during create session.
+[2020-03-30 10:55:00Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-30 10:55:00Z INFO MessageListener] The session for this runner already exists.
+[2020-03-30 10:55:00Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-30 10:55:00Z INFO MessageListener] The session conflict exception haven't reached retry limit.
+[2020-03-30 10:55:00Z ERR  Terminal] WRITE ERROR: 2020-03-30 10:55:00Z: Runner connect error: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.. Retrying until reconnected.
+[2020-03-30 10:55:00Z INFO MessageListener] Sleeping for 30 seconds before retrying.
+[2020-03-30 10:55:30Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:55:30Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:55:30Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:55:30Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:55:30Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:55:30Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:55:30Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:55:30Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:55:31Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:55:31Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:55:31Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:55:31Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:55:31Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:55:31Z INFO MessageListener] VssConnection created
+[2020-03-30 10:55:31Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:55:31Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:55:31Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: 7A36EB6FA3DC485A81EA6D76CA5A5B8B Ref B: CHGEDGE1420 Ref C: 2020-03-30T10:55:27Z
+[2020-03-30 10:55:31Z ERR  MessageListener] Catch exception during create session.
+[2020-03-30 10:55:31Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-30 10:55:31Z INFO MessageListener] The session for this runner already exists.
+[2020-03-30 10:55:31Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-30 10:55:31Z INFO MessageListener] The session conflict exception haven't reached retry limit.
+[2020-03-30 10:55:31Z INFO MessageListener] Sleeping for 30 seconds before retrying.
+[2020-03-30 10:56:01Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:56:01Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:56:01Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:56:01Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:01Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:56:01Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:01Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:56:01Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:02Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:02Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:02Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:02Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:02Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:02Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:02Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:02Z INFO MessageListener] VssConnection created
+[2020-03-30 10:56:02Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:56:02Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:56:02Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: F75F27C9348F41509BD9691F042A72D1 Ref B: CHGEDGE1311 Ref C: 2020-03-30T10:55:58Z
+[2020-03-30 10:56:02Z ERR  MessageListener] Catch exception during create session.
+[2020-03-30 10:56:02Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-30 10:56:02Z INFO MessageListener] The session for this runner already exists.
+[2020-03-30 10:56:02Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-30 10:56:02Z INFO MessageListener] The session conflict exception haven't reached retry limit.
+[2020-03-30 10:56:02Z INFO MessageListener] Sleeping for 30 seconds before retrying.
+[2020-03-30 10:56:32Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:56:32Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:56:32Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:56:32Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:32Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:56:32Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:32Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:56:32Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:33Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:33Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:33Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:33Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:56:33Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:56:33Z INFO MessageListener] VssConnection created
+[2020-03-30 10:56:33Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:56:33Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:56:33Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: 205814D9D60B43FAA56B01B0D7957931 Ref B: CHGEDGE0906 Ref C: 2020-03-30T10:56:29Z
+[2020-03-30 10:56:33Z ERR  MessageListener] Catch exception during create session.
+[2020-03-30 10:56:33Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-30 10:56:33Z INFO MessageListener] The session for this runner already exists.
+[2020-03-30 10:56:33Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-30 10:56:33Z INFO MessageListener] The session conflict exception haven't reached retry limit.
+[2020-03-30 10:56:33Z INFO MessageListener] Sleeping for 30 seconds before retrying.
+[2020-03-30 10:57:03Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:57:03Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:57:03Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:57:03Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:03Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:57:03Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:03Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:57:03Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:04Z INFO MessageListener] VssConnection created
+[2020-03-30 10:57:04Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:57:04Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:57:04Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: 9CE80C49F54F4BCDB742BCABA324BB2E Ref B: CHGEDGE1008 Ref C: 2020-03-30T10:57:01Z
+[2020-03-30 10:57:04Z ERR  MessageListener] Catch exception during create session.
+[2020-03-30 10:57:04Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-30 10:57:04Z INFO MessageListener] The session for this runner already exists.
+[2020-03-30 10:57:04Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-30 10:57:04Z INFO MessageListener] The session conflict exception haven't reached retry limit.
+[2020-03-30 10:57:04Z INFO MessageListener] Sleeping for 30 seconds before retrying.
+[2020-03-30 10:57:34Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:57:34Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:57:34Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:57:34Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:34Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:57:34Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:34Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:57:34Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:57:35Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:35Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:35Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:57:35Z INFO MessageListener] VssConnection created
+[2020-03-30 10:57:35Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:57:35Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:57:35Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: 2A181C1336FC4B3FA89E01E4E3334DDB Ref B: CHGEDGE1117 Ref C: 2020-03-30T10:57:32Z
+[2020-03-30 10:57:35Z ERR  MessageListener] Catch exception during create session.
+[2020-03-30 10:57:35Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-30 10:57:35Z INFO MessageListener] The session for this runner already exists.
+[2020-03-30 10:57:35Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-30 10:57:35Z INFO MessageListener] The session conflict exception haven't reached retry limit.
+[2020-03-30 10:57:35Z INFO MessageListener] Sleeping for 30 seconds before retrying.
+[2020-03-30 10:58:05Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:58:05Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:58:05Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:58:05Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:58:05Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:58:05Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:58:05Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:58:05Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:58:06Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:58:06Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:58:06Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:58:06Z INFO MessageListener] VssConnection created
+[2020-03-30 10:58:06Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:58:06Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:58:06Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: DC9353A6546F46E997C8B62F1CE7E4F5 Ref B: CHGEDGE1421 Ref C: 2020-03-30T10:58:02Z
+[2020-03-30 10:58:06Z ERR  MessageListener] Catch exception during create session.
+[2020-03-30 10:58:06Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-30 10:58:06Z INFO MessageListener] The session for this runner already exists.
+[2020-03-30 10:58:06Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-30 10:58:06Z INFO MessageListener] The session conflict exception haven't reached retry limit.
+[2020-03-30 10:58:06Z INFO MessageListener] Sleeping for 30 seconds before retrying.
+[2020-03-30 10:58:36Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:58:36Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:58:36Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:58:36Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:58:36Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:58:36Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:58:36Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:58:36Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:58:36Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:58:36Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:58:36Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:58:36Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:58:36Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:58:36Z INFO MessageListener] VssConnection created
+[2020-03-30 10:58:36Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:58:36Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:58:37Z ERR  GitHubActionsService] POST request to https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/_apis/distributedtask/pools/1/sessions failed. HTTP Status: Conflict, AFD Ref: Ref A: 79F971097D6E4D86AC8C4B2AB4DF91A1 Ref B: CHGEDGE0908 Ref C: 2020-03-30T10:58:33Z
+[2020-03-30 10:58:37Z ERR  MessageListener] Catch exception during create session.
+[2020-03-30 10:58:37Z ERR  MessageListener] GitHub.DistributedTask.WebApi.TaskAgentSessionConflictException: The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.
+   at GitHub.Services.WebApi.VssHttpClientBase.HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync(HttpRequestMessage message, HttpCompletionOption completionOption, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpRequestMessage message, Object userState, CancellationToken cancellationToken)
+   at GitHub.Services.WebApi.VssHttpClientBase.SendAsync[T](HttpMethod method, IEnumerable`1 additionalHeaders, Guid locationId, Object routeValues, ApiResourceVersion version, HttpContent content, IEnumerable`1 queryParameters, Object userState, CancellationToken cancellationToken)
+   at GitHub.Runner.Listener.MessageListener.CreateSessionAsync(CancellationToken token)
+[2020-03-30 10:58:37Z INFO MessageListener] The session for this runner already exists.
+[2020-03-30 10:58:37Z ERR  Terminal] WRITE ERROR: A session for this runner already exists.
+[2020-03-30 10:58:37Z INFO MessageListener] The session conflict exception have reached retry limit.
+[2020-03-30 10:58:37Z ERR  Terminal] WRITE ERROR: Stop retry on SessionConflictException after retried for 240 seconds.
+[2020-03-30 10:58:37Z ERR  Terminal] WRITE ERROR: Failed to create session. The actions runner X2JCJAB8C5 already has an active session for owner X2JCJAB8C5.

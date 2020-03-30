@@ -1,0 +1,119 @@
+[2020-03-30 10:53:40Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-03-30 10:53:40Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-03-30 10:53:40Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-03-30 10:53:40Z INFO Listener] Version: 2.165.2
+[2020-03-30 10:53:40Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-03-30 10:53:40Z INFO Listener] Culture: en-US
+[2020-03-30 10:53:40Z INFO Listener] UI Culture: en-US
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:53:40Z INFO Listener] Validating directory permissions for: 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:53:40Z INFO CommandLineParser] Parse
+[2020-03-30 10:53:40Z INFO CommandLineParser] Parsing 3 args
+[2020-03-30 10:53:40Z INFO CommandLineParser] parsing argument
+[2020-03-30 10:53:40Z INFO CommandLineParser] HasArgs: False
+[2020-03-30 10:53:40Z INFO CommandLineParser] Adding Command: run
+[2020-03-30 10:53:40Z INFO CommandLineParser] parsing argument
+[2020-03-30 10:53:40Z INFO CommandLineParser] HasArgs: True
+[2020-03-30 10:53:40Z INFO CommandLineParser] arg: startuptype
+[2020-03-30 10:53:40Z INFO CommandLineParser] parsing argument
+[2020-03-30 10:53:40Z INFO CommandLineParser] HasArgs: True
+[2020-03-30 10:53:40Z INFO CommandLineParser] Adding option 'startuptype': 'service'
+[2020-03-30 10:53:40Z INFO Listener] Arguments parsed
+[2020-03-30 10:53:40Z INFO Runner] ExecuteCommand
+[2020-03-30 10:53:40Z INFO ConfigurationStore] currentAssemblyLocation: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin\Runner.Listener.dll
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:53:40Z INFO ConfigurationStore] binPath: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:53:40Z INFO ConfigurationStore] RootFolder: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:53:40Z INFO HostContext] Well known config file 'Runner': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.runner'
+[2020-03-30 10:53:40Z INFO ConfigurationStore] ConfigFilePath: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.runner
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:53:40Z INFO HostContext] Well known config file 'Credentials': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials'
+[2020-03-30 10:53:40Z INFO ConfigurationStore] CredFilePath: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:53:40Z INFO HostContext] Well known config file 'Service': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.service'
+[2020-03-30 10:53:40Z INFO ConfigurationStore] ServiceConfigFilePath: D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.service
+[2020-03-30 10:53:40Z INFO CommandSettings] Flag 'help': 'False'
+[2020-03-30 10:53:40Z INFO CommandSettings] Flag 'version': 'False'
+[2020-03-30 10:53:40Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-03-30 10:53:40Z INFO CommandSettings] Command 'configure': 'False'
+[2020-03-30 10:53:40Z INFO CommandSettings] Command 'remove': 'False'
+[2020-03-30 10:53:40Z INFO CommandSettings] Command 'warmup': 'False'
+[2020-03-30 10:53:40Z INFO ConfigurationManager] LoadSettings
+[2020-03-30 10:53:40Z INFO ConfigurationStore] IsConfigured()
+[2020-03-30 10:53:40Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-30 10:53:40Z INFO ConfigurationManager] Is configured: True
+[2020-03-30 10:53:40Z INFO ConfigurationStore] Read setting file: 301 chars
+[2020-03-30 10:53:40Z INFO ConfigurationManager] Settings Loaded
+[2020-03-30 10:53:40Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-03-30 10:53:40Z INFO ConfigurationStore] IsServiceConfigured: True
+[2020-03-30 10:53:40Z INFO CommandSettings] Command 'run': 'True'
+[2020-03-30 10:53:40Z INFO ConfigurationStore] IsConfigured()
+[2020-03-30 10:53:40Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-30 10:53:40Z INFO ConfigurationManager] Is configured: True
+[2020-03-30 10:53:40Z INFO Runner] Set runner startup type - Service
+[2020-03-30 10:53:40Z INFO CommandSettings] Flag 'once': 'False'
+[2020-03-30 10:53:40Z INFO Runner] RunAsync
+[2020-03-30 10:53:40Z INFO ConfigurationManager] LoadSettings
+[2020-03-30 10:53:40Z INFO ConfigurationStore] IsConfigured()
+[2020-03-30 10:53:40Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-30 10:53:40Z INFO ConfigurationManager] Is configured: True
+[2020-03-30 10:53:40Z INFO ConfigurationManager] Settings Loaded
+[2020-03-30 10:53:40Z INFO MessageListener] {
+  "AgentId": 2,
+  "AgentName": "X2JCJAB8C5",
+  "PoolId": 1,
+  "PoolName": "Default",
+  "ServerUrl": "https://pipelines.actions.githubusercontent.com/A1H7YTYHCgPLxgq4KLNuuBUgVIBrBqEYtJ8Qhaoln9ZW058fPd/",
+  "GitHubUrl": "https://github.com/monninn/SmartThingsPublic",
+  "WorkFolder": "_work"
+}
+[2020-03-30 10:53:40Z INFO MessageListener] Loading Credentials
+[2020-03-30 10:53:40Z INFO ConfigurationStore] HasCredentials()
+[2020-03-30 10:53:40Z INFO ConfigurationStore] stored True
+[2020-03-30 10:53:40Z INFO CredentialManager] GetCredentialProvider
+[2020-03-30 10:53:40Z INFO CredentialManager] Creating type OAuth
+[2020-03-30 10:53:40Z INFO CredentialManager] Creating credential type: OAuth
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Bin': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\bin'
+[2020-03-30 10:53:40Z INFO HostContext] Well known directory 'Root': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner'
+[2020-03-30 10:53:40Z INFO HostContext] Well known config file 'RSACredentials': 'D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials_rsaparams'
+[2020-03-30 10:53:40Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials_rsaparams
+[2020-03-30 10:53:40Z INFO MessageListener] Attempt to create session.
+[2020-03-30 10:53:40Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-30 10:53:40Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-30 10:53:40Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:53:41Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:53:41Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:53:41Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-30 10:53:41Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-30 10:53:41Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:53:41Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:53:41Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-30 10:53:42Z INFO MessageListener] VssConnection created
+[2020-03-30 10:53:42Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:53:42Z INFO Terminal] WRITE LINE: 
+[2020-03-30 10:53:42Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: ef1255ba-04b5-4ff9-9072-fc6d5428a043
+ActivityId: 6afc4e18-7e1e-4388-99f6-607b35051ac0
+X-TFS-Session: 7234a658-7667-4499-8109-d04d0371e895
+X-VSS-E2EID: 25d2b5e5-b905-4ad7-80ee-154820ca0c23
+X-VSS-SenderDeploymentId: 193695a0-0dcd-ade4-f810-b10ad24a9829
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: F6B206D4C3CC44DCA39BD36231DC6F7C Ref B: CHGEDGE0916 Ref C: 2020-03-30T10:53:38Z
+Date: Mon, 30 Mar 2020 10:53:38 GMT
+
+[2020-03-30 10:53:42Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials_rsaparams
+[2020-03-30 10:53:42Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file D:\monninn-github\monninn\SmartThingsPublic-\SmartThingsPublic-\actions-runner\.credentials_rsaparams
+[2020-03-30 10:53:43Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-03-30 10:53:43Z INFO MessageListener] Session created.
+[2020-03-30 10:53:43Z INFO Terminal] WRITE LINE: 2020-03-30 10:53:43Z: Listening for Jobs
+[2020-03-30 10:53:43Z INFO JobDispatcher] Set runner/worker IPC timeout to 30 seconds.
