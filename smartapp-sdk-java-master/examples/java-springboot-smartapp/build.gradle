@@ -1,0 +1,54 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath deps.springboot.gradlePlugin
+    }
+}
+
+plugins {
+    id 'jacoco'
+    id 'java'
+    id 'groovy'
+    id 'idea'
+    id 'eclipse'
+}
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+group = "examples"
+sourceCompatibility = '1.8'
+
+test {
+    jacoco {
+        destinationFile = file("${buildDir}/jacoco/test.exec")
+    }
+}
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled false
+    }
+}
+test.finalizedBy(jacocoTestReport)
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation deps.projects.smartappspring
+    implementation deps.projects.smartthingsclient
+    implementation deps.projects.smartappcsdynamodb
+    implementation deps.logging.logback
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.568')
+    implementation 'com.amazonaws:aws-java-sdk-dynamodb'
+
+    testImplementation deps.groovy.all
+    testImplementation deps.test.spockCore
+}
+
+jacocoTestReport.dependsOn(test)

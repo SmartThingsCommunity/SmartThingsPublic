@@ -1,0 +1,82 @@
+if (!project.hasProperty('sonatypeUsername') || !project.hasProperty('sonatypePassword')) {
+    return
+}
+
+apply plugin: "java"
+apply plugin: "maven-publish"
+apply plugin: "signing"
+
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = project.getName()
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                name = 'SmartApp SDK'
+                description = 'SmartApp and Client SDK'
+                url = 'https://github.com/SmartThingsCommunity/smartapp-sdk-java'
+                organization {
+                    name = 'com.smartthings.sdk'
+                    url = 'https://github.com/SmartThingsCommunity'
+                }
+                issueManagement {
+                    system = 'GitHub'
+                    url = 'https://github.com/SmartThingsCommunity/smartapp-sdk-java/issues'
+                }
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://github.com/SmartThingsCommunity/smartapp-sdk-java/blob/master/LICENSE'
+                        distribution = 'repo'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/SmartThingsCommunity/smartapp-sdk-java'
+                    connection = 'scm:git:git://github.com/SmartThingsCommunity/smartapp-sdk-java.git'
+                    developerConnection = 'scm:git:ssh://git@github.com:SmartThingsCommunity/smartapp-sdk-java.git'
+                }
+                developers {
+                    developer {
+                        name = 'SmartThings, Inc.'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = sonatypeUsername
+                password = sonatypePassword
+            }
+            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots'
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}

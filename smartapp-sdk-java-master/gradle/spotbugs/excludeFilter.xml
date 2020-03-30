@@ -1,0 +1,16 @@
+<FindBugsFilter>
+    <Match>
+        <Package name="com.smartthings.sdk.smartapp.core.models"/>
+    </Match>
+    <Match>
+        <Package name="~com\.smartthings\.sdk\.client(\.(models|methods))?"/>
+    </Match>
+    <Match>
+        <!--
+          Ignore some errors in Spock-generated classes. Note that if you run
+          the Gradle spotbugsTest task there are still a couple of Groovy/Spock
+          errors not ignored by this.
+        -->
+        <Class name="~.*\$__spock_feature.*"/>
+    </Match>
+</FindBugsFilter>

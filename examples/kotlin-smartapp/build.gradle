@@ -1,0 +1,58 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath deps.kotlin.gradlePlugin
+    }
+}
+
+plugins {
+    id 'jacoco'
+    id 'java'
+    id 'application'
+    id 'eclipse'
+}
+apply plugin: deps.kotlin.jvmPlugin
+
+group = "examples"
+mainClassName = 'io.ktor.server.netty.EngineMain'
+sourceCompatibility = '1.8'
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+test {
+    jacoco {
+        destinationFile = file("${buildDir}/jacoco/test.exec")
+    }
+}
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled false
+    }
+}
+test.finalizedBy(jacocoTestReport)
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation deps.projects.smartappcore
+    implementation deps.projects.smartthingsclient
+    implementation deps.kotlin.stdlib
+    implementation deps.kotlin.ktorClientOkhttp
+    implementation deps.kotlin.ktorServerNetty
+    implementation deps.kotlin.ktorJackson
+    implementation deps.logging.logback
+
+    testImplementation deps.test.kotlin.ktorServerTestHost
+    testImplementation deps.test.kotlin.mockk
+}

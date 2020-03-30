@@ -1,0 +1,12 @@
+apply plugin: 'groovy'
+apply plugin: 'eclipse'
+apply from: rootProject.file('gradle/convention.gradle')
+apply from: rootProject.file('gradle/publish-jar.gradle')
+
+dependencies {
+    implementation deps.projects.smartappcore
+    implementation deps.di.guice
+    testImplementation deps.test.spockCore
+    testRuntime deps.test.cglibNodep
+    testRuntime deps.test.objenesis
+}

@@ -1,0 +1,63 @@
+buildscript {
+  repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:2.0.0"
+  }
+}
+
+apply plugin: 'com.github.spotbugs'
+apply plugin: "pmd"
+apply plugin: "checkstyle"
+apply plugin: "jacoco"
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+spotbugs {
+    toolVersion = "3.1.12"
+    ignoreFailures = false
+    effort = "max"
+    reportLevel = "low"
+    excludeFilter = file("$rootProject.projectDir/gradle/spotbugs/excludeFilter.xml")
+    sourceSets = [sourceSets.main]
+    reportsDir = file("$project.buildDir/coverage/spotbugs")
+}
+
+checkstyle {
+    configFile = file("$rootProject.projectDir/gradle/checkstyle/checkstyle.xml")
+    reportsDir = file("$project.buildDir/coverage/checkstyle")
+}
+
+pmd {
+    ignoreFailures = false
+    ruleSets = []
+    ruleSetFiles = files("$rootProject.projectDir/gradle/pmd/stRuleSet.xml")
+    reportsDir = file("$project.buildDir/coverage/pmd")
+}
+
+tasks.withType(Javadoc) {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(com.github.spotbugs.SpotBugsTask) {
+    // If available, set exclude filters to avoid analyzing generated classes
+    def excludes = file("${project.getProjectDir()}/gradle/spotbugs/excludeFilter.xml")
+    if (excludes.exists()) {
+        excludeFilter = excludes
+    }
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled false
+    }
+}

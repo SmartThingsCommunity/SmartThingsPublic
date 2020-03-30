@@ -1,0 +1,11 @@
+{
+    "modelPackage": "com.smartthings.sdk.smartapp.core.models",
+    "library": "jersey2",
+    "typeMappings": {
+        "UUID": "java.lang.String"
+    },
+    "importMappings": {
+        "JsonIgnore": "com.fasterxml.jackson.annotation.JsonIgnore",
+        "JsonValue": "com.fasterxml.jackson.annotation.JsonValue"
+    }
+}
