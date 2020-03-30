@@ -330,7 +330,7 @@ private secureSequence(commands, delay=200) {
 
 private isSecured() {
 	if (zwaveInfo && zwaveInfo.zw) {
-		return zwaveInfo.zw.endsWith("s")
+		return zwaveInfo.zw.contains("s")
 	} else {
 		return state.sec == 1
 	}

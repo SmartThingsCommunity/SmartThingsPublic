@@ -161,7 +161,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	if (device.currentValue("syncStatus") != "synced") {
 
 		parameterMap().each {
-			if (device.currentValue("syncStatus") == "force") {
+			if (state."$it.key"?.state != null && device.currentValue("syncStatus") == "force") {
 				state."$it.key".state = "notSynced"
 			}
 
@@ -449,7 +449,7 @@ private encap(Map encapMap) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")) {
+	} else if (zwaveInfo?.cc?.contains("56")) {
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd", "info")

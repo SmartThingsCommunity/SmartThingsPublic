@@ -92,7 +92,7 @@ private getCommandClassVersions() {
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err 106")) {
-		if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.endsWith("s")) {
+		if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
 			log.debug description
 		} else {
 			result = createEvent(
@@ -317,7 +317,7 @@ def initialPoll() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.endsWith("s")) {
+	if ((zwaveInfo?.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()

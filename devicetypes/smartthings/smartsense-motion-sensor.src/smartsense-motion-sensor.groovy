@@ -133,7 +133,7 @@ def parse(String description) {
 						map = getBatteryResult(Integer.parseInt(battMap.value, 16))
 					}
 				}
-			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002) {
+			} else if (descMap?.clusterInt == 0x0500 && descMap.attrInt == 0x0002 && descMap.commandInt != 0x07) {
 				def zs = new ZoneStatus(zigbee.convertToInt(descMap.value, 16))
 				map = translateZoneStatus(zs)
 			} else if (descMap?.clusterInt == zigbee.TEMPERATURE_MEASUREMENT_CLUSTER && descMap.commandInt == 0x07) {

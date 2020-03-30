@@ -176,7 +176,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(cmd) {
-	if(zwaveInfo.zw.endsWith("s")) {
+	if(zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()

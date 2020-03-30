@@ -204,7 +204,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def isFibaro() {
-	(zwaveInfo?.mfr == "010F" && zwaveInfo.prod == "0C02")
+	(zwaveInfo?.mfr?.equals("010F") && zwaveInfo?.prod?.equals("0C02"))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
@@ -519,7 +519,7 @@ private setSecured() {
 
 private isSecured() {
     if (zwaveInfo && zwaveInfo.zw) {
-        return zwaveInfo.zw.endsWith("s")
+        return zwaveInfo.zw.contains("s")
     } else {
         return getDataValue("secured") == "true"
     }

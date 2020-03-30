@@ -281,7 +281,7 @@ private secure(cmd) {
 }
 
 def multiEncap(cmds) {
-	if (zwaveInfo.cc.contains("8F")) {
+	if (zwaveInfo?.cc?.contains("8F")) {
 		secure(zwave.multiCmdV1.multiCmdEncap().encapsulate(cmds.collect {
 			cmd -> cmd.format()
 		}))

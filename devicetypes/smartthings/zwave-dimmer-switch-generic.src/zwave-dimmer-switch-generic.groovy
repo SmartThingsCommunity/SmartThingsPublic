@@ -145,7 +145,7 @@ def parse(String description) {
 			result = zwaveEvent(cmd)
 		}
 	}
-	if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
+	if (result?.name?.equals('hail') && hubFirmwareLessThan("000.011.00602")) {
 		result = [result, response(zwave.basicV1.basicGet())]
 		log.debug "Was hailed: requesting state update"
 	} else {
