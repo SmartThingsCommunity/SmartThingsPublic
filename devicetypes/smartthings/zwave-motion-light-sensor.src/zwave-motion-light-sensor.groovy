@@ -87,24 +87,15 @@ def updated() {
 }
 
 def configure() {
-	// Device wakes up every deviceCheckInterval hours, this interval allows us to miss one wakeup notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * deviceWakeUpInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Device wakes up every 8 hours (+ 2 minutes), this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: (8 * 60 * 60) + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	// Setting wakeUpNotification interval for NEO Coolcam and Dome devices
+	if (zwaveInfo.mfr.equals("021F") || zwaveInfo.mfr.equals("0258")) {
+		zwave.wakeUpV2.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
+	}
 }
 
-def getDeviceWakeUpInterval() {
-	def deviceWakeIntervalValue = 4
-	switch (zwaveInfo?.mfr) {
-		case "021F":
-			deviceWakeIntervalValue = 12 // Dome reports once in 12h
-			break
-		case "0258":
-			deviceWakeIntervalValue = 12 // NEO Coolcam reports once in 12h
-			break
-		default:
-			deviceWakeIntervalValue = 4 // Default Z-Wave battery device reports once in 4h
-	}
-	return deviceWakeIntervalValue
-}
 
 private getCommandClassVersions() {
 	[
