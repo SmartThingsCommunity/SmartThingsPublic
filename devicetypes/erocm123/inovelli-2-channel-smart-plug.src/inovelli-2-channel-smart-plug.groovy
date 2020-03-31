@@ -83,7 +83,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 			def allOff = true
 			childDevices.each {
 				n ->
-					if (n.currentState("switch").value != "off") allOff = false
+					if (n.currentState("switch")?.value != "off") allOff = false
 			}
 			if (allOff) {
 				event = [createEvent([name: "switch", value: "off"])]
@@ -116,7 +116,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 			def allOff = true
 			childDevices.each {
 				n->
-					if (n.currentState("switch").value != "off") allOff = false
+					if (n.currentState("switch")?.value != "off") allOff = false
 			}
 			if (allOff) {
 				event = [createEvent([name: "switch", value: "off"])]

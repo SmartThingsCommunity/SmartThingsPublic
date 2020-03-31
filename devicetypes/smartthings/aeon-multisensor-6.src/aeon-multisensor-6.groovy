@@ -443,7 +443,7 @@ def configure() {
 	def checkInterval = 2 * (timeOptionValueMap[reportInterval] ?: 60 * 60) + 2 * 60
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 
-	commands(request, (state.sec || zwaveInfo?.zw?.endsWith("s")) ? 2000 : 500) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
+	commands(request, (state.sec || zwaveInfo?.zw?.contains("s")) ? 2000 : 500) + ["delay 20000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 }
 
 
@@ -476,7 +476,7 @@ private isConfigured() {
 }
 
 private command(physicalgraph.zwave.Command cmd) {
-	if (state.sec || zwaveInfo?.zw?.endsWith("s")) {
+	if (state.sec || zwaveInfo?.zw?.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()
