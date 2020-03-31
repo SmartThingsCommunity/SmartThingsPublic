@@ -17,8 +17,6 @@
 
 import java.text.SimpleDateFormat
 
-def devVer() { return "2.0.0" }
-
 metadata {
     definition (name: "Rachio Zone", namespace: "rachio", author: "Rachio") {
         capability "Refresh"
@@ -71,10 +69,6 @@ def ping() {
 }
 
 def generateEvent(Map results) {
-    if (!state.swVersion || state.swVersion != devVer()) {
-        initialize()
-        state.swVersion = devVer()
-    }
     if (results) {
         if (!results.data?.enabled) {
             sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
@@ -90,7 +84,6 @@ def generateEvent(Map results) {
 }
 
 def refresh() {
-    //log.trace "refresh..."
     parent?.poll(this)
 }
 
@@ -138,19 +131,17 @@ def close() {
     }
 }
 
+def markOffLine() {
+    log.trace "Watering (Offline)"
+    sendEvent(name: 'valve', value: "closed", displayed: false)
+    sendEvent(name: 'switch', value: "off", displayed: false)
+    sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
+}
+
 // To be used directly by smart apps
 def stopWatering() {
     log.trace "stopWatering"
     close()
-}
-
-def formatDt(dt, mdy = true) {
-    def formatVal = mdy ? "MMM d, yyyy - h:mm:ss a" : "E MMM dd HH:mm:ss z yyyy"
-    def tf = new SimpleDateFormat(formatVal)
-    if (location?.timeZone) {
-        tf.setTimeZone(location?.timeZone)
-    }
-    return tf.format(dt)
 }
 
 def isCmdOk2Run() {
