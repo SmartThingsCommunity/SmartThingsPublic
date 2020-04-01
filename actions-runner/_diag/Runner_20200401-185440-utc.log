@@ -146,3 +146,12 @@ Date: Wed, 01 Apr 2020 20:45:15 GMT
 [2020-04-01 20:45:18Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
 [2020-04-01 20:45:18Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
 [2020-04-01 20:55:21Z INFO MessageListener] No message retrieved from session '536af404-a327-4778-b4be-446289e57832' within last 30 minutes.
+[2020-04-01 21:25:30Z INFO MessageListener] No message retrieved from session '536af404-a327-4778-b4be-446289e57832' within last 30 minutes.
+[2020-04-01 21:34:50Z INFO Terminal] WRITE LINE: Exiting...
+[2020-04-01 21:34:50Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-04-01 21:34:50Z INFO ConfigurationStore] IsServiceConfigured: False
+[2020-04-01 21:34:50Z INFO HostContext] Runner will be shutdown for UserCancelled
+[2020-04-01 21:34:50Z WARN GitHubActionsService] GET request to https://pipelines.actions.githubusercontent.com/EQE2oYQT0i2U5mCTEGtEZoQM75DsLEfYVM9ZJlOo5q1WQNpGUD/_apis/distributedtask/pools/1/messages?sessionId=536af404-a327-4778-b4be-446289e57832 has been cancelled.
+[2020-04-01 21:34:50Z INFO MessageListener] Get next message has been cancelled.
+[2020-04-01 21:34:50Z INFO JobDispatcher] Shutting down JobDispatcher. Make sure all WorkerDispatcher has finished.
+[2020-04-01 21:34:51Z INFO Listener] Runner execution been cancelled.
