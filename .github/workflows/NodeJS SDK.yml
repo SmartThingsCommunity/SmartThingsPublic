@@ -1,0 +1,108 @@
+{
+  "name": "@smartthings/smartapp",
+  "version": "2.0.0",
+  "description": "NodeJS SDK for SmartApps",
+  "displayName": "SmartThings SmartApp SDK for NodeJS",
+  "author": "SmartThings",
+  "contributors": [
+    "Bob Florian (https://github.com/bflorian)"
+  ],
+  "keywords": [
+    "smartthings",
+    "smartapp"
+  ],
+  "main": "lib/smart-app.js",
+  "scripts": {
+    "lint": "xo",
+    "test:unit": "mocha test/unit/**",
+    "test": "xo && nyc mocha test/unit/**",
+    "start": "node ./smart-app.js",
+    "debug": "node --inspect ./lib/smart-app.js",
+    "semantic-release": "semantic-release -e ./config/release.config.js",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
+  },
+  "engines": {
+    "node": ">=8.9.4"
+  },
+  "license": "Apache-2.0",
+  "repository": "github:SmartThingsCommunity/smartapp-sdk-nodejs",
+  "bugs": {
+    "url": "https://github.com/SmartThingsCommunity/smartapp-sdk-nodejs/issues"
+  },
+  "homepage": "https://github.com/SmartThingsCommunity/smartapp-sdk-nodejs#readme",
+  "dependencies": {
+    "@smartthings/core-sdk": "0.0.2",
+    "async-mutex": "^0.1.4",
+    "axios": "^0.19.2",
+    "fs-extra": "~7.0.1",
+    "http-signature": "~1.2.0",
+    "i18n": "~0.8.5",
+    "node-cache": "^4.2.1",
+    "snyk": "^1.297.2",
+    "sshpk": "~1.16.1",
+    "underscore": "^1.9.1",
+    "winston": "~3.2.1"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "~3.0.2",
+    "@semantic-release/commit-analyzer": "^6.1.1",
+    "@semantic-release/git": "~7.0.8",
+    "@semantic-release/release-notes-generator": "^7.1.7",
+    "chai": "~4.2.0",
+    "chai-datetime": "^1.5.0",
+    "conventional-changelog-eslint": "~3.0.1",
+    "dotenv": "^8.1.0",
+    "mocha": "^6.2.1",
+    "nock": "^10.0.6",
+    "nyc": "~13.3.0",
+    "proxyquire": "^2.1.3",
+    "semantic-git-commit-cli": "~3.2.2",
+    "semantic-release": "^15.13.24",
+    "sinon": "^7.5.0",
+    "xo": "~0.24.0"
+  },
+  "nyc": {
+    "watermarks": {
+      "lines": [
+        40,
+        95
+      ],
+      "functions": [
+        40,
+        95
+      ],
+      "branches": [
+        40,
+        95
+      ],
+      "statements": [
+        40,
+        95
+      ]
+    }
+  },
+  "xo": {
+    "space": false,
+    "semicolon": false,
+    "rules": {
+      "no-useless-constructor": 1,
+      "promise/prefer-await-to-then": 1,
+      "prefer-object-spread": 1,
+      "no-template-curly-in-string": 0,
+      "quote-props": [
+        "error",
+        "consistent"
+      ]
+    },
+    "overrides": [
+      {
+        "files": "examples/**/*.js",
+        "rules": {
+          "import/no-unresolved": 0
+        }
+      }
+    ]
+  },
+  "snyk": false
+}
