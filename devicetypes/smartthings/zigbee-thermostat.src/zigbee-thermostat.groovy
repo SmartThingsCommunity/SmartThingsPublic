@@ -4,7 +4,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *			http://www.apache.org/licenses/LICENSE-2.0
+ *		http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -36,7 +36,7 @@ metadata {
 
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0020,0201,0202,0204,0B05", outClusters: "000A, 0019",  manufacturer: "LUX", model: "KONOZ", deviceJoinName: "LUX KONOz Thermostat"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0020,0201,0202,0405", outClusters: "0019, 0402", manufacturer: "Umbrela", model: "Thermostat", deviceJoinName: "Umbrela UTee"
-		fingerprint manufacturer: "Danfoss", model: "eTRV0100", deviceJoinName: "Thermostat", vid: "generic-radiator-thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019
+		fingerprint manufacturer: "Danfoss", model: "eTRV0100", deviceJoinName: "Danfoss Thermostat", vid: "generic-radiator-thermostat" //Danfoss Ally Radiator thermostat, Raw Description	01 0104 0301 01 08 0000 0001 0003 000A 0020 0201 0204 0B05 02 0000 0019
 	}
 
 	tiles {
@@ -265,7 +265,6 @@ private parseAttrMessage(description) {
 			} else if (it.attribute == BATTERY_PERCENTAGE_REMAINING) {
 				map.name = "battery"
 				map.value = Math.min(100, Integer.parseInt(it.value, 16))
-				map.descriptionText = "${device.displayName} battery has ${map.value}%"
 			} else if (it.attribute == BATTERY_ALARM_STATE) {
 				map = getPowerSource(it.value)
 			}
@@ -355,7 +354,6 @@ def getBatteryPercentage(rawValue) {
 			roundedPct = 0
 		}
 		result.value = Math.min(100, roundedPct)
-		result.descriptionText = "${device.displayName} battery has ${result.value}%"
 	}
 
 	return result
