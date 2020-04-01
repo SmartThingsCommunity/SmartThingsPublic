@@ -24,7 +24,9 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr: "010F", prod: "1B01", model: "1000", deviceJoinName: "Switch" //Fibaro Walli Double Switch FGWDSEU-221, Raw Description zw:Ls type:1001 mfr:010F prod:1B01 model:1000 ver:5.01 zwv:6.02 lib:03 cc:5E,55,98,9F,56,6C,22 sec:25,85,8E,59,86,72,5A,73,32,70,71,75,5B,7A,60 role:05 ff:9D00 ui:9D00 epc:2
+		// Fibaro Walli Double Switch FGWDSEU-221
+		// Raw Description zw:Ls type:1001 mfr:010F prod:1B01 model:1000 ver:5.01 zwv:6.02 lib:03 cc:5E,55,98,9F,56,6C,22 sec:25,85,8E,59,86,72,5A,73,32,70,71,75,5B,7A,60 role:05 ff:9D00 ui:9D00 epc:2
+		fingerprint mfr: "010F", prod: "1B01", model: "1000", deviceJoinName: "Fibaro Switch"
 	}
 
 	tiles(scale: 2){
@@ -480,10 +482,10 @@ private getParameterMap() {[
 			5: "Yellow",
 			6: "Cyan",
 			7: "Magenta",
-			8: "colour changes smoothly depending on measured power",
-			9: "colour changes in steps depending on measured power"
+			8: "colour changes smoothly depending on the measured power",
+			9: "colour changes in steps depending on the measured power"
 		],
-		description: "This parameter defines the LED colour when thedevice is ON. When set to 8 or 9, LED frame colour will change depending on he measured power and parameter 10. Other colours are set permanently and do not depend on power consumption."
+		description: "LED colour when the device is ON. When set to 8 or 9, LED frame colour will change depending on the measured power and parameter 10. Other colours are set permanently and do not depend on the power consumption."
 	],
 	[
 		name: "LED frame - colour when OFF", key: "ledFrame-ColourWhenOff", type: "enum",
@@ -498,13 +500,13 @@ private getParameterMap() {[
 			6: "Cyan",
 			7: "Magenta"
 		],
-		description: "This parameter defines the LED colour when the device is OFF."
+		description: "LED colour when the device is OFF."
 	],
 	[
 		name: "LED frame - brightness", key: "ledFrame-Brightness", type: "range",
 		parameterNumber: 13, size: 1, defaultValue: 100,
 		range: "1..102",
-		description: "This parameter allows to adjust the LED frame brightness."
+		description: "Adjust the LED frame brightness."
 	],
 	[
 		name: "Buttons operation", key: "buttonsOperation", type: "enum",
@@ -514,20 +516,20 @@ private getParameterMap() {[
 			2: "1st button turns the load ON, 2nd button turns the load OFF",
 			3: "device works in 2-way/3-way switch configuration"
 		],
-		description: "This parameter defines how device buttons should control the channels."
+		description: "How device buttons should control the channels."
 	],
 	[
 		name: "Buttons orientation", key: "buttonsOrientation", type: "boolean",
 		parameterNumber: 24, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "default (1st button controls 1st channel, 2nd button controls 2nd channel)",
 		optionActive: 1, activeDescription: "reversed (1st button controls 2nd channel, 2nd button controls 1st channel)",
-		description: "This parameter allows reversing the operation of the buttons."
+		description: "Reversing the operation of the buttons."
 	],
 	[
 		name: "Outputs orientation", key: "outputsOrientation", type: "boolean",
 		parameterNumber: 25, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "default (Q1 - 1st channel, Q2 - 2nd channel)",
 		optionActive: 1, activeDescription: "reversed (Q1 - 2nd channel, Q2 - 1st channel)",
-		description: "This parameter allows reversing the operation of Q1 and Q2 without changing the wiring (e.g. in case of invalid connection). Changing orientation turns both outputs off."
+		description: "Reversing the operation of Q1 and Q2 without changing the wiring (e.g. in case of invalid connection). Changing orientation turns both outputs off."
 	]
 ]}
