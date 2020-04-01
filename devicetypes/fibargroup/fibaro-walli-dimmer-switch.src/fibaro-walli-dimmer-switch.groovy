@@ -28,7 +28,9 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr: "010F", prod: "1C01", model: "1000", deviceJoinName: "Dimmer Switch" //Fibaro Walli Dimmer FGWDEU-111,  raw description: zw:Ls type:1101 mfr:010F prod:1C01 model:1000 ver:5.01 zwv:6.02 lib:03 cc:5E,55,98,56,6C,22 sec:26,85,8E,59,86,72,5A,73,32,70,71,75,5B,7A role:05 ff:9C00 ui:9C00
+		// Fibaro Walli Dimmer FGWDEU-111,
+		// Raw Description: zw:Ls type:1101 mfr:010F prod:1C01 model:1000 ver:5.01 zwv:6.02 lib:03 cc:5E,55,98,56,6C,22 sec:26,85,8E,59,86,72,5A,73,32,70,71,75,5B,7A role:05 ff:9C00 ui:9C00
+		fingerprint mfr: "010F", prod: "1C01", model: "1000", deviceJoinName: "Fibaro Dimmer Switch"
 	}
 
 	tiles(scale: 2) {
@@ -462,10 +464,10 @@ private getParameterMap() {[
 			5: "Yellow",
 			6: "Cyan",
 			7: "Magenta",
-			8: "colour changes smoothly depending on measured power",
-			9: "colour changes in steps depending on measured power"
+			8: "colour changes smoothly depending on the measured power",
+			9: "colour changes in steps depending on the measured power"
 		],
-		description: "This parameter defines the LED colour when thedevice is ON. When set to 8 or 9, LED frame colour will change depending on he measured power and parameter 10. Other colours are set permanently and do not depend on power consumption."
+		description: "LED colour when the device is ON. When set to 8 or 9, LED frame colour will change depending on the measured power and parameter 10. Other colours are set permanently and do not depend on the power consumption."
 	],
 	[
 		name: "LED frame – colour when OFF", key: "ledFrame–ColourWhenOff", type: "enum",
@@ -480,13 +482,13 @@ private getParameterMap() {[
 			6: "Cyan",
 			7: "Magenta"
 		],
-		description: "This parameter defines the LED colour when the device is OFF."
+		description: "LED colour when the device is OFF."
 	],
 	[
 		name: "LED frame – brightness", key: "ledFrame–Brightness", type: "range",
 		parameterNumber: 13, size: 1, defaultValue: 100,
 		range: "0..102",
-		description: "This parameter allows to adjust the LED frame brightness. " +
+		description: "Adjust the LED frame brightness. " +
 				"101 - brightness directly proportional to set level, " +
 				"102 - brightness inversely proportional to set level"
 	],
@@ -494,7 +496,7 @@ private getParameterMap() {[
 		name: "Manual control – dimming step size", key: "manualControl–DimmingStepSize", type: "range",
 		parameterNumber: 156, size: 1, defaultValue: 1,
 		range: "1..99",
-		description: "This parameter defines the percentage value of the dimming step during the manual control. " +
+		description: "Percentage value of the dimming step during the manual control. " +
 				"1 - [MSB] – Notification Type (Default)\n" +
 				"2 - Notification Value\n" +
 				"3 - Event/State Parameters\n" +
@@ -505,19 +507,19 @@ private getParameterMap() {[
 		name: "Manual control – time of dimming step", key: "manualControl–TimeOfDimmingStep", type: "range",
 		parameterNumber: 157, size: 2, defaultValue: 5,
 		range: "0..255",
-		description: "This parameter defines the time of performing a single dimming step set in parameter 156 during the manual control."
+		description: "Time of performing a single dimming step set in parameter 156 during the manual control."
 	],
 	[
 		name: "Double click – set level", key: "doubleClick–SetLevel", type: "range",
 		parameterNumber: 165, size: 1, defaultValue: 99,
 		range: "0..99",
-		description: "This parameter defines brightness level set after double-clicking any of the buttons. The same value is also sent to devices associated with 2nd and 3rd association group."
+		description: "Brightness level set after double-clicking any of the buttons."
 	],
 	[
 		name: "Buttons orientation", key: "buttonsOrientation", type: "boolean",
 		parameterNumber: 24, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "default (1st button brightens, 2nd button dims)",
 		optionActive: 1, activeDescription: "reversed (1st button dims, 2nd button brightens)",
-		description: "This parameter allows reversing the operation of the buttons."
+		description: "Reversing the operation of the buttons."
 	]
 ]}
