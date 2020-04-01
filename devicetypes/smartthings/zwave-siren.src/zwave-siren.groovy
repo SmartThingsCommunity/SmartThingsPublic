@@ -188,7 +188,7 @@ def getYaleDefaults() {
 }
 
 def getEverspringDefaultAlarmLength() {
-	[1: 180]
+	return 180
 }
 
 def getConfigurationCommands() {
@@ -238,8 +238,8 @@ def getConfigurationCommands() {
 	}
 
 	if(isEverspring()){
-		if (!state.alarmLength) state.alarmLength = everspringDefaultAlarmLength[1]
-		Short alarmLength = (settings.alarmLength as Short) ?: everspringDefaultAlarmLength[1]
+		if (!state.alarmLength) state.alarmLength = everspringDefaultAlarmLength
+		Short alarmLength = (settings.alarmLength as Short) ?: everspringDefaultAlarmLength
 
 		if(alarmLength != state.alarmLength) {
 			alarmLength = calculateLength(alarmLength)
@@ -485,7 +485,7 @@ private Boolean secondsPast(timestamp, seconds) {
 def calculateLength(int alarmLength){
 	//If the siren is Everspring then the alarm length can be set to 1, 2 or max 3 minutes
 	def map = [1:60, 2:120, 3:180]
-	if (alarmLength > 3) return map[3] else return map[alarmLength].value
+	if (alarmLength > 3) return everspringDefaultAlarmLength else return map[alarmLength].value
 }
 
 def isYale() {
