@@ -112,3 +112,12 @@ Date: Wed, 01 Apr 2020 18:18:36 GMT
 [2020-04-01 18:18:39Z INFO MessageListener] Session created.
 [2020-04-01 18:18:39Z INFO Terminal] WRITE LINE: 2020-04-01 18:18:39Z: Listening for Jobs
 [2020-04-01 18:18:39Z INFO JobDispatcher] Set runner/worker IPC timeout to 30 seconds.
+[2020-04-01 18:48:48Z INFO MessageListener] No message retrieved from session '48769e25-07cb-48de-b59d-b63ab35c5b49' within last 30 minutes.
+[2020-04-01 18:54:33Z INFO Terminal] WRITE LINE: Exiting...
+[2020-04-01 18:54:33Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-04-01 18:54:33Z INFO ConfigurationStore] IsServiceConfigured: False
+[2020-04-01 18:54:33Z INFO HostContext] Runner will be shutdown for UserCancelled
+[2020-04-01 18:54:33Z WARN GitHubActionsService] GET request to https://pipelines.actions.githubusercontent.com/EQE2oYQT0i2U5mCTEGtEZoQM75DsLEfYVM9ZJlOo5q1WQNpGUD/_apis/distributedtask/pools/1/messages?sessionId=48769e25-07cb-48de-b59d-b63ab35c5b49 has been cancelled.
+[2020-04-01 18:54:33Z INFO MessageListener] Get next message has been cancelled.
+[2020-04-01 18:54:33Z INFO JobDispatcher] Shutting down JobDispatcher. Make sure all WorkerDispatcher has finished.
+[2020-04-01 18:54:34Z INFO Listener] Runner execution been cancelled.
