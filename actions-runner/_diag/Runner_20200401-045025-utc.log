@@ -147,3 +147,53 @@ Date: Wed, 01 Apr 2020 06:41:09 GMT
 [2020-04-01 06:41:11Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
 [2020-04-01 06:51:15Z INFO MessageListener] No message retrieved from session 'fa77cf9c-5d60-422f-9607-632590acc43b' within last 30 minutes.
 [2020-04-01 07:21:25Z INFO MessageListener] No message retrieved from session 'fa77cf9c-5d60-422f-9607-632590acc43b' within last 30 minutes.
+[2020-04-01 07:36:30Z WARN GitHubActionsService] Authentication failed with status code 401.
+Transfer-Encoding: chunked
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d3d872d7-c4a8-4f1b-a1a2-2470f7bd4f68
+ActivityId: 136cd8ed-f8eb-4d35-9552-85cf70b3b7f0
+X-TFS-Session: 502df39c-1688-4f0e-b5d4-757dd4f67d0a
+X-VSS-E2EID: e8d67943-b92c-45f6-84de-80b25429c893
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: AC216C4102B846FB9CAED6F8ACA52209 Ref B: CHGEDGE0913 Ref C: 2020-04-01T07:36:29Z
+Date: Wed, 01 Apr 2020 07:36:28 GMT
+
+[2020-04-01 07:36:30Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 07:36:31Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 07:51:36Z INFO MessageListener] No message retrieved from session 'fa77cf9c-5d60-422f-9607-632590acc43b' within last 30 minutes.
+[2020-04-01 08:21:45Z INFO MessageListener] No message retrieved from session 'fa77cf9c-5d60-422f-9607-632590acc43b' within last 30 minutes.
+[2020-04-01 08:31:49Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d3d872d7-c4a8-4f1b-a1a2-2470f7bd4f68
+ActivityId: 13702c5e-f8eb-4d35-9552-85cf70b3b7f0
+X-TFS-Session: 502df39c-1688-4f0e-b5d4-757dd4f67d0a
+X-VSS-E2EID: b44f1e88-4c54-4c5d-8a77-d676c93fb510
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 2B464957C08F41B390B80336A3D42BF5 Ref B: CHGEDGE0913 Ref C: 2020-04-01T08:31:48Z
+Date: Wed, 01 Apr 2020 08:31:47 GMT
+
+[2020-04-01 08:31:49Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 08:31:49Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 08:51:55Z INFO MessageListener] No message retrieved from session 'fa77cf9c-5d60-422f-9607-632590acc43b' within last 30 minutes.
+[2020-04-01 09:22:06Z INFO MessageListener] No message retrieved from session 'fa77cf9c-5d60-422f-9607-632590acc43b' within last 30 minutes.
+[2020-04-01 09:27:08Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d4957f3b-d469-4538-b992-626bf5274a1f
+ActivityId: 7e48af5c-604a-4a69-913e-fd4fafa5daa0
+X-TFS-Session: 502df39c-1688-4f0e-b5d4-757dd4f67d0a
+X-VSS-E2EID: 9d0473dc-fb2d-4f83-9a99-c2cd74a1694c
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 87EFA43C41884341AD1B47303D0C7746 Ref B: CHGEDGE0913 Ref C: 2020-04-01T09:27:07Z
+Date: Wed, 01 Apr 2020 09:27:07 GMT
+
+[2020-04-01 09:27:08Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 09:27:09Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
