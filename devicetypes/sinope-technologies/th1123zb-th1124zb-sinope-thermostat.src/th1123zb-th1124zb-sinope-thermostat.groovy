@@ -1,7 +1,6 @@
 /**
-
-Copyright Sinopé Technologies 2019
-1.1.0
+Copyright Sinopé Technologies
+1.1.1
 SVN-571
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
@@ -189,6 +188,7 @@ void initialize() {
         sendEvent(name: "heatingSetpointRangeHigh", value: 86, scale: scale)
     }
     sendEvent(name: "lock", value: "unlocked")
+	refresh();
 }
 
 def ping() {
@@ -731,4 +731,4 @@ def traceEvent(logFilter, message, displayEvent = false, traceLevel = 4, sendMes
 			if (sendMessage) sendEvent(results)
 		} /* end if displayEvent*/
 	}
-}
+} 
