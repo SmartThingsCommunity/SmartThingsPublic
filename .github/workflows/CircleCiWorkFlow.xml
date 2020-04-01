@@ -1,0 +1,10 @@
+jobs:
+  build:
+    docker:
+      - image: circleci/ruby:2.4.1-jessie
+    steps:
+      - run: |
+          bundle install
+          bundle exec rake db:schema:load
+          bundle exec rspec spec
+          bundle exec cucumber
