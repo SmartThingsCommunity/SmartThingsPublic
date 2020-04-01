@@ -1,0 +1,183 @@
+[2020-04-01 10:19:08Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-04-01 10:19:08Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-04-01 10:19:08Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-04-01 10:19:08Z INFO Listener] Version: 2.165.2
+[2020-04-01 10:19:08Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-04-01 10:19:08Z INFO Listener] Culture: en-US
+[2020-04-01 10:19:08Z INFO Listener] UI Culture: en-US
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 10:19:08Z INFO Listener] Validating directory permissions for: 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 10:19:08Z INFO CommandLineParser] Parse
+[2020-04-01 10:19:08Z INFO CommandLineParser] Parsing 1 args
+[2020-04-01 10:19:08Z INFO CommandLineParser] parsing argument
+[2020-04-01 10:19:08Z INFO CommandLineParser] HasArgs: False
+[2020-04-01 10:19:08Z INFO CommandLineParser] Adding Command: run
+[2020-04-01 10:19:08Z INFO Listener] Arguments parsed
+[2020-04-01 10:19:08Z INFO Runner] ExecuteCommand
+[2020-04-01 10:19:08Z INFO ConfigurationStore] currentAssemblyLocation: C:\github\SmartThingsPublic\actions-runner\bin\Runner.Listener.dll
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 10:19:08Z INFO ConfigurationStore] binPath: C:\github\SmartThingsPublic\actions-runner\bin
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 10:19:08Z INFO ConfigurationStore] RootFolder: C:\github\SmartThingsPublic\actions-runner
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 10:19:08Z INFO HostContext] Well known config file 'Runner': 'C:\github\SmartThingsPublic\actions-runner\.runner'
+[2020-04-01 10:19:08Z INFO ConfigurationStore] ConfigFilePath: C:\github\SmartThingsPublic\actions-runner\.runner
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 10:19:08Z INFO HostContext] Well known config file 'Credentials': 'C:\github\SmartThingsPublic\actions-runner\.credentials'
+[2020-04-01 10:19:08Z INFO ConfigurationStore] CredFilePath: C:\github\SmartThingsPublic\actions-runner\.credentials
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 10:19:08Z INFO HostContext] Well known config file 'Service': 'C:\github\SmartThingsPublic\actions-runner\.service'
+[2020-04-01 10:19:08Z INFO ConfigurationStore] ServiceConfigFilePath: C:\github\SmartThingsPublic\actions-runner\.service
+[2020-04-01 10:19:08Z INFO CommandSettings] Flag 'help': 'False'
+[2020-04-01 10:19:08Z INFO CommandSettings] Flag 'version': 'False'
+[2020-04-01 10:19:08Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-04-01 10:19:08Z INFO CommandSettings] Command 'configure': 'False'
+[2020-04-01 10:19:08Z INFO CommandSettings] Command 'remove': 'False'
+[2020-04-01 10:19:08Z INFO CommandSettings] Command 'warmup': 'False'
+[2020-04-01 10:19:08Z INFO ConfigurationManager] LoadSettings
+[2020-04-01 10:19:08Z INFO ConfigurationStore] IsConfigured()
+[2020-04-01 10:19:08Z INFO ConfigurationStore] IsConfigured: True
+[2020-04-01 10:19:08Z INFO ConfigurationManager] Is configured: True
+[2020-04-01 10:19:08Z INFO ConfigurationStore] Read setting file: 297 chars
+[2020-04-01 10:19:08Z INFO ConfigurationManager] Settings Loaded
+[2020-04-01 10:19:08Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-04-01 10:19:08Z INFO ConfigurationStore] IsServiceConfigured: False
+[2020-04-01 10:19:08Z INFO CommandSettings] Command 'run': 'True'
+[2020-04-01 10:19:08Z INFO ConfigurationStore] IsConfigured()
+[2020-04-01 10:19:08Z INFO ConfigurationStore] IsConfigured: True
+[2020-04-01 10:19:08Z INFO ConfigurationManager] Is configured: True
+[2020-04-01 10:19:08Z INFO Runner] Could not parse the argument value '' for StartupType. Defaulting to Manual
+[2020-04-01 10:19:08Z INFO Runner] Set runner startup type - Manual
+[2020-04-01 10:19:08Z INFO CommandSettings] Flag 'once': 'False'
+[2020-04-01 10:19:08Z INFO Runner] RunAsync
+[2020-04-01 10:19:08Z INFO ConfigurationManager] LoadSettings
+[2020-04-01 10:19:08Z INFO ConfigurationStore] IsConfigured()
+[2020-04-01 10:19:08Z INFO ConfigurationStore] IsConfigured: True
+[2020-04-01 10:19:08Z INFO ConfigurationManager] Is configured: True
+[2020-04-01 10:19:08Z INFO ConfigurationManager] Settings Loaded
+[2020-04-01 10:19:08Z INFO MessageListener] {
+  "AgentId": 3,
+  "AgentName": "itbytes",
+  "PoolId": 1,
+  "PoolName": "Default",
+  "ServerUrl": "https://pipelines.actions.githubusercontent.com/EQE2oYQT0i2U5mCTEGtEZoQM75DsLEfYVM9ZJlOo5q1WQNpGUD/",
+  "GitHubUrl": "https://github.com/monninn/SmartThingsPublic",
+  "WorkFolder": "work"
+}
+[2020-04-01 10:19:08Z INFO MessageListener] Loading Credentials
+[2020-04-01 10:19:08Z INFO ConfigurationStore] HasCredentials()
+[2020-04-01 10:19:08Z INFO ConfigurationStore] stored True
+[2020-04-01 10:19:08Z INFO CredentialManager] GetCredentialProvider
+[2020-04-01 10:19:08Z INFO CredentialManager] Creating type OAuth
+[2020-04-01 10:19:08Z INFO CredentialManager] Creating credential type: OAuth
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 10:19:08Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 10:19:08Z INFO HostContext] Well known config file 'RSACredentials': 'C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams'
+[2020-04-01 10:19:08Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 10:19:08Z INFO MessageListener] Attempt to create session.
+[2020-04-01 10:19:08Z INFO MessageListener] Connecting to the Runner Server...
+[2020-04-01 10:19:08Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-04-01 10:19:08Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-04-01 10:19:08Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-04-01 10:19:08Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-04-01 10:19:08Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-04-01 10:19:08Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-04-01 10:19:09Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-04-01 10:19:09Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-04-01 10:19:09Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-04-01 10:19:09Z INFO MessageListener] VssConnection created
+[2020-04-01 10:19:09Z INFO Terminal] WRITE LINE: 
+[2020-04-01 10:19:09Z INFO Terminal] WRITE LINE: 
+[2020-04-01 10:19:09Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: e43d305f-962f-482d-ad3f-0390fc7a4ef6
+ActivityId: 8e3c2053-d702-4ebd-857d-d203e94ec41e
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: 8427f76c-e75b-491e-bc6e-dadc0e149c99
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 92359D21382649A4940731260436A0B8 Ref B: CHGEDGE1418 Ref C: 2020-04-01T10:19:08Z
+Date: Wed, 01 Apr 2020 10:19:07 GMT
+
+[2020-04-01 10:19:09Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 10:19:09Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 10:19:10Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 10:19:10Z INFO MessageListener] Session created.
+[2020-04-01 10:19:10Z INFO Terminal] WRITE LINE: 2020-04-01 10:19:10Z: Listening for Jobs
+[2020-04-01 10:19:10Z INFO JobDispatcher] Set runner/worker IPC timeout to 30 seconds.
+[2020-04-01 10:49:19Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 11:14:27Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d4957f3b-d469-4538-b992-626bf5274a1f
+ActivityId: 7e23c20a-604a-4a69-913e-fd4fafa5daa0
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: 397e8dde-7d95-45e6-8693-0face861152d
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: EA9F271C4BF8414BAA027926C9AFFEC7 Ref B: CHGEDGE1418 Ref C: 2020-04-01T11:14:26Z
+Date: Wed, 01 Apr 2020 11:14:25 GMT
+
+[2020-04-01 11:14:27Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 11:14:28Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 11:19:30Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 11:49:38Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 12:09:45Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d4957f3b-d469-4538-b992-626bf5274a1f
+ActivityId: 7e102667-604a-4a69-913e-fd4fafa5daa0
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: 1db3b702-75cc-4ce0-8a2f-8379e6fafb34
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: F9B8425683624634A1DB1A289699F26E Ref B: CHGEDGE1418 Ref C: 2020-04-01T12:09:43Z
+Date: Wed, 01 Apr 2020 12:09:42 GMT
+
+[2020-04-01 12:09:45Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 12:09:46Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 12:19:50Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 12:49:59Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 13:05:04Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d3d872d7-c4a8-4f1b-a1a2-2470f7bd4f68
+ActivityId: 133de527-f8eb-4d35-9552-85cf70b3b7f0
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: 87331ca4-a384-441c-a938-b6f49f2df0f4
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 1C3862F0316D4FF786E18FFB3E62DF2B Ref B: CHGEDGE1418 Ref C: 2020-04-01T13:05:02Z
+Date: Wed, 01 Apr 2020 13:05:02 GMT
+
+[2020-04-01 13:05:04Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 13:05:05Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 13:20:10Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 13:50:19Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 14:00:22Z WARN GitHubActionsService] Authentication failed with status code 401.
+Transfer-Encoding: chunked
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: 442fb032-2425-4731-9954-65b2494d651c
+ActivityId: fc9440d5-467e-4380-8114-6315d8d8d252
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: 8b424d47-1e57-4d1d-84cb-85ec6dffd47e
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: DD6DF8913B5A42FAB0CB6CD89F828D27 Ref B: CHGEDGE1418 Ref C: 2020-04-01T14:00:20Z
+Date: Wed, 01 Apr 2020 14:00:20 GMT
+
+[2020-04-01 14:00:22Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 14:00:23Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 14:20:29Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.

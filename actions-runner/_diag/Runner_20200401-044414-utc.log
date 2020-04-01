@@ -1,0 +1,50 @@
+[2020-04-01 04:44:14Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-04-01 04:44:14Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-04-01 04:44:14Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-04-01 04:44:14Z INFO Listener] Version: 2.165.2
+[2020-04-01 04:44:14Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-04-01 04:44:14Z INFO Listener] Culture: en-US
+[2020-04-01 04:44:14Z INFO Listener] UI Culture: en-US
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:14Z INFO Listener] Validating directory permissions for: 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:14Z INFO CommandLineParser] Parse
+[2020-04-01 04:44:14Z INFO CommandLineParser] Parsing 1 args
+[2020-04-01 04:44:14Z INFO CommandLineParser] parsing argument
+[2020-04-01 04:44:14Z INFO CommandLineParser] HasArgs: False
+[2020-04-01 04:44:14Z INFO CommandLineParser] Adding Command: run
+[2020-04-01 04:44:14Z INFO Listener] Arguments parsed
+[2020-04-01 04:44:14Z INFO Runner] ExecuteCommand
+[2020-04-01 04:44:14Z INFO ConfigurationStore] currentAssemblyLocation: C:\github\SmartThingsPublic\actions-runner\bin\Runner.Listener.dll
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:14Z INFO ConfigurationStore] binPath: C:\github\SmartThingsPublic\actions-runner\bin
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:14Z INFO ConfigurationStore] RootFolder: C:\github\SmartThingsPublic\actions-runner
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:14Z INFO HostContext] Well known config file 'Runner': 'C:\github\SmartThingsPublic\actions-runner\.runner'
+[2020-04-01 04:44:14Z INFO ConfigurationStore] ConfigFilePath: C:\github\SmartThingsPublic\actions-runner\.runner
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:14Z INFO HostContext] Well known config file 'Credentials': 'C:\github\SmartThingsPublic\actions-runner\.credentials'
+[2020-04-01 04:44:14Z INFO ConfigurationStore] CredFilePath: C:\github\SmartThingsPublic\actions-runner\.credentials
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:14Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:14Z INFO HostContext] Well known config file 'Service': 'C:\github\SmartThingsPublic\actions-runner\.service'
+[2020-04-01 04:44:14Z INFO ConfigurationStore] ServiceConfigFilePath: C:\github\SmartThingsPublic\actions-runner\.service
+[2020-04-01 04:44:14Z INFO CommandSettings] Flag 'help': 'False'
+[2020-04-01 04:44:14Z INFO CommandSettings] Flag 'version': 'False'
+[2020-04-01 04:44:14Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-04-01 04:44:14Z INFO CommandSettings] Command 'configure': 'False'
+[2020-04-01 04:44:14Z INFO CommandSettings] Command 'remove': 'False'
+[2020-04-01 04:44:14Z INFO CommandSettings] Command 'warmup': 'False'
+[2020-04-01 04:44:14Z INFO ConfigurationManager] LoadSettings
+[2020-04-01 04:44:14Z INFO ConfigurationStore] IsConfigured()
+[2020-04-01 04:44:14Z INFO ConfigurationStore] IsConfigured: False
+[2020-04-01 04:44:14Z INFO ConfigurationManager] Is configured: False
+[2020-04-01 04:44:14Z ERR  Terminal] WRITE ERROR: An error occurred: Not configured
+[2020-04-01 04:44:14Z ERR  Listener] System.InvalidOperationException: Not configured
+   at GitHub.Runner.Listener.Configuration.ConfigurationManager.LoadSettings()
+   at GitHub.Runner.Listener.Runner.ExecuteCommand(CommandSettings command)
+   at GitHub.Runner.Listener.Program.MainAsync(IHostContext context, String[] args)

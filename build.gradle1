@@ -9,7 +9,7 @@ apply plugin: 'smartthings-slack'
 
 buildscript {
     dependencies {
-        classpath "com.smartthings.deployment:executable-deployment-scripts:0.1.12"
+        classpath "com.smartthings.deployment:executable-deployment-scripts:1.0.12"
     }
     repositories {
         mavenLocal()

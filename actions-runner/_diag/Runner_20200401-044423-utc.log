@@ -1,0 +1,76 @@
+[2020-04-01 04:44:23Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-04-01 04:44:23Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-04-01 04:44:23Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-04-01 04:44:23Z INFO Listener] Version: 2.165.2
+[2020-04-01 04:44:23Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-04-01 04:44:23Z INFO Listener] Culture: en-US
+[2020-04-01 04:44:23Z INFO Listener] UI Culture: en-US
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:23Z INFO Listener] Validating directory permissions for: 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:23Z INFO CommandLineParser] Parse
+[2020-04-01 04:44:23Z INFO CommandLineParser] Parsing 1 args
+[2020-04-01 04:44:23Z INFO CommandLineParser] parsing argument
+[2020-04-01 04:44:23Z INFO CommandLineParser] HasArgs: False
+[2020-04-01 04:44:23Z INFO CommandLineParser] Adding Command: configure
+[2020-04-01 04:44:23Z INFO Listener] Arguments parsed
+[2020-04-01 04:44:23Z INFO Runner] ExecuteCommand
+[2020-04-01 04:44:23Z INFO ConfigurationStore] currentAssemblyLocation: C:\github\SmartThingsPublic\actions-runner\bin\Runner.Listener.dll
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:23Z INFO ConfigurationStore] binPath: C:\github\SmartThingsPublic\actions-runner\bin
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:23Z INFO ConfigurationStore] RootFolder: C:\github\SmartThingsPublic\actions-runner
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:23Z INFO HostContext] Well known config file 'Runner': 'C:\github\SmartThingsPublic\actions-runner\.runner'
+[2020-04-01 04:44:23Z INFO ConfigurationStore] ConfigFilePath: C:\github\SmartThingsPublic\actions-runner\.runner
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:23Z INFO HostContext] Well known config file 'Credentials': 'C:\github\SmartThingsPublic\actions-runner\.credentials'
+[2020-04-01 04:44:23Z INFO ConfigurationStore] CredFilePath: C:\github\SmartThingsPublic\actions-runner\.credentials
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 04:44:23Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 04:44:23Z INFO HostContext] Well known config file 'Service': 'C:\github\SmartThingsPublic\actions-runner\.service'
+[2020-04-01 04:44:23Z INFO ConfigurationStore] ServiceConfigFilePath: C:\github\SmartThingsPublic\actions-runner\.service
+[2020-04-01 04:44:23Z INFO CommandSettings] Flag 'help': 'False'
+[2020-04-01 04:44:23Z INFO CommandSettings] Flag 'version': 'False'
+[2020-04-01 04:44:23Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-04-01 04:44:23Z INFO CommandSettings] Command 'configure': 'True'
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: 
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: --------------------------------------------------------------------------------
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: |        ____ _ _   _   _       _          _        _   _                      |
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: |       / ___(_) |_| | | |_   _| |__      / \   ___| |_(_) ___  _ __  ___      |
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: |      | |  _| | __| |_| | | | | '_ \    / _ \ / __| __| |/ _ \| '_ \/ __|     |
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: |      | |_| | | |_|  _  | |_| | |_) |  / ___ \ (__| |_| | (_) | | | \__ \     |
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: |       \____|_|\__|_| |_|\__,_|_.__/  /_/   \_\___|\__|_|\___/|_| |_|___/     |
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: |                                                                              |
+[2020-04-01 04:44:23Z INFO Terminal] WRITE: |                       
+[2020-04-01 04:44:23Z INFO Terminal] WRITE: Self-hosted runner registration
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE:                         |
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: |                                                                              |
+[2020-04-01 04:44:23Z INFO Terminal] WRITE LINE: --------------------------------------------------------------------------------
+[2020-04-01 04:44:23Z INFO ConfigurationManager] ConfigureAsync
+[2020-04-01 04:44:23Z INFO ConfigurationStore] IsConfigured()
+[2020-04-01 04:44:23Z INFO ConfigurationStore] IsConfigured: False
+[2020-04-01 04:44:23Z INFO ConfigurationManager] Is configured: False
+[2020-04-01 04:44:23Z INFO CommandSettings] Arg 'url': ''
+[2020-04-01 04:44:23Z INFO CommandSettings] Flag 'unattended': 'False'
+[2020-04-01 04:44:23Z INFO PromptManager] ReadValue
+[2020-04-01 04:44:23Z INFO Terminal] WRITE: What is the URL of your repository? 
+[2020-04-01 04:44:23Z INFO Terminal] READ LINE
+[2020-04-01 04:45:11Z INFO Terminal] Read value: 'https://github.com/monninn/SmarthingsPublic'
+[2020-04-01 04:45:11Z INFO CommandSettings] Arg 'token': ''
+[2020-04-01 04:45:11Z INFO CommandSettings] Flag 'unattended': 'False'
+[2020-04-01 04:45:11Z INFO PromptManager] ReadValue
+[2020-04-01 04:45:11Z INFO Terminal] WRITE: What is your runner register token? 
+[2020-04-01 04:45:11Z INFO Terminal] READ SECRET
+[2020-04-01 04:46:18Z INFO Terminal] Read value: '***'
+[2020-04-01 04:46:19Z ERR  Terminal] WRITE ERROR: Http response code: NotFound from 'POST https://api.github.com/repos/monninn/SmarthingsPublic/actions-runners/registration'
+[2020-04-01 04:46:19Z ERR  Terminal] WRITE ERROR: {"message":"Not Found","documentation_url":"https://developer.github.com/v3"}
+[2020-04-01 04:46:19Z ERR  Runner] System.Net.Http.HttpRequestException: Response status code does not indicate success: 404 (Not Found).
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at GitHub.Runner.Listener.Configuration.ConfigurationManager.GetTenantCredential(String githubUrl, String githubToken)
+   at GitHub.Runner.Listener.Configuration.ConfigurationManager.ConfigureAsync(CommandSettings command)
+   at GitHub.Runner.Listener.Runner.ExecuteCommand(CommandSettings command)
+[2020-04-01 04:46:19Z ERR  Terminal] WRITE ERROR: Response status code does not indicate success: 404 (Not Found).
