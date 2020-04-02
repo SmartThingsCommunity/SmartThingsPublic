@@ -496,18 +496,13 @@ private getParameterMap() {[
 		name: "Manual control – dimming step size", key: "manualControl–DimmingStepSize", type: "range",
 		parameterNumber: 156, size: 1, defaultValue: 1,
 		range: "1..99",
-		description: "Percentage value of the dimming step during the manual control. " +
-				"1 - [MSB] – Notification Type (Default)\n" +
-				"2 - Notification Value\n" +
-				"3 - Event/State Parameters\n" +
-				"4 - [LSB] – action\n" +
-				"1 to 99 - (1-99%, 1% step) – dimming step"
+		description: "Percentage value of the dimming step during the manual control (1 to 99 %)"
 	],
 	[
 		name: "Manual control – time of dimming step", key: "manualControl–TimeOfDimmingStep", type: "range",
 		parameterNumber: 157, size: 2, defaultValue: 5,
 		range: "0..255",
-		description: "Time of performing a single dimming step set in parameter 156 during the manual control."
+		description: "Time to perform a single dimming step set in the parameter: 'Manual control – dimming step size' during the manual control."
 	],
 	[
 		name: "Double click – set level", key: "doubleClick–SetLevel", type: "range",
@@ -520,6 +515,6 @@ private getParameterMap() {[
 		parameterNumber: 24, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "default (1st button brightens, 2nd button dims)",
 		optionActive: 1, activeDescription: "reversed (1st button dims, 2nd button brightens)",
-		description: "Reversing the operation of the buttons."
+		description: "Reverse the operation of the buttons."
 	]
 ]}
