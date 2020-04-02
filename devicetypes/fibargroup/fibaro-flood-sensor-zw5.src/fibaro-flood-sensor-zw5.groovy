@@ -17,10 +17,10 @@ metadata {
 
 		command "forceSync"
 
-		fingerprint mfr: "010F", prod: "0B01", model: "1002"
-		fingerprint mfr: "010F", prod: "0B01", model: "1003"
-		fingerprint mfr: "010F", prod: "0B01", model: "2002"
-		fingerprint mfr: "010F", prod: "0B01"
+		fingerprint mfr: "010F", prod: "0B01", model: "1002", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr: "010F", prod: "0B01", model: "1003", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr: "010F", prod: "0B01", model: "2002", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr: "010F", prod: "0B01", deviceJoinName: "Fibaro Water Leak Sensor"
 	}
 
 	tiles(scale: 2) {

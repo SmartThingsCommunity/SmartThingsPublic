@@ -38,7 +38,7 @@ metadata {
 	// simulator metadata
 	simulator {}
 
- // UI tile definitions
+ //UItiledefinitions
     tiles(scale: 2) {
         multiAttributeTile(name:"rich-control", type: "lighting", canChangeIcon: true){
             tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {

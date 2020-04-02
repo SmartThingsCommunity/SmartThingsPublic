@@ -21,15 +21,15 @@ metadata {
 		capability "Switch"
 		
 		//zw:F type:1001 mfr:014A prod:0006 model:0002 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
-		fingerprint mfr:"014A", prod:"0006", model:"0002", deviceJoinName: "Ecolink Z-Wave Plus Toggle Light Switch"
+		fingerprint mfr:"014A", prod:"0006", model:"0002", deviceJoinName: "Ecolink Switch" //Ecolink Z-Wave Plus Toggle Light Switch
 		//zw:F type:1001 mfr:014A prod:0006 model:0003 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
-		fingerprint mfr:"014A", prod:"0006", model:"0003", deviceJoinName: "Ecolink Z-Wave Plus Smart Switch - Dual Rocker"
+		fingerprint mfr:"014A", prod:"0006", model:"0003", deviceJoinName: "Ecolink Switch" //Ecolink Z-Wave Plus Smart Switch - Dual Rocker
 		//zw:F type:1001 mfr:014A prod:0006 model:0004 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
-		fingerprint mfr:"014A", prod:"0006", model:"0004", deviceJoinName: "Ecolink Z-Wave Plus Smart Switch - Dual Toggle"
+		fingerprint mfr:"014A", prod:"0006", model:"0004", deviceJoinName: "Ecolink Switch" //Ecolink Z-Wave Plus Smart Switch - Dual Toggle
 		//zw:F type:1001 mfr:014A prod:0006 model:0005 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
-		fingerprint mfr:"014A", prod:"0006", model:"0005", deviceJoinName: "Ecolink Z-Wave Plus Smart Switch - Single Rocker"
+		fingerprint mfr:"014A", prod:"0006", model:"0005", deviceJoinName: "Ecolink Switch" //Ecolink Z-Wave Plus Smart Switch - Single Rocker
 		//zw:F type:1001 mfr:014A prod:0006 model:0006 ver:10.01 zwv:4.38 lib:03 cc:5E,86,72,73,80,25,85,59,7A role:07 ff:9D00 ui:9D00
-		fingerprint mfr:"014A", prod:"0006", model:"0006", deviceJoinName: "Ecolink Z-Wave Plus Smart Switch - Single Toggle"
+		fingerprint mfr:"014A", prod:"0006", model:"0006", deviceJoinName: "Ecolink Switch" //Ecolink Z-Wave Plus Smart Switch - Single Toggle
 	}
 	
 	tiles(scale: 2) {

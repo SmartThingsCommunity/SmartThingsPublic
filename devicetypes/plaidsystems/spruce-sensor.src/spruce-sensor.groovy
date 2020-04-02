@@ -43,9 +43,9 @@ metadata {
         command "resetHumidity"
         command "refresh"
         
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Sensor"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Sensor"
-        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Sensor"
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-01", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP1", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
+        fingerprint profileId: "0104", inClusters: "0000,0001,0003,0402,0405", outClusters: "0003, 0019", manufacturer: "PLAID SYSTEMS", model: "PS-SPRZMS-SLP3", deviceJoinName: "Spruce Irrigation" //Spruce Sensor
 	}
 
 	preferences {
@@ -155,7 +155,7 @@ private Map parseCatchAllMessage(String description) {
         sendEvent(name: 'configuration',value: configInterval, descriptionText: "Configuration Successful")        
         //setConfig()
         log.debug "config complete"        
-        //return resultMap = [name: 'configuration', value: configInterval, descriptionText: "Settings configured successfully"]                
+        //return resultMap = [name: 'configuration', value: configInterval, descriptionText: "Settings configured successfully"]
     }
     else if (descMap.command == 0x0001){    
     	def hexString = "${hex(descMap.data[5])}" + "${hex(descMap.data[4])}"

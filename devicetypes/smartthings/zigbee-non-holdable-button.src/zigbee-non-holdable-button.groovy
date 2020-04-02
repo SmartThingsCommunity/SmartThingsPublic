@@ -25,7 +25,7 @@ metadata {
         capability "Health Check"
         capability "Sensor"
 
-        fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0500", outClusters: "0019", manufacturer: "HEIMAN", model: "SOS-EM", deviceJoinName: "HEIMAN Emergency Button"
+        fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0500", outClusters: "0019", manufacturer: "HEIMAN", model: "SOS-EM", deviceJoinName: "HEIMAN Button" //HEIMAN Emergency Button
     }
 
     tiles(scale: 2) {

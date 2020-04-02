@@ -27,7 +27,7 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint inClusters: "0000, 0001, 0003, 1000, FD01", outClusters: "0003, 0004, 0006, 0008, 0019, 0300, 1000", manufacturer: "LDS", model: "ZBT-CCTSwitch-D0001", deviceJoinName: "EcoSmart 4-button remote"
+		fingerprint inClusters: "0000, 0001, 0003, 1000, FD01", outClusters: "0003, 0004, 0006, 0008, 0019, 0300, 1000", manufacturer: "LDS", model: "ZBT-CCTSwitch-D0001", deviceJoinName: "EcoSmart Remote Control" //EcoSmart 4-button remote
 	}
 
 	tiles {

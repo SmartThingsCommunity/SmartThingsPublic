@@ -25,17 +25,17 @@ metadata {
 		capability "Health Check"
 		capability "Outlet"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3200", deviceJoinName: "Outlet"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3200-Sgb", deviceJoinName: "Outlet"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "4257050-RZHAC", deviceJoinName: "Outlet"
-		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 000F, 0B04", outClusters: "0019", manufacturer: "SmartThings", model: "outletv4", deviceJoinName: "Outlet"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0006,0009,0B04", outClusters: "0019", manufacturer: "Samjin", model: "outlet", deviceJoinName: "Outlet"
-		fingerprint profileId: "0010", inClusters: "0000 0003 0004 0005 0006 0008 0702 0B05", outClusters: "0019", manufacturer: "innr", model: "SP 120", deviceJoinName: "Innr Smart Plug"
-		fingerprint profileId: "0104", inClusters: "0000,0002,0003,0004,0005,0006,0009,0B04,0702", outClusters: "0019,000A,0003,0406", manufacturer: "Aurora", model: "SmartPlug51AU", deviceJoinName: "Aurora SmartPlug"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0B04", outClusters: "0019", manufacturer: "Aurora", model: "SingleSocket50AU", deviceJoinName: "Aurora SmartPlug"
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0702,0B04,0B05,FC03", outClusters: "0019", manufacturer: "CentraLite", model: "3210-L", deviceJoinName: "Iris Smart Plug"
-		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0006,0B04,0B05,0702", outClusters: "0003,000A,0B05,0019", manufacturer: " Sercomm Corp.", model: "SZ-ESW01-AU", deviceJoinName: "Sercomm Smart Power Plug"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3200", deviceJoinName: "SmartPower Outlet" //Outlet
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3200-Sgb", deviceJoinName: "SmartPower Outlet" //Outlet
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "4257050-RZHAC", deviceJoinName: "SmartPower Outlet" //Outlet
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 000F, 0B04", outClusters: "0019", manufacturer: "SmartThings", model: "outletv4", deviceJoinName: "SmartPower Outlet" //Outlet
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0B04,0B05", outClusters: "0019", deviceJoinName: "SmartPower Outlet"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0006,0009,0B04", outClusters: "0019", manufacturer: "Samjin", model: "outlet", deviceJoinName: "SmartPower Outlet" //Outlet
+		fingerprint profileId: "0010", inClusters: "0000 0003 0004 0005 0006 0008 0702 0B05", outClusters: "0019", manufacturer: "innr", model: "SP 120", deviceJoinName: "Innr Outlet" //Innr Smart Plug
+		fingerprint profileId: "0104", inClusters: "0000,0002,0003,0004,0005,0006,0009,0B04,0702", outClusters: "0019,000A,0003,0406", manufacturer: "Aurora", model: "SmartPlug51AU", deviceJoinName: "Aurora Outlet" //Aurora SmartPlug
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0B04", outClusters: "0019", manufacturer: "Aurora", model: "SingleSocket50AU", deviceJoinName: "Aurora Outlet" //Aurora SmartPlug
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0702,0B04,0B05,FC03", outClusters: "0019", manufacturer: "CentraLite", model: "3210-L", deviceJoinName: "Iris Outlet" //Iris Smart Plug
+		fingerprint profileId: "0104", inClusters: "0000,0001,0003,0004,0005,0006,0B04,0B05,0702", outClusters: "0003,000A,0B05,0019", manufacturer: " Sercomm Corp.", model: "SZ-ESW01-AU", deviceJoinName: "Sercomm Outlet" //Sercomm Smart Power Plug
 	}
 
 	// simulator metadata

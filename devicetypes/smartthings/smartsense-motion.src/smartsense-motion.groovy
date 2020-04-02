@@ -19,8 +19,8 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", deviceId: "013A", inClusters: "0000", outClusters: "0006"
-		fingerprint profileId: "FC01", deviceId: "013A"
+		fingerprint profileId: "0104", deviceId: "013A", inClusters: "0000", outClusters: "0006", deviceJoinName: "SmartSense Motion Sensor"
+		fingerprint profileId: "FC01", deviceId: "013A", deviceJoinName: "SmartSense Motion Sensor"
 	}
 
 	simulator {

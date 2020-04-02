@@ -31,11 +31,11 @@ metadata {
 		command "poll"
 
 		fingerprint deviceId: "0x08"
-		fingerprint inClusters: "0x43,0x40,0x44,0x31"
-		fingerprint mfr:"0039", prod:"0011", model:"0001", deviceJoinName: "Honeywell Z-Wave Thermostat"
-		fingerprint mfr:"008B", prod:"5452", model:"5439", deviceJoinName: "Trane Thermostat"
-		fingerprint mfr:"008B", prod:"5452", model:"5442", deviceJoinName: "Trane Thermostat"
-		fingerprint mfr:"008B", prod:"5452", model:"5443", deviceJoinName: "American Standard Thermostat"
+		fingerprint inClusters: "0x43,0x40,0x44,0x31", deviceJoinName: "Thermostat"
+		fingerprint mfr:"0039", prod:"0011", model:"0001", deviceJoinName: "Honeywell Thermostat" //Honeywell Z-Wave Thermostat
+		fingerprint mfr:"008B", prod:"5452", model:"5439", deviceJoinName: "Trane Thermostat" //Trane Thermostat
+		fingerprint mfr:"008B", prod:"5452", model:"5442", deviceJoinName: "Trane Thermostat" //Trane Thermostat
+		fingerprint mfr:"008B", prod:"5452", model:"5443", deviceJoinName: "American Standard Thermostat" //American Standard Thermostat
 	}
 
 	tiles {

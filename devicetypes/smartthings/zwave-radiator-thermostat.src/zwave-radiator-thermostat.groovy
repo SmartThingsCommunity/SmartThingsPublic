@@ -23,10 +23,10 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Configuration"
 
-		fingerprint mfr: "0060", prod: "0015", model: "0001", deviceJoinName: "Everspring Thermostatic Radiator Valve", mnmn: "SmartThings", vid: "generic-radiator-thermostat"
+		fingerprint mfr: "0060", prod: "0015", model: "0001", deviceJoinName: "Everspring Thermostat", mnmn: "SmartThings", vid: "generic-radiator-thermostat" //Everspring Thermostatic Radiator Valve
 		//this DTH is sending temperature setpoint commands using Celsius scale and assumes that they'll be handled correctly by device
 		//if new device added to this DTH won't be able to do that, make sure to you'll handle conversion in a right way
-		fingerprint mfr: "0002", prod: "0115", model: "A010", deviceJoinName: "POPP Radiator Thermostat Valve", mnmn: "SmartThings", vid: "generic-radiator-thermostat-2"
+		fingerprint mfr: "0002", prod: "0115", model: "A010", deviceJoinName: "POPP Thermostat", mnmn: "SmartThings", vid: "generic-radiator-thermostat-2" //POPP Radiator Thermostat Valve
 	}
 
 	tiles(scale: 2) {

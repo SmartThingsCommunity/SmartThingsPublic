@@ -25,13 +25,13 @@ metadata {
 		capability "Configuration"
 
 		// While adding new device to this DTH, remember to update method getProdNumberOfButtons()
-		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button" //EU
-		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button"  //US
-		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //US
-		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec NanoMote Quad", mnmn: "SmartThings", vid: "generic-4-button" //EU
-		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //US
-		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec KeyFob", mnmn: "SmartThings", vid: "generic-4-button" //EU
-		fingerprint mfr: "010F", prod: "1001", model: "3000", deviceJoinName: "Fibaro KeyFob", mnmn: "SmartThings", vid: "generic-6-button" //AU
+		fingerprint mfr: "010F", prod: "1001", model: "1000", deviceJoinName: "Fibaro Remote Control", mnmn: "SmartThings", vid: "generic-6-button" //EU //Fibaro KeyFob
+		fingerprint mfr: "010F", prod: "1001", model: "2000", deviceJoinName: "Fibaro Remote Control", mnmn: "SmartThings", vid: "generic-6-button"  //US //Fibaro KeyFob
+		fingerprint mfr: "0371", prod: "0102", model: "0003", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //US //Aeotec NanoMote Quad
+		fingerprint mfr: "0371", prod: "0002", model: "0003", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //EU //Aeotec NanoMote Quad
+		fingerprint mfr: "0086", prod: "0101", model: "0058", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //US //Aeotec KeyFob
+		fingerprint mfr: "0086", prod: "0001", model: "0058", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //EU //Aeotec KeyFob
+		fingerprint mfr: "010F", prod: "1001", model: "3000", deviceJoinName: "Fibaro Remote Control", mnmn: "SmartThings", vid: "generic-6-button" //AU //Fibaro KeyFob
 	}
 
 	tiles(scale: 2) {
