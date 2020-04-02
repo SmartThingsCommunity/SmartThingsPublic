@@ -523,13 +523,13 @@ private getParameterMap() {[
 		parameterNumber: 24, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "default (1st button controls 1st channel, 2nd button controls 2nd channel)",
 		optionActive: 1, activeDescription: "reversed (1st button controls 2nd channel, 2nd button controls 1st channel)",
-		description: "Reversing the operation of the buttons."
+		description: "Reverse the operation of the buttons."
 	],
 	[
 		name: "Outputs orientation", key: "outputsOrientation", type: "boolean",
 		parameterNumber: 25, size: 1, defaultValue: 0,
 		optionInactive: 0, inactiveDescription: "default (Q1 - 1st channel, Q2 - 2nd channel)",
 		optionActive: 1, activeDescription: "reversed (Q1 - 2nd channel, Q2 - 1st channel)",
-		description: "Reversing the operation of Q1 and Q2 without changing the wiring (e.g. in case of invalid connection). Changing orientation turns both outputs off."
+		description: "Reverse the operation of Q1 and Q2 without changing the wiring (e.g. in case of invalid connection). Changing orientation turns both outputs off."
 	]
 ]}
