@@ -96,8 +96,8 @@
 		}
 
 		//this will display a temperature tile for the DS18B20 sensor
-		//main(["contact", "temperature"])						//COMMENT ME OUT IF NO TEMP INSTALLED
-		//details(["contact", "temperature", "battery"])			//COMMENT ME OUT IF NO TEMP INSTALLED
+		//main(["contact", "temperature"])//COMMENT ME OUT IF NO TEMP INSTALLED
+		//details(["contact", "temperature", "battery"])	//COMMENT ME OUT IF NO TEMP INSTALLED
         
         //this will hide the temperature tile if the DS18B20 sensor is not installed
 		main(["contact"])										//UNCOMMENT ME IF NO TEMP INSTALLED

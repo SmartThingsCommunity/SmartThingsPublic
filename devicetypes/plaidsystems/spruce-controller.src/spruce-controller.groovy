@@ -117,7 +117,7 @@ metadata {
 	simulator {
 		// status messages
 		
-		// reply messages		
+		// reply messages
 	}
     
     preferences {
@@ -483,7 +483,7 @@ def config(){
 	log.debug "Configuring Reporting and Bindings ${device.deviceNetworkId} ${device.zigbeeId}"
     
     def configCmds = [	
-        //program on/off        
+        //program on/off
         "zdo bind 0x${device.deviceNetworkId} 1 1 6 {${device.zigbeeId}} {}", "delay 1000",
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x09 {${device.zigbeeId}} {}", "delay 1000",        
         "zdo bind 0x${device.deviceNetworkId} 1 1 0x0F {${device.zigbeeId}} {}", "delay 1000",

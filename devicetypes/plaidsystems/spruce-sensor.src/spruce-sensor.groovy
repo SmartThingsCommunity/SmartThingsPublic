@@ -155,7 +155,7 @@ private Map parseCatchAllMessage(String description) {
         sendEvent(name: 'configuration',value: configInterval, descriptionText: "Configuration Successful")        
         //setConfig()
         log.debug "config complete"        
-        //return resultMap = [name: 'configuration', value: configInterval, descriptionText: "Settings configured successfully"]                
+        //return resultMap = [name: 'configuration', value: configInterval, descriptionText: "Settings configured successfully"]
     }
     else if (descMap.command == 0x0001){    
     	def hexString = "${hex(descMap.data[5])}" + "${hex(descMap.data[4])}"

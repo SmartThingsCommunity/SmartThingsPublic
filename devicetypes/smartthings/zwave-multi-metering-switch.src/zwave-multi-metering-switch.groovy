@@ -27,9 +27,9 @@ metadata {
 		fingerprint mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
 		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
 		fingerprint mfr:"0086", prod:"0203", model:"0084", deviceJoinName: "Aeotec Switch 1" //AU //Aeotec Nano Switch 1
-		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Switch 1"
-		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz Switch 1" //Zooz ZEN Power Strip
-		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Switch 1" //Zooz Double Plug
+		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
+		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz Switch" //Zooz ZEN Power Strip
+		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Switch" //Zooz Double Plug
 	}
 
 	tiles(scale: 2){

@@ -408,7 +408,7 @@ def configure() {
 		///3. Z-Wave notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable
 		//if (state.initDefault) {
 		//	log.debug "Setting zwave notification default value to 1   "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
-		//		request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
+		//request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
 		//	  state.initDefault = false
 		//} else if (zwaveNotificationStatus && zwaveNotificationStatus != "null"){
 		//	log.debug "else zwave notification "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: notificationOptionValueMap[zwaveNotificationStatus] ?: 0)
