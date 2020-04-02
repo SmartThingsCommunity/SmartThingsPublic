@@ -14,9 +14,9 @@ metadata {
 
 		attribute "coLevel", "number"
 
-		fingerprint mfr: "010F", prod: "1201", model: "1000"
-		fingerprint mfr: "010F", prod: "1201", model: "1001"
-		fingerprint mfr: "010F", prod: "1201"
+		fingerprint mfr: "010F", prod: "1201", model: "1000", deviceJoinName: "Fibaro Carbon Monoxide Sensor"
+		fingerprint mfr: "010F", prod: "1201", model: "1001", deviceJoinName: "Fibaro Carbon Monoxide Sensor"
+		fingerprint mfr: "010F", prod: "1201", deviceJoinName: "Fibaro Carbon Monoxide Sensor"
 	}
 
 	tiles (scale: 2) {

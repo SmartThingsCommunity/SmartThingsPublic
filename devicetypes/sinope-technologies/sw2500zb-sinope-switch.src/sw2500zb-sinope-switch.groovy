@@ -25,7 +25,7 @@ metadata {
 		capability "Health Check"
         
 
-        fingerprint manufacturer: "Sinope Technologies", model: "SW2500ZB", deviceJoinName: "SW2500ZB"
+        fingerprint manufacturer: "Sinope Technologies", model: "SW2500ZB", deviceJoinName: "Sinope Switch" //SW2500ZB
     }
 
     tiles(scale: 2) 
