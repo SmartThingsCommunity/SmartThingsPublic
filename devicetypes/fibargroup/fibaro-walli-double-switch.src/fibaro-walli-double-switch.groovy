@@ -314,7 +314,7 @@ private changeSwitch(endpoint, value) {
 	if (endpoint == 1) {
 		createEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	} else {
-		String childDni = "${device.deviceNetworkId}:$endpoint"
+		String childDni = "${device.deviceNetworkId}-$endpoint"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
 	}
@@ -325,7 +325,7 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) 
 	if (ep == 1) {
 		createEvent(createMeterEventMap(cmd))
 	} else if(ep) {
-		String childDni = "${device.deviceNetworkId}:$ep"
+		String childDni = "${device.deviceNetworkId}-$ep"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
 		child?.sendEvent(createMeterEventMap(cmd))
 	} else {
@@ -363,6 +363,14 @@ def off() {
 
 def ping() {
 	refresh()
+}
+
+def childOn(deviceNetworkId) {
+	childOnOff(deviceNetworkId, 0xFF)
+}
+
+def childOff(deviceNetworkId) {
+	childOnOff(deviceNetworkId, 0x00)
 }
 
 def childOnOff(deviceNetworkId, value) {
@@ -435,7 +443,7 @@ def reset(endpoint = 1) {
 }
 
 def getSwitchId(deviceNetworkId) {
-	def split = deviceNetworkId?.split(":")
+	def split = deviceNetworkId?.split("-")
 	return (split.length > 1) ? split[1] as Integer : null
 }
 
@@ -456,9 +464,9 @@ private encap(cmd, endpoint = null) {
 private addChildSwitches(numberOfSwitches) {
 	for (def endpoint : 2..numberOfSwitches) {
 		try {
-			String childDni = "${device.deviceNetworkId}:$endpoint"
+			String childDni = "${device.deviceNetworkId}-$endpoint"
 			def componentLabel = device.displayName + " ${endpoint}"
-			addChildDevice("Child Metering Switch", childDni, device.getHub().getId(), [
+			addChildDevice("Fibaro Double Switch 2 - USB", childDni, device.getHub().getId(), [
 				completedSetup	: true,
 				label			: componentLabel,
 				isComponent		: false
