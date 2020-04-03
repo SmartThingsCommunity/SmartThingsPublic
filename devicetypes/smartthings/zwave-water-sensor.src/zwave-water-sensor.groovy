@@ -58,12 +58,13 @@ metadata {
 }
 
 def initialize() {
-	if (zwaveInfo.mfr.equals("0086") || zwaveInfo.mfr.equals("021F") || zwaveInfo.mfr.equals("0258"))
-	// 8 hour (+ 2 minutes) ping for Aeotec, NEO Coolcam and Dome
-		sendEvent(name: "checkInterval", value: (8 * 60 * 60) + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	else
-	// 12 hours (+ 2 minutes) for other devices
-		sendEvent(name: "checkInterval", value: (12 * 60 * 60) + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if (isAeotec() || isNeoCoolcam() || isDome()) {
+		// 8 hour (+ 2 minutes) ping for Aeotec, NEO Coolcam, Dome
+		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	} else {
+		// 12 hours (+ 2 minutes) for other devices
+		sendEvent(name: "checkInterval", value: 12 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	}
 }
 
 def installed() {
@@ -79,13 +80,13 @@ def updated() {
 }
 
 def configure() {
-	if (zwaveInfo.mfr.equals("0086") && zwaveInfo.model.equals("007A")) {
+	if (isAeotec()) {
 		def commands = []
 		// Tell sensor to send us battery information instead of USB power information
 		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x5E, scaledConfigurationValue: 1, size: 1))
 		response(delayBetween(commands, 1000) + ["delay 20000", encap(zwave.wakeUpV1.wakeUpNoMoreInformation())])
-	} else if (zwaveInfo.mfr.equals("021F") || zwaveInfo.mfr.equals("0258")) {
-		// wakeUpInterval set to 4 h for NEO Coolcam and Dome
+	} else if (isNeoCoolcam() || isDome()) {
+		// wakeUpInterval set to 4 h for NEO Coolcam, Dome
 		zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
 	}
 }
@@ -308,4 +309,16 @@ private secEncap(physicalgraph.zwave.Command cmd) {
 
 private crcEncap(physicalgraph.zwave.Command cmd) {
 	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
+private isDome() {
+	zwaveInfo.mfr == "021F" && zwaveInfo.model == "0085"
+}
+
+private isNeoCoolcam() {
+	zwaveInfo.mfr == "0258" && zwaveInfo.model == "1085"
+}
+
+private isAeotec() {
+	zwaveInfo.mfr == "0086" && zwaveInfo.model == "007A"
 }
