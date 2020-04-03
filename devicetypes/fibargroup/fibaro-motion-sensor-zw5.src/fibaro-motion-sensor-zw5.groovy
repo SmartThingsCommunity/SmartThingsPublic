@@ -85,7 +85,7 @@ metadata {
 			title: "Fibaro Motion Sensor settings",
 			description: "Device's settings update is executed when device wakes up.\n" +
 					"It may take up to 2 hours (for default wake up interval). \n" +
-					"If you want immediate change, manually wake up device by clicking B-button thrice.",
+					"If you want immediate change, manually wake up device by clicking B-button once.",
 			type: "paragraph",
 			element: "paragraph"
 		)
