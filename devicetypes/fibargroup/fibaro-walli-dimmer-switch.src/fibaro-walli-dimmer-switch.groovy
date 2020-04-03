@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Walli Dimmer Switch", namespace: "fibargroup", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: false, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
+	definition (name: "Fibaro Walli Dimmer Switch", namespace: "fibargroup", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
 
 		capability "Actuator"
 		capability "Configuration"
