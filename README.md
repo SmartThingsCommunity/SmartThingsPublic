@@ -1,2 +1,2 @@
-# Old-SmartThingsPublic
+# SmartThingsPublic
 Backup
