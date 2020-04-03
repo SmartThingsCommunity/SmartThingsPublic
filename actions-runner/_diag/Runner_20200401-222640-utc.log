@@ -1,0 +1,115 @@
+[2020-04-01 22:26:40Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-04-01 22:26:40Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-04-01 22:26:40Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-04-01 22:26:40Z INFO Listener] Version: 2.165.2
+[2020-04-01 22:26:40Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-04-01 22:26:40Z INFO Listener] Culture: en-US
+[2020-04-01 22:26:40Z INFO Listener] UI Culture: en-US
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 22:26:40Z INFO Listener] Validating directory permissions for: 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 22:26:40Z INFO CommandLineParser] Parse
+[2020-04-01 22:26:40Z INFO CommandLineParser] Parsing 1 args
+[2020-04-01 22:26:40Z INFO CommandLineParser] parsing argument
+[2020-04-01 22:26:40Z INFO CommandLineParser] HasArgs: False
+[2020-04-01 22:26:40Z INFO CommandLineParser] Adding Command: run
+[2020-04-01 22:26:40Z INFO Listener] Arguments parsed
+[2020-04-01 22:26:40Z INFO Runner] ExecuteCommand
+[2020-04-01 22:26:40Z INFO ConfigurationStore] currentAssemblyLocation: C:\github\SmartThingsPublic\actions-runner\bin\Runner.Listener.dll
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 22:26:40Z INFO ConfigurationStore] binPath: C:\github\SmartThingsPublic\actions-runner\bin
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 22:26:40Z INFO ConfigurationStore] RootFolder: C:\github\SmartThingsPublic\actions-runner
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 22:26:40Z INFO HostContext] Well known config file 'Runner': 'C:\github\SmartThingsPublic\actions-runner\.runner'
+[2020-04-01 22:26:40Z INFO ConfigurationStore] ConfigFilePath: C:\github\SmartThingsPublic\actions-runner\.runner
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 22:26:40Z INFO HostContext] Well known config file 'Credentials': 'C:\github\SmartThingsPublic\actions-runner\.credentials'
+[2020-04-01 22:26:40Z INFO ConfigurationStore] CredFilePath: C:\github\SmartThingsPublic\actions-runner\.credentials
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 22:26:40Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 22:26:40Z INFO HostContext] Well known config file 'Service': 'C:\github\SmartThingsPublic\actions-runner\.service'
+[2020-04-01 22:26:40Z INFO ConfigurationStore] ServiceConfigFilePath: C:\github\SmartThingsPublic\actions-runner\.service
+[2020-04-01 22:26:40Z INFO CommandSettings] Flag 'help': 'False'
+[2020-04-01 22:26:40Z INFO CommandSettings] Flag 'version': 'False'
+[2020-04-01 22:26:40Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-04-01 22:26:40Z INFO CommandSettings] Command 'configure': 'False'
+[2020-04-01 22:26:40Z INFO CommandSettings] Command 'remove': 'False'
+[2020-04-01 22:26:40Z INFO CommandSettings] Command 'warmup': 'False'
+[2020-04-01 22:26:40Z INFO ConfigurationManager] LoadSettings
+[2020-04-01 22:26:40Z INFO ConfigurationStore] IsConfigured()
+[2020-04-01 22:26:40Z INFO ConfigurationStore] IsConfigured: True
+[2020-04-01 22:26:40Z INFO ConfigurationManager] Is configured: True
+[2020-04-01 22:26:40Z INFO ConfigurationStore] Read setting file: 297 chars
+[2020-04-01 22:26:41Z INFO ConfigurationManager] Settings Loaded
+[2020-04-01 22:26:41Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-04-01 22:26:41Z INFO ConfigurationStore] IsServiceConfigured: False
+[2020-04-01 22:26:41Z INFO CommandSettings] Command 'run': 'True'
+[2020-04-01 22:26:41Z INFO ConfigurationStore] IsConfigured()
+[2020-04-01 22:26:41Z INFO ConfigurationStore] IsConfigured: True
+[2020-04-01 22:26:41Z INFO ConfigurationManager] Is configured: True
+[2020-04-01 22:26:41Z INFO Runner] Could not parse the argument value '' for StartupType. Defaulting to Manual
+[2020-04-01 22:26:41Z INFO Runner] Set runner startup type - Manual
+[2020-04-01 22:26:41Z INFO CommandSettings] Flag 'once': 'False'
+[2020-04-01 22:26:41Z INFO Runner] RunAsync
+[2020-04-01 22:26:41Z INFO ConfigurationManager] LoadSettings
+[2020-04-01 22:26:41Z INFO ConfigurationStore] IsConfigured()
+[2020-04-01 22:26:41Z INFO ConfigurationStore] IsConfigured: True
+[2020-04-01 22:26:41Z INFO ConfigurationManager] Is configured: True
+[2020-04-01 22:26:41Z INFO ConfigurationManager] Settings Loaded
+[2020-04-01 22:26:41Z INFO MessageListener] {
+  "AgentId": 3,
+  "AgentName": "itbytes",
+  "PoolId": 1,
+  "PoolName": "Default",
+  "ServerUrl": "https://pipelines.actions.githubusercontent.com/EQE2oYQT0i2U5mCTEGtEZoQM75DsLEfYVM9ZJlOo5q1WQNpGUD/",
+  "GitHubUrl": "https://github.com/monninn/SmartThingsPublic",
+  "WorkFolder": "work"
+}
+[2020-04-01 22:26:41Z INFO MessageListener] Loading Credentials
+[2020-04-01 22:26:41Z INFO ConfigurationStore] HasCredentials()
+[2020-04-01 22:26:41Z INFO ConfigurationStore] stored True
+[2020-04-01 22:26:41Z INFO CredentialManager] GetCredentialProvider
+[2020-04-01 22:26:41Z INFO CredentialManager] Creating type OAuth
+[2020-04-01 22:26:41Z INFO CredentialManager] Creating credential type: OAuth
+[2020-04-01 22:26:41Z INFO HostContext] Well known directory 'Bin': 'C:\github\SmartThingsPublic\actions-runner\bin'
+[2020-04-01 22:26:41Z INFO HostContext] Well known directory 'Root': 'C:\github\SmartThingsPublic\actions-runner'
+[2020-04-01 22:26:41Z INFO HostContext] Well known config file 'RSACredentials': 'C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams'
+[2020-04-01 22:26:41Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 22:26:41Z INFO MessageListener] Attempt to create session.
+[2020-04-01 22:26:41Z INFO MessageListener] Connecting to the Runner Server...
+[2020-04-01 22:26:41Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-04-01 22:26:41Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-04-01 22:26:41Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-04-01 22:26:41Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-04-01 22:26:41Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-04-01 22:26:41Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-04-01 22:26:42Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-04-01 22:26:42Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-04-01 22:26:42Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-04-01 22:26:42Z INFO MessageListener] VssConnection created
+[2020-04-01 22:26:42Z INFO Terminal] WRITE LINE: 
+[2020-04-01 22:26:42Z INFO Terminal] WRITE LINE: 
+[2020-04-01 22:26:42Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d4957f3b-d469-4538-b992-626bf5274a1f
+ActivityId: 7f7eb638-604a-4a69-913e-fd4fafa5daa0
+X-TFS-Session: cba84ab1-481b-4608-ab58-530a4817b711
+X-VSS-E2EID: 26125e0e-4f23-402b-ac2d-6104c26b9286
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 0E66CF09307E458891E00CF388CAFB36 Ref B: CHGEDGE1119 Ref C: 2020-04-01T22:26:40Z
+Date: Wed, 01 Apr 2020 22:26:39 GMT
+
+[2020-04-01 22:26:42Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 22:26:42Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 22:26:43Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 22:26:44Z INFO MessageListener] Session created.
+[2020-04-01 22:26:44Z INFO Terminal] WRITE LINE: 2020-04-01 22:26:44Z: Listening for Jobs
+[2020-04-01 22:26:44Z INFO JobDispatcher] Set runner/worker IPC timeout to 30 seconds.
+[2020-04-01 22:56:52Z INFO MessageListener] No message retrieved from session 'bdd16596-f1a8-40ff-892d-930a2ddbae8b' within last 30 minutes.

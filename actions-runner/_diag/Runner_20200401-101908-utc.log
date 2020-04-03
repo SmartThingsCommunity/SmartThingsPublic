@@ -181,3 +181,78 @@ Date: Wed, 01 Apr 2020 14:00:20 GMT
 [2020-04-01 14:00:22Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
 [2020-04-01 14:00:23Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
 [2020-04-01 14:20:29Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 14:50:38Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 14:55:39Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d4957f3b-d469-4538-b992-626bf5274a1f
+ActivityId: 7ee50c75-604a-4a69-913e-fd4fafa5daa0
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: 509d2dc7-bade-4dd3-a035-5100d7389465
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 06C421BFC5BF45E180247420280B7656 Ref B: CHGEDGE1418 Ref C: 2020-04-01T14:55:38Z
+Date: Wed, 01 Apr 2020 14:55:38 GMT
+
+[2020-04-01 14:55:39Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 14:55:40Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 15:20:47Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 15:50:57Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 15:50:57Z WARN GitHubActionsService] Authentication failed with status code 401.
+Transfer-Encoding: chunked
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: d3d872d7-c4a8-4f1b-a1a2-2470f7bd4f68
+ActivityId: 13ef1ed5-f8eb-4d35-9552-85cf70b3b7f0
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: 9ddcb21e-66c7-4c62-92d8-38f6739d3d26
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 81B68EF9649347E989137D682034A2EE Ref B: CHGEDGE1418 Ref C: 2020-04-01T15:50:55Z
+Date: Wed, 01 Apr 2020 15:50:55 GMT
+
+[2020-04-01 15:50:57Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 15:50:58Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 16:21:07Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 16:46:15Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: fffac0d6-91fd-41b8-9a35-fee17c740583
+ActivityId: e4a73ad3-0520-4160-b974-2892c8d62bf3
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: efcdecff-25f7-47f7-b256-bd0b667892ac
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: A9854EB636924AF2AF1EF81A2AABB59B Ref B: CHGEDGE1418 Ref C: 2020-04-01T16:46:13Z
+Date: Wed, 01 Apr 2020 16:46:13 GMT
+
+[2020-04-01 16:46:15Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 16:46:16Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 16:51:17Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 17:21:26Z INFO MessageListener] No message retrieved from session 'ce2228af-cbbb-4a44-b4ca-9a7b24ce6617' within last 30 minutes.
+[2020-04-01 17:41:33Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: e43d305f-962f-482d-ad3f-0390fc7a4ef6
+ActivityId: 8ea56279-d702-4ebd-857d-d203e94ec41e
+X-TFS-Session: 8c3eb2cd-f46a-4a3c-94e4-54b3e55cabb8
+X-VSS-E2EID: cbb72456-e00f-403a-992f-139d8f448e7e
+X-VSS-SenderDeploymentId: d624195d-30e0-1768-06a5-b10a7879c7db
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: BE392DB51ACF40D2AFBBAFE922683AE9 Ref B: CHGEDGE1418 Ref C: 2020-04-01T17:41:31Z
+Date: Wed, 01 Apr 2020 17:41:30 GMT
+
+[2020-04-01 17:41:33Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\github\SmartThingsPublic\actions-runner\.credentials_rsaparams
+[2020-04-01 17:41:33Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-04-01 17:47:36Z INFO Terminal] WRITE LINE: Exiting...
+[2020-04-01 17:47:36Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-04-01 17:47:36Z INFO ConfigurationStore] IsServiceConfigured: False
+[2020-04-01 17:47:36Z INFO HostContext] Runner will be shutdown for UserCancelled
+[2020-04-01 17:47:36Z WARN GitHubActionsService] GET request to https://pipelines.actions.githubusercontent.com/EQE2oYQT0i2U5mCTEGtEZoQM75DsLEfYVM9ZJlOo5q1WQNpGUD/_apis/distributedtask/pools/1/messages?sessionId=ce2228af-cbbb-4a44-b4ca-9a7b24ce6617 has been cancelled.
+[2020-04-01 17:47:36Z INFO MessageListener] Get next message has been cancelled.
+[2020-04-01 17:47:36Z INFO JobDispatcher] Shutting down JobDispatcher. Make sure all WorkerDispatcher has finished.
+[2020-04-01 17:47:38Z INFO Listener] Runner execution been cancelled.
