@@ -1,131 +1,401 @@
 /**
- *  Device Type Definition File
- *
- *  Device Type:        Fibaro Flood Sensor
- *  File Name:          fibaro-flood-sensor.groovy
- *  Initial Release:    2014-12-10
- *  @author:            Todd Wackford
- *  Email:              todd@wackford.net
- *  @version:           1.0
- *
- *  Copyright 2014 SmartThings
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
- *
- */
- 
- /**
- * Sets up metadata, simulator info and tile definition. The tamper tile is setup, but 
- * not displayed to the user. We do this so we can receive events and display on device 
- * activity. If the user wants to display the tamper tile, adjust the tile display lines
- * with the following:
- *		main(["water", "temperature"])
- *		details(["water", "temperature", "tamper", "battery", "configure"])
- *
- * @param none
- *
- * @return none
+ *	Fibaro Flood Sensor ZW5
  */
 metadata {
-	definition (name: "Fibaro Flood Sensor", namespace: "smartthings", author: "SmartThings") {
-		capability "Water Sensor"
-		capability "Temperature Measurement"
-		capability "Configuration"
+	definition(name: "Fibaro Flood Sensor ZW5", namespace: "FibarGroup", author: "Fibar Group", ocfDeviceType: "x.com.st.d.sensor.moisture") {
 		capability "Battery"
-		capability "Health Check"
+		capability "Configuration"
 		capability "Sensor"
-    
-		command    "resetParams2StDefaults"
-		command    "listCurrentParams"
-		command    "updateZwaveParam"
-		command    "test"
+		capability "Tamper Alert"
+		capability "Temperature Measurement"
+		capability "Water Sensor"
+		capability "Power Source"
+		capability "Health Check"
 
-		fingerprint deviceId: "0xA102", inClusters: "0x30,0x9C,0x60,0x85,0x8E,0x72,0x70,0x86,0x80,0x84"
-		fingerprint mfr:"010F", prod:"0000", model:"2002"
-		fingerprint mfr:"010F", prod:"0000", model:"1002"
-		fingerprint mfr:"010F", prod:"0B00", model:"1001"
+		attribute "syncStatus", "string"
+		attribute "lastAlarmDate", "string"
+
+		command "forceSync"
+
+		fingerprint mfr: "010F", prod: "0B01", model: "1002"
+		fingerprint mfr: "010F", prod: "0B01", model: "1003"
+		fingerprint mfr: "010F", prod: "0B01", model: "2002"
+		fingerprint mfr: "010F", prod: "0B01"
 	}
 
-	simulator {
-		// messages the device returns in response to commands it receives
-		status "motion (basic)"     : "command: 2001, payload: FF"
-		status "no motion (basic)"  : "command: 2001, payload: 00"
-
-		for (int i = 0; i <= 100; i += 20) {
-			status "temperature ${i}F": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-				scaledSensorValue: i, precision: 1, sensorType: 1, scale: 1).incomingMessage()
-		}
-
-		for (int i = 200; i <= 1000; i += 200) {
-			status "luminance ${i} lux": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-				scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
-		}
-
-		for (int i = 0; i <= 100; i += 20) {
-			status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(
-				batteryLevel: i).incomingMessage()
-		}
-	}
-
-	tiles(scale:2) {
-		multiAttributeTile(name:"water", type: "generic", width: 6, height: 4){
+	tiles(scale: 2) {
+		multiAttributeTile(name: "FGFS", type: "lighting", width: 6, height: 4) {
 			tileAttribute("device.water", key: "PRIMARY_CONTROL") {
-				attributeState("dry", icon:"st.alarm.water.dry", backgroundColor:"#ffffff")
-				attributeState("wet", icon:"st.alarm.water.wet", backgroundColor:"#00A0DC")
- 			}
- 		}
+				attributeState("dry", label: "Alarm not detected", icon: "http://fibaro-smartthings.s3-eu-west-1.amazonaws.com/flood/flood0sensor.png", backgroundColor: "#79b821")
+				attributeState("wet", label: "Alarm detected", icon: "http://fibaro-smartthings.s3-eu-west-1.amazonaws.com/flood/flood1sensor.png", backgroundColor: "#ffa81e")
+			}
+
+			tileAttribute("device.multiStatus", key: "SECONDARY_CONTROL") {
+				attributeState("multiStatus", label: '${currentValue}')
+			}
+
+		}
+
 		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
-			state "temperature", label:'${currentValue}°',
-			backgroundColors:[
-				[value: 31, color: "#153591"],
-				[value: 44, color: "#1e9cbb"],
-				[value: 59, color: "#90d2a7"],
-				[value: 74, color: "#44b621"],
-				[value: 84, color: "#f1d801"],
-				[value: 95, color: "#d04e00"],
-				[value: 96, color: "#bc2323"]
-			]
-		}
-		standardTile("tamper", "device.tamper", width: 2, height: 2) {
-			state("secure", label:"secure", icon:"st.locks.lock.locked",   backgroundColor:"#ffffff")
-			state("tampered", label:"tampered", icon:"st.locks.lock.unlocked", backgroundColor:"#00a0dc")
-		}
-		valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "battery", label:'${currentValue}% battery', unit:""
-		}
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
+			state "temperature", label: '${currentValue}°',
+					backgroundColors: [
+							[value: 31, color: "#153591"],
+							[value: 44, color: "#1e9cbb"],
+							[value: 59, color: "#90d2a7"],
+							[value: 74, color: "#44b621"],
+							[value: 84, color: "#f1d801"],
+							[value: 95, color: "#d04e00"],
+							[value: 96, color: "#bc2323"]
+					]
 		}
 
-		main(["water", "temperature"])
-		details(["water", "temperature", "battery", "configure"])
+		valueTile("batteryStatus", "device.batteryStatus", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
+			state "val", label: '${currentValue}'
+		}
+
+		standardTile("syncStatus", "device.syncStatus", decoration: "flat", width: 2, height: 2) {
+			def syncIconUrl = "http://fibaro-smartthings.s3-eu-west-1.amazonaws.com/keyfob/sync_icon.png"
+			state "synced", label: 'OK', action: "forceSync", backgroundColor: "#00a0dc", icon: syncIconUrl
+			state "pending", label: "Pending", action: "forceSync", backgroundColor: "#153591", icon: syncIconUrl
+			state "inProgress", label: "Syncing", action: "forceSync", backgroundColor: "#44b621", icon: syncIconUrl
+			state "incomplete", label: "Incomplete", action: "forceSync", backgroundColor: "#f1d801", icon: syncIconUrl
+			state "failed", label: "Failed", action: "forceSync", backgroundColor: "#bc2323", icon: syncIconUrl
+			state "force", label: "Force", action: "forceSync", backgroundColor: "#e86d13", icon: syncIconUrl
+		}
+
+		main "FGFS"
+		details(["FGFS", "batteryStatus", "temperature", "syncStatus"])
+	}
+
+	preferences {
+		input(
+			title: "Fibaro Flood Sensor settings",
+			description: "Device's settings update is executed when device wakes up.\n" +
+					"It may take up to 6 hours (for default wake up interval). \n" +
+					"If you want immediate change, manually wake up device by clicking TMP button once.",
+			type: "paragraph",
+			element: "paragraph"
+		)
+		parameterMap().each {
+			getPrefsFor(it)
+		}
+
+		input ( name: "logging", title: "Logging", type: "boolean", required: false )
 	}
 }
 
-// Parse incoming device messages to generate events
-def parse(String description)
-{
+def installed(){
+  sendEvent(name: "checkInterval", value: (21600*2)+10*60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+}
+
+//UI Support functions
+def getPrefsFor(parameter) {
+	input(
+			title: "${parameter.num}. ${parameter.title}",
+			description: parameter.descr,
+			type: "paragraph",
+			element: "paragraph"
+	)
+	input(
+			name: parameter.key,
+			title: null,
+			type: parameter.type,
+			options: parameter.options,
+			range: (parameter.min != null && parameter.max != null) ? "${parameter.min}..${parameter.max}" : null,
+			defaultValue: parameter.def,
+			required: false
+	)
+}
+
+def updated() {
+
+	if (state.lastUpdated && (now() - state.lastUpdated) < 2000) return
+
+	logging("${device.displayName} - Executing updated()", "info")
+	def cmds = []
+	def cmdCount = 0
+
+	parameterMap().each {
+		if (settings."$it.key" == null || state."$it.key" == null) {
+			state."$it.key" = [value: it.def as Integer, state: "notSynced"]
+		}
+
+		if (settings."$it.key" != null) {
+			if (state."$it.key".value != settings."$it.key" as Integer || state."$it.key".state == "notSynced") {
+				state."$it.key".value = settings."$it.key" as Integer
+				state."$it.key".state = "notSynced"
+				cmdCount = cmdCount + 1
+			}
+		} else {
+			if (state."$it.key".state == "notSynced") {
+				cmdCount = cmdCount + 1
+			}
+		}
+	}
+
+	if (cmdCount > 0) {
+		logging("${device.displayName} - sending config.", "info")
+		sendEvent(name: "syncStatus", value: "pending")
+	}
+
+	state.lastUpdated = now()
+}
+
+def forceSync() {
+	if (device.currentValue("syncStatus") != "force") {
+		state.prevSyncState = device.currentValue("syncStatus")
+		sendEvent(name: "syncStatus", value: "force")
+	} else {
+		if (state.prevSyncState != null) {
+			sendEvent(name: "syncStatus", value: state.prevSyncState)
+		} else {
+			sendEvent(name: "syncStatus", value: "synced")
+		}
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
+	log.debug "WakeUpNotification"
+	def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
+	def cmds = []
+	def cmdsSet = []
+	def cmdsGet = []
+	def cmdCount = 0
+	def results = [createEvent(descriptionText: "$device.displayName woke up", isStateChange: true)]
+
+	cmdsGet << zwave.batteryV1.batteryGet()
+	cmdsGet << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
+
+	if (device.currentValue("syncStatus") != "synced") {
+
+		parameterMap().each {
+			if (state."$it.key"?.state != null && device.currentValue("syncStatus") == "force") {
+				state."$it.key".state = "notSynced"
+			}
+
+			if (state."$it.key"?.value != null && state."$it.key"?.state == "notSynced") {
+				cmdsSet << zwave.configurationV2.configurationSet(configurationValue: intToParam(state."$it.key".value, it.size), parameterNumber: it.num, size: it.size)
+				cmdsGet << zwave.configurationV2.configurationGet(parameterNumber: it.num)
+				cmdCount = cmdCount + 1
+			}
+		}
+
+		log.debug "Not synced, syncing ${cmdCount} parameters"
+		sendEvent(name: "syncStatus", value: "inProgress")
+		runIn((5 + cmdCount * 1.5), syncCheck)
+
+	}
+
+	if (cmdsSet) {
+		cmds = encapSequence(cmdsSet, 500)
+		cmds << "delay 500"
+	}
+
+	cmds = cmds + encapSequence(cmdsGet, 1000)
+	cmds << "delay " + (5000 + cmdCount * 1500)
+	cmds << encap(zwave.wakeUpV1.wakeUpNoMoreInformation())
+	results = results + response(cmds)
+
+	return results
+}
+
+
+def syncCheck() {
+	logging("${device.displayName} - Executing syncCheck()", "info")
+	def notSynced = []
+	def count = 0
+
+	if (device.currentValue("syncStatus") != "synced") {
+		parameterMap().each {
+			if (state."$it.key"?.state == "notSynced") {
+				notSynced << it
+				logging "Sync failed! Verify parameter: ${notSynced[0].num}"
+				logging "Sync $it.key " + state."$it.key"
+				sendEvent(name: "batteryStatus", value: "Sync incomplited! Check parameter nr. ${notSynced[0].num}")
+				count = count + 1
+			}
+		}
+	}
+	if (count == 0) {
+		logging("${device.displayName} - Sync Complete", "info")
+		sendEvent(name: "syncStatus", value: "synced")
+	} else {
+		logging("${device.displayName} Sync Incomplete", "info")
+		if (device.currentValue("syncStatus") != "failed") {
+			sendEvent(name: "syncStatus", value: "incomplete")
+		}
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+	log.debug "ManufacturerSpecificReport"
+	log.debug "manufacturerId:	 ${cmd.manufacturerId}"
+	log.debug "manufacturerName: ${cmd.manufacturerName}"
+	log.debug "productId:		 ${cmd.productId}"
+	log.debug "productTypeId:	 ${cmd.productTypeId}"
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecificReport cmd) {
+	log.debug "DeviceSpecificReport"
+	log.debug "deviceIdData:				${cmd.deviceIdData}"
+	log.debug "deviceIdDataFormat:			${cmd.deviceIdDataFormat}"
+	log.debug "deviceIdDataLengthIndicator: ${cmd.deviceIdDataLengthIndicator}"
+	log.debug "deviceIdType:				${cmd.deviceIdType}"
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
+	log.debug "VersionReport"
+	log.debug "applicationVersion:		${cmd.applicationVersion}"
+	log.debug "applicationSubVersion:	${cmd.applicationSubVersion}"
+	log.debug "zWaveLibraryType:		${cmd.zWaveLibraryType}"
+	log.debug "zWaveProtocolVersion:	${cmd.zWaveProtocolVersion}"
+	log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
+	log.debug "BatteryReport"
+	log.debug "cmd: "+cmd
+	log.debug "location: "+location
+	def timeDate = location.timeZone ? new Date().format("yyyy MMM dd EEE h:mm:ss a", location.timeZone) : new Date().format("yyyy MMM dd EEE h:mm:ss")
+
+	if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
+		sendEvent(name: "battery", value: 1, descriptionText: "${device.displayName} has a low battery", isStateChange: true)
+	} else {
+		sendEvent(name: "battery", value: cmd.batteryLevel, descriptionText: "Current battery level")
+	}
+	sendEvent(name: "batteryStatus", value: "Battery: $cmd.batteryLevel%\n($timeDate)")
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	log.debug "NotificationReport"
+	def map = [:]
+	def alarmInfo = "Last alarm detection: "
+	if (cmd.notificationType == 5) {
+		switch (cmd.event) {
+			case 2:
+				map.name = "water"
+				map.value = "wet"
+				map.descriptionText = "${device.displayName} is ${map.value}"
+				state.lastAlarmDate = "\n"+new Date().format("yyyy MMM dd EEE HH:mm:ss")
+				//state.lastAlarmDate = "\n"+new Date().format("yyyy MMM dd EEE HH:mm:ss", location.timeZone)
+				multiStatusEvent(alarmInfo + state.lastAlarmDate)
+				break
+
+			case 0:
+				map.name = "water"
+				map.value = "dry"
+				map.descriptionText = "${device.displayName} is ${map.value}"
+				multiStatusEvent(alarmInfo + state.lastAlarmDate)
+				break
+		}
+	} else if (cmd.notificationType == 7) {
+		switch (cmd.event) {
+			case 0:
+				map.name = "tamper"
+				map.value = "clear"
+				map.descriptionText = "${device.displayName}: tamper alarm has been deactivated"
+				sendEvent(name: "batteryStatus", value: "Tamper alarm inactive")
+				break
+
+			case 3:
+				map.name = "tamper"
+				map.value = "detected"
+				map.descriptionText = "${device.displayName}: tamper alarm activated"
+				sendEvent(name: "batteryStatus", value: "Tamper alarm activated")
+				break
+		}
+	}
+	createEvent(map)
+}
+
+private multiStatusEvent(String statusValue, boolean force = false, boolean display = false) {
+	if (!device.currentValue("multiStatus")?.contains("Sync") || device.currentValue("multiStatus") == "Sync OK." || force) {
+		sendEvent(name: "multiStatus", value: statusValue, descriptionText: statusValue, displayed: display)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
+	log.debug "SensorMultilevelReport"
+	def map = [:]
+	if (cmd.sensorType == 1) {
+		// temperature
+		def cmdScale = cmd.scale == 1 ? "F" : "C"
+		map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, 1)
+		map.unit = getTemperatureScale()
+		map.name = "temperature"
+		map.displayed = true
+		log.debug "Temperature:" + map.value
+		createEvent(map)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNotification cmd) {
+	log.warn "Test10: DeviceResetLocallyNotification"
+	log.info "${device.displayName}: received command: $cmd - device has reset itself"
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpIntervalReport cmd) {
+	log.warn cmd
+}
+
+/*
+####################
+## Z-Wave Toolkit ##
+####################
+*/
+
+def parse(String description) {
 	def result = []
-
-	def cmd = zwave.parse(description, [0x31: 2, 0x30: 1, 0x70: 2, 0x71: 1, 0x84: 1, 0x80: 1, 0x9C: 1, 0x72: 2, 0x56: 2, 0x60: 3])
-
-	if (cmd) {
-		result += zwaveEvent(cmd) //createEvent(zwaveEvent(cmd))   
-	}
-
-	if ( result[0] != null ) {
-		log.debug "Parse returned ${result}"
-		result
+	logging("${device.displayName} - Parsing: ${description}")
+	if (description.startsWith("Err 106")) {
+		result = createEvent(
+				descriptionText: "Failed to complete the network security key exchange. If you are unable to receive data from it, you must remove it from your network and add it again.",
+				eventType: "ALERT",
+				name: "secureInclusion",
+				value: "failed",
+				displayed: true,
+		)
+	} else if (description == "updated") {
+		return null
+	} else {
+		def cmd = zwave.parse(description, cmdVersions())
+		if (cmd) {
+			logging("${device.displayName} - Parsed: ${cmd}")
+			zwaveEvent(cmd)
+		}
 	}
 }
 
+//event handlers related to configuration and sync
+def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	def paramKey = parameterMap().find({ it.num == cmd.parameterNumber }).key
+	logging("${device.displayName} - Parameter ${paramKey} value is ${cmd.scaledConfigurationValue} expected " + state."$paramKey".value, "info")
+	if (state."$paramKey".value == cmd.scaledConfigurationValue) {
+		state."$paramKey".state = "synced"
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
+	if (encapsulatedCommand) {
+		logging("${device.displayName} - Parsed SecurityMessageEncapsulation into: ${encapsulatedCommand}")
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract Secure command from $cmd"
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+	def version = cmdVersions()[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (encapsulatedCommand) {
+		logging("${device.displayName} - Parsed Crc16Encap into: ${encapsulatedCommand}")
+		zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract CRC16 command from $cmd"
+	}
+}
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
@@ -136,322 +406,143 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 		cmd.command = cmd.parameter[1]
 		cmd.parameter = cmd.parameter.drop(2)
 	}
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x30: 2, 0x31: 2]) // can specify command class versions here like in zwave.parse
-	log.debug ("Command from endpoint ${cmd.sourceEndPoint}: ${encapsulatedCommand}")
+	def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
 	if (encapsulatedCommand) {
-		return zwaveEvent(encapsulatedCommand)
-	}
-}
-
-// Event Generation
-def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
-	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
-	if (!isConfigured()) {
-		// we're still in the process of configuring a newly joined device
-		result << lateConfigure(true)
+		logging("${device.displayName} - Parsed MultiChannelCmdEncap ${encapsulatedCommand}")
+		zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
 	} else {
-		result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
+		log.warn "Unable to extract MultiChannel command from $cmd"
 	}
-	result
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelReport cmd)
-{
-	def map = [:]
-
-	switch (cmd.sensorType) {
-		case 1:
-			// temperature
-			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
-			map.unit = getTemperatureScale()
-			map.name = "temperature"
-			break;
-		case 0:
-			// here's our tamper alarm = acceleration
-			map.value = cmd.sensorState == 255 ? "active" : "inactive"
-			map.name = "acceleration"
-			break;
-	}
-	createEvent(map)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-	def map = [:]
-	map.name = "battery"
-	map.unit = "%"
-
-	if (cmd.batteryLevel == 0xFF) {  // Special value for low battery alert
-		map.value = 1
-		map.descriptionText = "${device.displayName} has a low battery"
-		map.isStateChange = true
-	} else {
-		map.value = cmd.batteryLevel
-		map.descriptionText = "Current battery level"
-	}
-	createEvent(map)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv1.SensorBinaryReport cmd) {
-	def map = [:]
-	map.value = cmd.sensorValue ? "active" : "inactive"
-	map.name = "acceleration"
-
-	if (map.value == "active") {
-		map.descriptionText = "$device.displayName detected vibration"
-	}
-	else {
-		map.descriptionText = "$device.displayName vibration has stopped"
-	}
-	createEvent(map)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'"
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	log.debug "BasicSet with CMD = ${cmd}"
-
-	if (!isConfigured()) {
-		def result = []
-		def map = [:]
-
-		map.name = "water"
-		map.value = cmd.value ? "wet" : "dry"
-		map.descriptionText = "${device.displayName} is ${map.value}"
-
-		// If we are getting a BasicSet, and isConfigured == false, then we are likely NOT properly configured.
-		result += lateConfigure(true)
-
-		result << createEvent(map)
-
-		result
-	}
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd)
-{
-	def map = [:]
-
-	if (cmd.sensorType == 0x05) {
-		map.name = "water"
-		map.value = cmd.sensorState ? "wet" : "dry"
-		map.descriptionText = "${device.displayName} is ${map.value}"
-
-		log.debug "CMD = SensorAlarmReport: ${cmd}"
-		setConfigured()
-	} else if ( cmd.sensorType == 0) {
-		map.name = "tamper"
-		map.isStateChange = true
-		map.value = cmd.sensorState ? "tampered" : "secure"
-		map.descriptionText = "${device.displayName} has been tampered with"
-		runIn(30, "resetTamper") //device does not send alarm cancelation
-
-	} else if ( cmd.sensorType == 1) {
-		map.name = "tamper"
-		map.value = cmd.sensorState ? "tampered" : "secure"
-		map.descriptionText = "${device.displayName} has been tampered with"
-		runIn(30, "resetTamper") //device does not send alarm cancelation
-
-	} else {
-		map.descriptionText = "${device.displayName}: ${cmd}"
-	}
-	createEvent(map)
-}
-
-def resetTamper() {
-	def map = [:]
-	map.name = "tamper"
-	map.value = "secure"
-	map.descriptionText = "$device.displayName is secure"
-	sendEvent(map)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	log.debug "Catchall reached for cmd: ${cmd.toString()}}"
+	// Handles all Z-Wave commands we aren't interested in
+	log.debug "Unhandled: ${cmd.toString()}"
 	[:]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
+private logging(text, type = "debug") {
+	if (settings.logging == "true") {
+		log."$type" text
+	}
+}
+
+private secEncap(physicalgraph.zwave.Command cmd) {
+	logging("${device.displayName} - encapsulating command using Secure Encapsulation, command: $cmd", "info")
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crcEncap(physicalgraph.zwave.Command cmd) {
+	logging("${device.displayName} - encapsulating command using CRC16 Encapsulation, command: $cmd", "info")
+	zwave.crc16EncapV1.crc16Encap().encapsulate(cmd).format()
+}
+
+private multiEncap(physicalgraph.zwave.Command cmd, Integer ep) {
+	logging("${device.displayName} - encapsulating command using MultiChannel Encapsulation, ep: $ep command: $cmd", "info")
+	zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: ep).encapsulate(cmd)
+}
+
+private encap(physicalgraph.zwave.Command cmd, Integer ep) {
+	encap(multiEncap(cmd, ep))
+}
+
+private encap(List encapList) {
+	encap(encapList[0], encapList[1])
+}
+
+private encap(Map encapMap) {
+	encap(encapMap.cmd, encapMap.ep)
+}
+
+private encap(physicalgraph.zwave.Command cmd) {
+	if (zwaveInfo.zw.contains("s")) {
+		secEncap(cmd)
+	} else if (zwaveInfo?.cc?.contains("56")) {
+		crcEncap(cmd)
+	} else {
+		logging("${device.displayName} - no encapsulation supported for command: $cmd", "info")
+		cmd.format()
+	}
+}
+
+private encapSequence(cmds, Integer delay = 250) {
+	delayBetween(cmds.collect { encap(it) }, delay)
+}
+
+private List intToParam(Long value, Integer size = 1) {
 	def result = []
-
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	log.debug "msr: $msr"
-	device.updateDataValue(["MSR", msr])
-
-	if ( msr == "010F-0B00-2001" ) { //this is the msr and device type for the fibaro flood sensor
-		result += lateConfigure(true)
+	size.times {
+		result = result.plus(0, (value & 0xFF) as Short)
+		value = (value >> 8)
 	}
-
-	result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
-	result
+	return result
 }
 
-def setConfigured() {
-	device.updateDataValue("configured", "true")
+def zwaveEvent(physicalgraph.zwave.commands.applicationstatusv1.ApplicationRejectedRequest cmd) {
+	log.warn "Flood Sensor rejected configuration!"
+	sendEvent(name: "syncStatus", value: "failed")
 }
 
-def isConfigured() {
-	Boolean configured = device.getDataValue(["configured"]) as Boolean
-
-	return configured
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.NetworkKeyVerify cmd) {
+	log.debug cmd
 }
 
-def lateConfigure(setConf = False) {
-	def res = response(configure())
-
-	if (setConf)
-		setConfigured()
-
-	return res
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecuritySchemeReport cmd) {
+	log.debug cmd
 }
 
- /**
- * Configures the device to settings needed by SmarthThings at device discovery time.
- *
- * @param none
- *
- * @return none
- */
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
+	log.debug cmd
+}
+
+/*
+##########################
+## Device Configuration ##
+##########################
+*/
+
+/*	0x31 : 5 - Sensor Multilevel
+	0x56 : 1 - Crc16 Encap
+	0x71 : 2 - Notification ST supported V3
+	0x72 : 2 - Manufacturer Specific
+	0x80 : 1 - Battery
+	0x84: 2 - Wake Up
+	0x85: 2 - Association
+	0x86: 1 - Version
+	0x98: 1 - Security */
+
+private Map cmdVersions() {
+	[0x31: 5, 0x56: 1, 0x71: 3, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1, 0x98: 1]
+}
+
 def configure() {
-	log.debug "Configuring Device..."
-	// Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
-	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-
-	// default initial state
-	sendEvent(name: "water", value: "dry")
-
+	state.lastAlarmDate = "-"
 	def cmds = []
-
-	// send associate to group 2 to get alarm data
-	cmds << zwave.associationV2.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId]).format()
-
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [255], parameterNumber: 5, size: 1).format()
-
-	// send associate to group 3 to get sensor data reported only to hub
-	cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
-
-	// reporting frequency of temps and battery set to one hour
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,60*60], parameterNumber: 10, size: 2).format()
-	// cmds << zwave.configurationV1.configurationGet(parameterNumber: 10).format()
-
-	// temp hysteresis set to .5 degrees celcius
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,50], parameterNumber: 12, size: 2).format()
-	// cmds << zwave.configurationV1.configurationGet(parameterNumber: 12).format()
-
-	cmds << zwave.batteryV1.batteryGet().format()
-
-	cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-
-	delayBetween(cmds, 100)
+	sendEvent(name: "water", value: "dry", displayed: "true")
+	cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 21600, nodeid: zwaveHubNodeId)//FGFS' default wake up interval
+	cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+	cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
+	cmds += zwave.versionV1.versionGet()
+	cmds += zwave.batteryV1.batteryGet()
+	cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
+	cmds += zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: [zwaveHubNodeId])
+	cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
+	encapSequence(cmds, 500)
 }
 
-
-//used to add "test" button for simulation of user changes to parameters
-def test() {
-	def params = [paramNumber:12,value:4,size:1]
-	updateZwaveParam(params)
+private parameterMap() {
+	[
+			[key: "AlarmCancellationDelay", num: 1, size: 2, type: "number", def: 0, min: 0, max: 3600, title: "Alarm cancellation delay", descr: "Time period by which a Flood Sensor will retain the flood state after the flooding itself has ceased. 0-3600 (in seconds)"],
+			[key: "AcousticVisualSignals", num: 2, size: 1, type: "enum", options: [
+					0: "acoustic and visual alarms inactive",
+					1: "acoustic alarm inactive, visual alarm active",
+					2: "acoustic alarm active, visual alarm inactive",
+					3: "acoustic and visual alarms active"],
+			 def: 3, title: "Acoustic and visual signals on / off in case of flooding.", descr: ""],
+			[key: "tempInterval", num: 10, size: 4, type: "number", def: 300, min: 1, max: 65535, title: "Interval of temperature measurements", descr: "How often the temperature will be measured (1-65535 in seconds)"],
+			[key: "floodSensorOnOff", num: 77, size: 1, type: "enum", options: [
+					0: "on",
+					1: "off"],
+			 def: 0, title: "Flood sensor functionality turned on/off", descr: "Allows to turn off the internal flood sensor. Tamper and built in temperature sensor will remain active."]
+	]
 }
-
- /**
- * This method will allow the user to update device parameters (behavior) from an app.
- * A "Zwave Tweaker" app will be developed as an interface to do this. Or the user can
- * write his/her own app to envoke this method. No type or value checking is done to
- * compare to what device capability or reaction. It is up to user to read OEM
- * documentation prio to envoking this method.
- *
- * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
- *
- * @param List[paramNumber:80,value:10,size:1]
- *
- *
- * @return none
- */
-def updateZwaveParam(params) {
-	if ( params ) {
-		def pNumber = params.paramNumber
-		def pSize	= params.size
-		def pValue	= [params.value]
-		log.debug "Make sure device is awake and in recieve mode (triple-click?)"
-		log.debug "Updating ${device.displayName} parameter number '${pNumber}' with value '${pValue}' with size of '${pSize}'"
-
-		def cmds = []
-		cmds << zwave.configurationV1.configurationSet(configurationValue: pValue, parameterNumber: pNumber, size: pSize).format()
-		cmds << zwave.configurationV1.configurationGet(parameterNumber: pNumber).format()
-		delayBetween(cmds, 1000)
-	}
-}
-
- /**
- * Sets all of available Fibaro parameters back to the device defaults except for what
- * SmartThings needs to support the stock functionality as released. This will be
- * called from the "Fibaro Tweaker" or user's app.
- *
- * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
- *
- * @param none
- *
- * @return none
- */
-def resetParams2StDefaults() {
-	log.debug "Resetting ${device.displayName} parameters to SmartThings compatible defaults"
-	def cmds = []
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0],			parameterNumber: 1,	 size: 2).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [3],				parameterNumber: 2,	 size: 1).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [255],			parameterNumber: 5,	 size: 1).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [255],			parameterNumber: 7,	 size: 1).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [1],				parameterNumber: 9,	 size: 1).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,60*60],		parameterNumber: 10, size: 2).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,50],			parameterNumber: 12, size: 2).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0],				parameterNumber: 13, size: 1).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [5,220],			parameterNumber: 50, size: 2).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [13,172],		parameterNumber: 51, size: 2).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0,0,225],		parameterNumber: 61, size: 4).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,255,0,0],		parameterNumber: 62, size: 4).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [2],				parameterNumber: 63, size: 1).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0],			parameterNumber: 73, size: 2).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [2],				parameterNumber: 74, size: 1).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0],			parameterNumber: 75, size: 2).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0],			parameterNumber: 76, size: 2).format()
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0],				parameterNumber: 77, size: 1).format()
-
-	delayBetween(cmds, 1200)
-}
-
- /**
- * Lists all of available Fibaro parameters and thier current settings out to the 
- * logging window in the IDE This will be called from the "Fibaro Tweaker" or 
- * user's own app.
- *
- * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
- *
- * @param none
- *
- * @return none
- */
-def listCurrentParams() {
-	log.debug "Listing of current parameter settings of ${device.displayName}"
-	def cmds = []
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 1).format() 
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 2).format() 
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 5).format() 
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 7).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 9).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 10).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 12).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 13).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 50).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 51).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 61).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 62).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 63).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 73).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 74).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 75).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 76).format()
-	cmds << zwave.configurationV1.configurationGet(parameterNumber: 77).format()
-
-	delayBetween(cmds, 1200)
-}
-
