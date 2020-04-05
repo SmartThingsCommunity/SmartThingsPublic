@@ -1,0 +1,228 @@
+[2020-03-29 15:12:50Z INFO HostContext] No proxy settings were found based on environmental variables (http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY)
+[2020-03-29 15:12:50Z INFO Listener] Runner is built for Windows (X64) - win-x64.
+[2020-03-29 15:12:50Z INFO Listener] RuntimeInformation: Microsoft Windows 10.0.18362.
+[2020-03-29 15:12:50Z INFO Listener] Version: 2.165.2
+[2020-03-29 15:12:50Z INFO Listener] Commit: fcf795d86d880b9f0bd10f9713d29cb9784ecef5
+[2020-03-29 15:12:50Z INFO Listener] Culture: en-US
+[2020-03-29 15:12:50Z INFO Listener] UI Culture: en-US
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Root': 'C:\actions-runner'
+[2020-03-29 15:12:50Z INFO Listener] Validating directory permissions for: 'C:\actions-runner'
+[2020-03-29 15:12:50Z INFO CommandLineParser] Parse
+[2020-03-29 15:12:50Z INFO CommandLineParser] Parsing 1 args
+[2020-03-29 15:12:50Z INFO CommandLineParser] parsing argument
+[2020-03-29 15:12:50Z INFO CommandLineParser] HasArgs: False
+[2020-03-29 15:12:50Z INFO CommandLineParser] Adding Command: run
+[2020-03-29 15:12:50Z INFO Listener] Arguments parsed
+[2020-03-29 15:12:50Z INFO Runner] ExecuteCommand
+[2020-03-29 15:12:50Z INFO ConfigurationStore] currentAssemblyLocation: C:\actions-runner\bin\Runner.Listener.dll
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:12:50Z INFO ConfigurationStore] binPath: C:\actions-runner\bin
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Root': 'C:\actions-runner'
+[2020-03-29 15:12:50Z INFO ConfigurationStore] RootFolder: C:\actions-runner
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Root': 'C:\actions-runner'
+[2020-03-29 15:12:50Z INFO HostContext] Well known config file 'Runner': 'C:\actions-runner\.runner'
+[2020-03-29 15:12:50Z INFO ConfigurationStore] ConfigFilePath: C:\actions-runner\.runner
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Root': 'C:\actions-runner'
+[2020-03-29 15:12:50Z INFO HostContext] Well known config file 'Credentials': 'C:\actions-runner\.credentials'
+[2020-03-29 15:12:50Z INFO ConfigurationStore] CredFilePath: C:\actions-runner\.credentials
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Root': 'C:\actions-runner'
+[2020-03-29 15:12:50Z INFO HostContext] Well known config file 'Service': 'C:\actions-runner\.service'
+[2020-03-29 15:12:50Z INFO ConfigurationStore] ServiceConfigFilePath: C:\actions-runner\.service
+[2020-03-29 15:12:50Z INFO CommandSettings] Flag 'help': 'False'
+[2020-03-29 15:12:50Z INFO CommandSettings] Flag 'version': 'False'
+[2020-03-29 15:12:50Z INFO CommandSettings] Flag 'commit': 'False'
+[2020-03-29 15:12:50Z INFO CommandSettings] Command 'configure': 'False'
+[2020-03-29 15:12:50Z INFO CommandSettings] Command 'remove': 'False'
+[2020-03-29 15:12:50Z INFO CommandSettings] Command 'warmup': 'False'
+[2020-03-29 15:12:50Z INFO ConfigurationManager] LoadSettings
+[2020-03-29 15:12:50Z INFO ConfigurationStore] IsConfigured()
+[2020-03-29 15:12:50Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-29 15:12:50Z INFO ConfigurationManager] Is configured: True
+[2020-03-29 15:12:50Z INFO ConfigurationStore] Read setting file: 302 chars
+[2020-03-29 15:12:50Z INFO ConfigurationManager] Settings Loaded
+[2020-03-29 15:12:50Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-03-29 15:12:50Z INFO ConfigurationStore] IsServiceConfigured: False
+[2020-03-29 15:12:50Z INFO CommandSettings] Command 'run': 'True'
+[2020-03-29 15:12:50Z INFO ConfigurationStore] IsConfigured()
+[2020-03-29 15:12:50Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-29 15:12:50Z INFO ConfigurationManager] Is configured: True
+[2020-03-29 15:12:50Z INFO Runner] Could not parse the argument value '' for StartupType. Defaulting to Manual
+[2020-03-29 15:12:50Z INFO Runner] Set runner startup type - Manual
+[2020-03-29 15:12:50Z INFO CommandSettings] Flag 'once': 'False'
+[2020-03-29 15:12:50Z INFO Runner] RunAsync
+[2020-03-29 15:12:50Z INFO ConfigurationManager] LoadSettings
+[2020-03-29 15:12:50Z INFO ConfigurationStore] IsConfigured()
+[2020-03-29 15:12:50Z INFO ConfigurationStore] IsConfigured: True
+[2020-03-29 15:12:50Z INFO ConfigurationManager] Is configured: True
+[2020-03-29 15:12:50Z INFO ConfigurationManager] Settings Loaded
+[2020-03-29 15:12:50Z INFO MessageListener] {
+  "AgentId": 25,
+  "AgentName": "X2JCJAB8C5",
+  "PoolId": 1,
+  "PoolName": "Default",
+  "ServerUrl": "https://pipelines.actions.githubusercontent.com/oPTqmPn939GbLlpjSZRiFhnoKKE2vkIaWo3n2Fd9JDOicD1Kx4/",
+  "GitHubUrl": "https://github.com/monninn/SmartThingsPublic",
+  "WorkFolder": "_work"
+}
+[2020-03-29 15:12:50Z INFO MessageListener] Loading Credentials
+[2020-03-29 15:12:50Z INFO ConfigurationStore] HasCredentials()
+[2020-03-29 15:12:50Z INFO ConfigurationStore] stored True
+[2020-03-29 15:12:50Z INFO CredentialManager] GetCredentialProvider
+[2020-03-29 15:12:50Z INFO CredentialManager] Creating type OAuth
+[2020-03-29 15:12:50Z INFO CredentialManager] Creating credential type: OAuth
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:12:50Z INFO HostContext] Well known directory 'Root': 'C:\actions-runner'
+[2020-03-29 15:12:50Z INFO HostContext] Well known config file 'RSACredentials': 'C:\actions-runner\.credentials_rsaparams'
+[2020-03-29 15:12:50Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\actions-runner\.credentials_rsaparams
+[2020-03-29 15:12:50Z INFO MessageListener] Attempt to create session.
+[2020-03-29 15:12:50Z INFO MessageListener] Connecting to the Runner Server...
+[2020-03-29 15:12:50Z INFO RunnerServer] Establish connection with 100 seconds timeout.
+[2020-03-29 15:12:51Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-29 15:12:51Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-29 15:12:51Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-29 15:12:51Z INFO RunnerServer] Establish connection with 60 seconds timeout.
+[2020-03-29 15:12:51Z INFO GitHubActionsService] Starting operation Location.GetConnectionData
+[2020-03-29 15:12:51Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-29 15:12:51Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-29 15:12:51Z INFO GitHubActionsService] Finished operation Location.GetConnectionData
+[2020-03-29 15:12:51Z INFO MessageListener] VssConnection created
+[2020-03-29 15:12:51Z INFO Terminal] WRITE LINE: 
+[2020-03-29 15:12:51Z INFO Terminal] WRITE LINE: 
+[2020-03-29 15:12:52Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: b2b62d90-e975-4df4-bd8c-5a5aa7e26dcd
+ActivityId: dfc05370-d528-4cb0-adaf-1a21c6fe3420
+X-TFS-Session: 5e0f61d6-ea21-4c2e-827d-45c0ca52f654
+X-VSS-E2EID: f16c49ed-85d0-4675-bf2c-5ed0a919306a
+X-VSS-SenderDeploymentId: 193695a0-0dcd-ade4-f810-b10ad24a9829
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: CEA11FD77C654403AC8A2F4DCED7EBF6 Ref B: CHGEDGE0809 Ref C: 2020-03-29T15:12:49Z
+Date: Sun, 29 Mar 2020 15:12:48 GMT
+
+[2020-03-29 15:12:52Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\actions-runner\.credentials_rsaparams
+[2020-03-29 15:12:52Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\actions-runner\.credentials_rsaparams
+[2020-03-29 15:12:52Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-03-29 15:12:53Z INFO MessageListener] Session created.
+[2020-03-29 15:12:53Z INFO Terminal] WRITE LINE: 2020-03-29 15:12:53Z: Listening for Jobs
+[2020-03-29 15:12:53Z INFO JobDispatcher] Set runner/worker IPC timeout to 30 seconds.
+[2020-03-29 15:12:57Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\actions-runner\.credentials_rsaparams
+[2020-03-29 15:12:57Z INFO MessageListener] Message '1' received from session '3b39c390-23ab-4ebd-8a0b-2c4551b2b563'.
+[2020-03-29 15:12:57Z INFO JobDispatcher] Job request 51 for plan a1fe9f60-82ac-4d75-b956-1368dbf063aa job 1688b4be-3760-56c4-0657-72178d884855 received.
+[2020-03-29 15:12:57Z INFO Terminal] WRITE LINE: 2020-03-29 15:12:57Z: Running job: build (10.x)
+[2020-03-29 15:12:57Z INFO JobDispatcher] Start renew job request 51 for job 1688b4be-3760-56c4-0657-72178d884855.
+[2020-03-29 15:12:57Z INFO JobDispatcher] Successfully renew job request 51, job is valid till 3/29/2020 3:22:55 PM
+[2020-03-29 15:12:57Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper] Starting process:
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   File name: 'C:\actions-runner\bin\Runner.Worker.exe'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   Arguments: 'spawnclient 2160 2172'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   Working directory: 'C:\actions-runner\bin'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   Require exit code zero: 'False'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   Encoding web name:  ; code page: ''
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   Force kill process on cancellation: 'True'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   Redirected STDIN: 'False'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   Persist current code page: 'False'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   Keep redirected STDIN open: 'False'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper]   High priority process: 'True'
+[2020-03-29 15:12:57Z INFO ProcessInvokerWrapper] Process started with process id 12304, waiting for process exit.
+[2020-03-29 15:12:57Z INFO JobDispatcher] Send job request message to worker for job 1688b4be-3760-56c4-0657-72178d884855.
+[2020-03-29 15:12:57Z INFO JobNotification] Entering JobStarted Notification
+[2020-03-29 15:12:57Z INFO JobNotification] Entering StartMonitor
+[2020-03-29 15:13:57Z INFO JobDispatcher] Successfully renew job request 51, job is valid till 3/29/2020 3:23:55 PM
+[2020-03-29 15:14:37Z INFO ProcessInvokerWrapper] STDOUT/STDERR stream read finished.
+[2020-03-29 15:14:37Z INFO ProcessInvokerWrapper] STDOUT/STDERR stream read finished.
+[2020-03-29 15:14:37Z INFO ProcessInvokerWrapper] Finished process 12304 with exit code 102, and elapsed time 00:01:40.4748024.
+[2020-03-29 15:14:37Z INFO JobDispatcher] Worker finished for job 1688b4be-3760-56c4-0657-72178d884855. Code: 102
+[2020-03-29 15:14:37Z INFO JobDispatcher] finish job request for job 1688b4be-3760-56c4-0657-72178d884855 with result: Failed
+[2020-03-29 15:14:37Z INFO Terminal] WRITE LINE: 2020-03-29 15:14:37Z: Job build (10.x) completed with result: Failed
+[2020-03-29 15:14:37Z INFO JobDispatcher] Stop renew job request for job 1688b4be-3760-56c4-0657-72178d884855.
+[2020-03-29 15:14:37Z INFO JobDispatcher] job renew has been canceled, stop renew job request 51.
+[2020-03-29 15:14:37Z INFO JobNotification] Entering JobCompleted Notification
+[2020-03-29 15:14:37Z INFO JobNotification] Entering EndMonitor
+[2020-03-29 15:14:39Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\actions-runner\.credentials_rsaparams
+[2020-03-29 15:14:39Z INFO MessageListener] Message '2' received from session '3b39c390-23ab-4ebd-8a0b-2c4551b2b563'.
+[2020-03-29 15:14:39Z INFO JobDispatcher] Job request 52 for plan a1fe9f60-82ac-4d75-b956-1368dbf063aa job a9a345e6-1106-5aaa-6fe5-f842db892828 received.
+[2020-03-29 15:14:39Z INFO JobDispatcher] Job request 1688b4be-3760-56c4-0657-72178d884855 processed succeed.
+[2020-03-29 15:14:39Z INFO Terminal] WRITE LINE: 2020-03-29 15:14:39Z: Running job: build (12.x)
+[2020-03-29 15:14:39Z INFO JobDispatcher] Start renew job request 52 for job a9a345e6-1106-5aaa-6fe5-f842db892828.
+[2020-03-29 15:14:40Z INFO JobDispatcher] Successfully renew job request 52, job is valid till 3/29/2020 3:24:37 PM
+[2020-03-29 15:14:40Z INFO HostContext] Well known directory 'Bin': 'C:\actions-runner\bin'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper] Starting process:
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   File name: 'C:\actions-runner\bin\Runner.Worker.exe'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   Arguments: 'spawnclient 2296 2308'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   Working directory: 'C:\actions-runner\bin'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   Require exit code zero: 'False'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   Encoding web name:  ; code page: ''
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   Force kill process on cancellation: 'True'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   Redirected STDIN: 'False'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   Persist current code page: 'False'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   Keep redirected STDIN open: 'False'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper]   High priority process: 'True'
+[2020-03-29 15:14:40Z INFO ProcessInvokerWrapper] Process started with process id 1548, waiting for process exit.
+[2020-03-29 15:14:40Z INFO JobDispatcher] Send job request message to worker for job a9a345e6-1106-5aaa-6fe5-f842db892828.
+[2020-03-29 15:14:40Z INFO JobNotification] Entering JobStarted Notification
+[2020-03-29 15:14:40Z INFO JobNotification] Entering StartMonitor
+[2020-03-29 15:14:42Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\actions-runner\.credentials_rsaparams
+[2020-03-29 15:14:42Z INFO MessageListener] Message '3' received from session '3b39c390-23ab-4ebd-8a0b-2c4551b2b563'.
+[2020-03-29 15:14:42Z INFO JobDispatcher] Job cancellation request a9a345e6-1106-5aaa-6fe5-f842db892828 received, cancellation timeout 5 minutes.
+[2020-03-29 15:14:42Z INFO JobDispatcher] Send job cancellation message to worker for job a9a345e6-1106-5aaa-6fe5-f842db892828.
+[2020-03-29 15:14:44Z INFO ProcessInvokerWrapper] STDOUT/STDERR stream read finished.
+[2020-03-29 15:14:44Z INFO ProcessInvokerWrapper] STDOUT/STDERR stream read finished.
+[2020-03-29 15:14:44Z INFO ProcessInvokerWrapper] Finished process 1548 with exit code 103, and elapsed time 00:00:04.4993289.
+[2020-03-29 15:14:44Z INFO JobDispatcher] finish job request for job a9a345e6-1106-5aaa-6fe5-f842db892828 with result: Canceled
+[2020-03-29 15:14:44Z INFO Terminal] WRITE LINE: 2020-03-29 15:14:44Z: Job build (12.x) completed with result: Canceled
+[2020-03-29 15:14:44Z INFO JobDispatcher] Stop renew job request for job a9a345e6-1106-5aaa-6fe5-f842db892828.
+[2020-03-29 15:14:44Z INFO JobDispatcher] job renew has been canceled, stop renew job request 52.
+[2020-03-29 15:14:44Z INFO JobNotification] Entering JobCompleted Notification
+[2020-03-29 15:14:44Z INFO JobNotification] Entering EndMonitor
+[2020-03-29 15:44:47Z INFO MessageListener] No message retrieved from session '3b39c390-23ab-4ebd-8a0b-2c4551b2b563' within last 30 minutes.
+[2020-03-29 16:08:12Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: b2b62d90-e975-4df4-bd8c-5a5aa7e26dcd
+ActivityId: dfcb1432-d528-4cb0-adaf-1a21c6fe3420
+X-TFS-Session: 5e0f61d6-ea21-4c2e-827d-45c0ca52f654
+X-VSS-E2EID: 8ce39f3c-53b6-4752-8c3c-8b5b4db20103
+X-VSS-SenderDeploymentId: 193695a0-0dcd-ade4-f810-b10ad24a9829
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 2AD2ED4743844D549B4372C8FB1235C3 Ref B: CHGEDGE0809 Ref C: 2020-03-29T16:08:09Z
+Date: Sun, 29 Mar 2020 16:08:09 GMT
+
+[2020-03-29 16:08:12Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\actions-runner\.credentials_rsaparams
+[2020-03-29 16:08:13Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-03-29 16:14:53Z INFO MessageListener] No message retrieved from session '3b39c390-23ab-4ebd-8a0b-2c4551b2b563' within last 30 minutes.
+[2020-03-29 16:44:58Z INFO MessageListener] No message retrieved from session '3b39c390-23ab-4ebd-8a0b-2c4551b2b563' within last 30 minutes.
+[2020-03-29 17:03:22Z WARN GitHubActionsService] Authentication failed with status code 401.
+WWW-Authenticate: Bearer
+Strict-Transport-Security: max-age=2592000
+X-TFS-ProcessId: 9a2c53dc-4945-49dd-90d4-deaf2260d169
+ActivityId: 5d661e07-fb6c-4c0c-afac-c463b877ce86
+X-TFS-Session: 5e0f61d6-ea21-4c2e-827d-45c0ca52f654
+X-VSS-E2EID: 7ae4e024-1bfb-4281-9565-c4a6665a543f
+X-VSS-SenderDeploymentId: 193695a0-0dcd-ade4-f810-b10ad24a9829
+X-TFS-ServiceError: The+user+%27System%3aPublicAccess%3baaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa%27+is+not+authorized+to+access+this+resource.
+X-VSS-S2STargetService: 0000005A-0000-8888-8000-000000000000/visualstudio.com
+X-MSEdge-Ref: Ref A: 508682FD302944B38BA9595A380DF561 Ref B: CHGEDGE0809 Ref C: 2020-03-29T17:03:20Z
+Date: Sun, 29 Mar 2020 17:03:20 GMT
+
+[2020-03-29 17:03:22Z INFO RSAEncryptedFileKeyManager] Loading RSA key parameters from file C:\actions-runner\.credentials_rsaparams
+[2020-03-29 17:03:23Z INFO GitHubActionsService] AAD Correlation ID for this token request: Unknown
+[2020-03-29 17:15:05Z INFO MessageListener] No message retrieved from session '3b39c390-23ab-4ebd-8a0b-2c4551b2b563' within last 30 minutes.
+[2020-03-29 17:45:10Z INFO MessageListener] No message retrieved from session '3b39c390-23ab-4ebd-8a0b-2c4551b2b563' within last 30 minutes.
+[2020-03-29 17:48:55Z INFO Terminal] WRITE LINE: Exiting...
+[2020-03-29 17:48:55Z INFO ConfigurationStore] IsServiceConfigured()
+[2020-03-29 17:48:55Z INFO ConfigurationStore] IsServiceConfigured: False
+[2020-03-29 17:48:55Z INFO HostContext] Runner will be shutdown for UserCancelled
+[2020-03-29 17:48:55Z WARN GitHubActionsService] GET request to https://pipelines.actions.githubusercontent.com/oPTqmPn939GbLlpjSZRiFhnoKKE2vkIaWo3n2Fd9JDOicD1Kx4/_apis/distributedtask/pools/1/messages?sessionId=3b39c390-23ab-4ebd-8a0b-2c4551b2b563&lastMessageId=3 has been cancelled.
+[2020-03-29 17:48:55Z INFO MessageListener] Get next message has been cancelled.
+[2020-03-29 17:48:55Z INFO JobDispatcher] Shutting down JobDispatcher. Make sure all WorkerDispatcher has finished.
+[2020-03-29 17:48:55Z INFO JobDispatcher] Ensure WorkerDispather for job a9a345e6-1106-5aaa-6fe5-f842db892828 run to finish, cancel any running job.
+[2020-03-29 17:48:55Z INFO JobDispatcher] Job request a9a345e6-1106-5aaa-6fe5-f842db892828 processed succeed.
+[2020-03-29 17:48:56Z INFO Listener] Runner execution been cancelled.

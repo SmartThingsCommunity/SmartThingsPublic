@@ -1,0 +1,298 @@
+version: 2.1
+
+# [major].[minor].[build]-[prerelease]+[buildmetadata]
+semVerRegExp: &semVerRegExp
+                /^(\d|[1-9]\d*)\.(\d|[1-9]\d*)\.(\d|[1-9]\d*)(-(0|[1-9A-Za-z-][0-9A-Za-z-]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9A-Za-z-][0-9A-Za-z-]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/
+
+defaults: &defaults
+    working_directory: ~/SmartThingsCommunity/smartapp-sdk-java
+
+references:
+    install_print_tree_alpine: &print_tree_alpine
+            run:
+                name: Print directory tree
+                command: |
+                    echo $PWD
+                    apk update
+                    apk add tree
+                    tree -a
+    install_print_tree: &print_tree
+            run:
+                name: Print directory tree
+                command: |
+                    echo $PWD
+                    sudo apt-get update
+                    sudo apt-get install tree
+                    tree -a
+    workspace_root: &workspace_root
+                        ~/SmartThingsCommunity/smartapp-sdk-java
+    attach_workspace: &attach_workspace
+        attach_workspace:
+            at: *workspace_root
+    persist_to_workspace: &persist_to_workspace
+        persist_to_workspace:
+            root: *workspace_root
+            paths: .
+    restore_source: &restore_source
+        restore_cache: # hopefully restore cache of git repository to save time as the project grows
+            name: Restoring git repository
+            keys:
+                - source-v1-{{ .Branch }}-{{ .Revision }}
+                - source-v1-{{ .Branch }}-
+                # omit source-v1 because tags will not be able to checkout
+    restore_gradle_wrapper: &restore_gradle_wrapper
+        restore_cache:
+            name: Restoring gradle wrapper
+            keys:
+                - gradle-wrapper-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
+    restore_gradle_cache: &restore_gradle_cache
+        restore_cache:
+            name: Restoring gradle cache
+            keys:
+                - gradle-cache-{{ checksum "build.gradle" }}
+                - gradle-cache- # fallback, if checksum fails
+    restore_gradle_build_cache: &restore_gradle_build_cache
+        restore_cache:
+            name: Restoring gradle build cache
+            keys:
+                - gradle-build-caches-{{ .Revision }}
+                - gradle-build-caches- # fallback, if checksum fails
+
+executors:
+    dobbie:
+        docker:
+            - image: circleci/openjdk:8-jdk
+        working_directory: ~/SmartThingsCommunity/smartapp-sdk-java
+        environment:
+            JVM_OPTS: -Xmx4096M
+            TERM:     dumb
+
+jobs:
+    'Checkout':
+        executor: dobbie
+        steps:
+            - checkout
+            - save_cache: # save the checked out repository branch/revision
+                  key: source-v1-{{ .Branch }}-{{ .Revision }}
+                  paths:
+                      - ".git"
+            - save_cache:
+                  key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+                  paths:
+                      - ~/SmartThingsCommunity/smartapp-sdk-java
+
+    'Dependencies':
+        executor: dobbie
+        steps:
+            - *restore_source
+            - checkout
+            - *restore_gradle_wrapper
+            - *restore_gradle_cache
+            - *restore_gradle_build_cache
+            - run:
+                  name:    Downloading Dependencies
+                  command: ./gradlew --max-workers 2 downloadDependencies
+            - save_cache:
+                  name: Caching gradle wrapper
+                  paths:
+                      - ~/.gradle/wrapper/
+                  key:  gradle-wrapper-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
+            - save_cache:
+                  name: Caching gradle cache
+                  paths:
+                      - ~/.gradle/caches
+                  key:  gradle-cache-{{ checksum "build.gradle" }}
+
+    'Build':
+        executor: dobbie
+        steps:
+            - *attach_workspace
+            - checkout
+            - *restore_source
+            - *restore_gradle_wrapper
+            - *restore_gradle_cache
+            - *restore_gradle_build_cache
+            - run:
+                  name:    Gradle Build
+                  command: ./gradlew build --no-daemon --parallel --max-workers=2
+            - run:
+                  name:    Collecting gradle build caches
+                  command: |
+                           mkdir -p ~/gradle-build-caches
+                           [ -d ~/.gradle/caches ] &&
+                           [ -n "$(ls -Ad ~/.gradle/caches/build-cache-* 2>/dev/null)" ] &&
+                           mv ~/.gradle/caches/build-cache-* ~/gradle-build-caches || true
+                  when:    always
+            - save_cache:
+                  paths:
+                      - ~/gradle-build-caches
+                  key:      gradle-build-caches-{{ .Revision }}
+                  when:     always
+            - run:
+                name: Save artifacts to workspace
+                command: mkdir -p artifacts && cp */build/libs/* artifacts
+            - *persist_to_workspace
+            - store_artifacts:
+                  name:        Uploading artifacts
+                  path:        artifacts
+                  destination: .
+            - store_test_results:
+                  name:        Uploading smartapp-core test report
+                  path:        smartapp-core/build/test-results/*.xml
+
+    'PR check':
+        executor: dobbie
+        steps:
+            - *attach_workspace
+            - checkout
+            - *restore_source
+            - *restore_gradle_wrapper
+            - *restore_gradle_cache
+            - *restore_gradle_build_cache
+            - run:
+                  name:    Perform lint, style, & bug check
+                  command: ./gradlew check -PciBuild=true --parallel --max-workers=2
+
+    'MavenCentral':
+        executor: dobbie
+        steps:
+            - *attach_workspace
+            - *restore_gradle_wrapper
+            - *restore_gradle_cache
+            - *restore_gradle_build_cache
+            - run:
+                name: Import signing key
+                command: |
+                    # decode private key from armored ASCII representation
+                    echo $GPG_PRIV_B64 | base64 --decode > key.asc
+                    # import private key to keyring
+                    gpg --pinentry-mode loopback \
+                        --passphrase "$SIGNING_PASSWORD" \
+                        --allow-secret-key-import \
+                        --import key.asc
+                    # export keyring file to current working directory as secring.gpg
+                    gpg --pinentry-mode loopback \
+                        --passphrase "$SIGNING_PASSWORD" \
+                        --export-secret-keys > secring.gpg
+            - run:
+                name: Generate Maven credentials
+                command: |
+                     echo "sonatypeUsername=$SONATYPE_USERNAME
+                     sonatypePassword=$SONATYPE_PASSWORD
+                     signing.keyId=$SIGNING_KEY_ID
+                     signing.password=$SIGNING_PASSWORD
+                     signing.secretKeyRingFile=/home/circleci/SmartThingsCommunity/smartapp-sdk-java/secring.gpg" >> gradle.properties
+            - *print_tree
+            - run:
+                  name:    Publish to Maven Central
+                  command: |
+                    ./gradlew clean \
+                        smartapp-core:publishMavenJavaPublicationToMavenRepository \
+                        smartapp-guice:publishMavenJavaPublicationToMavenRepository \
+                        smartapp-spring:publishMavenJavaPublicationToMavenRepository \
+                        smartapp-contextstore-dynamodb:publishMavenJavaPublicationToMavenRepository \
+                        smartthings-client:publishMavenJavaPublicationToMavenRepository
+
+    'GitHub Release':
+        <<: *defaults # not using the shared executor, so, set defaults
+        docker:
+            - image: circleci/node
+        steps:
+            - *attach_workspace
+            - *restore_source
+            - *restore_gradle_wrapper
+            - *restore_gradle_cache
+            - *restore_gradle_build_cache
+            - *print_tree
+            - run:
+                name: Update npm
+                command: 'sudo npm install -g npm@latest'
+            - run:
+                name: Install Github Release Notes
+                command: sudo npm install -g github-release-notes
+            - run:
+                name: Publish release on GitHub
+                command: |
+                    gren release \
+                            --draft \
+                            --prerelease \
+                            --override \
+                            --data-source=issues \
+                            --token=$GITHUB_TOKEN
+
+    'Test':
+        executor: dobbie
+        steps:
+            - *attach_workspace
+            - checkout
+            - *restore_source
+            - *restore_gradle_wrapper
+            - *restore_gradle_cache
+            - *restore_gradle_build_cache
+            - run:
+                  name:    Perform all unit tests
+                  command: ./gradlew test -PciBuild=true --parallel --max-workers=2
+            - run:
+                  name:    Generate JaCoCo report
+                  command: ./gradlew -PciBuild=true jacocoTestReport
+            - run:
+                  name:    Upload coverage report to CodeCov
+                  command: bash <(curl -s https://codecov.io/bash)
+
+workflows:
+    'Build':
+        jobs:
+            - 'Checkout':
+                  filters:
+                      branches:
+                          only: /.*/ # unblocking branch builds
+                      tags:
+                          only: /.*/ # ensure this job does not block publishing via tag
+            - 'Dependencies':
+                  requires:
+                      - 'Checkout'
+                  filters:
+                      tags:
+                          only: /.*/ # ensure this job does not block publishing via tag
+            - 'PR check':
+                  requires:
+                      - 'Dependencies'
+                  filters:
+                      tags:
+                          ignore: /.*/ # ignore for all tags
+                      branches:
+                          only: /^pull\/.*$/ # only from forks
+            - 'Build':
+                  requires:
+                      - 'Dependencies'
+                  filters:
+                      tags:
+                          only: /.*/ # do not prevent build on tags
+                      branches:
+                          only: /^(?!pull\/).*$/ # only from canonical repository
+            - 'Test':
+                  requires:
+                      - 'Build'
+                  filters:
+                      tags:
+                          ignore: /.*/ # do not test on tags
+                      branches:
+                          only: /^(?!pull\/).*$/ # only from canonical repository
+            - 'MavenCentral':
+                  context: pi
+                  requires:
+                      - 'Build'
+                  filters:
+                      tags:
+                          only: *semVerRegExp # allow publish tag matches any semVer
+                      branches:
+                          ignore: /.*/ # ignore all branch builds
+            - 'GitHub Release':
+                  context: pi
+                  requires:
+                      - 'Build'
+                  filters:
+                      tags:
+                          only: *semVerRegExp # allow publish tag matches any semVer
+                      branches:
+                          ignore: /.*/ # ignore all branch builds

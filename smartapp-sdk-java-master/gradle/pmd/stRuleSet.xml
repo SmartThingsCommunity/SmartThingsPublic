@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<ruleset name="Custom Rules"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Custom Rules for SmartApp SDK
+    </description>
+
+    <exclude-pattern>.*/build/gen/.*</exclude-pattern>
+
+    <rule ref="rulesets/java/quickstart.xml">
+        <exclude name="GuardLogStatement"/>
+    </rule>
+
+    <rule ref="category/java/bestpractices.xml/GuardLogStatement">
+        <properties>
+            <property name="guardsMethods" value="isTraceEnabled,isDebugEnabled,isInfoEnabled"/>
+            <property name="logLevels" value="trace,debug,info"/>
+        </properties>
+    </rule>
+</ruleset>

@@ -1,0 +1,43 @@
+buildscript {
+  repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:2.0.0"
+  }
+}
+
+if (!JavaVersion.current().java8Compatible) {
+    throw new IllegalStateException("Must be built with Java 8 or higher")
+}
+
+allprojects {
+    group 'com.smartthings.sdk'
+    version = rootProject.file('version.txt').text.trim()
+    apply from: rootProject.file('gradle/dependencies.gradle')
+
+    repositories {
+        mavenLocal()
+        jcenter()
+    }
+
+    task downloadDependencies() {
+        description 'Download all dependencies to the Gradle cache'
+        doLast {
+            configurations.findAll { it.canBeResolved }.files
+        }
+    }
+}
+
+// Generate documentation info the docs folder for github pages.
+task githubJavadoc(type: GradleBuild) {
+    tasks = ['smartapp-core:githubJavadoc', 'smartthings-client:githubJavadoc']
+}
+
+task preCommit(type: GradleBuild) {
+    // Not including spotbugsTest here because some Spock tests generate
+    // SpotBugs errors that aren't currently ignored.
+    tasks = ['check', 'test', 'jacocoTestReport', 'spotbugsMain', 'githubJavadoc']
+}

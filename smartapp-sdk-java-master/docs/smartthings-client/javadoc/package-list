@@ -1,0 +1,4 @@
+com.smartthings.sdk.client
+com.smartthings.sdk.client.auth
+com.smartthings.sdk.client.methods
+com.smartthings.sdk.client.models

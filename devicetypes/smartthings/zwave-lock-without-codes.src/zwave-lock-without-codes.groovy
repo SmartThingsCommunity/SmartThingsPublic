@@ -699,4 +699,3 @@ private queryBattery() {
 		sendHubCommand(secure(zwave.batteryV1.batteryGet()))
 	}
 }
-

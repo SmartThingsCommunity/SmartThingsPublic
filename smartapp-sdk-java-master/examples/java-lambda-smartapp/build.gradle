@@ -1,0 +1,61 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+}
+
+plugins {
+    id 'jacoco'
+    id 'java'
+    id 'groovy'
+    id 'application'
+    id 'idea'
+    id 'eclipse'
+}
+
+group = "examples"
+sourceCompatibility = '1.8'
+mainClassName = 'app.App'
+
+test {
+    jacoco {
+        destinationFile = file("${buildDir}/jacoco/test.exec")
+    }
+}
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled false
+    }
+}
+test.finalizedBy(jacocoTestReport)
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation deps.projects.smartappcore
+    implementation deps.projects.smartthingsclient
+    implementation deps.aws.lambdaJavaCore
+    implementation deps.aws.lambdaLogging
+
+    testImplementation deps.groovy.all
+    testImplementation deps.test.spockCore
+}
+
+jacocoTestReport.dependsOn(test)
+
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        // AWS docs seem to be a bit off here.
+        // https://docs.aws.amazon.com/lambda/latest/dg/create-deployment-pkg-zip-java.html
+        // They use compileClasspath here but when we use a library that uses others, we
+        // need runtimeClasspath to avoid class not found exceptions.
+        from configurations.runtimeClasspath
+    }
+}
+
+build.dependsOn buildZip

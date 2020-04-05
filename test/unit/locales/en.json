@@ -1,0 +1,15 @@
+{
+	"pages.eaMainPage.name": "Endpoint App Page Spec",
+	"pages.eaMainPage.sections.whenDoorOpensAndCloses.name": "When this door opens and closes",
+	"pages.eaMainPage.settings.contactSensor.name": "Select an open/close sensor",
+	"pages.eaMainPage.sections.turnLightsOnAndOff.name": "Turn these lights on and off",
+	"pages.eaMainPage.settings.lights.name": "Select lights",
+	"pages.i18nMainPage.name": "Page Builder i18n Spec",
+	"pages.i18nMainPage.sections.whenDoorOpensAndCloses.name": "When this door opens and closes",
+	"pages.i18nMainPage.settings.contactSensor.name": "Select an open/close sensor",
+	"pages.i18nMainPage.sections.turnLightsOnAndOff.name": "Turn these lights on and off",
+	"pages.i18nMainPage.settings.lights.name": "Select one or more lights to control",
+	"pages.enumTestPage.sections.testSection.name": "Test Section",
+	"pages.enumTestPage.settings.testSetting.name": "Test Enumeration",
+	"pages.enumTestPage.settings.testSetting.options.red.name": "Red"
+}

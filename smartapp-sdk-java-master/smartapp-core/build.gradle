@@ -1,0 +1,107 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        // VFS and httpclient to download with http/https
+        classpath deps.tools.vfs
+        classpath deps.tools.httpclient
+        classpath deps.tools.swaggerPlugin
+    }
+}
+
+apply plugin: 'org.ysb33r.vfs'
+apply plugin: 'org.hidetake.swagger.generator'
+apply plugin: 'idea'
+apply plugin: 'groovy'
+apply plugin: 'eclipse'
+apply from: rootProject.file('gradle/convention.gradle')
+apply from: rootProject.file('gradle/publish-jar.gradle')
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    swaggerCodegen deps.swagger.v2.cli
+    compile deps.swagger.v2.annotations
+    compile deps.logging.slf4j
+    compile deps.serialize.jackson.databind
+    compile deps.bouncycastle.bcpkix
+    compile deps.httpsig.api
+    compile deps.httpsig.sshJce
+    compile deps.httpsig.sshBc
+    compile deps.guava
+    implementation deps.tools.httpclient
+    testCompile deps.test.guavaTestlib
+    testImplementation deps.test.spockCore
+    testImplementation deps.test.mockito
+    testRuntime deps.test.cglibNodep
+    testRuntime deps.test.objenesis
+}
+
+def spec = file("${project.getProjectDir()}/resources/smartapps-v1.yml")
+def swaggerConfig = file("${project.getProjectDir()}/resources/config.json")
+def swaggerOutput = file("${project.getBuildDir().path}/gen")
+
+// Define Java code generation tasks
+// For models-only generation, use 'jersey2' as it has no default serializer
+swaggerSources {
+    smartapp {
+        inputFile = spec
+        code {
+            language = 'java'
+            library = 'jersey2'
+            configFile = swaggerConfig
+            outputDir = swaggerOutput
+            components = ['models']
+            additionalProperties = ['modelsOnly': 'true']
+            dependsOn validation
+        }
+    }
+}
+
+/**
+ * If the smartapps Swagger specification doesn't exist, download the latest.
+ *
+ * You have an opportunity to insert your own spec here if you are confident
+ * that you need something different than provided. Be warned, this is unsupported
+ * and may produce poor or incorrect results.
+ */
+task downloadSpecYml {
+    doLast {
+        vfs {
+            mkdir "${project.getProjectDir()}/resources"
+            if (!spec.exists()) {
+                cp 'https://smartthings.developer.samsung.com/docs/api-ref/resources/smartapps-v1.yml', spec
+            }
+        }
+    }
+}
+
+// Disallow CheckStyle from analyzing generated classes by setting
+// the source to the non-generated directories
+checkstyleMain.source = "${project.getProjectDir()}/src/main/java"
+
+
+// Prior to generating classes, download the latest public spec if necessary
+generateSwaggerCode.dependsOn downloadSpecYml
+
+// Insert generated code into the sourceSets
+sourceSets.main.java.srcDir "${swaggerSources.smartapp.code.outputDir}/src/main/java"
+sourceSets.main.resources.srcDir "${swaggerSources.smartapp.code.outputDir}/src/main/resources"
+
+// Generate classes prior to compileJava
+compileJava.dependsOn swaggerSources.smartapp.code
+
+// Automatically generate models when IntelliJ loads the project
+ideaModule.dependsOn generateSwaggerCode
+
+task githubJavadoc(type: Javadoc, dependsOn: generateSwaggerCode) {
+    source = sourceSets.main.allJava
+    destinationDir = rootProject.file('docs/smartapp-core/javadoc')
+    options.addBooleanOption("notimestamp", true)
+}

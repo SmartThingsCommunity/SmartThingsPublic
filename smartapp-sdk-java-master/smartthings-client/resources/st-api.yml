@@ -1,0 +1,3589 @@
+info:
+  title: SmartThings API
+  description: |
+    # Overview
+
+    This is the reference documentation for the SmartThings API.
+
+    The SmartThings API supports [REST](https://en.wikipedia.org/wiki/Representational_state_transfer), resources are protected with [OAuth 2.0 Bearer Tokens](https://tools.ietf.org/html/rfc6750#section-2.1), and all responses are sent as [JSON](http://www.json.org/).
+
+    # Authentication
+
+    All SmartThings resources are protected with [OAuth 2.0 Bearer Tokens](https://tools.ietf.org/html/rfc6750#section-2.1) sent on the request as an `Authorization: Bearer <TOKEN>` header, and operations require specific OAuth scopes that specify the exact permissions authorized by the user.
+
+    ## Token types
+
+    There are two types of tokens: SmartApp tokens, and personal access tokens.
+
+    SmartApp tokens are used to communicate between third-party integrations, or SmartApps, and the SmartThings API.
+    When a SmartApp is called by the SmartThings platform, it is sent an authorization token that can be used to interact with the SmartThings API.
+
+    Personal access tokens are used to interact with the API for non-SmartApp use cases. They can be created and managed on the [personal access tokens page](https://account.smartthings.com/tokens).
+
+    ## OAuth2 scopes
+
+    Operations are protected by specific OAuth scopes that specify the permissions authorized for the particular token.
+
+    SmartApp token scopes are derived from the permissions requested by the SmartApp and granted by the end-user during installation.
+    Personal access token scopes are associated with the specific permissions authorized when creating them.
+
+    Scopes are generally in the form `permission:entity-type:entity-id`.
+
+    **An `*` used for the `entity-id` specifies that the permission may be applied to all entities that the token type has access to, or may be replaced with a specific ID.**
+
+    For more information about authorization and permissions, please see the [Authorization and permissions guide](https://smartthings.developer.samsung.com/docs/guides/smartapps/auth-and-permissions.html).
+
+    <!-- ReDoc-Inject: <security-definitions> -->
+
+    # Errors
+
+    The SmartThings API uses conventional HTTP response codes to indicate the success or failure of a request.
+    In general, a `2XX` response code indicates success, a `4XX` response code indicates an error given the inputs for the request, and a `5XX` response code indicates a failure on the SmartThings platform.
+
+    API errors will contain a JSON response body with more information about the error:
+
+    ```json
+    {
+      "requestId": "031fec1a-f19f-470a-a7da-710569082846"
+      "error": {
+        "code": "ConstraintViolationError",
+        "message": "Validation errors occurred while process your request.",
+        "details": [
+          { "code": "PatternError", "target": "latitude", "message": "Invalid format." },
+          { "code": "SizeError", "target": "name", "message": "Too small." },
+          { "code": "SizeError", "target": "description", "message": "Too big." }
+        ]
+      }
+    }
+    ```
+
+    ## Error Response Body
+
+    The error response attributes are:
+
+    | Property | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | requestId | String | No | A request identifier that can be used to correlate an error to additional logging on the SmartThings servers.
+    | error | Error | **Yes** | The Error object, documented below.
+
+    ## Error Object
+
+    The Error object contains the following attributes:
+
+    | Property | Type | Required | Description |
+    | --- | --- | --- | --- |
+    | code | String | **Yes** | A SmartThings-defined error code that serves as a more specific indicator of the error than the HTTP error code specified in the response. See [SmartThings Error Codes](#section/Errors/SmartThings-Error-Codes) for more information.
+    | message | String | **Yes** | A description of the error, intended to aid developers in debugging of error responses.
+    | target | String | No | The target of the particular error. For example, it could be the name of the property that caused the error.
+    | details | Error[] | No | An array of Error objects that typically represent distinct, related errors that occurred during the request. As an optional attribute, this may be null or an empty array.
+
+    ## Standard HTTP Error Codes
+
+    The following table lists the most common HTTP error response:
+
+    | Code | Name | Description |
+    | --- | --- | --- |
+    | 400 | Bad Request | The client has issued an invalid request. This is commonly used to specify validation errors in a request payload.
+    | 401 | Unauthorized | Authorization for the API is required, but the request has not been authenticated.
+    | 403 | Forbidden | The request has been authenticated but does not have appropriate permissions, or a requested resource is not found.
+    | 404 | Not Found | Specifies the requested path does not exist.
+    | 406 | Not Acceptable | The client has requested a MIME type via the Accept header for a value not supported by the server.
+    | 422 | Unprocessable Entity | The client has made a valid request, but the server cannot process it. This is often used for APIs for which certain limits have been exceeded.
+    | 429 | Too Many Requests | The client has exceeded the number of requests allowed for a given time window.
+    | 500 | Internal Server Error | An unexpected error on the SmartThings servers has occurred. These errors should be rare.
+    | 501 | Not Implemented | The client request was valid and understood by the server, but the requested feature has yet to be implemented. These errors should be rare.
+
+    ## SmartThings Error Codes
+
+    SmartThings specifies several standard custom error codes.
+    These provide more information than the standard HTTP error response codes.
+    The following table lists the standard SmartThings error codes and their description:
+
+    | Code | Typical HTTP Status Codes | Description |
+    | --- | --- | --- |
+    | PatternError | 400, 422 | The client has provided input that does not match the expected pattern.
+    | ConstraintViolationError | 422 | The client has provided input that has violated one or more constraints.
+    | NotNullError | 422 | The client has provided a null input for a field that is required to be non-null.
+    | NullError | 422 | The client has provided an input for a field that is required to be null.
+    | NotEmptyError | 422 | The client has provided an empty input for a field that is required to be non-empty.
+    | SizeError | 400, 422 | The client has provided a value that does not meet size restrictions.
+    | Unexpected Error | 500 | A non-recoverable error condition has occurred. Indicates a problem occurred on the SmartThings server that is no fault of the client.
+    | UnprocessableEntityError | 422 | The client has sent a malformed request body.
+    | TooManyRequestError | 429 | The client issued too many requests too quickly.
+    | LimitError | 422 | The client has exceeded certain limits an API enforces.
+    | UnsupportedOperationError | 400, 422 | The client has issued a request to a feature that currently isn't supported by the SmartThings platform. These should be rare.
+
+    ## Custom Error Codes
+
+    An API may define its own error codes where appropriate.
+    These custom error codes are documented as part of that specific API's documentation.
+
+    # API Versions
+
+    The SmartThings API supports both path and header-based versioning.
+    The following are equivalent:
+
+    - https://api.smartthings.com/v1/locations
+    - https://api.smartthings.com/locations with header `Accept: application/vnd.smartthings+json;v=1`
+
+    Currently, only version 1 is available.
+
+    # Paging
+
+    Operations that return a list of objects return a paginated response.
+    The `_links` object contains the items returned, and links to the next and previous result page, if applicable.
+
+    ```json
+    {
+      "items": [
+        {
+          "locationId": "6b3d1909-1e1c-43ec-adc2-5f941de4fbf9",
+          "name": "Home"
+        },
+        {
+          "locationId": "6b3d1909-1e1c-43ec-adc2-5f94d6g4fbf9",
+          "name": "Work"
+        }
+        ....
+      ],
+      "_links": {
+        "next": {
+          "href": "https://api.smartthings.com/v1/locations?page=3"
+        },
+        "previous": {
+          "href": "https://api.smartthings.com/v1/locations?page=1"
+        }
+      }
+    }
+    ```
+  version: v1.0-PREVIEW
+schemes:
+- https
+basePath: /v1/
+produces:
+- application/json
+tags:
+- name: locations
+  description: |
+    In the SmartThings platform, the primary unit of organization of devices within a user account is the Location. The Locations API provides clients the ability work with these Locations.
+- name: devices
+  description: |
+    The devices API is used to access metadata about devices, access the state of devices, and control them.
+- name: deviceprofiles
+  description: |
+    Device profiles describe the components, capabilities, and categories of a type of device. Profiles are shared by
+    instances of a type of device.
+- name: apps
+  description: |
+    Most SmartThings integrations are represented as SmartApps, or "Apps". A SmartApp is created and maintained by a developer or partner
+    community. At this time, Apps may only be installed into the same account that created it.
+- name: installedapps
+  description: |
+    Most SmartThings integrations are represented as SmartApps, or "Apps". An App is created and maintained by a developer or partner
+    community. At this time, Apps may only be installed into the same account that created it. Installation
+    involves an OAuth process that allows a user to accept any requested permissions. After authorization, an Installed
+    App is created. The Installed App API allows clients to work with the various integrations created in a user's
+    account.
+- name: subscriptions
+  description: |
+    Subscriptions allow integrations like "Apps" to be notified when events occur.
+- name: schedules
+  description: |
+    Schedules allow integrations like "Apps" to be triggered at fixed or recurring times.
+    The schedules API allows for functionality like setting timeouts in response to other events or
+    actuating a device at a particular time of day.
+securityDefinitions:
+  Bearer:
+    description: |
+      SmartThings resources are protected with HTTP Bearer authentication and OAuth2 scopes.
+    type: oauth2
+    authorizationUrl: https://auth-global.api.smartthings.com
+    flow: implicit
+    scopes:
+      r:installedapps:*: |
+        Read details about installed SmartApps, such as which devices have been configured for the installation. For SmartApp tokens, the scope is restricted to the location the SmartApp is installed into. For personal access tokens, the scope is limited to the account associated with the token.
+      l:installedapps: |
+        View a list of installed SmartApps. For SmartApp tokens, the scope is restricted to the location the SmartApp is installed into. For personal access tokens, the scope is limited to the account associated with the token.
+      w:installedapps:*: |
+        Create, update, or delete installed SmartApps. For SmartApp tokens, the scope is restricted to the location the SmartApp is installed into. For personal access tokens, the scope is limited to the account associated with the token.
+      r:apps:*: |
+        Read details about a SmartApp. Only applicable for personal access tokens, and the scope is limited to the SmartApps associated with the token's account.
+      w:apps:*: |
+        Create, update, or delete SmartApps. For SmartApp tokens, the scope is restricted to the location the SmartApp is installed into. For personal access tokens, the scope is limited to the account associated with the token.
+      l:devices: |
+        View a list of devices. For SmartApp tokens, the scope is restricted to the location the SmartApp is installed into. For personal access tokens, the scope is limited to the account associated with the token.
+      r:devices:*: |
+        Read details about a device, including device attribute state. For SmartApp tokens, the scope is restricted to the location the SmartApp is installed into. For personal access tokens, the scope is limited to the account associated with the token. This scope is required to create subscriptions.
+      w:devices:*: |
+        Update details such as the device name, or delete a device. For SmartApp tokens, the scope is restricted to the location the SmartApp is installed into. For personal access tokens, the scope is limited to the account associated with the token.
+      x:devices:*: |
+        Execute commands on a device. For SmartApp tokens, the scope is restricted to the location the SmartApp is installed into. For personal access tokens, the scope is limited to the account associated with the token.
+      r:deviceprofiles: |
+        View details of device profiles associated with the account. Only applicable for personal access tokens.
+      w:deviceprofiles: |
+        Create, update, or delete device profiles. Only applicable to personal access tokens, and the device profile must be owned by the same account associated with the token.
+      i:deviceprofiles: Create devices of the type associated with the device profile.
+        Only applicable for SmartApp tokens, and is requires the device profile and
+        the SmartApp have the same account owner.
+      l:scenes: |
+        View a list of scenes. For personal access tokens, the scope is limited to the account associated with the token.
+      x:scenes:*: |
+        Execute a scene. For personal access tokens, the scope is limited to the account associated with the token.
+      r:schedules: |
+        Read details of scheduled executions. For SmartApp tokens, the scope is restricted to the installed SmartApp. For personal access tokens, the scope is limited to the account associated with the token.
+      w:schedules: |
+        Create, update, or delete schedules. For SmartApp tokens, the scope is restricted to the installed SmartApp. For personal access tokens, the scope is limited to the account associated with the token.
+      l:locations: |
+        View a list of locations. Only applicable for personal access tokens, and the scope is limited to the account associated with the token.
+      r:locations:*: |
+        Read details of a location, such as geocoordinates and temperature scale. For SmartApp tokens, the scope is restricted to the installed SmartApp. For personal access tokens, the scope is limited to the account associated with the token.
+      w:locations:*: |
+        Create, update, and delete locations. Only applicable for personal access tokens.
+  Basic:
+    type: basic
+responses:
+  notAuthenticated:
+    description: Not authenticated
+  notAuthorized:
+    description: Not authorized
+  notFound:
+    description: Not found
+    schema:
+      $ref: '#/definitions/ErrorResponse'
+  badRequest:
+    description: Bad request
+    schema:
+      $ref: '#/definitions/ErrorResponse'
+  unprocessableEntity:
+    description: Unprocessable Entity
+    schema:
+      $ref: '#/definitions/ErrorResponse'
+  tooManyRequests:
+    description: Too many requests
+    schema:
+      $ref: '#/definitions/ErrorResponse'
+  conflict:
+    description: Conflict
+    schema:
+      $ref: '#/definitions/ErrorResponse'
+  defaultResponse:
+    description: Unexpected error
+    schema:
+      $ref: '#/definitions/ErrorResponse'
+parameters:
+  authorization:
+    name: Authorization
+    in: header
+    description: OAuth token
+    required: true
+    type: string
+    format: string
+  deviceId:
+    name: deviceId
+    in: path
+    type: string
+    required: true
+    description: the device ID
+  installedAppId:
+    name: installedAppId
+    description: The ID of the installed application.
+    in: path
+    type: string
+    required: true
+    format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+  locationId:
+    name: locationId
+    description: The ID of the location.
+    in: path
+    type: string
+    required: true
+    format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+  subscriptionId:
+    name: subscriptionId
+    description: The ID of the subscription
+    in: path
+    type: string
+    required: true
+    format: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+  configurationId:
+    name: configurationId
+    description: The ID of the install configuration.
+    in: path
+    type: string
+    required: true
+    format: uuid
+  installedAppStatus:
+    name: installedAppStatus
+    description: State of the Installed App.
+    in: query
+    type: string
+    required: false
+    enum:
+    - PENDING
+    - AUTHORIZED
+    - REVOKED
+    - DISABLED
+  scheduleName:
+    name: scheduleName
+    description: The name of the schedule
+    in: path
+    type: string
+    format: ^[A-Za-z0-9._\-]{1,36}$
+    required: true
+  componentId:
+    name: componentId
+    description: The name of the component.
+    in: path
+    type: string
+    required: true
+    format: ^[-_!.~'()*0-9a-zA-Z]{1,36}$
+  capabilityId:
+    name: capabilityId
+    in: path
+    type: string
+    required: true
+  appNameOrId:
+    name: appNameOrId
+    description: The appName or appId field of an app.
+    in: path
+    type: string
+    required: true
+  appType:
+    name: appType
+    description: The App Type of the application.
+    in: query
+    type: string
+    required: true
+    enum:
+    - LAMBDA_SMART_APP
+    - WEBHOOK_SMART_APP
+  optionalLocationId:
+    name: locationId
+    description: The ID of the location that both the installed smart app and source
+      are associated with.
+    in: query
+    type: string
+    required: false
+    format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+  requiredLocationId:
+    name: locationId
+    description: The ID of the location that both the installed smart app and source
+      are associated with.
+    in: query
+    type: string
+    required: true
+    format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+  deviceProfileId:
+    name: deviceProfileId
+    in: path
+    type: string
+    required: true
+    description: the device profile ID
+  sceneId:
+    name: sceneId
+    description: The ID of the Scene.
+    in: path
+    type: string
+    required: true
+    format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+  sceneRequest:
+    name: jsonBody
+    required: true
+    in: body
+    schema:
+      $ref: '#/definitions/SceneRequest'
+  max:
+    name: max
+    description: The max number of items to return
+    in: query
+    type: integer
+    required: false
+  offset:
+    name: offset
+    description: The index where the list of items should start
+    in: query
+    type: integer
+    required: false
+paths:
+  /devices:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    get:
+      summary: List devices.
+      operationId: getDevices
+      description: Get a list of devices.
+      parameters:
+      - name: capability
+        in: query
+        type: array
+        collectionFormat: multi
+        required: false
+        items:
+          type: string
+        description: |
+          The device capabilities to filter the results by.
+          The capabilities are treated as an "and" so all capabilities must be present.
+      - name: locationId
+        in: query
+        type: array
+        collectionFormat: multi
+        required: false
+        items:
+          type: string
+          format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        description: |
+          The device locations to filter the results by.
+      - name: deviceId
+        in: query
+        type: array
+        collectionFormat: multi
+        required: false
+        items:
+          type: string
+          format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        description: |
+          The device ids to filter the results by.
+      security:
+      - Bearer:
+        - l:devices
+      responses:
+        200:
+          description: A list of devices.
+          schema:
+            $ref: '#/definitions/PagedDevices'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+    post:
+      summary: Install a Device.
+      operationId: installDevice
+      description: |
+        Install a device. This is only available for SmartApp managed devices.
+        The SmartApp that creates the device is responsible for handling commands for the device and
+        updating the status of the device by creating events.
+      security:
+      - Bearer:
+        - i:deviceprofiles
+      parameters:
+      - name: InstallationRequest
+        in: body
+        description: Installation Request
+        required: true
+        schema:
+          $ref: '#/definitions/DeviceInstallRequest'
+      responses:
+        200:
+          description: Device Installed.
+          schema:
+            $ref: '#/definitions/Device'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+  /devices/{deviceId}:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/deviceId'
+    get:
+      summary: Get a device's description.
+      operationId: getDevice
+      description: Get a device's description.
+      security:
+      - Bearer:
+        - r:devices:*
+      responses:
+        200:
+          description: A Device
+          schema:
+            $ref: '#/definitions/Device'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+    delete:
+      summary: Delete a Device.
+      operationId: deleteDevice
+      description: |
+        Delete a device by device id.
+        If the token is for a SmartApp that created the device then it implicitly has permission for this api.
+      security:
+      - Bearer:
+        - w:devices:*
+      responses:
+        200:
+          description: Device deleted.
+          schema:
+            $ref: '#/definitions/DeleteDeviceCommandsResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+    put:
+      summary: Update a device.
+      operationId: updateDevice
+      description: |
+        Update the properties of a device.
+        If the token is for a SmartApp that created the device then it implicitly has permission for this api.
+      parameters:
+      - name: updateDeviceRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateDeviceRequest'
+      security:
+      - Bearer:
+        - w:devices:*
+      responses:
+        200:
+          description: Updated Device.
+          schema:
+            $ref: '#/definitions/Device'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+  /devices/{deviceId}/commands:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/deviceId'
+    post:
+      summary: Execute commands on device.
+      operationId: executeDeviceCommands
+      description: Execute commands on a device.
+      parameters:
+      - name: executeCapabilityCommand
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/DeviceCommandsRequest'
+      security:
+      - Bearer:
+        - x:devices:*
+      responses:
+        200:
+          description: Created commands.
+          schema:
+            $ref: '#/definitions/CreateDeviceCommandsResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+  /devices/{deviceId}/events:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/deviceId'
+    post:
+      summary: Create Device Events.
+      operationId: createDeviceEvents
+      description: |
+        Create events for a device. When a device is managed by a SmartApp then it is responsible for creating events
+        to update the attributes of the device in the SmartThings platform.
+        The token must be for a SmartApp and it must be the SmartApp that created the Device.
+      parameters:
+      - name: deviceEventRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/DeviceEventsRequest'
+      security:
+      - Bearer:
+        - w:devices:*
+      responses:
+        200:
+          description: Created events.
+          schema:
+            $ref: '#/definitions/CreateDeviceEventsResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+  /devices/{deviceId}/status:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/deviceId'
+    get:
+      summary: Get the full status of a device.
+      operationId: getDeviceStatus
+      description: |
+        Get the current status of all of a device's component's attributes.
+        The results may be filtered if the requester only has permission to
+        view a subset of the device's components or capabilities.
+        If the token is for a SmartApp that created the device then it implicitly has permission for this api.
+      security:
+      - Bearer:
+        - r:devices:*
+      responses:
+        200:
+          description: successful return of current status of device attributes
+          schema:
+            $ref: '#/definitions/DeviceStatus'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+  /devices/{deviceId}/components/{componentId}/status:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/deviceId'
+    - $ref: '#/parameters/componentId'
+    get:
+      summary: Get a device component's status.
+      description: |
+        Get the status of all attributes of a the component.
+        The results may be filtered if the requester only has permission to view a subset of the component's capabilities.
+        If the token is for a SmartApp that created the device then it implicitly has permission for this api.
+      operationId: getDeviceComponentStatus
+      security:
+      - Bearer:
+        - r:devices:*
+      responses:
+        200:
+          description: Successful return  current status of device component's attributes.
+          schema:
+            $ref: '#/definitions/ComponentStatus'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+  /devices/{deviceId}/components/{componentId}/capabilities/{capabilityId}/status:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/deviceId'
+    - $ref: '#/parameters/componentId'
+    - $ref: '#/parameters/capabilityId'
+    get:
+      summary: Get a capability's status.
+      operationId: getDeviceStatusByCapability
+      description: |
+        Get the current status of a device component's capability.
+        If the token is for a SmartApp that created the device then it implicitly has permission for this api.
+      security:
+      - Bearer:
+        - r:devices:*
+      responses:
+        200:
+          description: Successful return of current status of the attributes of a
+            device component's capability
+          schema:
+            $ref: '#/definitions/CapabilityStatus'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - devices
+  /deviceprofiles:
+    post:
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - name: request
+        in: body
+        description: The device profile to be created.
+        schema:
+          $ref: '#/definitions/CreateDeviceProfileRequest'
+      summary: Create a device profile.
+      operationId: createDeviceProfile
+      description: Create a device profile.
+      security:
+      - Bearer:
+        - w:deviceprofiles
+      responses:
+        200:
+          description: The device profile
+          schema:
+            $ref: '#/definitions/DeviceProfile'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - deviceprofiles
+    get:
+      parameters:
+      - $ref: '#/parameters/authorization'
+      summary: List all device profiles for the authenticated user.
+      operationId: listDeviceProfiles
+      description: List device profiles.
+      security:
+      - Bearer:
+        - r:deviceprofiles
+      responses:
+        200:
+          description: A list of the users device profiles
+          schema:
+            $ref: '#/definitions/PagedDeviceProfiles'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - deviceprofiles
+  /deviceprofiles/{deviceProfileId}:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/deviceProfileId'
+    get:
+      summary: GET a device profile's description.
+      operationId: getDeviceProfile
+      description: GET a device profile's description.
+      security:
+      - Bearer:
+        - r:deviceprofiles
+      responses:
+        200:
+          description: A Device Profile
+          schema:
+            $ref: '#/definitions/DeviceProfile'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - deviceprofiles
+    delete:
+      summary: Delete a device profile.
+      operationId: deleteDeviceProfile
+      description: Delete a device profile by ID. Admin use only
+      security:
+      - Bearer:
+        - w:deviceprofiles
+      responses:
+        200:
+          description: Device profile deleted.
+          schema:
+            $ref: '#/definitions/DeleteDeviceProfileResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - deviceprofiles
+  /locations:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    get:
+      summary: List Locations.
+      description: List all Locations currently available in a user account.
+      operationId: listLocations
+      security:
+      - Bearer:
+        - l:locations
+      responses:
+        200:
+          description: An array of Locations
+          schema:
+            $ref: '#/definitions/PagedLocations'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - locations
+    post:
+      summary: Create a Location.
+      description: |
+        Create a Location for a user.  We will try and create the Location geographically close to the country code provided in the request body. If we do not support Location creation in the requested country code, then the API will return a 422 error response with an error code of UnsupportedGeoRegionError.
+      operationId: createLocation
+      security:
+      - Bearer:
+        - w:locations:*
+      parameters:
+      - name: createLocationRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/CreateLocationRequest'
+      responses:
+        200:
+          description: Created successfully.
+          schema:
+            $ref: '#/definitions/Location'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - locations
+  /locations/{locationId}:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/locationId'
+    get:
+      summary: Get a Location.
+      description: Get a specific Location from a user's account.
+      operationId: getLocation
+      security:
+      - Bearer:
+        - r:locations:*
+      responses:
+        200:
+          description: A Location.
+          schema:
+            $ref: '#/definitions/Location'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - locations
+    put:
+      summary: Update a Location.
+      description: All the fields in the request body are optional. Only the specified
+        fields will be updated.
+      operationId: updateLocation
+      parameters:
+      - name: updateLocationRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateLocationRequest'
+      security:
+      - Bearer:
+        - w:locations:*
+      responses:
+        200:
+          description: A Location.
+          schema:
+            $ref: '#/definitions/Location'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - locations
+    delete:
+      summary: Delete a Location.
+      description: Delete a Location from a user's account.
+      operationId: deleteLocation
+      security:
+      - Bearer:
+        - w:locations:*
+      responses:
+        200:
+          description: An empty object response.
+          schema:
+            $ref: '#/definitions/DeleteLocationResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - locations
+  /installedapps:
+    get:
+      summary: List installed apps.
+      operationId: listInstallations
+      description: List all installed applications within a location.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/requiredLocationId'
+      - $ref: '#/parameters/installedAppStatus'
+      security:
+      - Bearer:
+        - l:installedapps
+      responses:
+        200:
+          description: A paginated list of installed apps.
+          schema:
+            $ref: '#/definitions/PagedInstalledApps'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - installedapps
+  /installedapps/{installedAppId}:
+    get:
+      summary: Get an installed app.
+      operationId: getInstallation
+      description: Fetch a single installed application.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/installedAppId'
+      security:
+      - Bearer:
+        - r:installedapps:*
+      responses:
+        200:
+          description: An installed app.
+          schema:
+            $ref: '#/definitions/InstalledApp'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - installedapps
+    delete:
+      summary: Delete an installed app.
+      operationId: deleteInstallation
+      description: Delete an Installed App.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/installedAppId'
+      - $ref: '#/parameters/optionalLocationId'
+      security:
+      - Bearer:
+        - w:installedapps:*
+      responses:
+        200:
+          description: The number of installed apps deleted.
+          schema:
+            $ref: '#/definitions/DeleteInstalledAppResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - installedapps
+  /installedapps/{installedAppId}/configs:
+    get:
+      summary: List an installed app's configurations.
+      operationId: listInstallationConfig
+      description: List all configurations potentially filtered by status for an installed
+        app.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/installedAppId'
+      - name: configurationStatus
+        description: Filter for configuration status.
+        in: query
+        type: string
+        enum:
+        - STAGED
+        - DONE
+        - AUTHORIZED
+        - REVOKED
+        required: false
+      security:
+      - Bearer:
+        - r:installedapps:*
+      responses:
+        200:
+          description: An paginated list of install configuration.
+          schema:
+            $ref: '#/definitions/PagedInstallConfigurations'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - installedapps
+  /installedapps/{installedAppId}/configs/{configurationId}:
+    get:
+      summary: Get an installed app configuration.
+      operationId: getInstallationConfig
+      description: Fetch a detailed install configuration model containing actual
+        config entries / values.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/installedAppId'
+      - $ref: '#/parameters/configurationId'
+      security:
+      - Bearer:
+        - r:installedapps:*
+      responses:
+        200:
+          description: An install configuration detail model.
+          schema:
+            $ref: '#/definitions/InstallConfigurationDetail'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - installedapps
+  /installedapps/{installedAppId}/subscriptions:
+    parameters:
+    - $ref: '#/parameters/installedAppId'
+    - $ref: '#/parameters/authorization'
+    get:
+      tags:
+      - subscriptions
+      summary: List an installed app's subscriptions.
+      operationId: listSubscriptions
+      description: |
+        List the subscriptions for the installed app.
+      security:
+      - Bearer:
+        - r:installedapps:*
+      responses:
+        200:
+          description: An array of subscriptions
+          schema:
+            $ref: '#/definitions/PagedSubscriptions'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+    post:
+      tags:
+      - subscriptions
+      summary: Create a subscription for an installed app.
+      operationId: saveSubscription
+      description: |
+        Create a subscription to a type of event from the specified source.
+        Both the source and the installed app must be in the location specified
+        and the installed app must have read access to the event being subscribed to.
+
+        ### Authorization scopes
+        For installed app principal:
+        * installed app id matches the incoming request installed app id
+        * if the subscription is a device subscription then there must be a `r:devices:$deviceId` scope
+        * if it is a capability subscription then the location must match the installed app location, and there must be a `r:devices:*:$capability` or `r:devices:*` scope
+
+        For user token:
+        * user must have ability to read the installed app
+        * if the subscription is a device subscription then the user must be able to access the device
+        * if it is a capability subscription then the location must match the installed apps location
+      security:
+      - Bearer:
+        - w:installedapps:*
+        - r:devices:*
+      consumes:
+      - application/json
+      parameters:
+      - name: request
+        in: body
+        description: The Subscription to be created.
+        schema:
+          $ref: '#/definitions/SubscriptionRequest'
+      responses:
+        200:
+          description: The subscription
+          schema:
+            $ref: '#/definitions/Subscription'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        409:
+          $ref: '#/responses/conflict'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+    delete:
+      tags:
+      - subscriptions
+      summary: Delete all of an installed app's subscriptions.
+      operationId: deleteAllSubscriptions
+      description: |
+        Delete all subscriptions for the installed app.
+      security:
+      - Bearer:
+        - w:installedapps:*
+      parameters:
+      - name: deviceId
+        description: Limit deletion to subscriptions for a particular device.
+        in: query
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        required: false
+      responses:
+        200:
+          description: Successfully deleted
+          schema:
+            $ref: '#/definitions/SubscriptionDelete'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+  /installedapps/{installedAppId}/subscriptions/{subscriptionId}:
+    parameters:
+    - $ref: '#/parameters/installedAppId'
+    - $ref: '#/parameters/subscriptionId'
+    - $ref: '#/parameters/authorization'
+    get:
+      operationId: getSubscription
+      summary: Get an installed app's subscription.
+      description: |
+        Get a specific subscription for the installed app.
+      tags:
+      - subscriptions
+      security:
+      - Bearer:
+        - r:installedapps:*
+      responses:
+        200:
+          description: The subscription
+          schema:
+            $ref: '#/definitions/Subscription'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+    delete:
+      summary: Delete an installed app's subscription.
+      operationId: deleteSubscription
+      description: |
+        Delete a specific subscription for the installed app.
+      tags:
+      - subscriptions
+      security:
+      - Bearer:
+        - w:installedapps:*
+      responses:
+        200:
+          description: Successfully deleted
+          schema:
+            $ref: '#/definitions/SubscriptionDelete'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+  /installedapps/{installedAppId}/schedules:
+    parameters:
+    - $ref: '#/parameters/installedAppId'
+    - $ref: '#/parameters/authorization'
+    get:
+      tags:
+      - schedules
+      summary: List installed app schedules.
+      operationId: getSchedules
+      description: |
+        List the schedules for the installed app.
+      security:
+      - Bearer:
+        - r:schedules
+      responses:
+        200:
+          description: A paged schedules list
+          schema:
+            $ref: '#/definitions/PagedSchedules'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+    post:
+      tags:
+      - schedules
+      summary: Save an installed app schedule.
+      operationId: createSchedule
+      description: |
+        Create a schedule for an installed app. The installed app must be in the location specified and the installed app must have permission to create schedules.
+      security:
+      - Bearer:
+        - w:schedules
+      consumes:
+      - application/json
+      parameters:
+      - name: request
+        in: body
+        description: The schedule to be created.
+        schema:
+          $ref: '#/definitions/ScheduleRequest'
+      responses:
+        200:
+          description: The created schedule.
+          schema:
+            $ref: '#/definitions/Schedule'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+    delete:
+      tags:
+      - schedules
+      summary: Delete all of an installed app's schedules.
+      description: |
+        Delete all schedules for the installed app.
+      operationId: deleteSchedules
+      security:
+      - Bearer:
+        - w:schedules
+      responses:
+        200:
+          description: Successfully deleted
+          schema:
+            $ref: '#/definitions/DeleteScheduleResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+  /installedapps/{installedAppId}/schedules/{scheduleName}:
+    parameters:
+    - $ref: '#/parameters/installedAppId'
+    - $ref: '#/parameters/scheduleName'
+    - $ref: '#/parameters/authorization'
+    get:
+      tags:
+      - schedules
+      summary: Get an installed app's schedule.
+      operationId: getSchedule
+      description: |
+        Get a specific schedule for the installed app.
+      security:
+      - Bearer:
+        - r:schedules
+      responses:
+        200:
+          description: The schedule
+          schema:
+            $ref: '#/definitions/Schedule'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+    delete:
+      tags:
+      - schedules
+      summary: Delete a schedule.
+      description: |
+        Delete a specific schedule for the installed app.
+      operationId: deleteSchedule
+      security:
+      - Bearer:
+        - w:schedules
+      responses:
+        200:
+          description: Successfully deleted
+          schema:
+            $ref: '#/definitions/DeleteScheduleResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+  /apps:
+    post:
+      summary: Create an app.
+      operationId: createApp
+      description: |
+        Create an app integration.
+
+        A single developer account is allowed to contain a maximum of 500 apps.  Upon hitting that limit a 422 error
+        response is returned with an error code of LimitError.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - name: createOrUpdateAppRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/CreateOrUpdateAppRequest'
+      security:
+      - Bearer:
+        - w:apps:*
+      responses:
+        200:
+          description: An app model.
+          schema:
+            $ref: '#/definitions/CreateAppResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+    get:
+      summary: List apps.
+      operationId: listApps
+      description: List all apps configured in an account.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/appType'
+      security:
+      - Bearer:
+        - r:apps
+      responses:
+        200:
+          description: A paginated list of apps.
+          schema:
+            $ref: '#/definitions/PagedApps'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+  /apps/{appNameOrId}:
+    get:
+      summary: Get an app.
+      operationId: getApp
+      description: Get a single app.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/appNameOrId'
+      security:
+      - Bearer:
+        - r:apps:*
+      responses:
+        200:
+          description: An app.
+          schema:
+            $ref: '#/definitions/App'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+    put:
+      summary: Update an app.
+      operationId: updateApp
+      description: Update an app.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/appNameOrId'
+      - name: createOrUpdateAppRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/CreateOrUpdateAppRequest'
+      security:
+      - Bearer:
+        - w:apps:*
+      responses:
+        200:
+          description: An app model.
+          schema:
+            $ref: '#/definitions/App'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+    delete:
+      summary: Delete an app.
+      operationId: deleteApp
+      description: Delete an app.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/appNameOrId'
+      security:
+      - Bearer:
+        - w:apps:*
+      responses:
+        200:
+          description: The number of deleted apps.
+          schema:
+            $ref: '#/definitions/DeleteAppResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+  /apps/{appNameOrId}/settings:
+    get:
+      summary: Get settings.
+      operationId: getAppSettings
+      description: Get settings for an app.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/appNameOrId'
+      security:
+      - Bearer:
+        - r:apps:*
+      responses:
+        200:
+          description: An app settings model.
+          schema:
+            $ref: '#/definitions/GetAppSettingsResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+    put:
+      summary: Update settings.
+      operationId: updateAppSettings
+      description: Update settings for an app.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - name: appNameOrId
+        in: path
+        description: The appName or appId  field of an app.
+        required: true
+        type: string
+      - name: updateAppSettingsRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateAppSettingsRequest'
+      security:
+      - Bearer:
+        - w:apps:*
+      responses:
+        200:
+          description: An app settings model.
+          schema:
+            $ref: '#/definitions/UpdateAppSettingsResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+  /apps/{appNameOrId}/oauth:
+    get:
+      summary: Get an app's oauth settings.
+      operationId: getAppOauth
+      description: Get an app's oauth settings.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/appNameOrId'
+      security:
+      - Bearer:
+        - r:apps:*
+      responses:
+        200:
+          description: An app.
+          schema:
+            $ref: '#/definitions/AppOAuth'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+    put:
+      summary: Update an app's oauth settings.
+      operationId: updateAppOauth
+      description: Update an app's oauth settings.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/appNameOrId'
+      - name: updateAppOAuthRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateAppOAuthRequest'
+      security:
+      - Bearer:
+        - w:apps:*
+      responses:
+        200:
+          description: An app's oauth settings model.
+          schema:
+            $ref: '#/definitions/AppOAuth'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        422:
+          $ref: '#/responses/unprocessableEntity'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+  /apps/{appNameOrId}/oauth/generate:
+    post:
+      summary: Generate an app's oauth client/secret.
+      operationId: generateAppOauth
+      description: |
+        When an app is first created an OAuth client/secret are automatically generated for the integration.  However,
+        there are times when it maybe useful to re-generate a client/secret.  Such as in cases where a secret becomes
+        compromised.
+      parameters:
+      - $ref: '#/parameters/authorization'
+      - $ref: '#/parameters/appNameOrId'
+      - name: generateAppOAuthRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/GenerateAppOAuthRequest'
+      security:
+      - Bearer:
+        - w:apps:*
+      responses:
+        200:
+          description: |
+            An a response object containing the newly create OAuth Client ID / Secret and relevant details
+            pertaining to the OAuth client.
+          schema:
+            $ref: '#/definitions/GenerateAppOAuthResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        400:
+          $ref: '#/responses/badRequest'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - apps
+  /scenes:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/locationId'
+    get:
+      summary: List Scenes
+      operationId: listScenes
+      description: Fetch a list of Scenes for the logged in user and given locationId
+      security:
+      - Bearer:
+        - l:scenes
+      produces:
+      - application/vnd.smartthings+json
+      parameters:
+      - $ref: '#/parameters/max'
+      - $ref: '#/parameters/offset'
+      responses:
+        200:
+          description: The Scenes have been fetched
+          schema:
+            $ref: '#/definitions/ScenePagedResult'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - scenes
+  /scenes/{sceneId}/execute:
+    parameters:
+    - $ref: '#/parameters/authorization'
+    - $ref: '#/parameters/locationId'
+    - $ref: '#/parameters/sceneId'
+    post:
+      summary: Execute Scene
+      operationId: executeScene
+      description: Execute a Scene by id for the logged in user and given locationId
+      security:
+      - Bearer:
+        - x:scenes:*
+      produces:
+      - application/json
+      responses:
+        200:
+          description: The Scene has been executed
+          schema:
+            $ref: '#/definitions/StandardSuccessResponse'
+        401:
+          $ref: '#/responses/notAuthenticated'
+        403:
+          $ref: '#/responses/notAuthorized'
+        429:
+          $ref: '#/responses/tooManyRequests'
+        default:
+          $ref: '#/responses/defaultResponse'
+      tags:
+      - scenes
+definitions:
+  Link:
+    type: object
+    properties:
+      href:
+        type: string
+        description: An absolute URL linking to a resource.
+        example: https://...
+  Links:
+    type: object
+    properties:
+      next:
+        $ref: '#/definitions/Link'
+      previous:
+        $ref: '#/definitions/Link'
+  ErrorResponse:
+    type: object
+    properties:
+      requestId:
+        type: string
+        description: A correlation id used for reference when contacting support.
+        example: 7b8514e6-230d-41cc-b3c2-512bca15abf0
+      error:
+        $ref: '#/definitions/Error'
+  Error:
+    description: Details about the error.
+    type: object
+    properties:
+      code:
+        type: string
+        description: Machine readable error code.
+        example: ConstraintViolationError
+      message:
+        type: string
+        description: Human readable error message.
+        example: The request was malformed.
+      target:
+        type: string
+        description: Optional field used to point to a problamatic part of the request.
+        example: 31192dc9-eb45-4d90-b606-21e9b66d8c2b
+      details:
+        type: array
+        items:
+          $ref: '#/definitions/Error'
+  Owner:
+    description: A typed model which provides information around ownership of a specific
+      domain.
+    type: object
+    properties:
+      ownerType:
+        type: string
+        default: USER
+        enum:
+        - USER
+        description: The account type which owns the specific domain item.
+      ownerId:
+        type: string
+        description: A global idenfifier for owner.
+    example:
+      ownerType: USER
+      ownerId: 72fd3b54-d243-4bf7-a845-92eb7956b982
+  Device:
+    type: object
+    properties:
+      deviceId:
+        type: string
+        description: The identifier for the device instance.
+        example: 6f5ea629-4c05-4a90-a244-cc129b0a80c3
+      name:
+        type: string
+        description: The name that the device integration (Device Handler or SmartApp)
+          defines for the device.
+        example: color.light.100x
+      label:
+        type: string
+        description: The name that a user chooses for the device. This defaults to
+          the same value as name.
+        example: color.light.100x
+      deviceManufacturerCode:
+        type: string
+        description: The device manufacturer code.
+        example: 010F-0B01-2002
+      locationId:
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        description: The ID of the Location with which the device is associated.
+        example: 0c0b935d-0616-4441-a0bf-da7aeec3dc0a
+      deviceTypeId:
+        type: string
+        description: Deprecated please look under "dth".
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        example: Deprecated please look under "dth".
+      deviceTypeName:
+        type: string
+        description: Deprecated please look under "dth".
+        example: Deprecated please look under "dth".
+      deviceNetworkType:
+        type: string
+        description: Deprecated please look under "dth".
+        example: Deprecated please look under "dth".
+      components:
+        type: array
+        description: The IDs of all components on the device.
+        items:
+          $ref: '#/definitions/DeviceComponent'
+      app:
+        type: object
+        description: Device Profile information for the SmartApp. This field will
+          be empty if device type is not ENDPOINT_APP.
+        $ref: '#/definitions/AppDeviceDetails'
+      dth:
+        type: object
+        description: Device Profile information for DTH. This field will be empty
+          if device type is not DTH.
+        $ref: '#/definitions/DthDeviceDetails'
+      type:
+        $ref: '#/definitions/DeviceIntegrationType'
+  PagedDevices:
+    description: A paginated array of devices.
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Device'
+      _links:
+        $ref: '#/definitions/Links'
+  CapabilityReference:
+    type: object
+    properties:
+      id:
+        type: string
+        example: switch
+    required:
+    - id
+  DeviceCommandsRequest:
+    type: object
+    properties:
+      commands:
+        description: An array of commands to execute on the Device.
+        type: array
+        items:
+          $ref: '#/definitions/DeviceCommand'
+  DeviceCommand:
+    type: object
+    properties:
+      component:
+        type: string
+        description: The name of the component on this device, default is 'main'.
+          The component must be valid for the device.
+        default: main
+        format: ^[-_!.~'()*0-9a-zA-Z]{1,36}$
+      capability:
+        description: Capability that this command relates to. This must be a capability
+          of the component.
+        type: string
+      command:
+        description: Name of the command, this must be valid for the capability.
+        type: string
+      arguments:
+        type: array
+        items:
+          type: object
+        description: |
+          Arguments of the command.
+          The type of the arguments are dependent on the type of the capability's command argument
+    required:
+    - capability
+    - command
+    example:
+      component: main
+      capability: temperatureSetPoint
+      command: setTemperature
+      arguments:
+      - value: 5
+        unit: °C
+  DeviceStatus:
+    description: The status of a Device.
+    type: object
+    properties:
+      components:
+        description: A map of componentId to Component status.
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/ComponentStatus'
+        example:
+          main:
+            switch:
+              switch:
+                value: 'on'
+            switchLevel:
+              level:
+                value: 90
+  ComponentStatus:
+    description: A map of capabilityId to Capability status.
+    type: object
+    additionalProperties:
+      $ref: '#/definitions/CapabilityStatus'
+    example:
+      switch:
+        switch:
+          value: 'on'
+      switchLevel:
+        level:
+          value: 90
+  CapabilityStatus:
+    description: A map of Attribute name to Attribute state.
+    type: object
+    additionalProperties:
+      $ref: '#/definitions/AttributeState'
+    example:
+      switch:
+        value: 'on'
+  AttributeState:
+    type: object
+    properties:
+      value:
+        type: object
+        example: 0
+      unit:
+        type: string
+        example: °C
+  DeviceEventsRequest:
+    type: object
+    properties:
+      deviceEvents:
+        description: An array of attribute state updates.
+        type: array
+        minItems: 1
+        maxItems: 8
+        items:
+          $ref: '#/definitions/DeviceStateEvent'
+  DeviceStateEvent:
+    type: object
+    properties:
+      component:
+        type: string
+        description: The name of the component on this device, default is 'main'.
+      capability:
+        type: string
+        description: Capability that this event relates to.
+      attribute:
+        type: string
+        description: Name of the capability attribute that this event relates to.
+      value:
+        type: object
+        description: Value associated with the event. The valid value depends on the
+          capability.
+      unit:
+        type: string
+        description: Unit of the value field.
+    example:
+      component: main
+      capability: switchLevel
+      attribute: level
+      value: 0
+      unit: null
+  DeviceInstallRequest:
+    type: object
+    properties:
+      label:
+        type: string
+        description: The label for the device.
+        example: Living room light
+      locationId:
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        description: The ID of the Location with which the device is associated.
+        example: 0c0b935d-0616-4441-a0bf-da7aeec3dc0a
+      app:
+        type: object
+        properties:
+          profileId:
+            type: string
+            description: The device profile Id
+            example: 6f5ea629-4c05-4a90-a244-cc129b0a80c3
+          installedAppId:
+            type: string
+            description: The ID of the installed application
+            format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+            example: 6f5ea629-4c05-4a90-a244-cc129b0a80c3
+          externalId:
+            type: string
+            description: A field to store an ID from a system external to SmartThings.
+            maxLength: 64
+            example: Th13390
+        required:
+        - profileId
+        - installedAppId
+    required:
+    - app
+    - locationId
+  AppDeviceDetails:
+    type: object
+    properties:
+      installedAppId:
+        description: The ID of the installed app that integrates this device.
+        type: string
+        example: 0c0b935d-0616-4441-a0bf-da7aeec3dc0a
+        format: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+      externalId:
+        type: string
+        description: A field to store an ID from a system external to SmartThings.
+        maxLength: 64
+        example: Th13390
+      profile:
+        $ref: '#/definitions/DeviceProfileReference'
+  DthDeviceDetails:
+    type: object
+    properties:
+      deviceTypeId:
+        type: string
+        description: The identifier for the device's DeviceType.
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        example: 7b8514e6-230d-41cc-b3c2-512bca15abf0
+      deviceTypeName:
+        type: string
+        description: The name for the device's DeviceType.
+        example: x.com.samsung.da.fridge
+      deviceNetworkType:
+        type: string
+        description: The device network type.
+        example: ZWAVE
+  DeviceProfileReference:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The device profile Id
+        example: user@example.com/thermostat.model1
+  DeviceIntegrationType:
+    type: string
+    enum:
+    - DTH
+    - ENDPOINT_APP
+    default: DTH
+    description: |
+      The type of device integration.
+      If the type is DTH, the device implementation is a groovy Device Handler and the details are in the "dth" field.
+      If the type is ENDPOINT_APP, the device implementation is a SmartApp and the details are in the "app" field.
+  CreateDeviceEventsResponse:
+    type: object
+  CreateDeviceCommandsResponse:
+    type: object
+  DeleteDeviceCommandsResponse:
+    type: object
+  UpdateDeviceRequest:
+    type: object
+    properties:
+      label:
+        type: string
+        description: The label for the device.
+        example: Living room light
+  DeviceComponent:
+    type: object
+    properties:
+      id:
+        type: string
+        example: main
+        format: ^[-_!.~'()*0-9a-zA-Z]{1,36}$
+      capabilities:
+        type: array
+        minItems: 1
+        maxItems: 20
+        items:
+          $ref: '#/definitions/CapabilityReference'
+        default: [
+          ]
+    required:
+    - id
+    - capabilities
+  DeviceProfile:
+    type: object
+    properties:
+      id:
+        type: string
+        example: a362ddb6-349b-4650-9911-681b51069a57
+      name:
+        type: string
+        example: thermostat1.model1
+      owner:
+        $ref: '#/definitions/Owner'
+      components:
+        type: array
+        items:
+          $ref: '#/definitions/DeviceComponent'
+      metadata:
+        $ref: '#/definitions/DeviceProfileMetadata'
+  PagedDeviceProfiles:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/DeviceProfile'
+      _links:
+        $ref: '#/definitions/Links'
+  DeviceProfileMetadata:
+    additionalProperties:
+      type: string
+    description: Additional information about the device profile.
+  CreateDeviceProfileRequest:
+    type: object
+    properties:
+      name:
+        type: string
+        example: thermostat1.model1
+        description: The name of the device profile.
+      components:
+        type: array
+        minItems: 1
+        maxItems: 10
+        items:
+          $ref: '#/definitions/DeviceComponent'
+        default: [
+          ]
+      metadata:
+        $ref: '#/definitions/DeviceProfileMetadata'
+    required:
+    - name
+    - components
+  DeleteDeviceProfileResponse:
+    type: object
+  PagedLocations:
+    description: Represents a single page of Locations available in a user account.
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/PagedLocation'
+      _links:
+        $ref: '#/definitions/Links'
+  PagedLocation:
+    description: A slimmed down representation of the Location model.
+    type: object
+    properties:
+      locationId:
+        type: string
+        format: uuid
+        description: The ID of the location.
+      name:
+        type: string
+        description: A nickname given for the location (eg. Home)
+    example:
+      locationId: 6b3d1909-1e1c-43ec-adc2-5f941de4fbf9
+      name: Home
+  Location:
+    type: object
+    properties:
+      locationId:
+        type: string
+        format: uuid
+        description: The ID of the location.
+      name:
+        type: string
+        description: A nickname given for the location (eg. Home)
+      latitude:
+        type: number
+        description: A geographical latitude.
+        format: float
+      longitude:
+        type: number
+        description: A geographical longitude.
+        format: float
+      regionRadius:
+        type: integer
+        format: int32
+        description: The radius in meters around latitude and longitude which defines
+          this location.
+      temperatureScale:
+        type: string
+        enum:
+        - F
+        - C
+      timeZoneId:
+        type: string
+        description: |
+          An ID matching the Java Time Zone ID of the location.  Only available if latitude and longitude have been
+          provided.
+      locale:
+        description: An IETF BCP 47 language tag representing the chosen locale for
+          this location.
+        type: string
+        example: en
+    example:
+      locationId: 6b3d1909-1e1c-43ec-adc2-5f941de4fbf9
+      name: Home
+      latitude: 45.00708112
+      longitude: -93.11223629
+      regionRadius: 150
+      temperatureScale: F
+      timeZoneId: America/Chicago
+      locale: en
+  CreateLocationRequest:
+    type: object
+    required:
+    - name
+    - countryCode
+    properties:
+      name:
+        type: string
+        description: A nickname given for the location (eg. Home)
+      countryCode:
+        type: string
+        description: An ISO Alpha-3 country code.  (i.e. GBR, USA)
+      latitude:
+        description: A geographical latitude.
+        type: number
+        format: float
+      longitude:
+        description: A geographical longitude.
+        type: number
+        format: float
+      regionRadius:
+        type: integer
+        description: The radius in meters around latitude and longitude which defines
+          this location.
+      temperatureScale:
+        type: string
+        description: The desired temperature scale used within location.
+        enum:
+        - F
+        - C
+      locale:
+        description: An IETF BCP 47 language tag representing the chosen locale for
+          this location.
+        type: string
+        example: en
+    example:
+      name: Home
+      countryCode: USA
+      latitude: 45.00708112
+      longitude: -93.11223629
+      regionRadius: 150
+      temperatureScale: F
+      locale: en
+  UpdateLocationRequest:
+    type: object
+    properties:
+      name:
+        type: string
+        description: A nickname for the location.
+      latitude:
+        type: number
+        description: A geographical latitude.
+        format: float
+      longitude:
+        type: number
+        description: A geographical longitude.
+        format: float
+      regionRadius:
+        description: The radius in meters around latitude and longitude which defines
+          this location.
+        type: integer
+      temperatureScale:
+        type: string
+        description: The desired temperature scale used within location.
+        enum:
+        - F
+        - C
+      locale:
+        description: An IETF BCP 47 language tag representing the chosen locale for
+          this location.
+        type: string
+        example: en
+    example:
+      name: Home
+      latitude: 45.00708112
+      longitude: -93.11223629
+      regionRadius: 150
+      temperatureScale: F
+      locale: en
+  DeleteLocationResponse:
+    description: An empty object response.
+    type: object
+    example: {
+      }
+  InstalledApp:
+    type: object
+    properties:
+      installedAppId:
+        description: The ID of the installed app.
+        type: string
+        format: uuid
+      installedAppType:
+        $ref: '#/definitions/InstalledAppType'
+      installedAppStatus:
+        $ref: '#/definitions/InstalledAppStatus'
+      displayName:
+        description: A user defined name for the installed app.
+        type: string
+        maxLength: 64
+      appId:
+        description: The ID of the app.
+        type: string
+      referenceId:
+        description: |
+          A reference to an upstream system.  For example, Behaviors would reference the behaviorId.
+        type: string
+      locationId:
+        description: The ID of the location to which the installed app may belong.
+        type: string
+        format: uuid
+      owner:
+        $ref: '#/definitions/Owner'
+      createdDate:
+        description: A UTC ISO-8601 Date-Time String
+        type: string
+        format: date-time
+      lastUpdatedDate:
+        description: A UTC ISO-8601 Date-Time String
+        type: string
+        format: date-time
+    example:
+      installedAppId: 8885b9c3-a50d-427e-ad07-d7a2f94421af
+      installedAppType: WEBHOOK_SMART_APP
+      installedAppStatus: PENDING
+      displayName: Color App
+      appId: fdd21b3e-5880-44c8-9f61-ce474814f587
+      referenceId: c71b0a5b-7dab-41fe-b75f-7cf30246468e
+      locationId: 4ae86cfc-63be-4bcc-8514-836c873b4d7a
+      owner:
+        ownerType: USER
+        ownerId: 3f178632-79ed-4358-94de-280dbd7c206c
+      createdDate: 2017-05-19T12:39:37Z
+      lastUpdatedDate: 2017-05-19T12:39:37Z
+  InstallConfiguration:
+    description: An configuration instance of an Installed App.
+    type: object
+    properties:
+      installedAppId:
+        description: The ID of the installed app.
+        type: string
+        format: uuid
+      configurationId:
+        description: The ID to this configuration instance.
+        type: string
+        format: uuid
+      configurationStatus:
+        $ref: '#/definitions/InstallConfigurationStatus'
+      createdDate:
+        description: A UTC ISO-8601 Date-Time String
+        type: string
+        format: date-time
+      lastUpdatedDate:
+        description: A UTC ISO-8601 Date-Time String
+        type: string
+        format: date-time
+    example:
+      installedAppId: 8885b9c3-a50d-427e-ad07-d7a2f94421af
+      configurationId: c71b0a5b-7dab-41fe-b75f-7cf30246468e
+      configurationStatus: DONE
+      createdDate: 2017-05-19T12:39:37Z
+      lastUpdatedDate: 2017-05-19T12:39:37Z
+  InstallConfigurationDetail:
+    description: Encompasses both a configuration value, and any required permissions
+      that maybe needed.
+    type: object
+    properties:
+      installedAppId:
+        description: The ID of the installed app.
+        type: string
+        format: uuid
+      configurationId:
+        description: The ID to this configration instance.
+        type: string
+        format: uuid
+      configurationStatus:
+        $ref: '#/definitions/InstallConfigurationStatus'
+      config:
+        $ref: '#/definitions/ConfigMap'
+      createdDate:
+        description: A UTC ISO-8601 Date-Time String
+        type: string
+        format: date-time
+      lastUpdatedDate:
+        description: A UTC ISO-8601 Date-Time String
+        type: string
+        format: date-time
+    example:
+      installedAppId: 8885b9c3-a50d-427e-ad07-d7a2f94421af
+      configurationId: c71b0a5b-7dab-41fe-b75f-7cf30246468e
+      configurationStatus: AUTHORIZED
+      createdDate: 2017-05-19T12:39:37Z
+      lastUpdatedDate: 2017-05-19T12:39:37Z
+      config:
+        switches:
+        - valueType: DEVICE
+          deviceConfig:
+            deviceId: 5ccbf4ba-7b5f-4eb3-85b8-ab8705ff8d61
+            componentId: main
+            permissions:
+            - r:devices
+  StringConfig:
+    description: A simple string configuration.
+    type: object
+    properties:
+      value:
+        description: A config value
+        type: string
+        maxLength: 2048
+    example:
+      value: 31192dc9-eb45-4d90-b606-21e9b66d8c2b
+  DeviceConfig:
+    description: A device and component configuration with any required permissions.
+    type: object
+    properties:
+      deviceId:
+        description: The ID of the device.
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+      componentId:
+        description: The component ID on the device.
+        type: string
+        format: ^[-_!.~'()*0-9a-zA-Z]{1,36}$
+      permissions:
+        type: array
+        items:
+          type: string
+        maxItems: 25
+    example:
+      deviceId: 31192dc9-eb45-4d90-b606-21e9b66d8c2b
+      componentId: main
+      permissions:
+      - r:devices
+  PermissionConfig:
+    description: Required permissions for the installed app.
+    type: object
+    properties:
+      permissions:
+        type: array
+        items:
+          type: string
+        minItems: 1
+        maxItems: 25
+    example:
+      permissions:
+      - w:notifications
+  ConfigEntry:
+    description: A configuration value type and the correspodning configuration.
+    type: object
+    properties:
+      valueType:
+        type: string
+        default: STRING
+        enum:
+        - STRING
+        - DEVICE
+        - PERMISSION
+        description: The value type.
+      stringConfig:
+        description: The config if valueType is STRING, meaningless otherwise
+        $ref: '#/definitions/StringConfig'
+      deviceConfig:
+        description: The config if valueType is DEVICE, meaningless otherwise
+        $ref: '#/definitions/DeviceConfig'
+      permissionConfig:
+        description: The config if valueType is PERMISSION, meaningless otherwise
+        $ref: '#/definitions/PermissionConfig'
+    example:
+      valueType: DEVICE
+      deviceConfig:
+        deviceId: 31192dc9-eb45-4d90-b606-21e9b66d8c2b
+        componentId: main
+        permissions:
+        - r:devices
+  ConfigEntries:
+    description: A list of available configuration values.
+    type: array
+    items:
+      $ref: '#/definitions/ConfigEntry'
+  ConfigMap:
+    description: |
+      A multi-map of configurations for an Installed App.  The map 'key' is the configuration name
+      and the 'value' is an array of ConfigEntry models each containing a value and associated permissions.  The config
+      key is alpha-numeric, may contain dashes, underscores, periods, and must be less then 50 characters long.
+    type: object
+    additionalProperties:
+      $ref: '#/definitions/ConfigEntries'
+    example:
+      switches:
+      - valueType: DEVICE
+        deviceConfig:
+          deviceId: 31192dc9-eb45-4d90-b606-21e9b66d8c2b
+          componentId: main
+          permissions:
+          - r:devices
+      - valueType: DEVICE
+        deviceConfig:
+          deviceId: bea6074d-7dde-4936-ab79-373fa13250d4
+          componentId: main
+          permissions:
+          - r:devices
+      color:
+      - valueType: STRING
+        stringConfig:
+          value: null
+  InstalledAppType:
+    description: Denotes the type of installed app.
+    type: string
+    enum:
+    - LAMBDA_SMART_APP
+    - WEBHOOK_SMART_APP
+    - BEHAVIOR
+  InstallConfigurationStatus:
+    description: |
+      Denotes the current state of a configuration instance.  'STAGED' configuration is used during active
+      modification to config.  A configuration is marked 'DONE' once it is deemed finished.  At this point it
+      is immutable, meaning it can't be changed.  A status of 'AUTHORIZED' means the apps permissions have been
+      authorized by the consumer.  Installed Apps in 'AUTHORIZED' state are fully installed and used by the
+      SmartThings platform.  A status of 'REVOKED' means the apps permissions have been revoked.
+    type: string
+    enum:
+    - STAGED
+    - DONE
+    - AUTHORIZED
+    - REVOKED
+  InstalledAppStatus:
+    description: |
+      Denotes the current state of an install.  'PENDING' is used during active modification to the install's config
+      prior to 'AUTHORIZATION'. A status of 'AUTHORIZED' means the install's permissions have been authorized by the
+      consumer. Installed Apps in 'AUTHORIZED' state are fully installed and usable by the SmartThings platform.  A
+      status of 'REVOKED' means the install's permissions have been revoked.  A status of 'DISABLED' means a previously
+      'AUTHORIZED' Installed App will not execute.
+    type: string
+    enum:
+    - PENDING
+    - AUTHORIZED
+    - REVOKED
+    - DISABLED
+  PagedInstalledApps:
+    description: Represents a single page of InstalledApps available in a user account.
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/InstalledApp'
+      _links:
+        $ref: '#/definitions/Links'
+  PagedInstallConfigurations:
+    description: Represents a single page of InstallConfiguration models available
+      for an InstalledApp.
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/InstallConfiguration'
+      _links:
+        $ref: '#/definitions/Links'
+  DeleteInstalledAppResponse:
+    description: The number of deleted installed apps.
+    type: object
+    properties:
+      count:
+        type: integer
+        format: int32
+  OnceSchedule:
+    properties:
+      time:
+        description: The time in millis from jan 1 1970 UTC for ONCE schedules. Must
+          be less than 2 years from now.
+        type: integer
+        format: int64
+      overwrite:
+        type: boolean
+    required:
+    - time
+  CronSchedule:
+    properties:
+      expression:
+        description: |
+          The cron expression for the schedule for CRON schedules.
+          The format matches that specified by the [Quartz scheduler](http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html) but should not include the seconds (1st)
+          field. The exact second will be chosen at random but will remain consistent. The years part must be les than 2 years from now.
+        type: string
+        example: 15 10 * * ? *
+        maxLength: 256
+      timezone:
+        description: The timezone id for CRON schedules.
+        example: GMT
+        type: string
+    required:
+    - expression
+    - timezone
+  ScheduleRequest:
+    properties:
+      once:
+        $ref: '#/definitions/OnceSchedule'
+      name:
+        type: string
+        minLength: 1
+        maxLength: 36
+        description: The unique per installed app name of the schedule.
+        example: on_schedule-1
+        format: ^[A-Za-z0-9._\-]{1,36}$
+      cron:
+        $ref: '#/definitions/CronSchedule'
+    required:
+    - name
+    example:
+      name: on_schedule_1
+      cron:
+        expression: 15 10 * * ? *
+        timezone: GMT
+  Schedule:
+    properties:
+      installedAppId:
+        description: The ID of the installed app.
+        type: string
+        format: uuid
+        example: 736e3903-001c-4d40-b408-ff40d162a06b
+      locationId:
+        description: The ID of the location the installed app is in.
+        type: string
+        format: uuid
+        example: 35451c7a-cc23-4838-8a3b-1205090cf161
+      scheduledExecutions:
+        description: list of scheduled execution times in millis from jan 1 1970 UTC
+        type: array
+        items:
+          type: integer
+          format: int64
+          example: 1490892856362
+      name:
+        type: string
+        minLength: 1
+        maxLength: 36
+        description: The unique per installed app name of the schedule.
+        example: on_schedule-1
+        format: ^[A-Za-z0-9._\-]{1,36}$
+      cron:
+        $ref: '#/definitions/CronSchedule'
+    required:
+    - name
+    example:
+      installedAppId: 736e3903-001c-4d40-b408-ff40d162a06b
+      scheduledExecutions:
+      - 1490892856362
+      name: on_schedule-1
+      cron:
+        expression: 15 10 * * ? *
+        timezone: GMT
+  PagedSchedules:
+    description: An array of schedules
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Schedule'
+      _links:
+        $ref: '#/definitions/Links'
+    example:
+      items:
+      - scheduledExecutions:
+        - 1505752823000
+        name: schedule-name
+        cron:
+          expression: 0/10 * * * ? *
+          timezone: America/Chicago
+        installedAppId: 937e11d5-317d-445f-bec7-3055fdb827a3
+        locationId: 8418eebd-8d5f-48dd-a028-054744j8secb
+      _links:
+        next: null
+        previous: null
+  DeleteScheduleResponse:
+    type: object
+    description: Delete schedule response
+  Subscription:
+    properties:
+      id:
+        description: The id of the subscription.
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        example: 736e3903-001c-4d40-b408-ff40d162a06b
+      installedAppId:
+        description: The id of the subscribing app.
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        example: 499e28ba-b33b-49c9-a5a1-cce40e41f8a6
+      sourceType:
+        $ref: '#/definitions/SubscriptionSource'
+      device:
+        $ref: '#/definitions/DeviceSubscriptionDetail'
+      capability:
+        $ref: '#/definitions/CapabilitySubscriptionDetail'
+    example:
+      id: 5e1b134b-bd85-4125-9c25-4a8291e754aa
+      installedAppId: fb05c874-cf1d-406a-930c-69a081e0eaee
+      sourceType: DEVICE
+      device:
+        componentId: main
+        deviceId: e457978e-5e37-43e6-979d-18112e12c961,
+        capability: contactSensor,
+        attribute: contact,
+        stateChangeOnly: true,
+        subscriptionName: contact_subscription',
+        value: '*'
+  SubscriptionSource:
+    description: The type of the event that is being subscribed to.
+    type: string
+    enum:
+    - DEVICE
+    - CAPABILITY
+  SubscriptionRequest:
+    type: object
+    properties:
+      sourceType:
+        $ref: '#/definitions/SubscriptionSource'
+      device:
+        $ref: '#/definitions/DeviceSubscriptionDetail'
+      capability:
+        $ref: '#/definitions/CapabilitySubscriptionDetail'
+    required:
+    - sourceType
+    example:
+    - sourceType: DEVICE
+      device:
+        deviceId: 736e3903-001c-4d40-b408-ff40d162a06b
+        componentId: freezer
+        capability: temperatureMeasurement
+        attribute: temperature
+        stateChangeOnly: true
+    - sourceType: CAPABILITY
+      capability:
+        locationId: 86e42398-2502-494e-99f1-760fb75ebdc5
+        capability: thermostat
+        attribute: coolingSetpoint
+        value: 74
+        stateChangeOnly: true
+  DeviceSubscriptionDetail:
+    description: Details of a subscription of source type DEVICE. The combination
+      of subscribed values must be unique per installed app.
+    type: object
+    properties:
+      deviceId:
+        description: The GUID of the device that is subscribed to.
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        example: 35451c7a-cc23-4838-8a3b-1205090cf161
+      componentId:
+        type: string
+        format: ^[-_!.~'()*0-9a-zA-Z]{1,36}$
+        description: The component ID on the device that is subscribed to or * for
+          all.
+        example: main
+        default: '*'
+      capability:
+        type: string
+        minLength: 1
+        maxLength: 128
+        description: Name of the capability that is subscribed to or * for all.
+        example: switch
+        default: '*'
+      attribute:
+        type: string
+        minLength: 1
+        maxLength: 256
+        description: Name of the capabilities attribute or * for all.
+        example: switch
+        default: '*'
+      value:
+        type: object
+        maxLength: 256
+        description: A particular value for the attribute that will trigger the subscription
+          or * for all.
+        default: '*'
+        example:
+        - '*'
+        - 1
+        - 'on'
+        - key: 30
+      stateChangeOnly:
+        type: boolean
+        description: Only execute the subscription if the subscribed event is a state
+          change from previous events.
+      subscriptionName:
+        description: A name for the subscription that will be passed to the installed
+          app. Must be unique per installed app.
+        type: string
+        format: ^[-_!.~'()*0-9a-zA-Z]{1,36}$
+    required:
+    - deviceId
+  CapabilitySubscriptionDetail:
+    description: Details of a subscription of source type CAPABILITY. The combination
+      of subscribed values must be unique per installed app.
+    type: object
+    properties:
+      locationId:
+        description: The id of the location that both the app and source device are
+          in.
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+      capability:
+        type: string
+        minLength: 1
+        maxLength: 128
+        description: Name of the capability that is subscribed to.
+        example: switch
+      attribute:
+        type: string
+        minLength: 1
+        maxLength: 256
+        description: Name of the capabilities attribute or * for all.
+        example: switch
+        default: '*'
+      value:
+        type: object
+        maxLength: 256
+        description: A particular value for the attribute that will trigger the subscription
+          or * for all.
+        example:
+        - '*'
+        - 1
+        - 'on'
+        - key: 30
+        default: '*'
+      stateChangeOnly:
+        type: boolean
+        default: true
+        description: Only execute the subscription if the subscribed event is a state
+          change from previous events.
+      subscriptionName:
+        description: A name for the subscription that will be passed to the installed
+          app. Must be unique per installed app.
+        type: string
+        format: ^[-_!.~'()*0-9a-zA-Z]{1,36}$
+    required:
+    - locationId
+    - capability
+  SubscriptionDelete:
+    description: The number of deleted subscriptions
+    type: object
+    properties:
+      count:
+        type: integer
+        format: int32
+  PagedSubscriptions:
+    description: An array of subscriptions
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Subscription'
+      _links:
+        $ref: '#/definitions/Links'
+  PagedApps:
+    type: object
+    description: Represents a single page of Apps available in an account.
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/PagedApp'
+      _links:
+        $ref: '#/definitions/Links'
+  PagedApp:
+    type: object
+    properties:
+      appName:
+        type: string
+        description: |
+          A user defined unique identifier for an app.  It is alpha-numeric, may contain dashes,
+          underscores, periods, and be less then 250 characters long.  It must be unique within your account.
+        format: ^[a-z0-9.-_]{1,250}$
+      appId:
+        type: string
+        format: uuid
+        description: A globally unique identifier for an app.
+      appType:
+        $ref: '#/definitions/AppType'
+      displayName:
+        type: string
+        maxLength: 75
+        description: |
+          A default display name for an app.
+      description:
+        type: string
+        maxLength: 250
+        description: |
+          A default description for an app.
+      owner:
+        $ref: '#/definitions/Owner'
+      createdDate:
+        type: string
+        format: date-time
+        description: A UTC ISO-8601 Date-Time String
+      lastUpdatedDate:
+        type: string
+        format: date-time
+        description: A UTC ISO-8601 Date-Time String
+    example:
+      appName: security-home-monitor
+      appId: c71b0a5b-7dab-41fe-b75f-7cf30246468e
+      appType: WEBHOOK_SMART_APP
+      displayName: Security Home Monitor
+      description: |
+        An integration that leverages all security devices in your home - cameras, motion sensors, etc to provide
+        you with peace of mind and #security.
+      owner:
+        ownerType: USER
+        ownerId: 3f178632-79ed-4358-94de-280dbd7c206c
+      createdDate: 2017-05-19T12:39:37Z
+      lastUpdatedDate: 2017-05-19T12:39:37Z
+  AppType:
+    type: string
+    enum:
+    - LAMBDA_SMART_APP
+    - WEBHOOK_SMART_APP
+    description: Denotes the type of app.
+  App:
+    type: object
+    properties:
+      appName:
+        type: string
+        description: |
+          A user defined unique identifier for an app.  It is alpha-numeric, may contain dashes,
+          underscores, periods, and be less then 250 characters long.  It must be unique within your account.
+        format: ^[a-z0-9.-_]{1,250}$
+      appId:
+        type: string
+        format: uuid
+        description: A globally unique identifier for an app.
+      appType:
+        $ref: '#/definitions/AppType'
+      displayName:
+        type: string
+        maxLength: 75
+        description: |
+          A default display name for an app.
+      description:
+        type: string
+        maxLength: 250
+        description: |
+          A default description for an app.
+      singleInstance:
+        type: boolean
+        default: false
+        description: |
+          Inform the installation systems that a particular app can only be installed once within a user's account.
+      owner:
+        $ref: '#/definitions/Owner'
+      createdDate:
+        type: string
+        format: date-time
+        description: A UTC ISO-8601 Date-Time String
+      lastUpdatedDate:
+        type: string
+        format: date-time
+        description: A UTC ISO-8601 Date-Time String
+      lambdaSmartApp:
+        $ref: '#/definitions/LambdaSmartApp'
+      webhookSmartApp:
+        $ref: '#/definitions/WebHookSmartApp'
+    example:
+      appName: security-home-monitor
+      appId: c71b0a5b-7dab-41fe-b75f-7cf30246468e
+      appType: WEBHOOK_SMART_APP
+      displayName: Security Home Monitor
+      description: |
+        An intergration that leverages all security devices in your home - cameras, motion sensors, etc to provide
+        you with peace of mind and #security.
+      owner:
+        ownerType: USER
+        ownerId: 3f178632-79ed-4358-94de-280dbd7c206c
+      webhookSmartApp:
+        targetUrl: https://securityhome.com/smartthings
+        publicKey: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlz00iTNPXIo+RM8n0Eudnh84XDWBFAkR
+          L7mkOtXvZiKViCR1qs5LT3SaNy62hkUroexCoii4vjRTSHaQ9FwyBRo98EY9U3qzWmr9Row9ONcQ
+          VKFVX6qiwb9SZG7QvHSfqVAuWhMGb1fFGUWl94L7kY0CihF+WJS5fdhXc1h/f/tY1439hruL3+BR
+          /idfYjAKDa1+euW4b0HKMi4BdJutL/G5FXjDP7MP5fTRuM52erKpON1pwPD8ow/03MhK4wRikHqS
+          /Kvd3UnQ8Q7OSrfJevqR0CqBf83Am1HSHh/bqOfsG0epl+2I1RKLBzB2tSTvMfk0ftiRSq/fRrhl
+          xsJmFQIDAQAB
+          -----END PUBLIC KEY-----
+      createdDate: 2017-05-19T12:39:37Z
+      lastUpdatedDate: 2017-05-19T12:39:37Z
+  LambdaSmartApp:
+    description: |
+      Details related to a Lambda Smart App implementation.  This model will only be available for apps of type LAMBDA_SMART_APP.
+    type: object
+    properties:
+      functions:
+        type: array
+        items:
+          type: string
+        description: A list of AWS arns referencing a Lambda function.
+  WebHookSmartApp:
+    description: |
+      Details related to a WebHook Smart App implementation.  This model will only be available for apps of type WEBHOOK_SMART_APP.
+    type: object
+    properties:
+      targetUrl:
+        type: string
+        description: A URL that should be invoked during execution.
+      publicKey:
+        type: string
+        description: |
+          The public half of an RSA key pair.  Useful for verifying a WebHook execution request signature to
+          ensure it came from SmartThings.
+    example:
+      appName: security-home-monitor
+      appId: c71b0a5b-7dab-41fe-b75f-7cf30246468e
+      appType: WEBHOOK_SMART_APP
+      owner:
+        ownerType: USER
+        ownerId: 3f178632-79ed-4358-94de-280dbd7c206c
+      targetUrl: https://securityhome.com/smartthings
+      publicKey: |
+        -----BEGIN PUBLIC KEY-----
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlz00iTNPXIo+RM8n0Eudnh84XDWBFAkR
+        L7mkOtXvZiKViCR1qs5LT3SaNy62hkUroexCoii4vjRTSHaQ9FwyBRo98EY9U3qzWmr9Row9ONcQ
+        VKFVX6qiwb9SZG7QvHSfqVAuWhMGb1fFGUWl94L7kY0CihF+WJS5fdhXc1h/f/tY1439hruL3+BR
+        /idfYjAKDa1+euW4b0HKMi4BdJutL/G5FXjDP7MP5fTRuM52erKpON1pwPD8ow/03MhK4wRikHqS
+        /Kvd3UnQ8Q7OSrfJevqR0CqBf83Am1HSHh/bqOfsG0epl+2I1RKLBzB2tSTvMfk0ftiRSq/fRrhl
+        xsJmFQIDAQAB
+        -----END PUBLIC KEY-----
+      createdDate: 2017-05-19T12:39:37Z
+      lastUpdatedDate: 2017-05-19T12:39:37Z
+  AppOAuth:
+    type: object
+    properties:
+      clientName:
+        description: A name given to the OAuth Client.
+        type: string
+      scope:
+        description: A list of SmartThings API OAuth scope identifiers that maybe
+          required to execute your integration.
+        type: array
+        items:
+          type: string
+    example:
+      clientName: My SmartThings Integration
+      scope:
+      - r:installedapps
+      - w:installedapps
+      - x:installedapps
+  CreateOrUpdateAppRequest:
+    required:
+    - appName
+    - appType
+    - displayName
+    - description
+    type: object
+    properties:
+      appName:
+        type: string
+        description: |
+          A globally unique, developer-defined identifier for an app. It is alpha-numeric, may contain dashes,
+          underscores, periods, and must be less then 250 characters long.
+        format: ^[a-z0-9.-_]{1,250}$
+      displayName:
+        type: string
+        maxLength: 75
+        description: |
+          A default display name for an app.
+      description:
+        type: string
+        maxLength: 250
+        description: |
+          A default description for an app.
+      singleInstance:
+        type: boolean
+        default: false
+        description: |
+          Inform the installation systems that a particular app can only be installed once within a user's account.
+      appType:
+        $ref: '#/definitions/AppType'
+      lambdaSmartApp:
+        $ref: '#/definitions/CreateOrUpdateLambdaSmartAppRequest'
+      webhookSmartApp:
+        $ref: '#/definitions/CreateOrUpdateWebHookSmartAppRequest'
+  CreateAppResponse:
+    type: object
+    description: A response object containing the newly created App and OAuth client
+      details.
+    properties:
+      app:
+        $ref: '#/definitions/App'
+      oauthClientId:
+        type: string
+        format: uuid
+        description: The OAuth Client ID.
+      oauthClientSecret:
+        type: string
+        format: uuid
+        description: The OAuth Client Secret.
+    example:
+      app:
+        appName: security-home-monitor
+        appId: c71b0a5b-7dab-41fe-b75f-7cf30246468e
+        appType: WEBHOOK_SMART_APP
+        displayName: Security Home Monitor
+        description: |
+          An intergration that leverages all security devices in your home - cameras, motion sensors, etc to provide
+          you with peace of mind and #security.
+        owner:
+          ownerType: USER
+          ownerId: 3f178632-79ed-4358-94de-280dbd7c206c
+        webhookSmartApp:
+          targetUrl: https://securityhome.com/smartthings
+          publicKey: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlz00iTNPXIo+RM8n0Eudnh84XDWBFAkR
+            L7mkOtXvZiKViCR1qs5LT3SaNy62hkUroexCoii4vjRTSHaQ9FwyBRo98EY9U3qzWmr9Row9ONcQ
+            VKFVX6qiwb9SZG7QvHSfqVAuWhMGb1fFGUWl94L7kY0CihF+WJS5fdhXc1h/f/tY1439hruL3+BR
+            /idfYjAKDa1+euW4b0HKMi4BdJutL/G5FXjDP7MP5fTRuM52erKpON1pwPD8ow/03MhK4wRikHqS
+            /Kvd3UnQ8Q7OSrfJevqR0CqBf83Am1HSHh/bqOfsG0epl+2I1RKLBzB2tSTvMfk0ftiRSq/fRrhl
+            xsJmFQIDAQAB
+            -----END PUBLIC KEY-----
+        createdDate: 2017-05-19T12:39:37Z
+        lastUpdatedDate: 2017-05-19T12:39:37Z
+      oauthClientId: 7cd4d474-7b36-4e03-bbdb-4cd4ae45a2be
+      oauthClientSecret: 9b3fd445-42d6-441b-b386-99ea51e13cb0
+  CreateOrUpdateLambdaSmartAppRequest:
+    description: |
+      Details related to a Lambda Smart App implementation.  This model should only be specified for apps of type LAMBDA_SMART_APP.
+    type: object
+    required:
+    - functions
+    properties:
+      functions:
+        description: A list of AWS arns referencing a Lambda function.
+        type: array
+        items:
+          type: string
+    example:
+      functions:
+      - arn:aws:lambda:eu-central-1:account-id:function:function-name:alias-name
+      - arn:aws:lambda:ap-southeast-1:account-id:function:function-name:alias-name
+  CreateOrUpdateWebHookSmartAppRequest:
+    description: |
+      Details related to a WebHook Smart App implementation.  This model should only be specified for apps of type WEBHOOK_SMART_APP.
+    type: object
+    required:
+    - url
+    properties:
+      targetUrl:
+        type: string
+        description: A URL that should be invoked during execution.
+    example:
+      targetUrl: https://securityhome.com/smartthings
+  UpdateAppOAuthRequest:
+    required:
+    - clientName
+    - scope
+    type: object
+    properties:
+      clientName:
+        description: A name given to the OAuth Client.
+        type: string
+      scope:
+        description: A list of SmartThings API OAuth scope identifiers that maybe
+          required to execute your integration.
+        type: array
+        items:
+          type: string
+    example:
+      clientName: My SmartThings Integration
+      scope:
+      - r:installedapps
+      - w:installedapps
+  GenerateAppOAuthRequest:
+    type: object
+    properties:
+      clientName:
+        description: A name given to the OAuth Client.
+        type: string
+      scope:
+        description: A list of SmartThings API OAuth scope identifiers that maybe
+          required to execute your integration.
+        type: array
+        items:
+          type: string
+    example:
+      clientName: My SmartThings Integration
+      scope:
+      - r:installedapps
+      - w:installedapps
+  DeleteAppResponse:
+    description: An empty object 200 response.
+    type: object
+  UpdateAppSettingsRequest:
+    type: object
+    description: Settings for a given app
+    properties:
+      settings:
+        type: object
+        additionalProperties:
+          type: string
+    example:
+      settings:
+        mySecretData: 6c21f9ee-7634-413f-89f7-bdfdce88bf0e
+  UpdateAppSettingsResponse:
+    type: object
+    description: Settings for a given app
+    properties:
+      settings:
+        type: object
+        additionalProperties:
+          type: string
+    example:
+      settings:
+        mySecretData: 6c21f9ee-7634-413f-89f7-bdfdce88bf0e
+  GetAppSettingsResponse:
+    type: object
+    description: Settings for a given app
+    properties:
+      settings:
+        type: object
+        additionalProperties:
+          type: string
+    example:
+      settings:
+        mySecretData: 6c21f9ee-7634-413f-89f7-bdfdce88bf0e
+  GenerateAppOAuthResponse:
+    type: object
+    description: A response object containing a new OAuth Client and it's details.
+    properties:
+      oauthClientDetails:
+        $ref: '#/definitions/AppOAuth'
+      oauthClientId:
+        type: string
+        format: uuid
+        description: The OAuth Client ID.
+      oauthClientSecret:
+        type: string
+        format: uuid
+        description: The OAuth Client Secret.
+    example:
+      oauthClientDetails:
+        clientName: My SmartThings Integration
+        scope:
+        - r:installedapps
+        - w:installedapps
+        - x:installedapps
+      oauthClientId: 7cd4d474-7b36-4e03-bbdb-4cd4ae45a2be
+      oauthClientSecret: 9b3fd445-42d6-441b-b386-99ea51e13cb0
+  SceneSummary:
+    type: object
+    properties:
+      sceneId:
+        type: string
+        description: The unique identifier of the Scene
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+      sceneName:
+        type: string
+        description: The user-defined name of the Scene
+      sceneIcon:
+        type: string
+        description: The name of the icon
+      sceneColor:
+        type: string
+        description: The color of the icon
+      behaviorId:
+        type: string
+        description: The unique identifier of the backing behavior
+      locationId:
+        type: string
+        description: Location of the Scene
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+      createdBy:
+        type: string
+        description: The unique identifier of the user that created the scene
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+      createdDate:
+        type: string
+        description: The date the scene was created
+        format: date-time
+      lastUpdatedDate:
+        type: string
+        description: The date the scene was last updated
+        format: date-time
+      lastExecutedDate:
+        type: string
+        description: The date the scene was last executed
+        format: date-time
+      editable:
+        type: boolean
+        description: Whether or not this scene can be edited by the logged in user
+          using the version of the app that made the request
+      apiVersion:
+        type: string
+        description: Date-based version of the API with which the scene was created
+          in format YYYYMMDD
+  SceneDevice:
+    type: object
+    properties:
+      deviceId:
+        type: string
+        description: the id of the device
+      deviceLabel:
+        type: string
+        description: the label of the device
+      deviceName:
+        type: string
+        description: the name of the device
+      deviceTypeId:
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+        description: The identifier for the device's DeviceType.
+      components:
+        type: array
+        items:
+          $ref: '#/definitions/SceneComponent'
+      locationId:
+        type: string
+        description: Location of the device
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+  SceneRequest:
+    type: object
+    description: JSON body for creating or updating a Scene
+    required:
+    - sceneName
+    - devices
+    properties:
+      sceneName:
+        type: string
+        description: The user-defined name of the Scene
+      sceneIcon:
+        type: string
+        description: The name of the icon
+      sceneColor:
+        type: string
+        description: The color of the icon
+        format: ^\#[0-9A-F]{6}$
+      devices:
+        type: array
+        items:
+          $ref: '#/definitions/SceneDeviceRequest'
+  SceneDeviceRequest:
+    type: object
+    description: JSON structure for a device when creating a Scene
+    properties:
+      deviceId:
+        type: string
+        description: the id of the device
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+      components:
+        type: array
+        items:
+          $ref: '#/definitions/SceneComponent'
+  SceneComponent:
+    type: object
+    description: A component of the scene device
+    properties:
+      componentId:
+        type: string
+        description: the id of the component
+      capabilities:
+        type: array
+        items:
+          $ref: '#/definitions/SceneCapability'
+  SceneCapability:
+    type: object
+    description: A device component capability
+    properties:
+      capabilityId:
+        type: string
+        description: The id of the capability
+      status:
+        type: string
+        description: The status of the capability
+        enum:
+        - proposed
+        - live
+        - deprecated
+        - dead
+      commands:
+        description: Capability commands
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/SceneCommand'
+  SceneCommand:
+    type: object
+    description: A component capability command
+    properties:
+      arguments:
+        description: the command arguments
+        type: array
+        items:
+          $ref: '#/definitions/SceneArgument'
+  SceneArgument:
+    type: object
+    description: A capability command argument
+    properties:
+      name:
+        type: string
+        description: the name of the command
+      schema:
+        type: object
+        description: the schema of the command
+      value:
+        type: object
+        description: The value being set for the capability command
+  ScenePagedResult:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/SceneSummary'
+      _links:
+        $ref: '#/definitions/Links'
+  StandardSuccessResponse:
+    description: '{"status": "success"}'
+    type: object
+    properties:
+      status:
+        type: string
+        default: success
+        enum:
+        - success
+  CapabilityDataType:
+    description: __DEPRECATED__ only available while migrating from `type` to `schema`
+    type: string
+    enum:
+    - STRING
+    - NUMBER
+    - ENUM
+    - JSON_OBJECT
+    - DATE
+    - VECTOR3
+    - DYNAMIC_ENUM
+    - COLOR_MAP
+    - BOOLEAN
+    example: ENUM
+swagger: '2.0'
+host: api.smartthings.com

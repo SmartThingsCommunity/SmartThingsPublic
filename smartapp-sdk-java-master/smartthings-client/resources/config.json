@@ -1,0 +1,15 @@
+{
+    "modelPackage": "com.smartthings.sdk.client.models",
+    "apiPackage": "com.smartthings.sdk.client.methods",
+    "library": "feign",
+    "java8": true,
+    "dateLibrary": "java8",
+    "hideGenerationTimestamp": true,
+    "typeMappings": {
+        "UUID": "java.lang.String"
+    },
+    "importMappings": {
+        "JsonIgnore": "com.fasterxml.jackson.annotation.JsonIgnore",
+        "JsonValue": "com.fasterxml.jackson.annotation.JsonValue"
+    }
+}

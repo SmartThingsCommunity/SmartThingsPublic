@@ -1,0 +1,41 @@
+{
+  "name": "poc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+      "start": "docker run --rm -it poc bash",
+      "build": "npm run build:cli && npm run build:docker",
+      "build:cli": "pkg app.js --target node10-linux-x64",
+      "build:docker": "docker build . --tag poc"
+    },
+  "dependencies": {
+      "minimist": "1.2.0"
+    },
+  "devDependencies": {
+      "pkg": "4.4.4"
+    }
+{
+  "name": "poc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+      "start": "docker run --rm -it poc bash",
+      "build": "npm run build:cli && npm run build:docker",
+      "build:cli": "pkg app.js --target node10-linux-x64",
+      "build:docker": "docker build . --tag poc"
+    },
+  "dependencies": {
+      "minimist": "1.2.0"
+    },
+  "devDependencies": {
+      "pkg": "4.4.4"
+    }
+}

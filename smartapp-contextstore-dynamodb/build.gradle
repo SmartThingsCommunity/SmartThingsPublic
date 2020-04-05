@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+    id 'eclipse'
+}
+
+apply from: rootProject.file('gradle/convention.gradle')
+apply from: rootProject.file('gradle/publish-jar.gradle')
+
+dependencies {
+    implementation deps.projects.smartappcore
+    implementation deps.projects.smartthingsclient
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.568')
+    implementation 'com.amazonaws:aws-java-sdk-dynamodb'
+    testImplementation 'junit:junit:4.12'
+    testImplementation deps.test.mockito
+    testImplementation deps.guava
+}
+
+jacocoTestReport.dependsOn(test)

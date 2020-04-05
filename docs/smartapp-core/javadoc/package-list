@@ -1,0 +1,7 @@
+com.smartthings.sdk.smartapp.core
+com.smartthings.sdk.smartapp.core.extensions
+com.smartthings.sdk.smartapp.core.extensions.contextstore
+com.smartthings.sdk.smartapp.core.internal
+com.smartthings.sdk.smartapp.core.internal.handlers
+com.smartthings.sdk.smartapp.core.models
+com.smartthings.sdk.smartapp.core.service

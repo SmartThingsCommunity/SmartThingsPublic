@@ -1,0 +1,1061 @@
+info:
+  title: SmartThings SmartApps API
+  version: v1.0-PREVIEW
+schemes:
+- https
+basePath: /
+produces:
+- application/json
+tags:
+- name: SmartApps
+  description: |
+    SmartThings SmartApps are client integrations built on top of the SmartThings platform.  These applications
+    are written in a technology chosen by the developer, and registered with the SmartThings platform.  The API
+    documented here details out what your client can expect when invoked by the SmartThings platform.
+paths:
+  /:
+    post:
+      summary: Execute a third-party SmartApp.
+      description: |
+        Execute a SmartThings SmartApp. Each SmartThings app execution is expected to contain the information outlined in the ExecutionRequest.
+      operationId: execute
+      parameters:
+      - name: executionRequest
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ExecutionRequest'
+      responses:
+        default:
+          description: Execution response.
+          schema:
+            $ref: '#/definitions/ExecutionResponse'
+      tags: [
+        ]
+definitions:
+  ExecutionRequest:
+    description: |
+      The root model for all executions.  An execution request is compositional in nature.  Client's can
+      expect exactly one *Data field set depending on the type of execution.  For example, if execution is
+      of type EVENT, the "eventData" field will be set.
+    type: object
+    properties:
+      lifecycle:
+        $ref: '#/definitions/AppLifecycle'
+      executionId:
+        description: This is a correlation id that is assigned to the execution that
+          is useful for support requests.
+        type: string
+        format: uuid
+        example: b328f242-c602-4204-8d73-33c48ae180af
+      locale:
+        description: An IETF BCP 47 language tag representing the chosen locale for
+          this account.
+        type: string
+        example: en
+      version:
+        description: The version of the execution's request model.
+        type: string
+        example: 1.0.0
+      eventData:
+        $ref: '#/definitions/EventData'
+      installData:
+        $ref: '#/definitions/InstallData'
+      updateData:
+        $ref: '#/definitions/UpdateData'
+      uninstallData:
+        $ref: '#/definitions/UninstallData'
+      configurationData:
+        $ref: '#/definitions/ConfigurationData'
+      pingData:
+        $ref: '#/definitions/PingData'
+      confirmationData:
+        $ref: '#/definitions/ConfirmationData'
+      oauthCallbackData:
+        $ref: '#/definitions/OAuthCallbackData'
+      settings:
+        description: Global settings as defined on the App.
+        type: object
+        additionalProperties:
+          type: string
+  ExecutionResponse:
+    description: |
+      Expected response structure for an SmartApp execution.  An execution response is compositional in nature.  Client's should
+      set exactly one *Data field depending on the type of execution.  For example, if the execution request's lifecycle was of type EVENT,
+      the "eventData" field should be returned.
+    type: object
+    properties:
+      statusCode:
+        type: integer
+      eventData:
+        $ref: '#/definitions/EventResponseData'
+      installData:
+        $ref: '#/definitions/InstallResponseData'
+      updateData:
+        $ref: '#/definitions/UpdateResponseData'
+      uninstallData:
+        $ref: '#/definitions/UninstallResponseData'
+      configurationData:
+        $ref: '#/definitions/ConfigurationResponseData'
+      pingData:
+        $ref: '#/definitions/PingResponseData'
+      oauthCallbackData:
+        $ref: '#/definitions/OAuthCallbackResponseData'
+  Event:
+    description: The event information, only populated if the execution type is EVENT.
+    type: object
+    properties:
+      eventType:
+        $ref: '#/definitions/EventType'
+      deviceEvent:
+        $ref: '#/definitions/DeviceEvent'
+      modeEvent:
+        $ref: '#/definitions/ModeEvent'
+      timerEvent:
+        $ref: '#/definitions/TimerEvent'
+      deviceCommandsEvent:
+        $ref: '#/definitions/DeviceCommandsEvent'
+  Permissions:
+    description: A list of permissions associated with this execution. See `securityDefinitions`
+      for more information.
+    type: array
+    items:
+      type: string
+  StringConfig:
+    description: A simple string configuration.
+    type: object
+    properties:
+      value:
+        description: A config value
+        type: string
+        maxLength: 2048
+    example:
+      value: 31192dc9-eb45-4d90-b606-21e9b66d8c2b
+  DeviceConfig:
+    description: A device configuration.
+    type: object
+    properties:
+      deviceId:
+        description: The ID of the device.
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+      componentId:
+        description: The component ID on the device.
+        type: string
+        format: ^[-_!.~'()*0-9a-zA-Z]{1,36}$
+    example:
+      deviceId: 31192dc9-eb45-4d90-b606-21e9b66d8c2b
+      componentId: main
+  ModeConfig:
+    description: A mode configuration.
+    type: object
+    properties:
+      modeId:
+        description: The ID of the mode.
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+    example:
+      modeId: 9206ea57-2e2e-414c-a792-9087117ca3d8
+  ConfigEntry:
+    description: A configuration value type and the correspodning configuration.
+    type: object
+    properties:
+      valueType:
+        type: string
+        default: STRING
+        enum:
+        - STRING
+        - DEVICE
+        - MODE
+        description: The value type.
+      stringConfig:
+        description: The config if valueType is STRING, meaningless otherwise
+        $ref: '#/definitions/StringConfig'
+      deviceConfig:
+        description: The config if valueType is DEVICE, meaningless otherwise
+        $ref: '#/definitions/DeviceConfig'
+      modeConfig:
+        description: The config if valueType is MODE, meaningless otherwise
+        $ref: '#/definitions/ModeConfig'
+    example:
+      valueType: DEVICE
+      deviceConfig:
+        deviceId: 31192dc9-eb45-4d90-b606-21e9b66d8c2b
+        componentId: main
+  ConfigEntries:
+    description: A list of available configuration values.
+    type: array
+    items:
+      $ref: '#/definitions/ConfigEntry'
+  ConfigMap:
+    description: |
+      A map of configurations for an Installed App.  The map 'key' is the configuration name
+      and the 'value' is an array of strings.
+    type: object
+    additionalProperties:
+      $ref: '#/definitions/ConfigEntries'
+  DeviceEvent:
+    description: An event on a device that matched a subscription for this app.
+    type: object
+    properties:
+      subscriptionName:
+        description: The name of subscription that caused delivery.
+        type: string
+        example: motion_sensors
+      eventId:
+        description: The ID of the event.
+        type: string
+        example: 736e3903-001c-4d40-b408-ff40d162a06b
+      locationId:
+        description: The ID of the location in which the event was triggered.
+        type: string
+        example: 499e28ba-b33b-49c9-a5a1-cce40e41f8a6
+      deviceId:
+        description: The ID of the device associated with the DEVICE_EVENT.
+        type: string
+        example: 6f5ea629-4c05-4a90-a244-cc129b0a80c3
+      componentId:
+        description: The name of the component on the device that the event is associated
+          with.
+        type: string
+        example: main
+      capability:
+        description: The name of the capability associated with the DEVICE_EVENT.
+        type: string
+        example: motionSensor
+      attribute:
+        description: The name of the DEVICE_EVENT. This typically corresponds to an
+          attribute name of the device-handler’s capabilities.
+        type: string
+        example: motion
+      value:
+        description: |
+          The value of the event. The type of the value is dependent on the capability's attribute type.
+        type: object
+        example: active
+      stateChange:
+        description: Whether or not the state of the device has changed as a result
+          of the DEVICE_EVENT.
+        type: boolean
+  ModeEvent:
+    type: object
+    properties:
+      modeId:
+        description: The ID of the mode associated with a MODE_EVENT.
+        type: string
+  TimerEvent:
+    description: An event that is caused by a schedule for this app being fired.
+    type: object
+    properties:
+      eventId:
+        description: The ID of the event.
+        type: string
+      name:
+        description: The name of the schedule that caused this event.
+        type: string
+        example: lights_off_timeout
+      type:
+        $ref: '#/definitions/TimerType'
+      time:
+        description: The IS0-8601 date time strings in UTC that this event was scheduled
+          for.
+        type: string
+        example: 2017-08-04T12:44:18Z
+      expression:
+        description: The CRON expression if the schedule was of type CRON.
+        type: string
+  DeviceCommandsEvent:
+    description: An event that contains commands for devices that were created by
+      this app.
+    type: object
+    properties:
+      deviceId:
+        type: string
+        description: The guid of the device that the cammands are for.
+      profileId:
+        type: string
+        description: The device profile ID of the device instance.
+      externalId:
+        type: string
+        description: The external ID that was set during install of a device.
+      commands:
+        type: array
+        items:
+          $ref: '#/definitions/DeviceCommandsEventCommand'
+  DeviceCommandsEventCommand:
+    type: object
+    properties:
+      componentId:
+        type: string
+        example: main
+      capability:
+        type: string
+        example: switch
+      command:
+        type: string
+        example: 'on'
+      arguments:
+        type: array
+        items:
+          type: object
+        example: [
+          ]
+  EventType:
+    description: |
+      The type of event passed to the app being executed. The type will be one of:
+        * DEVICE_EVENT - A device event as a result of a subscription the app created.
+        * TIMER_EVENT - An event as a result of a scheduled app execution.
+        * DEVICE_COMMANDS_EVENT - _Only applicable for cloud-to-cloud device integration apps._ An event as a result of a device command execution request.
+        * MODE_EVENT - A mode event is triggered when the location's mode is changed.
+    type: string
+    enum:
+    - DEVICE_EVENT
+    - MODE_EVENT
+    - TIMER_EVENT
+    - DEVICE_COMMANDS_EVENT
+  TimerType:
+    description: The type of TIMER_EVENT.
+    type: string
+    enum:
+    - CRON
+    - ONCE
+  AppLifecycle:
+    description: |
+      Every invocation of a SmartApp is associated to a specific lifecycle event.  These lifecycles include:
+      * INSTALL - Lifecycle that will be invoked once at the time of installation of a SmartApp.
+      * UPDATE - Invoked when a user modifies the configuration values assigned to the SmartApp.
+      * UNINSTALL - A clean up lifecycle invoked upon the deletion of an SmartApp from a user's account.
+      * EVENT - Lifecycle event used when the SmartApp is invoked as the result of a subscription or schedule.
+      * PING - Lifecycle used during App creation to verify connectivity, and ownership of a particular target.
+      * CONFIRMATION - Lifecycle used to send confirmation link to a SmartApp for ownership validation
+      * CONFIGURATION - Lifecycle used to drive the UX during the installation process of a SmartApp into a user's account.
+      * OAUTH_CALLBACK - Lifecycle used for integrations that implement a third-party OAuth out.
+    type: string
+    enum:
+    - INSTALL
+    - UPDATE
+    - UNINSTALL
+    - EVENT
+    - PING
+    - CONFIRMATION
+    - CONFIGURATION
+    - OAUTH_CALLBACK
+  EventData:
+    description: The data payload to an execution request with an AppLifecycle of
+      EVENT.
+    type: object
+    required:
+    - authToken
+    - installedApp
+    - event
+    properties:
+      authToken:
+        description: An OAuth token to use when calling into SmartThings API's.
+        type: string
+      installedApp:
+        $ref: '#/definitions/InstalledApp'
+      events:
+        type: array
+        items:
+          $ref: '#/definitions/Event'
+  InstallData:
+    description: The data payload to an execution request with an AppLifecycle of
+      INSTALL.
+    type: object
+    required:
+    - authToken
+    - refreshToken
+    - installedApp
+    properties:
+      authToken:
+        description: An OAuth token to use when calling into SmartThings API's.
+        type: string
+      refreshToken:
+        description: |
+          A refresh token which maybe used to obtain authorization to SmartThings API after expiration of the authToken.
+          An integration will need to use this refreshToken to support calling the SmartThings API outside the context
+          of an event.
+        type: string
+      installedApp:
+        $ref: '#/definitions/InstalledApp'
+  UpdateData:
+    description: The data payload to an execution request with an AppLifecycle of
+      UPDATE.
+    type: object
+    required:
+    - authToken
+    - installedApp
+    - previousConfig
+    - previousPermissions
+    properties:
+      authToken:
+        description: An OAuth token to use when calling into SmartThings API's.
+        type: string
+      refreshToken:
+        description: |
+          A refresh token which maybe used to obtain authorization to SmartThings API after expiration of the authToken.
+          An integration will need to use this refreshToken to support calling the SmartThings API outside the context
+          of an event.
+        type: string
+      installedApp:
+        $ref: '#/definitions/InstalledApp'
+      previousConfig:
+        $ref: '#/definitions/ConfigMap'
+      previousPermissions:
+        $ref: '#/definitions/Permissions'
+  UninstallData:
+    description: The data payload to an execution request with an AppLifecycle of
+      UNINSTALL.
+    type: object
+    required:
+    - installedApp
+    properties:
+      installedApp:
+        $ref: '#/definitions/InstalledApp'
+  InstalledApp:
+    description: The information associated with this installed app.
+    type: object
+    properties:
+      installedAppId:
+        description: The id of the installed app.
+        type: string
+        format: uuid
+      locationId:
+        description: The location that the installed App is associated with
+        type: string
+        format: ^(?:([0-9a-fA-F]{32})|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))$
+      config:
+        $ref: '#/definitions/ConfigMap'
+      permissions:
+        $ref: '#/definitions/Permissions'
+    example:
+      installedAppId: d692699d-e7a6-400d-a0b7-d5be96e7a564
+      locationId: e675a3d9-2499-406c-86dc-8a492a886494
+      config:
+        contactSensor:
+        - valueType: DEVICE
+          deviceConfig:
+            deviceId: e457978e-5e37-43e6-979d-18112e12c961
+            componentId: main
+        lightSwitch:
+        - valueType: DEVICE
+          deviceConfig:
+            deviceId: 74aac3bb-91f2-4a88-8c49-ae5e0a234d76
+            componentId: main
+        minutes:
+        - valueType: STRING
+          stringConfig:
+            value: '5'
+        permissions:
+        - r:devices:e457978e-5e37-43e6-979d-18112e12c961
+        - r:devices:74aac3bb-91f2-4a88-8c49-ae5e0a234d76
+        - x:devices:74aac3bb-91f2-4a88-8c49-ae5e0a234d76
+  PingData:
+    description: |
+      A request to ping a SmartApp to ensure connectivity.
+    type: object
+    required:
+    - challenge
+    properties:
+      challenge:
+        description: A challenge phrase that the SmartApp must echo back to validate
+          itself.
+        type: string
+  ConfirmationData:
+    description: |
+      A request to send a confirmation link to a SmartApp for ownership validation.
+      type: object
+    type: object
+    properties:
+      appId:
+        type: string
+        format: uuid
+        description: A globally unique identifier for an app.
+      confirmationUrl:
+        description: |
+          An HTTPS url that may be visited to confirm / activate an App registration.
+        type: string
+        format: url
+  ConfigurationData:
+    description: |
+      A request for a pages flow to drive app installation.  This will only be available for executions of type "CONFIGURATION".
+    type: object
+    required:
+    - phase
+    properties:
+      installedAppId:
+        description: The id of the installed app.
+        type: string
+        format: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+      phase:
+        $ref: '#/definitions/ConfigurationPhase'
+      pageId:
+        description: A developer defined page ID. Must be URL safe characters.
+        type: string
+        format: ^[a-zA-Z0-9.-_]{1,36}$
+      previousPageId:
+        description: The previous page the user completed. Must be URL safe characters.
+        type: string
+        format: ^[a-zA-Z0-9.-_]{1,36}$
+      config:
+        description: Settings currently configured by user.
+        $ref: '#/definitions/ConfigMap'
+  OAuthCallbackData:
+    description: |
+      Provides intergration with the result of a third party oauth attempt.  This will only be available for executions of type "OAUTH_CALLBACK".
+    type: object
+    properties:
+      installedAppId:
+        description: The id of the installed app.
+        type: string
+        format: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+      urlPath:
+        description: |
+          A relative URL containing all of the query string parameters as returned by the third party oauth system. A SmartApp can
+          parse the `urlPath` property to extract any senstive auth codes/tokens which can then be used to access the third party system.
+        type: string
+  EventResponseData:
+    description: |
+      Empty object response for an Event lifecycle execution.
+    type: object
+  InstallResponseData:
+    description: |
+      Empty object response for an Install lifecycle execution.
+    type: object
+  UpdateResponseData:
+    description: |
+      Empty object response for an Update lifecycle execution.
+    type: object
+  UninstallResponseData:
+    description: |
+      Empty object response for an Uninstall lifecycle execution.
+    type: object
+  ConfigurationResponseData:
+    description: |
+      Expected response for a Configuration lifecycle execution.  ConfigurationResponseData follows a compositional
+      structure.
+      * When a request is made for the INITIALIZE phase, a InitializeInstall model should be returned.
+      * When a request is made for the PAGE phase, a Page model should be returned.
+    type: object
+    properties:
+      initialize:
+        $ref: '#/definitions/InitializeSetting'
+      page:
+        $ref: '#/definitions/Page'
+  PingResponseData:
+    description: |
+      Expected response for a Ping lifecycle execution.
+    type: object
+    properties:
+      challenge:
+        description: An echo of the challenge that was provided on the request.
+        type: string
+  OAuthCallbackResponseData:
+    description: |
+      Empty object response for an OAuth Callback lifecycle execution.
+    type: object
+  Page:
+    type: object
+    properties:
+      name:
+        description: Name of the page to be configured.
+        type: string
+        maxLength: 128
+      pageId:
+        description: A developer defined page ID. Must be URL safe characters.
+        type: string
+        format: ^[a-zA-Z0-9.-_]{1,36}$
+      nextPageId:
+        description: A developer defined page ID for the next page in the configuration
+          process. Must be URL safe characters.
+        type: string
+        format: ^[a-zA-Z0-9.-_]{1,36}$
+      previousPageId:
+        description: A developer defined page ID for the previous page in the configuration
+          process. Must be URL safe characters.
+        type: string
+        format: ^[a-zA-Z0-9.-_]{1,36}$
+      complete:
+        description: Indicates if this is the last page in the configuration process.
+        type: boolean
+        default: false
+      sections:
+        description: The display sections for user defined settings.
+        type: array
+        items:
+          $ref: '#/definitions/Section'
+  Section:
+    type: object
+    properties:
+      name:
+        description: Name of the section.
+        type: string
+        maxLength: 128
+      hideable:
+        description: Whether or not the section can be collapsed
+        type: boolean
+        default: false
+      hidden:
+        description: If section can be collapsed, whether or not it defaults to hidden
+        type: boolean
+        default: false
+      settings:
+        description: |
+          Configuration settings represent the questions asked to the end user installing an integration the answers to
+          which provide the configuration for which the integration will use when executing. Settings follow an inheritance
+          pattern.  The type field dictates the expected instance of setting that is provided.
+        type: array
+        items:
+          $ref: '#/definitions/SectionSetting'
+  ConfigurationPhase:
+    description: Denotes the current installation phase.
+    type: string
+    enum:
+    - INITIALIZE
+    - PAGE
+  SettingType:
+    description: Denotes the type of setting.
+    type: string
+    enum:
+    - DEVICE
+    - TEXT
+    - PASSWORD
+    - BOOLEAN
+    - ENUM
+    - MODE
+    - SCENE
+    - LINK
+    - PAGE
+    - IMAGE
+    - IMAGES
+    - VIDEO
+    - TIME
+    - PARAGRAPH
+    - EMAIL
+    - DECIMAL
+    - NUMBER
+    - PHONE
+    - OAUTH
+  StyleType:
+    description: Style of the setting.
+    type: string
+    enum:
+    - COMPLETE
+    - ERROR
+    - DEFAULT
+  Setting:
+    type: object
+    properties:
+      id:
+        description: A developer defined configuration ID.
+        type: string
+        format: ^[a-zA-Z0-9.-_]+$
+        maxLength: 128
+      name:
+        description: Name of the setting to be configured.
+        type: string
+        maxLength: 128
+      description:
+        description: Description of the app to be configured.
+        type: string
+        maxLength: 2048
+  InitializeSetting:
+    description: The initial setting to be returned when starting a new configuration
+      install.
+    allOf:
+    - $ref: '#/definitions/Setting'
+    - type: object
+      properties:
+        firstPageId:
+          description: A developer defined page ID of the first page to display. Must
+            be URL safe characters.
+          type: string
+          format: ^[a-zA-Z0-9.-_]{1,36}$
+        disableCustomDisplayName:
+          description: Disable the ability for the user to customize the display name.
+          type: boolean
+          default: false
+        disableRemoveApp:
+          description: Disable the ability to remove the app from the configuration
+            flow.
+          type: boolean
+          default: false
+        permissions:
+          type: array
+          items:
+            type: string
+  SectionSetting:
+    allOf:
+    - $ref: '#/definitions/Setting'
+    - type: object
+      discriminator: type
+      required:
+      - type
+      properties:
+        defaultValue:
+          description: A defualt value for the setting.
+          type: string
+          maxLength: 128
+        required:
+          description: Indicates if this setting is required for configuration.
+          type: boolean
+          default: false
+        type:
+          $ref: '#/definitions/SettingType'
+  DeviceSetting:
+    description: Device Setting
+    x-discriminator-value: DEVICE
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        multiple:
+          description: Indicates if this device setting can have multiple values.
+          type: boolean
+          default: false
+        submitOnChange:
+          description: Indicates if this input should refresh configs after a change
+            in value.
+          type: boolean
+          default: false
+        preselect:
+          description: Indicates if the first device in the list of options should
+            be pre selected.
+          type: boolean
+          default: false
+        capabilities:
+          description: The required capabilities for the device(s) options.
+          type: array
+          items:
+            type: string
+            maxLength: 128
+        permissions:
+          description: The required permissions for the selected device(s).
+          type: array
+          items:
+            type: string
+            enum:
+            - r
+            - x
+            - w
+        style:
+          $ref: '#/definitions/StyleType'
+  OAuthSetting:
+    description: OAuth Setting
+    x-discriminator-value: OAUTH
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        urlTemplate:
+          description: |
+            The url to use for the OAuth service.
+            Use __SmartThingsOAuthCallback__ in the template for the callback/redirect url you need to provide to the OAuth service.
+          type: string
+          maxLength: 2048
+          example: http://www.smartthings.com/oauth?param1=1&param2=2&callback=__SmartThingsOAuthCallback__
+        style:
+          $ref: '#/definitions/StyleType'
+  TimeSetting:
+    description: Time Setting
+    x-discriminator-value: TIME
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+  TextSetting:
+    description: Text Setting
+    x-discriminator-value: TEXT
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        maxLength:
+          description: The maximum length the text can have.
+          type: integer
+        minLength:
+          description: The minimum length the text can have.
+          type: integer
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+        postMessage:
+          description: A string to be shown after the text input field.
+          type: string
+          maxLength: 10
+  PasswordSetting:
+    description: Password Setting
+    x-discriminator-value: PASSWORD
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        maxLength:
+          description: The maximum length the password can have.
+          type: integer
+        minLength:
+          description: The minimum length the password can have.
+          type: integer
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+  PhoneSetting:
+    description: Phone Setting
+    x-discriminator-value: PHONE
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+  EmailSetting:
+    description: Email Setting
+    x-discriminator-value: EMAIL
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+  NumberSetting:
+    description: Number Setting
+    x-discriminator-value: NUMBER
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        max:
+          description: The maximum inclusive value the number can be set to.
+          type: integer
+        min:
+          description: The minumum inclusive value the number can be set to.
+          type: integer
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+        postMessage:
+          description: A string to be shown after the text input field.
+          type: string
+          maxLength: 10
+  DecimalSetting:
+    description: DECIMAL Setting
+    x-discriminator-value: DECIMAL
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        max:
+          description: The maximum inclusive value the decimal can be set to.
+          type: integer
+        min:
+          description: The minumum inclusive value the decimal can be set to.
+          type: integer
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+        postMessage:
+          description: A string to be shown after the text input field.
+          type: string
+          maxLength: 10
+  BooleanSetting:
+    description: Boolean Setting
+    x-discriminator-value: BOOLEAN
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+        submitOnChange:
+          description: Indicates if this input should refresh configs after a change
+            in value.
+          type: boolean
+          default: false
+  ParagraphSetting:
+    description: Paragraph Setting
+    x-discriminator-value: PARAGRAPH
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+  LinkSetting:
+    description: URL link Setting
+    x-discriminator-value: LINK
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        url:
+          description: The page to navigate to.
+          type: string
+          maxLength: 2048
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+        style:
+          $ref: '#/definitions/StyleType'
+  PageSetting:
+    description: Jump to page Setting
+    x-discriminator-value: PAGE
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        page:
+          description: The page to navigate to.
+          type: string
+          maxLength: 128
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+        style:
+          $ref: '#/definitions/StyleType'
+  ImageSetting:
+    description: Image Setting
+    x-discriminator-value: IMAGE
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+  ImagesSetting:
+    description: Images Setting
+    x-discriminator-value: IMAGES
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        images:
+          description: The images to display.
+          type: array
+          items:
+            description: The image url.
+            type: string
+            maxLength: 2048
+  VideoSetting:
+    description: Video Setting
+    x-discriminator-value: VIDEO
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        video:
+          description: The video url.
+          type: string
+          maxLength: 2048
+        image:
+          description: The image url.
+          type: string
+          maxLength: 2048
+  EnumSetting:
+    description: Enum Setting
+    x-discriminator-value: ENUM
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        multiple:
+          description: Indicates if this enum setting can have multiple values.
+          type: boolean
+          default: false
+        groupedOptions:
+          description: Display the enum options as groups.
+          type: array
+          items:
+            $ref: '#/definitions/GroupedOption'
+        options:
+          description: The enum options.
+          type: array
+          items:
+            $ref: '#/definitions/Option'
+        submitOnChange:
+          description: Indicates if this input should refresh configs after a change
+            in value.
+          type: boolean
+          default: false
+        style:
+          $ref: '#/definitions/StyleType'
+  ModeSetting:
+    description: Mode Setting
+    x-discriminator-value: MODE
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        multiple:
+          description: Indicates if this enum setting can have multiple values.
+          type: boolean
+          default: false
+        submitOnChange:
+          description: Indicates if this input should refresh configs after a change
+            in value.
+          type: boolean
+          default: false
+        style:
+          $ref: '#/definitions/StyleType'
+  SceneSetting:
+    description: Scene Setting
+    x-discriminator-value: SCENE
+    allOf:
+    - $ref: '#/definitions/SectionSetting'
+    - type: object
+      properties:
+        multiple:
+          description: Indicates if this scene setting can have multiple values.
+          type: boolean
+          default: false
+        submitOnChange:
+          description: Indicates if this input should refresh configs after a change
+            in value.
+          type: boolean
+          default: false
+        style:
+          $ref: '#/definitions/StyleType'
+  GroupedOption:
+    type: object
+    properties:
+      name:
+        description: The display name of this group of enum options.
+        type: string
+        maxLength: 128
+      options:
+        description: The enum options.
+        type: array
+        items:
+          $ref: '#/definitions/Option'
+  Option:
+    type: object
+    properties:
+      id:
+        description: The unique ID for this option.
+        type: string
+        maxLength: 128
+      name:
+        description: The display name for this option.
+        type: string
+        maxLength: 128
+swagger: '2.0'
+host: smartapps

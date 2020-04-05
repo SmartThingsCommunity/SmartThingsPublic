@@ -1,0 +1,8 @@
+ignore:
+  - "[docs|doc]/**/*"  # ignore docs
+  - "[config|]/**/*" # ignore configs
+  - "*.md" # ignore markdown
+
+parsers:
+  javascript:
+    enable_partials: yes
