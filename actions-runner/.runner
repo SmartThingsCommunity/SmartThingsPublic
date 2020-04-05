@@ -1,9 +1,9 @@
 ﻿{
-  "agentId": 3,
-  "agentName": "itbytes",
+  "agentId": 23,
+  "agentName": "X2JCJAB8C5",
   "poolId": 1,
   "poolName": "Default",
   "serverUrl": "https://pipelines.actions.githubusercontent.com/EQE2oYQT0i2U5mCTEGtEZoQM75DsLEfYVM9ZJlOo5q1WQNpGUD/",
-  "gitHubUrl": "https://github.com/monninn/SmartThingsPublic",
-  "workFolder": "work"
+  "gitHubUrl": "https://github.com/monninn82/SmartThingsPublic",
+  "workFolder": "_work"
 }
