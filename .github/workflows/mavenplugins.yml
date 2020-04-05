@@ -21,6 +21,6 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with Maven
-      run: mvn teamcity-configs:generate
+      run: mvn teamcity-configs:generate build
 
 
