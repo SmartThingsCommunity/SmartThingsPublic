@@ -1,0 +1,17 @@
+name: ember-cli-code-coverage
+
+on: [pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: ember-cli-code-coverage-action  
+    - uses: ./ # Uses an action in the root directory
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        test-command: 'yarn run mock-test-command
+        coverage-file: './example-coverage/coverage-summary.json'
