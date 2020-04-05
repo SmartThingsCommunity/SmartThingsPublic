@@ -1,10 +1,10 @@
 ﻿{
   "repositoryName": "monninn82/SmartThingsPublic",
   "pipelineDirectory": "SmartThingsPublic",
-  "workspaceDirectory": "SmartThingsPublic\\SmartThingsPublic",
+  "workspaceDirectory": "monninn82\\Nicholas_Monnin",
   "repositories": {
     "monninn/SmartThingsPublic": {
-      "repositoryPath": "monninn82//SmartThingsPublic",
+      "repositoryPath": "monninn82//Nicholas_Monnin",
       "lastRunOn": "03/29/2020 11:12:59 -05:00"
     }
   },
