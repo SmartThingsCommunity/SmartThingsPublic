@@ -29,7 +29,7 @@
 
   <meta name="viewport" content="width=device-width">
   
-  <title>awesome-readme/contributing.md at master · matiassingers/awesome-readme</title>
+  <title>awesome-readme/.travis.yml at master · matiassingers/awesome-readme</title>
     <meta name="description" content="A curated list of awesome READMEs. Contribute to matiassingers/awesome-readme development by creating an account on GitHub.">
     <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="GitHub">
   <link rel="fluid-icon" href="https://github.com/fluidicon.png" title="GitHub">
@@ -39,10 +39,10 @@
     <meta property="og:image" content="https://avatars2.githubusercontent.com/u/938453?s=400&amp;v=4" /><meta property="og:site_name" content="GitHub" /><meta property="og:type" content="object" /><meta property="og:title" content="matiassingers/awesome-readme" /><meta property="og:url" content="https://github.com/matiassingers/awesome-readme" /><meta property="og:description" content="A curated list of awesome READMEs. Contribute to matiassingers/awesome-readme development by creating an account on GitHub." />
 
   <link rel="assets" href="https://github.githubassets.com/">
-  <link rel="web-socket" href="wss://live.github.com/_sockets/VjI6NTE4NTEyMTg4OmE5NjQ3YWY2ZmE4YTU5YzgwMTkzZGJmZDk4YjkzM2JkODFhZjcwZDNlM2JiNTc2NDNjNjIzMmE0ZjdkOWI0MjY=--bd24eef964cf5a4cc1ed2a4a3e61344a5ea2d630">
+  <link rel="web-socket" href="wss://live.github.com/_sockets/VjI6NTE4NTEyMTg4OjkzNmU2ODkwYzY3Njk4MjU3Y2FhYWIzNWE2NWFhZTk0MDRhODkyYmMzODc2YjE0OTI1MWU3OTg0NmUyMjRjYjA=--3a99733341dd912db684a70ee1d3912bacd7ae23">
   <link rel="sudo-modal" href="/sessions/sudo_modal">
 
-  <meta name="request-id" content="323D:6F2C:532C98:8611F9:5E896E6B" data-pjax-transient="true" /><meta name="html-safe-nonce" content="66972f4baeeb32de0c6346908783be412c3a6f47" data-pjax-transient="true" /><meta name="visitor-payload" content="eyJyZWZlcnJlciI6Imh0dHBzOi8vZ2l0aHViLmNvbS9tYXRpYXNzaW5nZXJzL2F3ZXNvbWUtcmVhZG1lIiwicmVxdWVzdF9pZCI6IjMyM0Q6NkYyQzo1MzJDOTg6ODYxMUY5OjVFODk2RTZCIiwidmlzaXRvcl9pZCI6IjgzMTg2MDkwNDU0OTg3MTQ3NTciLCJyZWdpb25fZWRnZSI6ImlhZCIsInJlZ2lvbl9yZW5kZXIiOiJpYWQifQ==" data-pjax-transient="true" /><meta name="visitor-hmac" content="19a1ee69088589ce1879ce14e957a354e02e096e1eb547dc050e32eea91f70ad" data-pjax-transient="true" />
+  <meta name="request-id" content="323D:6F2C:533CCF:86279C:5E896EB7" data-pjax-transient="true" /><meta name="html-safe-nonce" content="66972f4baeeb32de0c6346908783be412c3a6f47" data-pjax-transient="true" /><meta name="visitor-payload" content="eyJyZWZlcnJlciI6Imh0dHBzOi8vZ2l0aHViLmNvbS9tYXRpYXNzaW5nZXJzL2F3ZXNvbWUtcmVhZG1lIiwicmVxdWVzdF9pZCI6IjMyM0Q6NkYyQzo1MzNDQ0Y6ODYyNzlDOjVFODk2RUI3IiwidmlzaXRvcl9pZCI6IjgzMTg2MDkwNDU0OTg3MTQ3NTciLCJyZWdpb25fZWRnZSI6ImlhZCIsInJlZ2lvbl9yZW5kZXIiOiJpYWQifQ==" data-pjax-transient="true" /><meta name="visitor-hmac" content="d37371f7cb43f63cb79dcf83202702ddb280c7cded893a023054496ece2e92f5" data-pjax-transient="true" />
 
 
 
@@ -76,7 +76,7 @@
 
       <meta name="expected-hostname" content="github.com">
 
-      <meta name="js-proxy-site-detection-payload" content="MzNjNTZlMGY5YTVlYzFjOThjOTlmYmY3N2VmOGU1ZDFkNmY4ODk4OWM2NTZmNjExNzQ0ZTY1Nzk5NGZkNWY4NXx7InJlbW90ZV9hZGRyZXNzIjoiMTA0LjEyOS4xOTYuNzYiLCJyZXF1ZXN0X2lkIjoiMzIzRDo2RjJDOjUzMkM5ODo4NjExRjk6NUU4OTZFNkIiLCJ0aW1lc3RhbXAiOjE1ODYwNjUwMDgsImhvc3QiOiJnaXRodWIuY29tIn0=">
+      <meta name="js-proxy-site-detection-payload" content="NTgwMzVmOTNlZTg0YzFmZDk1NjkzYTdmMDc3OGE2ODY5MTczMzkyMThlYWUyYjFiMWIwMTJiNjQ0Yzk0ZTdjZHx7InJlbW90ZV9hZGRyZXNzIjoiMTA0LjEyOS4xOTYuNzYiLCJyZXF1ZXN0X2lkIjoiMzIzRDo2RjJDOjUzM0NDRjo4NjI3OUM6NUU4OTZFQjciLCJ0aW1lc3RhbXAiOjE1ODYwNjUwOTYsImhvc3QiOiJnaXRodWIuY29tIn0=">
 
     <meta name="enabled-features" content="MARKETPLACE_FEATURED_BLOG_POSTS,MARKETPLACE_INVOICED_BILLING,MARKETPLACE_SOCIAL_PROOF_CUSTOMERS,MARKETPLACE_TRENDING_SOCIAL_PROOF,MARKETPLACE_RECOMMENDATIONS,MARKETPLACE_PENDING_INSTALLATIONS,RELATED_ISSUES,GHE_CLOUD_TRIAL,PAGE_STALE_CHECK">
 
@@ -90,7 +90,7 @@
   <meta name="octolytics-dimension-user_id" content="938453" /><meta name="octolytics-dimension-user_login" content="matiassingers" /><meta name="octolytics-dimension-repository_id" content="29456624" /><meta name="octolytics-dimension-repository_nwo" content="matiassingers/awesome-readme" /><meta name="octolytics-dimension-repository_public" content="true" /><meta name="octolytics-dimension-repository_is_fork" content="false" /><meta name="octolytics-dimension-repository_network_root_id" content="29456624" /><meta name="octolytics-dimension-repository_network_root_nwo" content="matiassingers/awesome-readme" /><meta name="octolytics-dimension-repository_explore_github_marketplace_ci_cta_shown" content="false" />
 
 
-    <link rel="canonical" href="https://github.com/matiassingers/awesome-readme/blob/master/contributing.md" data-pjax-transient>
+    <link rel="canonical" href="https://github.com/matiassingers/awesome-readme/blob/master/.travis.yml" data-pjax-transient>
 
 
   <meta name="browser-stats-url" content="https://api.github.com/_private/browser/stats">
@@ -165,7 +165,7 @@
           spellcheck="false"
           autocomplete="off"
           >
-          <input type="hidden" value="W8Nuh/02ppU9xbYyMg7I8C6bEMUZHsNJKieG4+MgftnGIrBYfOIIoo3R879kOU0vB7voAv49CHtGcHqWvosNLw==" data-csrf="true" class="js-data-jump-to-suggestions-path-csrf" />
+          <input type="hidden" value="kQfNPxVwmDdPamC9VFquW7v/i3mmcmWQ8lVRrSJvuw8M5hPglKQ2AP9+JTACbSuEkt9zvkFRrqKeAq3Yf8TI+Q==" data-csrf="true" class="js-data-jump-to-suggestions-path-csrf" />
           <input type="hidden" class="js-site-search-type-field" name="type" >
             <img src="https://github.githubassets.com/images/search-key-slash.svg" alt="" class="mr-2 header-search-key-slash">
 
@@ -316,7 +316,7 @@
       <img class="avatar" height="20" width="20" alt="@monninn82" src="https://avatars3.githubusercontent.com/u/62664434?s=60&amp;v=4" />
       monninn82
 </a>
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form action="/logout" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="MHyl1wKL2RXue5htRnAUgs7Sygii17BmhB3IblEZS7HZF/al49Mw3ZCQ3Av3TWfdaONADyGWeI7SiYNaY/+TzQ==" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form action="/logout" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="j60K1oTidmbAaO8ahL5GFvJHOeOzPkUcznVxVCLFwexmxlmkZbqfrr6Dq3w1gzVJVHaz5DB/jfSY4TpgECMZkA==" />
       <button type="submit" class="Header-link mr-0 mr-lg-3 py-2 py-lg-0 border-top border-lg-top-0 border-white-fade-15 d-lg-none btn-link d-block width-full text-left" data-ga-click="Header, sign out, icon:logout" style="padding-left: 2px;">
         <svg class="octicon octicon-sign-out v-align-middle" viewBox="0 0 16 17" version="1.1" width="16" height="17" aria-hidden="true"><path fill-rule="evenodd" d="M12 9V7H8V5h4V3l4 3-4 3zm-2 3H6V3L2 1h8v3h1V1c0-.55-.45-1-1-1H1C.45 0 0 .45 0 1v11.38c0 .39.22.73.55.91L6 16.01V13h4c.55 0 1-.45 1-1V8h-1v4z"></path></svg>
         Sign out
@@ -410,7 +410,7 @@
   " data-team-hovercards-enabled>
   <details class="js-user-status-details details-reset details-overlay details-overlay-dark">
     <summary class="btn-link btn-block link-gray no-underline js-toggle-user-status-edit toggle-user-status-edit "
-      role="menuitem" data-hydro-click="{&quot;event_type&quot;:&quot;user_profile.click&quot;,&quot;payload&quot;:{&quot;profile_user_id&quot;:938453,&quot;target&quot;:&quot;EDIT_USER_STATUS&quot;,&quot;user_id&quot;:62664434,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/contributing.md&quot;}}" data-hydro-click-hmac="7f05d34cc6574e56397da80e51a344b572ff6b6a8aa5c22767c73a2d2087c02b">
+      role="menuitem" data-hydro-click="{&quot;event_type&quot;:&quot;user_profile.click&quot;,&quot;payload&quot;:{&quot;profile_user_id&quot;:938453,&quot;target&quot;:&quot;EDIT_USER_STATUS&quot;,&quot;user_id&quot;:62664434,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/.travis.yml&quot;}}" data-hydro-click-hmac="c553d2db2428356767363121592b4f25eb4e32be588a5ded8823b982c70c487f">
       <div class="d-flex">
         <div class="f6 lh-condensed user-status-header
           d-inline-block v-align-middle
@@ -437,7 +437,7 @@
       </div>
     </summary>
     <details-dialog class="details-dialog rounded-1 anim-fade-in fast Box Box--overlay" role="dialog" tabindex="-1">
-      <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="position-relative flex-auto js-user-status-form" action="/users/status?compact=1&amp;link_mentions=0&amp;truncate=1" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="put" /><input type="hidden" name="authenticity_token" value="+ITtJWLgYBmTGnCmW/ikBOC+0LM8K961v1j3A3ZxPBFfOTfB/N4Nw67u7hRU98hwjMCCMvxnueWBiVXX5O9N0Q==" />
+      <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="position-relative flex-auto js-user-status-form" action="/users/status?compact=1&amp;link_mentions=0&amp;truncate=1" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="put" /><input type="hidden" name="authenticity_token" value="QakFPzmOo0osAEDmz/8ZS5qwrYNA2FSPcmM6scOrHcfmFN/bp7DOkBH03lTA8HU/9s7/AoCUM99MsphlUTVsBw==" />
         <div class="Box-header bg-gray border-bottom p-3">
           <button class="Box-btn-octicon js-toggle-user-status-edit btn-octicon float-right" type="reset" aria-label="Close dialog" data-close-dialog>
             <svg class="octicon octicon-x" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M7.48 8l3.75 3.75-1.48 1.48L6 9.48l-3.75 3.75-1.48-1.48L4.52 8 .77 4.25l1.48-1.48L6 6.52l3.75-3.75 1.48 1.48L7.48 8z"></path></svg>
@@ -555,17 +555,17 @@
       </li>
       <li class="dropdown-divider" role="none"></li>
         <li>
-          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 30 minutes" value="2020-04-05T02:06:48-04:00">
+          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 30 minutes" value="2020-04-05T02:08:16-04:00">
             in 30 minutes
           </button>
         </li>
         <li>
-          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 1 hour" value="2020-04-05T02:36:48-04:00">
+          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 1 hour" value="2020-04-05T02:38:16-04:00">
             in 1 hour
           </button>
         </li>
         <li>
-          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 4 hours" value="2020-04-05T05:36:48-04:00">
+          <button type="button" class="btn-link dropdown-item ws-normal js-user-status-expire-button" title="in 4 hours" value="2020-04-05T05:38:16-04:00">
             in 4 hours
           </button>
         </li>
@@ -622,10 +622,10 @@
     class="dropdown-item btn-link"
     role="menuitem"
     data-feature-preview-trigger-url="/users/monninn82/feature_previews"
-    data-feature-preview-close-details="{&quot;event_type&quot;:&quot;feature_preview.clicks.close_modal&quot;,&quot;payload&quot;:{&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/contributing.md&quot;,&quot;user_id&quot;:62664434}}"
-    data-feature-preview-close-hmac="451e8afb4284e65b9686d9d937bb6d539fc684b69c89ec1e093b29903f9a7891"
-    data-hydro-click="{&quot;event_type&quot;:&quot;feature_preview.clicks.open_modal&quot;,&quot;payload&quot;:{&quot;link_location&quot;:&quot;user_dropdown&quot;,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/contributing.md&quot;,&quot;user_id&quot;:62664434}}"
-    data-hydro-click-hmac="6c0594fc13061fe24d22e1d12c24c7337ad67568126c025ff3c5861c08b74ba2"
+    data-feature-preview-close-details="{&quot;event_type&quot;:&quot;feature_preview.clicks.close_modal&quot;,&quot;payload&quot;:{&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/.travis.yml&quot;,&quot;user_id&quot;:62664434}}"
+    data-feature-preview-close-hmac="7a71d8a9f27f2697163cdbd27d94ec06a2254c78ce8cd8aae365dd66cb0234f5"
+    data-hydro-click="{&quot;event_type&quot;:&quot;feature_preview.clicks.open_modal&quot;,&quot;payload&quot;:{&quot;link_location&quot;:&quot;user_dropdown&quot;,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/.travis.yml&quot;,&quot;user_id&quot;:62664434}}"
+    data-hydro-click-hmac="d224f4f4295ee4f1437a06b86df4aac4fe5d39a6a83cdaa1e96c442225bb6311"
   >
     Feature preview
   </button>
@@ -634,12 +634,12 @@
 
     <a role="menuitem" class="dropdown-item" href="https://help.github.com" data-ga-click="Header, go to help, text:help">Help</a>
     <a role="menuitem" class="dropdown-item" href="/settings/profile" data-ga-click="Header, go to settings, icon:settings">Settings</a>
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="logout-form" action="/logout" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="F7M/47FdTvqKJkyNlcili5T3SRc7PZ3stTc+zMvtF0H+2GyRUAWnMvTNCOsk9dbUMsbDELh8VQTjo3X4+QvPPQ==" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="logout-form" action="/logout" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="H313D+74/azeLk7qVAO1wYxodsVHQB+XHp6ZIzTlY+f2FiR9D6AUZKDFCozlPsaeKln8wsQB139ICtIXBgO7mw==" />
       
       <button type="submit" class="dropdown-item dropdown-signout" data-ga-click="Header, sign out, icon:logout" role="menuitem">
         Sign out
       </button>
-      <input type="text" name="required_field_b062" hidden="hidden" class="form-control" /><input type="hidden" name="timestamp" value="1586065008426" class="form-control" /><input type="hidden" name="timestamp_secret" value="556d19418fc45fa62deafacfb04d257643238f631e73ca9cdb1a9906c5d02b98" class="form-control" />
+      <input type="text" name="required_field_b4d9" hidden="hidden" class="form-control" /><input type="hidden" name="timestamp" value="1586065096695" class="form-control" /><input type="hidden" name="timestamp_secret" value="ef6cbc716f4ee5d4149a1d42aeb5b457bb0bea269945620657bae4dec9f8eb9e" class="form-control" />
 </form>  </details-menu>
 </details>
 
@@ -723,10 +723,10 @@
 
   <li>
     
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-remote="true" class="clearfix js-social-form js-social-container" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="LQ3tYKHiFfFEJU2uitVlmZsrqwzOiYfwSdtTJZLbwNAEfH73LaVEMHKUnK4K6kxaHqIgfziOWqesJuz4ktO7pA==" />      <input type="hidden" name="repository_id" value="29456624">
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-remote="true" class="clearfix js-social-form js-social-container" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="vy1Dj0aOzOZCRNOjfOP8b8+XFqSE7OTV4ahMloZPkqyWXNAYysmdJ3T1AqP83NWsSh6d13LrOYIEVfNLhkfp2A==" />      <input type="hidden" name="repository_id" value="29456624">
 
       <details class="details-reset details-overlay select-menu float-left">
-        <summary class="select-menu-button float-left btn btn-sm btn-with-count" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;WATCH_BUTTON&quot;,&quot;repository_id&quot;:29456624,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/contributing.md&quot;,&quot;user_id&quot;:62664434}}" data-hydro-click-hmac="ac66ec71d8bcc1a098f646d2698420a4a1b42d939db16ed4b6b8b26c04fed0ff" data-ga-click="Repository, click Watch settings, action:blob#show">          <span data-menu-button>
+        <summary class="select-menu-button float-left btn btn-sm btn-with-count" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;WATCH_BUTTON&quot;,&quot;repository_id&quot;:29456624,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/.travis.yml&quot;,&quot;user_id&quot;:62664434}}" data-hydro-click-hmac="feebf668180047feef7ad6b1414acc417ada771db13e0df13b5be4ee3eda8954" data-ga-click="Repository, click Watch settings, action:blob#show">          <span data-menu-button>
               <svg class="octicon octicon-eye v-align-text-bottom" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8.06 2C3 2 0 8 0 8s3 6 8.06 6C13 14 16 8 16 8s-3-6-7.94-6zM8 12c-2.2 0-4-1.78-4-4 0-2.2 1.8-4 4-4 2.22 0 4 1.8 4 4 0 2.22-1.78 4-4 4zm2-4c0 1.11-.89 2-2 2-1.11 0-2-.89-2-2 0-1.11.89-2 2-2 1.11 0 2 .89 2 2z"></path></svg>
               Watch
           </span>
@@ -797,9 +797,9 @@
 
   <li>
       <div class="js-toggler-container js-social-container starring-container ">
-    <form class="starred js-social-form" action="/matiassingers/awesome-readme/unstar" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="5NQVj8QZCfUbjQzu2RARujkd7aYfJtGBivFYOiqD0VHOXcu9uk0xFMAzHIb9YppSDatuIHbqu7Wpml7+QfmKGg==" />
+    <form class="starred js-social-form" action="/matiassingers/awesome-readme/unstar" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="+5s67r0/mvRbdkdUq/saMRHNhoutIrj/JZPAI0glnVPREuTcw2uiFYDIVzyPiZHZJXsFDcTu0ssG+MbnI1/GGA==" />
       <input type="hidden" name="context" value="repository"></input>
-      <button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Unstar matiassingers/awesome-readme" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;UNSTAR_BUTTON&quot;,&quot;repository_id&quot;:29456624,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/contributing.md&quot;,&quot;user_id&quot;:62664434}}" data-hydro-click-hmac="08a6233477603e49b1762c622a98255785476878c9c3da33fd3c8a015d3ea41e" data-ga-click="Repository, click unstar button, action:blob#show; text:Unstar">        <svg height="16" class="octicon octicon-star v-align-text-bottom" vertical_align="text_bottom" viewBox="0 0 14 16" version="1.1" width="14" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"></path></svg>
+      <button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Unstar matiassingers/awesome-readme" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;UNSTAR_BUTTON&quot;,&quot;repository_id&quot;:29456624,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/.travis.yml&quot;,&quot;user_id&quot;:62664434}}" data-hydro-click-hmac="81ecee4230fd5166c20f5c7b1985055a10b8c58346fab2165264bef3c291884a" data-ga-click="Repository, click unstar button, action:blob#show; text:Unstar">        <svg height="16" class="octicon octicon-star v-align-text-bottom" vertical_align="text_bottom" viewBox="0 0 14 16" version="1.1" width="14" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"></path></svg>
 
         Unstar
 </button>        <a class="social-count js-social-count" href="/matiassingers/awesome-readme/stargazers"
@@ -807,9 +807,9 @@
            6k
         </a>
 </form>
-    <form class="unstarred js-social-form" action="/matiassingers/awesome-readme/star" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="/IbIBNCTgvevmANNgDSPmcw2ROksvMt8K2lVwAbzW4tTxPJKVAG8UbAFcjrQDIX/Vu9Q+a2NlEIy0jGwxAaWGw==" />
+    <form class="unstarred js-social-form" action="/matiassingers/awesome-readme/star" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="XQcj2g2DzTdDAOK9SSauLFD7cl1Q0mULS9SMsQkhnszyRRmUiRHzkVydk8oZHqRKyiJmTdHjOjVSb+jBy9RTXA==" />
       <input type="hidden" name="context" value="repository"></input>
-      <button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Star matiassingers/awesome-readme" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;STAR_BUTTON&quot;,&quot;repository_id&quot;:29456624,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/contributing.md&quot;,&quot;user_id&quot;:62664434}}" data-hydro-click-hmac="2d3311de725454f1bb5b86fc4f32b623f0188f62fd9d6b0b15d81026499eb869" data-ga-click="Repository, click star button, action:blob#show; text:Star">        <svg height="16" class="octicon octicon-star v-align-text-bottom" vertical_align="text_bottom" viewBox="0 0 14 16" version="1.1" width="14" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"></path></svg>
+      <button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Star matiassingers/awesome-readme" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;STAR_BUTTON&quot;,&quot;repository_id&quot;:29456624,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/.travis.yml&quot;,&quot;user_id&quot;:62664434}}" data-hydro-click-hmac="ebb4232e9bd11e623420ba666b5114bc2144775d6c0517afa48139313f5023ef" data-ga-click="Repository, click star button, action:blob#show; text:Star">        <svg height="16" class="octicon octicon-star v-align-text-bottom" vertical_align="text_bottom" viewBox="0 0 14 16" version="1.1" width="14" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"></path></svg>
 
         Star
 </button>        <a class="social-count js-social-count" href="/matiassingers/awesome-readme/stargazers"
@@ -821,8 +821,8 @@
   </li>
 
   <li>
-          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="btn-with-count" action="/matiassingers/awesome-readme/fork" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="fpIsSNCt4vzbWRhNszvNxKDPS3GYGOmYIT82GNdY8NsEi+64nXGZSa9U3XIUspbeA3bz+FpFtwmtDHRIWLmv5A==" />
-            <button class="btn btn-sm btn-with-count" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;FORK_BUTTON&quot;,&quot;repository_id&quot;:29456624,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/contributing.md&quot;,&quot;user_id&quot;:62664434}}" data-hydro-click-hmac="643f41c12e86b21a40905ef3bd851ab6a715342bc93bca44c86e584636775cbb" data-ga-click="Repository, show fork modal, action:blob#show; text:Fork" type="submit" title="Fork your own copy of matiassingers/awesome-readme to your account" aria-label="Fork your own copy of matiassingers/awesome-readme to your account">              <svg class="octicon octicon-repo-forked v-align-text-bottom" viewBox="0 0 10 16" version="1.1" width="10" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8 1a1.993 1.993 0 00-1 3.72V6L5 8 3 6V4.72A1.993 1.993 0 002 1a1.993 1.993 0 00-1 3.72V6.5l3 3v1.78A1.993 1.993 0 005 15a1.993 1.993 0 001-3.72V9.5l3-3V4.72A1.993 1.993 0 008 1zM2 4.2C1.34 4.2.8 3.65.8 3c0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm3 10c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm3-10c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2z"></path></svg>
+          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="btn-with-count" action="/matiassingers/awesome-readme/fork" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="VQz0l3FK8hNLW/gtCwTch5QSlJ6oMzETbXMoNX6Cit4vFTZnPJaJpj9WPRKsjYedN6ssF2pub4LhQGpl8WPV4Q==" />
+            <button class="btn btn-sm btn-with-count" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;FORK_BUTTON&quot;,&quot;repository_id&quot;:29456624,&quot;originating_url&quot;:&quot;https://github.com/matiassingers/awesome-readme/blob/master/.travis.yml&quot;,&quot;user_id&quot;:62664434}}" data-hydro-click-hmac="d1c47888c72f174caf445655cadb66d9b5b4b5b49f06c8d9857a4db68888614f" data-ga-click="Repository, show fork modal, action:blob#show; text:Fork" type="submit" title="Fork your own copy of matiassingers/awesome-readme to your account" aria-label="Fork your own copy of matiassingers/awesome-readme to your account">              <svg class="octicon octicon-repo-forked v-align-text-bottom" viewBox="0 0 10 16" version="1.1" width="10" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8 1a1.993 1.993 0 00-1 3.72V6L5 8 3 6V4.72A1.993 1.993 0 002 1a1.993 1.993 0 00-1 3.72V6.5l3 3v1.78A1.993 1.993 0 005 15a1.993 1.993 0 001-3.72V9.5l3-3V4.72A1.993 1.993 0 008 1zM2 4.2C1.34 4.2.8 3.65.8 3c0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm3 10c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm3-10c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2z"></path></svg>
               Fork
 </button></form>
     <a href="/matiassingers/awesome-readme/network/members" class="social-count"
@@ -961,9 +961,9 @@
   
 
 
-    <a class="d-none js-permalink-shortcut" data-hotkey="y" href="/matiassingers/awesome-readme/blob/d4401631f24de19ab35db780bc177ae17f85729b/contributing.md">Permalink</a>
+    <a class="d-none js-permalink-shortcut" data-hotkey="y" href="/matiassingers/awesome-readme/blob/d4401631f24de19ab35db780bc177ae17f85729b/.travis.yml">Permalink</a>
 
-    <!-- blob contrib key: blob_contributors:v22:67c72afb741055150a158ae0320867ea -->
+    <!-- blob contrib key: blob_contributors:v22:b130b335d72367027c6e5c6ff8be474c -->
     
 
     <div class="d-flex flex-items-start flex-shrink-0 flex-column flex-md-row pb-3">
@@ -978,7 +978,7 @@
     <span class="dropdown-caret"></span>
   </summary>
 
-  <details-menu class="SelectMenu SelectMenu--hasFilter" src="/matiassingers/awesome-readme/refs/master/contributing.md?source_action=show&amp;source_controller=blob" preload>
+  <details-menu class="SelectMenu SelectMenu--hasFilter" src="/matiassingers/awesome-readme/refs/master/.travis.yml?source_action=show&amp;source_controller=blob" preload>
     <div class="SelectMenu-modal">
       <include-fragment class="SelectMenu-loading" aria-label="Menu is loading">
         <svg class="octicon octicon-octoface anim-pulse" height="32" viewBox="0 0 16 16" version="1.1" width="32" aria-hidden="true"><path fill-rule="evenodd" d="M14.7 5.34c.13-.32.55-1.59-.13-3.31 0 0-1.05-.33-3.44 1.3-1-.28-2.07-.32-3.13-.32s-2.13.04-3.13.32c-2.39-1.64-3.44-1.3-3.44-1.3-.68 1.72-.26 2.99-.13 3.31C.49 6.21 0 7.33 0 8.69 0 13.84 3.33 15 7.98 15S16 13.84 16 8.69c0-1.36-.49-2.48-1.3-3.35zM8 14.02c-3.3 0-5.98-.15-5.98-3.35 0-.76.38-1.48 1.02-2.07 1.07-.98 2.9-.46 4.96-.46 2.07 0 3.88-.52 4.96.46.65.59 1.02 1.3 1.02 2.07 0 3.19-2.68 3.35-5.98 3.35zM5.49 9.01c-.66 0-1.2.8-1.2 1.78s.54 1.79 1.2 1.79c.66 0 1.2-.8 1.2-1.79s-.54-1.78-1.2-1.78zm5.02 0c-.66 0-1.2.79-1.2 1.78s.54 1.79 1.2 1.79c.66 0 1.2-.8 1.2-1.79s-.53-1.78-1.2-1.78z"></path></svg>
@@ -994,13 +994,13 @@
                 data-hotkey="t">
             Find file
           </a>
-          <clipboard-copy value="contributing.md" class="btn btn-sm BtnGroup-item">
+          <clipboard-copy value=".travis.yml" class="btn btn-sm BtnGroup-item">
             Copy path
           </clipboard-copy>
         </div>
       </span>
       <h2 id="blob-path" class="breadcrumb flex-auto min-width-0 text-normal flex-md-self-center ml-md-2 mr-md-3 my-2 my-md-0">
-        <span class="js-repo-root text-bold"><span class="js-path-segment"><a data-pjax="true" href="/matiassingers/awesome-readme"><span>awesome-readme</span></a></span></span><span class="separator">/</span><strong class="final-path">contributing.md</strong>
+        <span class="js-repo-root text-bold"><span class="js-path-segment"><a data-pjax="true" href="/matiassingers/awesome-readme"><span>awesome-readme</span></a></span></span><span class="separator">/</span><strong class="final-path">.travis.yml</strong>
       </h2>
 
       <div class="BtnGroup flex-shrink-0 d-none d-md-inline-block">
@@ -1010,7 +1010,7 @@
               data-hotkey="t">
           Find file
         </a>
-        <clipboard-copy value="contributing.md" class="btn btn-sm BtnGroup-item">
+        <clipboard-copy value=".travis.yml" class="btn btn-sm BtnGroup-item">
           Copy path
         </clipboard-copy>
       </div>
@@ -1022,30 +1022,30 @@
   <div class="Box Box--condensed d-flex flex-column flex-shrink-0 mb-3">
       <div class="Box-body d-flex flex-justify-between bg-blue-light flex-column flex-md-row flex-items-start flex-md-items-center">
         <span class="pr-md-4 f6">
-          <a rel="contributor" data-skip-pjax="true" data-hovercard-type="user" data-hovercard-url="/users/elia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/elia"><img class="avatar" src="https://avatars1.githubusercontent.com/u/1051?s=40&amp;v=4" width="20" height="20" alt="@elia" /></a>
-          <a class="text-bold link-gray-dark lh-default v-align-middle" rel="contributor" data-hovercard-type="user" data-hovercard-url="/users/elia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/elia">elia</a>
+          <a rel="author" data-skip-pjax="true" data-hovercard-type="user" data-hovercard-url="/users/matiassingers/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/matiassingers"><img class="avatar" src="https://avatars0.githubusercontent.com/u/938453?s=40&amp;v=4" width="20" height="20" alt="@matiassingers" /></a>
+          <a class="text-bold link-gray-dark lh-default v-align-middle" rel="author" data-hovercard-type="user" data-hovercard-url="/users/matiassingers/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/matiassingers">matiassingers</a>
             <span class="lh-default v-align-middle">
-              <a data-pjax="true" title="Use GitHub&#39;s #readme anchor" class="link-gray" href="/matiassingers/awesome-readme/commit/23a028a1f0e84108e806f9c229e2e3d0a79c6e8d">Use GitHub's #readme anchor</a>
+              <a data-pjax="true" title="Update whitelisting in .travis.yml" class="link-gray" href="/matiassingers/awesome-readme/commit/6a9451e475f3140e8c7e758103949eedac5676c5">Update whitelisting in .travis.yml</a>
             </span>
         </span>
         <span class="d-inline-block flex-shrink-0 v-align-bottom f6 mt-2 mt-md-0">
-          <a class="pr-2 text-mono link-gray" href="/matiassingers/awesome-readme/commit/23a028a1f0e84108e806f9c229e2e3d0a79c6e8d" data-pjax>23a028a</a>
-          <relative-time datetime="2019-08-13T13:41:02Z" class="no-wrap">Aug 13, 2019</relative-time>
+          <a class="pr-2 text-mono link-gray" href="/matiassingers/awesome-readme/commit/6a9451e475f3140e8c7e758103949eedac5676c5" data-pjax>6a9451e</a>
+          <relative-time datetime="2019-08-10T11:03:59Z" class="no-wrap">Aug 10, 2019</relative-time>
         </span>
       </div>
 
     <div class="Box-body d-flex flex-items-center flex-auto f6 border-bottom-0 flex-wrap" >
       <details class="details-reset details-overlay details-overlay-dark lh-default text-gray-dark float-left mr-2" id="blob_contributors_box">
         <summary class="btn-link">
-          <span><strong>3</strong> contributors</span>
+          <span><strong>2</strong> contributors</span>
         </summary>
         <details-dialog
           class="Box Box--overlay d-flex flex-column anim-fade-in fast"
           aria-label="Users who have contributed to this file"
-          src="/matiassingers/awesome-readme/contributors-list/master/contributing.md" preload>
+          src="/matiassingers/awesome-readme/contributors-list/master/.travis.yml" preload>
           <div class="Box-header">
             <button class="Box-btn-octicon btn-octicon float-right" type="button" aria-label="Close dialog" data-close-dialog>
-              <svg class="octicon octicon-x" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M7.48 8l3.75 3.75-1.48 1.48L6 9.48l-3.75 3.75-1.48-1.48L4.52 8 .77 4.25l1.48-1.48L6 6.52l3.75-3.75 1.48 1.48L7.48 8z"/></svg>
+              <svg class="octicon octicon-x" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M7.48 8l3.75 3.75-1.48 1.48L6 9.48l-3.75 3.75-1.48-1.48L4.52 8 .77 4.25l1.48-1.48L6 6.52l3.75-3.75 1.48 1.48L7.48 8z"></path></svg>
             </button>
             <h3 class="Box-title">
               Users who have contributed to this file
@@ -1055,12 +1055,10 @@
         </details-dialog>
       </details>
         <span class="">
-    <a class="avatar-link" data-hovercard-type="user" data-hovercard-url="/users/RichardLitt/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/matiassingers/awesome-readme/commits/master/contributing.md?author=RichardLitt">
-      <img class="avatar mr-1" src="https://avatars0.githubusercontent.com/u/910753?s=40&amp;v=4" width="20" height="20" alt="@RichardLitt" /> 
-</a>    <a class="avatar-link" data-hovercard-type="user" data-hovercard-url="/users/matiassingers/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/matiassingers/awesome-readme/commits/master/contributing.md?author=matiassingers">
+    <a class="avatar-link" data-hovercard-type="user" data-hovercard-url="/users/matiassingers/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/matiassingers/awesome-readme/commits/master/.travis.yml?author=matiassingers">
       <img class="avatar mr-1" src="https://avatars0.githubusercontent.com/u/938453?s=40&amp;v=4" width="20" height="20" alt="@matiassingers" /> 
-</a>    <a class="avatar-link" data-hovercard-type="user" data-hovercard-url="/users/elia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/matiassingers/awesome-readme/commits/master/contributing.md?author=elia">
-      <img class="avatar mr-1" src="https://avatars1.githubusercontent.com/u/1051?s=40&amp;v=4" width="20" height="20" alt="@elia" /> 
+</a>    <a class="avatar-link" data-hovercard-type="user" data-hovercard-url="/users/RichardLitt/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/matiassingers/awesome-readme/commits/master/.travis.yml?author=RichardLitt">
+      <img class="avatar mr-1" src="https://avatars0.githubusercontent.com/u/910753?s=40&amp;v=4" width="20" height="20" alt="@RichardLitt" /> 
 </a>
 </span>
 
@@ -1078,36 +1076,36 @@
 <div class="Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center">
   <div class="text-mono f6 flex-auto pr-3 flex-order-2 flex-md-order-1 mt-2 mt-md-0">
 
-      16 lines (13 sloc)
+      7 lines (7 sloc)
       <span class="file-info-divider"></span>
-    736 Bytes
+    129 Bytes
   </div>
 
   <div class="d-flex py-1 py-md-0 flex-auto flex-order-1 flex-md-order-2 flex-sm-grow-0 flex-justify-between">
 
     <div class="BtnGroup">
-      <a id="raw-url" class="btn btn-sm BtnGroup-item" href="/matiassingers/awesome-readme/raw/master/contributing.md">Raw</a>
-        <a class="btn btn-sm js-update-url-with-hash BtnGroup-item" data-hotkey="b" href="/matiassingers/awesome-readme/blame/master/contributing.md">Blame</a>
-      <a rel="nofollow" class="btn btn-sm BtnGroup-item" href="/matiassingers/awesome-readme/commits/master/contributing.md">History</a>
+      <a id="raw-url" class="btn btn-sm BtnGroup-item" href="/matiassingers/awesome-readme/raw/master/.travis.yml">Raw</a>
+        <a class="btn btn-sm js-update-url-with-hash BtnGroup-item" data-hotkey="b" href="/matiassingers/awesome-readme/blame/master/.travis.yml">Blame</a>
+      <a rel="nofollow" class="btn btn-sm BtnGroup-item" href="/matiassingers/awesome-readme/commits/master/.travis.yml">History</a>
     </div>
 
 
     <div>
           <a class="btn-octicon tooltipped tooltipped-nw js-remove-unless-platform"
              data-platforms="windows,mac"
-             href="x-github-client://openRepo/https://github.com/matiassingers/awesome-readme?branch=master&amp;filepath=contributing.md"
+             href="x-github-client://openRepo/https://github.com/matiassingers/awesome-readme?branch=master&amp;filepath=.travis.yml"
              aria-label="Open this file in GitHub Desktop"
              data-ga-click="Repository, open with desktop">
               <svg class="octicon octicon-device-desktop" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M15 2H1c-.55 0-1 .45-1 1v9c0 .55.45 1 1 1h5.34c-.25.61-.86 1.39-2.34 2h8c-1.48-.61-2.09-1.39-2.34-2H15c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zm0 9H1V3h14v8z"></path></svg>
           </a>
 
-          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form js-update-url-with-hash" action="/matiassingers/awesome-readme/edit/master/contributing.md" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="kg2Zs7QWNf0VqIbPNhkTj2s/u6bNVLfyN0NaCv3+j+vMn/JvoN6p1wYCIvmgP9mmF/ftAKJlqtsx33IsKV7MYg==" />
+          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form js-update-url-with-hash" action="/matiassingers/awesome-readme/edit/master/.travis.yml" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="IkUcknvTzoQFDmWMofibjKoqzHJwPhV4eOscygEPuhCBdYLMZW+0I1TWH0bupbJyTCSwZaVtNqU///jdXBCXhA==" />
             <button class="btn-octicon tooltipped tooltipped-nw" type="submit"
               aria-label="Edit the file in your fork of this project" data-hotkey="e" data-disable-with>
               <svg class="octicon octicon-pencil" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M0 12v3h3l8-8-3-3-8 8zm3 2H1v-2h1v1h1v1zm10.3-9.3L12 6 9 3l1.3-1.3a.996.996 0 011.41 0l1.59 1.59c.39.39.39 1.02 0 1.41z"></path></svg>
             </button>
 </form>
-          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form" action="/matiassingers/awesome-readme/delete/master/contributing.md" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="b+KFOsZyDgyH1xV2HKSzqLDqMawWrT8GvQKKXCNZ/DKt/Lx5gCwi+IOxOOwURQ0Wlt5J6GfCmZgLe8PL/FHi2g==" />
+          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form" action="/matiassingers/awesome-readme/delete/master/.travis.yml" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="W8iwuVbNvcPvVwsoq4I2B1zgW8Dr+XAzr9vll+w+2Vgqs+2lWUGsOHugHkiwCHAl3IzLSooZKt4M6v5nQASc0g==" />
             <button class="btn-octicon btn-octicon-danger tooltipped tooltipped-nw" type="submit"
               aria-label="Delete the file in your fork of this project" data-disable-with>
               <svg class="octicon octicon-trashcan" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11 2H9c0-.55-.45-1-1-1H5c-.55 0-1 .45-1 1H2c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1v9c0 .55.45 1 1 1h7c.55 0 1-.45 1-1V5c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zm-1 12H3V5h1v8h1V5h1v8h1V5h1v8h1V5h1v9zm1-10H2V3h9v1z"></path></svg>
@@ -1119,23 +1117,62 @@
 
 
       
-  <div id="readme" class="Box-body readme blob js-code-block-container px-5">
-    <article class="markdown-body entry-content" itemprop="text"><h1><a id="user-content-contribution-guidelines" class="anchor" aria-hidden="true" href="#contribution-guidelines"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Contribution Guidelines</h1>
-<p>Please ensure your pull request adheres to the following guidelines:</p>
-<ul>
-<li>Alphabetize your entry.</li>
-<li>Search previous suggestions before making a new one, as yours may be a duplicate.</li>
-<li>Suggested READMEs should be beautiful or stand out in some way.</li>
-<li>Make an individual pull request for each suggestion.</li>
-<li>New categories, or improvements to the existing categorization are welcome.</li>
-<li>Keep descriptions short and simple, but descriptive.</li>
-<li>Start the description with a capital and end with a full stop/period.</li>
-<li>Check your spelling and grammar.</li>
-<li>Make sure your text editor is set to remove trailing whitespace.</li>
-<li>Use the <code>#readme</code> anchor for GitHub READMEs to link them directly</li>
-</ul>
-<p>Thank you for your suggestions!</p>
-</article>
+
+  <div itemprop="text" class="Box-body p-0 blob-wrapper data type-yaml ">
+      
+<table class="highlight tab-size js-file-line-container" data-tab-size="8" data-paste-markdown-skip>
+      <tr>
+        <td id="L1" class="blob-num js-line-number" data-line-number="1"></td>
+        <td id="LC1" class="blob-code blob-code-inner js-file-line"><span class="pl-ent">language</span>: <span class="pl-s">ruby</span></td>
+      </tr>
+      <tr>
+        <td id="L2" class="blob-num js-line-number" data-line-number="2"></td>
+        <td id="LC2" class="blob-code blob-code-inner js-file-line"><span class="pl-ent">rvm</span>:</td>
+      </tr>
+      <tr>
+        <td id="L3" class="blob-num js-line-number" data-line-number="3"></td>
+        <td id="LC3" class="blob-code blob-code-inner js-file-line">  - <span class="pl-c1">2.2</span></td>
+      </tr>
+      <tr>
+        <td id="L4" class="blob-num js-line-number" data-line-number="4"></td>
+        <td id="LC4" class="blob-code blob-code-inner js-file-line"><span class="pl-ent">before_script</span>:</td>
+      </tr>
+      <tr>
+        <td id="L5" class="blob-num js-line-number" data-line-number="5"></td>
+        <td id="LC5" class="blob-code blob-code-inner js-file-line">  - <span class="pl-s">gem install awesome_bot</span></td>
+      </tr>
+      <tr>
+        <td id="L6" class="blob-num js-line-number" data-line-number="6"></td>
+        <td id="LC6" class="blob-code blob-code-inner js-file-line"><span class="pl-ent">script</span>:</td>
+      </tr>
+      <tr>
+        <td id="L7" class="blob-num js-line-number" data-line-number="7"></td>
+        <td id="LC7" class="blob-code blob-code-inner js-file-line">  - <span class="pl-s">awesome_bot readme.md -w https://recordit.co/</span></td>
+      </tr>
+</table>
+
+  <details class="details-reset details-overlay BlobToolbar position-absolute js-file-line-actions dropdown d-none" aria-hidden="true">
+    <summary class="btn-octicon ml-0 px-2 p-0 bg-white border border-gray-dark rounded-1" aria-label="Inline file action toolbar">
+      <svg class="octicon octicon-kebab-horizontal" viewBox="0 0 13 16" version="1.1" width="13" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M1.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm5 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM13 7.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path></svg>
+    </summary>
+    <details-menu>
+      <ul class="BlobToolbar-dropdown dropdown-menu dropdown-menu-se mt-2" style="width:185px">
+        <li>
+          <clipboard-copy role="menuitem" class="dropdown-item" id="js-copy-lines" style="cursor:pointer;">
+            Copy lines
+          </clipboard-copy>
+        </li>
+        <li>
+          <clipboard-copy role="menuitem" class="dropdown-item" id="js-copy-permalink" style="cursor:pointer;">
+            Copy permalink
+          </clipboard-copy>
+        </li>
+        <li><a class="dropdown-item js-update-url-with-hash" id="js-view-git-blame" role="menuitem" href="/matiassingers/awesome-readme/blame/d4401631f24de19ab35db780bc177ae17f85729b/.travis.yml">View git blame</a></li>
+          <li><a class="dropdown-item" id="js-new-issue" role="menuitem" href="/matiassingers/awesome-readme/issues/new">Reference in new issue</a></li>
+      </ul>
+    </details-menu>
+  </details>
+
   </div>
 
     </div>
