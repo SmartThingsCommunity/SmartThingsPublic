@@ -198,7 +198,8 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	if (cmd.notificationStatus == 0xFF) {
 		switch (cmd.event) {
 			case 0x09: //TAMPER
-				createEvent([name: "tamper", value: "detected"])
+				sendEvent(name: "tamper", value: "detected")
+				runIn(10, "clearTamper")
 				break
 			case 0x01: //ON
 				if (state.lastTriggeredSound == 1) {
@@ -213,6 +214,10 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 				break
 		}
 	}
+}
+
+def clearTamper() {
+	sendEvent(name: "tamper", value: "clear")
 }
 
 def setOnChild(deviceDni) {
