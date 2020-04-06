@@ -14,9 +14,6 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-
-import java.text.SimpleDateFormat
-
 metadata {
     definition (name: "Rachio Zone", namespace: "rachio", author: "Rachio") {
         capability "Refresh"
@@ -136,6 +133,22 @@ def markOffLine() {
     sendEvent(name: 'valve', value: "closed", displayed: false)
     sendEvent(name: 'switch', value: "off", displayed: false)
     sendEvent(name: "DeviceWatch-DeviceStatus", value: "offline", displayed: false)
+}
+
+def startZone() {
+    log.trace "startZone()..."
+    if (isCmdOk2Run()) {
+        def zoneNum = device.latestValue('zoneNumber')
+        def waterTime = 10;
+        log.debug("Starting Watering for Zone (${zoneNum}) for (${waterTime}) Minutes")
+        if (parent?.startZone(this, state.deviceId, zoneNum, waterTime)) {
+            log.debug "runThisZone was Sent Successfully"
+            sendEvent(name:'switch', value: "on", displayed: false)
+            sendEvent(name:'valve', value: "open", displayed: false)
+        } else {
+            markOffLine()
+        }
+    }
 }
 
 // To be used directly by smart apps
