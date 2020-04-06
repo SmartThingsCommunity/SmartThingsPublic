@@ -23,15 +23,15 @@ metadata {
         capability "Relative Humidity Measurement"
         capability "Ultraviolet Index"
         //capability "Wind Speed" // Not in production yet
-        capability "stsmartweather.Wind Speed" // "Wind Speed" only supports m/s unit, however we want to create both events
-        capability "stsmartweather.Wind Direction"
-        capability "stsmartweather.Apparent Temperature"
-        capability "stsmartweather.Astronomical Data"
-        capability "stsmartweather.Precipitation"
-        capability "stsmartweather.Ultraviolet Description"
-        capability "stsmartweather.Weather Alert"
-        capability "stsmartweather.Weather Forecast"
-        capability "stsmartweather.Weather Summary"
+        capability "stsmartweather.windSpeed" // "Wind Speed" only supports m/s unit, however we want to create both events
+        capability "stsmartweather.windDirection"
+        capability "stsmartweather.apparentTemperature"
+        capability "stsmartweather.astronomicalData"
+        capability "stsmartweather.precipitation"
+        capability "stsmartweather.ultravioletDescription"
+        capability "stsmartweather.weatherAlert"
+        capability "stsmartweather.weatherForecast"
+        capability "stsmartweather.weatherSummary"
         capability "Sensor"
         capability "Refresh"
 
