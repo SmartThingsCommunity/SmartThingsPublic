@@ -488,9 +488,9 @@ def calcEverspringAlarmLen(int alarmLength) {
 	//If the siren is Everspring then the alarm length can be set to 1, 2 or max 3 minutes
 	def map = [1:60, 2:120, 3:180]
 	if (alarmLength > 3) {
-        return everspringDefaultAlarmLength
+		return everspringDefaultAlarmLength
     } else {
-        return map[alarmLength].value
+		return map[alarmLength].value
     }
 }
 
