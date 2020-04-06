@@ -89,10 +89,6 @@ def updated() {
 def configure() {
 	// Device wakes up every 8 hours (+ 2 minutes), this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	// Setting wakeUpNotification interval for NEO Coolcam and Dome devices
-	if (isNeoCoolcam() || isDome()) {
-		zwave.wakeUpV2.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
-	}
 }
 
 private getCommandClassVersions() {
@@ -200,12 +196,4 @@ def sensorMotionEvent(value) {
 		result << createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
 	}
 	return result
-}
-
-private isDome() {
-	zwaveInfo.mfr == "021F" && zwaveInfo.model == "0083"
-}
-
-private isNeoCoolcam() {
-	zwaveInfo.mfr == "0258" && (zwaveInfo.model == "108D" || zwaveInfo.model == "008D")
 }

@@ -85,9 +85,6 @@ def configure() {
 		// Tell sensor to send us battery information instead of USB power information
 		commands << encap(zwave.configurationV1.configurationSet(parameterNumber: 0x5E, scaledConfigurationValue: 1, size: 1))
 		response(delayBetween(commands, 1000) + ["delay 20000", encap(zwave.wakeUpV1.wakeUpNoMoreInformation())])
-	} else if (isNeoCoolcam() || isDome()) {
-		// wakeUpInterval set to 4 h for NEO Coolcam, Dome
-		zwave.wakeUpV1.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
 	}
 }
 
