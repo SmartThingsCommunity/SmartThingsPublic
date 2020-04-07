@@ -81,6 +81,14 @@ metadata {
 		details(["FGMS", "battery", "temperature", "illuminance", "motionTile", "multiStatus"])
 	}
 	preferences {
+		input(
+			title: "Fibaro Motion Sensor settings",
+			description: "Device's settings update is executed when device wakes up.\n" +
+					"It may take up to 2 hours (for default wake up interval). \n" +
+					"If you want immediate change, manually wake up device by clicking B-button once.",
+			type: "paragraph",
+			element: "paragraph"
+		)
 		parameterMap().findAll { (it.num as Integer) != 54 }.each {
 			input(
 				title: "${it.num}. ${it.title}",
