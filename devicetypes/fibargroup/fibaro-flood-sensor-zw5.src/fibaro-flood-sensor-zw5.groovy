@@ -68,6 +68,14 @@ metadata {
 	}
 
 	preferences {
+		input(
+			title: "Fibaro Flood Sensor settings",
+			description: "Device's settings update is executed when device wakes up.\n" +
+					"It may take up to 6 hours (for default wake up interval). \n" +
+					"If you want immediate change, manually wake up device by clicking TMP button once.",
+			type: "paragraph",
+			element: "paragraph"
+		)
 		parameterMap().each {
 			getPrefsFor(it)
 		}
