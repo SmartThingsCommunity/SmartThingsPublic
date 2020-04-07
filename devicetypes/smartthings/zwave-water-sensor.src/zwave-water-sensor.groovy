@@ -292,7 +292,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s") || state.sec == 1) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		cmd.format()
