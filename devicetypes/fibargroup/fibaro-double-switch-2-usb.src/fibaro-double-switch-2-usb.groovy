@@ -13,6 +13,7 @@ metadata {
 		capability "Health Check"
 		
 		command "reset"
+	  
 	}
 
 	tiles {
@@ -55,21 +56,21 @@ def installed(){
 }
 
 def ping() {
-	parent.childRefresh(device.deviceNetworkId)
+	parent.childRefresh()
 }
 
 def on() {
-	parent.childOn(device.deviceNetworkId)
+	parent.childOn()
 }
 
 def off() {
-	parent.childOff(device.deviceNetworkId)
+	parent.childOff()
 }
 
 def reset() {
-	parent.childReset(device.deviceNetworkId)
+	parent.childReset()
 }
 
 def refresh() {
-	parent.childRefresh(device.deviceNetworkId)
+	parent.childRefresh()
 }

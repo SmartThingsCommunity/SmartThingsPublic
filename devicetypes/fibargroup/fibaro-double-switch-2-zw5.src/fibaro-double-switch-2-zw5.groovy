@@ -82,16 +82,14 @@ def off(){
 	encapSequence(cmds, 5000)
 }
 
-def childOn(deviceNetworkId) {
-	def switchId = getSwitchId(deviceNetworkId)
-	sendHubCommand(response(encap(zwave.basicV1.basicSet(value: 255), switchId)))
-	sendHubCommand(response(encap(zwave.switchBinaryV1.switchBinaryGet(), switchId)))
+def childOn() {
+	sendHubCommand(response(encap(zwave.basicV1.basicSet(value: 255),2)))
+	sendHubCommand(response(encap(zwave.switchBinaryV1.switchBinaryGet(),2)))
 }
 
-def childOff(deviceNetworkId) {
-	def switchId = getSwitchId(deviceNetworkId)
-	sendHubCommand(response(encap(zwave.basicV1.basicSet(value: 0), switchId)))
-	sendHubCommand(response(encap(zwave.switchBinaryV1.switchBinaryGet(), switchId)))
+def childOff() {
+	sendHubCommand(response(encap(zwave.basicV1.basicSet(value: 0),2)))
+	sendHubCommand(response(encap(zwave.switchBinaryV1.switchBinaryGet(),2)))
 }
 
 def reset() {
@@ -102,12 +100,11 @@ def reset() {
 	encapSequence(cmds,1000)
 }
 
-def childReset(deviceNetworkId) {
-	def switchId = getSwitchId(deviceNetworkId)
+def childReset() {
 	def cmds = []
-	cmds << response(encap(zwave.meterV3.meterReset(), switchId))
-	cmds << response(encap(zwave.meterV3.meterGet(scale: 0), switchId))
-	cmds << response(encap(zwave.meterV3.meterGet(scale: 2), switchId))
+	cmds << response(encap(zwave.meterV3.meterReset(), 2))
+	cmds << response(encap(zwave.meterV3.meterGet(scale: 0), 2))
+	cmds << response(encap(zwave.meterV3.meterGet(scale: 2), 2))
 	sendHubCommand(cmds,1000)
 }
 
@@ -119,18 +116,12 @@ def refresh() {
 	encapSequence(cmds,1000)
 }
 
-def childRefresh(deviceNetworkId) {
-	def switchId = getSwitchId(deviceNetworkId)
+def childRefresh() {
 	def cmds = []
-	cmds << response(encap(zwave.meterV3.meterGet(scale: 0), switchId))
-	cmds << response(encap(zwave.meterV3.meterGet(scale: 2), switchId))
-	cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(), switchId))
+	cmds << response(encap(zwave.meterV3.meterGet(scale: 0), 2))
+	cmds << response(encap(zwave.meterV3.meterGet(scale: 2), 2))
+	cmds << response(encap(zwave.switchBinaryV1.switchBinaryGet(), 2))
 	sendHubCommand(cmds,1000)
-}
-
-def getSwitchId(deviceNetworkId) {
-	def split = deviceNetworkId?.split("-")
-	return (split.length > 1) ? split[1] as Integer : null
 }
 
 def installed(){

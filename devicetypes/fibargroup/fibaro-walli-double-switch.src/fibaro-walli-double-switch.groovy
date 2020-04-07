@@ -365,16 +365,16 @@ def ping() {
 	refresh()
 }
 
-def childOn(deviceNetworkId) {
+def childOn(deviceNetworkId = null) {
 	childOnOff(deviceNetworkId, 0xFF)
 }
 
-def childOff(deviceNetworkId) {
+def childOff(deviceNetworkId = null) {
 	childOnOff(deviceNetworkId, 0x00)
 }
 
 def childOnOff(deviceNetworkId, value) {
-	def switchId = getSwitchId(deviceNetworkId)
+	def switchId = deviceNetworkId ? getSwitchId(deviceNetworkId) : 2
 	if (switchId != null) sendHubCommand onOffCmd(value, switchId)
 }
 
@@ -401,8 +401,8 @@ private refreshAll(includeMeterGet = true) {
 	sendHubCommand refresh(endpoints,includeMeterGet)
 }
 
-def childRefresh(deviceNetworkId, includeMeterGet = true) {
-	def switchId = getSwitchId(deviceNetworkId)
+def childRefresh(deviceNetworkId = null, includeMeterGet = true) {
+	def switchId = deviceNetworkId ? getSwitchId(deviceNetworkId) : 2
 	if (switchId != null) {
 		sendHubCommand refresh([switchId],includeMeterGet)
 	}
@@ -425,8 +425,8 @@ private resetAll() {
 	sendHubCommand reset()
 }
 
-def childReset(deviceNetworkId) {
-	def switchId = getSwitchId(deviceNetworkId)
+def childReset(deviceNetworkId = null) {
+	def switchId = deviceNetworkId ? getSwitchId(deviceNetworkId) : 2
 	if (switchId != null) {
 		log.debug "Child reset switchId: ${switchId}"
 		sendHubCommand reset(switchId)
