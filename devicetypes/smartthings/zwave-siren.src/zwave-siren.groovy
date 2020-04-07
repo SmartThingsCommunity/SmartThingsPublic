@@ -239,8 +239,8 @@ def getConfigurationCommands() {
 
 	if (isEverspring()) {
 		if (!state.alarmLength) {
-            state.alarmLength = everspringDefaultAlarmLength
-        }
+			state.alarmLength = everspringDefaultAlarmLength
+		}
 		Short alarmLength = (settings.alarmLength as Short) ?: everspringDefaultAlarmLength
 
 		if (alarmLength != state.alarmLength) {
@@ -257,7 +257,6 @@ def getConfigurationCommands() {
 	}
 	cmds
 }
-
 
 def poll() {
 	if (secondsPast(state.lastbatt, 36 * 60 * 60)) {
@@ -489,9 +488,9 @@ def calcEverspringAlarmLen(int alarmLength) {
 	def map = [1:60, 2:120, 3:180]
 	if (alarmLength > 3) {
 		return everspringDefaultAlarmLength
-    } else {
+	} else {
 		return map[alarmLength].value
-    }
+	}
 }
 
 def isYale() {
