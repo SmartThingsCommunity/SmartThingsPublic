@@ -92,10 +92,11 @@ def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotificat
     def button = cmd.sceneNumber
 
     def value = buttonAttributesMap[(int)cmd.keyAttributes]
-
-    def child = getChildDevice(button)
-    child?.sendEvent(name: "button", value: value, data: [buttonNumber: 1], descriptionText: "$child.displayName was $value", isStateChange: true)
-    createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true, displayed: false)
+    if (value) {
+        def child = getChildDevice(button)
+        child?.sendEvent(name: "button", value: value, data: [buttonNumber: 1], descriptionText: "$child.displayName was $value", isStateChange: true)
+        createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true, displayed: false)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
@@ -169,7 +170,7 @@ def getChildDevice(button) {
 
 private getSupportedButtonValues() {
     if (isEverspring()) {
-        return ["pushed", "held", "down_hold", "double"]
+        return ["pushed", "held", "double"]
     } else {
         return ["pushed", "held"]
     }
@@ -178,8 +179,7 @@ private getSupportedButtonValues() {
 private getButtonAttributesMap() {
     if (isEverspring()) {[
             0: "pushed",
-            1: "held",
-            2: "down_hold",
+            2: "held",
             3: "double"
     ]}
     else {[
