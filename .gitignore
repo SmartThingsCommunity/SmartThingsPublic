@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Built application files
 *.apk
 *.ap_
@@ -81,3 +82,28 @@ lint/generated/
 lint/outputs/
 lint/tmp/
 # lint/reports/
+=======
+# Eclipse files
+/.settings
+/.classpath
+/.project
+/eclipse/
+/target-eclipse
+
+# IntelliJ files
+*.iws
+*.iml
+.idea
+/out
+*.ipr
+
+# Gradle files
+.gradletasknamecache
+.gradle/
+
+# Mac OS files
+.DS_Store
+
+# Build files
+/build
+>>>>>>> refs/remotes/origin/master
