@@ -21,6 +21,10 @@ out/
 .gradle/
 build/
 
+# README.md
+*.st-ignore/
+*.md/
+
 # Local configuration file (sdk path, etc)
 local.properties
 
