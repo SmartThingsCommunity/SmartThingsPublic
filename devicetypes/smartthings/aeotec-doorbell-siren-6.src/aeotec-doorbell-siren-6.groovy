@@ -21,12 +21,12 @@ metadata {
 		capability "Alarm"
 		capability "Chime"
 
-		fingerprint mfr: "0371", prod: "0003", model: "00A2", deviceJoinName: "Aeotec Doorbell" //EU //Aeotec Doorbell 6
-		fingerprint mfr: "0371", prod: "0103", model: "00A2", deviceJoinName: "Aeotec Doorbell" //US //Aeotec Doorbell 6
-		fingerprint mfr: "0371", prod: "0003", model: "00A4", deviceJoinName: "Aeotec Siren" //EU //Aeotec Siren 6
-		fingerprint mfr: "0371", prod: "0103", model: "00A4", deviceJoinName: "Aeotec Siren" //US //Aeotec Siren 6
-		fingerprint mfr: "0371", prod: "0203", model: "00A4", deviceJoinName: "Aeotec Siren" //AU //Aeotec Siren 6
-		fingerprint mfr: "0371", prod: "0203", model: "00A2", deviceJoinName: "Aeotec Doorbell" //AU //Aeotec Doorbell 6
+		fingerprint mfr: "0371", prod: "0003", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //EU //Aeotec Doorbell 6
+		fingerprint mfr: "0371", prod: "0103", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //US //Aeotec Doorbell 6
+		fingerprint mfr: "0371", prod: "0003", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //EU //Aeotec Siren 6
+		fingerprint mfr: "0371", prod: "0103", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //US //Aeotec Siren 6
+		fingerprint mfr: "0371", prod: "0203", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //AU //Aeotec Siren 6
+		fingerprint mfr: "0371", prod: "0203", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //AU //Aeotec Doorbell 6
 	}
 
 	tiles {
