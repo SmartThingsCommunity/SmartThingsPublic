@@ -139,6 +139,11 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
     createEvent(name: "manufacturer", value: cmd.manufacturerName)
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
+    logging("AssociationReport $cmd", 2)
+    state."association${cmd.groupingIdentifier}" = cmd.nodeId[0]
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
     logging("SensorBinaryReport: $cmd", 2)
     def children = childDevices
@@ -355,6 +360,12 @@ def update_needed_settings() {
 
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
+	
+    if(!state.association4 || state.association4 == "" || state.association4 != 1){
+       logging("Setting association group 4", 1)
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:4)
+    }
 
     configuration.Value.each {
         if ("${it.@setting_type}" == "zwave" && it.@disabled != "true") {
