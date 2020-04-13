@@ -30,7 +30,7 @@ metadata {
         attribute "tamper", "enum", ["detected", "clear"]
 
 		//fingerprints
-        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "DWZB1-ECO"//, deviceJoinName: "Ecolink Door/Window"
+        fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0020,0402,0500,0B05", outClusters: "0019", manufacturer: "Ecolink", model: "DWZB1-ECO"//, deviceJoinName: "Ecolink Door/Window"
 
 	}
 
