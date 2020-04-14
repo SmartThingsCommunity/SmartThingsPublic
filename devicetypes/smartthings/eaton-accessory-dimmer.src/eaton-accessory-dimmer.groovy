@@ -22,7 +22,7 @@ metadata {
 		capability "Sensor"
 		capability "Light"
 
-		fingerprint mfr: "001A", prod: "4441", model: "0000", deviceJoinName: "Eaton RF Accessory Dimmer"
+		fingerprint mfr: "001A", prod: "4441", model: "0000", deviceJoinName: "Eaton Dimmer Switch" //Eaton RF Accessory Dimmer
 	}
 
 	simulator {

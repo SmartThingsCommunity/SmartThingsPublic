@@ -24,7 +24,7 @@ metadata {
 		attribute "temperatureAlarm", "string"
 		attribute "multiStatus", "string"
 
-		fingerprint mfr: "010F", prod: "0702"
+		fingerprint mfr: "010F", prod: "0702", deviceJoinName: "Fibaro Open/Closed Sensor"
 	}
 
 	tiles (scale: 2) {
