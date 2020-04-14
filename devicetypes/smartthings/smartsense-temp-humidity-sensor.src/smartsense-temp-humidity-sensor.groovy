@@ -189,7 +189,7 @@ def configure() {
 	if (manufacturer == "Heiman"|| manufacturer == "HEIMAN") {
 		return refresh() +
 		        zigbee.temperatureConfig(30, 300) +
-		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 21600, 0x10) +
+		        zigbee.configureReporting(zigbee.POWER_CONFIGURATION_CLUSTER, 0x0021, DataType.UINT8, 30, 3600, 0x10) +
 		        zigbee.configureReporting(0x0405, 0x0000, DataType.UINT16, 30, 3600, 100, [destEndpoint: 0x02])
 	} else {
 		return refresh() +
