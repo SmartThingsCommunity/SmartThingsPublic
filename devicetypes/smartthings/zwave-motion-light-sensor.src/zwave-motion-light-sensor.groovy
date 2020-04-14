@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition(name: "Z-Wave Motion/Light Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition(name: "Z-Wave Motion/Light Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion") {
 		capability "Motion Sensor"
 		capability "Illuminance Measurement"
 		capability "Battery"
@@ -87,23 +87,12 @@ def updated() {
 }
 
 def configure() {
-	// Device wakes up every deviceCheckInterval hours, this interval allows us to miss one wakeup notification before marking offline
-	sendEvent(name: "checkInterval", value: 2 * deviceWakeUpInterval * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-}
-
-def getDeviceWakeUpInterval() {
-	def deviceWakeIntervalValue = 4
-	switch (zwaveInfo?.mfr) {
-		case "021F":
-			deviceWakeIntervalValue = 12 // Dome reports once in 12h
-			break
-		case "0258":
-			deviceWakeIntervalValue = 12 // NEO Coolcam reports once in 12h
-			break
-		default:
-			deviceWakeIntervalValue = 4 // Default Z-Wave battery device reports once in 4h
+	// Device wakes up every 8 hours (+ 2 minutes), this interval allows us to miss one wakeup notification before marking offline
+	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	// Setting wakeUpNotification interval for NEO Coolcam and Dome devices
+	if (isNeoCoolcam() || isDome()) {
+		zwave.wakeUpV2.wakeUpIntervalSet(seconds: 4 * 3600, nodeid: zwaveHubNodeId).format()
 	}
-	return deviceWakeIntervalValue
 }
 
 private getCommandClassVersions() {
@@ -211,4 +200,11 @@ def sensorMotionEvent(value) {
 		result << createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
 	}
 	return result
+}
+
+private isDome() {
+	zwaveInfo.mfr == "021F" && zwaveInfo.model == "0083"
+}
+private isNeoCoolcam() {
+	zwaveInfo.mfr == "0258" && (zwaveInfo.model == "108D" || zwaveInfo.model == "008D")
 }
