@@ -13,9 +13,9 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr: "010F", prod: "0203", model: "2000"
-		fingerprint mfr: "010F", prod: "0203", model: "1000"
-		fingerprint mfr: "010F", prod: "0203", model: "3000"
+		fingerprint mfr: "010F", prod: "0203", model: "2000", deviceJoinName: "Fibaro Switch"
+		fingerprint mfr: "010F", prod: "0203", model: "1000", deviceJoinName: "Fibaro Switch"
+		fingerprint mfr: "010F", prod: "0203", model: "3000", deviceJoinName: "Fibaro Switch"
 	  }
 
 	tiles (scale: 2) {

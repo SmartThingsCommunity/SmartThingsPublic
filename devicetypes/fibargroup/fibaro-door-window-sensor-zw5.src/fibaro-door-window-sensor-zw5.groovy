@@ -22,8 +22,8 @@ metadata {
         	capability "Tamper Alert"
 		capability "Health Check"
 
-		fingerprint mfr: "010F", prod: "0700"
-		fingerprint mfr: "010F", prod: "0701"
+		fingerprint mfr: "010F", prod: "0700", deviceJoinName: "Fibaro Open/Closed Sensor"
+		fingerprint mfr: "010F", prod: "0701", deviceJoinName: "Fibaro Open/Closed Sensor"
 	}
 
 	simulator {
