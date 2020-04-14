@@ -1,5 +1,5 @@
 /**
- *  Zooz 4-in-1 Sensor v2.0.5
+ *  Zooz 4-in-1 Sensor v2.1.1
  *		(Model: ZSE40)
  *
  *  Author: 
@@ -9,6 +9,12 @@
  *    
  *
  *  Changelog:
+ *
+ *    2.1.1 (03/13/2020)
+ *      - Fixed bug with enum settings that was caused by a change ST made in the new mobile app.
+ *
+ *    2.1 (02/20/2019)
+ *    	- Changed illuminance and humidity to whole numbers because decimal values for those attributes completely crash the new mobile app.
  *
  *    2.0.5 (10/10/2018)
  *    	- Fixed issue causing problems with inclusion process
@@ -123,7 +129,7 @@ metadata {
 			title: "Round values to how many decimal places?", 
 			defaultValue: 2, 
 			required: false,
-			options: [[0:"0"],[1:"1"],[2:"2"]]
+			options: ["0":"0", "1":"1", "2":"2"]
 		
 		getNumberInput("checkinInterval", "Minimum Check-in Interval [0-167]\n(0 = 10 Minutes [FOR TESTING ONLY])\n(1 = 1 Hour)\n(167 = 7 Days)", "0..167", checkinIntervalSetting)
 		getNumberInput("reportBatteryEvery", "Battery Reporting Interval [1-167]\n(1 = 1 Hour)\n(167 = 7 Days)\nThis setting can't be less than the Minimum Check-in Interval.", "1..167", batteryReportingIntervalSetting)
@@ -517,23 +523,23 @@ private getLedIndicatorModes() {
 
 private getPrimaryStatusOptions() {
 	return [
-		["motion":"Motion"],
-		["temperature":"Temperature"],
-		["humidity": "Relative Humidity"],
-		["pLight":"Light %"],
-		["lxLight":"Light Lux"]
+		"motion":"Motion",
+		"temperature":"Temperature",
+		"humidity": "Relative Humidity",
+		"pLight":"Light %",
+		"lxLight":"Light Lux"
 	]
 }
 
 private getSecondaryStatusOptions() {
 	return [
-		["none":"None"],
-		["motion":"Motion"],
-		["temperature":"Temperature"],
-		["humidity": "Relative Humidity"],
-		["pLight":"Light %"],
-		["lxLight":"Light Lux"],
-		["combined":"Combined Values"]
+		"none":"None",
+		"motion":"Motion",
+		"temperature":"Temperature",
+		"humidity": "Relative Humidity",
+		"pLight":"Light %",
+		"lxLight":"Light Lux",
+		"combined":"Combined Values"
 	]
 }
 
@@ -897,14 +903,14 @@ private createTempEventMaps(val, onlyIfNew) {
 private createHumidityEventMaps(val, onlyIfNew) {
 	state.actualHumidity = val
 	def offsetVal = applyOffset(val, humidityOffsetSetting, "Humidity", "%")
-	return createEventMaps("humidity", offsetVal, "%", true, onlyIfNew)
+	return createEventMaps("humidity", Math.round(offsetVal), "%", true, onlyIfNew)
 }
 
 private createLightEventMaps(val, onlyIfNew) {
 	state.actualLight = val
 	def pOffsetVal = applyOffset(val, lightOffsetSetting, "Light", "%")
 	def lxOffsetVal = (val == 100) ? maxLxSetting : applyOffset(calculateLxVal(val), lxLightOffsetSetting, "Light", "lx")
-	def lightOffsetVal = reportLxSetting ? lxOffsetVal : pOffsetVal
+	def lightOffsetVal = reportLxSetting ? Math.round(lxOffsetVal) : Math.round(pOffsetVal)
 	def lightUnit = reportLxSetting ? "lx" : "%"
 	
 	def result = []
