@@ -78,7 +78,7 @@ def beep() {
 		Future: new packet type "st.beep"
 
 		raw 0xFC05 {15 0A 11 00 00 15 01}
-		send 0x2F7F 2 2
+		send 0x2F7F 1 2
 
 	where "0xABCD" is the node ID of the Smart Tag, everything else above is a constant. Except
 	the "15 01" at the end of the first raw command, that sets the speaker's period (reciprocal
@@ -90,27 +90,26 @@ def beep() {
 	up to this long from the time you send the message to the time you hear a sound.
 	*/
 
-	// Used source endpoint of 0x02 because we are using smartthings manufacturer specific cluster.
 	[
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
 		"delay 200",
-		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
+		"send 0x$zigbee.deviceNetworkId 0x01 0x$zigbee.endpointId",
 		"delay 7000",
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
 		"delay 200",
-		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
+		"send 0x$zigbee.deviceNetworkId 0x01 0x$zigbee.endpointId",
 		"delay 7000",
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
 		"delay 200",
-		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
+		"send 0x$zigbee.deviceNetworkId 0x01 0x$zigbee.endpointId",
 		"delay 7000",
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
 		"delay 200",
-		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
+		"send 0x$zigbee.deviceNetworkId 0x01 0x$zigbee.endpointId",
 		"delay 7000",
 		"raw 0xFC05 {15 0A 11 00 00 15 01}",
 		"delay 200",
-		"send 0x$zigbee.deviceNetworkId 0x02 0x$zigbee.endpointId",
+		"send 0x$zigbee.deviceNetworkId 0x01 0x$zigbee.endpointId",
 	]
 }
 
