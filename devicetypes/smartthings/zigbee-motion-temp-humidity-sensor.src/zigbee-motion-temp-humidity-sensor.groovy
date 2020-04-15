@@ -45,7 +45,7 @@ metadata {
 		}
 		section {
 			input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
-			input "humidityOffset", "number", title: "Humidity Offset", description: "Adjust humidity by this percentage", range: "*..*", displayDuringSetup: false
+			input "humidityOffset", "number", title: "Humidity Offset", description: "Enter a percentage to adjust the humidity.", range: "*..*", displayDuringSetup: false
 		}
 	}
 
