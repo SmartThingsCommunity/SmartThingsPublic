@@ -41,7 +41,7 @@ metadata {
 		// Innr
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RS 128 T", deviceJoinName: "Innr Smart Spot Tunable White"
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 178 T", deviceJoinName: "Innr Smart Bulb Tunable White"
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 148 T", deviceJoinName: "Innr Smart Bulb Tunable White"
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 148 T", deviceJoinName: "Innr Smart Bulb Tunable White", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K"
 	}
 
 	// UI tile definitions
