@@ -29,7 +29,7 @@ metadata {
 
 	command "test"
 
-	fingerprint mfr: "013C", prod: "0004", model: "000A", deviceJoinName: "Philio Multiple Sound Siren PSE02"
+	fingerprint mfr: "013C", prod: "0004", model: "000A", deviceJoinName: "Philio Siren" //Philio Multiple Sound Siren PSE02
  }
 
  simulator {
