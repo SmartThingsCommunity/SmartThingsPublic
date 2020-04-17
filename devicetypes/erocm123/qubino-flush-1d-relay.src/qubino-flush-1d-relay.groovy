@@ -93,6 +93,7 @@ def parse(String description) {
     if (cmd) {
         result += zwaveEvent(cmd)
     }
+
     if (result?.name == 'hail' && hubFirmwareLessThan("000.011.00602")) {
         result = [result, response(zwave.basicV1.basicGet())]
         logging("Was hailed: requesting state update", 2)
@@ -142,6 +143,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd) {
     logging("AssociationReport $cmd", 2)
     state."association${cmd.groupingIdentifier}" = cmd.nodeId[0]
+    return [:]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd) {
@@ -230,6 +232,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 
 def on() {
     logging("on()", 1)
+    //sendEvent(name: "switch", value: "on")
     commands([
         zwave.basicV1.basicSet(value: 0xFF),
         zwave.switchBinaryV1.switchBinaryGet()
@@ -238,6 +241,7 @@ def on() {
 
 def off() {
     logging("off()", 1)
+    //sendEvent(name: "switch", value: "off")
     commands([
         zwave.basicV1.basicSet(value: 0x00),
         zwave.switchBinaryV1.switchBinaryGet()
@@ -361,6 +365,11 @@ def update_needed_settings() {
     def configuration = parseXml(configuration_model())
     def isUpdateNeeded = "NO"
 	
+    if(!state.association1 || state.association1 == "" || state.association1 != 1){
+       logging("Setting association group 1", 1)
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:1)
+    }
     if(!state.association4 || state.association4 == "" || state.association4 != 1){
        logging("Setting association group 4", 1)
        cmds << zwave.associationV2.associationSet(groupingIdentifier:4, nodeId:zwaveHubNodeId)
