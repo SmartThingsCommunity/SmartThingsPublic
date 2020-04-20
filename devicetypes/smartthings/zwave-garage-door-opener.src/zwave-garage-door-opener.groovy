@@ -22,6 +22,7 @@ metadata {
 		capability "Contact Sensor"
 		capability "Refresh"
 		capability "Sensor"
+		capability "Battery"
 
 		fingerprint inClusters: "0x66, 0x98, 0x71, 0x72"
 		fingerprint deviceId: "0x4007", inClusters: "0x98"
