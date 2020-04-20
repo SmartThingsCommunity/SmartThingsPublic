@@ -36,7 +36,7 @@ preferences {
 		input "time3", "time", title: "Time 3", required: false
 		input "time4", "time", title: "Time 4", required: false
 	}
-	section("I forget send me a notification and/or text message..."){
+	section("If I forget send me a notification and/or text message..."){
         input("recipients", "contact", title: "Send notifications to") {
             input "sendPush", "enum", title: "Push Notification", required: false, options: ["Yes", "No"]
             input "phone1", "phone", title: "Phone Number", required: false
