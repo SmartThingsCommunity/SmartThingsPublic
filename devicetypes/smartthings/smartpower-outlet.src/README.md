@@ -1,10 +1,11 @@
-# SmartPower Outlet
+# Samsung SmartThings Outlet
 
 Local Execution on V2 Hubs
 
 Works with: 
 
-* [Samsung SmartPower Outlet](https://shop.smartthings.com/#!/products/smartpower-outlet)
+* [Samsung SmartThings  Outlet](https://shop.smartthings.com/#!/products/samsung-smartthings-outlet)
+* [SmartPower Outlet (2014)](https://shop.smartthings.com/#!/products/smartpower-outlet)
 
 ## Table of contents
 
@@ -31,9 +32,8 @@ SmartThings platform will ping the device after `checkInterval` seconds of inact
 
 ## Troubleshooting
 
-If the device doesn't pair when trying from the SmartThings mobile app, it is possible that the device is out of range.
-Pairing needs to be tried again by placing the device closer to the hub.
-Instructions related to pairing, resetting and removing the device from SmartThings can be found in the following links
-for the different models:
-* [SmartPower Outlet Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/201084854-SmartPower-Outlet)
+If the outlet did not pair to the Hub when it was first connected, it migh be out of range. 
+Bring the outlet closer to the Hub and attempt to connect it again.
+Other troubleshooting tips are listed as follows:
 * [Samsung SmartThings Outlet Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/205957620)
+* [SmartPower Outlet Troubleshooting Tips](https://support.smartthings.com/hc/en-us/articles/201084854-SmartPower-Outlet)
