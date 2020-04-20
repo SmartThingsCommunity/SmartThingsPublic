@@ -1,0 +1,631 @@
+.wu {
+    display: inline-block;
+    background-repeat: no-repeat;
+    padding: 0;
+    margin: 0;
+}
+
+.wu-16 {
+    width: 16px;
+    height: 16px;
+}
+
+.wu-32 {
+    width: 32px;
+    height: 32px;
+}
+
+.wu-64 {
+    width: 64px;
+    height: 64px;
+}
+
+.wu-128 {
+    width: 128px;
+    height: 128px;
+}
+
+.wu-256 {
+    width: 256px;
+    height: 256px;
+}
+
+.wu-black.wu-chanceflurries {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/chanceflurries.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-chancerain {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/chancerain.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-chancesleet {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/chancesleet.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-chancesnow {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/chancesnow.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-chancetstorms {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/chancetstorms.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-clear {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/clear.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-cloudy {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/cloudy.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-flurries {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/flurries.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-fog {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/fog.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-hazy {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/hazy.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-mostlycloudy {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/mostlycloudy.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-mostlysunny {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/mostlysunny.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-partlycloudy {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/partlycloudy.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-partlysunny {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/partlysunny.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-rain {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/rain.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-sleet {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/sleet.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-snow {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/snow.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-sunny {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/sunny.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-tstorms {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/tstorms.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-black.wu-unknown {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/svg/unknown.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-chanceflurries {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/chanceflurries.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-chancerain {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/chancerain.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-chancesleet {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/chancesleet.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-chancesnow {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/chancesnow.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-chancetstorms {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/chancetstorms.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-clear {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/clear.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-cloudy {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/cloudy.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-flurries {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/flurries.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-fog {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/fog.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-hazy {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/hazy.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-mostlycloudy {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/mostlycloudy.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-mostlysunny {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/mostlysunny.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-partlycloudy {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/partlycloudy.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-partlysunny {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/partlysunny.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-rain {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/rain.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-sleet {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/sleet.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-snow {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/snow.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-sunny {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/sunny.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-tstorms {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/tstorms.svg), linear-gradient(transparent, transparent);
+}
+
+.wu-white.wu-unknown {
+    background: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/svg/unknown.svg), linear-gradient(transparent, transparent);
+}
+
+.no-svg .wu-16.wu-black {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/png/16x16/_spritesheet.png);
+}
+
+.no-svg .wu-32.wu-black {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/png/32x32/_spritesheet.png);
+}
+
+.no-svg .wu-64.wu-black {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/png/64x64/_spritesheet.png);
+}
+
+.no-svg .wu-128.wu-black {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/png/128x128/_spritesheet.png);
+}
+
+.no-svg .wu-256.wu-black {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/black/png/256x256/_spritesheet.png);
+}
+
+.no-svg .wu-16.wu-white {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/png/16x16/_spritesheet.png);
+}
+
+.no-svg .wu-32.wu-white {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/png/32x32/_spritesheet.png);
+}
+
+.no-svg .wu-64.wu-white {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/png/64x64/_spritesheet.png);
+}
+
+.no-svg .wu-128.wu-white {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/png/128x128/_spritesheet.png);
+}
+
+.no-svg .wu-256.wu-white {
+    background-image: url(https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Weather/icons/white/png/256x256/_spritesheet.png);
+}
+
+.no-svg .wu-16.wu-chanceflurries {
+    background-position: -5px -5px;
+}
+
+.no-svg .wu-16.wu-chancerain {
+    background-position: -31px -5px;
+}
+
+.no-svg .wu-16.wu-chancesleet {
+    background-position: -57px -5px;
+}
+
+.no-svg .wu-16.wu-chancesnow {
+    background-position: -83px -5px;
+}
+
+.no-svg .wu-16.wu-chancetstorms {
+    background-position: -5px -31px;
+}
+
+.no-svg .wu-16.wu-clear {
+    background-position: -31px -31px;
+}
+
+.no-svg .wu-16.wu-cloudy {
+    background-position: -57px -31px;
+}
+
+.no-svg .wu-16.wu-flurries {
+    background-position: -83px -31px;
+}
+
+.no-svg .wu-16.wu-fog {
+    background-position: -5px -57px;
+}
+
+.no-svg .wu-16.wu-hazy {
+    background-position: -31px -57px;
+}
+
+.no-svg .wu-16.wu-mostlycloudy {
+    background-position: -57px -57px;
+}
+
+.no-svg .wu-16.wu-mostlysunny {
+    background-position: -83px -57px;
+}
+
+.no-svg .wu-16.wu-partlycloudy {
+    background-position: -5px -83px;
+}
+
+.no-svg .wu-16.wu-partlysunny {
+    background-position: -31px -83px;
+}
+
+.no-svg .wu-16.wu-rain {
+    background-position: -57px -83px;
+}
+
+.no-svg .wu-16.wu-sleet {
+    background-position: -83px -83px;
+}
+
+.no-svg .wu-16.wu-snow {
+    background-position: -109px -5px;
+}
+
+.no-svg .wu-16.wu-sunny {
+    background-position: -109px -31px;
+}
+
+.no-svg .wu-16.wu-tstorms {
+    background-position: -109px -57px;
+}
+
+.no-svg .wu-16.wu-unknown {
+    background-position: -109px -83px;
+}
+
+.no-svg .wu-32.wu-chanceflurries {
+    background-position: 0 0;
+}
+
+.no-svg .wu-32.wu-chancerain {
+    background-position: -32px 0;
+}
+
+.no-svg .wu-32.wu-chancesleet {
+    background-position: -64px 0;
+}
+
+.no-svg .wu-32.wu-chancesnow {
+    background-position: -96px 0;
+}
+
+.no-svg .wu-32.wu-chancetstorms {
+    background-position: 0 -32px;
+}
+
+.no-svg .wu-32.wu-clear {
+    background-position: -32px -32px;
+}
+
+.no-svg .wu-32.wu-cloudy {
+    background-position: -64px -32px;
+}
+
+.no-svg .wu-32.wu-flurries {
+    background-position: -96px -32px;
+}
+
+.no-svg .wu-32.wu-fog {
+    background-position: 0 -64px;
+}
+
+.no-svg .wu-32.wu-hazy {
+    background-position: -32px -64px;
+}
+
+.no-svg .wu-32.wu-mostlycloudy {
+    background-position: -64px -64px;
+}
+
+.no-svg .wu-32.wu-mostlysunny {
+    background-position: -96px -64px;
+}
+
+.no-svg .wu-32.wu-partlycloudy {
+    background-position: 0 -96px;
+}
+
+.no-svg .wu-32.wu-partlysunny {
+    background-position: -32px -96px;
+}
+
+.no-svg .wu-32.wu-rain {
+    background-position: -64px -96px;
+}
+
+.no-svg .wu-32.wu-sleet {
+    background-position: -96px -96px;
+}
+
+.no-svg .wu-32.wu-snow {
+    background-position: -128px 0;
+}
+
+.no-svg .wu-32.wu-sunny {
+    background-position: -128px -32px;
+}
+
+.no-svg .wu-32.wu-tstorms {
+    background-position: -128px -64px;
+}
+
+.no-svg .wu-32.wu-unknown {
+    background-position: -128px -96px;
+}
+
+.no-svg .wu-64.wu-chanceflurries {
+    background-position: -5px -5px;
+}
+
+.no-svg .wu-64.wu-chancerain {
+    background-position: -79px -5px;
+}
+
+.no-svg .wu-64.wu-chancesleet {
+    background-position: -153px -5px;
+}
+
+.no-svg .wu-64.wu-chancesnow {
+    background-position: -227px -5px;
+}
+
+.no-svg .wu-64.wu-chancetstorms {
+    background-position: -5px -79px;
+}
+
+.no-svg .wu-64.wu-clear {
+    background-position: -79px -79px;
+}
+
+.no-svg .wu-64.wu-cloudy {
+    background-position: -153px -79px;
+}
+
+.no-svg .wu-64.wu-flurries {
+    background-position: -227px -79px;
+}
+
+.no-svg .wu-64.wu-fog {
+    background-position: -5px -153px;
+}
+
+.no-svg .wu-64.wu-hazy {
+    background-position: -79px -153px;
+}
+
+.no-svg .wu-64.wu-mostlycloudy {
+    background-position: -153px -153px;
+}
+
+.no-svg .wu-64.wu-mostlysunny {
+    background-position: -227px -153px;
+}
+
+.no-svg .wu-64.wu-partlycloudy {
+    background-position: -5px -227px;
+}
+
+.no-svg .wu-64.wu-partlysunny {
+    background-position: -79px -227px;
+}
+
+.no-svg .wu-64.wu-rain {
+    background-position: -153px -227px;
+}
+
+.no-svg .wu-64.wu-sleet {
+    background-position: -227px -227px;
+}
+
+.no-svg .wu-64.wu-snow {
+    background-position: -301px -5px;
+}
+
+.no-svg .wu-64.wu-sunny {
+    background-position: -301px -79px;
+}
+
+.no-svg .wu-64.wu-tstorms {
+    background-position: -301px -153px;
+}
+
+.no-svg .wu-64.wu-unknown {
+    background-position: -301px -227px;
+}
+
+.no-svg .wu-128.wu-chanceflurries {
+    background-position: -5px -5px;
+}
+
+.no-svg .wu-128.wu-chancerain {
+    background-position: -143px -5px;
+}
+
+.no-svg .wu-128.wu-chancesleet {
+    background-position: -281px -5px;
+}
+
+.no-svg .wu-128.wu-chancesnow {
+    background-position: -419px -5px;
+}
+
+.no-svg .wu-128.wu-chancetstorms {
+    background-position: -5px -143px;
+}
+
+.no-svg .wu-128.wu-clear {
+    background-position: -143px -143px;
+}
+
+.no-svg .wu-128.wu-cloudy {
+    background-position: -281px -143px;
+}
+
+.no-svg .wu-128.wu-flurries {
+    background-position: -419px -143px;
+}
+
+.no-svg .wu-128.wu-fog {
+    background-position: -5px -281px;
+}
+
+.no-svg .wu-128.wu-hazy {
+    background-position: -143px -281px;
+}
+
+.no-svg .wu-128.wu-mostlycloudy {
+    background-position: -281px -281px;
+}
+
+.no-svg .wu-128.wu-mostlysunny {
+    background-position: -419px -281px;
+}
+
+.no-svg .wu-128.wu-partlycloudy {
+    background-position: -5px -419px;
+}
+
+.no-svg .wu-128.wu-partlysunny {
+    background-position: -143px -419px;
+}
+
+.no-svg .wu-128.wu-rain {
+    background-position: -281px -419px;
+}
+
+.no-svg .wu-128.wu-sleet {
+    background-position: -419px -419px;
+}
+
+.no-svg .wu-128.wu-snow {
+    background-position: -557px -5px;
+}
+
+.no-svg .wu-128.wu-sunny {
+    background-position: -557px -143px;
+}
+
+.no-svg .wu-128.wu-tstorms {
+    background-position: -557px -281px;
+}
+
+.no-svg .wu-128.wu-unknown {
+    background-position: -557px -419px;
+}
+
+.no-svg .wu-256.wu-chanceflurries {
+    background-position: -5px -5px;
+}
+
+.no-svg .wu-256.wu-chancerain {
+    background-position: -271px -5px;
+}
+
+.no-svg .wu-256.wu-chancesleet {
+    background-position: -537px -5px;
+}
+
+.no-svg .wu-256.wu-chancesnow {
+    background-position: -803px -5px;
+}
+
+.no-svg .wu-256.wu-chancetstorms {
+    background-position: -5px -271px;
+}
+
+.no-svg .wu-256.wu-clear {
+    background-position: -271px -271px;
+}
+
+.no-svg .wu-256.wu-cloudy {
+    background-position: -537px -271px;
+}
+
+.no-svg .wu-256.wu-flurries {
+    background-position: -803px -271px;
+}
+
+.no-svg .wu-256.wu-fog {
+    background-position: -5px -537px;
+}
+
+.no-svg .wu-256.wu-hazy {
+    background-position: -271px -537px;
+}
+
+.no-svg .wu-256.wu-mostlycloudy {
+    background-position: -537px -537px;
+}
+
+.no-svg .wu-256.wu-mostlysunny {
+    background-position: -803px -537px;
+}
+
+.no-svg .wu-256.wu-partlycloudy {
+    background-position: -5px -803px;
+}
+
+.no-svg .wu-256.wu-partlysunny {
+    background-position: -271px -803px;
+}
+
+.no-svg .wu-256.wu-rain {
+    background-position: -537px -803px;
+}
+
+.no-svg .wu-256.wu-sleet {
+    background-position: -803px -803px;
+}
+
+.no-svg .wu-256.wu-snow {
+    background-position: -1069px -5px;
+}
+
+.no-svg .wu-256.wu-sunny {
+    background-position: -1069px -271px;
+}
+
+.no-svg .wu-256.wu-tstorms {
+    background-position: -1069px -537px;
+}
+
+.no-svg .wu-256.wu-unknown {
+    background-position: -1069px -803px;
+}

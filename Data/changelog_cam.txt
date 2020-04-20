@@ -1,0 +1,15 @@
+<p style="font-size: 15px;"><strong>V5.0.0 (March 30th, 2017):</strong><p>
+<hr noshade>
+<ul style="font-size: 12px; padding: 0 10px 0 10px; Margin: 0;">
+    <li><strong>NEW:</strong> All-New HTML design with fluid swiping/tapping slides and refresh button to reload html content (Swiping/Refresh on iOS only).</li>
+    <li><strong>NEW:</strong> Camera event zone info is now part of the device interface.</li>
+    <ul>
+        <li>Event Types (Ex. Has Motion, Has Person, Has Sound).</li>
+        <li>If Zones are configured they be will displayed for each event.</li>
+    </ul>
+    <li><strong>NEW:</strong> Activated Motion and Sound capabilities to support an exciting new feature coming soon</li>
+    <li><strong>FIXED:</strong> When streaming was off it would sometime cause the device health to show offline.</li>
+    <li><strong>UPDATED:</strong> Few tweaks to help minimize the connection issues with iOS/android camera streams.</li>
+</ul>
+ <p style="font-size: 12px;"><strong>NOTICE:</strong> As much as I want to add support for Password protected camera streams.
+        It's just not going to happen (At least at this time)</p>

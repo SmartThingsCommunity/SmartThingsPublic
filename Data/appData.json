@@ -1,0 +1,104 @@
+{
+    "help": {
+        "showHelp": true
+    },
+    "state": {
+        "stateVarVer": 2
+    },
+    "token": {
+        "id": "9d132e83-11fc-45be-9a8d-95b7a7cb07a0",
+        "secret": "LDaJe8tAMvdPGyFPt0JJP165x",
+        "tokenNum": 4
+    },
+    "broadcast": {
+        "msgId": "",
+        "message": "",
+        "type": "info",
+        "devBannerMsg": {
+            "msgId": "7lVTfVCjHA",
+            "message": "You must obey me at all costs ;)",
+            "type": "warn",
+            "expireDt": "Wed Feb 15 00:00:00 EST 2017"
+        }
+    },
+    "updater": {
+        "updateVer": 1,
+        "updateMsg": "",
+        "updateDesc": "",
+        "updateType": "std",
+        "setupVersion": 2,
+        "versions": {
+            "app": {
+                "ver": "5.0.2"
+            },
+            "autoapp": {
+                "ver": "5.0.0"
+            },
+            "thermostat": {
+                "ver": "5.0.0"
+            },
+            "protect": {
+                "ver": "5.0.0"
+            },
+            "camera": {
+                "ver": "5.0.0"
+            },
+            "presence": {
+                "ver": "5.0.0"
+            },
+            "weather": {
+                "ver": "5.0.1"
+            }
+        }
+    },
+    "html": {
+        "cssVer": 1,
+        "cssUrl": "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Documents/css/ST-HTML.min.css",
+        "chartJsVer": 1,
+        "chartJsUrl": "https://www.gstatic.com/charts/loader.js"
+    },
+    "database": {
+        "allowRemoteDiag": true,
+        "disableExceptions": false,
+        "exceptionPath": "exceptionData",
+        "newexceptionPath": "newexceptionData",
+        "remoteDiagPath": "remoteDiagLogs"
+    },
+    "aaPrefs": {
+        "enAaMsgQueue": true,
+        "enMultiQueue": false
+    },
+    "reportPrefs": {
+        "disVoiceZoneRprt": false,
+        "disVoiceUsageRprt": false
+    },
+    "clientBL": {
+        "clients": []
+    },
+    "clientRemDiagAuth": {
+        "clients": ["bad978ab-f37e-48c9-909c-1971e1970364", "44360aba-62c0-4f6b-a2c9-c93668c64352", "14157c70-619b-4718-b34d-55e6cfb06200"]
+    },
+    "pollMethod": {
+        "allowAsync": true
+    },
+    "schedules": {
+        "count": 8
+    },
+    "eventStreaming": {
+        "enabled": false,
+        "minVersion": "0.4.0"
+    },
+    "healthcheck": {
+        "camTimeout": 120,
+        "protWireTimeout": 35,
+        "protBattTimeout": 1500,
+        "tstatTimeout": 35,
+        "longTimeout": 120,
+        "timeout": 35,
+        "enabled": true
+    },
+    "devStatusPage": {
+        "enabled": false,
+        "path": ""
+    }
+}
