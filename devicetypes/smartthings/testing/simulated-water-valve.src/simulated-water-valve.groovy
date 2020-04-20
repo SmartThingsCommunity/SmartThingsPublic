@@ -21,7 +21,7 @@ metadata {
 
 	// tile definitions
 	tiles {
-		standardTile("contact", "device.contact", width: 2, height: 2, canChangeIcon: true) {
+		standardTile("valve", "device.valve", width: 2, height: 2, canChangeIcon: true) {
 			state "closed", label: '${name}', action: "valve.open", icon: "st.valves.water.closed", backgroundColor: "#ffffff"
 			state "open", label: '${name}', action: "valve.close", icon: "st.valves.water.open", backgroundColor: "#00A0DC"
 		}
@@ -29,8 +29,8 @@ metadata {
 			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		main "contact"
-		details(["contact","refresh"])
+		main "valve"
+		details(["valve","refresh"])
 	}
 }
 
@@ -38,7 +38,7 @@ def installed() {
 	log.trace "Executing 'installed'"
 	initialize()
 
-	sendEvent(name: "contact", value: "closed")
+	sendEvent(name: "valve", value: "closed")
 }
 
 def updated() {
@@ -56,9 +56,9 @@ private initialize() {
 
 
 def open() {
-	sendEvent(name: "contact", value: "open")
+	sendEvent(name: "valve", value: "open")
 }
 
 def close() {
-	sendEvent(name: "contact", value: "closed")
+	sendEvent(name: "valve", value: "closed")
 }
