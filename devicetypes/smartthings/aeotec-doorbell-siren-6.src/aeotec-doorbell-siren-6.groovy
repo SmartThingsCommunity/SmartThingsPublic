@@ -14,7 +14,7 @@
  *
  */
 metadata {
-	definition(name: "Aeotec Doorbell Siren 6", namespace: "smartthings", author: "SmartThings", mcdSync: true,  mnmn: "SmartThings", vid: "generic-8-sound") {
+	definition(name: "Aeotec Doorbell Siren 6", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Tamper Alert"
@@ -64,6 +64,7 @@ private getNumberOfSounds() {
 def installed() {
 	initialize()
 	sendEvent(name: "alarm", value: "off", isStateChange: true, displayed: false)
+	sendEvent(name: "chime", value: "off", isStateChange: true, displayed: false)
 	sendEvent(name: "tamper", value: "clear", isStateChange: true, displayed: false)
 }
 
