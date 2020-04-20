@@ -1,8 +1,8 @@
 /**
- *  Its too humid!
+ *  Humidity Alert!
  *
- *  Copyright 2014 Brian Critchlow
- *  Based on Its too cold code by SmartThings
+ *  Copyright 2014-2018 Brian Critchlow, Larry McQueary
+ *  Based on It's Too Cold code by SmartThings
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
@@ -64,31 +64,30 @@ def humidityHandler(evt) {
 	def deltaMinutes = 10 
     
     def timeAgo = new Date(now() - (1000 * 60 * deltaMinutes).toLong())
-	def recentEvents = humiditySensor1.eventsSince(timeAgo)
+	// This may be a multisensor, so make sure we're counting only humidity events
+	def recentEvents = humiditySensor1.eventsSince(timeAgo)?.findAll { it.name == "humidity" }
 	log.trace "Found ${recentEvents?.size() ?: 0} events in the last ${deltaMinutes} minutes"
-	def alreadySentSms = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= tooHumid } > 1 || recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= notHumidEnough } > 1
+	def alreadySentSmsTooHigh = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) >= tooHumid } > 1
+	def alreadySentSmsTooLow = recentEvents.count { Double.parseDouble(it.value.replace("%", "")) <= notHumidEnough } > 1
     
 	if (currentHumidity >= tooHumid) {
 		log.debug "Checking how long the humidity sensor has been reporting >= ${tooHumid}"
 
 		// Don't send a continuous stream of text messages
-		
-
-
-		if (alreadySentSms) {
+		if (alreadySentSmsTooHigh) {
 			log.debug "Notification already sent within the last ${deltaMinutes} minutes"
 			
 		} else {
 			log.debug "Humidity Rose Above ${tooHumid}:  sending SMS and activating ${mySwitch}"
 			send("${humiditySensor1.label} sensed high humidity level of ${evt.value}")
-			switch1?.on()
+	  		switch1?.on()
 		}
 	}
 
     if (currentHumidity <= notHumidEnough) {
 		log.debug "Checking how long the humidity sensor has been reporting <= ${notHumidEnough}"
 
-		if (alreadySentSms) {
+		if (alreadySentSmsTooLow) {
 			log.debug "Notification already sent within the last ${deltaMinutes} minutes"
 			
 		} else {
