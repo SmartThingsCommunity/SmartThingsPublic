@@ -122,6 +122,7 @@ private getGREEN() { "green" }
 private getBLUE() { "blue" }
 private getRGB_NAMES() { [RED, GREEN, BLUE] }
 
+
 def setupHealthCheck() {
 	def motionInterval = (OnTime != null ? OnTime : 2) as int
 	def luminanceInterval = (LiteMin != null ? LiteMin : 6) as int
@@ -135,6 +136,7 @@ def setupHealthCheck() {
 def installed() {
 	sendEvent(name: "motion", value: "inactive", displayed: false)
 	state.colorReceived = [red: null, green: null, blue: null]
+    state.commandedColor = [red: 0, green: 0, blue: 0]
 	setupHealthCheck()
 }
 
@@ -263,11 +265,25 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def on() {
-	log.debug "Turning Light 'on'"
-	commands([
-		zwave.basicV1.basicSet(value: 0xFF),
-		zwave.basicV1.basicGet()
-	], 500)
+    log.debug "Turning Light 'on' Command"
+    //if the color state is all off
+    if ((state.commandedColor.red == 0)&&(state.commandedColor.green == 0)&&(state.commandedColor.blue == 0)){
+    	log.debug "Turning Light to default color"
+    	//set to default all on
+    	commands([
+			zwave.basicV1.basicSet(value: 0xFF),
+			zwave.basicV1.basicGet()
+		], 500)
+    }
+    //else
+    else{
+		def cmds = []
+		log.debug "Returning to Prior Color"
+		//return it to prior color
+    	cmds << zwave.switchColorV3.switchColorSet(red: state.commandedColor.red, green: state.commandedColor.green, blue: state.commandedColor.blue)
+		cmds << zwave.basicV1.basicGet()
+		commands(cmds + queryAllColors(), 100)
+	}
 }
 
 def off() {
@@ -294,7 +310,7 @@ def setColor(value) {
 
 	// The EZMultiPli has just on/off for each of the 3 channels RGB so convert the 0-255 value into 0 or 255.
 	if (value.containsKey("hue") && value.containsKey("saturation")) {
-		def level = (value.containsKey("level")) ? value.level : 100
+        def level = (value.containsKey("level")) ? value.level : 100
 		hue = value.hue as Integer
 		saturation = value.saturation as Integer
 
@@ -318,12 +334,17 @@ def setColor(value) {
 	// It should be safe to leave this in here for now.
 	else if (value.containsKey("red") && value.containsKey("green") && value.containsKey("blue")) {
 		myred = channelValue(value.red)
-		mygreen = channelValue(value.green)
+	    mygreen = channelValue(value.green)
 		myblue = channelValue(value.blue)
 	} else {
 		return
 	}
-
+    
+    //save commanded color
+    state.commandedColor.red = myred
+    state.commandedColor.green = mygreen
+    state.commandedColor.blue = myblue
+    
 	cmds << zwave.switchColorV3.switchColorSet(red: myred, green: mygreen, blue: myblue)
 	cmds << zwave.basicV1.basicGet()
 
