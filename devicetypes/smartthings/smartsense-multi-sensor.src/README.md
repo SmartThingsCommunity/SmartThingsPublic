@@ -1,10 +1,11 @@
-# Smartsense Multi Sensor
+# Samsung SmartThings Multipurpose Sensor
 
 Local Execution on V2 Hubs
 
 Works with: 
 
 * [Samsung SmartThings Multi Sensor](https://shop.smartthings.com/#!/products/smartsense-multi)
+* SmartSense Multi Sensor (2014)
 
 ## Table of contents
 
@@ -38,8 +39,8 @@ One CR2450 (for Samsung SmartThings Multipurpose Sensor) battery / Two AAAA (for
 
 ## Troubleshooting
 
-If the sensor doesn't pair when trying from the SmartThings mobile app, it is possible that the sensor is out of range.
-Pairing needs to be tried again by placing the sensor closer to the hub.
+If the Multipurpose sensor did not connect to the Hub when you removed the pull tab, it might be out of range.
+Bring the sensor closer to the Hub and attempt to connect it again.
 Other troubleshooting tips are listed as follows:
 * [Troubleshooting: Samsung SmartThings Multipurpose Sensor is stuck on "open" or "closed"](https://support.smartthings.com/hc/en-us/articles/200955940-Troubleshooting-Samsung-SmartThings-Multipurpose-Sensor-is-stuck-on-open-or-closed-)
 * [Troubleshooting: Temperature reading for the Samsung SmartThings Multipurpose Sensor is off](https://support.smartthings.com/hc/en-us/articles/200756845-Troubleshooting-Temperature-reading-for-the-Samsung-SmartThings-Multipurpose-Sensor-is-off)
