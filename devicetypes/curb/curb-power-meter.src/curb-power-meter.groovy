@@ -39,7 +39,7 @@ metadata {
                     ]
             }
             tileAttribute ("device.energy", key: "SECONDARY_CONTROL") {
-                attributeState "energy", label:'${currentValue} kWh'
+                attributeState "energy", label:'${currentValue} kWh this billing period'
             }
         }
         main(["power"])
