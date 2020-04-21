@@ -94,6 +94,9 @@ metadata {
 		// Leedarson
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FEDC", outClusters: "000A, 0019", manufacturer: "Smarthome", model: "S111-202A", deviceJoinName: "Leedarson Light" //Leedarson Tunable White Bulb A19
 
+		// LINKIND
+		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000, FC82", outClusters: "000A, 0019", manufacturer: "lk", model: "ZBT-CCTLight-GLS0108", deviceJoinName: "Linkind Light" //Linkid Tunable A19 Bulb
+
 		// Muller Licht Tint
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 1000", outClusters: "0019", manufacturer: "MLI", model: "ZBT-ColorTemperature", deviceJoinName: "Tint Light" //Müller Licht Tint White Bulb
 
