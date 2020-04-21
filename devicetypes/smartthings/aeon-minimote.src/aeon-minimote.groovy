@@ -22,7 +22,7 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint mfr: "0086", prod: "0001", model:"0003"
+		fingerprint mfr: "0086", prod: "0001", model:"0003", deviceJoinName: "Aeon Remote Control"
 	}
 
 	simulator {

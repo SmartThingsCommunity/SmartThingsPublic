@@ -30,7 +30,7 @@ metadata {
         
         attribute "swBuild","string"// earliers versions of the DM2500ZB does not support the minimal intensity. theses dimmers can be identified by their swBuild under the value 106
         
-        fingerprint manufacturer: "Sinope Technologies", model: "DM2500ZB", deviceJoinName: "DM2500ZB"
+        fingerprint manufacturer: "Sinope Technologies", model: "DM2500ZB", deviceJoinName: "Sinope Dimmer Switch" //DM2500ZB
     }
 
     tiles(scale: 2) 

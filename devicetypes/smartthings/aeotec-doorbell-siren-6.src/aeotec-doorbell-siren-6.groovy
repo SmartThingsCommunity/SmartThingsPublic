@@ -14,19 +14,19 @@
  *
  */
 metadata {
-	definition(name: "Aeotec Doorbell Siren 6", namespace: "smartthings", author: "SmartThings", mcdSync: true,  mnmn: "SmartThings", vid: "generic-8-sound") {
+	definition(name: "Aeotec Doorbell Siren 6", namespace: "smartthings", author: "SmartThings", mcdSync: true) {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Tamper Alert"
 		capability "Alarm"
 		capability "Chime"
 
-		fingerprint mfr: "0371", prod: "0003", model: "00A2", deviceJoinName: "Aeotec Doorbell 6" //EU
-		fingerprint mfr: "0371", prod: "0103", model: "00A2", deviceJoinName: "Aeotec Doorbell 6" //US
-		fingerprint mfr: "0371", prod: "0003", model: "00A4", deviceJoinName: "Aeotec Siren 6" //EU
-		fingerprint mfr: "0371", prod: "0103", model: "00A4", deviceJoinName: "Aeotec Siren 6" //US
-		fingerprint mfr: "0371", prod: "0203", model: "00A4", deviceJoinName: "Aeotec Siren 6" //AU
-		fingerprint mfr: "0371", prod: "0203", model: "00A2", deviceJoinName: "Aeotec Doorbell 6" //AU
+		fingerprint mfr: "0371", prod: "0003", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //EU //Aeotec Doorbell 6
+		fingerprint mfr: "0371", prod: "0103", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //US //Aeotec Doorbell 6
+		fingerprint mfr: "0371", prod: "0003", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //EU //Aeotec Siren 6
+		fingerprint mfr: "0371", prod: "0103", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //US //Aeotec Siren 6
+		fingerprint mfr: "0371", prod: "0203", model: "00A4", deviceJoinName: "Aeotec Siren", ocfDeviceType: "x.com.st.d.siren" //AU //Aeotec Siren 6
+		fingerprint mfr: "0371", prod: "0203", model: "00A2", deviceJoinName: "Aeotec Doorbell", ocfDeviceType: "x.com.st.d.doorbell" //AU //Aeotec Doorbell 6
 	}
 
 	tiles {
@@ -64,6 +64,7 @@ private getNumberOfSounds() {
 def installed() {
 	initialize()
 	sendEvent(name: "alarm", value: "off", isStateChange: true, displayed: false)
+	sendEvent(name: "chime", value: "off", isStateChange: true, displayed: false)
 	sendEvent(name: "tamper", value: "clear", isStateChange: true, displayed: false)
 }
 

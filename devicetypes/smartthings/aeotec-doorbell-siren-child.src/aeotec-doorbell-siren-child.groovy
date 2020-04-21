@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Aeotec Doorbell Siren Child", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-SmartThings_Siren") {
+	definition(name: "Aeotec Doorbell Siren Child", namespace: "smartthings", author: "SmartThings") {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Alarm"
