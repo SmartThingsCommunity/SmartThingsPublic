@@ -1,6 +1,6 @@
 /**
  *
- *  Inovelli Smart Plug 2-Channel
+ *  Inovelli 2-Channel Smart Plug MCD
  *
  *  Copyright 2020 SmartThings
  *
@@ -22,7 +22,7 @@
  *
  */
 metadata {
-	definition(name: "Inovelli Smart Plug 2-Channel", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mcdSync: true) {
+	definition(name: "Inovelli 2-Channel Smart Plug MCD", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mcdSync: true) {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"
