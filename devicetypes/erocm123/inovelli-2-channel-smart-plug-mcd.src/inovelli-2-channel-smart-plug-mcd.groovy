@@ -71,12 +71,12 @@ def parse(String description) {
 	return result
 }
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
-	logging("BasicReport ${cmd} - ep ${ep}", 2)
+	logging("BasicReport ${cmd} - outlet ${ep}", 2)
 	if (ep) {
 		def event
 		childDevices.each {
 			childDevice ->
-				if (childDevice.deviceNetworkId == "$device.deviceNetworkId-ep$ep") {
+				if (childDevice.deviceNetworkId == "$device.deviceNetworkId:outlet$ep") {
 					childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
 				}
 		}
@@ -106,11 +106,11 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	return [result, response(commands(cmds))] // returns the result of reponse()
 }
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
-	logging("SwitchBinaryReport ${cmd} - ep ${ep}", 2)
+	logging("SwitchBinaryReport ${cmd} - outlet ${ep}", 2)
 	if (ep) {
 		def event
 		def childDevice = childDevices.find {
-			it.deviceNetworkId == "$device.deviceNetworkId-ep$ep"
+			it.deviceNetworkId == "$device.deviceNetworkId:outlet$ep"
 		}
 		if (childDevice) childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
 		if (cmd.value) {
@@ -260,19 +260,19 @@ private commands(commands, delay = 1000) {
 	}, delay)
 }
 private channelNumber(String dni) {
-	dni.split("-ep")[-1] as Integer
+	dni.split(":outlet")[-1] as Integer
 }
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..2) {
 		addChildDevice("Switch Child Device",
-				"${device.deviceNetworkId}-ep${i}",
+				"${device.deviceNetworkId}:outlet${i}",
 				device.hubId,
 				[completedSetup: true,
 				 label: "${device.displayName} (CH${i})",
 				 isComponent: true,
-				 componentName: "ep$i",
-				 componentLabel: "Channel $i"
+				 componentName: "outlet$i",
+				 componentLabel: "Outlet $i"
 		])
 	}
 }
