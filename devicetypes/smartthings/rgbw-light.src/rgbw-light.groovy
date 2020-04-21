@@ -57,25 +57,25 @@ metadata {
 		 */
 
 		// dimmable, color control
-		fingerprint inClusters: "0x26,0x33", deviceJoinName: "Z-Wave RGBW Bulb"
+		fingerprint inClusters: "0x26,0x33", deviceJoinName: "Light" //Z-Wave RGBW Bulb
 
 		// GENERIC_TYPE_SWITCH_MULTILEVEL:SPECIFIC_TYPE_POWER_SWITCH_MULTILEVEL
 		// dimmable, color control
-		fingerprint deviceId: "0x1101", inClusters: "0x26,0x33", deviceJoinName: "Z-Wave RGBW Bulb"
+		fingerprint deviceId: "0x1101", inClusters: "0x26,0x33", deviceJoinName: "Light" //Z-Wave RGBW Bulb
 
 		// GENERIC_TYPE_SWITCH_MULTILEVEL:SPECIFIC_TYPE_COLOR_TUNABLE_MULTILEVEL
 		// dimmable, color control
-		fingerprint deviceId: "0x1102", inClusters: "0x26,0x33", deviceJoinName: "Z-Wave RGBW Bulb"
+		fingerprint deviceId: "0x1102", inClusters: "0x26,0x33", deviceJoinName: "Light" //Z-Wave RGBW Bulb
 
 		// Manufacturer and model-specific fingerprints.
-		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec LED Strip" //US
-		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec LED Strip" //EU
-		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec LED Bulb" //US
-		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec LED Bulb" //EU
-		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_US, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec LED Bulb 6" //US
-		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_EU, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec LED Bulb 6" //EU
-		fingerprint mfr: "0300", prod: "0003", model: "0003", deviceJoinName: "ilumin RGBW Bulb"
-		fingerprint mfr: "031E", prod: "0005", model: "0001", deviceJoinName: "ilumin RGBW Bulb"
+		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec Light" //US //Aeotec LED Strip
+		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec Light" //EU //Aeotec LED Strip
+		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec Light" //US //Aeotec LED Bulb
+		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec Light" //EU //Aeotec LED Bulb
+		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_US, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec Light" //US //Aeotec LED Bulb 6
+		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_EU, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec Light" //EU //Aeotec LED Bulb 6
+		fingerprint mfr: "0300", prod: "0003", model: "0003", deviceJoinName: "ilumin Light" //ilumin RGBW Bulb
+		fingerprint mfr: "031E", prod: "0005", model: "0001", deviceJoinName: "ilumin Light" //ilumin RGBW Bulb
 	}
 
 	simulator {
