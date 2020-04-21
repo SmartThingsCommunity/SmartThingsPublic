@@ -1,7 +1,10 @@
 /**
  *
- *  Inovelli 2-Channel Smart Plug
+ *  Inovelli Smart Plug 2-Channel
  *
+ *  Copyright 2020 SmartThings
+ *
+ *  Original integration:
  *  github: Eric Maycock (erocm123)
  *  Date: 2017-04-27
  *  Copyright Eric Maycock
@@ -19,7 +22,7 @@
  *
  */
 metadata {
-	definition(name: "Inovelli 2-Channel Smart Plug", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-switch") {
+	definition(name: "Inovelli Smart Plug 2-Channel", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mcdSync: true) {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"
@@ -27,7 +30,14 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		// Fingerprints moved to "Inovelli Smart Plug 2-Channel" for modern MCD experience.
+		fingerprint manufacturer: "015D", prod: "0221", model: "251C", deviceJoinName: "Show Home Outlet" //Show Home 2-Channel Smart Plug
+		fingerprint manufacturer: "0312", prod: "0221", model: "251C", deviceJoinName: "Inovelli Outlet" //Inovelli 2-Channel Smart Plug
+		fingerprint manufacturer: "0312", prod: "B221", model: "251C", deviceJoinName: "Inovelli Outlet" //Inovelli 2-Channel Smart Plug
+		fingerprint manufacturer: "0312", prod: "0221", model: "611C", deviceJoinName: "Inovelli Outlet" //Inovelli 2-Channel Outdoor Smart Plug
+		fingerprint manufacturer: "015D", prod: "0221", model: "611C", deviceJoinName: "Inovelli Outlet" //Inovelli 2-Channel Outdoor Smart Plug
+		fingerprint manufacturer: "015D", prod: "6100", model: "6100", deviceJoinName: "Inovelli Outlet" //Inovelli 2-Channel Outdoor Smart Plug
+		fingerprint manufacturer: "0312", prod: "6100", model: "6100", deviceJoinName: "Inovelli Outlet" //Inovelli 2-Channel Outdoor Smart Plug
+		fingerprint manufacturer: "015D", prod: "2500", model: "2500", deviceJoinName: "Inovelli Outlet" //Inovelli 2-Channel Smart Plug w/Scene
 	}
 	simulator {}
 	preferences {}
