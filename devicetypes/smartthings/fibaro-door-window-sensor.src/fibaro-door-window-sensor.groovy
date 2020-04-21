@@ -47,7 +47,7 @@
         command		"updateZwaveParam"
         command		"test"
 
-		fingerprint deviceId: "0x2001", inClusters: "0x30,0x9C,0x85,0x72,0x70,0x86,0x80,0x56,0x84,0x7A,0xEF,0x2B"
+		fingerprint deviceId: "0x2001", inClusters: "0x30,0x9C,0x85,0x72,0x70,0x86,0x80,0x56,0x84,0x7A,0xEF,0x2B", deviceJoinName: "Fibaro Open/Closed Sensor"
 	}
 
 	simulator {
@@ -96,8 +96,8 @@
 		}
 
 		//this will display a temperature tile for the DS18B20 sensor
-		//main(["contact", "temperature"])						//COMMENT ME OUT IF NO TEMP INSTALLED
-		//details(["contact", "temperature", "battery"])			//COMMENT ME OUT IF NO TEMP INSTALLED
+		//main(["contact", "temperature"])//COMMENT ME OUT IF NO TEMP INSTALLED
+		//details(["contact", "temperature", "battery"])	//COMMENT ME OUT IF NO TEMP INSTALLED
         
         //this will hide the temperature tile if the DS18B20 sensor is not installed
 		main(["contact"])										//UNCOMMENT ME IF NO TEMP INSTALLED

@@ -12,8 +12,8 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr: "010F", prod: "1401", model: "2000"
-		fingerprint mfr: "010F", prod: "1401"
+		fingerprint mfr: "010F", prod: "1401", model: "2000", deviceJoinName: "Fibaro Outlet"
+		fingerprint mfr: "010F", prod: "1401", deviceJoinName: "Fibaro Outlet"
 
 	}
 

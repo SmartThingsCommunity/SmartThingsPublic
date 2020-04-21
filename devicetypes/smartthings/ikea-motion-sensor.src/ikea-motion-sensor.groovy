@@ -23,7 +23,7 @@ metadata {
         capability "Health Check"
         capability "Refresh"
 
-        fingerprint inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0006, 0019, 1000", manufacturer: "IKEA of Sweden",  model: "TRADFRI motion sensor", deviceJoinName: "IKEA TRÅDFRI Motion Sensor"
+        fingerprint inClusters: "0000, 0001, 0003, 0009, 0B05, 1000", outClusters: "0003, 0004, 0006, 0019, 1000", manufacturer: "IKEA of Sweden",  model: "TRADFRI motion sensor", deviceJoinName: "IKEA Motion Sensor" //IKEA TRÅDFRI Motion Sensor
     }
 
     tiles(scale: 2) {
