@@ -27,7 +27,7 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		// Fingerprints moved to "Inovelli Smart Plug 2-Channel" for modern MCD experience.
+		// Fingerprints moved to "Inovelli 2-Channel Smart Plug MCD" for modern MCD experience.
 	}
 	simulator {}
 	preferences {}
