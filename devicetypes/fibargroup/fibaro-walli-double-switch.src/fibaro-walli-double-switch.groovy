@@ -316,7 +316,7 @@ private changeSwitch(endpoint, value) {
 	} else {
 		String childDni = "${device.deviceNetworkId}-$endpoint"
 		def child = childDevices.find { it.deviceNetworkId == childDni }
-		child?.sendEvent(name: "switch", value: value, isStateChange: true, descriptionText: "Switch ${endpoint} is ${value}")
+		child?.sendEvent(name: "switch", value: value, isStateChange: true, displayed: true, descriptionText: "Switch ${endpoint} is ${value}")
 	}
 }
 
@@ -345,6 +345,7 @@ private createMeterEventMap(cmd) {
 			eventMap.value = Math.round(cmd.scaledMeterValue)
 			eventMap.unit = "W"
 		}
+		eventMap.displayed = true
 	}
 	eventMap
 }
