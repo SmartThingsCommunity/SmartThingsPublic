@@ -100,7 +100,7 @@ def contactHandler(evt) {
 }
 
 def motionHandler(evt) {
-	log.debug "motionHandler: $evt.name: $evt.value"
+	log.debug "motionHandler: $evt.name: $evt.value (current state: " + state.myState + ")"
 
     if (evt.value == "active") {
         if(state.myState == "ready" || state.myState == "active" || state.myState == "activating" ) {
