@@ -20,7 +20,6 @@ metadata {
 		capability "Health Check"
 		capability "Sensor"
 		capability "Temperature Measurement"
-		capability "Motion Sensor"
 		capability "Refresh"
 	}
 
