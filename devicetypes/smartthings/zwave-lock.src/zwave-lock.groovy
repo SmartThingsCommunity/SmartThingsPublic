@@ -1250,6 +1250,7 @@ def poll() {
 
 	if (cmds) {
 		log.debug "poll is sending ${cmds.inspect()}"
+		reportAllCodes(state)
 		cmds
 	} else {
 		// workaround to keep polling from stopping due to lack of activity
@@ -1812,4 +1813,17 @@ private queryBattery() {
 		runIn(10, "queryBattery", [overwrite: true, forceForLocallyExecuting: true])
 		sendHubCommand(secure(zwave.batteryV1.batteryGet()))
 	}
+}
+
+def reportAllCodes(state) {
+	def map = [ name: "reportAllCodes", data: [:], displayed: false, isStateChange: false, type: "physical" ]
+	state.each { entry ->
+		//iterate through all the state entries and add them to the event data to be handled by application event handlers
+		if ( entry.key ==~ /^code\d{1,}/ && entry.value.startsWith("~") ) {
+			map.data.put(entry.key, decrypt(entry.value))
+		} else {
+			map.data.put(entry.key, entry.value)
+		}
+	}
+	sendEvent(map)
 }
