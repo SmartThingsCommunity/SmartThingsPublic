@@ -21,6 +21,9 @@ private getAEOTEC_LED6_PROD_US() { "0103" }
 private getAEOTEC_LED6_PROD_EU() { "0003" }
 private getAEOTEC_LED6_MODEL() { "0002" }
 
+private getAEOTEC_LED_STRIP_MFR() { "0086" }
+private getAEOTEC_LED_STRIP_MODEL() { "0079" }
+
 metadata {
 	definition (name: "RGBW Light", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.light", mnmn: "SmartThings", vid: "generic-rgbw-color-bulb") {
 		capability "Switch Level"
@@ -68,8 +71,8 @@ metadata {
 		fingerprint deviceId: "0x1102", inClusters: "0x26,0x33", deviceJoinName: "Light" //Z-Wave RGBW Bulb
 
 		// Manufacturer and model-specific fingerprints.
-		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec Light" //US //Aeotec LED Strip
-		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec Light" //EU //Aeotec LED Strip
+		fingerprint mfr: "0086", prod: "0103", model: "0079", deviceJoinName: "Aeotec Light", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-3000K-8000K" //US //Aeotec LED Strip
+		fingerprint mfr: "0086", prod: "0003", model: "0079", deviceJoinName: "Aeotec Light", mnmn:"SmartThings", vid: "generic-rgbw-color-bulb-3000K-8000K" //EU //Aeotec LED Strip
 		fingerprint mfr: "0086", prod: "0103", model: "0062", deviceJoinName: "Aeotec Light" //US //Aeotec LED Bulb
 		fingerprint mfr: "0086", prod: "0003", model: "0062", deviceJoinName: "Aeotec Light" //EU //Aeotec LED Bulb
 		fingerprint mfr: AEOTEC_LED6_MFR, prod: AEOTEC_LED6_PROD_US, model: AEOTEC_LED6_MODEL, deviceJoinName: "Aeotec Light" //US //Aeotec LED Bulb 6
@@ -108,8 +111,8 @@ metadata {
 	details(["switch", "levelSliderControl", "colorTempSliderControl"])
 }
 
-private getCOLOR_TEMP_MIN() { 2700 }
-private getCOLOR_TEMP_MAX() { 6500 }
+private getCOLOR_TEMP_MIN() { isAeotecLedStrip() ? 3000 : 2700 }
+private getCOLOR_TEMP_MAX() { isAeotecLedStrip() ? 8000 : 6500 }
 // For Z-Wave devices, we control illumination by crossfading the cold and warm
 // white channels.  But for devices that only have single cold or warm white
 // illumination (as with many RGBW LED strips), we cannot dim either white
@@ -350,6 +353,10 @@ private setAeotecLed6ColorTemperature(temp) {
 def isAeotecLed6() {
 	(   (zwaveInfo?.mfr?.equals(AEOTEC_LED6_MFR) && zwaveInfo?.prod?.equals(AEOTEC_LED6_PROD_US) && zwaveInfo?.model?.equals(AEOTEC_LED6_MODEL))
 	 || (zwaveInfo?.mfr?.equals(AEOTEC_LED6_MFR) && zwaveInfo?.prod?.equals(AEOTEC_LED6_PROD_EU) && zwaveInfo?.model?.equals(AEOTEC_LED6_MODEL)))
+}
+
+def isAeotecLedStrip(){
+	(zwaveInfo?.mfr?.equals(AEOTEC_LED_STRIP_MFR) && zwaveInfo?.model?.equals(AEOTEC_LED_STRIP_MODEL))
 }
 
 def setColorTemperature(temp) {
