@@ -18,6 +18,7 @@
 
 metadata {
 	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
+		capability "Actuator"
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -61,18 +62,44 @@ metadata {
 		main "motion"
 		details(["motion", "battery", "tamper"])
 	}
+		preferences {
+			section{
+				input(tittle: "Everspring Motion Sensor settings",
+					description: "The Configuration parameter that can be used to adjust the interval of being re-triggered after the detector has been triggered as Configuration Parameter #4.  No response will be made during this interval if a movement is presented.  The time interval can be set between 5 secs to 3600 secs.",
+ 					displayDuringSetup: false,
+					type: "paragraph",
+					element: "paragraph"
+					)
+
+				input("reTriggerValue", "number",
+					title: "Re-Trigger Interval",
+					description: "5 - 3600",
+					defaultValue: "180",
+					range: "5..3600",
+					required: "false"
+					)
+			}
+		}
 }
 
 def installed() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "tamper", value: "clear", displayed: false)
+	state.reTriggerMap = [:]
+	if(isEverspring()) {
+		state.reTriggerMap = reTriggerValue ? reTriggerValue : false
+	}
+	
 	response(initialPoll())
 }
 
 def updated() {
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	if(isEverspring()) {
+		state.reTriggerMap = reTriggerValue ? reTriggerValue : false
+	}
 }
 
 private getCommandClassVersions() {
@@ -172,6 +199,11 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 	} else {
 		result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
 	}
+	if(isEverspring()) {
+		result << response(zwave.configurationV1.configurationSet(parameterNumber: 4, size: 2, scaledConfigurationValue: reTriggerValue))
+	}
+	
+	state.reTriggerMap = [0]
 	result
 }
 
@@ -302,4 +334,8 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private isEnerwave() {
 	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
+}
+
+private isEverspring() {
+	zwaveInfo?.mfr?.equals("0060") && zwaveInfo?.prod?.equals("0001") && zwaveInfo?.model?.equals("0006")
 }
