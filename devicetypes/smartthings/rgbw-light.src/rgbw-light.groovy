@@ -22,8 +22,6 @@ private getAEOTEC_LED6_PROD_EU() { "0003" }
 private getAEOTEC_LED6_MODEL() { "0002" }
 
 private getAEOTEC_LED_STRIP_MFR() { "0086" }
-private getAEOTEC_LED_STRIP_PROD_US() { "0103" }
-private getAEOTEC_LED_STRIP_PROD_EU() { "0003" }
 private getAEOTEC_LED_STRIP_MODEL() { "0079" }
 
 metadata {
@@ -358,8 +356,7 @@ def isAeotecLed6() {
 }
 
 def isAeotecLedStrip(){
-	(   (zwaveInfo?.mfr?.equals(AEOTEC_LED_STRIP_MFR) && zwaveInfo?.prod?.equals(AEOTEC_LED_STRIP_PROD_US) && zwaveInfo?.model?.equals(AEOTEC_LED_STRIP_MODEL))
-	|| (zwaveInfo?.mfr?.equals(AEOTEC_LED_STRIP_MFR) && zwaveInfo?.prod?.equals(AEOTEC_LED_STRIP_PROD_EU) && zwaveInfo?.model?.equals(AEOTEC_LED_STRIP_MODEL)))
+	(zwaveInfo?.mfr?.equals(AEOTEC_LED_STRIP_MFR) && zwaveInfo?.model?.equals(AEOTEC_LED_STRIP_MODEL))
 }
 
 def setColorTemperature(temp) {
