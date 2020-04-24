@@ -65,15 +65,15 @@ def parse(String description) {
 	def cmd = zwave.parse(description)
 	if (cmd) {
 		result += zwaveEvent(cmd)
-		logging("Parsed ${cmd} to ${result.inspect()}", 1)
+		log.debug "Parsed ${cmd} to ${result.inspect()}"
 	} else {
-		logging("Non-parsed event: ${description}", 2)
+		log.debug "Non-parsed event: ${description}"
 	}
 	return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
-	logging("BasicReport ${cmd} - outlet ${ep}", 2)
+	log.debug "BasicReport ${cmd} - outlet ${ep}"
 	if (ep) {
 		def event
 		childDevices.each {
@@ -101,7 +101,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	logging("BasicSet ${cmd}", 2)
+	log.debug "BasicSet ${cmd}"
 	def result = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
 	def cmds = []
 	cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
@@ -110,7 +110,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
-	logging("SwitchBinaryReport ${cmd} - outlet ${ep}", 2)
+	log.debug "SwitchBinaryReport ${cmd} - outlet ${ep}"
 	if (ep) {
 		def event
 		def childDevice = childDevices.find {
@@ -150,7 +150,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 		cmd.command = cmd.parameter[1]
 		cmd.parameter = cmd.parameter.drop(2)
 	}
-	logging("MultiChannelCmdEncap ${cmd}", 2)
+	log.debug "MultiChannelCmdEncap ${cmd}"
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
@@ -158,20 +158,20 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	logging("ManufacturerSpecificReport ${cmd}", 2)
+	log.debug "ManufacturerSpecificReport ${cmd}"
 	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	logging("msr: $msr", 2)
+	log.debug "msr: $msr"
 	updateDataValue("MSR", msr)
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// This will capture any commands not handled by other instances of zwaveEvent
 	// and is recommended for development so you can see every command the device sends
-	logging("Unhandled Event: ${cmd}", 2)
+	log.debug "Unhandled Event: ${cmd}"
 }
 
 def on() {
-	logging("on()", 1)
+	log.debug "on()"
 	commands([
 		zwave.switchAllV1.switchAllOn(),
 		encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
@@ -180,7 +180,7 @@ def on() {
 }
 
 def off() {
-	logging("off()", 1)
+	log.debug "off()"
 	commands([
 		zwave.switchAllV1.switchAllOff(),
 		encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
@@ -189,7 +189,7 @@ def off() {
 }
 
 void childOn(String dni) {
-	logging("childOn($dni)", 1)
+	log.debug "childOn($dni)"
 	def cmds = []
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(dni))))
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
@@ -197,7 +197,7 @@ void childOn(String dni) {
 }
 
 void childOff(String dni) {
-	logging("childOff($dni)", 1)
+	log.debug "childOff($dni)"
 	def cmds = []
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(dni))))
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
@@ -205,19 +205,19 @@ void childOff(String dni) {
 }
 
 void childRefresh(String dni) {
-	logging("childRefresh($dni)", 1)
+	log.debug "childRefresh($dni)"
 	def cmds = []
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
 	sendHubCommand(cmds, 1000)
 }
 
 def poll() {
-	logging("poll()", 1)
+	log.debug "poll()"
 	refresh()
 }
 
 def refresh() {
-	logging("refresh()", 1)
+	log.debug "refresh()"
 	commands([
 		encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
 		encap(zwave.switchBinaryV1.switchBinaryGet(), 2),
@@ -225,7 +225,7 @@ def refresh() {
 }
 
 def ping() {
-	logging("ping()", 1)
+	log.debug "ping()"
 	refresh()
 }
 
@@ -234,7 +234,7 @@ def getCheckInterval() {
 }
 
 def installed() {
-	logging("installed()", 1)
+	log.debug "installed()"
 
 	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 
@@ -243,7 +243,7 @@ def installed() {
 }
 
 def updated() {
-	logging("updated()", 1)
+	log.debug "updated()"
 
 	if (!childDevices) {
 		createChildDevices()
@@ -262,7 +262,7 @@ def updated() {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'", 2)
+	log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
 }
 
 private encap(cmd, endpoint) {
@@ -305,18 +305,5 @@ private void createChildDevices() {
 		])
 
 		newDevice.sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	}
-}
-
-private def logging(message, level) {
-	if (logLevel != "0") {
-		switch (logLevel) {
-			case "1":
-				if (level > 1) log.debug "$message"
-				break
-			case "99":
-				log.debug "$message"
-				break
-		}
 	}
 }
