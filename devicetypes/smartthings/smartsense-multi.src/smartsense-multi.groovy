@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "SmartSense Multi", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Multi", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, mnmn: "SmartThings", vid: "generic-contact-2") {
 		capability "Three Axis"
 		capability "Contact Sensor"
 		capability "Acceleration Sensor"
@@ -21,9 +21,7 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 
-		fingerprint profileId: "FC01", deviceId: "0139"
-
-		attribute "status", "string"
+		fingerprint profileId: "FC01", deviceId: "0139", deviceJoinName: "SmartThings Multipurpose Sensor"
 	}
 
 	simulator {
@@ -45,8 +43,7 @@ metadata {
 	}
 
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
 	}
 
 	tiles(scale: 2) {
@@ -113,17 +110,6 @@ private List parseSingleMessage(description) {
 	def results = []
 	results << createEvent(
 		name: "contact",
-		value: value,
-		unit: null,
-		linkText: linkText,
-		descriptionText: descriptionText,
-		handlerName: handlerName,
-		isStateChange: isStateChange,
-		displayed: displayed(description, isStateChange)
-	)
-
-	results << createEvent(
-		name: "status",
 		value: value,
 		unit: null,
 		linkText: linkText,
@@ -298,19 +284,7 @@ private List getContactResult(part, description) {
 			linkText: linkText,
 			descriptionText: descriptionText,
 			handlerName: handlerName,
-			isStateChange: isStateChange,
-			displayed:false
-	)
-
-	results << createEvent(
-			name: "status",
-			value: value,
-			unit: null,
-			linkText: linkText,
-			descriptionText: descriptionText,
-			handlerName: handlerName,
-			isStateChange: isStateChange,
-			displayed: displayed(description, isStateChange)
+			isStateChange: isStateChange
 	)
 
 	results

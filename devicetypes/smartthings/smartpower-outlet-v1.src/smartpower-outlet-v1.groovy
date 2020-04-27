@@ -1,12 +1,12 @@
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "SmartPower Outlet V1", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartPower Outlet V1", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Switch"
 		capability "Sensor"
 		capability "Outlet"
 
-		fingerprint profileId: "0104", inClusters: "0006, 0004, 0003, 0000, 0005", outClusters: "0019", manufacturer: "Compacta International, Ltd", model: "ZBMPlug15", deviceJoinName: "SmartPower Outlet V1"
+		fingerprint profileId: "0104", inClusters: "0006, 0004, 0003, 0000, 0005", outClusters: "0019", manufacturer: "Compacta International, Ltd", model: "ZBMPlug15", deviceJoinName: "Smartenit Outlet" //SmartPower Outlet V1
 	}
 
 	// simulator metadata

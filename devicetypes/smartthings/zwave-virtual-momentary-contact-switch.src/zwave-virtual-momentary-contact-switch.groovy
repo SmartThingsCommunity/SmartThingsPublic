@@ -16,7 +16,7 @@
  *  Date: 2013-03-07
  */
 metadata {
-	definition (name: "Z-Wave Virtual Momentary Contact Switch", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Z-Wave Virtual Momentary Contact Switch", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.contact") {
 		capability "Actuator"
 		capability "Switch"
 		capability "Refresh"

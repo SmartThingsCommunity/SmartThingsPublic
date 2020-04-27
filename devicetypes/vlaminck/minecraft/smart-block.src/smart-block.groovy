@@ -115,7 +115,7 @@ def off() {
 	sendSwitchStateToMC("off")
 }
 
-def setLevel(newLevel) {
+def setLevel(newLevel, rate = null) {
 	def signal = convertLevelToSignal(newLevel as int)
 
 	sendSignalToMC(signal)

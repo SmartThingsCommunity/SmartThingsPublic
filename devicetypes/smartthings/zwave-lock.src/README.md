@@ -1,11 +1,25 @@
-# Z-Wave Switch
+# Z-Wave Lock
 
 Cloud Execution
 
 Works with: 
 
-* [Yale Key Free Touchscreen Deadbolt (YRD240)](https://www.smartthings.com/works-with-smartthings/yale/yale-key-free-touchscreen-deadbolt-yrd240)
-
+* KwikSet SmartCode 910 Deadbolt Door Lock
+* KwikSet SmartCode 910 Contemporary Deadbolt Door Lock
+* KwikSet SmartCode 912 Lever Door Lock
+* KwikSet SmartCode 914 Deadbolt Door Lock
+* KwikSet SmartCode 916 Touchscreen Deadbolt Door Lock
+* Schlage Camelot Touchscreen Deadbolt Door Lock
+* Schlage Century Touchscreen Deadbolt Door Lock
+* Schlage Connected Keypad Lever Door Lock
+* Yale Touchscreen Deadbolt Door Lock
+* Yale Touchscreen Lever Door Lock
+* Yale Push Button Deadbolt Door Lock
+* Yale Push Button Lever Door Lock
+* Yale Assure Lock with Bluetooth
+* Yale Keyless Connected Smart Door Lock
+* Yale Assure Lock Push Button Deadbolt
+* Samsung Digital Lock: SHP-DH525, SHP-DS705, SHP-DP728
 
 ## Table of contents
 
@@ -41,5 +55,3 @@ If the device doesn't pair when trying from the SmartThings mobile app, it is po
 Pairing needs to be tried again by placing the device closer to the hub.
 Instructions related to pairing, resetting and removing the device from SmartThings can be found in the following link:
 * [General Z-Wave/ZigBee Yale Lock Troubleshooting](https://support.smartthings.com/hc/en-us/articles/205138400-How-to-connect-Yale-locks)
-
-

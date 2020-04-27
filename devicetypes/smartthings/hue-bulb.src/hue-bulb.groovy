@@ -1,3 +1,5 @@
+//DEPRECATED. INTEGRATION MOVED TO SUPER LAN CONNECT
+
 /**
  *  Hue Bulb
  *
@@ -66,8 +68,18 @@ metadata {
 	}
 }
 
-void installed() {
+def initialize() {
 	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
+}
+
+void installed() {
+	log.debug "installed()"
+	initialize()
+}
+
+def updated() {
+	log.debug "updated()"
+	initialize()
 }
 
 // parse events into attributes
@@ -96,7 +108,7 @@ void off() {
 	log.trace parent.off(this)
 }
 
-void setLevel(percent) {
+void setLevel(percent, rate = null) {
     log.debug "Executing 'setLevel'"
     if (verifyPercent(percent)) {
 	    log.trace parent.setLevel(this, percent)
