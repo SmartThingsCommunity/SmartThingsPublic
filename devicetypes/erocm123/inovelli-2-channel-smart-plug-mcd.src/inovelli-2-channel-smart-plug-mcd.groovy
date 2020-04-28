@@ -327,6 +327,6 @@ private void createChildDevices() {
 				 componentLabel: "Outlet $i"
 		])
 
-		newDevice.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+		newDevice.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
 }
