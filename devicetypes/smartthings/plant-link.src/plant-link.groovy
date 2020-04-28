@@ -23,8 +23,8 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0405,FC08", outClusters: "0003"
-		fingerprint endpoint: "1", profileId: "0104", inClusters: "0000,0001,0003,0B04", outClusters: "0003", manufacturer: "", model: "", deviceJoinName: "OSO Technologies PlantLink Soil Moisture Sensor"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0405,FC08", outClusters: "0003", deviceJoinName: "Plant Link Humidity Sensor"
+		fingerprint endpoint: "1", profileId: "0104", inClusters: "0000,0001,0003,0B04", outClusters: "0003", manufacturer: "", model: "", deviceJoinName: "Plant Link Humidity Sensor" //OSO Technologies PlantLink Soil Moisture Sensor
 	}
 
 	tiles {
