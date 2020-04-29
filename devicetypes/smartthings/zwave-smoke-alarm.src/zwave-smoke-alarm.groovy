@@ -19,9 +19,9 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)"
-		fingerprint mfr:"0138", prod:"0001", model:"0003", deviceJoinName: "First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)"
-		fingerprint mfr:"0154", prod:"0004", model:"0003", deviceJoinName: "POPP Co Detector", mnmn: "SmartThings", vid: "generic-carbon-monoxide-3"
+		fingerprint mfr:"0138", prod:"0001", model:"0002", deviceJoinName: "First Alert Smoke Detector" //First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)
+		fingerprint mfr:"0138", prod:"0001", model:"0003", deviceJoinName: "First Alert Smoke Detector" //First Alert Smoke Detector and Carbon Monoxide Alarm (ZCOMBO)
+		fingerprint mfr:"0154", prod:"0004", model:"0003", deviceJoinName: "POPP Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide-3" //POPP Co Detector
 	}
 
 	simulator {
