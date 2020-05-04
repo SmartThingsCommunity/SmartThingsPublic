@@ -272,10 +272,7 @@ def updated() {
 		createChildDevices()
 	} else if (device.label != state.oldLabel) {
 		childDevices.each {
-			if (it.label == "${state.oldLabel} (CH${channelNumber(it.deviceNetworkId)})") {
-				def newLabel = "${device.displayName} (CH${channelNumber(it.deviceNetworkId)})"
-				it.setLabel(newLabel)
-			}
+			it.setLabel("${device.displayName} Outlet ${channelNumber(it.deviceNetworkId)}")
 		}
 		state.oldLabel = device.label
 	}
@@ -319,7 +316,7 @@ private void createChildDevices() {
 				"${device.deviceNetworkId}:${i}",
 				device.hubId,
 				[completedSetup: true,
-				 label: "${device.displayName} (CH${i})",
+				 label: "${device.displayName} Outlet ${i}",
 				 isComponent: true,
 				 componentName: "outlet$i",
 				 componentLabel: "Outlet $i"
