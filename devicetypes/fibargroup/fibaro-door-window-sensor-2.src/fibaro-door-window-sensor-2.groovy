@@ -16,12 +16,12 @@ metadata {
 		capability "Contact Sensor"
 		capability "Tamper Alert"
 		capability "Temperature Measurement"
+		capability "Temperature Alarm"
 		capability "Configuration"
 		capability "Battery"
 		capability "Sensor"
 		capability "Health Check"
-	
-		attribute "temperatureAlarm", "string"
+
 		attribute "multiStatus", "string"
 
 		fingerprint mfr: "010F", prod: "0702", deviceJoinName: "Fibaro Open/Closed Sensor"
@@ -62,15 +62,16 @@ metadata {
 		
 		standardTile("temperatureAlarm", "device.temperatureAlarm", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
 			state "default", label: "No temp. alarm", backgroundColor:"#ffffff"
-			state "clear", label:'', backgroundColor:"#ffffff", icon: "st.alarm.temperature.normal"
-			state "underheat", label:'underheat', backgroundColor:"#1e9cbb", icon: "st.alarm.temperature.freeze"
-			state "overheat", label:'overheat', backgroundColor:"#d04e00", icon: "st.alarm.temperature.overheat"
+			state "cleared", label:'', backgroundColor:"#ffffff", icon: "st.alarm.temperature.normal"
+			state "freeze", label:'freeze', backgroundColor:"#1e9cbb", icon: "st.alarm.temperature.freeze"
+			state "heat", label:'heat', backgroundColor:"#d04e00", icon: "st.alarm.temperature.overheat"
 		}
 
 		main "FGDW"
 		details(["FGDW","tamper","temperature","battery","temperatureAlarm"])
 	}
-		
+
+
 	preferences {
 		input (
 			title: "Wake up interval",
@@ -117,6 +118,7 @@ def installed() {
 	// Initial states for OCF compatibility
 	sendEvent(name: "tamper", value: "clear", displayed: false)
 	sendEvent(name: "contact", value: "open", displayed: false)
+	sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	sendEvent(name: "checkInterval", value: 21600 * 4 + 120, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
@@ -132,7 +134,7 @@ def updated() {
 	if ( settings.temperatureHigh as Integer == 0 && settings.temperatureLow as Integer == 0 ) { 
 		sendEvent(name: "temperatureAlarm", value: null, displayed: false) 
 	} else if ( settings.temperatureHigh != null || settings.temperatureHigh != null ) {
-		sendEvent(name: "temperatureAlarm", value: "clear", displayed: false) 
+		sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
 	}
 	
 	syncStart()
@@ -308,15 +310,15 @@ def zwaveEvent(physicalgraph.zwave.commands.alarmv2.AlarmReport cmd) {
 				map.name = "temperatureAlarm"
 				switch (cmd.zwaveAlarmEvent) {
 					case 0:
-						map.value = "clear"
+						map.value = "cleared"
 						map.descriptionText = "Temperature alert cleared"
 						break
 					case 2:
-						map.value = "overheat"
+						map.value = "heat"
 						map.descriptionText = "Temperature alert: overheating detected"
 						break
 					case 6:
-						map.value = "underheat"
+						map.value = "freeze"
 						map.descriptionText = "Temperature alert: underheating detected"
 						break
 				}
