@@ -74,37 +74,39 @@ def parse(String description) {
 	return result
 }
 
+def handleSwitchEndpointEvent(cmd, ep) {
+	def event
+
+	def childDevice = childDevices.find {
+			it.deviceNetworkId == "$device.deviceNetworkId:$ep"
+		}
+	childDevice?.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+
+	if (cmd.value) {
+		event = [createEvent([name: "switch", value: "on"])]
+	} else {
+		def allOff = true
+
+		childDevices.each { n ->
+				if (n.currentState("switch")?.value != "off")
+					allOff = false
+			}
+
+		if (allOff) {
+			event = [createEvent([name: "switch", value: "off"])]
+		} else {
+			event = [createEvent([name: "switch", value: "on"])]
+		}
+	}
+
+	return event
+}
+
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "BasicReport ${cmd} - outlet ${ep}"
 
 	if (ep) {
-		def event
-
-		childDevices.each {
-			childDevice ->
-				if (childDevice.deviceNetworkId == "$device.deviceNetworkId:$ep") {
-					childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
-				}
-		}
-
-		if (cmd.value) {
-			event = [createEvent([name: "switch", value: "on"])]
-		} else {
-			def allOff = true
-
-			childDevices.each {
-				n ->
-					if (n.currentState("switch")?.value != "off") allOff = false
-			}
-
-			if (allOff) {
-				event = [createEvent([name: "switch", value: "off"])]
-			} else {
-				event = [createEvent([name: "switch", value: "on"])]
-			}
-		}
-
-		return event
+		return handleSwitchEndpointEvent(cmd, ep)
 	}
 }
 
@@ -116,38 +118,14 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
 	cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
 
-	return [result, response(commands(cmds))] // returns the result of reponse()
+	return [result, response(commands(cmds))]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
 	log.debug "SwitchBinaryReport ${cmd} - outlet ${ep}"
 
 	if (ep) {
-		def event
-
-		def childDevice = childDevices.find {
-			it.deviceNetworkId == "$device.deviceNetworkId:$ep"
-		}
-		childDevice?.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
-
-		if (cmd.value) {
-			event = [createEvent([name: "switch", value: "on"])]
-		} else {
-			def allOff = true
-
-			childDevices.each {
-				n->
-					if (n.currentState("switch")?.value != "off") allOff = false
-			}
-
-			if (allOff) {
-				event = [createEvent([name: "switch", value: "off"])]
-			} else {
-				event = [createEvent([name: "switch", value: "on"])]
-			}
-		}
-
-		return event
+		return handleSwitchEndpointEvent(cmd, ep)
 	} else {
 		def result = createEvent(name: "switch", value: cmd.value ? "on" : "off")
 		def cmds = []
@@ -155,7 +133,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 		cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
 		cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
 
-		return [result, response(commands(cmds))] // returns the result of reponse()
+		return [result, response(commands(cmds))]
 	}
 }
 
