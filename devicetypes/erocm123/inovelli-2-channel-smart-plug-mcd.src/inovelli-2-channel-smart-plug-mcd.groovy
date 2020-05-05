@@ -76,10 +76,8 @@ def parse(String description) {
 
 def handleSwitchEndpointEvent(cmd, ep) {
 	def event
+	def childDevice = childDevices.find { it.deviceNetworkId == "$device.deviceNetworkId:$ep" }
 
-	def childDevice = childDevices.find {
-			it.deviceNetworkId == "$device.deviceNetworkId:$ep"
-		}
 	childDevice?.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
 
 	if (cmd.value) {
@@ -88,9 +86,9 @@ def handleSwitchEndpointEvent(cmd, ep) {
 		def allOff = true
 
 		childDevices.each { n ->
-				if (n.currentState("switch")?.value != "off")
-					allOff = false
-			}
+			if (n.currentState("switch")?.value != "off")
+				allOff = false
+		}
 
 		if (allOff) {
 			event = [createEvent([name: "switch", value: "off"])]
