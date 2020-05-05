@@ -131,10 +131,8 @@ def updated() {
 	}
 	logging("${device.displayName} - Executing updated()","debug")
 
-	if ( settings.temperatureHigh as Integer == 0 && settings.temperatureLow as Integer == 0 ) { 
-		sendEvent(name: "temperatureAlarm", value: null, displayed: false) 
-	} else if ( settings.temperatureHigh != null || settings.temperatureHigh != null ) {
-		sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false)
+	if (settings.temperatureHigh != null || settings.temperatureLow != null) {
+        sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false) 
 	}
 	
 	syncStart()
