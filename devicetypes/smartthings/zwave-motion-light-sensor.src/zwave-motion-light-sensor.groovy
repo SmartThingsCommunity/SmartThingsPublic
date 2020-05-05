@@ -26,7 +26,7 @@ metadata {
 		capability "Configuration"
 
 		//zw:S type:0701 mfr:021F prod:0003 model:0083 ver:3.92 zwv:4.05 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07
-		fingerprint mfr: "021F", prod: "0003", model: "0083", deviceJoinName: "Dome Motion/Light Sensor"
+		fingerprint mfr: "021F", prod: "0003", model: "0083", deviceJoinName: "Dome Motion/Light Sensor", mnmn: "SmartThings", vid: "generic-motion-10"
 		//zw:S type:0701 mfr:0258 prod:0003 model:008D ver:3.80 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07
 		fingerprint mfr: "0258", prod: "0003", model: "008D", deviceJoinName: "NEO Coolcam Motion/Light Sensor"
 		//zw:S type:0701 mfr:0258 prod:0003 model:108D ver:3.80 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07 EU version
