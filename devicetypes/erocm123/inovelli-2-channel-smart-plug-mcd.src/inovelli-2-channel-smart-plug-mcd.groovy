@@ -1,7 +1,10 @@
 /**
  *
- *  Inovelli 2-Channel Smart Plug
+ *  Inovelli 2-Channel Smart Plug MCD
  *
+ *  Copyright 2020 SmartThings
+ *
+ *  Original integration:
  *  github: Eric Maycock (erocm123)
  *  Date: 2017-04-27
  *  Copyright Eric Maycock
@@ -19,7 +22,7 @@
  *
  */
 metadata {
-	definition(name: "Inovelli 2-Channel Smart Plug", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-switch") {
+	definition(name: "Inovelli 2-Channel Smart Plug MCD", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mcdSync: true) {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"
@@ -27,7 +30,14 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		// Fingerprints moved to "Inovelli 2-Channel Smart Plug MCD" for modern MCD experience.
+		fingerprint manufacturer: "015D", prod: "0221", model: "251C", deviceJoinName: "Show Home Outlet" // Show Home 2-Channel Smart Plug
+		fingerprint manufacturer: "0312", prod: "0221", model: "251C", deviceJoinName: "Inovelli Outlet" // Inovelli 2-Channel Smart Plug
+		fingerprint manufacturer: "0312", prod: "B221", model: "251C", deviceJoinName: "Inovelli Outlet" // Inovelli 2-Channel Smart Plug
+		fingerprint manufacturer: "0312", prod: "0221", model: "611C", deviceJoinName: "Inovelli Outlet" // Inovelli 2-Channel Outdoor Smart Plug
+		fingerprint manufacturer: "015D", prod: "0221", model: "611C", deviceJoinName: "Inovelli Outlet" // Inovelli 2-Channel Outdoor Smart Plug
+		fingerprint manufacturer: "015D", prod: "6100", model: "6100", deviceJoinName: "Inovelli Outlet" // Inovelli 2-Channel Outdoor Smart Plug
+		fingerprint manufacturer: "0312", prod: "6100", model: "6100", deviceJoinName: "Inovelli Outlet" // Inovelli 2-Channel Outdoor Smart Plug
+		fingerprint manufacturer: "015D", prod: "2500", model: "2500", deviceJoinName: "Inovelli Outlet" // Inovelli 2-Channel Smart Plug w/Scene
 	}
 	simulator {}
 	preferences {}
@@ -49,83 +59,82 @@ metadata {
 		])
 	}
 }
+
 def parse(String description) {
 	def result = []
 	def cmd = zwave.parse(description)
+
 	if (cmd) {
 		result += zwaveEvent(cmd)
-		logging("Parsed ${cmd} to ${result.inspect()}", 1)
+		log.debug "Parsed ${cmd} to ${result.inspect()}"
 	} else {
-		logging("Non-parsed event: ${description}", 2)
+		log.debug "Non-parsed event: ${description}"
 	}
+
 	return result
 }
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
-	logging("BasicReport ${cmd} - ep ${ep}", 2)
-	if (ep) {
-		def event
-		childDevices.each {
-			childDevice ->
-				if (childDevice.deviceNetworkId == "$device.deviceNetworkId-ep$ep") {
-					childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
-				}
+
+def handleSwitchEndpointEvent(cmd, ep) {
+	def event
+	def childDevice = childDevices.find { it.deviceNetworkId == "$device.deviceNetworkId:$ep" }
+
+	childDevice?.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
+
+	if (cmd.value) {
+		event = [createEvent([name: "switch", value: "on"])]
+	} else {
+		def allOff = true
+
+		childDevices.each { n ->
+			if (n.currentState("switch")?.value != "off")
+				allOff = false
 		}
-		if (cmd.value) {
-			event = [createEvent([name: "switch", value: "on"])]
+
+		if (allOff) {
+			event = [createEvent([name: "switch", value: "off"])]
 		} else {
-			def allOff = true
-			childDevices.each {
-				n ->
-					if (n.currentState("switch")?.value != "off") allOff = false
-			}
-			if (allOff) {
-				event = [createEvent([name: "switch", value: "off"])]
-			} else {
-				event = [createEvent([name: "switch", value: "on"])]
-			}
+			event = [createEvent([name: "switch", value: "on"])]
 		}
-		return event
+	}
+
+	return event
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
+	log.debug "BasicReport ${cmd} - outlet ${ep}"
+
+	if (ep) {
+		return handleSwitchEndpointEvent(cmd, ep)
 	}
 }
+
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
-	logging("BasicSet ${cmd}", 2)
-	def result = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+	log.debug "BasicSet ${cmd}"
+	def result = createEvent(name: "switch", value: cmd.value ? "on" : "off")
 	def cmds = []
+
 	cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
 	cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-	return [result, response(commands(cmds))] // returns the result of reponse()
+
+	return [result, response(commands(cmds))]
 }
+
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
-	logging("SwitchBinaryReport ${cmd} - ep ${ep}", 2)
+	log.debug "SwitchBinaryReport ${cmd} - outlet ${ep}"
+
 	if (ep) {
-		def event
-		def childDevice = childDevices.find {
-			it.deviceNetworkId == "$device.deviceNetworkId-ep$ep"
-		}
-		if (childDevice) childDevice.sendEvent(name: "switch", value: cmd.value ? "on" : "off")
-		if (cmd.value) {
-			event = [createEvent([name: "switch", value: "on"])]
-		} else {
-			def allOff = true
-			childDevices.each {
-				n->
-					if (n.currentState("switch")?.value != "off") allOff = false
-			}
-			if (allOff) {
-				event = [createEvent([name: "switch", value: "off"])]
-			} else {
-				event = [createEvent([name: "switch", value: "on"])]
-			}
-		}
-		return event
+		return handleSwitchEndpointEvent(cmd, ep)
 	} else {
-		def result = createEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
+		def result = createEvent(name: "switch", value: cmd.value ? "on" : "off")
 		def cmds = []
+
 		cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 1)
 		cmds << encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
-		return [result, response(commands(cmds))] // returns the result of reponse()
+
+		return [result, response(commands(cmds))]
 	}
 }
+
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
 	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
 		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
@@ -135,101 +144,120 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 		cmd.command = cmd.parameter[1]
 		cmd.parameter = cmd.parameter.drop(2)
 	}
-	logging("MultiChannelCmdEncap ${cmd}", 2)
+	log.debug "MultiChannelCmdEncap ${cmd}"
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
+
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
 	}
 }
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	logging("ManufacturerSpecificReport ${cmd}", 2)
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	logging("msr: $msr", 2)
-	updateDataValue("MSR", msr)
-}
+
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
 	// This will capture any commands not handled by other instances of zwaveEvent
 	// and is recommended for development so you can see every command the device sends
-	logging("Unhandled Event: ${cmd}", 2)
+	log.debug "Unhandled Event: ${cmd}"
 }
+
 def on() {
-	logging("on()", 1)
+	log.debug "on()"
+
 	commands([
-			zwave.switchAllV1.switchAllOn(),
-			encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
-			encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+		zwave.switchAllV1.switchAllOn(),
+		encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+		encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
 	])
 }
+
 def off() {
-	logging("off()", 1)
+	log.debug "off()"
+
 	commands([
-			zwave.switchAllV1.switchAllOff(),
-			encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
-			encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
+		zwave.switchAllV1.switchAllOff(),
+		encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+		encap(zwave.switchBinaryV1.switchBinaryGet(), 2)
 	])
 }
+
 void childOn(String dni) {
-	logging("childOn($dni)", 1)
+	log.debug "childOn($dni)"
 	def cmds = []
+
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0xFF), channelNumber(dni))))
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
+
 	sendHubCommand(cmds, 1000)
 }
+
 void childOff(String dni) {
-	logging("childOff($dni)", 1)
+	log.debug "childOff($dni)"
 	def cmds = []
+
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.basicV1.basicSet(value: 0x00), channelNumber(dni))))
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
+
 	sendHubCommand(cmds, 1000)
 }
+
 void childRefresh(String dni) {
-	logging("childRefresh($dni)", 1)
+	log.debug "childRefresh($dni)"
 	def cmds = []
+
 	cmds << new physicalgraph.device.HubAction(command(encap(zwave.switchBinaryV1.switchBinaryGet(), channelNumber(dni))))
+
 	sendHubCommand(cmds, 1000)
 }
+
 def poll() {
-	logging("poll()", 1)
-	commands([
-			encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
-			encap(zwave.switchBinaryV1.switchBinaryGet(), 2),
-	])
-}
-def refresh() {
-	logging("refresh()", 1)
-	commands([
-			encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
-			encap(zwave.switchBinaryV1.switchBinaryGet(), 2),
-	])
-}
-def ping() {
-	logging("ping()", 1)
+	log.debug "poll()"
+
 	refresh()
 }
-def installed() {
-	logging("installed()", 1)
-	command(zwave.manufacturerSpecificV1.manufacturerSpecificGet())
-	createChildDevices()
+
+def refresh() {
+	log.debug "refresh()"
+
+	commands([
+		encap(zwave.switchBinaryV1.switchBinaryGet(), 1),
+		encap(zwave.switchBinaryV1.switchBinaryGet(), 2),
+	])
 }
+
+def ping() {
+	log.debug "ping()"
+
+	refresh()
+}
+
+def getCheckInterval() {
+	2 * 15 * 60 + 2 * 60
+}
+
+def installed() {
+	log.debug "installed()"
+
+	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+
+	createChildDevices()
+	response(refresh())
+}
+
 def updated() {
-	logging("updated()", 1)
+	log.debug "updated()"
+
 	if (!childDevices) {
 		createChildDevices()
 	} else if (device.label != state.oldLabel) {
 		childDevices.each {
-			if (it.label == "${state.oldLabel} (CH${channelNumber(it.deviceNetworkId)})") {
-				def newLabel = "${device.displayName} (CH${channelNumber(it.deviceNetworkId)})"
-				it.setLabel(newLabel)
-			}
+			it.setLabel("${device.displayName} Outlet ${channelNumber(it.deviceNetworkId)}")
 		}
 		state.oldLabel = device.label
 	}
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
-	sendEvent(name: "needUpdate", value: device.currentValue("needUpdate"), displayed: false, isStateChange: true)
 }
+
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	logging("${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'", 2)
+	log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd2Integer(cmd.configurationValue)}'"
 }
+
 private encap(cmd, endpoint) {
 	if (endpoint) {
 		zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
@@ -237,6 +265,7 @@ private encap(cmd, endpoint) {
 		cmd
 	}
 }
+
 private command(physicalgraph.zwave.Command cmd) {
 	if (state.sec) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
@@ -244,38 +273,31 @@ private command(physicalgraph.zwave.Command cmd) {
 		cmd.format()
 	}
 }
+
 private commands(commands, delay = 1000) {
 	delayBetween(commands.collect {
 		command(it)
 	}, delay)
 }
+
 private channelNumber(String dni) {
-	dni.split("-ep")[-1] as Integer
-}
-private void createChildDevices() {
-	state.oldLabel = device.label
-	for (i in 1..2) {
-		addChildDevice("Switch Child Device",
-				"${device.deviceNetworkId}-ep${i}",
-				device.hubId,
-				[completedSetup: true,
-				 label: "${device.displayName} (CH${i})",
-				 isComponent: true,
-				 componentName: "ep$i",
-				 componentLabel: "Channel $i"
-		])
-	}
+	dni.split(":")[-1] as Integer
 }
 
-private def logging(message, level) {
-	if (logLevel != "0") {
-		switch (logLevel) {
-			case "1":
-				if (level > 1) log.debug "$message"
-				break
-			case "99":
-				log.debug "$message"
-				break
-		}
+private void createChildDevices() {
+	state.oldLabel = device.label
+
+	for (i in 1..2) {
+		def newDevice = addChildDevice("smartthings", "Child Switch Health",
+				"${device.deviceNetworkId}:${i}",
+				device.hubId,
+				[completedSetup: true,
+				 label: "${device.displayName} Outlet ${i}",
+				 isComponent: true,
+				 componentName: "outlet$i",
+				 componentLabel: "Outlet $i"
+		])
+
+		newDevice.sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
 }
