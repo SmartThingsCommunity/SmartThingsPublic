@@ -16,7 +16,7 @@
 import java.lang.Math
 
 metadata {
-	definition (name: "Fibaro Walli Roller Shutter", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "SmartThings-smartthings-Fibaro_Roller_Shutter") {
+	definition (name: "Fibaro Walli Roller Shutter", namespace: "fibargroup", author: "SmartThings", ocfDeviceType: "oic.d.blind", mnmn: "SmartThings", vid: "SmartThings-smartthings-Fibaro_Roller_Shutter") {
 		capability "Window Shade"
 		capability "Switch Level"
 		capability "Power Meter"
