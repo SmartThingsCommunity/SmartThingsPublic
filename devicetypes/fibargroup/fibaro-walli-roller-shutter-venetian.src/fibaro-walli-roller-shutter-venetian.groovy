@@ -124,6 +124,7 @@ metadata {
 
 def installed() {
 	state.calibrationStatus = "notStarted"
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	// Preferences template begin
 	state.currentPreferencesState = [:]
 	parameterMap.each {
@@ -279,11 +280,12 @@ def handleConfigurationChange(confgurationReport) {
 					state.calibrationStatus = "notStarted"
 					break
 				case 1: // "Device is calibrated"
-					state.calibrationStatus = "done"
-					break
-				case 2: // "Force Calibration"
-					state.calibrationStatus = "pending"
-					break
+                    state.calibrationStatus = "done"
+                    state.currentPreferencesState.forceCalibration.status = "synced"
+                    break
+                case 2: // "Force Calibration"
+                    state.calibrationStatus = state.calibrationStatus == "notStarted" ? "pending" : state.calibrationStatus
+                    break
 			}
 			log.info "Calibration ${state.calibrationStatus}"
 			break
@@ -325,7 +327,7 @@ def parse(String description) {
 }
 
 def close() {
-	setShadeLevel(0x63)
+	setShadeLevel(0x64)
 }
 
 def open() {

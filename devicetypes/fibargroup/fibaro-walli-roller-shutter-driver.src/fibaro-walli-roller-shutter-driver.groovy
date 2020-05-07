@@ -123,6 +123,7 @@ metadata {
 
 def installed() {
 	state.calibrationStatus = "notStarted"
+	sendEvent(name: "checkInterval", value: 2 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	// Preferences template begin
 	state.currentPreferencesState = [:]
 	parameterMap.each {
@@ -133,7 +134,6 @@ def installed() {
 		} else {
 			def preferenceName = it.key + "Boolean"
 			settings."$preferenceName" = true
-			singlePreferenceDebug(it, "Preference: ${preferenceName} right after pairing: ${settings."$preferenceName"}")
 			state.currentPreferencesState."$it.key".status = "synced"
 		}
 	}
@@ -171,7 +171,6 @@ private syncConfiguration() {
 	def commands = []
 	parameterMap.each {
 		if (state.currentPreferencesState."$it.key".status == "syncPending") {
-			singlePreferenceDebug(it, "Configuration value setting: ${getCommandValue(it)}, type: ${checkType(getCommandValue(it))}")
 			commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
 			commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
 		} else if (state.currentPreferencesState."$it.key".status == "disablePending") {
@@ -229,7 +228,6 @@ private getCommandValue(preference) {
 		case "range":
 			return settings."$parameterKey"
 		default:
-			singlePreferenceDebug(preference, "in getCommandValue type: ${checkType(settings."$parameterKey")}")
 			return Integer.parseInt(settings."$parameterKey")
 	}
 }
@@ -294,7 +292,7 @@ def parse(String description) {
 }
 
 def close() {
-	setShadeLevel(0x63)
+	setShadeLevel(0x64)
 }
 
 def open() {
