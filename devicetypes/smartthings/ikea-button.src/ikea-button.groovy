@@ -296,6 +296,10 @@ private Map getButtonEvent(Map descMap) {
 	}
 
 	if (buttonNumber != 0) {
+		// Create old style
+		def descriptionText = "${getButtonName(buttonNumber)} was $buttonState"
+		result = [name: "button", value: buttonState, data: [buttonNumber: buttonNumber], descriptionText: descriptionText, isStateChange: true, displayed: false]
+
 		// Create and send component event
 		sendButtonEvent(buttonNumber, buttonState)
 	}
