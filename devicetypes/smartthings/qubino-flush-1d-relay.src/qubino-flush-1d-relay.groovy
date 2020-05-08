@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Qubino Flush 1D Relay", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch", minHubCoreVersion: '000.019.00012') {
+	definition(name: "Qubino Flush 1D Relay", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.switch") {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Health Check"
