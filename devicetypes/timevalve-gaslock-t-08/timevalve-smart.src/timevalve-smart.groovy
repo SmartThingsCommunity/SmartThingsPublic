@@ -25,12 +25,12 @@ metadata {
         tiles (scale: 2) {
         	multiAttributeTile(name:"statusTile", type:"generic", width:6, height:4) {
             	tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
-	            	attributeState "open", label: '${name}', action: "close", icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-	            	attributeState "closed", label:'${name}', action: "", icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+	            	attributeState "open", label: '${name}', action: "close", icon:"st.contact.contact.open", backgroundColor:"#e86d13"
+	            	attributeState "closed", label:'${name}', action: "", icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
     	        }
                 tileAttribute("device.remainingText", key: "SECONDARY_CONTROL") {
-	            	attributeState "open", label: '${currentValue}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-	            	attributeState "closed", label:'', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+	            	attributeState "open", label: '${currentValue}', icon:"st.contact.contact.open", backgroundColor:"#e86d13"
+	            	attributeState "closed", label:'', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc"
     	        }
             }
             

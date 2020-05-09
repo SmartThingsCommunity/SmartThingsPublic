@@ -39,7 +39,9 @@ definition(
     category: "SmartThings Internal",
     iconUrl: "https://ifttt.com/images/channels/ifttt.png",
     iconX2Url: "https://ifttt.com/images/channels/ifttt_med.png",
-    oauth: [displayName: "IFTTT", displayLink: "https://ifttt.com"]
+    oauth: [displayName: "IFTTT", displayLink: "https://ifttt.com"],
+    usesThirdPartyAuthentication: true,
+    pausable: false
 )
 
 preferences {
@@ -94,7 +96,7 @@ mappings {
 }
 
 def installed() {
-	log.debug settings
+	//log.debug settings
 }
 
 def updated() {
@@ -107,11 +109,11 @@ def updated() {
 		state.remove(device.id)
 		unsubscribe(device)
 	}
-	log.debug settings
+	//log.debug settings
 }
 
 def list() {
-	log.debug "[PROD] list, params: ${params}"
+	//log.debug "[PROD] list, params: ${params}"
 	def type = params.deviceType
 	settings[type]?.collect{deviceItem(it)} ?: []
 }
@@ -131,25 +133,75 @@ def update() {
 	def type = params.deviceType
 	def data = request.JSON
 	def devices = settings[type]
+	def device = settings[type]?.find { it.id == params.id }
 	def command = data.command
 
-	log.debug "[PROD] update, params: ${params}, request: ${data}, devices: ${devices*.id}"
-	if (command) {
-		def device = devices?.find { it.id == params.id }
-		if (!device) {
-			httpError(404, "Device not found")
-		} else {
-			device."$command"()
-		}
+	//log.debug "[PROD] update, params: ${params}, request: ${data}, devices: ${devices*.id}"
+	
+	if (!device) {
+		httpError(404, "Device not found")
+	} 
+	
+	if (validateCommand(device, type, command)) {
+		device."$command"()
+	} else {
+		httpError(403, "Access denied. This command is not supported by current capability.")
 	}
 }
+
+/**
+ * Validating the command passed by the user based on capability.
+ * @return boolean
+ */
+def validateCommand(device, deviceType, command) {
+	def capabilityCommands = getDeviceCapabilityCommands(device.capabilities)
+	def currentDeviceCapability = getCapabilityName(deviceType)
+	if (capabilityCommands[currentDeviceCapability]) {
+		return command in capabilityCommands[currentDeviceCapability] ? true : false
+	} else {
+		// Handling other device types here, which don't accept commands
+		httpError(400, "Bad request.")
+	}
+}
+
+/**
+ * Need to get the attribute name to do the lookup. Only
+ * doing it for the device types which accept commands
+ * @return attribute name of the device type
+ */
+def getCapabilityName(type) {
+    switch(type) {
+		case "switches":
+			return "Switch"
+		case "alarms":
+			return "Alarm"
+		case "locks":
+			return "Lock"
+		default:
+			return type
+	}
+}
+
+/**
+ * Constructing the map over here of
+ * supported commands by device capability
+ * @return a map of device capability -> supported commands
+ */
+def getDeviceCapabilityCommands(deviceCapabilities) {
+	def map = [:]
+	deviceCapabilities.collect {
+		map[it.name] = it.commands.collect{ it.name.toString() }
+	}
+	return map
+}
+
 
 def show() {
 	def type = params.deviceType
 	def devices = settings[type]
 	def device = devices.find { it.id == params.id }
 
-	log.debug "[PROD] show, params: ${params}, devices: ${devices*.id}"
+	//log.debug "[PROD] show, params: ${params}, devices: ${devices*.id}"
 	if (!device) {
 		httpError(404, "Device not found")
 	}
@@ -170,13 +222,13 @@ def addSubscription() {
 	def callbackUrl = data.callbackUrl
 	def device = devices.find { it.id == deviceId }
 
-	log.debug "[PROD] addSubscription, params: ${params}, request: ${data}, device: ${device}"
+	//log.debug "[PROD] addSubscription, params: ${params}, request: ${data}, device: ${device}"
 	if (device) {
 		log.debug "Adding switch subscription " + callbackUrl
 		state[deviceId] = [callbackUrl: callbackUrl]
 		subscribe(device, attribute, deviceHandler)
 	}
-	log.info state
+	//log.info state
 
 }
 
@@ -186,13 +238,13 @@ def removeSubscription() {
 	def deviceId = params.id
 	def device = devices.find { it.id == deviceId }
 
-	log.debug "[PROD] removeSubscription, params: ${params}, request: ${data}, device: ${device}"
+	//log.debug "[PROD] removeSubscription, params: ${params}, request: ${data}, device: ${device}"
 	if (device) {
 		log.debug "Removing $device.displayName subscription"
 		state.remove(device.id)
 		unsubscribe(device)
 	}
-	log.info state
+	//log.info state
 }
 
 def deviceHandler(evt) {
@@ -203,7 +255,7 @@ def deviceHandler(evt) {
 				log.debug "[PROD IFTTT] Event data successfully posted"
 			}
 		} catch (groovyx.net.http.ResponseParseException e) {
-			log.debug("Error parsing ifttt payload ${e}")
+			log.error("Error parsing ifttt payload ${e}")
 		}
 	} else {
 		log.debug "[PROD] No subscribed device found"

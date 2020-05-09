@@ -45,18 +45,17 @@ metadata {
 	}
     
 	preferences {
-		input title: "Temperature Offset", description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+		input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
 	}    
 
 	tiles {
 		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#e86d13")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#00a0dc")
 		}
 		standardTile("acceleration", "device.acceleration") {
-			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+			state("active", label:'${name}', icon:"st.motion.acceleration.active", backgroundColor:"#00a0dc")
+			state("inactive", label:'${name}', icon:"st.motion.acceleration.inactive", backgroundColor:"#cccccc")
 		}
 		valueTile("temperature", "device.temperature") {
 			state("temperature", label:'${currentValue}°',
@@ -96,7 +95,7 @@ metadata {
 def parse(String description) {
 	def results
 
-	if (!isSupportedDescription(description) || zigbee.isZoneType19(description)) {
+	if (!isSupportedDescription(description) || description.startsWith("zone")) {
 		// Ignore this in favor of orientation-based state
 		// results = parseSingleMessage(description)
 	}

@@ -53,14 +53,14 @@ def accelerationActiveHandler(evt) {
 	def alreadySentSms = recentEvents.count { it.value && it.value == "active" } > 1
 
 	if (alreadySentSms) {
-		log.debug "SMS already sent to $phone1 within the last $deltaSeconds seconds"
+		log.debug "SMS already sent within the last $deltaSeconds seconds"
 	} else {
         if (location.contactBookEnabled) {
-            log.debug "$accelerationSensor has moved, texting contacts: ${recipients?.size()}"
+            log.debug "accelerationSensor has moved, texting contacts: ${recipients?.size()}"
             sendNotificationToContacts("${accelerationSensor.label ?: accelerationSensor.name} moved", recipients)
         }
         else {
-            log.debug "$accelerationSensor has moved, texting $phone1"
+            log.debug "accelerationSensor has moved, sending text message"
             sendSms(phone1, "${accelerationSensor.label ?: accelerationSensor.name} moved")
         }
 	}

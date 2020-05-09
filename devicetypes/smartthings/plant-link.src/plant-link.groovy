@@ -21,8 +21,10 @@ metadata {
 		capability "Relative Humidity Measurement"
 		capability "Battery"
 		capability "Sensor"
+		capability "Health Check"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0405,FC08", outClusters: "0003"
+		fingerprint endpoint: "1", profileId: "0104", inClusters: "0000,0001,0003,0B04", outClusters: "0003", manufacturer: "", model: "", deviceJoinName: "OSO Technologies PlantLink Soil Moisture Sensor"
 	}
 
 	tiles {
@@ -46,6 +48,11 @@ metadata {
 		main(["humidity", "battery"])
 		details(["humidity", "battery"])
 	}
+}
+
+def updated() {
+	// Device-Watch allows 2 check-in misses from device
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 }
 
 // Parse incoming device messages to generate events

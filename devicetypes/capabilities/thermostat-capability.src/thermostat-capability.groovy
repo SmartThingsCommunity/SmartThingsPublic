@@ -79,8 +79,8 @@ metadata {
 		standardTile("mode", "device.thermostatMode", inactiveLabel: false, decoration: "flat") {
 			state "off", label:'${name}', action:"thermostat.emergencyHeat", backgroundColor:"#ffffff"
 			state "emergencyHeat", label:'${name}', action:"thermostat.heat", backgroundColor:"#e86d13"
-			state "heat", label:'${name}', action:"thermostat.cool", backgroundColor:"#ffc000"
-			state "cool", label:'${name}', action:"thermostat.off", backgroundColor:"#269bd2"
+			state "heat", label:'${name}', action:"thermostat.cool", backgroundColor:"#e86d13"
+			state "cool", label:'${name}', action:"thermostat.off", backgroundColor:"#00A0DC"
 		}
 		standardTile("fanMode", "device.thermostatFanMode", inactiveLabel: false, decoration: "flat") {
 			state "fanAuto", label:'${name}', action:"thermostat.fanOn", backgroundColor:"#ffffff"

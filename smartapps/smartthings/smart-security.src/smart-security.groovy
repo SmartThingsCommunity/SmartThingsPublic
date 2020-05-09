@@ -71,7 +71,7 @@ def updated() {
 private subscribeToEvents()
 {
 	subscribe intrusionMotions, "motion", intruderMotion
-	subscribe residentMotions, "motion", residentMotion
+	// subscribe residentMotions, "motion", residentMotion
 	subscribe intrusionContacts, "contact", contact
 	subscribe alarms, "alarm", alarm
 	subscribe(app, appTouch)
@@ -156,6 +156,7 @@ def residentMotion(evt)
 	//    	startReArmSequence()
 	//    }
 	//}
+  unsubscribe(residentMotions)
 }
 
 def contact(evt)
@@ -214,7 +215,7 @@ def checkForReArm()
 	}
 	else {
 		log.warn "checkForReArm: lastIntruderMotion was null, unable to check for re-arming intrusion detection"
-	}	
+	}
 }
 
 private startAlarmSequence()

@@ -90,7 +90,7 @@ def takeAction(){
 }
 
 def sendTextMessage() {
-	log.debug "$multisensor was open too long, texting $phone"
+	log.debug "$multisensor was open too long, texting phone"
 
 	updateSmsHistory()
 	def openMinutes = maxOpenTime * (state.smsHistory?.size() ?: 1)

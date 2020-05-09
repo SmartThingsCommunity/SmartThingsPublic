@@ -27,15 +27,17 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		valueTile("illuminance", "device.illuminance", width: 2, height: 2) {
-			state("illuminance", label:'${currentValue}', unit:"lux",
-				backgroundColors:[
-					[value: 9, color: "#767676"],
-					[value: 315, color: "#ffa81e"],
-					[value: 1000, color: "#fbd41b"]
-				]
-			)
+	tiles(scale: 2) {
+		multiAttributeTile(name:"illuminance", type: "generic", width: 6, height: 4){
+			tileAttribute("device.illuminance", key: "PRIMARY_CONTROL") {
+				attributeState("illuminance", label:'${currentValue}', unit:"lux",
+					backgroundColors:[
+						[value: 9, color: "#767676"],
+						[value: 315, color: "#ffa81e"],
+						[value: 1000, color: "#fbd41b"]
+					]
+				)
+			}
 		}
 
 		main "illuminance"
