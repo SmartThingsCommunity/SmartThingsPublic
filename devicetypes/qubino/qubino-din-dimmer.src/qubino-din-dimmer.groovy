@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition(name: "Qubino DIN Dimmer", namespace: "qubino", author: "SmartThings", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
+	definition(name: "Qubino DIN Dimmer", namespace: "qubino", author: "SmartThings", mnmn: "SmartThings", vid:"generic-dimmer-power-energy", ocfDeviceType: "oic.d.switch", runLocally: false, executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Configuration"
 		capability "Energy Meter"
@@ -49,7 +49,7 @@ metadata {
 			state "default", label: '', action: "refresh.refresh", icon: "st.secondary.refresh"
 		}
 
-		main(["switch", "power", "energy"])
+		main(["switch"])
 		details(["switch", "power", "energy", "refresh"])
 	}
 
@@ -57,64 +57,64 @@ metadata {
 		// Preferences template begin
 		parameterMap.each {
 			input(
-					title: it.name,
-					description: it.description,
-					type: "paragraph",
-					element: "paragraph"
+				title: it.name,
+				description: it.description,
+				type: "paragraph",
+				element: "paragraph"
 			)
 
 			switch (it.type) {
 				case "boolRange":
 					input(
-							name: it.key + "Boolean",
-							type: "bool",
-							title: "Enable",
-							description: "If you disable this option, it will overwrite setting below.",
-							defaultValue: it.defaultValue != it.disableValue,
-							required: false
+						name: it.key + "Boolean",
+						type: "bool",
+						title: "Enable",
+						description: "If you disable this option, it will overwrite setting below.",
+						defaultValue: it.defaultValue != it.disableValue,
+						required: false
 					)
 					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
+						name: it.key,
+						type: "number",
+						title: "Set value (range ${it.range})",
+						defaultValue: it.defaultValue,
+						range: it.range,
+						required: false
 					)
 					break
 				case "boolean":
 					input(
-							type: "paragraph",
-							element: "paragraph",
-							description: "Option enabled: ${it.activeDescription}\n" +
-									"Option disabled: ${it.inactiveDescription}"
+						type: "paragraph",
+						element: "paragraph",
+						description: "Option enabled: ${it.activeDescription}\n" +
+							"Option disabled: ${it.inactiveDescription}"
 					)
 					input(
-							name: it.key,
-							type: "boolean",
-							title: "Enable",
-							defaultValue: it.defaultValue == it.activeOption,
-							required: false
+						name: it.key,
+						type: "boolean",
+						title: "Enable",
+						defaultValue: it.defaultValue == it.activeOption,
+						required: false
 					)
 					break
 				case "enum":
 					input(
-							name: it.key,
-							title: "Select",
-							type: "enum",
-							options: it.values,
-							defaultValue: it.defaultValue,
-							required: false
+						name: it.key,
+						title: "Select",
+						type: "enum",
+						options: it.values,
+						defaultValue: it.defaultValue,
+						required: false
 					)
 					break
 				case "range":
 					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
+						name: it.key,
+						type: "number",
+						title: "Set value (range ${it.range})",
+						defaultValue: it.defaultValue,
+						range: it.range,
+						required: false
 					)
 					break
 			}
@@ -184,33 +184,33 @@ private syncConfiguration() {
 
 def getCommandClassVersions() {
 	[
-        0x5E: 1,
-        0x5A: 1, //Device Reset Locally
-        0x73: 1, //Powerlevel
-        0x98: 1, //Security
-        0x86: 1, //Version
-        0x72: 2, //Manufacturer Specific
-        0x27: 1, //Switch All
-        0x25: 1, //Switch Binary
-        0x26: 3, //Switch Multilevel
-        0x32: 3, //Meter
-        0x71: 3, //Notification
-        0x85: 2, //Association
-        0x8E: 2, //Multi Channel Association
-        0x59: 1, //Association Grp Info
-        0x70: 2, //Configuration
+		0x5E: 1,
+		0x5A: 1, //Device Reset Locally
+		0x73: 1, //Powerlevel
+		0x98: 1, //Security
+		0x86: 1, //Version
+		0x72: 2, //Manufacturer Specific
+		0x27: 1, //Switch All
+		0x25: 1, //Switch Binary
+		0x26: 3, //Switch Multilevel
+		0x32: 3, //Meter
+		0x71: 3, //Notification
+		0x85: 2, //Association
+		0x8E: 2, //Multi Channel Association
+		0x59: 1, //Association Grp Info
+		0x70: 2, //Configuration
 	]
 }
 
 def configure() {
 	def configurationCommands = [
-        encap(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: [zwaveHubNodeId])),
-        encap(zwave.associationV1.associationSet(groupingIdentifier: 2, nodeId: [zwaveHubNodeId])),
-        encap(zwave.associationV1.associationSet(groupingIdentifier: 3, nodeId: [zwaveHubNodeId])),
-        encap(zwave.associationV1.associationSet(groupingIdentifier: 4, nodeId: [zwaveHubNodeId])),
-        encap(zwave.associationV1.associationSet(groupingIdentifier: 5, nodeId: [zwaveHubNodeId])),
-        encap(zwave.multiChannelV3.multiChannelEndPointGet()),
-        encap(zwave.meterV2.meterReset())
+		encap(zwave.associationV1.associationSet(groupingIdentifier: 1, nodeId: [zwaveHubNodeId])),
+		encap(zwave.associationV1.associationSet(groupingIdentifier: 2, nodeId: [zwaveHubNodeId])),
+		encap(zwave.associationV1.associationSet(groupingIdentifier: 3, nodeId: [zwaveHubNodeId])),
+		encap(zwave.associationV1.associationSet(groupingIdentifier: 4, nodeId: [zwaveHubNodeId])),
+		encap(zwave.associationV1.associationSet(groupingIdentifier: 5, nodeId: [zwaveHubNodeId])),
+		encap(zwave.multiChannelV3.multiChannelEndPointGet()),
+		encap(zwave.meterV2.meterReset())
 	]
 	delayBetween(configurationCommands)
 }
@@ -322,7 +322,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointR
 
 def createChildDevice() {
 	try {
-		String childDni = "${device.deviceNetworkId}-2"
+		String childDni = "${device.deviceNetworkId}:2"
 		String componentLabel = "Qubino Temperature Sensor"
 		def properties = [
 			completedSetup: true,
@@ -376,8 +376,8 @@ def dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	log.debug "dimmerEvents() value: ${cmd.value}"
 	def value = (cmd.value ? "on" : "off")
 	return [
-        createEvent(name: "switch", value: value),
-        createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
+		createEvent(name: "switch", value: value),
+		createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
 	]
 }
 
@@ -426,7 +426,7 @@ def createSensorMultilevelReportParameters(physicalgraph.zwave.commands.sensormu
 }
 
 def sendEventToChild(event) {
-	String childDni = "${device.deviceNetworkId}-2"
+	String childDni = "${device.deviceNetworkId}:2"
 	def child = childDevices.find { it.deviceNetworkId == childDni }
 	log.debug "Sending event: ${event} to child: ${child}"
 	child?.sendEvent(event)
@@ -538,185 +538,185 @@ private encapSequence(cmds, Integer delay = 250) {
 
 private getParameterMap() {
 	[
-			[
-					name               : "Input switch type",
-					key                : "inputSwitchType",
-					type               : "boolean",
-					parameterNumber    : 1,
-					size               : 1,
-					defaultValue       : 0,
-					optionInactive     : 0,
-					inactiveDescription: "Mono-stable switch type (push button)",
-					optionActive       : 1,
-					activeDescription  : "Bi-stable switch type (toggle switch)",
-					description        : "Type of switch type: mono-stable switch type (push button) or bi-stable switch type (toggle switch)"
+		[
+			name               : "Input switch type",
+			key                : "inputSwitchType",
+			type               : "boolean",
+			parameterNumber    : 1,
+			size               : 1,
+			defaultValue       : 0,
+			optionInactive     : 0,
+			inactiveDescription: "Mono-stable switch type (push button)",
+			optionActive       : 1,
+			activeDescription  : "Bi-stable switch type (toggle switch)",
+			description        : "Type of switch type: mono-stable switch type (push button) or bi-stable switch type (toggle switch)"
+		],
+		[
+			name           : "Activate / deactivate functions ALL ON / ALL OFF ",
+			key            : "activate/DeactivateFunctionsAllOn/AllOff",
+			type           : "enum",
+			parameterNumber: 10, size: 2, defaultValue: 255,
+			values         : [
+				255: "ALL ON active, ALL OFF active",
+				0  : "ALL ON is not active, ALL OFF is not active",
+				1  : "ALL ON is not active, ALL OFF active",
+				2  : "ALL ON active, ALL OFF is not active"
 			],
-			[
-					name           : "Activate / deactivate functions ALL ON / ALL OFF ",
-					key            : "activate/DeactivateFunctionsAllOn/AllOff",
-					type           : "enum",
-					parameterNumber: 10, size: 2, defaultValue: 255,
-					values         : [
-						255: "ALL ON active, ALL OFF active",
-						0  : "ALL ON is not active, ALL OFF is not active",
-						1  : "ALL ON is not active, ALL OFF active",
-						2  : "ALL ON active, ALL OFF is not active"
-					],
-					description    : "DIN Dimmer module responds to commands ALL ON / ALL OFF that may be sent by the main controller or by other controller belonging to the system. "
-			],
-			[
-					name           : "Automatic turning off output after set time ",
-					key            : "automaticTurningOffOutputAfterSetTime", type: "boolRange",
-					parameterNumber: 11,
-					size           : 2,
-					defaultValue   : 0,
-					range          : "1..32536",
-					disableValue   : 0,
-					description    : "Turns off the output after set time."
-			],
-			[
-					name           : "Temperature sensor offset settings",
-					key            : "temperatureSensorOffsetSettings",
-					type           : "boolRange",
-					parameterNumber: 110,
-					size           : 2,
-					defaultValue   : 32536,
-					range          : "1..1100",
-					disableValue   : 32536,
-					description    : "Set value is added or subtracted to actual measured value by sensor. Available configuration parameters: 32536 = offset is 0.0°C,	1 - 100 = value from 0.1°C to 10.0°C is added to actual measured temperature. 1001 - 1100 = value from -0.1°C to -10.0°C is subtracted to actual measured temperature."
-			],
-			[
-					name           : "Automatic turning on output after set time ",
-					key            : "automaticTurningOnOutputAfterSetTime",
-					type           : "boolRange",
-					parameterNumber: 12,
-					size           : 2,
-					defaultValue   : 0,
-					range          : "1..32535",
-					disableValue   : 0,
-					description    : "Turns on the output after set time."
-			],
-			[
-					name           : "Digital temperature sensor reporting",
-					key            : "digitalTemperatureSensorReporting",
-					type           : "range",
-					parameterNumber: 120,
-					size           : 1,
-					defaultValue   : 5,
-					range          : "0..127",
-					description    : "Digital temperature sensor reporting If digital temperature sensor is connected, module reports measured temperature on temperature change defined by this parameter. Available configuration parameters: default value 5 = 0,5°C. 1- 127 = 0,1°C - 12,7°C, step is 0,1°C change.	0 = reporting disabled"
-			],
-			[
-					name               : "Enable/Disable Double click function",
-					key                : "enable/DisableDoubleClickFunction",
-					type               : "boolean",
-					parameterNumber    : 21,
-					size               : 1,
-					defaultValue       : 0,
-					optionInactive     : 0,
-					inactiveDescription: "Double click disabled",
-					optionActive       : 1,
-					activeDescription  : "Double click enabled",
-					description        : "If Double click function is enabled, a fast double click on the push button will set dimming power at maximum dimming value."
-			],
-			[
-					name               : "Saving the state of the device after a power failure",
-					key                : "savingTheStateOfTheDeviceAfterAPowerFailure",
-					type               : "boolean",
-					parameterNumber    : 30,
-					size               : 1,
-					defaultValue       : 0,
-					optionInactive     : 0,
-					inactiveDescription: "DIN Dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
-					optionActive       : 1,
-					activeDescription  : "DIN Dimmer module does not save the state after a power failure, it returns to off position",
-					description        : "Based on the parameter settings the stores/does not store the last value of the output after power failure."
-			],
-			[
-					name           : "Power reporting in Watts on power change",
-					key            : "powerReportingInWattsOnPowerChange",
-					type           : "boolRange",
-					parameterNumber: 40,
-					size           : 1,
-					defaultValue   : 5,
-					range          : "1..100",
-					disableValue   : 0,
-					description    : "Set value means percentage, set value from 0 - 100=0% - 100%.  Power report is send (push) only when actual power in Watts in real time changes for more than set percentage comparing to previous actual power in Watts, step is 1%. NOTE: if power changed is less than 1W, the report is not send (pushed), independent of percentage set."
-			],
-			[
-					name           : " Power reporting in Watts by time interval",
-					key            : "powerReportingInWattsByTimeInterval",
-					type           : "boolRange",
-					parameterNumber: 42,
-					size           : 2,
-					defaultValue   : 0,
-					range          : "1..32767",
-					disableValue   : 0,
-					description    : "Time interval (0 - 32767) in seconds, when power report is send. Reporting enabled. Power report is send with time interval set by entered value. Please note, that too fast reporting can cause too much Z-Wave traffic resulting in Z-Wave poor response."
-			],
-			[
-					name           : "Minimum dimming value",
-					key            : "minimumDimmingValue",
-					type           : "range",
-					parameterNumber: 60,
-					size           : 1,
-					defaultValue   : 1,
-					range          : "1..98",
-					description    : "The minimum level may not be higher than the maximum level! 1% min. When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
-			],
-			[
-					name           : "Maximum dimming value",
-					key            : "maximumDimmingValue",
-					type           : "range",
-					parameterNumber: 61,
-					size           : 1,
-					defaultValue   : 99,
-					range          : "2..99",
-					description    : "The maximum level may not be lower than the minimum level! When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
-			],
-			[
-					name           : "Dimming time (soft on/off)",
-					key            : "dimmingTime(SoftOn/Off)",
-					type           : "range",
-					parameterNumber: 65,
-					size           : 2,
-					defaultValue   : 100,
-					range          : "50..255",
-					description    : "Set value means time of moving the DIN Dimmer between min. and max. dimming values by short press of push button."
-			],
-			[
-					name           : "Dimming time when key pressed",
-					key            : "dimmingTimeWhenKeyPressed",
-					type           : "range",
-					parameterNumber: 66,
-					size           : 2,
-					defaultValue   : 3,
-					range          : "1..255",
-					description    : "Time of moving the DIN Dimmer between min. and max dimming values by continues hold of push button or associated device."
-			],
-			[
-					name               : "Ignore start level",
-					key                : "ignoreStartLevel",
-					type               : "boolean",
-					parameterNumber    : 67,
-					size               : 1,
-					defaultValue       : 0,
-					optionInactive     : 0,
-					inactiveDescription: "Respect start level",
-					optionActive       : 1,
-					activeDescription  : "Ignore start level",
-					description        : "Choose whether the device should use (or disregard) the start dimming level value. If the device is configured to use the start level, it should start the dimming process from the currently set dimming level. This parameter is used with association group 3."
-			],
-			[
-					name           : "Dimming duration",
-					key            : "dimmingDuration",
-					type           : "range",
-					parameterNumber: 68,
-					size           : 1,
-					defaultValue   : 0,
-					range          : "1..127",
-					description    : "Choose the time during which the device will transition from the current value to the new target value. This parameter applies to the association group 3."
-			]
+			description    : "DIN Dimmer module responds to commands ALL ON / ALL OFF that may be sent by the main controller or by other controller belonging to the system. "
+		],
+		[
+			name           : "Automatic turning off output after set time ",
+			key            : "automaticTurningOffOutputAfterSetTime", type: "boolRange",
+			parameterNumber: 11,
+			size           : 2,
+			defaultValue   : 0,
+			range          : "1..32536",
+			disableValue   : 0,
+			description    : "Turns off the output after set time."
+		],
+		[
+			name           : "Temperature sensor offset settings",
+			key            : "temperatureSensorOffsetSettings",
+			type           : "boolRange",
+			parameterNumber: 110,
+			size           : 2,
+			defaultValue   : 32536,
+			range          : "1..1100",
+			disableValue   : 32536,
+			description    : "Set value is added or subtracted to actual measured value by sensor. Available configuration parameters: 32536 = offset is 0.0°C,	1 - 100 = value from 0.1°C to 10.0°C is added to actual measured temperature. 1001 - 1100 = value from -0.1°C to -10.0°C is subtracted to actual measured temperature."
+		],
+		[
+			name           : "Automatic turning on output after set time ",
+			key            : "automaticTurningOnOutputAfterSetTime",
+			type           : "boolRange",
+			parameterNumber: 12,
+			size           : 2,
+			defaultValue   : 0,
+			range          : "1..32535",
+			disableValue   : 0,
+			description    : "Turns on the output after set time."
+		],
+		[
+			name           : "Digital temperature sensor reporting",
+			key            : "digitalTemperatureSensorReporting",
+			type           : "range",
+			parameterNumber: 120,
+			size           : 1,
+			defaultValue   : 5,
+			range          : "0..127",
+			description    : "Digital temperature sensor reporting If digital temperature sensor is connected, module reports measured temperature on temperature change defined by this parameter. Available configuration parameters: default value 5 = 0,5°C. 1- 127 = 0,1°C - 12,7°C, step is 0,1°C change.	0 = reporting disabled"
+		],
+		[
+			name               : "Enable/Disable Double click function",
+			key                : "enable/DisableDoubleClickFunction",
+			type               : "boolean",
+			parameterNumber    : 21,
+			size               : 1,
+			defaultValue       : 0,
+			optionInactive     : 0,
+			inactiveDescription: "Double click disabled",
+			optionActive       : 1,
+			activeDescription  : "Double click enabled",
+			description        : "If Double click function is enabled, a fast double click on the push button will set dimming power at maximum dimming value."
+		],
+		[
+			name               : "Saving the state of the device after a power failure",
+			key                : "savingTheStateOfTheDeviceAfterAPowerFailure",
+			type               : "boolean",
+			parameterNumber    : 30,
+			size               : 1,
+			defaultValue       : 0,
+			optionInactive     : 0,
+			inactiveDescription: "DIN Dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
+			optionActive       : 1,
+			activeDescription  : "DIN Dimmer module does not save the state after a power failure, it returns to off position",
+			description        : "Based on the parameter settings the stores/does not store the last value of the output after power failure."
+		],
+		[
+			name           : "Power reporting in Watts on power change",
+			key            : "powerReportingInWattsOnPowerChange",
+			type           : "boolRange",
+			parameterNumber: 40,
+			size           : 1,
+			defaultValue   : 5,
+			range          : "1..100",
+			disableValue   : 0,
+			description    : "Set value means percentage, set value from 0 - 100=0% - 100%.  Power report is send (push) only when actual power in Watts in real time changes for more than set percentage comparing to previous actual power in Watts, step is 1%. NOTE: if power changed is less than 1W, the report is not send (pushed), independent of percentage set."
+		],
+		[
+			name           : " Power reporting in Watts by time interval",
+			key            : "powerReportingInWattsByTimeInterval",
+			type           : "boolRange",
+			parameterNumber: 42,
+			size           : 2,
+			defaultValue   : 0,
+			range          : "1..32767",
+			disableValue   : 0,
+			description    : "Time interval (0 - 32767) in seconds, when power report is send. Reporting enabled. Power report is send with time interval set by entered value. Please note, that too fast reporting can cause too much Z-Wave traffic resulting in Z-Wave poor response."
+		],
+		[
+			name           : "Minimum dimming value",
+			key            : "minimumDimmingValue",
+			type           : "range",
+			parameterNumber: 60,
+			size           : 1,
+			defaultValue   : 1,
+			range          : "1..98",
+			description    : "The minimum level may not be higher than the maximum level! 1% min. When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
+		],
+		[
+			name           : "Maximum dimming value",
+			key            : "maximumDimmingValue",
+			type           : "range",
+			parameterNumber: 61,
+			size           : 1,
+			defaultValue   : 99,
+			range          : "2..99",
+			description    : "The maximum level may not be lower than the minimum level! When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
+		],
+		[
+			name           : "Dimming time (soft on/off)",
+			key            : "dimmingTime(SoftOn/Off)",
+			type           : "range",
+			parameterNumber: 65,
+			size           : 2,
+			defaultValue   : 100,
+			range          : "50..255",
+			description    : "Set value means time of moving the DIN Dimmer between min. and max. dimming values by short press of push button."
+		],
+		[
+			name           : "Dimming time when key pressed",
+			key            : "dimmingTimeWhenKeyPressed",
+			type           : "range",
+			parameterNumber: 66,
+			size           : 2,
+			defaultValue   : 3,
+			range          : "1..255",
+			description    : "Time of moving the DIN Dimmer between min. and max dimming values by continues hold of push button or associated device."
+		],
+		[
+			name               : "Ignore start level",
+			key                : "ignoreStartLevel",
+			type               : "boolean",
+			parameterNumber    : 67,
+			size               : 1,
+			defaultValue       : 0,
+			optionInactive     : 0,
+			inactiveDescription: "Respect start level",
+			optionActive       : 1,
+			activeDescription  : "Ignore start level",
+			description        : "Choose whether the device should use (or disregard) the start dimming level value. If the device is configured to use the start level, it should start the dimming process from the currently set dimming level. This parameter is used with association group 3."
+		],
+		[
+			name           : "Dimming duration",
+			key            : "dimmingDuration",
+			type           : "range",
+			parameterNumber: 68,
+			size           : 1,
+			defaultValue   : 0,
+			range          : "1..127",
+			description    : "Choose the time during which the device will transition from the current value to the new target value. This parameter applies to the association group 3."
+		]
 	]
 }
 
