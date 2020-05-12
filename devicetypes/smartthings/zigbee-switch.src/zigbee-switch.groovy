@@ -75,6 +75,10 @@ metadata {
 		// sengled
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006, 0B05", outClusters: "0019", manufacturer: "sengled", model: "E1C-NB6", deviceJoinName: "Sengled Outlet", ocfDeviceType: "oic.d.smartplug" //Sengled Element Outlet
 
+		//Sinopé Technologies
+		fingerprint manufacturer: "Sinope Technologies", model: "SP2600ZB", deviceJoinName: "Sinope Outlet", ocfDeviceType: "oic.d.smartplug"
+		fingerprint manufacturer: "Sinope Technologies", model: "SP2610ZB", deviceJoinName: "Sinope Outlet", ocfDeviceType: "oic.d.smartplug"
+
 		// SONOFF
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "BASICZBR3", deviceJoinName: "SONOFF Outlet", ocfDeviceType: "oic.d.smartplug" //SONOFF Basic (R3 Zigbee)
 		fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0005, 0006", outClusters: "0000", manufacturer: "SONOFF", model: "S31 Lite zb", deviceJoinName: "S31 Outlet", ocfDeviceType: "oic.d.smartplug" //S31 Lite zb

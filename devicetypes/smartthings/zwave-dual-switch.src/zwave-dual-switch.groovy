@@ -22,15 +22,15 @@ metadata {
 
 		// This DTH uses 2 switch endpoints. Parent DTH controls endpoint 1 so please use '1' at the end of deviceJoinName
 		// Child device (isComponent : false) representing endpoint 2 will substitute 1 with 2 for easier identification.
-		fingerprint mfr: "0086", prod: "0103", model: "008C", deviceJoinName: "Aeotec Dual Nano Switch 1" //US
-		fingerprint mfr: "0086", prod: "0003", model: "008C", deviceJoinName: "Aeotec Dual Nano Switch 1" //EU
+		fingerprint mfr: "0086", prod: "0103", model: "008C", deviceJoinName: "Aeotec Switch 1" //US //Aeotec Dual Nano Switch 1
+		fingerprint mfr: "0086", prod: "0003", model: "008C", deviceJoinName: "Aeotec Switch 1" //EU //Aeotec Dual Nano Switch 1
 		// sometimes the aeotec nano dual switch does not update its NIF when adding securely
-		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut: "0x82", ui: "0x8700", deviceJoinName: "Aeotec Dual Nano Switch 1"
-		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Light Switch 1"
-		fingerprint mfr: "0258", prod: "0003", model: "108B", deviceJoinName: "NEO coolcam Light Switch 1"
-		fingerprint mfr: "0312", prod: "C000", model: "C004", deviceJoinName: "EVA LOGIK Smart Plug 2CH 1"
-		fingerprint mfr: "0312", prod: "FF00", model: "FF05", deviceJoinName: "Minoston Smart Plug 2CH 1"
-		fingerprint mfr: "0312", prod: "C000", model: "C007", deviceJoinName: "Evalogik Outdoor Smart Plug 2CH 1"
+		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut: "0x82", ui: "0x8700", deviceJoinName: "Aeotec Switch 1" //Aeotec Dual Nano Switch 1
+		fingerprint mfr: "0258", prod: "0003", model: "008B", deviceJoinName: "NEO Coolcam Switch 1" //NEO Coolcam Light Switch 1
+		fingerprint mfr: "0258", prod: "0003", model: "108B", deviceJoinName: "NEO Coolcam Switch 1" //NEO coolcam Light Switch 1
+		fingerprint mfr: "0312", prod: "C000", model: "C004", deviceJoinName: "EVA Switch 1" //EVA LOGIK Smart Plug 2CH 1
+		fingerprint mfr: "0312", prod: "FF00", model: "FF05", deviceJoinName: "Minoston Switch 1" //Minoston Smart Plug 2CH 1
+		fingerprint mfr: "0312", prod: "C000", model: "C007", deviceJoinName: "Evalogik Switch 1" //Evalogik Outdoor Smart Plug 2CH 1
 	}
 
 	// tile definitions
