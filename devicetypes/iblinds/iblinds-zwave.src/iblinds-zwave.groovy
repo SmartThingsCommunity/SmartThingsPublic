@@ -16,7 +16,6 @@ import groovy.json.JsonOutput
 
 metadata {
     definition (name: "iblinds Z-Wave", namespace: "iblinds", author: "HABHomeIntel", ocfDeviceType: "oic.d.blind",  mnmn: "SmartThings", vid: "generic-shade-3") {
-
 		capability "Switch Level"
 		capability "Switch"
 		capability "Battery"
@@ -53,8 +52,8 @@ metadata {
 				attributeState "open", label:'${name}', action:"close", icon:"http://i.imgur.com/4TbsR54.png", backgroundColor:"#79b821", nextState:"closing"
 				attributeState "closed", label:'${name}', action:"open", icon:"st.shades.shade-closed", backgroundColor:"#ffffff", nextState:"opening"
 				attributeState "partially open", label:'Open', action:"close", icon:"st.shades.shade-open", backgroundColor:"#79b821", nextState:"closing"
-				attributeState "opening", label:'${name}', action:"stop", icon:"st.shades.shade-opening", backgroundColor:"#79b821", nextState:"partially open"
-				attributeState "closing", label:'${name}', action:"stop", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partially open"
+				attributeState "opening", label:'${name}', action:"pause", icon:"st.shades.shade-opening", backgroundColor:"#79b821", nextState:"partially open"
+				attributeState "closing", label:'${name}', action:"pause", icon:"st.shades.shade-closing", backgroundColor:"#ffffff", nextState:"partially open"
 			}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"setLevel"
@@ -104,7 +103,7 @@ def getCheckInterval() {
 }
 
 def installed() {
-	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+	sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close"]), displayed: false)
 	response(refresh())
 }
@@ -170,25 +169,23 @@ def open() {
 	// Blinds fully open at 50%
 	level = 50
 	sendEvent(name: "windowShade", value: "open")
-	sendEvent(name: "level", value: 50, unit: "%",displayed: true)
-	sendEvent(name: "shadeLevel", value: 50, unit: "%",displayed: true)
+	sendEvent(name: "level", value: 50, unit: "%")
+	sendEvent(name: "shadeLevel", value: 50, unit: "%")
 	zwave.switchMultilevelV3.switchMultilevelSet(value: 50).format()
 }
 
 def close() {
 	log.debug "close()"
 
-	if(reverse){
+	if (reverse) {
 		 sendEvent(name: "windowShade", value: "closed")
-		 sendEvent(name: "level", value: 0, unit: "%",displayed: true)
-		 sendEvent(name: "shadeLevel", value: 0, unit: "%",displayed: true)
+		 sendEvent(name: "level", value: 0, unit: "%")
+		 sendEvent(name: "shadeLevel", value: 0, unit: "%")
 		 zwave.switchMultilevelV3.switchMultilevelSet(value: 0x63).format()
-
-	} else
-	{
+	} else {
 		 sendEvent(name: "windowShade", value: "closed")
-		 sendEvent(name: "level", value: 0, unit: "%",displayed: true)
-		 sendEvent(name: "shadeLevel", value: 0, unit: "%",displayed: true)
+		 sendEvent(name: "level", value: 0, unit: "%")
+		 sendEvent(name: "shadeLevel", value: 0, unit: "%")
 		 zwave.switchMultilevelV3.switchMultilevelSet(value: 0).format()
 	}
 }
@@ -210,24 +207,21 @@ def setShadeLevel(value) {
 	if (level > 99) level = 99
 	Integer tiltLevel = level as Integer //we will use this value to decide what level is sent to device (reverse or not reversed)
 
-	if(reverse)  // Check to see if user wants blinds to operate in reverse direction
-	{
+	if (reverse) {  // Check to see if user wants blinds to operate in reverse direction
 		tiltLevel = 99 - level
 	}
 
-	if (level <= 0)
-	{
-		//level =0
+	if (level <= 0) {
+		//level = 0
 		sendEvent(name: "windowShade", value: "closed")
 	} else if (level >= 99) {
 		level = 99
 		sendEvent(name: "windowShade", value: "closed")
 	} else if (level == 50) {
-	   // level = 50
 		sendEvent(name: "windowShade", value: "open")
 	} else {
 		descriptionText = "${device.displayName} tilt level is ${level}% open"
-		sendEvent(name: "windowShade", value: "partially open" , descriptionText: descriptionText) //, isStateChange: levelEvent.isStateChange )
+		sendEvent(name: "windowShade", value: "partially open" , descriptionText: descriptionText)
 	}
 	//log.debug "Level - ${level}%  & Tilt Level - ${tiltLevel}%"
 	sendEvent(name: "level", value: level, unit: "%", descriptionText: descriptionText)
