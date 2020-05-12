@@ -184,6 +184,12 @@ def close() {
 	setShadeLevel(0)
 }
 
+def pause() {
+	log.debug "pause()"
+
+	zwave.switchMultilevelV3.switchMultilevelStopLevelChange().format()
+}
+
 def setLevel(value, duration = null) {
 	log.debug "setLevel($value)"
 
@@ -225,12 +231,7 @@ def setShadeLevel(value) {
 }
 
 def presetPosition() {
-	setLevel(preset ?: state.preset ?: 50)
-}
-
-def pause() {
-	log.debug "pause()"
-	zwave.switchMultilevelV3.switchMultilevelStopLevelChange().format()
+	setShadeLevel(preset != null ? preset : 50)
 }
 
 def ping() {
@@ -239,6 +240,7 @@ def ping() {
 
 def refresh() {
 	log.debug "refresh()"
+
 	delayBetween([
 		zwave.switchMultilevelV1.switchMultilevelGet().format(),
 		zwave.batteryV1.batteryGet().format()
