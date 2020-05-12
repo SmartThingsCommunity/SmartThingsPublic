@@ -31,6 +31,7 @@ metadata {
 		fingerprint mfr: "0258", prod: "0003", model: "008D", deviceJoinName: "NEO Coolcam Motion Sensor" //NEO Coolcam Motion/Light Sensor
 		//zw:S type:0701 mfr:0258 prod:0003 model:108D ver:3.80 zwv:4.38 lib:06 cc:5E,86,72,5A,73,80,31,71,30,70,85,59,84 role:06 ff:8C07 ui:8C07 EU version
 		fingerprint mfr: "0258", prod: "0003", model: "108D", deviceJoinName: "NEO Coolcam Motion Sensor" //NEO Coolcam Motion/Light Sensor
+		fingerprint mfr: "017F", prod: "0101", model: "0001", deviceJoinName: "Wink Motion Sensor"
 	}
 
 	simulator {
