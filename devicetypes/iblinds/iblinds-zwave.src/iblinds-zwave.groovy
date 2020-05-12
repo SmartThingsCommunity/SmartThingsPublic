@@ -15,16 +15,16 @@ import groovy.json.JsonOutput
 
 
 metadata {
-    definition (name: "iblinds Z-Wave v2", namespace: "iblinds", author: "HABHomeIntel", ocfDeviceType: "oic.d.blind",  mnmn: "SmartThings", vid: "generic-shade-3") {
+    definition (name: "iblinds Z-Wave", namespace: "iblinds", author: "HABHomeIntel", ocfDeviceType: "oic.d.blind",  mnmn: "SmartThings", vid: "generic-shade-3") {
 
-		capability "Switch Level" 
-		capability "Switch" 
-		capability "Battery" 
-		capability "Refresh" 
+		capability "Switch Level"
+		capability "Switch"
+		capability "Battery"
+		capability "Refresh"
 		capability "Actuator"
-		capability "Health Check" 
-		capability "Window Shade" 
-		capability "Window Shade Preset"	
+		capability "Health Check"
+		capability "Window Shade"
+		capability "Window Shade Preset"
 
 		command "stop"
 
@@ -78,7 +78,7 @@ metadata {
 
 		preferences {
 			input "preset", "number", title: "Preset position", defaultValue: 50, range: "1..99", required: false, displayDuringSetup: false
-			input "reverse", "bool", title: "Reverse", description: "Reverse Blind Direction",defaultValue: false, required: false , displayDuringSetup: false 
+			input "reverse", "bool", title: "Reverse", description: "Reverse Blind Direction",defaultValue: false, required: false , displayDuringSetup: false
 		}
 
 		main(["windowShade"])
@@ -102,7 +102,7 @@ def parse(String description) {
 def getCheckInterval() {
 	// iblinds is a battery-powered device, and it's not very critical
 	// to know whether they're online or not – 12 hrs
-	12 * 60 * 60 //12 hours 
+	12 * 60 * 60 //12 hours
 }
 
 def installed() {
@@ -178,25 +178,25 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 
 def open() {
 	log.debug "open()"
-	// Blinds fully open at 50% 
-	level =50  
+	// Blinds fully open at 50%
+	level =50
 	sendEvent(name: "windowShade", value: "open")
-	sendEvent(name: "level", value: 50, unit: "%",displayed: true) 
+	sendEvent(name: "level", value: 50, unit: "%",displayed: true)
 	zwave.switchMultilevelV3.switchMultilevelSet(value: 50).format()
 }
 
 def close() {
 	log.debug "close()"
-	   
+
 	if(reverse){
 		 sendEvent(name: "windowShade", value: "closed")
-		 sendEvent(name: "level", value: 0, unit: "%",displayed: true) 
+		 sendEvent(name: "level", value: 0, unit: "%",displayed: true)
 		 zwave.switchMultilevelV3.switchMultilevelSet(value: 0x63).format()
 
-	} else 
+	} else
 	{
 		 sendEvent(name: "windowShade", value: "closed")
-		 sendEvent(name: "level", value: 0, unit: "%",displayed: true) 
+		 sendEvent(name: "level", value: 0, unit: "%",displayed: true)
 		 zwave.switchMultilevelV3.switchMultilevelSet(value: 0).format()
 	}
 }
@@ -207,7 +207,7 @@ def setLevel(value, duration = null) {
 
 	log.debug "setLevel(${value.inspect()})"
 	Integer level = value as Integer
-	 
+
 	if (level < 0) level = 0
 	if (level > 99) level = 99
 	Integer tiltLevel = level as Integer //we will use this value to decide what level is sent to device (reverse or not reversed)
@@ -216,23 +216,23 @@ def setLevel(value, duration = null) {
 	{
 		tiltLevel = 99 - level
 	}
-       
-	if (level <= 0) 
+
+	if (level <= 0)
 	{
-		//level =0  
+		//level =0
 		sendEvent(name: "windowShade", value: "closed")
 	} else if (level >= 99) {
-		level = 99  
+		level = 99
 		sendEvent(name: "windowShade", value: "closed")
 	} else if (level == 50) {
-	   // level = 50  
+	   // level = 50
 		sendEvent(name: "windowShade", value: "open")
 	} else {
-		descriptionText = "${device.displayName} tilt level is ${level}% open"   
+		descriptionText = "${device.displayName} tilt level is ${level}% open"
 		sendEvent(name: "windowShade", value: "partially open" , descriptionText: descriptionText) //, isStateChange: levelEvent.isStateChange )
 	}
 	//log.debug "Level - ${level}%  & Tilt Level - ${tiltLevel}%"
-	sendEvent(name: "level", value: level,  descriptionText: descriptionText) 
+	sendEvent(name: "level", value: level,  descriptionText: descriptionText)
 	zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
 
 }
