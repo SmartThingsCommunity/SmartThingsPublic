@@ -13,7 +13,6 @@
  */
 import groovy.json.JsonOutput
 
-
 metadata {
 	definition (name: "iblinds Z-Wave", namespace: "iblinds", author: "HABHomeIntel", ocfDeviceType: "oic.d.blind",  mnmn: "SmartThings", vid: "generic-shade-3") {
 		capability "Switch Level"
@@ -84,7 +83,6 @@ metadata {
 
 		main(["windowShade"])
 		details(["windowShade", "home", "refresh", "battery"])
-
 	}
 }
 
@@ -189,15 +187,21 @@ private getSlatDirectionMap() {[
  	UP: 1
 ]}
 
-private deviceEvtToCapability(deviceLevel) {
+private deviceEventToCapability(deviceLevel) {
 	def capabilityLevel = deviceLevel
 	def direction = slatDirectionMap.DOWN
+
+	// TODO: convert percentages based on above to capability level and direction
 
 	return [level: capabilityLevel, direction: direction]
 }
 
-private capabilityEvtToDevice(level, direction) {
+private capabilityEventToDevice(level, direction) {
+	def deviceLevel = level
 
+	// TODO: convert capability level and direction to device percent taking in account user preferences
+
+	return deviceLevel
 }
 
 /**
@@ -228,7 +232,7 @@ private buildWindowShadeEvents(level) {
 }
 
 private handleLevelReport(physicalgraph.zwave.Command cmd) {
-	def shadeLevel = deviceEvtToCapability(cmd.value as Integer)
+	def shadeLevel = deviceEventToCapability(cmd.value as Integer)
 	def result = buildWindowShadeEvents(shadeLevel.level)
 
 	if (!state.lastbatt || now() - state.lastbatt > 24 * 60 * 60 * 1000) {
