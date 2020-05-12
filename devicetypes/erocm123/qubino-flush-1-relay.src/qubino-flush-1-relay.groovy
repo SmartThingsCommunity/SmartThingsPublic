@@ -484,6 +484,11 @@ def update_needed_settings()
        cmds << zwave.associationV2.associationSet(groupingIdentifier:7, nodeId:zwaveHubNodeId)
        cmds << zwave.associationV2.associationGet(groupingIdentifier:7)
     }
+    if(!state.association9 || state.association9 == "" || state.association9 != 1){
+       logging("Setting association group 9", 1)
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:9, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:9)
+    }
 
     configuration.Value.each
     {     
