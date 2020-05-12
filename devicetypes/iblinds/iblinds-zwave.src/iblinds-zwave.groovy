@@ -25,9 +25,7 @@ metadata {
 		capability "Health Check"
 		capability "Window Shade"
 		capability "Window Shade Preset"
-
-		command "stop"
-
+		capability "Window Shade Level"
 
 		fingerprint mfr:"0287", prod:"0003", model:"000D", deviceJoinName: "iBlinds Motor"
 		fingerprint mfr:"0287", prod:"0004", model:"0071", deviceJoinName: "iBlinds Motor"
@@ -77,8 +75,8 @@ metadata {
 		}
 
 		preferences {
-			input "preset", "number", title: "Preset position", defaultValue: 50, range: "1..99", required: false, displayDuringSetup: false
-			input "reverse", "bool", title: "Reverse", description: "Reverse Blind Direction",defaultValue: false, required: false , displayDuringSetup: false
+			input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
+			input "reverse", "bool", title: "Reverse", description: "Reverse Blind Direction", defaultValue: false, required: false, displayDuringSetup: false
 		}
 
 		main(["windowShade"])
@@ -149,15 +147,6 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelS
 	[ createEvent(name: "windowShade", value: "partially open", displayed: false, descriptionText: "$device.displayName shade stopped"),  response(zwave.switchMultilevelV1.switchMultilevelGet().format()) ]
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	if (cmd.manufacturerName) {
-		updateDataValue("manufacturer", cmd.manufacturerName)
-	}
-	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	def map = [ name: "battery", unit: "%" ]
 	if (cmd.batteryLevel == 0xFF) {
@@ -179,9 +168,10 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 def open() {
 	log.debug "open()"
 	// Blinds fully open at 50%
-	level =50
+	level = 50
 	sendEvent(name: "windowShade", value: "open")
 	sendEvent(name: "level", value: 50, unit: "%",displayed: true)
+	sendEvent(name: "shadeLevel", value: 50, unit: "%",displayed: true)
 	zwave.switchMultilevelV3.switchMultilevelSet(value: 50).format()
 }
 
@@ -191,21 +181,29 @@ def close() {
 	if(reverse){
 		 sendEvent(name: "windowShade", value: "closed")
 		 sendEvent(name: "level", value: 0, unit: "%",displayed: true)
+		 sendEvent(name: "shadeLevel", value: 0, unit: "%",displayed: true)
 		 zwave.switchMultilevelV3.switchMultilevelSet(value: 0x63).format()
 
 	} else
 	{
 		 sendEvent(name: "windowShade", value: "closed")
 		 sendEvent(name: "level", value: 0, unit: "%",displayed: true)
+		 sendEvent(name: "shadeLevel", value: 0, unit: "%",displayed: true)
 		 zwave.switchMultilevelV3.switchMultilevelSet(value: 0).format()
 	}
 }
 
 def setLevel(value, duration = null) {
+	log.debug "setLevel($value)"
+
+	setShadeLevel(value)
+}
+
+def setShadeLevel(value) {
 	def descriptionText = null
 	def shadeValue = null
 
-	log.debug "setLevel(${value.inspect()})"
+	log.debug "setShadeLevel($value)"
 	Integer level = value as Integer
 
 	if (level < 0) level = 0
@@ -232,7 +230,8 @@ def setLevel(value, duration = null) {
 		sendEvent(name: "windowShade", value: "partially open" , descriptionText: descriptionText) //, isStateChange: levelEvent.isStateChange )
 	}
 	//log.debug "Level - ${level}%  & Tilt Level - ${tiltLevel}%"
-	sendEvent(name: "level", value: level,  descriptionText: descriptionText)
+	sendEvent(name: "level", value: level, unit: "%", descriptionText: descriptionText)
+	sendEvent(name: "shadeLevel", value: level, unit: "%", descriptionText: descriptionText)
 	zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
 
 }
@@ -243,11 +242,6 @@ def presetPosition() {
 
 def pause() {
 	log.debug "pause()"
-	stop()
-}
-
-def stop() {
-	log.debug "stop()"
 	zwave.switchMultilevelV3.switchMultilevelStopLevelChange().format()
 }
 
