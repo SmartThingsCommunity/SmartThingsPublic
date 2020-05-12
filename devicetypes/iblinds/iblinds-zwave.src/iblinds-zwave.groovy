@@ -186,10 +186,11 @@ private getSlatDirectionMap() {[
  	DOWN: 0,
  	UP: 1
 ]}
+private getSlatDefaultDirection() { slatDirectionMap.DOWN }
 
 private deviceEventToCapability(deviceLevel) {
 	def capabilityLevel = deviceLevel
-	def direction = slatDirectionMap.DOWN
+	def direction = slatDefaultDirection // Just a filler
 
 	// TODO: convert percentages based on above to capability level and direction
 
@@ -273,34 +274,17 @@ def setLevel(value, duration = null) {
 }
 
 def setShadeLevel(value) {
-	def descriptionText = null
+	def results = []
+	Integer level = Math.max(Math.min((value as Integer), 100), 0)
+	Integer tiltLevel = capabilityEventToDevice(level, slatDefaultDirection)
 
-	log.debug "setShadeLevel($value)"
-	Integer level = Math.max(Math.min((value as Integer), 99), 0)
-	Integer tiltLevel = level / 2 // we will use this value to decide what level is sent to device (reverse or not reversed)
+	log.debug "setShadeLevel($value) -> tiltLevel $tiltLevel"
 
-	if (reverse) {  // Check to see if user wants blinds to operate in reverse direction
-		tiltLevel = 99 - level
-	}
+	//result = buildWindowShadeEvents(level)
 
-	if (level <= 0) {
-		//level = 0
-		sendEvent(name: "windowShade", value: "closed")
-	} else if (level >= 99) {
-		level = 99
-		sendEvent(name: "windowShade", value: "closed")
-	} else if (level == 50) {
-		sendEvent(name: "windowShade", value: "open")
-	} else {
-		descriptionText = "${device.displayName} tilt level is ${level}% open"
-		sendEvent(name: "windowShade", value: "partially open" , descriptionText: descriptionText)
-	}
+	results << zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
 
-	//log.debug "Level - ${level}%  & Tilt Level - ${tiltLevel}%"
-	sendEvent(name: "level", value: level, unit: "%", descriptionText: descriptionText)
-	sendEvent(name: "shadeLevel", value: level, unit: "%", descriptionText: descriptionText)
-
-	zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
+	return results
 }
 
 def presetPosition() {
