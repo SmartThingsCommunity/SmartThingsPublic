@@ -23,11 +23,11 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint inClusters: "0x62"
-		fingerprint mfr: "010E", prod: "0009", model: "0001", deviceJoinName: "Danalock V3 Smart Lock"
-		fingerprint mfr: "0090", prod: "0003", model: "0446", deviceJoinName: "Kwikset Convert Deadbolt Door Lock" //99140
-		fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Smart Lock Pro"
-		fingerprint mfr: "021D", prod: "0003", model: "0001", deviceJoinName: "Alfred Smart Home Touchscreen Deadbolt" // DB2
+		fingerprint inClusters: "0x62", deviceJoinName: "Door Lock"
+		fingerprint mfr: "010E", prod: "0009", model: "0001", deviceJoinName: "Danalock Door Lock" //Danalock V3 Smart Lock
+		fingerprint mfr: "0090", prod: "0003", model: "0446", deviceJoinName: "Kwikset Door Lock" //99140 //Kwikset Convert Deadbolt Door Lock
+		fingerprint mfr: "033F", prod: "0001", model: "0001", deviceJoinName: "August Door Lock" //August Smart Lock Pro
+		fingerprint mfr: "021D", prod: "0003", model: "0001", deviceJoinName: "Alfred Door Lock" // DB2 //Alfred Smart Home Touchscreen Deadbolt
 	}
 
 	simulator {

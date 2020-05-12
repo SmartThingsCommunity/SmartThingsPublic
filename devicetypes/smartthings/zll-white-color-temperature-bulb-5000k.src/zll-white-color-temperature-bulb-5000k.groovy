@@ -39,7 +39,7 @@ metadata {
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300, 0B05, 1000", outClusters: "0005, 0019, 0020, 1000", manufacturer: "IKEA of Sweden", model: "TRADFRI bulb E27 WS opal 980lm", deviceJoinName: "IKEA Light", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-4000K" //IKEA TRÅDFRI White Spectrum LED Bulb
 
 		// Innr
-		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RS 128 T", deviceJoinName: "Innr Light" //Innr Smart Spot Tunable White
+		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RS 128 T", deviceJoinName: "Innr Light", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K" //Innr Smart Spot Tunable White
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 178 T", deviceJoinName: "Innr Light" //Innr Smart Bulb Tunable White
 		fingerprint profileId: "C05E", inClusters: "0000, 0003, 0004, 0005, 0006, 0008, 0300", outClusters: "0019", manufacturer: "innr", model: "RB 148 T", deviceJoinName: "Innr Light", mnmn: "SmartThings", vid: "generic-color-temperature-bulb-2200K-5000K" //Innr Smart Bulb Tunable White
 	}
