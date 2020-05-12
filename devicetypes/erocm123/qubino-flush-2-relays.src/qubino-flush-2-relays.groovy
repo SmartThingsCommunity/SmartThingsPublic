@@ -412,6 +412,12 @@ def update_needed_settings() {
 
     cmds << zwave.associationV2.associationSet(groupingIdentifier: 1, nodeId: zwaveHubNodeId)
     cmds << zwave.associationV2.associationGet(groupingIdentifier: 1)
+	
+    if(!state.association8 || state.association8 == "" || state.association8 != 1){
+       logging("Setting association group 8", 1)
+       cmds << zwave.associationV2.associationSet(groupingIdentifier:8, nodeId:zwaveHubNodeId)
+       cmds << zwave.associationV2.associationGet(groupingIdentifier:8)
+    }
     
     configuration.Value.each {
         if ("${it.@setting_type}" == "zwave" && it.@disabled != "true") {
