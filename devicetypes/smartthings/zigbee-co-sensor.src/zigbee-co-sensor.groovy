@@ -28,8 +28,9 @@ metadata {
 		capability "Refresh"
 		capability "Health Check"
 
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "CO_00.00.00.22TC", deviceJoinName: "Ozom Smart Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide"
-		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "CO_00.00.00.15TC", deviceJoinName: "Ozom Smart Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide"
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "CO_00.00.00.22TC", deviceJoinName: "Ozom Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide" //Ozom Smart Carbon Monoxide Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500", outClusters: "0000", manufacturer: "ClimaxTechnology", model: "CO_00.00.00.15TC", deviceJoinName: "Ozom Carbon Monoxide Sensor", mnmn: "SmartThings", vid: "generic-carbon-monoxide" //Ozom Smart Carbon Monoxide Sensor
+		fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0001,0003,0500", outClusters: "0000", manufacturer: "HEIMAN", model: "COSensor-EM", deviceJoinName: "HEIMAN Carbon Monoxide Sensor" //HEIMAN CO Sensor
 	}
 
 	tiles {

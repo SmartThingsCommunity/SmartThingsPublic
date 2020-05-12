@@ -18,6 +18,7 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 		capability "Refresh"
+		capability "Configuration"
 	}
 
 	tiles(scale: 2) {

@@ -28,7 +28,7 @@ metadata {
 
 		command "changeMode"
 
-		fingerprint mfr: "0159", prod: "0005", model: "0054", deviceJoinName: "Qubino Flush On/Off Thermostat 2"
+		fingerprint mfr: "0159", prod: "0005", model: "0054", deviceJoinName: "Qubino Thermostat" //Qubino Flush On/Off Thermostat 2
 	}
 
 	tiles(scale: 2) {
@@ -331,9 +331,9 @@ private getCurrentSetpointType() {
 }
 
 private getMaxSetpointTemperature() {
-		temperatureScale == 'C' ? 40 : 104
+		temperatureScale == 'C' ? 80 : 176
 }
 
 private getMinSetpointTemperature() {
-		temperatureScale == 'C' ? -12 : 11
+		temperatureScale == 'C' ? -25 : -13
 }

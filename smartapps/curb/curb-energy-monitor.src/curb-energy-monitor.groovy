@@ -26,7 +26,9 @@ definition(
     iconUrl: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX2Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
     iconX3Url: "http://energycurb.com/wp-content/uploads/2015/12/curb-web-logo.png",
-    singleInstance: true
+    singleInstance: true,
+    usesThirdPartyAuthentication: true,
+    pausable: false
 ) {
     appSetting "clientId"
     appSetting "clientSecret"

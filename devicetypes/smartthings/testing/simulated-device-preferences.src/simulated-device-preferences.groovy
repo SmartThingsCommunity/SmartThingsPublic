@@ -22,31 +22,49 @@ metadata {
 
 	preferences {
 		section {
-			input(title: "Section 1 Title",
-					description: "Section 1 Description",
+			input(title: "======= Enum Types Title =======",
+					description: "Enum Types Description",
 					displayDuringSetup: false,
 					type: "paragraph",
 					element: "paragraph")
-			input("textInput", "text",
-					title: "Text Title",
-					description: "Text Description",
-					defaultValue: "default value",
-					required: false)
 			input("enumInput", "enum",
 					title: "Enum Title (key/value options)",
 					description: "Enum Description (key/value options)",
-					options: ["Option1Key":"Option 1 Value", "Option2Key":"Option 2 Value", "Option3Key":"Option 3 Value", "Option4Key":"Option 4 Value"],
-					defaultValue: "Option1Key",
+					options: ["Enum1 - Option A Key": "Enum1 - Option A Value",
+							  "Enum1 - Option B Key": "Enum1 - Option B Value",
+							  "Enum1 - Option C Key": "Enum1 - Option C Value",
+							  "Enum1 - Option D Key": "Enum1 - Option D Value"],
+					defaultValue: "Enum1 - Option A Key",
 					required: false)
 			input("enumInput2", "enum",
-					title: "Enum Title 2 (value options)",
-					description: "Enum Description 2 (value options)",
-					options: ["Option 1 Value", "Option 2 Value", "Option 3 Value", "Option 4 Value"],
-					defaultValue: "Option 1 Value",
+					title: "Enum Title 2 (List of options)",
+					description: "Enum Description 2 (List of options)",
+					options: ["Enum2 - Option A Value",
+							  "Enum2 - Option B Value",
+							  "Enum2 - Option C Value",
+							  "Enum2 - Option D Value"],
+					defaultValue: "Enum2 - Option A Value",
 					required: false)
 			input("enumInput3", "enum",
-					title: "Enum Title 3 (no options)", description: "Enum Description 3 (no options)",
+					title: "Enum Title 3 (Lists of Maps options)",
+					description: "Enum Description 3 (Lists of Maps options)",
+					options: [
+							["Enum3 - Option A Key": "Enum3 - Option A Value"],
+							["Enum3 - Option B Key": "Enum3 - Option B Value"],
+							["Enum3 - Option C Key": "Enum3 - Option C Value"],
+							["Enum3 - Option D Key": "Enum3 - Option D Value"]],
+					defaultValue: "Enum3 - Option A Key",
 					required: false)
+			input("enumInput4", "enum",
+					title: "Enum Title 4 (no options)", description: "Enum Description 4 (no options)",
+					required: false)
+		}
+		section {
+			input(title: "======= Boolean Types Title =======",
+					description: "Boolean Types Description",
+					displayDuringSetup: false,
+					type: "paragraph",
+					element: "paragraph")
 			input("booleanInput", "boolean",
 					title: "Boolean Title",
 					description: "Boolean Description",
@@ -59,8 +77,8 @@ metadata {
 					required: false)
 		}
 		section {
-			input(title: "Section 2 Title",
-					description: "Section 2 Description",
+			input(title: "======= Numerical Types Title =======",
+					description: "Numerical Types Description",
 					displayDuringSetup: false,
 					type: "paragraph",
 					element: "paragraph")
@@ -91,6 +109,19 @@ metadata {
 					title: "Decimal Title",
 					description: "Decimal Description",
 					defaultValue: "5.0",
+					required: false)
+
+		}
+		section {
+			input(title: "======= Other Types Title =======",
+					description: "Other Types Description",
+					displayDuringSetup: false,
+					type: "paragraph",
+					element: "paragraph")
+			input("textInput", "text",
+					title: "Text Title",
+					description: "Text Description",
+					defaultValue: "default value",
 					required: false)
 			input("passInput", "password",
 					title: "Password Title",
@@ -134,6 +165,7 @@ def updated() {
 		enumInput: enumInput,
 		enumInput2: enumInput2,
 		enumInput3: enumInput3,
+		enumInput4: enumInput4,
 		numInput: numInput,
 		numInput2: numInput2,
 		numInput3: numInput3,
@@ -141,8 +173,11 @@ def updated() {
 		passInput: passInput,
 		textInput: textInput
 	]
-	log.debug "Current preferences: ${state.preferences}"
-	log.debug "New preferences: ${newPreferences}"
+	newPreferences.each { k, v ->
+		if (state.preferences[k] != v) {
+			log.debug "Changing preference '$k' from '${state.preferences[k]}' to '$v'"
+		}
+	}
 	state.preferences = newPreferences
 }
 

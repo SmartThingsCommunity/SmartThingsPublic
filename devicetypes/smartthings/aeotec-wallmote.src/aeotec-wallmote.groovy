@@ -19,13 +19,13 @@ metadata {
         capability "Actuator"
         capability "Button"
         capability "Battery"
-        capability "Holdable Button"
         capability "Configuration"
         capability "Sensor"
         capability "Health Check"
 
-        fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Wallmote Quad", mnmn: "SmartThings", vid: "generic-4-button"
-        fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Wallmote", mnmn: "SmartThings", vid: "generic-2-button"
+        fingerprint mfr: "0086", model: "0082", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-4-button" //Aeotec Wallmote Quad
+        fingerprint mfr: "0086", model: "0081", deviceJoinName: "Aeotec Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Aeotec Wallmote
+        fingerprint mfr: "0060", model: "0003", deviceJoinName: "Everspring Remote Control", mnmn: "SmartThings", vid: "generic-2-button" //Everspring Wall Switch
     }
 
     tiles(scale: 2) {
@@ -44,14 +44,14 @@ metadata {
 }
 
 def getNumberOfButtons() {
-    def modelToButtons = ["0082" : 4, "0081": 2]
+    def modelToButtons = ["0082" : 4, "0081": 2, "0003": 2]
     return modelToButtons[zwaveInfo.model] ?: 1
 }
 
 def installed() {
     createChildDevices()
     sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
-    sendEvent(name: "supportedButtonValues", value: ["pushed", "held"].encodeAsJson(), displayed: false)
+    sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJson(), displayed: false)
     sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], displayed: false)
 }
 
@@ -90,17 +90,13 @@ def parse(String description) {
 
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
     def button = cmd.sceneNumber
-    def value
-    // 0 = pushed, 1 = released, 2 = held down
-    if (cmd.keyAttributes != 2) {
-        value = cmd.keyAttributes == 1 ? "held" : "pushed"
-    } else {
-        // we can't do anything with the held down event yet
-        return []
+
+    def value = buttonAttributesMap[(int)cmd.keyAttributes]
+    if (value) {
+        def child = getChildDevice(button)
+        child?.sendEvent(name: "button", value: value, data: [buttonNumber: 1], descriptionText: "$child.displayName was $value", isStateChange: true)
+        createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true, displayed: false)
     }
-    def child = getChildDevice(button)
-    child?.sendEvent(name: "button", value: value, data: [buttonNumber: 1], descriptionText: "$child.displayName was $value", isStateChange: true)
-    createEvent(name: "button", value: value, data: [buttonNumber: button], descriptionText: "$device.displayName button $button was $value", isStateChange: true)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
@@ -149,14 +145,14 @@ def createChildDevices() {
             child = addChildDevice("Child Button", "${device.deviceNetworkId}:${i}", device.hubId,
                     [completedSetup: true, label: "${device.displayName} button ${i}",
                      isComponent: true, componentName: "button$i", componentLabel: "Button $i"])
-            child.sendEvent(name: "supportedButtonValues", value: ["pushed", "held"].encodeAsJson(), displayed: false)
+            child.sendEvent(name: "supportedButtonValues", value: supportedButtonValues.encodeAsJson(), displayed: false)
             child.sendEvent(name: "button", value: "pushed", data: [buttonNumber: 1], descriptionText: "$child.displayName was pushed", isStateChange: true, displayed: false)
         }
     }
 }
 
 def secure(cmd) {
-    if (zwaveInfo.zw.endsWith("s")) {
+    if (zwaveInfo.zw.contains("s")) {
         zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
     } else {
         cmd.format()
@@ -171,3 +167,29 @@ def getChildDevice(button) {
     }
     return child
 }
+
+private getSupportedButtonValues() {
+    if (isEverspring()) {
+        return ["pushed", "held", "double"]
+    } else {
+        return ["pushed", "held"]
+    }
+}
+
+private getButtonAttributesMap() {
+    if (isEverspring()) {[
+            0: "pushed",
+            2: "held",
+            3: "double"
+    ]}
+    else {[
+            0: "pushed",
+            1: "held"
+    ]}
+}
+
+private isEverspring() {
+    zwaveInfo.model.equals("0003")
+}
+
+

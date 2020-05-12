@@ -27,10 +27,6 @@ metadata {
 		capability "Sensor"
 
 		command "reset"
-
-		fingerprint inClusters: "0x26,0x33,0x98"
-		fingerprint deviceId: "0x11", inClusters: "0x98,0x33"
-		fingerprint deviceId: "0x1102", inClusters: "0x98"
 	}
 
 	simulator {

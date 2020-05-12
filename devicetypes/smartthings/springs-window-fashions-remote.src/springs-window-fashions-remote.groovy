@@ -16,8 +16,8 @@ metadata {
 
         capability "Battery"
 
-        fingerprint mfr:"026E", prod:"5643", model:"5A31", deviceJoinName: "2 Button Window Remote"
-        fingerprint mfr:"026E", prod:"4252", model:"5A31", deviceJoinName: "3 Button Window Remote"
+        fingerprint mfr:"026E", prod:"5643", model:"5A31", deviceJoinName: "Springs Remote Control" //2 Button Window Remote
+        fingerprint mfr:"026E", prod:"4252", model:"5A31", deviceJoinName: "Springs Remote Control" //3 Button Window Remote
     }
 
     simulator {
@@ -107,7 +107,7 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private getDeviceIsSecure() {
     if (zwaveInfo && zwaveInfo.zw) {
-        return zwaveInfo.zw.endsWith("s")
+        return zwaveInfo.zw.contains("s")
     } else {
         return state.sec ? true : false
     }

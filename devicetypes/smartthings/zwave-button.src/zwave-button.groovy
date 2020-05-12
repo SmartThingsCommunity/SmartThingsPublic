@@ -23,10 +23,11 @@ metadata {
 		capability "Health Check"
 		capability "Configuration"
 
-		fingerprint mfr: "010F", prod: "0F01", model: "1000", deviceJoinName: "Fibaro Button"
-		fingerprint mfr: "010F", prod: "0F01", model: "2000", deviceJoinName: "Fibaro Button"
-		fingerprint mfr: "0371", prod: "0102", model: "0004", deviceJoinName: "Aeotec NanoMote One" //US
-		fingerprint mfr: "0371", prod: "0002", model: "0004", deviceJoinName: "Aeotec NanoMote One" //EU
+		fingerprint mfr: "010F", prod: "0F01", model: "1000", deviceJoinName: "Fibaro Button" //Fibaro Button
+		fingerprint mfr: "010F", prod: "0F01", model: "2000", deviceJoinName: "Fibaro Button" //Fibaro Button
+		fingerprint mfr: "010F", prod: "0F01", model: "3000", deviceJoinName: "Fibaro Button" //Fibaro Button
+		fingerprint mfr: "0371", prod: "0102", model: "0004", deviceJoinName: "Aeotec Button" //US //Aeotec NanoMote One
+		fingerprint mfr: "0371", prod: "0002", model: "0004", deviceJoinName: "Aeotec Button" //EU //Aeotec NanoMote One
 	}
 
 	tiles(scale: 2) {
@@ -133,7 +134,7 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 private secure(cmd) {
-	if(zwaveInfo.zw.endsWith("s")) {
+	if(zwaveInfo.zw.contains("s")) {
 		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 	} else {
 		cmd.format()

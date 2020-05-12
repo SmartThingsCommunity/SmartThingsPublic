@@ -28,18 +28,22 @@ metadata {
 		capability "Tamper Alert"
 		capability "Health Check"
 
-		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71"
-		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "NEO Coolcam Siren Alarm"
-		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren"
-		fingerprint mfr: "0060", prod: "000C", model: "0001", deviceJoinName: "Utilitech Siren"
+		fingerprint inClusters: "0x20,0x25,0x86,0x80,0x85,0x72,0x71", deviceJoinName: "Siren"
+		fingerprint mfr: "0258", prod: "0003", model: "0088", deviceJoinName: "NEO Coolcam Siren" //NEO Coolcam Siren Alarm
+		fingerprint mfr: "021F", prod: "0003", model: "0088", deviceJoinName: "Dome Siren" //Dome Siren
+		fingerprint mfr: "0060", prod: "000C", model: "0001", deviceJoinName: "Utilitech Siren" //Utilitech Siren
 		//zw:F type:1005 mfr:0131 prod:0003 model:1083 ver:2.17 zwv:6.02 lib:06 cc:5E,9F,55,73,86,85,8E,59,72,5A,25,71,87,70,80,6C role:07 ff:8F00 ui:8F00
-		fingerprint mfr: "0131", prod: "0003", model: "1083", deviceJoinName: "Zipato Siren Alarm"
+		fingerprint mfr: "0131", prod: "0003", model: "1083", deviceJoinName: "Zipato Siren" //Zipato Siren Alarm
 		//zw:F type:1005 mfr:0258 prod:0003 model:1088 ver:2.94 zwv:4.38 lib:06 cc:5E,86,72,5A,73,70,85,59,25,71,87,80 role:07 ff:8F00 ui:8F00 (EU)
-		fingerprint mfr: "0258", prod: "0003", model: "1088", deviceJoinName: "NEO Coolcam Siren Alarm"
+		fingerprint mfr: "0258", prod: "0003", model: "1088", deviceJoinName: "NEO Coolcam Siren" //NEO Coolcam Siren Alarm
 		//zw:Fs type:1005 mfr:0129 prod:6F01 model:0001 ver:1.04 zwv:4.33 lib:03 cc:5E,80,5A,72,73,86,70,98 sec:59,2B,71,85,25,7A role:07 ff:8F00 ui:8F00
-		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale External Siren"
-		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Outdoor Solar Siren", vid: "generic-siren-12"
-		fingerprint mfr: "0154", prod: "0004", model: "0002", deviceJoinName: "POPP Solar Outdoor Siren", vid: "generic-siren-12"
+		fingerprint mfr: "0129", prod: "6F01", model: "0001", deviceJoinName: "Yale Siren" //Yale External Siren
+		fingerprint mfr: "0060", prod: "000C", model: "0002", deviceJoinName: "Everspring Siren", vid: "generic-siren-12" //Everspring Outdoor Solar Siren
+		fingerprint mfr: "0154", prod: "0004", model: "0002", deviceJoinName: "POPP Siren", vid: "generic-siren-12" //POPP Solar Outdoor Siren
+		fingerprint mfr: "0109", prod: "2005", model: "0518", deviceJoinName: "Vision Siren" //Vision Outdoor Siren
+		fingerprint mfr: "0258", prod: "0003", model: "6088", deviceJoinName: "NEO Coolcam Siren"//AU //NEO Coolcam Siren Alarm
+		fingerprint mfr: "0258", prod: "0600", model: "1028", deviceJoinName: "NEO Coolcam Siren"//MY //NEO Coolcam Siren Alarm
+		fingerprint mfr: "0109", prod: "2009", model: "0908", deviceJoinName: "Vision Siren" //Vision Indoor Siren
 	}
 
 	simulator {
@@ -75,13 +79,13 @@ metadata {
 
 		// Yale siren only
 		preferences {
-			input name: "alarmLength", type: "number", title: "Alarm length", range: "1..10"
+			input name: "alarmLength", type: "number", title: "Alarm length", description: "This setting does not apply to all devices", range: "1..10"
 			// defaultValue: 10
-			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash"
+			input name: "alarmLEDflash", type: "bool", title: "Alarm LED flash", description: "This setting does not apply to all devices"
 			// defaultValue: false
-			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec.)", range: "0..25"
+			input name: "comfortLED", type: "number", title: "Comfort LED (x10 sec.)", description: "This setting does not apply to all devices", range: "0..25"
 			// defaultValue: 0
-			input name: "tamper", type: "bool", title: "Tamper alert"
+			input name: "tamper", type: "bool", title: "Tamper alert", description: "This setting does not apply to all devices"
 			// defaultValue: false
 		}
 
@@ -130,7 +134,7 @@ def initialize() {
 		log.warn "Initializition of ${device.displayName} has failed with too many attempts"
 		return
 	}
-	
+
 	def cmds = []
 
 	if (!device.currentState("alarm")) {
@@ -140,7 +144,7 @@ def initialize() {
 		}
 	}
 	if (!device.currentState("battery")) {
-		if (zwaveInfo?.cc?.contains("80")) {
+		if (zwaveInfo?.cc?.contains("80") || zwaveInfo?.sec?.contains("80")) {
 			cmds << secure(zwave.batteryV1.batteryGet())
 		} else {
 			// Right now this DTH assumes all devices are battery powered, in the event a device is wall powered we should populate something
@@ -181,6 +185,10 @@ def getYaleDefaults() {
 	 2: true,
 	 3: 0,
 	 4: false]
+}
+
+def getEverspringDefaultAlarmLength() {
+	return 180
 }
 
 def getConfigurationCommands() {
@@ -228,13 +236,27 @@ def getConfigurationCommands() {
 		// if there's nothing to configure, we're configured
 		state.configured = true
 	}
+
+	if (isEverspring()) {
+		if (!state.alarmLength) {
+			state.alarmLength = everspringDefaultAlarmLength
+		}
+		Short alarmLength = (settings.alarmLength as Short) ?: everspringDefaultAlarmLength
+
+		if (alarmLength != state.alarmLength) {
+			alarmLength = calcEverspringAlarmLen(alarmLength)
+			state.alarmLength = alarmLength
+			log.debug "alarm settings: ${alarmLength}"
+		}
+		cmds << secure(zwave.configurationV2.configurationSet(parameterNumber: 1, size: 2, configurationValue: [0,alarmLength]))
+	}
+
 	if (cmds.size > 0) {
 		// send this last to confirm we were heard
 		cmds << secure(zwave.configurationV2.configurationGet(parameterNumber: 1))
 	}
 	cmds
 }
-
 
 def poll() {
 	if (secondsPast(state.lastbatt, 36 * 60 * 60)) {
@@ -317,11 +339,11 @@ def parse(String description) {
 			result = createEvent(descriptionText: description, displayed: false)
 		} else {
 			result = createEvent(
-				descriptionText: "This device failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
-				eventType: "ALERT",
-				name: "secureInclusion",
-				value: "failed",
-				displayed: true,
+					descriptionText: "This device failed to complete the network security key exchange. If you are unable to control it via SmartThings, you must remove it from your network and add it again.",
+					eventType: "ALERT",
+					name: "secureInclusion",
+					value: "failed",
+					displayed: true,
 			)
 		}
 	} else {
@@ -367,6 +389,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	} else {
 		state.configured = true
 	}
+	log.debug "configuration report: ${cmd}"
 	return [:]
 }
 
@@ -437,7 +460,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 			case 0x03: //Tamper switch is pressed more than 3 sec and released
 				result << createEvent([name: "tamper", value: "detected"])
 				result << createEvent([name: "alarm", value: "both"])
-			break
+				break
 		}
 	}
 	result
@@ -458,6 +481,16 @@ private Boolean secondsPast(timestamp, seconds) {
 		}
 	}
 	return (new Date().time - timestamp) > (seconds * 1000)
+}
+
+def calcEverspringAlarmLen(int alarmLength) {
+	//If the siren is Everspring then the alarm length can be set to 1, 2 or max 3 minutes
+	def map = [1:60, 2:120, 3:180]
+	if (alarmLength > 3) {
+		return everspringDefaultAlarmLength
+	} else {
+		return map[alarmLength].value
+	}
 }
 
 def isYale() {

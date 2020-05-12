@@ -24,7 +24,7 @@ metadata {
 		attribute "temperatureAlarm", "string"
 		attribute "multiStatus", "string"
 
-		fingerprint mfr: "010F", prod: "0702"
+		fingerprint mfr: "010F", prod: "0702", deviceJoinName: "Fibaro Open/Closed Sensor"
 	}
 
 	tiles (scale: 2) {
@@ -72,16 +72,6 @@ metadata {
 	}
 		
 	preferences {
-		
- 		input (
-			title: "Fibaro Door/Window Sensor 2",
-			description: "Tap to view the manual.",
-			image: "http://manuals.fibaro.com/wp-content/uploads/2017/05/dws2.jpg",
-			url: "http://manuals.fibaro.com/content/manuals/en/FGDW-002/FGDW-002-EN-T-v1.0.pdf",
-			type: "href",
-			element: "href"
-		)
-		
 		input (
 			title: "Wake up interval",
 			description: "How often should your device automatically sync with the HUB. The lower the value, the shorter the battery life.\n0 or 1-18 (in hours)",
@@ -430,7 +420,7 @@ private crcEncap(physicalgraph.zwave.Command cmd) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) { 
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){ 
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd","debug")

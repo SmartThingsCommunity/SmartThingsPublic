@@ -32,8 +32,8 @@ metadata {
         //
 //        fingerprint type: "0x1107", cc: "0x5E,0x26", deviceJoinName: "Window Shade"
 //        fingerprint type: "0x9A00", cc: "0x5E,0x26", deviceJoinName: "Window Shade"
-        fingerprint mfr:"026E", prod:"4353", model:"5A31", deviceJoinName: "Window Shade"
-        fingerprint mfr:"026E", prod:"5253", model:"5A31", deviceJoinName: "Roller Shade"
+        fingerprint mfr:"026E", prod:"4353", model:"5A31", deviceJoinName: "Springs Window Treatment" //Window Shade
+        fingerprint mfr:"026E", prod:"5253", model:"5A31", deviceJoinName: "Springs Window Treatment" //Roller Shade
     }
 
     simulator {
@@ -200,7 +200,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
         map.value = cmd.batteryLevel
     }
     state.lastbatt = now()
-    if (map.value <= 1 && device.latestValue("battery") - map.value > 20) {
+    if (map.value <= 1 && device.latestValue("battery") != null && device.latestValue("battery") - map.value > 20) {
         // Springs shades sometimes erroneously report a low battery when rapidly actuated manually. They'll still
         // refuse to actuate after one of these reports, but this will limit the bad data that gets surfaced
         log.warn "Erroneous battery report dropped from ${device.latestValue("battery")} to $map.value. Not reporting"

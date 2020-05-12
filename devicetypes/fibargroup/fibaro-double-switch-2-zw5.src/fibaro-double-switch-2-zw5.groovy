@@ -13,9 +13,9 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr: "010F", prod: "0203", model: "2000"
-		fingerprint mfr: "010F", prod: "0203", model: "1000"
-		fingerprint mfr: "010F", prod: "0203", model: "3000"
+		fingerprint mfr: "010F", prod: "0203", model: "2000", deviceJoinName: "Fibaro Switch"
+		fingerprint mfr: "010F", prod: "0203", model: "1000", deviceJoinName: "Fibaro Switch"
+		fingerprint mfr: "010F", prod: "0203", model: "3000", deviceJoinName: "Fibaro Switch"
 	  }
 
 	tiles (scale: 2) {
@@ -43,15 +43,6 @@ metadata {
 	}
 
 	preferences {
-		input (
-				title: "Fibaro Double Switch 2 ZW5 manual",
-				description: "Tap to view the manual.",
-				image: "http://manuals.fibaro.com/wp-content/uploads/2016/08/switch2_icon.jpg",
-				url: "http://manuals.fibaro.com/content/manuals/en/FGS-2x3/FGS-2x3-EN-T-v1.2.pdf",
-				type: "href",
-				element: "href"
-		)
-
 		parameterMap().each {
 			input (
 					title: "${it.num}. ${it.title}",
@@ -304,7 +295,7 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelassociationv2.MultiChann
 }
 
 //event handlers
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
+def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep=null) {
 	log.debug "BasicReport - "+cmd
 	//ignore
 }
@@ -429,6 +420,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
 	if (encapsulatedCommand) {
 		logging("${device.displayName} - Parsed MultiChannelCmdEncap ${encapsulatedCommand}")
@@ -480,7 +479,7 @@ private encap(Map encapMap) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")){
+	} else if (zwaveInfo?.cc?.contains("56")){
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd","info")

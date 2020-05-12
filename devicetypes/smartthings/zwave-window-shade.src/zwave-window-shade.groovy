@@ -30,8 +30,8 @@ metadata {
 
         // This device handler is specifically for non-SWF position-aware window coverings
         //
-        fingerprint type: "0x1107", cc: "0x5E,0x26", deviceJoinName: "Window Shade"
-        fingerprint type: "0x9A00", cc: "0x5E,0x26", deviceJoinName: "Window Shade"
+        fingerprint type: "0x1107", cc: "0x5E,0x26", deviceJoinName: "Window Treatment" //Window Shade
+        fingerprint type: "0x9A00", cc: "0x5E,0x26", deviceJoinName: "Window Treatment" //Window Shade
 //        fingerprint mfr:"026E", prod:"4353", model:"5A31", deviceJoinName: "Window Blinds"
 //        fingerprint mfr:"026E", prod:"5253", model:"5A31", deviceJoinName: "Roller Shade"
     }
@@ -80,7 +80,7 @@ metadata {
         }
 
         preferences {
-            input "preset", "number", title: "Preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
+            input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
         }
 
         main(["windowShade"])

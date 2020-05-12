@@ -17,10 +17,10 @@ metadata {
 
 		command "forceSync"
 
-		fingerprint mfr: "010F", prod: "0B01", model: "1002"
-		fingerprint mfr: "010F", prod: "0B01", model: "1003"
-		fingerprint mfr: "010F", prod: "0B01", model: "2002"
-		fingerprint mfr: "010F", prod: "0B01"
+		fingerprint mfr: "010F", prod: "0B01", model: "1002", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr: "010F", prod: "0B01", model: "1003", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr: "010F", prod: "0B01", model: "2002", deviceJoinName: "Fibaro Water Leak Sensor"
+		fingerprint mfr: "010F", prod: "0B01", deviceJoinName: "Fibaro Water Leak Sensor"
 	}
 
 	tiles(scale: 2) {
@@ -69,14 +69,13 @@ metadata {
 
 	preferences {
 		input(
-				title: "Fibaro Flood Sensor ZW5 manual",
-				description: "Tap to view the manual.",
-				image: "http://manuals.fibaro.com/wp-content/uploads/2017/02/fs_icon.png",
-				url: "http://manuals.fibaro.com/content/manuals/en/FGFS-101/FGFS-101-EN-T-v2.1.pdf",
-				type: "href",
-				element: "href"
+			title: "Fibaro Flood Sensor settings",
+			description: "Device's settings update is executed when device wakes up.\n" +
+					"It may take up to 6 hours (for default wake up interval). \n" +
+					"If you want immediate change, manually wake up device by clicking TMP button once.",
+			type: "paragraph",
+			element: "paragraph"
 		)
-
 		parameterMap().each {
 			getPrefsFor(it)
 		}
@@ -86,7 +85,7 @@ metadata {
 }
 
 def installed(){
-  sendEvent(name: "checkInterval", value: 21600, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+  sendEvent(name: "checkInterval", value: (21600*2)+10*60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 }
 
 //UI Support functions
@@ -170,7 +169,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	if (device.currentValue("syncStatus") != "synced") {
 
 		parameterMap().each {
-			if (device.currentValue("syncStatus") == "force") {
+			if (state."$it.key"?.state != null && device.currentValue("syncStatus") == "force") {
 				state."$it.key".state = "notSynced"
 			}
 
@@ -399,6 +398,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand(cmdVersions())
 	if (encapsulatedCommand) {
 		logging("${device.displayName} - Parsed MultiChannelCmdEncap ${encapsulatedCommand}")
@@ -450,7 +457,7 @@ private encap(Map encapMap) {
 private encap(physicalgraph.zwave.Command cmd) {
 	if (zwaveInfo.zw.contains("s")) {
 		secEncap(cmd)
-	} else if (zwaveInfo.cc.contains("56")) {
+	} else if (zwaveInfo?.cc?.contains("56")) {
 		crcEncap(cmd)
 	} else {
 		logging("${device.displayName} - no encapsulation supported for command: $cmd", "info")

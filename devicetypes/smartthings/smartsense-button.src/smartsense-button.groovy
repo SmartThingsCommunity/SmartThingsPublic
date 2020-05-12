@@ -27,7 +27,7 @@ metadata {
         capability "Health Check"
         capability "Sensor"
 
-        fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "button", deviceJoinName: "Button"
+        fingerprint inClusters: "0000,0001,0003,0020,0402,0500", outClusters: "0019", manufacturer: "Samjin", model: "button", deviceJoinName: "SmartThings Button" //Button
     }
 
     simulator {
@@ -43,7 +43,7 @@ metadata {
             ])
         }
         section {
-            input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
+            input "tempOffset", "number", title: "Temperature offset", description: "Select how many degrees to adjust the temperature.", range: "*..*", displayDuringSetup: false
         }
     }
 

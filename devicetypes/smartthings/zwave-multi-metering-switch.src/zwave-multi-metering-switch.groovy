@@ -24,12 +24,12 @@ metadata {
 
 		command "reset"
 
-		fingerprint mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
-		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Nano Switch 1"
-		fingerprint mfr:"0086", prod:"0203", model:"0084", deviceJoinName: "Aeotec Nano Switch 1" //AU
-		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Nano Switch 1"
-		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz ZEN Power Strip"
-		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Double Plug"
+		fingerprint mfr:"0086", prod:"0003", model:"0084", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
+		fingerprint mfr:"0086", prod:"0103", model:"0084", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
+		fingerprint mfr:"0086", prod:"0203", model:"0084", deviceJoinName: "Aeotec Switch 1" //AU //Aeotec Nano Switch 1
+		fingerprint mfr: "0000", cc: "0x5E,0x25,0x27,0x32,0x81,0x71,0x60,0x8E,0x2C,0x2B,0x70,0x86,0x72,0x73,0x85,0x59,0x98,0x7A,0x5A", ccOut:"0x82", ui:"0x8700", deviceJoinName: "Aeotec Switch 1" //Aeotec Nano Switch 1
+		fingerprint mfr: "027A", prod: "A000", model: "A004", deviceJoinName: "Zooz Switch" //Zooz ZEN Power Strip
+		fingerprint mfr: "027A", prod: "A000", model: "A003", deviceJoinName: "Zooz Switch" //Zooz Double Plug
 	}
 
 	tiles(scale: 2){
@@ -157,6 +157,14 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep = null) {
 	log.debug "Multichannel command ${cmd}" + (ep ? " from endpoint $ep" : "")
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
 }
@@ -322,7 +330,7 @@ private encap(cmd, endpoint = null) {
 			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
 		}
 
-		if (zwaveInfo.zw.endsWith("s")) {
+		if (zwaveInfo.zw.contains("s")) {
 			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
 		} else {
 			cmd.format()
