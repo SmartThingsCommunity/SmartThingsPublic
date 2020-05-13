@@ -262,7 +262,7 @@ private buildWindowShadeEvents(level) {
 		shadeValue = "closed"
 	} else {
 		shadeValue = "partially open"
-		descriptionText = "${device.displayName} tilt is ${shadeLevel.level}% open"
+		descriptionText = "${device.displayName} tilt is ${level}% open"
 	}
 
 	result << createEvent(name: "level", value: level, unit: "%")
