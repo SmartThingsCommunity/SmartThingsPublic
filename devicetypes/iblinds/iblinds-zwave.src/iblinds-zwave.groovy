@@ -1,5 +1,5 @@
 /**
- *  Copyright 2017 SmartThings
+ *  Copyright 2020 SmartThings
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -187,20 +187,57 @@ private getSlatDirectionMap() {[
  	UP: 1
 ]}
 private getSlatDefaultDirection() { slatDirectionMap.DOWN }
+private reverseSlatDirection(direction) {
+	return (direction == slatDirectionMap.DOWN) ? slatDirectionMap.UP : slatDirectionMap.DOWN
+}
 
 private deviceEventToCapability(deviceLevel) {
 	def capabilityLevel = deviceLevel
-	def direction = slatDefaultDirection // Just a filler
+	def direction = slatDefaultDirection
 
-	// TODO: convert percentages based on above to capability level and direction
+	// Convert device percentages based on above to capability level and direction
+	if (deviceLevel == TILTLEVEL_FULLY_OPEN) {
+		capabilityLevel = 100
+	} else if (deviceLevel < TILTLEVEL_FULLY_OPEN) {
+		capabilityLevel = deviceLevel * 2
+		direction = slatDirectionMap.DOWN
+	} else { // if deviceLevel > TILTLEVEL_FULLY_OPEN
+		capabilityLevel = (TILTLEVEL_FULLY_CLOSED_UP - deviceLevel) * 2
+		direction = slatDirectionMap.UP
+	}
+
+	if (reverse) {
+		direction = reverseSlatDirection(direction)
+	}
 
 	return [level: capabilityLevel, direction: direction]
 }
 
 private capabilityEventToDevice(level, direction) {
-	def deviceLevel = level
+	Integer deviceLevel = level
 
-	// TODO: convert capability level and direction to device percent taking in account user preferences
+	if (reverse) {
+		direction = reverseSlatDirection(direction)
+	}
+
+	// Convert capability level and direction to device percent taking in account user preferences
+	if (level == 100) {
+		deviceLevel = TILTLEVEL_FULLY_OPEN
+	} else if (level == 0) {
+		deviceLevel = (direction == slatDirectionMap.DOWN) ? TILTLEVEL_FULLY_CLOSED_DOWN : TILTLEVEL_FULLY_CLOSED_UP
+	} else {
+		if (direction == slatDirectionMap.DOWN) {
+			// Just to make sure that 99% will come out to be 49
+			if (level == 99) level = 98
+
+			deviceLevel = level / 2
+		} else { // if direction == slatDirectionMap.UP
+			deviceLevel = TILTLEVEL_FULLY_CLOSED_UP - (level / 2)
+
+			// Make sure that we aren't out of bounds for the request 95%-99% should become 51
+			if (deviceLevel <= TILTLEVEL_FULLY_OPEN) deviceLevel = (TILTLEVEL_FULLY_OPEN + 1)
+		}
+	}
 
 	return deviceLevel
 }
@@ -209,6 +246,9 @@ private capabilityEventToDevice(level, direction) {
  * Device handler helper function
  */
 
+/**
+ * Given a shade level expressed for the SmartThings capability and generate all necessary ST events.
+ */
 private buildWindowShadeEvents(level) {
 	def result = []
 	def descriptionText = null
@@ -283,6 +323,8 @@ def setShadeLevel(value) {
 	//result = buildWindowShadeEvents(level)
 
 	results << zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
+	results << "delay 15000"
+	results << zwave.switchMultilevelV3.switchMultilevelGet().format()
 
 	return results
 }
