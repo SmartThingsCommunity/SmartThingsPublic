@@ -1,5 +1,5 @@
 /**
- *	Copyright 2015 SmartThings
+ *	Copyright 2020 SmartThings
  *
  *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *	in compliance with the License. You may obtain a copy of the License at:
@@ -9,10 +9,6 @@
  *	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *	for the specific language governing permissions and limitations under the License.
- *
- *	Qubino Flush Dimmer
- *
- *	Copyright 2014 SmartThings
  *
  */
 
@@ -29,11 +25,11 @@ metadata {
 		capability "Energy Meter"
 
 		// Qubino Flush Dimmer - ZMNHDD
-		fingerprint mfr: "0159", prod: "0001", model: "0051", deviceJoinName: "Qubino Flush Dimmer", ocfDeviceType: "oic.d.smartplug"
+		fingerprint mfr: "0159", prod: "0001", model: "0051", deviceJoinName: "Qubino Dimmer Switch", ocfDeviceType: "oic.d.smartplug"
 	}
 
 	tiles(scale: 2) {
-		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true) {
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
@@ -55,71 +51,71 @@ metadata {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		main(["switch","power","energy"])
+		main(["switch"])
 		details(["switch", "level", "power", "energy", "refresh"])
 
 		preferences {
 			// Preferences template begin
 			parameterMap.each {
 				input (
-						title: it.name,
-						description: it.description,
-						type: "paragraph",
-						element: "paragraph"
+					title: it.name,
+					description: it.description,
+					type: "paragraph",
+					element: "paragraph"
 				)
 
 				switch(it.type) {
 					case "boolRange":
 						input(
-								name: it.key + "Boolean",
-								type: "bool",
-								title: "Enable",
-								description: "If you disable this option, it will overwrite setting below.",
-								defaultValue: it.defaultValue != it.disableValue,
-								required: false
+							name: it.key + "Boolean",
+							type: "bool",
+							title: "Enable",
+							description: "If you disable this option, it will overwrite setting below.",
+							defaultValue: it.defaultValue != it.disableValue,
+							required: false
 						)
 						input(
-								name: it.key,
-								type: "number",
-								title: "Set value (range ${it.range})",
-								defaultValue: it.defaultValue,
-								range: it.range,
-								required: false
+							name: it.key,
+							type: "number",
+							title: "Set value (range ${it.range})",
+							defaultValue: it.defaultValue,
+							range: it.range,
+							required: false
 						)
 						break
 					case "boolean":
 						input(
-								type: "paragraph",
-								element: "paragraph",
-								description: "Option enabled: ${it.activeDescription}\n" +
-										"Option disabled: ${it.inactiveDescription}"
+							type: "paragraph",
+							element: "paragraph",
+							description: "Option enabled: ${it.activeDescription}\n" +
+								"Option disabled: ${it.inactiveDescription}"
 						)
 						input(
-								name: it.key,
-								type: "boolean",
-								title: "Enable",
-								defaultValue: it.defaultValue == it.activeOption,
-								required: false
+							name: it.key,
+							type: "boolean",
+							title: "Enable",
+							defaultValue: it.defaultValue == it.activeOption,
+							required: false
 						)
 						break
 					case "enum":
 						input(
-								name: it.key,
-								title: "Select",
-								type: "enum",
-								options: it.values,
-								defaultValue: it.defaultValue,
-								required: false
+							name: it.key,
+							title: "Select",
+							type: "enum",
+							options: it.values,
+							defaultValue: it.defaultValue,
+							required: false
 						)
 						break
 					case "range":
 						input(
-								name: it.key,
-								type: "number",
-								title: "Set value (range ${it.range})",
-								defaultValue: it.defaultValue,
-								range: it.range,
-								required: false
+							name: it.key,
+							type: "number",
+							title: "Set value (range ${it.range})",
+							defaultValue: it.defaultValue,
+							range: it.range,
+							required: false
 						)
 						break
 				}
@@ -217,12 +213,11 @@ def getCommandClassVersions() {
 
 def configure() {
 	def commands = []
-	commands << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
 	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
 	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId]).format()
 	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
 	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId]).format()
-	response(delayBetween(commands, 500))
+	delayBetween(commands, 500)
 }
 
 def parse(String description) {
@@ -390,18 +385,7 @@ def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cm
 	return result
 }
 
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-	log.debug "manufacturerId: $cmd.manufacturerId"
-	log.debug "manufacturerName: $cmd.manufacturerName"
-	log.debug "productId: $cmd.productId"
-	log.debug "productTypeId: $cmd.productTypeId"
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)
-	updateDataValue("manufacturer", cmd.manufacturerName)
-	createEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep = null){
+def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep = null) {
 	def encapsulatedCommand = cmd.encapsulatedCommand()
 	log.debug "MultiChannelCmdEncap: ${encapsulatedCommand}" + (ep ? " from endpoint $ep" : "")
 	if (encapsulatedCommand) {
@@ -415,7 +399,7 @@ def handleMeterReport(cmd) {
 			log.debug("createEvent energy")
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kWh")
 		} else if (cmd.scale == 1) {
-			createEvent("createEvent energy kVAh")
+			log.debug("createEvent energy kVAh")
 			createEvent(name: "energy", value: cmd.scaledMeterValue, unit: "kVAh")
 		} else if (cmd.scale == 2) {
 			log.debug("createEvent power")
@@ -433,16 +417,18 @@ def getNotificationComponentLabel() {
 	 0x07 : [componentLabel: "Qubino Notification from Motion Sensor", dthName: "Child Motion Sensor"]]
 }
 
-def createChildEvent(cmd) {
+def handleChildEvent(cmd) {
 	log.debug ("Creating child event: ${cmd}")
 	def map = [:]
 	def componentLabel
-	def childDTHname
+	def childDthName
 	def childDni
+	def childNamespace
 
 	if (cmd.hasProperty("notificationType")) {
 		componentLabel = notificationComponentLabel[cmd.notificationType as int].find{ it.key == "componentLabel" }?.value
-		childDTHname = notificationComponentLabel[cmd.notificationType as int].find{ it.key == "dthName" }?.value
+		childDthName = notificationComponentLabel[cmd.notificationType as int].find{ it.key == "dthName" }?.value
+		childNamespace = "smartthings"
 
 		if (cmd.notificationType == 0x01) { // Smoke Alarm
 			map.name = "smoke"
@@ -516,7 +502,8 @@ def createChildEvent(cmd) {
 		}
 	} else if (cmd.hasProperty("sensorType")) {
 		componentLabel = "Qubino Temperature Sensor"
-		childDTHname = "Child Temperature Sensor"
+		childDthName = "Child Temperature Sensor"
+		childNamespace = "qubino"
 		switch (cmd.sensorType) {
 			case 0x01:
 				log.debug ("cmd: ${cmd}")
@@ -527,13 +514,12 @@ def createChildEvent(cmd) {
 				break
 		}
 	}
-	childDni = "${device.deviceNetworkId}-${childUniqueDni[componentLabel]}"
-
+	childDni = "${device.deviceNetworkId}:${childUniqueDni[componentLabel]}"
 	if (doesChildDeviceExist(componentLabel)) {
 		log.debug("Found device: ${componentLabel}")
 	} else {
 		log.debug ("Device ${componentLabel} not found. Creating new child device.")
-		createChildDevice(componentLabel, childDTHname, childDni)
+		createChildDevice(componentLabel, childNamespace, childDthName, childDni)
 	}
 	sendEventToChild(map, childDni)
 }
@@ -556,37 +542,40 @@ def getAppSwitchOnOffTime() {
 	/*
 	User can set on/off time between 50 - 255 ms only when the dimmer is activated from the physical wall-switch.
 	This function adjusts that time to be used also when activating from the Mobile App (1-3s).
+	Map value from the range 50..255 into range 1..3 >> Math.round(1 + ((dimmingTimeBtn - 50) * (3-1))/ (255-50)) = Math.round(1 + ((dimmingTimeBtn - 50) * mappingConst
 	*/
-	def dimmingTimePref = parameterMap.find({it.parameterNumber == 65})
+
+	def dimmingTimePref = parameterMap.find({ it.key == 'dimmingTimeSoftOnOff' })
 	def dimmingTimeBtn = getCommandValue(dimmingTimePref) ?: dimmingTimePref.defaultValue
-	return Math.round(1 + ((dimmingTimeBtn - 50) * (3-1))/ (255-50))
+	def mappingConst = 0.00976
+	def appOnOffTime = Math.round(1 + ((dimmingTimeBtn - 50) * mappingConst))
+	log.debug "appOnOffTime: $appOnOffTime"
+	return appOnOffTime
 }
 
 def on() {
-	def maxDimmingLvlPref = parameterMap.find({it.parameterNumber == 61})
 	def value = state.lastDimmingLevel ?: getCommandValue(maxDimmingLvlPref) ?: maxDimmingLvlPref.defaultValue
 	def dimmingOn = appSwitchOnOffTime
 
-	log.debug ("dimming on value: ${value}")
-	log.debug ("dimming on time: ${dimmingOn}")
-
+	log.debug "dimming on value: ${value}"
+	log.debug "dimming on time: ${dimmingOn}"
 	encapSequence([
-			zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: dimmingOn, value: value),
-			//zwave.switchMultilevelV3.switchMultilevelGet(),
-			meterGet(scale: 0),
-			meterGet(scale: 2)
-	], 5000)
+		zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: dimmingOn, value: value),
+		//zwave.switchMultilevelV3.switchMultilevelGet(),
+		meterGet(scale: 0),
+		meterGet(scale: 2)
+	], statusDelay)
 }
 
 def off() {
 	def dimmingOff = appSwitchOnOffTime
 	log.debug ("dimming off time: ${dimmingOff}")
 	encapSequence([
-			zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: dimmingOff, value: 0x00),
-			//zwave.switchMultilevelV3.switchMultilevelGet(),
-			meterGet(scale: 0),
-			meterGet(scale: 2)
-	], 5000)
+		zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: dimmingOff, value: 0x00),
+		//zwave.switchMultilevelV3.switchMultilevelGet(),
+		meterGet(scale: 0),
+		meterGet(scale: 2)
+	], statusDelay)
 }
 
 def ping() {
@@ -596,16 +585,17 @@ def ping() {
 def refresh() {
 	log.debug "refresh()"
 	encapSequence([
-			zwave.switchMultilevelV1.switchMultilevelGet(),
-			meterGet(scale: 0),
-			meterGet(scale: 2),
-			zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
+		zwave.switchMultilevelV1.switchMultilevelGet(),
+		meterGet(scale: 0),
+		meterGet(scale: 2),
+		zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
 	], 100)
 }
 
 def checkIfLevelCorrect(level) {
-	def max = getCommandValue(parameterMap.find({it.parameterNumber == 61})) ?: maxDimmingLvlPref.defaultValue
-	def min = getCommandValue(parameterMap.find({it.parameterNumber == 60})) ?: minDimmingLvlPref.defaultValue
+	def max = getCommandValue(maxDimmingLvlPref) ?: maxDimmingLvlPref.defaultValue
+	def min = getCommandValue(minDimmingLvlPref) ?: minDimmingLvlPref.defaultValue
+	def value = state.lastDimmingLevel ?: getCommandValue(maxDimmingLvlPref) ?: maxDimmingLvlPref.defaultValue
 
 	if (level > max && level <= 100) {
 		level = max
@@ -617,22 +607,55 @@ def checkIfLevelCorrect(level) {
 	return level as int
 }
 
-def setLevel(level) {
-	log.debug "setLvl: ${level}"
+def setLevel(value) {
+	// this method is called without duration argument so dimmingDuration is set according to the current on/off transition time (1-3s).
+	log.debug "setLvl: $value"
 	def result = []
-	def checkedLevel = checkIfLevelCorrect(level)
-	result << encapSequence([
-			zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: appSwitchOnOffTime, value: checkedLevel),
-			//zwave.switchMultilevelV3.switchMultilevelGet(),
-			meterGet(scale: 0),
-			meterGet(scale: 2)
-	], 3000)
-	result
+	def level = checkIfLevelCorrect(value)
+	encapSequence([
+		zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: appSwitchOnOffTime, value: level),
+		//zwave.switchMultilevelV3.switchMultilevelGet(),
+		meterGet(scale: 0),
+		meterGet(scale: 2)
+	], statusDelay)
 }
 
-def createChildDevice(componentLabel, childDTHname, childDni) {
+def setLevel(value, duration) {
+	// this method is called with duration argument which should be passed as dimmingDuration parameter (unless the preference for dimming duration is specified).
+	def level = checkIfLevelCorrect(value)
+	def dimmingDuration = (dimmingDurationPref != 0) ? dimmingDurationPref : duration
+	log.debug "setLevel: $value, duration: $dimmingDuration"
+	def durationDelay = dimmingDuration < 128 ? (dimmingDuration * 1000) + 2000 : (Math.round(dimmingDuration / 60) * 60 * 1000) + 2000 as Integer
+	encapSequence([
+		zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: dimmingDuration, value: level),
+		zwave.switchMultilevelV3.switchMultilevelGet(),
+		meterGet(scale: 0),
+		meterGet(scale: 2)
+	], durationDelay)
+}
+
+def getDimmingDurationPref() {
+	// Check if the 'dimming duration' preference is specified and return it's value (1..127s).
+	def dimmingDurationPref = parameterMap.find({it.key == 'dimmingDuration'})
+	def dimmingDuration = getCommandValue(dimmingDurationPref) ?: dimmingDurationPref.defaultValue
+	return dimmingDuration
+}
+
+def getStatusDelay() {
+	return 1000 * (appSwitchOnOffTime + 1) as Integer
+}
+
+def getMaxDimmingLvlPref() {
+	return parameterMap.find({it.key == 'maximumDimmingValue'})
+}
+
+def getMinDimmingLvlPref() {
+	return parameterMap.find({it.key == 'minimumDimmingValue'})
+}
+
+def createChildDevice(componentLabel, childNamespace, childDthName, childDni) {
 	try {
-		addChildDevice(childDTHname, childDni, device.hub.id,[
+		addChildDevice(childNamespace, childDthName, childDni, device.hub.id,[
 				completedSetup: true,
 				label: componentLabel,
 				isComponent: false
@@ -642,7 +665,7 @@ def createChildDevice(componentLabel, childDTHname, childDni) {
 	}
 }
 
-def getChildUniqueDni(){
+def getChildUniqueDni() {
 	["Qubino Notification from Motion Sensor":"1",
 	 "Qubino Notification from CO Sensor":"2",
 	 "Qubino Notification from Smoke Sensor":"3",
@@ -671,220 +694,220 @@ private secure(physicalgraph.zwave.Command cmd) {
 
 private getParameterMap() {[
 		[
-				name: "Input 1 switch type", key: "input1SwitchType", type: "enum",
-				parameterNumber: 1, size: 1, defaultValue: 0,
-				values: [
-						0: "Default value - push button (momentary)",
-						1: "on/off toggle switch"
-				],
-				description: "Select between push-button (momentary) and on/off toggle switch types."
+			name: "Input 1 switch type", key: "input1SwitchType", type: "enum",
+			parameterNumber: 1, size: 1, defaultValue: 0,
+			values: [
+				0: "Default value - push button (momentary)",
+				1: "on/off toggle switch"
+			],
+			description: "Select between push-button (momentary) and on/off toggle switch types."
 		],
 		[
-				name: "Input 2 switch type", key: "inputsSwitchTypes", type: "enum",
-				parameterNumber: 2, size: 1, defaultValue: 0,
-				values: [
-						0: "Default value - push button (momentary)",
-						1: "on/off toggle switch"
-				],
-				description: "Select between push-button (momentary) and on/off toggle switch types. Both inputs must work the same way."
+			name: "Input 2 switch type", key: "inputsSwitchTypes", type: "enum",
+			parameterNumber: 2, size: 1, defaultValue: 0,
+			values: [
+				0: "Default value - push button (momentary)",
+				1: "on/off toggle switch"
+			],
+			description: "Select between push-button (momentary) and on/off toggle switch types. Both inputs must work the same way."
 		],
 		[
-				name: "Input 2 contact type", key: "input2ContactType", type: "enum",
-				parameterNumber: 3, size: 1, defaultValue: 0,
-				values: [
-						0: "Default value - NO (normally open) input type",
-						1: "NC (normally close) input type"
-				],
-				description: "Select between normally open (NO) and normally close (NC) contact types."
+			name: "Input 2 contact type", key: "input2ContactType", type: "enum",
+			parameterNumber: 3, size: 1, defaultValue: 0,
+			values: [
+				0: "Default value - NO (normally open) input type",
+				1: "NC (normally close) input type"
+			],
+			description: "Select between normally open (NO) and normally close (NC) contact types."
 		],
 		[
-				name: "Input 3 contact type", key: "input3ContactType", type: "enum",
-				parameterNumber: 4, size: 1, defaultValue: 0,
-				values: [
-						0: "Default value - NO (normally open) input type",
-						1: "NC (normally close) input type"
-				],
-				description: "Select between normally open (NO) and normally close (NC) contact types."
+			name: "Input 3 contact type", key: "input3ContactType", type: "enum",
+			parameterNumber: 4, size: 1, defaultValue: 0,
+			values: [
+				0: "Default value - NO (normally open) input type",
+				1: "NC (normally close) input type"
+			],
+			description: "Select between normally open (NO) and normally close (NC) contact types."
 		],
 		[
-				name: "Activate/deactivate functions ALL ON/ALL OFF", key: "activate/DeactivateFunctionsAllOn/AllOff", type: "enum",
-				parameterNumber: 10, size: 2, defaultValue: 255,
-				values: [
-						0: "ALL ON not active, ALL OFF not active",
-						1: "ALL ON not active, ALL OFF active",
-						2: "ALL ON active, ALL OFF not active",
-						255: "Default value - ALL ON active, ALL OFF active",
-				],
-				description: "Responds to commands ALL ON/ALL OFF that may be sent by the main controller or by other controller belonging to the system."
+			name: "Activate/deactivate functions ALL ON/ALL OFF", key: "activate/DeactivateFunctionsAllOn/AllOff", type: "enum",
+			parameterNumber: 10, size: 2, defaultValue: 255,
+			values: [
+				0: "ALL ON not active, ALL OFF not active",
+				1: "ALL ON not active, ALL OFF active",
+				2: "ALL ON active, ALL OFF not active",
+				255: "Default value - ALL ON active, ALL OFF active",
+			],
+			description: "Responds to commands ALL ON/ALL OFF that may be sent by the main controller or by other controller belonging to the system."
 		],
 		[
-				name: "Automatic turning off output after set time", key: "automaticTurningOffOutputAfterSetTime", type: "boolRange",
-				parameterNumber: 11, size: 2, defaultValue: 0,
-				range: "1..32535", disableValue: 0,
-				description: "Turns off the output after set time. " +
-						"0 Default value - Auto OFF disabled, " +
-						"1 second - 32535 seconds Auto OFF enabled with define time, step is 1 second"
+			name: "Automatic turning off output after set time", key: "automaticTurningOffOutputAfterSetTime", type: "boolRange",
+			parameterNumber: 11, size: 2, defaultValue: 0,
+			range: "1..32535", disableValue: 0,
+			description: "Turns off the output after set time. " +
+				"0 Default value - Auto OFF disabled, " +
+				"1 second - 32535 seconds Auto OFF enabled with define time, step is 1 second"
 		],
 		[
-				name: "Automatic turning on output after set time", key: "automaticTurningOnOutputAfterSetTime", type: "boolRange",
-				parameterNumber: 12, size: 2, defaultValue: 0,
-				range: "1..32535", disableValue: 0,
-				description: "Turns on the output after set time." +
-						"0 (Default value) - Auto ON disabled, " +
-						"1 second - 32535 seconds Auto ON enabled with define time, step is 1 second"
+			name: "Automatic turning on output after set time", key: "automaticTurningOnOutputAfterSetTime", type: "boolRange",
+			parameterNumber: 12, size: 2, defaultValue: 0,
+			range: "1..32535", disableValue: 0,
+			description: "Turns on the output after set time." +
+				"0 (Default value) - Auto ON disabled, " +
+				"1 second - 32535 seconds Auto ON enabled with define time, step is 1 second"
 		],
 		[
-				name: "Enable/Disable the 3-way switch/additional switch", key: "enable/DisableAdditionalSwitch", type: "enum",
-				parameterNumber: 20, size: 1, defaultValue: 0,
-				values: [
-						0: "Default value - single push-button (connected to l1)",
-						1: "3-way switch (connected to l1 and l2)",
-						2: "additional switch (connected to l2)",
-				],
-				description: "Dimming is done by using a push-button or a switch, connected to l1 (by default). If the 3-way switch option is set, dimming can be controlled by a push-button or a switch connected to l1 and l2."
+			name: "Enable/Disable the 3-way switch/additional switch", key: "enable/DisableAdditionalSwitch", type: "enum",
+			parameterNumber: 20, size: 1, defaultValue: 0,
+			values: [
+				0: "Default value - single push-button (connected to l1)",
+				1: "3-way switch (connected to l1 and l2)",
+				2: "additional switch (connected to l2)",
+			],
+			description: "Dimming is done by using a push-button or a switch, connected to l1 (by default). If the 3-way switch option is set, dimming can be controlled by a push-button or a switch connected to l1 and l2."
 		],
 		[
-				name: "Enable/Disable Double click function", key: "enable/DisableDoubleClickFunction", type: "boolean",
-				parameterNumber: 21, size: 1, defaultValue: 0,
-				optionInactive: 0, inactiveDescription: "Default value - Double click disabled",
-				optionActive: 1, activeDescription: "Double click enabled",
-				description: "If Double click function is enabled, a fast double click on the push button will set dimming power at maximum dimming value. Valid only if input is set as push button."
+			name: "Enable/Disable Double click function", key: "enable/DisableDoubleClickFunction", type: "boolean",
+			parameterNumber: 21, size: 1, defaultValue: 0,
+			optionInactive: 0, inactiveDescription: "Default value - Double click disabled",
+			optionActive: 1, activeDescription: "Double click enabled",
+			description: "If Double click function is enabled, a fast double click on the push button will set dimming power at maximum dimming value. Valid only if input is set as push button."
 		],
 		[
-				name: "Saving the state of the device after a power failure", key: "savingTheStateOfTheDeviceAfterAPowerFailure", type: "boolean",
-				parameterNumber: 30, size: 1, defaultValue: 0,
-				optionInactive: 0, inactiveDescription: "Default value - Flush Dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
-				optionActive: 1,
-				description: "Based on the parameter settings the stores/does not store the last value of the output after power failure. "
+			name: "Saving the state of the device after a power failure", key: "savingTheStateOfTheDeviceAfterAPowerFailure", type: "boolean",
+			parameterNumber: 30, size: 1, defaultValue: 0,
+			optionInactive: 0, inactiveDescription: "Default value - Flush Dimmer module saves its state before power failure (it returns to the last position saved before a power failure)",
+			optionActive: 1,
+			description: "Based on the parameter settings the stores/does not store the last value of the output after power failure. "
 		],
 		[
-				name: "Watt Power Consumption Reporting Threshold for Load", key: "wattPowerConsumptionThreshold", type: "range",
-				parameterNumber: 40, size: 1, defaultValue: 10,
-				range: "1..100",
-				description: "0 = Power consumption reporting disabled, " +
-						"default value = 10% " +
-						"1%-100% Power consumption reporting enabled. " +
-						"New value is reported only when Wattage in real time changes by more than the percentage value set in this parameter compared to the previous Wattage reading, starting at 1% " +
-						"NOTE: Power consumption needs to increase or decrease by at least 1 Watt to be reported, REGARDLESS of percentage set in this parameter."
+			name: "Watt Power Consumption Reporting Threshold for Load", key: "wattPowerConsumptionThreshold", type: "range",
+			parameterNumber: 40, size: 1, defaultValue: 10,
+			range: "1..100",
+			description: "0 = Power consumption reporting disabled, " +
+				"default value = 10% " +
+				"1%-100% Power consumption reporting enabled. " +
+				"New value is reported only when Wattage in real time changes by more than the percentage value set in this parameter compared to the previous Wattage reading, starting at 1% " +
+				"NOTE: Power consumption needs to increase or decrease by at least 1 Watt to be reported, REGARDLESS of percentage set in this parameter."
 		],
 		[
-				name: "Watt Power Consumption Reporting Time Threshold for Load", key: "wattPowerConsumptionTimeThreshold", type: "range",
-				parameterNumber: 42, size: 2, defaultValue: 10,
-				range: "1..32767",
-				description: "default value 0" +
-						"0 to 29 - Power consumption reporting disabled. " +
-						"30-32757 Power consumption reporting enabled. " +
-						"Report is sent according to ime interval (value) set here"
+			name: "Watt Power Consumption Reporting Time Threshold for Load", key: "wattPowerConsumptionTimeThreshold", type: "range",
+			parameterNumber: 42, size: 2, defaultValue: 10,
+			range: "1..32767",
+			description: "default value 0" +
+				"0 to 29 - Power consumption reporting disabled. " +
+				"30-32757 Power consumption reporting enabled. " +
+				"Report is sent according to ime interval (value) set here"
 		],
 		[
-				name: "Minimum dimming value", key: "minimumDimmingValue", type: "range",
-				parameterNumber: 60, size: 1, defaultValue: 1,
-				range: "1..98",
-				description: "1 (Default value) = 1% (minimum dimming value), " +
-						"1 - 98 = 1% - 98%, step is 1%. Minimum dimming values is set by entered value. " +
-						"If Switch_multilevel_set is set to the value '0', the output is turned OFF. " +
-						"If Switch_multilevel_set is set to the value '1', the output is set to the minimum diming value. " +
-						"NOTE: The minimum level may not be higher than the maximum level."
+			name: "Minimum dimming value", key: "minimumDimmingValue", type: "range",
+			parameterNumber: 60, size: 1, defaultValue: 1,
+			range: "1..98",
+			description: "1 (Default value) = 1% (minimum dimming value), " +
+				"1 - 98 = 1% - 98%, step is 1%. Minimum dimming values is set by entered value. " +
+				"If Switch_multilevel_set is set to the value '0', the output is turned OFF. " +
+				"If Switch_multilevel_set is set to the value '1', the output is set to the minimum diming value. " +
+				"NOTE: The minimum level may not be higher than the maximum level."
 		],
 		[
-				name: "Maximum dimming value", key: "maximumDimmingValue", type: "range",
-				parameterNumber: 61, size: 1, defaultValue: 99,
-				range: "2..99",
-				description: "99 (Default value) = 99% (Maximum dimming value)" +
-						"2 - 99 = 2% - 99%, step is 1%. Maximum dimming values is set by entered value. " +
-						"When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max. " +
-						"NOTE: The maximum level may not be lower than the minimum level."
+			name: "Maximum dimming value", key: "maximumDimmingValue", type: "range",
+			parameterNumber: 61, size: 1, defaultValue: 99,
+			range: "2..99",
+			description: "99 (Default value) = 99% (Maximum dimming value)" +
+				"2 - 99 = 2% - 99%, step is 1%. Maximum dimming values is set by entered value. " +
+				"When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max. " +
+				"NOTE: The maximum level may not be lower than the minimum level."
 		],
 		[
-				name: "Dimming time (soft on/off)", key: "dimmingTime(SoftOn/Off)", type: "range",
-				parameterNumber: 65, size: 2, defaultValue: 100,
-				range: "50..255",
-				description: "Set value means time of moving the Flush Dimmer between min. and max. dimming values by short press of push button I1 or controlled through UI (BasicSet). " +
-						"100 (Default value) = 1s, " +
-						"50 - 255 = 500 - 2550 milliseconds (2,55s), step is 10 milliseconds"
+			name: "Dimming time (soft on/off)", key: "dimmingTimeSoftOnOff", type: "range",
+			parameterNumber: 65, size: 2, defaultValue: 100,
+			range: "50..255",
+			description: "Set value means time of moving the Flush Dimmer between min. and max. dimming values by short press of push button I1 or controlled through UI (BasicSet). " +
+				"100 (Default value) = 1s, " +
+				"50 - 255 = 500 - 2550 milliseconds (2,55s), step is 10 milliseconds"
 		],
 		[
-				name: "Dimming time when key pressed", key: "dimmingTimeWhenKeyPressed", type: "range",
-				parameterNumber: 66, size: 2, defaultValue: 3,
-				range: "1..255",
-				description: "Time of moving the Flush Dimmer between min. and max dimming values by continues hold of push button I1 or associated device. " +
-						"3 seconds (Default value), " +
-						"1 - 255 seconds"
+			name: "Dimming time when key pressed", key: "dimmingTimeWhenKeyPressed", type: "range",
+			parameterNumber: 66, size: 2, defaultValue: 3,
+			range: "1..255",
+			description: "Time of moving the Flush Dimmer between min. and max dimming values by continues hold of push button I1 or associated device. " +
+				"3 seconds (Default value), " +
+				"1 - 255 seconds"
 		],
 		[
-				name: "Ignore start level", key: "ignoreStartLevel", type: "boolean",
-				parameterNumber: 67, size: 1, defaultValue: 0,
-				optionInactive: 0, inactiveDescription: "Default value - Respect start level",
-				optionActive: 1, activeDescription: "Ignore start level",
-				description: "This parameter is used with association group 3. A receiving device SHOULD respect the start level if the Ignore Start Level bit is 0. " +
-						"A receiving device MUST ignore the start level if the Ignore Start Level bit is 1."
+			name: "Ignore start level", key: "ignoreStartLevel", type: "boolean",
+			parameterNumber: 67, size: 1, defaultValue: 0,
+			optionInactive: 0, inactiveDescription: "Default value - Respect start level",
+			optionActive: 1, activeDescription: "Ignore start level",
+			description: "This parameter is used with association group 3. A receiving device SHOULD respect the start level if the Ignore Start Level bit is 0. " +
+				"A receiving device MUST ignore the start level if the Ignore Start Level bit is 1."
 		],
 		[
-				name: "Dimming duration", key: "dimmingDuration", type: "range",
-				parameterNumber: 68, size: 1, defaultValue: 0,
-				range: "0..127",
-				description: "This parameter is used with association group 3. The Duration field MUST specify the time that the transition should take from the current value to the new target value. " +
-						"A supporting device SHOULD respect the specified Duration value. " +
-						"0 (Default value) - dimming duration according to parameter: 'Dimming time when key pressed'," +
-						"1 to 127 seconds"
+			name: "Dimming duration", key: "dimmingDuration", type: "range",
+			parameterNumber: 68, size: 1, defaultValue: 0,
+			range: "0..127",
+			description: "This parameter is used with association group 3. The Duration field MUST specify the time that the transition should take from the current value to the new target value. " +
+				"A supporting device SHOULD respect the specified Duration value. " +
+				"0 (Default value) - dimming duration according to parameter: 'Dimming time when key pressed'," +
+				"1 to 127 seconds"
 		],
 		[
-				name: "Enable/Disable Endpoint l2 or select the Notification Type and the Notification Event", key: "enable/DisableNotificationl2", type: "enum",
-				parameterNumber: 100, size: 1, defaultValue: 0,
-				values: [
-						0: "Default value - Endpoint l2 disabled",
-						1: "Home Security; Motion Detection, unknown location",
-						2: "CO; Carbon Monoxide detected, unknown location",
-						3: "CO2; CarbonDioxide detected, unknown location",
-						4: "Water Alarm; Water Leak detected, unknown location",
-						5: "Heat Alarm; Overheat detected, unknown location",
-						6: "Smoke Alarm; Smoke detected, unknown location",
-						9: "Sensor Binary" //9
-				],
-				description: "NOTE1: After changing the values of the parameter, first exclude the device (without setting the parameters to their default values), then wait at least 30 seconds to re-include the device!. " +
-						"NOTE2: When the parameter is set to value 9 the notifications are sent for the Home Security notification type."
+			name: "Enable/Disable Endpoint l2 or select the Notification Type and the Notification Event", key: "enable/DisableNotificationl2", type: "enum",
+			parameterNumber: 100, size: 1, defaultValue: 0,
+			values: [
+				0: "Default value - Endpoint l2 disabled",
+				1: "Home Security; Motion Detection, unknown location",
+				2: "CO; Carbon Monoxide detected, unknown location",
+				3: "CO2; CarbonDioxide detected, unknown location",
+				4: "Water Alarm; Water Leak detected, unknown location",
+				5: "Heat Alarm; Overheat detected, unknown location",
+				6: "Smoke Alarm; Smoke detected, unknown location",
+				9: "Sensor Binary" //9
+			],
+			description: "NOTE1: After changing the values of the parameter, first exclude the device (without setting the parameters to their default values), then wait at least 30 seconds to re-include the device!. " +
+				"NOTE2: When the parameter is set to value 9 the notifications are sent for the Home Security notification type."
 		],
 		[
-				name: "Enable/Disable Endpoint l3 or select the Notification Type and the Notification Event", key: "enable/DisableNotificationl3", type: "enum",
-				parameterNumber: 101, size: 1, defaultValue: 0,
-				values: [
-						0: "Default value - Endpoint l3 disabled",
-						1: "Home Security; Motion Detection, unknown location",
-						2: "CO; Carbon Monoxide detected, unknown location",
-						3: "CO2; CarbonDioxide detected, unknown location",
-						4: "Water Alarm; Water Leak detected, unknown location",
-						5: "Heat Alarm; Overheat detected, unknown location",
-						6: "Smoke Alarm; Smoke detected, unknown location",
-						9: "Sensor Binary" //9
-				],
-				description: "NOTE1: After changing the values of the parameter, first exclude the device (without setting the parameters to their default values), then wait at least 30 seconds to re-include the device!. " +
-						"NOTE2: When the parameter is set to value 9 the notifications are sent for the Home Security notification type."
+			name: "Enable/Disable Endpoint l3 or select the Notification Type and the Notification Event", key: "enable/DisableNotificationl3", type: "enum",
+			parameterNumber: 101, size: 1, defaultValue: 0,
+			values: [
+				0: "Default value - Endpoint l3 disabled",
+				1: "Home Security; Motion Detection, unknown location",
+				2: "CO; Carbon Monoxide detected, unknown location",
+				3: "CO2; CarbonDioxide detected, unknown location",
+				4: "Water Alarm; Water Leak detected, unknown location",
+				5: "Heat Alarm; Overheat detected, unknown location",
+				6: "Smoke Alarm; Smoke detected, unknown location",
+				9: "Sensor Binary" //9
+			],
+			description: "NOTE1: After changing the values of the parameter, first exclude the device (without setting the parameters to their default values), then wait at least 30 seconds to re-include the device!. " +
+				"NOTE2: When the parameter is set to value 9 the notifications are sent for the Home Security notification type."
 		],
 		[
-				name: "Temperature sensor offset settings", key: "temperatureSensorOffsetSettings", type: "range",
-				parameterNumber: 110, size: 2, defaultValue: 32536,
-				range: "1..32536",
-				description: "Set value is added or subtracted to actual measured value by sensor. " +
-						"32536 (Default value), " +
-						"1 to 100 Value from 0.1 degrees celsius to 10.0 degrees celsius is added to actual measured temperature " +
-						"1001 to 1100 Value from -0.1 degrees celsius to -10.0 degrees celsius is subtracted to actual measured temperature"
+			name: "Temperature sensor offset settings", key: "temperatureSensorOffsetSettings", type: "range",
+			parameterNumber: 110, size: 2, defaultValue: 32536,
+			range: "1..32536",
+			description: "Set value is added or subtracted to actual measured value by sensor. " +
+				"32536 (Default value), " +
+				"1 to 100 Value from 0.1 degrees celsius to 10.0 degrees celsius is added to actual measured temperature " +
+				"1001 to 1100 Value from -0.1 degrees celsius to -10.0 degrees celsius is subtracted to actual measured temperature"
 		],
 		[
-				name: "Digital temperature sensor reporting", key: "digitalTemperatureSensorReporting", type: "range",
-				parameterNumber: 120, size: 1, defaultValue: 5,
-				range: "1..127",
-				description: "Digital temperature sensor reporting If digital temperature sensor is connected, module reports measured temperature on temperature change defined by this parameter. " +
-						"Available configuration parameters (data type is 1 Byte DEC): " +
-						"0 - Reporting disabled, " +
-						"5 (Default value) = 0,5°C change, " +
-						"1 - 127 = 0,1°C - 12,7°C, step is 0,1°C"
+			name: "Digital temperature sensor reporting", key: "digitalTemperatureSensorReporting", type: "range",
+			parameterNumber: 120, size: 1, defaultValue: 5,
+			range: "1..127",
+			description: "Digital temperature sensor reporting If digital temperature sensor is connected, module reports measured temperature on temperature change defined by this parameter. " +
+				"Available configuration parameters (data type is 1 Byte DEC): " +
+				"0 - Reporting disabled, " +
+				"5 (Default value) = 0,5°C change, " +
+				"1 - 127 = 0,1°C - 12,7°C, step is 0,1°C"
 		],
 		[
-				name: "Enable/Disable Reporting on set command", key: "enable/DisableReporting", type: "boolean",
-				parameterNumber: 249, size: 1, defaultValue: 0,
-				optionInactive: 0, inactiveDescription: "Default value - Double click disabled",
-				optionActive: 1, activeDescription: "Reporting on set command enabled",
-				description: "Choose whether reports (containing the new output state) are sent to the gateway (hub) after a set command is received by the device"
+			name: "Enable/Disable Reporting on set command", key: "enable/DisableReporting", type: "boolean",
+			parameterNumber: 249, size: 1, defaultValue: 0,
+			optionInactive: 0, inactiveDescription: "Default value - Double click disabled",
+			optionActive: 1, activeDescription: "Reporting on set command enabled",
+			description: "Choose whether reports (containing the new output state) are sent to the gateway (hub) after a set command is received by the device"
 		]
 
 ]}

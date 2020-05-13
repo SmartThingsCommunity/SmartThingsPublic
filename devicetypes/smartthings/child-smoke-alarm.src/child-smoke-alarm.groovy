@@ -1,5 +1,5 @@
 /**
- *	Copyright 2015 SmartThings
+ *	Copyright 2020 SmartThings
  *
  *	Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *	in compliance with the License. You may obtain a copy of the License at:
@@ -10,25 +10,22 @@
  *	on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *	for the specific language governing permissions and limitations under the License.
  *
- *
- *	Copyright 2014 SmartThings
- *
  */
 
 metadata {
-	definition(name: "Child Heat Alarm", namespace: "qubino", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.smoke", runLocally: false, executeCommandsLocally: false) {
-		capability "Temperature Alarm"
+	definition (name: "Child Smoke Alarm", namespace: "smartthings", author: "SmartThings", runLocally: false, executeCommandsLocally: false) {
+		capability "Smoke Detector"
 		capability "Sensor"
 		capability "Health Check"
 	}
 }
 
 def installed() {
-	log.debug "Child Overheat Alarm installed"
+	log.debug "Child Smoke Sensor installed"
 }
 
 def updated() {
-	log.debug "Child Overheat Alarm updated"
+	log.debug "Child Smoke Sensor updated"
 }
 
 def ping() {
