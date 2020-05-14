@@ -54,11 +54,14 @@ metadata {
 				attributeState "opening", label: '${name}', action: "pause", icon: "st.shades.shade-opening", backgroundColor: "#79b821", nextState: "partially open"
 				attributeState "closing", label: '${name}', action: "pause", icon: "st.shades.shade-closing", backgroundColor: "#ffffff", nextState: "partially open"
 			}
-			tileAttribute("device.level", key: "SLIDER_CONTROL") {
-				attributeState "level", action: "setShadeLevel"
+			tileAttribute("device.shadeLevel", key: "SLIDER_CONTROL") {
+				attributeState "shadeLevel", action: "setShadeLevel"
 			}
 		}
 
+		controlTile("level", "device.level", "slider", width: 4, height: 2, range: "(0..99)") {
+			state "level", label: "native level", action: "setLevel"
+		}
 		standardTile("home", "device.level", width: 2, height: 2, decoration: "flat") {
 			state "default", label: "home", action: "presetPosition", icon: "st.Home.home2"
 		}
@@ -75,14 +78,14 @@ metadata {
 		preferences {
 			input "preset", "number", title: "Preset position", description: "Set the window shade preset position", defaultValue: 50, range: "1..100", required: false, displayDuringSetup: false
 
-			// User has the option of opening/closing with slats down or up -- this controls the behavior when using Window Shade Level
+			// Indicate if the blinds have been installed in a way that is reverse of their native direction -- this affects the values that represent whether the slats are up or down
 			input "reverse", "bool", title: "Reverse", description: "Reverse blind direction", defaultValue: false, required: false, displayDuringSetup: false
 
 			// Right now the device does not auto-report SwitchMultilevelReport so we will use this to determine, based on the user's setup, how long to delay before SwitchMultilevelGet
 		}
 
 		main(["windowShade"])
-		details(["windowShade", "home", "refresh", "battery"])
+		details(["windowShade", "level", "home", "refresh", "battery"])
 	}
 }
 
@@ -190,6 +193,11 @@ private getSlatDefaultDirection() { slatDirectionMap.DOWN }
 private reverseSlatDirection(direction) {
 	return (direction == slatDirectionMap.DOWN) ? slatDirectionMap.UP : slatDirectionMap.DOWN
 }
+private getCurrentSlatDirection() {
+	def tiltLevel = device.currentValue("level")
+
+	return tiltLevel > 50 ? slatDirectionMap.UP : slatDirectionMap.DOWN
+}
 
 private deviceEventToCapability(deviceLevel) {
 	def capabilityLevel = deviceLevel
@@ -249,7 +257,7 @@ private capabilityEventToDevice(level, direction) {
 /**
  * Given a shade level expressed for the SmartThings capability and generate all necessary ST events.
  */
-private buildWindowShadeEvents(level) {
+private buildWindowShadeEvents(level, nativeLevel = null) {
 	def result = []
 	def descriptionText = null
 	def shadeValue = null
@@ -265,7 +273,7 @@ private buildWindowShadeEvents(level) {
 		descriptionText = "${device.displayName} tilt is ${level}% open"
 	}
 
-	result << createEvent(name: "level", value: level, unit: "%")
+	result << createEvent(name: "level", value: nativeLevel != null ? nativeLevel : level, unit: "%")
 	result << createEvent(name: "shadeLevel", value: level, unit: "%")
 	result << createEvent(name: "windowShade", value: shadeValue, descriptionText: descriptionText)
 
@@ -273,8 +281,9 @@ private buildWindowShadeEvents(level) {
 }
 
 private handleLevelReport(physicalgraph.zwave.Command cmd) {
-	def shadeLevel = deviceEventToCapability(cmd.value as Integer)
-	def result = buildWindowShadeEvents(shadeLevel.level)
+	Integer tiltLevel = cmd.value
+	def shadeLevel = deviceEventToCapability(tiltLevel)
+	def result = buildWindowShadeEvents(shadeLevel.level, tiltLevel)
 
 	if (!state.lastbatt || now() - state.lastbatt > 24 * 60 * 60 * 1000) {
 		log.debug "requesting battery"
@@ -310,17 +319,35 @@ def pause() {
 def setLevel(value, duration = null) {
 	log.debug "setLevel($value)"
 
-	setShadeLevel(value)
+	//setShadeLevel(value)
+
+	def results = []
+	Integer tiltLevel = Math.max(Math.min((value as Integer), 99), 0)
+
+	if (reverse) {
+		tiltLevel = 99 - tiltLevel
+	}
+
+	log.debug "setLevel($value) -> tiltLevel $tiltLevel"
+
+	//def shadeLevel = deviceEventToCapability(tiltLevel)
+	//result = buildWindowShadeEvents(shadeLevel.level, tiltLevel)
+
+	results << zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
+	results << "delay 15000"
+	results << zwave.switchMultilevelV3.switchMultilevelGet().format()
+
+	return results
 }
 
 def setShadeLevel(value) {
 	def results = []
 	Integer level = Math.max(Math.min((value as Integer), 100), 0)
-	Integer tiltLevel = capabilityEventToDevice(level, slatDefaultDirection)
+	Integer tiltLevel = capabilityEventToDevice(level, currentSlatDirection)
 
 	log.debug "setShadeLevel($value) -> tiltLevel $tiltLevel"
 
-	//result = buildWindowShadeEvents(level)
+	//result = buildWindowShadeEvents(level, tiltLevel)
 
 	results << zwave.switchMultilevelV3.switchMultilevelSet(value: tiltLevel).format()
 	results << "delay 15000"
