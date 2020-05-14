@@ -102,7 +102,7 @@ metadata {
 
 def parse(String description) {
 	def results = []
-     logging("${description}")
+    //logging("${description}")
 	if (description.startsWith("Err")) {
 	    results = createEvent(descriptionText:description, displayed:true)
 	} else {
@@ -146,11 +146,23 @@ private def logging(message) {
     if (settings.debug == "true") log.debug "$message"
 }
 
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpIntervalReport cmd)
+{
+    logging(cmd)
+    state.wakeInterval = cmd.seconds
+}
 
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
-	def results = [createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)]
-	results << response(zwave.wakeUpV1.wakeUpNoMoreInformation().format())
-	return results
+    logging(cmd)
+	def results = createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
+    def cmds = []
+	if (!state.lastbat || now() - state.lastbat > 24*60*60*1000) {
+        logging("Battery report not received in over 24Hrs. Requesting battery level.")
+        cmds << zwave.batteryV1.batteryGet().format()
+        cmds << "delay 3000"
+    } 
+	cmds << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
+	return [results, response(cmds)]
 }
 
 def buttonEvent(button, value) {
@@ -158,6 +170,7 @@ def buttonEvent(button, value) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
+    logging(cmd)
 	def map = [ name: "battery", unit: "%" ]
 	if (cmd.batteryLevel == 0xFF) {
 		map.value = 1
@@ -166,6 +179,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
 	} else {
 		map.value = cmd.batteryLevel
 	}
+	state.lastbat=now()
 	createEvent(map)
 }
 
