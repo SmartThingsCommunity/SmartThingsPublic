@@ -317,7 +317,7 @@ def setShadeLevel(level) {
 }
 
 def refresh() {
-	sendHubCommands([
+	sendHubCommand([
 			encap(zwave.switchMultilevelV3.switchMultilevelGet())
 	])
 }
