@@ -43,6 +43,7 @@ metadata {
         //AduroSmart
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "ADUROLIGHT", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Motion Sensor V2.0
         fingerprint profileId: "0104", deviceId: "0402", inClusters: "0000,0003,0500,0001,FFFF", manufacturer: "AduroSmart Eria", model: "VMS_ADUROLIGHT", deviceJoinName: "ERIA Motion Sensor Sensor", mnmn: "SmartThings", vid: "generic-contact-3" //ERIA Motion Sensor V2.1
+        fingerprint profileId: "0104", deviceId: "001", manufacturer: "Mig", model: "001", deviceJoinName: "Smartthings "
 	}
 
 	simulator {
