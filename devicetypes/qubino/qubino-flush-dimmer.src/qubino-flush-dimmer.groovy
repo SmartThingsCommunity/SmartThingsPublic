@@ -366,12 +366,12 @@ def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) 
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
 	log.debug "SensorMultilevelReport: ${cmd}, endpoint: ${ep}"
-	createChildEvent(cmd)
+	handleChildEvent(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd, ep = null) {
 	log.debug "NotificationReport: ${cmd}, endpoint: ${ep}"
-	createChildEvent(cmd)
+	handleChildEvent(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv2.SensorBinaryReport cmd, ep = null) {
@@ -538,44 +538,22 @@ def doesChildDeviceExist(componentLabel) {
 	def exists = (childDevices.find{it.toString() == componentLabel.toString()} == null) ? false : true
 }
 
-def getAppSwitchOnOffTime() {
-	/*
-	User can set on/off time between 50 - 255 ms only when the dimmer is activated from the physical wall-switch.
-	This function adjusts that time to be used also when activating from the Mobile App (1-3s).
-	Map value from the range 50..255 into range 1..3 >> Math.round(1 + ((dimmingTimeBtn - 50) * (3-1))/ (255-50)) = Math.round(1 + ((dimmingTimeBtn - 50) * mappingConst
-	*/
-
-	def dimmingTimePref = parameterMap.find({ it.key == 'dimmingTimeSoftOnOff' })
-	def dimmingTimeBtn = getCommandValue(dimmingTimePref) ?: dimmingTimePref.defaultValue
-	def mappingConst = 0.00976
-	def appOnOffTime = Math.round(1 + ((dimmingTimeBtn - 50) * mappingConst))
-	log.debug "appOnOffTime: $appOnOffTime"
-	return appOnOffTime
-}
-
 def on() {
-	def value = state.lastDimmingLevel ?: getCommandValue(maxDimmingLvlPref) ?: maxDimmingLvlPref.defaultValue
-	def dimmingOn = appSwitchOnOffTime
-
-	log.debug "dimming on value: ${value}"
-	log.debug "dimming on time: ${dimmingOn}"
 	encapSequence([
-		zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: dimmingOn, value: value),
-		//zwave.switchMultilevelV3.switchMultilevelGet(),
+		zwave.basicV1.basicSet(value: 0xFF),
+		zwave.basicV1.basicGet(),
 		meterGet(scale: 0),
 		meterGet(scale: 2)
-	], statusDelay)
+	], 5000)
 }
 
 def off() {
-	def dimmingOff = appSwitchOnOffTime
-	log.debug ("dimming off time: ${dimmingOff}")
 	encapSequence([
-		zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: dimmingOff, value: 0x00),
-		//zwave.switchMultilevelV3.switchMultilevelGet(),
+		zwave.basicV1.basicSet(value: 0x00),
+		zwave.basicV1.basicGet(),
 		meterGet(scale: 0),
 		meterGet(scale: 2)
-	], statusDelay)
+	], 5000)
 }
 
 def ping() {
@@ -592,42 +570,28 @@ def refresh() {
 	], 100)
 }
 
-def checkIfLevelCorrect(level) {
-	def max = getCommandValue(maxDimmingLvlPref) ?: maxDimmingLvlPref.defaultValue
-	def min = getCommandValue(minDimmingLvlPref) ?: minDimmingLvlPref.defaultValue
-	def value = state.lastDimmingLevel ?: getCommandValue(maxDimmingLvlPref) ?: maxDimmingLvlPref.defaultValue
-
-	if (level > max && level <= 100) {
-		level = max
-		log.warn "setLvl is greater than ${max}. New lvl: ${level}"
-	} else if (level < min) {
-		level = min
-		log.warn "setLvl is lower than ${min}. New lvl: ${level}"
-	}
-	return level as int
-}
-
 def setLevel(value) {
-	// this method is called without duration argument so dimmingDuration is set according to the current on/off transition time (1-3s).
-	log.debug "setLvl: $value"
+	def valueaux = value as Integer
+	def level = Math.max(Math.min(valueaux, 99), 0)
+	log.debug "setLvl: $level"
 	def result = []
-	def level = checkIfLevelCorrect(value)
 	encapSequence([
-		zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: appSwitchOnOffTime, value: level),
+		zwave.basicV1.basicSet(value: level),
 		//zwave.switchMultilevelV3.switchMultilevelGet(),
 		meterGet(scale: 0),
 		meterGet(scale: 2)
-	], statusDelay)
+	], 5000)
 }
 
 def setLevel(value, duration) {
 	// this method is called with duration argument which should be passed as dimmingDuration parameter (unless the preference for dimming duration is specified).
-	def level = checkIfLevelCorrect(value)
 	def dimmingDuration = (dimmingDurationPref != 0) ? dimmingDurationPref : duration
-	log.debug "setLevel: $value, duration: $dimmingDuration"
+	def valueaux = value as Integer
+	def level = Math.max(Math.min(valueaux, 99), 0)
+	log.debug "setLevel: $level, duration: $dimmingDuration"
 	def durationDelay = dimmingDuration < 128 ? (dimmingDuration * 1000) + 2000 : (Math.round(dimmingDuration / 60) * 60 * 1000) + 2000 as Integer
 	encapSequence([
-		zwave.switchMultilevelV3.switchMultilevelSet(dimmingDuration: dimmingDuration, value: level),
+		zwave.basicV1.basicSet(value: level, dimmingDuration: dimmingDuration),
 		zwave.switchMultilevelV3.switchMultilevelGet(),
 		meterGet(scale: 0),
 		meterGet(scale: 2)
@@ -639,10 +603,6 @@ def getDimmingDurationPref() {
 	def dimmingDurationPref = parameterMap.find({it.key == 'dimmingDuration'})
 	def dimmingDuration = getCommandValue(dimmingDurationPref) ?: dimmingDurationPref.defaultValue
 	return dimmingDuration
-}
-
-def getStatusDelay() {
-	return 1000 * (appSwitchOnOffTime + 1) as Integer
 }
 
 def getMaxDimmingLvlPref() {
