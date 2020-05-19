@@ -123,6 +123,8 @@ metadata {
 	}
 }
 
+def getSWITCH_MULTILEVEL_COMMAND_CLASS() {38}
+
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
 	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
@@ -347,44 +349,71 @@ def getChildId(deviceNetworkId) {
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep = null) {
 	log.debug "Multichannel command ${cmd}" + (ep ? " from endpoint $ep" : "")
-	def encapsulatedCommand = cmd.encapsulatedCommand()
-	zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
+	if(cmd.sourceEndPoint == 1 && cmd.commandClass == SWITCH_MULTILEVEL_COMMAND_CLASS){
+		[]
+	} else {
+		def encapsulatedCommand = cmd.encapsulatedCommand()
+		zwaveEvent(encapsulatedCommand, cmd.sourceEndPoint as Integer)
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
 	log.debug "BasicReport: ${cmd}"
-	def value = (cmd.value ? "on" : "off")
-	createEvent(name: "switch", value: value)
+	[]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	log.debug "BasicSet: ${cmd}"
-	[]
+	switchEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd, ep = null) {
 	log.debug "SwitchMultilevelReport: ${cmd}"
-	dimmerEvents(cmd)
+	def fixedValue = cmd.value == 0 ? 0 : adjustValueToRange(cmd.value, getMinDimmingLvlPref(), getMaxDimmingLvlPref())
+	dimmerEvents(cmd, fixedValue)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd) {
 	log.debug "SwitchMultilevelSet: ${cmd}"
-	[]
+	if(cmd.value == 255){
+		switchEvents(cmd)
+	} else {
+		dimmerEvents(cmd, cmd.value)
+	}
 }
 
-def dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
-	log.debug "dimmerEvents() value: ${cmd.value}"
+Integer adjustValueToRange(value, minDimmingLvlPref, maxDimmingLvlPref){
+	def range = maxDimmingLvlPref - minDimmingLvlPref
+	def fixedValue = (((value-minDimmingLvlPref)*100)/range) as Integer
+	def adjustedValue = Math.max(Math.min(fixedValue, maxDimmingLvlPref), minDimmingLvlPref)
+	return adjustedValue
+}
+
+def getMaxDimmingLvlPref(){
+	return getCommandValue(parameterMap.find({it.key == 'maximumDimmingValue'})) ?: parameterMap.find({it.key == 'maximumDimmingValue'}).defaultValue
+}
+
+def getMinDimmingLvlPref(){
+	return getCommandValue(parameterMap.find({it.key == 'minimumDimmingValue'})) ?: parameterMap.find({it.key == 'minimumDimmingValue'}).defaultValue
+}
+
+def dimmerEvents(physicalgraph.zwave.Command cmd, dimmerValue) {
+	def rangedValue = dimmerValue == 0 ? 0 : Math.max(Math.min(dimmerValue, maxDimmingLvlPref), minDimmingLvlPref)
 	def value = (cmd.value ? "on" : "off")
 	return [
 		createEvent(name: "switch", value: value),
-		createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
+		createEvent(name: "level", value: rangedValue == 99 ? 100 : rangedValue)
 	]
+}
+
+def switchEvents(physicalgraph.zwave.Command cmd){
+	def value = (cmd.value ? "on" : "off")
+	createEvent(name: "switch", value: value)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd, ep = null) {
 	log.debug "SwitchBinaryReport: ${cmd}"
-	def value = (cmd.value ? "on" : "off")
-	createEvent(name: "switch", value: value)
+	switchEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.meterv3.MeterReport cmd, ep = null) {
