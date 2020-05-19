@@ -113,7 +113,7 @@ def installed() {
 	state.childDevices = [:]
 	state.childDevices.main = null
 	state.childDevices.assistant = null
-	state.currentMode = "windowShadeVenetian"
+	state.currentMode = "windowShade"
 	createMainChildDeviceIfNeeded()
 	createAssistantChildDeviceIfNeeded()
 	sendEvent(name: "checkInterval", value: 2 * 60 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
