@@ -90,7 +90,7 @@ metadata {
 					)
 					input(
 							name: it.key,
-							type: "boolean",
+							type: "bool",
 							title: "Enable",
 							defaultValue: it.defaultValue == it.activeOption,
 							required: false
@@ -121,6 +121,14 @@ metadata {
 		// Preferences template end
 	}
 }
+
+//Globals, input types used in sevice settings (parameter #1: Input 1 switch type)
+private getINPUT_TYPE_MONO_STABLE_SWITCH() {0}
+private getINPUT_TYPE_BI_STABLE_SWITCH() {1}
+private getINPUT_TYPE_POTENTIOMETER() {2}
+private getINPUT_TYPE_TEMPERATURE_SENSOR() {3}
+private getINPUT_TYPE_ILLUMINATION_SENSOR() {4}
+private getINPUT_TYPE_GENERAL_PURPOSE_SENSOR() {5}
 
 def installed() {
 	// Device-Watch simply pings if no device events received for 32min(checkInterval)
@@ -240,7 +248,6 @@ def parse(String description) {
 
 	def result = null
 	def cmd = zwave.parse(description)
-	//def cmd = zwave.parse(description, commandClassVersions)
 	if (cmd) {
 		result = zwaveEvent(cmd)
 	}
@@ -348,32 +355,14 @@ private isPreferenceChanged(preference) {
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelEndPointReport cmd, ep = null) {
 	log.info "MultiChannelEndPointReport: ${cmd}"
-	if (!childDevices) {
-		createChildDevice()
-	}
 	response([
-			refresh()
+		refresh()
 	])
 }
 
-def createChildDevice() {
-	try {
-		String childDni = "${device.deviceNetworkId}-2"
-		String componentLabel =	 "Qubino Temperature Sensor"
-
-		addChildDevice("Child Temperature Sensor", childDni, device.hub.id,[
-				completedSetup: true,
-				label: componentLabel,
-				isComponent: false
-		])
-	} catch(Exception e) {
-		log.debug "Exception: ${e}"
-	}
-}
-
 def getChildId(deviceNetworkId) {
-	def split = deviceNetworkId?.split("-")
-	return (split.length > 1) ? split[1] as Integer : null
+    def split = deviceNetworkId?.split(":")
+    return (split.length > 1) ? split[1] as Integer : null
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd, ep = null) {
@@ -383,71 +372,134 @@ def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap 
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) {
-	log.debug "BasicReport: ${cmd}"
-	dimmerEvents(cmd)
+    if(input1SwitchType != INPUT_TYPE_GENERAL_PURPOSE_SENSOR) {
+        log.debug "BasicReport: ${cmd}"
+        dimmerEvents(cmd)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd, ep = null) {
-	log.debug "BasicSet: ${cmd}"
-	dimmerEvents(cmd)
+    def input1SwitchType = Integer.parseInt(state.currentPreferencesState.input1SwitchType.value)
+
+    if(input1SwitchType == INPUT_TYPE_POTENTIOMETER) {
+        log.debug "BasicSet: ${cmd} / INPUT_TYPE_POTENTfIOMETER"
+        [response(zwave.switchMultilevelV3.switchMultilevelGet().format())]
+    } else if (input1SwitchType == INPUT_TYPE_BI_STABLE_SWITCH) {
+        log.debug "BasicSet: ${cmd} / INPUT_TYPE_BI_STABLE_SWITCH"
+        dimmerEvents(cmd)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd, ep = null) {
-	log.debug "SwitchMultilevelReport: ${cmd}"
-	dimmerEvents(cmd)
+    if(input1SwitchType != INPUT_TYPE_GENERAL_PURPOSE_SENSOR) {
+        log.debug "SwitchMultilevelReport: ${cmd}"
+        dimmerEvents(cmd)
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd, ep = null) {
-	log.debug "SwitchMultilevelSet: ${cmd}"
-	dimmerEvents(cmd)
+    if(input1SwitchType != INPUT_TYPE_GENERAL_PURPOSE_SENSOR) {
+        log.debug "SwitchMultilevelSet: ${cmd}"
+        dimmerEvents(cmd)
+    }
 }
 
 private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
-	def value = (cmd.value ? "on" : "off")
-	def result = [createEvent(name: "switch", value: value)]
-	if (cmd.value && cmd.value <= 100) {
-		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
-	}
-	return result
+    createDimmerEvents(cmd.value)
+}
+
+private createDimmerEvents(cmdValue){
+    def value = (cmdValue ? "on" : "off")
+    def result = [createEvent(name: "switch", value: value)]
+    if (cmdValue && cmdValue <= 100) {
+        result << createEvent(name: "level", value: cmdValue == 99 ? 100 : cmdValue)
+    }
+    return result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd, ep = null) {
-	log.info "SensorMultilevelReport: ${cmd}, endpoint: ${ep}"
-	def map = [:]
-	def result = []
-	switch (cmd.sensorType) {
-		case 1:
-			map.name = "temperature"
-			def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
-			map.unit = getTemperatureScale()
-			break
-		default:
-			map.descriptionText = cmd.toString()
-	}
-	log.debug "SensorMultilevelReport, ${map}, ${map.name}, ${map.value}, ${map.unit}"
-	if (childDevices) {
-		sendEventToChild(map)
-	}
-	result << createEvent(map)
+    log.info "SensorMultilevelReport: ${cmd}, endpoint: ${ep}"
+    def result = []
+    def input1SwitchType = Integer.parseInt(state.currentPreferencesState.input1SwitchType.value)
+    log.debug "----------input1SwitchType: ${input1SwitchType}"
+
+    if (input1SwitchType == INPUT_TYPE_GENERAL_PURPOSE_SENSOR && ep == 2) {
+        log.debug "General purpose sensor is handled with 0-100 level values"
+        def roundedVal = Math.round(cmd.scaledSensorValue)
+        createDimmerEvents(roundedVal)
+    } else if (ep == 2)  {
+        def map = [:]
+        switch (cmd.sensorType) {
+            case 1:
+                map.name = "temperature"
+                def cmdScale = cmd.scale == 1 ? "F" : "C"
+                map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision)
+                map.unit = getTemperatureScale()
+                break
+            case 3:
+                map.name = "illuminance"
+                map.value = cmd.scaledSensorValue.toInteger().toString()
+                map.unit = "lux"
+                map.isStateChange = true
+                break;
+            default:
+                map.descriptionText = cmd.toString()
+        }
+        log.debug "SensorMultilevelReport, ${map}, ${map.name}, ${map.value}, ${map.unit}"
+        handleChildEvent(map)
+        result << createEvent(map)
+    }
 }
 
-def sendEventToChild(event) {
-	String childDni = "${device.deviceNetworkId}-2"
-	def child = childDevices.find { it.deviceNetworkId == childDni }
-	log.debug "Sending event: ${event} to child: ${child}"
-	child?.sendEvent(event)
+def handleChildEvent(map) {
+    def childDni = "${device.deviceNetworkId}:" + childDeviceSpecifics[map.name].childDni
+    log.debug "handleChildEvent / find child device: ${childDni}"
+    def childDevice = childDevices.find { it.deviceNetworkId == childDni }
+
+    if(!childDevice) {
+        log.debug "handleChildEvent / creating a child device"
+        def childComponentLabel	= childDeviceSpecifics[map.name].componentLabel
+        def childDthName		= childDeviceSpecifics[map.name].childDthName
+        def childDthNamespace 	= childDeviceSpecifics[map.name].childDthNamespace
+
+        createChildDevice(childDthNamespace.toString(), childDthName.toString(), childDni.toString(), childComponentLabel.toString())
+        childDevice = childDevices.find { it.deviceNetworkId == childDni }
+    }
+    log.debug "handleChildEvent / sending event: ${map} to child: ${childDevice}"
+    childDevice?.sendEvent(map)
+}
+
+def getChildDeviceSpecifics() {
+    [
+        "temperature" : [componentLabel: "Qubino Temperature Sensor", childDni:2, childDthName: "Child Temperature Sensor", childDthNamespace: "qubino"],
+        "illuminance" : [componentLabel: "Qubino Illuminance Sensor", childDni:3, childDthName: "Child Illuminance Sensor", childDthNamespace: "smartthings"]
+    ]
+}
+
+def createChildDevice(childDthNamespace, childDthName, childDni, childComponentLabel) {
+    try {
+        String deviceNetworkId = "${device.deviceNetworkId}:" + childDni
+        log.debug "Creating a child device: ${childDthNamespace}, ${childDthName}, ${childDni}, ${childComponentLabel}"
+        def childDevice = addChildDevice(childDthNamespace, childDthName, childDni, device.hub.id,
+            [
+                completedSetup: true,
+                label: childComponentLabel,
+                isComponent: false
+            ])
+        log.debug "createChildDevice: ${childDevice}"
+        childDevice
+    } catch(Exception e) {
+        log.debug "Exception: ${e}"
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStartLevelChange cmd) {
 	log.debug "SwitchMultilevelStartLevelChange: ${cmd}"
-	//[createEvent(name: "switch", value: "on")]
 	[:]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelStopLevelChange cmd) {
 	log.debug "SwitchMultilevelStopLevelChange: ${cmd}"
-	//[response(zwave.switchMultilevelV3.switchMultilevelGet().format())]
 	[:]
 }
 
@@ -463,7 +515,7 @@ def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerS
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-	// Handles all Z-Wave commands we aren't interested in
+	// Handles other Z-Wave commands that are not supported here
 	log.debug "Command: ${cmd}"
 	[:]
 }
@@ -518,7 +570,22 @@ def refresh() {
 }
 
 private refreshChild() {
-	sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0).format())
+
+    // refresh a child temperature sensor (if available)
+    def childDni = "${device.deviceNetworkId}:" + childDeviceSpecifics["temperature"].childDni
+    def childDevice = childDevices.find { it.deviceNetworkId == childDni }
+
+    if (childDevice != null) {
+        sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0).format())
+    }
+
+    // refresh a child illuminance sensor (if available)
+    childDni = "${device.deviceNetworkId}:" + childDeviceSpecifics["illuminance"].childDni
+    childDevice = childDevices.find { it.deviceNetworkId == childDni }
+
+    if (childDevice != null) {
+        sendHubCommand(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1).format())
+    }
 }
 
 private getParameterMap() {[
