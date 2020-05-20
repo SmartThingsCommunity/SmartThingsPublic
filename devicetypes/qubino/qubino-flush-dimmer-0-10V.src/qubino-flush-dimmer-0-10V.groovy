@@ -203,15 +203,22 @@ def getCommandClassVersions() {
 def configure() {
 	def commands = []
 
+	/*
+		Association Groups:
+		Group 1: Lifeline group (reserved for communication with the primary gateway (hub))
+		Group 2: Basic on/off (status change report for I1 input)
+		Group 3: Start level change/stop (status change report for I1 input). Working only when the Parameter no. 1 is set to mono stable switch type.
+		Group 4: Multilevel set (status change report of the Flush Dimmer 0-10V). Working only when the Parameter no. 1 is set to mono stable switch type.
+		Group 5: Multilevel sensor report (status change report of the analogue sensor)
+		Group 6: Multilevel sensor report (status change report of the temperature sensor)
+	*/
 	commands << zwave.manufacturerSpecificV2.manufacturerSpecificGet().format()
-	commands << zwave.associationV1.associationRemove(groupingIdentifier:1).format()
-	commands << zwave.associationV1.associationRemove(groupingIdentifier:2).format()
-	commands << zwave.associationV1.associationRemove(groupingIdentifier:3).format()
-	commands << zwave.associationV1.associationRemove(groupingIdentifier:4).format()
 	commands << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format()
 	commands << zwave.associationV1.associationSet(groupingIdentifier:2, nodeId:[zwaveHubNodeId]).format()
 	commands << zwave.associationV1.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
 	commands << zwave.associationV1.associationSet(groupingIdentifier:4, nodeId:[zwaveHubNodeId]).format()
+	commands << zwave.associationV1.associationSet(groupingIdentifier:5, nodeId:[zwaveHubNodeId]).format()
+	commands << zwave.associationV1.associationSet(groupingIdentifier:6, nodeId:[zwaveHubNodeId]).format()
 	commands << zwave.multiChannelV3.multiChannelEndPointGet().format()
 	commands + refresh()
 
