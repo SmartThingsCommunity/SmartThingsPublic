@@ -522,52 +522,6 @@ private getParameterMap() {[
 			"In manual mode regulation (how the input influence on output) is disabled. "
 	],
 	[
-		name: "Activate / deactivate functions ALL ON / ALL OFF", key: "activate/DeactivateFunctionsAllOn/AllOff", type: "enum",
-		parameterNumber: 10, size: 2, defaultValue: 255,
-		values: [
-			0: "ALL ON not active, ALL OFF not active",
-			1: "ALL ON not active, ALL OFF active",
-			2: "ALL ON active, ALL OFF not active",
-			255: "Default value - ALL ON active, ALL OFF active",
-		],
-		description: "Responds to commands ALL ON / ALL OFF that may be sent by the main controller or by other controller belonging to the system."
-	],
-	[
-		name: "Automatic turning off output after set time", key: "automaticTurningOffOutputAfterSetTime", type: "boolRange",
-		parameterNumber: 11, size: 2, defaultValue: 0,
-		range: "1..32536", disableValue: 0,
-		description: "Turns off the output after set time." +
-			"0 Default value - Auto ON disabled, " +
-			"1 second - 32535 seconds Auto ON enabled with define time, step is 1 second"
-	],
-	[
-		name: "Temperature sensor offset settings", key: "temperatureSensorOffsetSettings", type: "range",
-		parameterNumber: 110, size: 2, defaultValue: 32536,
-		range: "1..32536",
-		description: "Set value is added or subtracted to actual measured value by sensor. " +
-			"32536 (Default value), " +
-			"1 to 100 Value from 0.1 degrees celsius to 10.0 degrees celsius is added to actual measured temperature" +
-			"1001 to 1100 Value from -0.1 degrees celsius to -10.0 degrees celsius is subtracted to actual measured temperature"
-	],
-	[
-		name: "Automatic turning on output after set time", key: "automaticTurningOnOutputAfterSetTime", type: "boolRange",
-		parameterNumber: 12, size: 2, defaultValue: 0,
-		range: "1..32535", disableValue: 0,
-		description: "Turns on the output after set time." +
-			"0 (Default value) - Auto ON disabled, " +
-			"1 second - 32535 seconds Auto ON enabled with define time, step is 1 second"
-	],
-	[
-		name: "Digital temperature sensor reporting", key: "digitalTemperatureSensorReporting", type: "range",
-		parameterNumber: 120, size: 1, defaultValue: 5,
-		range: "1..127",
-		description: "Digital temperature sensor reporting If digital temperature sensor is connected, module reports measured temperature on temperature change defined by this parameter. " +
-			"Available configuration parameters (data type is 1 Byte DEC): " +
-			"0 - Reporting disabled, " +
-			"5 (Default value) = 0,5°C change, " +
-			"1 - 127 = 0,1°C - 12,7°C, step is 0,1°C"
-	],
-	[
 		name: "Input I1 Sensor reporting", key: "inputI1SensorReporting", type: "range",
 		parameterNumber: 140, size: 2, defaultValue: 5,
 		range: "1..10000",
@@ -575,36 +529,6 @@ private getParameterMap() {[
 			"0 Reporting disabled, " +
 			"5 (Default value) = 0,5 change, " +
 			"1 - 10000 = 0,1 - 1000 step is 0,1"
-	],
-	[
-		name: " Input I1 0-10V reporting threshold", key: "inputI10-10VReportingThreshold", type: "range",
-		parameterNumber: 141, size: 1, defaultValue: 5,
-		range: "1..100",
-		description: "Parameter is associated with Association group No. 2. " +
-			"Below this value, the Association No. 2 will report Basic Set 0xFF and above this value will report Basic Set 0xFF. " +
-			"Basic Set is reported only, when the input value changes for more than 10% (1V). " +
-			"5 (Default value) = 0,5V, " +
-			"1 - 100 = 0,1 - 10V"
-	],
-	[
-		name: "Minimum sensor range value", key: "minimumSensorRangeValue", type: "range",
-		parameterNumber: 143, size: 2, defaultValue: 0,
-		range: "0..20000",
-		description: "Value that must correspond to minimum sensor range value. Valid only if parameter 1 is set to values 3, 4 or 5). " +
-			"0 (Default value) = 0.0°C / 0Lux / 0.0%rh, " +
-			"0 - 10000 – value from 0 to 1000 (resolution 0,1), " +
-			"10001 – 20000 – value from -0,1 to  -1000 (resolution 0,1)," +
-			"NOTE: Minimum value must not be higher than maximum value."
-	],
-	[
-		name: "Maximum sensor range value", key: "maximumSensorRangeValue", type: "range",
-		parameterNumber: 144, size: 2, defaultValue: 1000,
-		range: "0..20000",
-		description: "Value that must correspond to maximum sensor range value. Valid only if parameter 1 is set to values 3, 4 or 5). " +
-			"1000 (Default value) = 100.0 degrees celsius / 100Lux / 100%rh, " +
-			"0 - 10000 Value from 0 to 1000 (resolution 0,1), " +
-			"10001 - 20000 Value from -0,1 to -1000 (resolution 0,1), " +
-			"NOTE: Maximum value must not be lower than minimum value"
 	],
 	[
 		name: "Enable/Disable Double click function", key: "enable/DisableDoubleClickFunction", type: "boolean",
@@ -628,59 +552,6 @@ private getParameterMap() {[
 		optionInactive: 0, inactiveDescription: "Default value - Flush Dimmer 0-10V module saves its state before power failure (it returns to the last position saved before a power failure)",
 		optionActive: 1, activeDescription: " Flush Dimmer 0-10V module does not save the state after a power failure, it returns to &amp;amp;amp;amp;amp;amp;amp;quot;off&amp;amp;amp;amp;amp;amp;amp;quot; position",
 		description: "Based on the parameter settings the stores/does not store the last value of the output after power failure. "
-	],
-	[
-		name: "PID value inside deadband", key: "pidValueInsideDeadband", type: "boolean",
-		parameterNumber: 53, size: 1, defaultValue: 0,
-		optionInactive: 0, inactiveDescription: "Default value - PID value equal ZERO",
-		optionActive: 1, activeDescription: "PID value set to LAST VALUE ",
-		description: "NOTE: When ZERO PID inside deadband is forced to zero. LASTVALUE means that PID remains on same level as was before entering into deadband. "
-	],
-	[
-		name: "PID deadband", key: "pidDeadband", type: "range",
-		parameterNumber: 54, size: 1, defaultValue: 1,
-		range: "0..100",
-		description: "This parameter defines the zone where PID is not active. If the temperature difference between actual and setpoint is bigger than PID deadband, then the PID will start to regulate the system, otherwise the PID is zero or fixed. "
-	],
-	[
-		name: "Integral sampling time", key: "integralSamplingTime", type: "range",
-		parameterNumber: 55, size: 1, defaultValue: 5,
-		range: "0..127",
-		description: "Parameter defines the time between samples. On each sample the controller capture difference between SP-act." +
-			"5 (Default value) = 5s, " +
-			"0 - 127 = 0s to 127s, step is 1s"
-	],
-	[
-		name: "P parameter", key: "pParameter", type: "range",
-		parameterNumber: 56, size: 2, defaultValue: 100,
-		range: "0.1000",
-		description: "The error is multiplied by a negative (for reverse action) proportional constant P, and added to the current output. " +
-			"P represents the band over which a controller's output is proportional to the error of the system. " +
-			"E.g. for a heater, a controller with a proportional band of 10 deg C and a setpoint of 100 deg C would have an output of 100% up to 90 deg C, " +
-			"50% at 95 Deg C and 10% at 99 deg C. If the temperature overshoots the setpoint value, the heating power would be cut back further. " +
-			"Proportional only control can provide a stable process temperature but there will always be an error between the required setpoint and the actual process temperature." +
-			"100 (Default value), " +
-			"0 - 1000 P value, step is 1"
-	],
-	[
-		name: "I parameter", key: "iParameter", type: "range",
-		parameterNumber: 57, size: 2, defaultValue: 1,
-		range: "0..1000",
-		description: "The error is integrated (averaged) over a period of time, and then multiplied by a constant I, and added to the current control output. " +
-			"I represents the steady state error of the system and will remove setpoint / measured value errors. " +
-			"For many applications Proportional + Integral control will be satisfactory with good stability and at the desired setpoint. " +
-			"1 (Default value), " +
-			"0 - 1000 I value, step is 1"
-	],
-	[
-		name: "D parameter", key: "dParameter", type: "range",
-		parameterNumber: 58, size: 2, defaultValue: 1,
-		range: "0..1000",
-		description: "The rate of change of the error is calculated with respect to time, multiplied by another constant D, and added to the output. " +
-			"The derivative term is used to determine a controller's response to a change or disturbance of the process temperature (e.g. opening an oven door). " +
-			"The larger the derivative term, the more rapidly the controller will respond to changes in the process value. " +
-			"1 (Default value), " +
-			"0 - 1000 D value, step is 1"
 	],
 	[
 		name: "Minimum dimming value", key: "minimumDimmingValue", type: "range",
@@ -717,14 +588,6 @@ private getParameterMap() {[
 		description: "Time of moving the Flush Dimmer 0-10V between min. and max dimming values by continues hold of push button I1 or associated device. " +
 			"3 seconds (Default value), " +
 			"1 - 255 seconds"
-	],
-	[
-		name: "Ignore start level", key: "ignoreStartLevel", type: "boolean",
-		parameterNumber: 67, size: 1, defaultValue: 0,
-		optionInactive: 0, inactiveDescription: "Default value - Respect start level",
-		optionActive: 1, activeDescription: "Ignore start level",
-		description: "This parameter is used with association group 3. A receiving device SHOULD respect the start level if the Ignore Start Level bit is 0. " +
-			"A receiving device MUST ignore the start level if the Ignore Start Level bit is 1."
 	],
 	[
 		name: "Dimming duration", key: "dimmingDuration", type: "range",
