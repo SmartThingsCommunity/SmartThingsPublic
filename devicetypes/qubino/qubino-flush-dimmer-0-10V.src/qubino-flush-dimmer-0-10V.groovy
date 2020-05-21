@@ -644,26 +644,6 @@ private getParameterMap() {[
 		description: "Based on the parameter settings the stores/does not store the last value of the output after power failure. "
 	],
 	[
-		name: "Minimum dimming value", key: "minimumDimmingValue", type: "range",
-		parameterNumber: 60, size: 1, defaultValue: 1,
-		range: "1..98",
-		description: "1 (Default value) = 1% (minimum dimming value), " +
-			"1 - 98 = 1% - 98%, step is 1%. Minimum dimming values is set by entered value. " +
-			"When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max. " +
-			"If Switch_multilevel_set is set to the value '0', the output is turned OFF. " +
-			"If Switch_multilevel_set is set to the value '1', the output is set to the minimum diming value. " +
-			"NOTE: The minimum level may not be higher than the maximum level."
-	],
-	[
-		name: "Maximum dimming value", key: "maximumDimmingValue", type: "range",
-		parameterNumber: 61, size: 1, defaultValue: 99,
-		range: "99",
-		description: "99 (Default value) = 99% (Maximum dimming value)" +
-			"2 - 99 = 2% - 99%, step is 1%. Maximum dimming values is set by entered value. " +
-			"When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max. " +
-			"NOTE: The maximum level may not be lower than the minimum level."
-	],
-	[
 		name: "Dimming time (soft on/off)", key: "dimmingTime(SoftOn/Off)", type: "range",
 		parameterNumber: 65, size: 2, defaultValue: 100,
 		range: "50..255",
