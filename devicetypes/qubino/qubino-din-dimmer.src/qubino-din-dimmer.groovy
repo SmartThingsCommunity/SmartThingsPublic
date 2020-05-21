@@ -139,6 +139,7 @@ def installed() {
 			state.currentPreferencesState."$it.key".status = "synced"
 		}
 	}
+	readConfigurationFromTheDevice()
 	// Preferences template end
 }
 
@@ -168,6 +169,15 @@ def updated() {
 	}
 	syncConfiguration()
 	// Preferences template end
+}
+
+private readConfigurationFromTheDevice() {
+	def commands = []
+	parameterMap.each {
+		state.currentPreferencesState."$it.key".status = "reverseSyncPending"
+		commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+	}
+	sendHubCommand(commands)
 }
 
 private syncConfiguration() {
@@ -236,18 +246,24 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	def preference = parameterMap.find({ it.parameterNumber == cmd.parameterNumber })
 	def key = preference.key
 	def preferenceValue = getPreferenceValue(preference, cmd.scaledConfigurationValue)
-	if (settings."$key" == preferenceValue) {
-		state.currentPreferencesState."$key".value = settings."$key"
+	if(state.currentPreferencesState."$key".status == "reverseSyncPending"){
+		log.debug "reverseSyncPending"
+		state.currentPreferencesState."$key".value = preferenceValue
 		state.currentPreferencesState."$key".status = "synced"
-	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
+	} else {
+		if (settings."$key" == preferenceValue) {
+			state.currentPreferencesState."$key".value = settings."$key"
+			state.currentPreferencesState."$key".status = "synced"
+		} else if (preference.type == "boolRange") {
+			if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
+				state.currentPreferencesState."$key".status = "disabled"
+			} else {
+				runIn(5, "syncConfiguration", [overwrite: true])
+			}
 		} else {
+			state.currentPreferencesState."$key"?.status = "syncPending"
 			runIn(5, "syncConfiguration", [overwrite: true])
 		}
-	} else {
-		state.currentPreferencesState."$key"?.status = "syncPending"
-		runIn(5, "syncConfiguration", [overwrite: true])
 	}
 	// Preferences template end
 }
@@ -369,8 +385,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelReport cmd, ep = null) {
 	log.debug "SwitchMultilevelReport: ${cmd}"
-	def fixedValue = cmd.value == 0 ? 0 : adjustValueToRange(cmd.value, getMinDimmingLvlPref(), getMaxDimmingLvlPref())
-	dimmerEvents(cmd, fixedValue)
+	dimmerEvents(cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelSet cmd) {
@@ -378,31 +393,15 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelS
 	if(cmd.value == 255){
 		switchEvents(cmd)
 	} else {
-		dimmerEvents(cmd, cmd.value)
+		dimmerEvents(cmd)
 	}
 }
 
-Integer adjustValueToRange(value, minDimmingLvlPref, maxDimmingLvlPref){
-	def range = maxDimmingLvlPref - minDimmingLvlPref
-	def fixedValue = (((value-minDimmingLvlPref)*100)/range) as Integer
-	def adjustedValue = Math.max(Math.min(fixedValue, maxDimmingLvlPref), minDimmingLvlPref)
-	return adjustedValue
-}
-
-def getMaxDimmingLvlPref(){
-	return getCommandValue(parameterMap.find({it.key == 'maximumDimmingValue'})) ?: parameterMap.find({it.key == 'maximumDimmingValue'}).defaultValue
-}
-
-def getMinDimmingLvlPref(){
-	return getCommandValue(parameterMap.find({it.key == 'minimumDimmingValue'})) ?: parameterMap.find({it.key == 'minimumDimmingValue'}).defaultValue
-}
-
-def dimmerEvents(physicalgraph.zwave.Command cmd, dimmerValue) {
-	def rangedValue = dimmerValue == 0 ? 0 : Math.max(Math.min(dimmerValue, maxDimmingLvlPref), minDimmingLvlPref)
+def dimmerEvents(physicalgraph.zwave.Command cmd) {
 	def value = (cmd.value ? "on" : "off")
 	return [
 		createEvent(name: "switch", value: value),
-		createEvent(name: "level", value: rangedValue == 99 ? 100 : rangedValue)
+		createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
 	]
 }
 
@@ -581,61 +580,6 @@ private getParameterMap() {
 			description        : "Type of switch type: mono-stable switch type (push button) or bi-stable switch type (toggle switch)"
 		],
 		[
-			name           : "Activate / deactivate functions ALL ON / ALL OFF ",
-			key            : "activate/DeactivateFunctionsAllOn/AllOff",
-			type           : "enum",
-			parameterNumber: 10, size: 2, defaultValue: 255,
-			values         : [
-				255: "ALL ON active, ALL OFF active",
-				0  : "ALL ON is not active, ALL OFF is not active",
-				1  : "ALL ON is not active, ALL OFF active",
-				2  : "ALL ON active, ALL OFF is not active"
-			],
-			description    : "DIN Dimmer module responds to commands ALL ON / ALL OFF that may be sent by the main controller or by other controller belonging to the system. "
-		],
-		[
-			name           : "Automatic turning off output after set time ",
-			key            : "automaticTurningOffOutputAfterSetTime", type: "boolRange",
-			parameterNumber: 11,
-			size           : 2,
-			defaultValue   : 0,
-			range          : "1..32536",
-			disableValue   : 0,
-			description    : "Turns off the output after set time."
-		],
-		[
-			name           : "Temperature sensor offset settings",
-			key            : "temperatureSensorOffsetSettings",
-			type           : "boolRange",
-			parameterNumber: 110,
-			size           : 2,
-			defaultValue   : 32536,
-			range          : "1..1100",
-			disableValue   : 32536,
-			description    : "Set value is added or subtracted to actual measured value by sensor. Available configuration parameters: 32536 = offset is 0.0°C,	1 - 100 = value from 0.1°C to 10.0°C is added to actual measured temperature. 1001 - 1100 = value from -0.1°C to -10.0°C is subtracted to actual measured temperature."
-		],
-		[
-			name           : "Automatic turning on output after set time ",
-			key            : "automaticTurningOnOutputAfterSetTime",
-			type           : "boolRange",
-			parameterNumber: 12,
-			size           : 2,
-			defaultValue   : 0,
-			range          : "1..32535",
-			disableValue   : 0,
-			description    : "Turns on the output after set time."
-		],
-		[
-			name           : "Digital temperature sensor reporting",
-			key            : "digitalTemperatureSensorReporting",
-			type           : "range",
-			parameterNumber: 120,
-			size           : 1,
-			defaultValue   : 5,
-			range          : "0..127",
-			description    : "Digital temperature sensor reporting If digital temperature sensor is connected, module reports measured temperature on temperature change defined by this parameter. Available configuration parameters: default value 5 = 0,5°C. 1- 127 = 0,1°C - 12,7°C, step is 0,1°C change.	0 = reporting disabled"
-		],
-		[
 			name               : "Enable/Disable Double click function",
 			key                : "enable/DisableDoubleClickFunction",
 			type               : "boolean",
@@ -682,26 +626,6 @@ private getParameterMap() {
 			range          : "1..32767",
 			disableValue   : 0,
 			description    : "Time interval (0 - 32767) in seconds, when power report is send. Reporting enabled. Power report is send with time interval set by entered value. Please note, that too fast reporting can cause too much Z-Wave traffic resulting in Z-Wave poor response."
-		],
-		[
-			name           : "Minimum dimming value",
-			key            : "minimumDimmingValue",
-			type           : "range",
-			parameterNumber: 60,
-			size           : 1,
-			defaultValue   : 1,
-			range          : "1..98",
-			description    : "The minimum level may not be higher than the maximum level! 1% min. When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
-		],
-		[
-			name           : "Maximum dimming value",
-			key            : "maximumDimmingValue",
-			type           : "range",
-			parameterNumber: 61,
-			size           : 1,
-			defaultValue   : 99,
-			range          : "2..99",
-			description    : "The maximum level may not be lower than the minimum level! When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max."
 		],
 		[
 			name           : "Dimming time (soft on/off)",
