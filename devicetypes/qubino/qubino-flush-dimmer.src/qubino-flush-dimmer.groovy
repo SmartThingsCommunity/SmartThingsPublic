@@ -606,14 +606,6 @@ def getDimmingDurationPref() {
 	return dimmingDuration
 }
 
-def getMaxDimmingLvlPref() {
-	return parameterMap.find({it.key == 'maximumDimmingValue'})
-}
-
-def getMinDimmingLvlPref() {
-	return parameterMap.find({it.key == 'minimumDimmingValue'})
-}
-
 def createChildDevice(componentLabel, childNamespace, childDthName, childDni) {
 	try {
 		addChildDevice(childNamespace, childDthName, childDni, device.hub.id,[
@@ -691,33 +683,6 @@ private getParameterMap() {[
 			description: "Select between normally open (NO) and normally close (NC) contact types."
 		],
 		[
-			name: "Activate/deactivate functions ALL ON/ALL OFF", key: "activate/DeactivateFunctionsAllOn/AllOff", type: "enum",
-			parameterNumber: 10, size: 2, defaultValue: 255,
-			values: [
-				0: "ALL ON not active, ALL OFF not active",
-				1: "ALL ON not active, ALL OFF active",
-				2: "ALL ON active, ALL OFF not active",
-				255: "Default value - ALL ON active, ALL OFF active",
-			],
-			description: "Responds to commands ALL ON/ALL OFF that may be sent by the main controller or by other controller belonging to the system."
-		],
-		[
-			name: "Automatic turning off output after set time", key: "automaticTurningOffOutputAfterSetTime", type: "boolRange",
-			parameterNumber: 11, size: 2, defaultValue: 0,
-			range: "1..32535", disableValue: 0,
-			description: "Turns off the output after set time. " +
-				"0 Default value - Auto OFF disabled, " +
-				"1 second - 32535 seconds Auto OFF enabled with define time, step is 1 second"
-		],
-		[
-			name: "Automatic turning on output after set time", key: "automaticTurningOnOutputAfterSetTime", type: "boolRange",
-			parameterNumber: 12, size: 2, defaultValue: 0,
-			range: "1..32535", disableValue: 0,
-			description: "Turns on the output after set time." +
-				"0 (Default value) - Auto ON disabled, " +
-				"1 second - 32535 seconds Auto ON enabled with define time, step is 1 second"
-		],
-		[
 			name: "Enable/Disable the 3-way switch/additional switch", key: "enable/DisableAdditionalSwitch", type: "enum",
 			parameterNumber: 20, size: 1, defaultValue: 0,
 			values: [
@@ -761,25 +726,6 @@ private getParameterMap() {[
 				"Report is sent according to ime interval (value) set here"
 		],
 		[
-			name: "Minimum dimming value", key: "minimumDimmingValue", type: "range",
-			parameterNumber: 60, size: 1, defaultValue: 1,
-			range: "1..98",
-			description: "1 (Default value) = 1% (minimum dimming value), " +
-				"1 - 98 = 1% - 98%, step is 1%. Minimum dimming values is set by entered value. " +
-				"If Switch_multilevel_set is set to the value '0', the output is turned OFF. " +
-				"If Switch_multilevel_set is set to the value '1', the output is set to the minimum diming value. " +
-				"NOTE: The minimum level may not be higher than the maximum level."
-		],
-		[
-			name: "Maximum dimming value", key: "maximumDimmingValue", type: "range",
-			parameterNumber: 61, size: 1, defaultValue: 99,
-			range: "2..99",
-			description: "99 (Default value) = 99% (Maximum dimming value)" +
-				"2 - 99 = 2% - 99%, step is 1%. Maximum dimming values is set by entered value. " +
-				"When the switch type is selected as Bi-stable, it is not possible to dim the value between min and max. " +
-				"NOTE: The maximum level may not be lower than the minimum level."
-		],
-		[
 			name: "Dimming time (soft on/off)", key: "dimmingTimeSoftOnOff", type: "range",
 			parameterNumber: 65, size: 2, defaultValue: 100,
 			range: "50..255",
@@ -794,14 +740,6 @@ private getParameterMap() {[
 			description: "Time of moving the Flush Dimmer between min. and max dimming values by continues hold of push button I1 or associated device. " +
 				"3 seconds (Default value), " +
 				"1 - 255 seconds"
-		],
-		[
-			name: "Ignore start level", key: "ignoreStartLevel", type: "boolean",
-			parameterNumber: 67, size: 1, defaultValue: 0,
-			optionInactive: 0, inactiveDescription: "Default value - Respect start level",
-			optionActive: 1, activeDescription: "Ignore start level",
-			description: "This parameter is used with association group 3. A receiving device SHOULD respect the start level if the Ignore Start Level bit is 0. " +
-				"A receiving device MUST ignore the start level if the Ignore Start Level bit is 1."
 		],
 		[
 			name: "Dimming duration", key: "dimmingDuration", type: "range",
@@ -843,32 +781,5 @@ private getParameterMap() {[
 			],
 			description: "NOTE1: After changing the values of the parameter, first exclude the device (without setting the parameters to their default values), then wait at least 30 seconds to re-include the device!. " +
 				"NOTE2: When the parameter is set to value 9 the notifications are sent for the Home Security notification type."
-		],
-		[
-			name: "Temperature sensor offset settings", key: "temperatureSensorOffsetSettings", type: "range",
-			parameterNumber: 110, size: 2, defaultValue: 32536,
-			range: "1..32536",
-			description: "Set value is added or subtracted to actual measured value by sensor. " +
-				"32536 (Default value), " +
-				"1 to 100 Value from 0.1 degrees celsius to 10.0 degrees celsius is added to actual measured temperature " +
-				"1001 to 1100 Value from -0.1 degrees celsius to -10.0 degrees celsius is subtracted to actual measured temperature"
-		],
-		[
-			name: "Digital temperature sensor reporting", key: "digitalTemperatureSensorReporting", type: "range",
-			parameterNumber: 120, size: 1, defaultValue: 5,
-			range: "1..127",
-			description: "Digital temperature sensor reporting If digital temperature sensor is connected, module reports measured temperature on temperature change defined by this parameter. " +
-				"Available configuration parameters (data type is 1 Byte DEC): " +
-				"0 - Reporting disabled, " +
-				"5 (Default value) = 0,5°C change, " +
-				"1 - 127 = 0,1°C - 12,7°C, step is 0,1°C"
-		],
-		[
-			name: "Enable/Disable Reporting on set command", key: "enable/DisableReporting", type: "boolean",
-			parameterNumber: 249, size: 1, defaultValue: 0,
-			optionInactive: 0, inactiveDescription: "Default value - Double click disabled",
-			optionActive: 1, activeDescription: "Reporting on set command enabled",
-			description: "Choose whether reports (containing the new output state) are sent to the gateway (hub) after a set command is received by the device"
 		]
-
 ]}
