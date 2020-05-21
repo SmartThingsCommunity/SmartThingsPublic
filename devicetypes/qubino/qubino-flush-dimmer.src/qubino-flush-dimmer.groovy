@@ -222,13 +222,18 @@ def configure() {
 
 def parse(String description) {
 	log.debug "parse() description: ${description}"
-	def result = null
-	def cmd = zwave.parse(description, commandClassVersions)
-	if (cmd) {
-		result = zwaveEvent(cmd)
-		log.debug("'$description' parsed to $result")
+	def result = []
+	if (description.contains("command: 0000")) {
+		// Sometimes the device sends a broken Z-Wave command 'cmd: 0000, payload: 00 00 00 00 00 00 00 00' that causes an exception while parsing.
+		log.warn "No operation ID 0x00. Cannot parse command: ${description}"
 	} else {
-		log.debug("Couldn't zwave.parse '$description'")
+		def cmd = zwave.parse(description, commandClassVersions)
+		if (cmd) {
+			result = zwaveEvent(cmd)
+			log.debug("'$description' parsed to $result")
+		} else {
+			log.debug("Couldn't zwave.parse '$description'")
+		}
 	}
 	return result
 }
@@ -351,10 +356,6 @@ private dimmerEvents(physicalgraph.zwave.Command cmd, ep = null) {
 	def result = [createEvent(name: "switch", value: value)]
 	if (cmd.value <= 100) {
 		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value)
-		if (cmd.value != 0) {
-			state.lastDimmingLevel = cmd.value
-			log.debug "Dimming level state set to ${cmd.value}"
-		}
 	}
 	log.debug "dimmerEvents: ${result}"
 	return result
