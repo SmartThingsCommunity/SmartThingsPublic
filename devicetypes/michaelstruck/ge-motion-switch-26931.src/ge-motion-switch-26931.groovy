@@ -1,11 +1,12 @@
 /**
  *  GE Motion Switch (Model 26931) DTH
  *
- *  Copyright © 2018 Michael Struck
+ *  Copyright © 2020 Michael Struck
  *  Original Author: Matt Lebaugh (@mlebaugh)
  *
- *  Version 1.0.5 12/4/18 
+ *  Version 1.0.6 5/22/20
  *
+ *  Version 1.0.6 (5/22/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Morgon! Alignment with dimmer parameter 
  *  Version 1.0.5 (12/4/18) - Removed logging to reduce Zwave traffic; optimized button triple press
  *  Version 1.0.4b (10/18/18) - Skipped 1.0.4 to maintain consistency with dimmer code version. Changed to triple push for special options
  *  Version 1.0.2 (8/2/18) - Updated some of the text/options on the Settings page
@@ -137,6 +138,7 @@ metadata {
                     "2" : "20 sec (Default)",
                     "3" : "30 sec",
                     "4" : "45 sec",
+                    "5" : "60 sec",
                     "110" : "27 mins"
                 ]
             )
@@ -491,11 +493,11 @@ def updated() {
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 14)
     //param 15 reset cycle
     if (settings.resetcycle) {
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [settings.resetcycle.toInteger()], parameterNumber: 15, size: 1)
+       	cmds << zwave.configurationV1.configurationSet(configurationValue: [0, settings.resetcycle.toInteger()], parameterNumber: 15, size: 2)
        	cmds << zwave.configurationV1.configurationGet(parameterNumber: 15)
     }
     else {
-       	cmds << zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 15, size: 1)
+       	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,2], parameterNumber: 15, size: 2)
        	cmds << zwave.configurationV1.configurationGet(parameterNumber: 15)
     }
     //param 3 operating mode (no default...no entry=no change)
@@ -595,4 +597,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor) {
 	result +="\n${timeSync} Timeout Duration: " + timeDelayTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.5 (12/04/18)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.6 (05/22/20)") }
