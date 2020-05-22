@@ -17,7 +17,7 @@
  */
 
 metadata {
-	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, executeCommandsLocally: false, genericHandler: "Z-Wave") {
+	definition (name: "Z-Wave Motion Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.motion", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false, genericHandler: "Z-Wave") {
 		capability "Motion Sensor"
 		capability "Sensor"
 		capability "Battery"
@@ -68,19 +68,19 @@ metadata {
 	// preferences {
 		section {
 			input(
-					title: "Settings Available For Everpring SP815 and SP817 only",
+					title: "Settings Available For Everspring SP815 and SP817 only",
 					description: "",
 					type: "paragraph",
 					element: "paragraph"
 			)
 			input (
 					title: "Temperature and Humidity Auto Report (Everspring SP815 only):",
-					description: "This setting allows to adjusts report time (in minutes) of temperature and humidity report.",
+					description: "This setting allows to adjusts report time (in seconds) of temperature and humidity report.",
 					name: "temperatureAndHumidityReport",
 					type: "number",
-					range: "1..1440",
-					defaultValue: 30
-			) // defaultValue: 30
+					range: "600..1440",
+					defaultValue: 600
+			) // defaultValue: 600
 			input (
 					title: "Re-trigger Interval Setting (Everspring SP815 and Everspring SP817 only):",
 					description: "The setting adjusts the sleep period (in seconds) after the detector has been triggered. No response will be made during this interval if a movement is presented. Longer re-trigger interval will result in longer battery life.",
@@ -389,7 +389,7 @@ def getConfigurationCommands() {
 }
 
 def getEverspringDefaults() {
-	[1:30,
+	[1: 600,
 	2: 180]
 }
 
