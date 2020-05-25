@@ -134,6 +134,13 @@ def updated() {
 	if (settings.temperatureHigh != null || settings.temperatureLow != null) {
         sendEvent(name: "temperatureAlarm", value: "cleared", displayed: false) 
 	}
+
+	def tempAlarmMap = ["clear": "cleared", "overheat": "heat", "underheat": "freeze"]
+	// Convert old device specific temperatureAlarm event to standard Temperature Alarm capability event
+	def temperatureAlarmCurrentValue = device.currentValue("temperatureAlarm")
+	if (tempAlarmMap.containsKey(temperatureAlarmCurrentValue)) {
+		sendEvent(name: "temperatureAlarm", value: tempAlarmMap[temperatureAlarmCurrentValue], displayed: true)
+	}
 	
 	syncStart()
 	state.lastUpdated = now()
