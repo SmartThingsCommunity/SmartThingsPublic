@@ -102,11 +102,11 @@ def updated() {
 	log.debug "updated"
 // Device wakes up every 4 hours, this interval allows us to miss one wakeup notification before marking offline
 	sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	response(initialPoll())
+	response(getConfigurationCommands())
 }
 
 def configure() {
-	if (isEverspringSP815andSP817()) {
+	if (isEverspringSP815orSP817()) {
 		state.configured = false
 		state.intervalConfigured = false
 		if(isEverspringSP815()){
@@ -196,7 +196,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	}
 
 	log.debug "isConfigured: ${isConfigured()}"
-	if (isEverspringSP815andSP817() && !isConfigured()) {
+	if (isEverspringSP815orSP817() && !isConfigured()) {
 		result += lateConfigure()
 	}
 	result
@@ -210,7 +210,7 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
 
-	if (isEverspringSP815andSP817() && !isConfigured()) {
+	if (isEverspringSP815orSP817() && !isConfigured()) {
 		result += lateConfigure(true)
 	}
 
@@ -329,7 +329,7 @@ def initialPoll() {
 	if (isEnerwave()) { // Enerwave motion doesn't always get the associationSet that the hub sends on join
 		request << zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:zwaveHubNodeId)
 	}
-	if (isEverspringSP815andSP817()) {
+	if (isEverspringSP815orSP817()) {
 		request += getConfigurationCommands()
 	}
 	request << zwave.batteryV1.batteryGet()
@@ -381,8 +381,12 @@ def getConfigurationCommands() {
 		if (!state.retriggerIntervalSettings) state.retriggerIntervalSettings = everspringDefaults[2]
 		Integer retriggerIntervalSettings = (settings.retriggerIntervalSettings as Integer) ?: everspringDefaults[2]
 		if (!isConfigured() || (retriggerIntervalSettings != state.retriggerIntervalSettings)) {
-			result << zwave.configurationV2.configurationSet(parameterNumber: 4, size: 2, scaledConfigurationValue: retriggerIntervalSettings)
-			result << zwave.configurationV2.configurationGet(parameterNumber: 4)
+			state.configured = false
+			if (!state.intervalConfigured || retriggerIntervalSettings != state.retriggerIntervalSettings) {
+				state.intervalConfigured = false
+				result << zwave.configurationV2.configurationSet(parameterNumber: 4, size: 2, scaledConfigurationValue: retriggerIntervalSettings)
+				result << zwave.configurationV2.configurationGet(parameterNumber: 4)
+			}
 		}
 	}
 	return result
@@ -402,12 +406,8 @@ private isConfigured() {
 	return state.configured == true
 }
 
-private setConfigured() {
-	state.configured = true
-}
-
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	if (isEverspringSP815andSP817()) {
+	if (isEverspringSP815orSP817()) {
 		if (cmd.parameterNumber == 1) {
 			state.temperatureAndHumidityReport = scaledConfigurationValue
 			state.temperatureConfigured = true
@@ -416,7 +416,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 			state.intervalConfigured = true
 		}
 		if (state.intervalConfigured == true && (isEverspringSP817() || (isEverspringSP815() && state.temperatureConfigured== true))) {
-			setConfigured()
+			state.configured = true
 		}
 		log.debug "Everspring Configuration Report: ${cmd}"
 		return [:]
@@ -435,6 +435,6 @@ private isEverspringSP817() {
 	zwaveInfo?.mfr?.equals("0060") && zwaveInfo?.model?.equals("0006")
 }
 
-private isEverspringSP815andSP817() {
+private isEverspringSP815orSP817() {
 	zwaveInfo?.mfr?.equals("0060") && (zwaveInfo?.model?.equals("0004") || zwaveInfo?.model?.equals("0006"))
 }
