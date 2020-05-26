@@ -42,66 +42,29 @@ metadata {
 
 	preferences {
 		parameterMap.each {
-			input (
-					title: it.name,
-					description: it.description,
-					type: "paragraph",
-					element: "paragraph"
-			)
+			input (title: it.name, description: it.description, type: "paragraph", element: "paragraph")
 
 			switch(it.type) {
 				case "boolRange":
-					input(
-							name: it.key + "Boolean",
-							type: "bool",
-							title: "Enable",
+					input(name: it.key + "Boolean", type: "bool", title: "Enable",
 							description: "If you disable this option, it will overwrite setting below.",
-							defaultValue: it.defaultValue != it.disableValue,
-							required: false
+							defaultValue: it.defaultValue != it.disableValue, required: false
 					)
-					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
+					input(name: it.key, type: "number", title: "Set value (range ${it.range})", defaultValue: it.defaultValue,
+							range: it.range, required: false
 					)
 				break
 				case "boolean":
-					input(
-							type: "paragraph",
-							element: "paragraph",
-							description: "Option enabled: ${it.activeDescription}\n" +
-									"Option disablePending: ${it.inactiveDescription}"
+					input(type: "paragraph", element: "paragraph", description: "Option enabled: ${it.activeDescription}\n" +
+							"Option disablePending: ${it.inactiveDescription}"
 					)
-					input(
-							name: it.key,
-							type: "boolean",
-							title: "Enable",
-							defaultValue: it.defaultValue == it.activeOption,
-							required: false
-					)
+					input(name: it.key, type: "boolean", title: "Enable", defaultValue: it.defaultValue == it.activeOption, required: false)
 				break
 				case "enum":
-					input(
-							name: it.key,
-							title: "Select",
-							type: "enum",
-							options: it.values,
-							defaultValue: it.defaultValue,
-							required: false
-					)
+					input(name: it.key, title: "Select", type: "enum", options: it.values, defaultValue: it.defaultValue, required: false)
 				break
 				case "range":
-					input(
-							name: it.key,
-							type: "number",
-							title: "Set value (range ${it.range})",
-							defaultValue: it.defaultValue,
-							range: it.range,
-							required: false
-					)
+					input(name: it.key, type: "number", title: "Set value (range ${it.range})", defaultValue: it.defaultValue, range: it.range, required: false)
 				break
 			}
 		}
@@ -141,7 +104,7 @@ def updated() {
 			state.currentPreferencesState."$it.key".status = "syncPending"
 			if (it.type == "boolRange") {
 				def preferenceName = it.key + "Boolean"
-				if (notNullCheck(settings."$preferenceName")) {
+				if (settings."$preferenceName" != null) {
 					if (!settings."$preferenceName") {
 						state.currentPreferencesState."$it.key".status = "disablePending"
 					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
@@ -220,7 +183,7 @@ private getCommandValue(preference) {
 			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
 		case "boolRange":
 			def parameterKeyBoolean = parameterKey + "Boolean"
-			return !notNullCheck(settings."$parameterKeyBoolean") || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+			return settings."$parameterKeyBoolean" == null || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
 		case "range":
 			return settings."$parameterKey"
 		default:
@@ -229,7 +192,7 @@ private getCommandValue(preference) {
 }
 
 private isPreferenceChanged(preference) {
-	if (notNullCheck(settings."$preference.key")) {
+	if (settings."$preference.key" != null) {
 		def value = state.currentPreferencesState."$preference.key"
 		switch (preference.type) {
 			case "boolRange":
@@ -245,10 +208,6 @@ private isPreferenceChanged(preference) {
 	} else {
 		return false
 	}
-}
-
-private notNullCheck(value) {
-	return value != null
 }
 
 def handleConfigurationChange(confgurationReport) {
