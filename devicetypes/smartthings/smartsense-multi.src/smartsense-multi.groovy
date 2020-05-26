@@ -21,7 +21,7 @@ metadata {
 		capability "Sensor"
 		capability "Battery"
 
-		fingerprint profileId: "FC01", deviceId: "0139", deviceJoinName: "SmartThings Multipurpose Sensor"
+		fingerprint profileId: "FC01", deviceId: "0139", deviceJoinName: "Multipurpose Sensor"
 	}
 
 	simulator {
