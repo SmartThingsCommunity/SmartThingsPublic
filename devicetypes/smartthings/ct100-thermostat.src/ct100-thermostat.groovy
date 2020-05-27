@@ -20,8 +20,9 @@ metadata {
 		command "raiseCoolSetpoint"
 		command "poll"
 
-		fingerprint deviceId: "0x08", inClusters: "0x43,0x40,0x44,0x31,0x80,0x85,0x60"
-		fingerprint mfr:"0098", prod:"6401", model:"0107", deviceJoinName: "2Gig CT100 Programmable Thermostat"
+		fingerprint deviceId: "0x08", inClusters: "0x43,0x40,0x44,0x31,0x80,0x85,0x60", deviceJoinName: "Thermostat"
+		fingerprint mfr:"0098", prod:"6401", model:"0107", deviceJoinName: "2Gig Thermostat" //2Gig CT100 Programmable Thermostat
+		fingerprint mfr:"0098", prod:"6501", model:"000C", deviceJoinName: "Iris Thermostat" //Radio Thermostat CT101
 	}
 
 	tiles {
@@ -355,6 +356,9 @@ def zwaveEvent(physicalgraph.zwave.commands.thermostatfanmodev3.ThermostatFanMod
 
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 	log.debug "Zwave BasicReport: $cmd"
+	if (cmd.value == 255) {
+		response(zwave.batteryV1.batteryGet().format())
+	}
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {

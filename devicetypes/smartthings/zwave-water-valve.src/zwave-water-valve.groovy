@@ -20,9 +20,11 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 
-		fingerprint deviceId: "0x1006", inClusters: "0x25"
-		fingerprint mfr: "0173", prod: "0003", model: "0002", deviceJoinName: "Leak Intelligence Leak Gopher Water Shutoff Valve"
-		fingerprint mfr: "021F", prod: "0003", model: "0002", deviceJoinName: "Dome Water Main Shut-off"
+		fingerprint deviceId: "0x1006", inClusters: "0x25", deviceJoinName: "Valve"
+		fingerprint mfr: "0173", prod: "0003", model: "0002", deviceJoinName: "Leak Gopher Valve" //Leak Intelligence Leak Gopher Water Shutoff Valve
+		fingerprint mfr: "021F", prod: "0003", model: "0002", deviceJoinName: "Dome Valve" //Dome Water Main Shut-off
+		fingerprint mfr: "0157", prod: "0003", model: "0002", deviceJoinName: "EcoNet Valve" //EcoNet Bulldog Valve Robot
+		fingerprint mfr: "0152", prod: "0003", model: "0512", deviceJoinName: "POPP Valve" //POPP Secure Flow Stop
 	}
 
 	// simulator metadata

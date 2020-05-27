@@ -11,6 +11,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import physicalgraph.zigbee.clusters.iaszone.ZoneStatus
 import physicalgraph.zigbee.zcl.DataType
 
 metadata {
@@ -19,11 +20,13 @@ metadata {
         capability "Battery"
         capability "Configuration"
         capability "Power Source"
+        capability "Health Check"
         capability "Refresh"
         capability "Valve"
 
-        fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0006, 0020, 0B02, FC02", outClusters: "0019", manufacturer: "WAXMAN", model: "leakSMART Water Valve v2.10", deviceJoinName: "leakSMART Valve"
-        fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0004, 0005, 0006, 0008, 000F, 0020, 0B02", outClusters: "0003, 0019", manufacturer: "WAXMAN", model: "House Water Valve - MDL-TBD", deviceJoinName: "Waxman House Water Valve"
+        fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0006, 0020, 0B02, FC02", outClusters: "0019", manufacturer: "WAXMAN", model: "leakSMART Water Valve v2.10", deviceJoinName: "leakSMART Valve" //leakSMART Valve
+        fingerprint profileId: "0104", inClusters: "0000, 0001, 0003, 0004, 0005, 0006, 0008, 000F, 0020, 0B02", outClusters: "0003, 0019", manufacturer: "WAXMAN", model: "House Water Valve - MDL-TBD", deviceJoinName: "Waxman Valve" //Waxman House Water Valve
+        fingerprint profileId: "0104", inClusters: "0000, 0003, 0004, 0006, 0500", outClusters: "0019", manufacturer: "", model: "E253-KR0B0ZX-HA", deviceJoinName: "Valve" //Smart Gas Valve Actuator
     }
 
     // simulator metadata
@@ -81,10 +84,12 @@ def parse(String description) {
             else if(event.value == "off") {
                 event.value = "closed"
             }
+            sendEvent(event)
+            // we need a valve and a contact event every time
+            event.name = "valve"
+        } else if (event.name == "powerSource") {
+            event.value = event.value.toLowerCase()
         }
-        sendEvent(event)
-        //handle valve attribute
-        event.name = "valve"
         sendEvent(event)
     }
     else {
@@ -92,16 +97,16 @@ def parse(String description) {
         if (descMap.clusterInt == CLUSTER_BASIC && descMap.attrInt == BASIC_ATTR_POWER_SOURCE){
             def value = descMap.value
             if (value == "01" || value == "02") {
-                sendEvent(name: "powerSource", value: "Mains")
+                sendEvent(name: "powerSource", value: "mains")
             }
             else if (value == "03") {
-                sendEvent(name: "powerSource", value: "Battery")
+                sendEvent(name: "powerSource", value: "battery")
             }
             else if (value == "04") {
-                sendEvent(name: "powerSource", value: "DC")
+                sendEvent(name: "powerSource", value: "dc")
             }
             else {
-                sendEvent(name: "powerSource", value: "Unknown")
+                sendEvent(name: "powerSource", value: "unknown")
             }
         }
         else if (descMap.clusterInt == CLUSTER_POWER && descMap.attrInt == POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) {
@@ -126,15 +131,26 @@ def close() {
 
 def refresh() {
     log.debug "refresh called"
-    zigbee.onOffRefresh() +
-    zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE) +
-    zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING) +
-    zigbee.onOffConfig() +
-    zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 600, 21600, 1) +
-    zigbee.configureReporting(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE, DataType.ENUM8, 5, 21600, 1)
+
+    def cmds = []
+    cmds += zigbee.onOffRefresh()
+    cmds += zigbee.readAttribute(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE)
+    cmds += zigbee.readAttribute(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING)
+    cmds += zigbee.onOffConfig()
+    cmds += zigbee.configureReporting(CLUSTER_BASIC, BASIC_ATTR_POWER_SOURCE, DataType.ENUM8, 5, 21600, 1)
+    cmds += zigbee.configureReporting(CLUSTER_POWER, POWER_ATTR_BATTERY_PERCENTAGE_REMAINING, DataType.UINT8, 600, 21600, 1)
+    return cmds
 }
 
 def configure() {
     log.debug "Configuring Reporting and Bindings."
     refresh()
+}
+
+def installed() {
+    sendEvent(name: "checkInterval", value: 2 * 60 * 60 + 2 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+}
+
+def ping() {
+    zigbee.onOffRefresh()
 }

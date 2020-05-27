@@ -20,7 +20,7 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
 
-		fingerprint deviceId: '0x4002', inClusters: '0x72,0x80,0x86,0x98'
+		fingerprint deviceId: '0x4002', inClusters: '0x72,0x80,0x86,0x98', deviceJoinName: "Danalock Door Lock"
 	}
 
 	simulator {
@@ -61,6 +61,21 @@ metadata {
 
 import physicalgraph.zwave.commands.doorlockv1.*
 
+/**
+ * Mapping of command classes and associated versions used for this DTH
+ */
+private getCommandClassVersions() {
+	[
+		0x62: 1,  // Door Lock
+		0x71: 2,  // Alarm
+		0x72: 2,  // Manufacturer Specific
+		0x80: 1,  // Battery
+		0x8A: 1,  // Time
+		0x85: 2,  // Association
+		0x98: 1   // Security 0
+	]
+}
+
 def parse(String description) {
 	def result = null
 	if (description.startsWith("Err")) {
@@ -76,7 +91,7 @@ def parse(String description) {
 			)
 		}
 	} else {
-		def cmd = zwave.parse(description, [ 0x98: 1, 0x72: 2, 0x85: 2, 0x8A: 1 ])
+		def cmd = zwave.parse(description, commandClassVersions)
 		if (cmd) {
 			result = zwaveEvent(cmd)
 		}
@@ -86,7 +101,7 @@ def parse(String description) {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	def encapsulatedCommand = cmd.encapsulatedCommand([0x62: 1, 0x71: 2, 0x80: 1, 0x8A: 1, 0x85: 2, 0x98: 1])
+	def encapsulatedCommand = cmd.encapsulatedCommand(commandClassVersions)
 	// log.debug "encapsulated: $encapsulatedCommand"
 	if (encapsulatedCommand) {
 		zwaveEvent(encapsulatedCommand)

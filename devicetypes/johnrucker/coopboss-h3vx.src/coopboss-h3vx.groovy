@@ -84,7 +84,6 @@ metadata {
     
     
 	preferences {
-		input description: "This feature allows you to correct any temperature variations by selecting an offset. Ex: If your sensor consistently reports a temp that's 5 degrees too warm, you'd enter \"-5\". If 3 degrees too cold, enter \"+3\".", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		input "tempOffsetCoop", "number", title: "Coop Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 		input "tempOffsetOutside", "number", title: "Outside Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false        
 	}    

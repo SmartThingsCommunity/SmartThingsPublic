@@ -12,7 +12,7 @@
  *
  */
 metadata {
-	definition (name: "Fibaro Smoke Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Fibaro Smoke Sensor", namespace: "smartthings", author: "SmartThings", mnmn: "SmartThings", vid: "SmartThings-smartthings-Fibaro_Smoke_Sensor", ocfDeviceType: "x.com.st.d.sensor.smoke") {
 		capability "Battery" //attributes: battery
 		capability "Configuration"	//commands: configure()
 		capability "Sensor"
@@ -22,7 +22,11 @@ metadata {
 		capability "Tamper Alert"
 		capability "Temperature Alarm"
 
-		fingerprint mfr:"010F", prod:"0C02", model:"1002"
+		fingerprint mfr:"010F", prod:"0C02", model:"1002", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"4002", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"1003", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", deviceJoinName: "Fibaro Smoke Detector"
+		fingerprint mfr:"010F", prod:"0C02", model:"3002", deviceJoinName: "Fibaro Smoke Detector"
 	}
 	simulator {
 		//battery
@@ -200,7 +204,7 @@ def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulat
 }
 
 def isFibaro() {
-	(zwaveInfo?.mfr == "010F" && zwaveInfo.prod == "0C02")
+	(zwaveInfo?.mfr?.equals("010F") && zwaveInfo?.prod?.equals("0C02"))
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
@@ -404,7 +408,7 @@ def configure() {
 		///3. Z-Wave notification status: 0-all disabled (default), 1-casing open enabled, 2-exceeding temp enable
 		//if (state.initDefault) {
 		//	log.debug "Setting zwave notification default value to 1   "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
-		//		request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
+		//request += zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: 1)
 		//	  state.initDefault = false
 		//} else if (zwaveNotificationStatus && zwaveNotificationStatus != "null"){
 		//	log.debug "else zwave notification "+zwave.configurationV1.configurationSet(parameterNumber: 2, size: 1, scaledConfigurationValue: notificationOptionValueMap[zwaveNotificationStatus] ?: 0)
@@ -515,7 +519,7 @@ private setSecured() {
 
 private isSecured() {
     if (zwaveInfo && zwaveInfo.zw) {
-        return zwaveInfo.zw.endsWith("s")
+        return zwaveInfo.zw.contains("s")
     } else {
         return getDataValue("secured") == "true"
     }

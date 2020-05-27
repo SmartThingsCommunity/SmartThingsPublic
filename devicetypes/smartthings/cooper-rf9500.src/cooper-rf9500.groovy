@@ -85,7 +85,7 @@ def leveldown() {
     	setLevel(curlevel - 10)
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.trace "setLevel($value)"
 	sendEvent(name: "level", value: value)
 }

@@ -16,8 +16,8 @@ metadata {
 
         capability "Battery"
 
-        fingerprint mfr:"026E", prod:"5643", model:"5A31", deviceJoinName: "2 Button Window Remote"
-        fingerprint mfr:"026E", prod:"4252", model:"5A31", deviceJoinName: "3 Button Window Remote"
+        fingerprint mfr:"026E", prod:"5643", model:"5A31", deviceJoinName: "Springs Remote Control" //2 Button Window Remote
+        fingerprint mfr:"026E", prod:"4252", model:"5A31", deviceJoinName: "Springs Remote Control" //3 Button Window Remote
     }
 
     simulator {
@@ -44,7 +44,7 @@ metadata {
 }
 
 def installed() {
-    if (zwaveInfo.zw && zwaveInfo.zw.cc?.contains("84")) {
+    if (zwaveInfo.cc?.contains("84")) {
         response(zwave.wakeUpV1.wakeUpNoMoreInformation())
     }
 }
@@ -52,9 +52,6 @@ def installed() {
 def parse(String description) {
     def result = null
     if (description.startsWith("Err")) {
-        if (description.startsWith("Err 106") && !state.sec) {
-            state.sec = 0
-        }
         result = createEvent(descriptionText:description, displayed:true)
     } else {
         def cmd = zwave.parse(description)
@@ -68,21 +65,23 @@ def parse(String description) {
 def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd) {
     def result = []
     result << createEvent(descriptionText: "${device.displayName} woke up", isStateChange: true)
+    result << response(command(zwave.batteryV1.batteryGet()))
     result << response(zwave.wakeUpV1.wakeUpNoMoreInformation())
     result
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-    state.sec = 1
-    createEvent(isStateChange: true, descriptionText: "$device.displayName: ${cmd.encapsulatedCommand()} [secure]")
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-    createEvent(isStateChange: true, descriptionText: "$device.displayName: ${cmd.encapsulatedCommand()}")
+    def encapsulatedCommand = cmd.encapsulatedCommand()
+    if (encapsulatedCommand) {
+        return zwaveEvent(encapsulatedCommand)
+    } else {
+        log.warn "Unable to extract encapsulated cmd from $cmd"
+        createEvent(descriptionText: cmd.toString())
+    }
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
-    createEvent(isStateChange: true, "$device.displayName: $cmd")
+    [:]
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
@@ -108,7 +107,7 @@ private command(physicalgraph.zwave.Command cmd) {
 
 private getDeviceIsSecure() {
     if (zwaveInfo && zwaveInfo.zw) {
-        return zwaveInfo.zw.endsWith("s")
+        return zwaveInfo.zw.contains("s")
     } else {
         return state.sec ? true : false
     }

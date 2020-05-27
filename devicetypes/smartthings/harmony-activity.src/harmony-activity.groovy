@@ -13,6 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+
+import groovy.json.JsonOutput
+
 metadata {
         definition (name: "Harmony Activity", namespace: "smartthings", author: "Juan Risso") {
         capability "Switch"

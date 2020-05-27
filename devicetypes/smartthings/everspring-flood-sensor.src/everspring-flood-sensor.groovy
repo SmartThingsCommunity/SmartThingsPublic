@@ -12,14 +12,14 @@
  *
  */
 metadata {
-	definition (name: "Everspring Flood Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture") {
+	definition (name: "Everspring Flood Sensor", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "x.com.st.d.sensor.moisture", runLocally: true, minHubCoreVersion: '000.024.0000', executeCommandsLocally: true) {
 		capability "Water Sensor"
 		capability "Configuration"
 		capability "Sensor"
 		capability "Battery"
 		capability "Health Check"
 
-		fingerprint deviceId: "0xA102", inClusters: "0x86,0x72,0x85,0x84,0x80,0x70,0x9C,0x20,0x71"
+		fingerprint deviceId: "0xA102", inClusters: "0x86,0x72,0x85,0x84,0x80,0x70,0x9C,0x20,0x71", deviceJoinName: "Everspring Water Leak Sensor"
 	}
 
 	simulator {

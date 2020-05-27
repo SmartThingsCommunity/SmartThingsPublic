@@ -11,9 +11,13 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
+import groovy.json.JsonOutput
+
+
 metadata {
     definition (name: "Springs Window Fashions Shade", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.blind") {
         capability "Window Shade"
+        capability "Window Shade Preset"
         capability "Battery"
         capability "Refresh"
         capability "Health Check"
@@ -28,8 +32,8 @@ metadata {
         //
 //        fingerprint type: "0x1107", cc: "0x5E,0x26", deviceJoinName: "Window Shade"
 //        fingerprint type: "0x9A00", cc: "0x5E,0x26", deviceJoinName: "Window Shade"
-        fingerprint mfr:"026E", prod:"4353", model:"5A31", deviceJoinName: "Window Shade"
-        fingerprint mfr:"026E", prod:"5253", model:"5A31", deviceJoinName: "Roller Shade"
+        fingerprint mfr:"026E", prod:"4353", model:"5A31", deviceJoinName: "Springs Window Treatment" //Window Shade
+        fingerprint mfr:"026E", prod:"5253", model:"5A31", deviceJoinName: "Springs Window Treatment" //Roller Shade
     }
 
     simulator {
@@ -110,6 +114,7 @@ def getCheckInterval() {
 
 def installed() {
     sendEvent(name: "checkInterval", value: checkInterval, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+    sendEvent(name: "supportedWindowShadeCommands", value: JsonOutput.toJson(["open", "close", "pause"]), displayed: false)
     response(refresh())
 }
 
@@ -195,7 +200,7 @@ def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
         map.value = cmd.batteryLevel
     }
     state.lastbatt = now()
-    if (map.value <= 1 && device.latestValue("battery") - map.value > 20) {
+    if (map.value <= 1 && device.latestValue("battery") != null && device.latestValue("battery") - map.value > 20) {
         // Springs shades sometimes erroneously report a low battery when rapidly actuated manually. They'll still
         // refuse to actuate after one of these reports, but this will limit the bad data that gets surfaced
         log.warn "Erroneous battery report dropped from ${device.latestValue("battery")} to $map.value. Not reporting"
@@ -239,6 +244,11 @@ def setLevel(value, duration = null) {
 
 def presetPosition() {
     zwave.switchMultilevelV1.switchMultilevelSet(value: 0xFF).format()
+}
+
+def pause() {
+    log.debug "pause()"
+    stop()
 }
 
 def stop() {

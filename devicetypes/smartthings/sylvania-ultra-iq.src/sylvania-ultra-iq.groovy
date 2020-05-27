@@ -75,7 +75,7 @@ def off() {
 	sendEvent(name: "switch", value: "off")
 	"st cmd 0x${device.deviceNetworkId} ${endpointId} 6 0 {}"
 }
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	log.trace "setLevel($value)"
 	def cmds = []
 
