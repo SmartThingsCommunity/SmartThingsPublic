@@ -343,7 +343,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	if (cmd.notificationType == 0x07) {
 		if ((cmd.event == 0x00)) { 
            	result << createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
-            log.debug "$device.displayName has stopped"
+            log.debug "$device.displayName motion has stopped"
          } else if (cmd.event == 0x08) {
             result << createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
             log.debug "$device.displayName detected motion"
