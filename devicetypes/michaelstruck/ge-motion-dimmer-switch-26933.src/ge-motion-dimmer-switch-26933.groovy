@@ -6,8 +6,9 @@
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.6a 2/11/20 
+ *  Version 1.0.7 5/27/20 
  *
+ *  Version 1.0.7 (5/27/20) - Version alignment with switch code. 
  *  Version 1.0.6a (2/11/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Morgon!
  *  Version 1.0.5 (12/4/18) - Removed logging to reduce Zwave traffic; optimized button triple press  
  *  Version 1.0.4b (10/15/18) - Changed to triple push for options for switches to activate special functions.
@@ -37,7 +38,6 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 		capability "Light"
-        capability "Button"
         
 		command "toggleMode"
         command "occupancy"
@@ -171,28 +171,13 @@ metadata {
             input title: "", description: "**setLevel Default Function (Advanced)**\nDefines how 'setLevel' behavior affects the light.",  type: "paragraph", element: "paragraph"
             input "setlevelmode", "bool", title: "setLevel Does Not Activate Light", defaultValue:false
     }
-simulator {
-		status "on":  "command: 2003, payload: FF"
-		status "off": "command: 2003, payload: 00"
-		status "09%": "command: 2003, payload: 09"
-		status "10%": "command: 2003, payload: 0A"
-		status "33%": "command: 2003, payload: 21"
-		status "66%": "command: 2003, payload: 42"
-		status "99%": "command: 2003, payload: 63"
-
-		// reply messages
-		reply "2001FF,delay 5000,2602": "command: 2603, payload: FF"
-		reply "200100,delay 5000,2602": "command: 2603, payload: 00"
-		reply "200119,delay 5000,2602": "command: 2603, payload: 19"
-		reply "200132,delay 5000,2602": "command: 2603, payload: 32"
-		reply "20014B,delay 5000,2602": "command: 2603, payload: 4B"
-		reply "200163,delay 5000,2602": "command: 2603, payload: 63"
-	}
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 		tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-			attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
-			attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+			attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC", nextState:"turningOff"
+			attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"turningOn"
+            attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+			attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 		}
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") { attributeState "level", action:"switch level.setLevel" }
             tileAttribute ("device.about", key: "SECONDARY_CONTROL") { attributeState "aboutTxt", label:'${currentValue}' }
@@ -247,7 +232,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	def result = []
     if (cmd.value == 255) {
-    	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "On/Up on (button 1) $device.displayName was pushed", isStateChange: true, type: "physical"])
+    	result << createEvent([name: "switch", value: "on", data: [buttonNumber: "1"], descriptionText: "On/Up (button 1) on $device.displayName was pushed", isStateChange: true, type: "physical"])
     	if (timeoutdurationPress){
         	if (modeOverride) state.offCounter=0
             if (!state.onCounter || state.onCounter > 2 || (now()-state.Timer) > 10000) state.onCounter=0
@@ -265,7 +250,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
         }
     }
 	else if (cmd.value == 0) {
-    	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
+    	result << createEvent([name: "switch", value: "off", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
     	if (modeOverride) {
         	if (timeoutdurationPress) state.onCounter=0
             if (!state.offCounter || state.offCounter > 2 || (now()-state.timerOff)>10000) state.offCounter=0
@@ -298,7 +283,7 @@ def zwaveEvent(physicalgraph.zwave.commands.associationv2.AssociationReport cmd)
     }
 }
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-	log.debug "---CONFIGURATION REPORT V2--- ${device.displayName} sent ${cmd}"
+	//log.debug "---CONFIGURATION REPORT V2--- ${device.displayName} sent ${cmd}"
     def config = cmd.scaledConfigurationValue
     def result = []
     if (cmd.parameterNumber == 1) {
@@ -348,26 +333,6 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
     //
    return result
 }
-def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
-    log.debug "---BINARY SWITCH REPORT V1--- ${device.displayName} sent ${cmd}"
-    sendEvent(name: "switch", value: cmd.value ? "on" : "off", type: "digital")
-}
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-    log.debug "---MANUFACTURER SPECIFIC REPORT V2--- ${device.displayName} sent ${cmd}"
-	log.debug "manufacturerId:   ${cmd.manufacturerId}"
-	log.debug "manufacturerName: ${cmd.manufacturerName}"
-    state.manufacturer=cmd.manufacturerName
-	log.debug "productId:        ${cmd.productId}"
-	log.debug "productTypeId:    ${cmd.productTypeId}"
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)	
-    sendEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
-}
-def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-	def fw = "${cmd.applicationVersion}.${cmd.applicationSubVersion}"
-	updateDataValue("fw", fw)
-	log.debug "---VERSION REPORT V1--- ${device.displayName} is running firmware version: $fw, Z-Wave version: ${cmd.zWaveProtocolVersion}.${cmd.zWaveProtocolSubVersion}"
-}
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 	createEvent([name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false])
 }
@@ -378,8 +343,10 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	if (cmd.notificationType == 0x07) {
 		if ((cmd.event == 0x00)) { 
            	result << createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
+            log.debug "$device.displayName has stopped"
          } else if (cmd.event == 0x08) {
-            result << createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")	  
+            result << createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
+            log.debug "$device.displayName detected motion"
         }
     }
 	result  
@@ -401,7 +368,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchmultilevelv3.SwitchMultilevelS
 }
 private dimmerEvents(physicalgraph.zwave.Command cmd) {
     def value = (cmd.value ? "on" : "off")
-	def result = [createEvent(name: "switch", value: value)]
+	def result = [createEvent(name: "switch", value: value, descriptionText: "$device.displayName was turned $value")]
 	if (cmd.value==0 && timeoutdurationPress){
     	log.info "Resetting timeout duration"
         def cmds=[],timeoutValue = timeoutduration ? timeoutduration.toInteger() : 5
@@ -410,55 +377,62 @@ private dimmerEvents(physicalgraph.zwave.Command cmd) {
         sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
         showDashboard(timeoutValue, "", "", "", "")
     }
-    if (cmd.value && cmd.value <= 100) {
-		result << createEvent(name: "level", value: cmd.value, unit: "%")
+    if (cmd.value) {
+		result << createEvent(name: "level", value: cmd.value == 99 ? 100 : cmd.value , unit: "%")
 	}
 	return result
 }
 def on() {
-    delayBetween([zwave.basicV1.basicSet(value: 0xFF).format(), zwave.switchMultilevelV3.switchMultilevelGet().format()], 5000) 
+    secureSequence([
+		zwave.basicV1.basicSet(value: 0xFF),
+		zwave.switchMultilevelV1.switchMultilevelGet()
+	], 3500) 
 }
 def off() {
-	delayBetween ([zwave.basicV1.basicSet(value: 0x00).format(), zwave.switchMultilevelV3.switchMultilevelGet().format()], 5000)
+	secureSequence([
+		zwave.basicV1.basicSet(value: 0x00),
+		zwave.switchMultilevelV1.switchMultilevelGet()
+	], 3500)
 }
-def setLevel(value) {
+def setLevel(value) {   
 	def valueaux = value as Integer
-	def level = Math.min(valueaux, 99)
+	def level = Math.max(Math.min(valueaux, 99), 0)
     def cmds = []    	
     if (settings.setlevelmode){ 
     	log.debug "setlevel does not activate light"
     	if (device.currentValue("switch") == "on") {
             sendEvent(name: "level", value: level, unit: "%")
-            cmds << zwave.configurationV1.configurationSet(configurationValue: [level] , parameterNumber: 17, size: 1)
-            cmds << zwave.basicV1.basicSet(value: level)
-            cmds << zwave.configurationV1.configurationGet(parameterNumber: 17)
-            cmds << zwave.switchMultilevelV3.switchMultilevelGet()
+            secureSequence([
+				zwave.configurationV1.configurationSet(configurationValue: [level] , parameterNumber: 17, size: 1),
+				zwave.basicV1.basicSet(value: level),
+                zwave.configurationV1.configurationGet(parameterNumber: 17),
+                zwave.switchMultilevelV3.switchMultilevelGet()
+			],500)
         } else if (device.currentValue("switch") == "off") {
-            cmds << zwave.configurationV1.configurationSet(configurationValue: [level] , parameterNumber: 17, size: 1)
-            cmds << zwave.configurationV1.configurationGet(parameterNumber: 17)
+            secureSequence([
+				zwave.configurationV1.configurationSet(configurationValue: [level] , parameterNumber: 17, size: 1),
+				zwave.configurationV1.configurationGet(parameterNumber: 17)
+            ],500)
         }        
-        sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 500)
     } else {
-    	log.debug "setlevel activates light"
-    	sendEvent(name: "level", value: level, unit: "%")
-		delayBetween ([zwave.basicV1.basicSet(value: level).format(), zwave.switchMultilevelV3.switchMultilevelGet().format()], 500)
+        secureSequence([
+			zwave.basicV1.basicSet(value: level),
+			zwave.switchMultilevelV1.switchMultilevelGet()
+		],3500)
     }
 }
 def setLevel(value, duration) {
 	def valueaux = value as Integer
-	def level = Math.min(valueaux, 99)
+	def level = Math.max(Math.min(valueaux, 99), 0)
 	def dimmingDuration = duration < 128 ? duration : 128 + Math.round(duration / 60)
     sendEvent(name: "level", value: level, unit: "%")
-	zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration).format()
+    secure(zwave.switchMultilevelV2.switchMultilevelSet(value: level, dimmingDuration: dimmingDuration))
 }
-def poll() { zwave.switchMultilevelV3.switchMultilevelGet().format() }
+def poll() { refresh() }
 def ping() { refresh() }
 def refresh() {
 	log.debug "refresh() is called"
-    delayBetween([
-    	zwave.notificationV3.notificationGet(notificationType: 7).format(),
-        zwave.switchMultilevelV3.switchMultilevelGet().format()
-	],100)
+    secure(zwave.switchMultilevelV1.switchMultilevelGet())
     showVersion()
 }
 def toggleMode() {
@@ -734,6 +708,16 @@ private parseAssocGroupList(list, group) {
     }  
     return nodes
 }
+private secure(physicalgraph.zwave.Command cmd) {	
+    if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
+        zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+private secureSequence(Collection commands, ...delayBetweenArgs) {
+	delayBetween(commands.collect{ secure(it) }, *delayBetweenArgs)
+}
 def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     if (timeDelay=="") timeDelay=state.currentTimeDelay
     if (motionSensor=="") motionSensor=state.currentMotionSensor
@@ -764,4 +748,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.6a (02/11/20)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.7 (05/27/20)") }

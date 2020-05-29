@@ -4,8 +4,9 @@
  *  Copyright © 2020 Michael Struck
  *  Original Author: Matt Lebaugh (@mlebaugh)
  *
- *  Version 1.0.6 5/22/20
+ *  Version 1.0.7 5/27/20
  *
+ *  Version 1.0.7 (5/27/20) - Fixed a few outstanding GUI issues and started adding secure commands to the code. Optimized code slightly and gave more meaningful logging"
  *  Version 1.0.6 (5/22/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Morgon! Alignment with dimmer parameter 
  *  Version 1.0.5 (12/4/18) - Removed logging to reduce Zwave traffic; optimized button triple press
  *  Version 1.0.4b (10/18/18) - Skipped 1.0.4 to maintain consistency with dimmer code version. Changed to triple push for special options
@@ -24,7 +25,7 @@
  *
  */
 metadata {
-	definition (name: "GE Motion Switch 26931", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", vid: "generic-switch") {
+	definition (name: "GE Motion Switch 26931", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", ocfDeviceType: "oic.d.switch", vid: "generic-motion-light") {
 		capability "Motion Sensor"
         capability "Actuator"
  		capability "Switch"
@@ -33,7 +34,6 @@ metadata {
 		capability "Sensor"
 		capability "Health Check"
 		capability "Light"
-        capability "Button"
 
 		command "toggleMode"
         command "occupied"
@@ -56,15 +56,6 @@ metadata {
         attribute "operatingMode", "enum", ["Manual", "Vacancy", "Occupancy"]
 
 		fingerprint mfr:"0063", prod:"494D", model: "3032", deviceJoinName: "GE Z-Wave Plus Motion Wall Switch"
-	}
-	// simulator metadata
-	simulator {
-		status "on":  "command: 2003, payload: FF"
-		status "off": "command: 2003, payload: 00"
-
-		// reply messages
-		reply "2001FF,delay 100,2502": "command: 2503, payload: FF"
-		reply "200100,delay 100,2502": "command: 2503, payload: 00"
 	}
 	preferences {
         	input title: "", description: "Select your preferences here, they will be sent to the device once updated.\n\nTo verify the current settings of the device, they will be shown in the 'Recently' page once any setting is updated", displayDuringSetup: false, type: "paragraph", element: "paragraph"
@@ -153,8 +144,10 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC"
-				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#00A0DC", nextState:"turningOff"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#00a0dc", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
             tileAttribute ("device.about", key: "SECONDARY_CONTROL") { attributeState "aboutTxt", label:'${currentValue}' }
 		}
@@ -203,14 +196,13 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd) {
 	}
 }
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
-	[name: "switch", value: cmd.value ? "on" : "off", type: "physical"]
+    createEvent([name: "switch", value: cmd.value ? "on" : "off", type: "physical"])
 }
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
     //log.debug "---BASIC SET V1--- ${device.displayName} sent ${cmd}"
     def result = []
-    result << createEvent([name: "switch", value: cmd.value ? "on" : "off", type: "physical"])
     if (cmd.value == 255) {
-        result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "On/Up on (button 1) $device.displayName was pushed", isStateChange: true, type: "physical"])
+    	result << createEvent([name: "switch", value: "on", data: [buttonNumber: "1"], descriptionText: "On/Up (button 1) on $device.displayName was pushed", isStateChange: true, type: "physical"])
     	if (timeoutdurationPress){
         	if (modeOverride) state.offCounter=0
             if (!state.onCounter || state.onCounter > 2 || (now()-state.Timer) > 10000) state.onCounter=0
@@ -228,7 +220,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
         }
     }
 	else if (cmd.value == 0) {
-    	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
+    	result << createEvent([name: "switch", value: "off", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
     	if (modeOverride) {
         	if (timeoutdurationPress) state.onCounter=0
             if (!state.offCounter || state.offCounter >2 || (now()-state.timerOff)>10000) state.offCounter=0
@@ -303,36 +295,22 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
         sendHubCommand(cmds.collect{ new physicalgraph.device.HubAction(it.format()) }, 1000)
         showDashboard(timeoutValue, "", "")
     }
-    createEvent([name: "switch", value: cmd.value ? "on" : "off", type: "digital"])
-}
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-    log.debug "---MANUFACTURER SPECIFIC REPORT V2--- ${device.displayName} sent ${cmd}"
-	log.debug "manufacturerId:   ${cmd.manufacturerId}"
-	log.debug "manufacturerName: ${cmd.manufacturerName}"
-    state.manufacturer=cmd.manufacturerName
-	log.debug "productId:        ${cmd.productId}"
-	log.debug "productTypeId:    ${cmd.productTypeId}"
-	def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-	updateDataValue("MSR", msr)	
-    sendEvent([descriptionText: "$device.displayName MSR: $msr", isStateChange: false])
-}
-def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {
-	def fw = "${cmd.applicationVersion}.${cmd.applicationSubVersion}"
-	updateDataValue("fw", fw)
-	log.debug "---VERSION REPORT V1--- ${device.displayName} is running firmware version: $fw, Z-Wave version: ${cmd.zWaveProtocolVersion}.${cmd.zWaveProtocolSubVersion}"
+    createEvent(name: "switch", value: cmd.value ? "on" : "off")
 }
 def zwaveEvent(physicalgraph.zwave.commands.hailv1.Hail cmd) {
 	[name: "hail", value: "hail", descriptionText: "Switch button was pressed", displayed: false]
 }
 def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd)
 {
-	log.debug "---NOTIFICATION REPORT V3--- ${device.displayName} sent ${cmd}"
+	//log.debug "---NOTIFICATION REPORT V3--- ${device.displayName} sent ${cmd}"
 	def result = []
 	if (cmd.notificationType == 0x07) {
 		if ((cmd.event == 0x00)) { 
 			result << createEvent(name: "motion", value: "inactive", descriptionText: "$device.displayName motion has stopped")
+            log.debug "$device.displayName has stopped"
 		} else if (cmd.event == 0x08) {
 			result << createEvent(name: "motion", value: "active", descriptionText: "$device.displayName detected motion")
+            log.debug "$device.displayName detected motion"
 		} 
 	} 
 	result
@@ -341,33 +319,24 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
     log.warn "${device.displayName} received unhandled command: ${cmd}"
 }
 def on() {
-	delayBetween([
-		zwave.basicV1.basicSet(value: 0xFF).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
-	],100)
+    [
+    secure(zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF)),
+			"delay 100",
+			secure(zwave.switchBinaryV1.switchBinaryGet())
+    ]
 }
 def off() {
-    delayBetween([
-		zwave.basicV1.basicSet(value: 0x00).format(),
-		zwave.switchBinaryV1.switchBinaryGet().format()
-	],100)  
+    [
+    secure(zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00)),
+			"delay 100",
+			secure(zwave.switchBinaryV1.switchBinaryGet())  
+	]
 }
-def poll() {
-	delayBetween([
-		zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.manufacturerSpecificV1.manufacturerSpecificGet().format()
-	],100)
-}
-/**
-  * PING is used by Device-Watch in attempt to reach the Device
-**/
+def poll() { refresh() }
 def ping() { refresh() }
 def refresh() {
 	log.debug "refresh() is called"
-    delayBetween([
-        zwave.switchBinaryV1.switchBinaryGet().format(),
-		zwave.notificationV3.notificationGet(notificationType: 7).format()    
-	],100)
+    response(secure(zwave.switchBinaryV1.switchBinaryGet()))
     showVersion()
 }
 def toggleMode() {
@@ -577,6 +546,13 @@ private parseAssocGroupList(list, group) {
     }   
     return nodes
 }
+private secure(cmd) {
+	if ((zwaveInfo.zw == null && state.sec != 0) || zwaveInfo?.zw?.contains("s")) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
 def showDashboard(timeDelay, motionSensor, lightSensor) {
     String result =""
     if (timeDelay=="") timeDelay=state.currentTimeDelay
@@ -597,4 +573,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor) {
 	result +="\n${timeSync} Timeout Duration: " + timeDelayTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.6 (05/22/20)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.7 (05/27/20)") }
