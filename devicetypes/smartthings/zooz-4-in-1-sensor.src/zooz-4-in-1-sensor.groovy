@@ -27,7 +27,7 @@ metadata {
 		//Zooz 4-in-1 sensor
 		fingerprint mfr: "0109", prod: "2021", model: "2101", deviceJoinName: "Vision Multipurpose Sensor"
 		//ZP3111US 4-in-1 Motion
-		fingerprint mfr: "0060", prod: "0001", model: "0004", deviceJoinName: "Everspring Motion Sensor"
+		fingerprint mfr: "0060", prod: "0001", model: "0004", deviceJoinName: "Everspring Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-Everspring_Multisensor"
 		//Everspring Immune Pet PIR Sensor SP815
 	}
 
