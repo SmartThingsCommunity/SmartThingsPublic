@@ -380,7 +380,7 @@ def update_needed_settings()
     
     cmds << zwave.versionV1.versionGet()
     
-    if (state.fw == "5.11") {
+    if (state.fw == "5.12" || state.fw == "5.11") {
        if(state.association2){
            logging("Setting association group 2", 1)
            cmds << zwave.associationV2.associationRemove(groupingIdentifier: 2, nodeId: [])
