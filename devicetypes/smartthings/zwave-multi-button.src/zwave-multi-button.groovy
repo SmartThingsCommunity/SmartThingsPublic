@@ -74,7 +74,7 @@ def initialize() {
 	if(childDevices) {
 		def event
 		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
-			event = createEvent(name: "button", value: "pushed", isStateChange: true)
+			event = createEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
 			sendEventToChild(endpoint, event)
 		}
 	}
@@ -137,9 +137,9 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
 	def description = "Button no. ${cmd.sceneNumber} was ${value}"
-	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
-	sendEventToChild(cmd.sceneNumber, event)
-	return event
+	def childEvent = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
+	sendEventToChild(cmd.sceneNumber, childEvent)
+	return createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true, displayed: false)
 }
 
 def sendEventToChild(buttonNumber, event) {
