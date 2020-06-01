@@ -372,20 +372,20 @@ def getConfigurationCommands() {
 	}
 	return result
 }
+
 def lateConfigure() {
 	log.debug "lateConfigure"
 	sendHubCommand(getConfigurationCommands(),200)
 }
+
 private isConfigured() {
 	return state.configured == true
 }
+
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	if (isEverspringSP817()) {
 		if (cmd.parameterNumber == 4) {
 			state.retriggerIntervalSettings = scaledConfigurationValue
-			state.intervalConfigured = true
-		}
-		if (state.intervalConfigured == true) {
 			state.configured = true
 		}
 		log.debug "Everspring Configuration Report: ${cmd}"
@@ -396,6 +396,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 private isEnerwave() {
 	zwaveInfo?.mfr?.equals("011A") && zwaveInfo?.prod?.equals("0601") && zwaveInfo?.model?.equals("0901")
 }
+
 private isEverspringSP817() {
 	zwaveInfo?.mfr?.equals("0060") && zwaveInfo?.model?.equals("0006")
 }
