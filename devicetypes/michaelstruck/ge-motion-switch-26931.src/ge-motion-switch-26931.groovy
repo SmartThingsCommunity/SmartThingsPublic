@@ -104,7 +104,7 @@ metadata {
                 required: false
             )
             //param 6
-            input "motion", "bool", title: "Enable Motion Sensor", defaultValue:tru
+            input "motion", "bool", title: "Enable Motion Sensor", defaultValue:true
 			input (name: "motionsensitivity", title: "Motion Sensitivity (When Motion Sensor Enabled)",
                 description: "Motion Sensitivity",
                 type: "enum",
