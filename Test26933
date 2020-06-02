@@ -31,15 +31,15 @@
 metadata {
 	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", vid: "generic-motion-dimmer") {
 		capability "Motion Sensor"
-        capability "Actuator"
+		capability "Actuator"
  		capability "Switch"
-        capability "Switch Level"
+		capability "Switch Level"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Light"
-        capability "Button"
+		capability "Button"
         
 		command "toggleMode"
         command "occupancy"
@@ -53,7 +53,7 @@ metadata {
         command "setMotionSenseHigh"
         command "setMotionSenseOff"
         command "lightSenseOn"
-		command "lightSenseOff"
+        command "lightSenseOff"
         command "setTimeout5Seconds"
         command "setTimeout1Minute"
         command "setTimeout5Minutes"
@@ -115,10 +115,9 @@ metadata {
             )
             //param 6
             input (name: "motion", title: "Motion Sensor",
-            	description: "Default is Enabled",
-                type: "enum",
+            	type: "enum",
                 options: [
-                   "Enabled", "Disabled"
+                   "Enabled": "Enabled (Default)", "Disabled": "Disabled"
                 ])
             //param 13
 			input ("motionsensitivity","enum", title: "Motion Sensitivity (When Motion Sensor Enabled)",
@@ -131,17 +130,15 @@ metadata {
             )
             //param 14
             input (name: "lightsense", title: "Light Sensing (Occupancy)",
-            	description: "Default is Enabled",
-                type: "enum",
+            	type: "enum",
                 options: [
-                   "Enabled", "Disabled"
+                   "Enabled":"Enabled (Default)", "Disabled":"Disabled"
                 ])
             //param 5
             input (name: "invertSwitch", title: "Remote Switch Orientation",
-            	description: "Default is Normal",
-                type: "enum",
+            	type: "enum",
                 options: [
-                   "Normal", "Inverted"
+                   "Normal":"Normal (Default)", "Inverted":"Inverted"
                 ])
             //param 15
             input ("resetcycle","enum",title: "Motion Reset Cycle", description: "Time to stop reporting motion once motion has stopped",
@@ -167,10 +164,9 @@ metadata {
             input title: "", description: "**Single Tap Ramp Rate Settings**", displayDuringSetup: false, type: "paragraph", element: "paragraph"
             //param 18
             input (name: "dimrate", title: "Slow Dim Rate (Disabled=Quick)",
-            	description: "Default is Disabled",
-                type: "enum",
+            	type: "enum",
                 options: [
-                   "Enabled", "Disabled"
+                   "Enabled":"Enabled", "Disabled":"Disabled (default)"
                 ])
             //param 17
             input "switchlevel","number", title: "Default Dim Level", description:"Default 0: Return to last state, Max 99", range: "0..99", defaultValue: 0
@@ -182,10 +178,9 @@ metadata {
             input "manualStepDuration", "number", title: "Manual Step Intervals Each 10 ms", range: "1..255", defaultValue: 3
             //param 16                             
             input (name: "switchmode", title: "Switch Mode",
-            	description: "Default is Disabled",
-                type: "enum",
+            	type: "enum",
                 options: [
-                   "Enabled", "Disabled"
+                   "Enabled":"Enabled", "Disabled":"Disabled (Default)"
                 ])
             //association groups
         	input ( type: "paragraph", element: "paragraph",
@@ -196,12 +191,10 @@ metadata {
         	input ( name: "requestedGroup3", title: "Association Group 3 Members (Max of 4):", description: "Use the 'Device Network ID' for each device", type: "text", required: false )            
             //description
             input title: "", description: "**setLevel Default Function (Advanced)**\nDefines how 'setLevel' behavior affects the light.",  type: "paragraph", element: "paragraph"
-            //input "setlevelmode", "bool", title: "setLevel Does Not Activate Light", defaultValue:false
             input (name: "setlevelmode", title: "setLevel Activates Light",
-            	description: "Default is Disabled",
-                type: "enum",
+            	type: "enum",
                 options: [
-                   "Enabled", "Disabled"
+                   "Enabled":"Enabled", "Disabled":"Disabled (Default)"
                 ])
     }
 	tiles(scale: 2) {
