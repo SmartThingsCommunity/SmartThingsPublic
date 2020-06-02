@@ -107,7 +107,7 @@ metadata {
 					[value: 84, color: "#f1d801"],
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
-			]
+				]
 		}
 		standardTile("temperatureAlarm", "device.temperatureAlarm", decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'No Alarm', icon: "st.alarm.temperature.normal", backgroundColor: "#ffffff"
@@ -164,9 +164,9 @@ def getSetpointStep() {
 }
 
 def getModeMap() {[
-		"00":"off",
-		"04":"heat",
-		"05":"eco"
+	"00":"off",
+	"04":"heat",
+	"05":"eco"
 ]}
 
 def setupHealthCheck() {
@@ -222,7 +222,7 @@ def parameterSetting() {
 	if (valid_lock) {
 		log.debug "lock valid"
 		zigbee.writeAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT, DataType.ENUM8, lockmode) +
-				poll()
+			poll()
 	} else {
 		log.debug "nothing valid"
 	}
@@ -550,8 +550,8 @@ def setHeatingSetpoint(preciseDegrees) {
 			log.debug "setHeatingSetpoint({$degrees} ${temperatureScale})"
 
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, zigbee.convertToHexString(celsius * 100, 4)) +
-					zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT) +
-					zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
+				zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT) +
+				zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
 		} else {
 			log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"
 		}
@@ -615,8 +615,8 @@ def setThermostatMode(value) {
 		}
 
 		zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_SYSTEM_MODE, DataType.ENUM8, modeNumber) +
-				zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_MFR_SPEC_SETPOINT_MODE, DataType.ENUM8, setpointModeNumber, ["mfgCode": "0x1185"]) +
-				poll()
+			zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_MFR_SPEC_SETPOINT_MODE, DataType.ENUM8, setpointModeNumber, ["mfgCode": "0x1185"]) +
+			poll()
 	} else {
 		log.debug "Invalid thermostat mode $value"
 	}

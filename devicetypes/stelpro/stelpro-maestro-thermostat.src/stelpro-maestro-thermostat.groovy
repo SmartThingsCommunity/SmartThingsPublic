@@ -123,7 +123,7 @@ metadata {
 					[value: 84, color: "#f1d801"],
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
-			]
+				]
 		}
 		standardTile("temperatureAlarm", "device.temperatureAlarm", decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'No Alarm', icon: "st.alarm.temperature.normal", backgroundColor: "#ffffff"
@@ -234,7 +234,7 @@ def parameterSetting() {
 	if (valid_lock) {
 		log.debug "lock valid"
 		zigbee.writeAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT, DataType.ENUM8, lockmode) +
-				poll()
+			poll()
 	} else {
 		log.debug "nothing valid"
 	}
@@ -351,12 +351,12 @@ def handleTemperature(descMap) {
 				if ((lastAlarm == "freeze" &&
 						map.value > FREEZE_ALARM_TEMP &&
 						lastTemp < map.value) ||
-						(lastAlarm == "heat" &&
-								map.value < HEAT_ALARM_TEMP &&
-								lastTemp > map.value)) {
-					log.debug "Clearing $lastAlarm temp alarm"
-					sendEvent(name: "temperatureAlarm", value: "cleared")
-					cleared = true
+					(lastAlarm == "heat" &&
+						map.value < HEAT_ALARM_TEMP &&
+						lastTemp > map.value)) {
+							log.debug "Clearing $lastAlarm temp alarm"
+							sendEvent(name: "temperatureAlarm", value: "cleared")
+							cleared = true
 				}
 			}
 
@@ -364,7 +364,7 @@ def handleTemperature(descMap) {
 			// just mask it.
 			if (!cleared &&
 					((lastAlarm == "freeze" && map.value > FREEZE_ALARM_TEMP) ||
-							(lastAlarm == "heat" && map.value < HEAT_ALARM_TEMP))) {
+					(lastAlarm == "heat" && map.value < HEAT_ALARM_TEMP))) {
 				log.debug "Hiding stale temperature ${map.value} because of ${lastAlarm} alarm"
 				map.value = (lastAlarm == "freeze") ? FREEZE_ALARM_TEMP : HEAT_ALARM_TEMP
 			}
@@ -505,8 +505,8 @@ def setHeatingSetpoint(preciseDegrees) {
 			log.debug "setHeatingSetpoint({$degrees} ${temperatureScale})"
 
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, zigbee.convertToHexString(celsius * 100, 4)) +
-					zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT) +
-					zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
+				zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT) +
+				zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
 		} else {
 			log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"
 		}

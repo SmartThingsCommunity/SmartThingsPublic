@@ -102,7 +102,7 @@ metadata {
 					[value: 84, color: "#f1d801"],
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
-			]
+				]
 		}
 		standardTile("temperatureAlarm", "device.temperatureAlarm", decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'No Alarm', icon: "st.alarm.temperature.normal", backgroundColor: "#ffffff"
@@ -202,7 +202,7 @@ def parse(String description) {
 				value: map.value,
 				unit: map.unit,
 				data: [thermostatSetpointRange: thermostatSetpointRange]
-		])
+			])
 	}
 
 	log.debug "Parse returned $result"
@@ -280,7 +280,7 @@ def poll() {
 			zwave.thermostatModeV2.thermostatModeGet().format(),
 			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1).format(),
 			zwave.sensorMultilevelV3.sensorMultilevelGet().format() // current temperature
-	], 100)
+		], 100)
 }
 
 // Event Generation
@@ -397,9 +397,9 @@ def zwaveEvent(thermostatmodev2.ThermostatModeReport cmd) {
 
 def zwaveEvent(associationv2.AssociationReport cmd) {
 	delayBetween([
-			zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:0).format(),
-			zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format(),
-			poll()
+		zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:0).format(),
+		zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format(),
+		poll()
 	], 2300)
 }
 
@@ -445,8 +445,8 @@ def setHeatingSetpoint(preciseDegrees) {
 		}
 
 		delayBetween([
-				zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: setpointType, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
-				zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointType).format()
+			zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: setpointType, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
+			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointType).format()
 		], 1000)
 	} else {
 		log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"
@@ -537,8 +537,8 @@ def cool() {
 def setThermostatMode(value) {
 	if (supportedThermostatModes.contains(value)) {
 		delayBetween([
-				zwave.thermostatModeV2.thermostatModeSet(mode: modeNumericMap[value]).format(),
-				zwave.thermostatModeV2.thermostatModeGet().format()
+			zwave.thermostatModeV2.thermostatModeSet(mode: modeNumericMap[value]).format(),
+			zwave.thermostatModeV2.thermostatModeGet().format()
 		], 1000)
 	} else {
 		log.trace "${device.displayName} does not support $value mode"
