@@ -23,12 +23,9 @@ metadata {
 		capability "Health Check"
 		capability "Tamper Alert"
 
-		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz Multipurpose Sensor"
-		//Zooz 4-in-1 sensor
-		fingerprint mfr: "0109", prod: "2021", model: "2101", deviceJoinName: "Vision Multipurpose Sensor"
-		//ZP3111US 4-in-1 Motion
-		fingerprint mfr: "0060", prod: "0001", model: "0004", deviceJoinName: "Everspring Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-Everspring_Multisensor"
-		//Everspring Immune Pet PIR Sensor SP815
+		fingerprint mfr: "027A", prod: "2021", model: "2101", deviceJoinName: "Zooz Multipurpose Sensor" // Zooz 4-in-1 sensor
+		fingerprint mfr: "0109", prod: "2021", model: "2101", deviceJoinName: "Vision Multipurpose Sensor" // ZP3111US 4-in-1 Motion
+		fingerprint mfr: "0060", prod: "0001", model: "0004", deviceJoinName: "Everspring Motion Sensor", mnmn: "SmartThings", vid: "SmartThings-smartthings-Everspring_Multisensor" // Everspring Immune Pet PIR Sensor SP815
 	}
 
 	tiles(scale: 2) {
@@ -72,7 +69,7 @@ metadata {
 		section {
 			input(
 					title: "Settings Available For Everspring SP815 only",
-					description: "",
+					description: "To activate device's settings changes press the learn key on the device three times or check the device manual.",
 					type: "paragraph",
 					element: "paragraph"
 			)
@@ -129,8 +126,9 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def results = []
 	results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 
-	if (isEverspringSP815 && !isConfigured()) {
-		result += lateConfigure(true)
+	log.debug "isConfigured: ${isConfigured()}"
+	if (isEverspringSP815() && !isConfigured()) {
+		result += lateConfigure()
 	}
 
 	results += response([
@@ -220,10 +218,7 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 	} else {
 		result = createEvent(descriptionText: cmd.toString(), isStateChange: false)
 	}
-	log.debug "isConfigured: ${isConfigured()}"
-	if (isEverspringSP815() && !isConfigured()) {
-		result = lateConfigure()
-	}
+
 	return result
 }
 
@@ -312,17 +307,21 @@ def getConfigurationCommands() {
 	}
 	return result
 }
+
 def getEverspringDefaults() {
 	[1: 600,
 	 2: 180]
 }
+
 def lateConfigure() {
 	log.debug "lateConfigure"
 	sendHubCommand(getConfigurationCommands(),200)
 }
+
 private isConfigured() {
 	return state.configured == true
 }
+
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
 	if (isEverspringSP815()) {
 		if (cmd.parameterNumber == 1) {
@@ -339,6 +338,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		return [:]
 	}
 }
+
 private isEverspringSP815() {
 	zwaveInfo?.mfr?.equals("0060") && zwaveInfo?.model?.equals("0004")
 }

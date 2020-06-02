@@ -25,30 +25,31 @@ metadata {
 		capability "Tamper Alert"
 		capability "Configuration"
 
-		fingerprint mfr: "011F", prod: "0001", model: "0001", deviceJoinName: "Schlage Motion Sensor"
-		// Schlage motion //Schlage Motion Sensor
-		fingerprint mfr: "014A", prod: "0001", model: "0001", deviceJoinName: "Ecolink Motion Sensor"
-		// Ecolink motion //Ecolink Motion Sensor
-		fingerprint mfr: "014A", prod: "0004", model: "0001", deviceJoinName: "Ecolink Motion Sensor"
-		// Ecolink motion + //Ecolink Motion Sensor
-		fingerprint mfr: "0060", prod: "0001", model: "0002", deviceJoinName: "Everspring Motion Sensor"
-		// Everspring SP814 //Everspring Motion Sensor
-		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor"
-		// Everspring HSP02 //Everspring Motion Sensor
-		fingerprint mfr: "0060", prod: "0001", model: "0005", deviceJoinName: "Everspring Motion Sensor"
-		//Everspring Motion Detector
-		fingerprint mfr: "0060", prod: "0001", model: "0006", deviceJoinName: "Everspring Motion Sensor"
-		//Everspring SP817 //Everspring Motion Detector
-		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor"
-		// Enerwave ZWN-BPC //Enerwave Motion Sensor
-		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Motion Sensor"
-		//GE Portable Smart Motion Sensor
-		fingerprint mfr: "0214", prod: "0003", model: "0002", deviceJoinName: "BeSense Motion Sensor"
-		//BeSense Motion Detector
-		fingerprint mfr: "027A", prod: "0001", model: "0005", deviceJoinName: "Zooz Motion Sensor"
-		//Zooz Outdoor Motion Sensor
-		fingerprint mfr: "027A", prod: "0301", model: "0012", deviceJoinName: "Zooz Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2"
-		//Zooz Motion Sensor
+		// BeSense
+		fingerprint mfr: "0214", prod: "0003", model: "0002", deviceJoinName: "BeSense Motion Sensor" // BeSense Motion Detector
+
+		// Ecolink
+		fingerprint mfr: "014A", prod: "0001", model: "0001", deviceJoinName: "Ecolink Motion Sensor" // Ecolink motion //Ecolink Motion Sensor
+		fingerprint mfr: "014A", prod: "0004", model: "0001", deviceJoinName: "Ecolink Motion Sensor" // Ecolink motion + //Ecolink Motion Sensor
+
+		// Enerwave
+		fingerprint mfr: "011A", prod: "0601", model: "0901", deviceJoinName: "Enerwave Motion Sensor" // Enerwave ZWN-BPC //Enerwave Motion Sensor
+
+		// Everspring
+		fingerprint mfr: "0060", prod: "0001", model: "0002", deviceJoinName: "Everspring Motion Sensor" // Everspring SP814 //Everspring Motion Sensor
+		fingerprint mfr: "0060", prod: "0001", model: "0003", deviceJoinName: "Everspring Motion Sensor" // Everspring HSP02 //Everspring Motion Sensor
+		fingerprint mfr: "0060", prod: "0001", model: "0005", deviceJoinName: "Everspring Motion Sensor" // Everspring Motion Detector
+		fingerprint mfr: "0060", prod: "0001", model: "0006", deviceJoinName: "Everspring Motion Sensor" // Everspring SP817 //Everspring Motion Detector
+
+		// GE
+		fingerprint mfr: "0063", prod: "4953", model: "3133", deviceJoinName: "GE Motion Sensor" // GE Portable Smart Motion Sensor
+
+		// Shlage
+		fingerprint mfr: "011F", prod: "0001", model: "0001", deviceJoinName: "Schlage Motion Sensor" // Schlage motion //Schlage Motion Sensor
+
+		// Zooz
+		fingerprint mfr: "027A", prod: "0001", model: "0005", deviceJoinName: "Zooz Motion Sensor" //Zooz Outdoor Motion Sensor
+		fingerprint mfr: "027A", prod: "0301", model: "0012", deviceJoinName: "Zooz Motion Sensor", mnmn: "SmartThings", vid: "generic-motion-2" //Zooz Motion Sensor
 	}
 
 	simulator {
@@ -80,7 +81,7 @@ metadata {
 		section {
 			input(
 					title: "Settings Available For Everspring SP817 only",
-					description: "",
+					description: "To activate device's settings changes press the tamper switch on the device three times or check the device manual.",
 					type: "paragraph",
 					element: "paragraph"
 			)
@@ -196,10 +197,6 @@ def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cm
 		result << createEvent(name: "alarm $cmd.v1AlarmType", value: value, isStateChange: true, displayed: false)
 	}
 
-	log.debug "isConfigured: ${isConfigured()}"
-	if (isEverspringSP817() && !isConfigured()) {
-		result += lateConfigure()
-	}
 	result
 }
 
@@ -211,8 +208,9 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
 
+	log.debug "isConfigured: ${isConfigured()}"
 	if (isEverspringSP817() && !isConfigured()) {
-		result += lateConfigure(true)
+		result = lateConfigure()
 	}
 
 	if (isEnerwave() && device.currentState('motion') == null) {  // Enerwave motion doesn't always get the associationSet that the hub sends on join
