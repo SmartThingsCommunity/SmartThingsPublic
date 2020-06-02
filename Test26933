@@ -166,7 +166,12 @@ metadata {
             //description
             input title: "", description: "**Single Tap Ramp Rate Settings**", displayDuringSetup: false, type: "paragraph", element: "paragraph"
             //param 18
-            input "dimrate", "bool", title: "Enable Slow Dim Rate (Off=Quick)", defaultValue:false
+            input (name: "dimrate", title: "Slow Dim Rate (Disabled=Quick)",
+            	description: "Default is Disabled",
+                type: "enum",
+                options: [
+                   "Enabled", "Disabled"
+                ])
             //param 17
             input "switchlevel","number", title: "Default Dim Level", description:"Default 0: Return to last state, Max 99", range: "0..99", defaultValue: 0
             //descrip
@@ -182,7 +187,6 @@ metadata {
                 options: [
                    "Enabled", "Disabled"
                 ])
-            
             //association groups
         	input ( type: "paragraph", element: "paragraph",
             title: "", description: "**Configure Association Groups**\nDevices in association groups 2 & 3 will receive Basic Set commands directly from the switch when it is turned on or off (physically or locally through the motion detector). Use this to control other devices as if they were connected to this switch.\n\n" +
@@ -688,7 +692,7 @@ def updated() {
         dimLevel =switchlevel.toInteger()
     }
     //dim rate param 18
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [dimrate ? 1 : 0], parameterNumber: 18, size: 1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [dimrate!="Enabled" ? 0 : 1], parameterNumber: 18, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 18)
 
     //end of dimmer specific params   
