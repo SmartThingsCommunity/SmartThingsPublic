@@ -29,7 +29,7 @@
  *
  */
 metadata {
-	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", vid: "generic-dimmer") {
+	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", vid: "generic-motion-dimmer") {
 		capability "Motion Sensor"
         capability "Actuator"
  		capability "Switch"
@@ -175,8 +175,14 @@ metadata {
             input "manualStepSize", "number", title: "Manual Step Size (%)", range: "1..99", defaultValue: 1
        		//param 8
             input "manualStepDuration", "number", title: "Manual Step Intervals Each 10 ms", range: "1..255", defaultValue: 3
-            //param 16
-            input "switchmode", "bool", title: "Enable Switch Mode", defaultValue:false                             
+            //param 16                             
+            input (name: "switchmode", title: "Switch Mode",
+            	description: "Default is Disabled",
+                type: "enum",
+                options: [
+                   "Enabled", "Disabled"
+                ])
+            
             //association groups
         	input ( type: "paragraph", element: "paragraph",
             title: "", description: "**Configure Association Groups**\nDevices in association groups 2 & 3 will receive Basic Set commands directly from the switch when it is turned on or off (physically or locally through the motion detector). Use this to control other devices as if they were connected to this switch.\n\n" +
@@ -186,7 +192,13 @@ metadata {
         	input ( name: "requestedGroup3", title: "Association Group 3 Members (Max of 4):", description: "Use the 'Device Network ID' for each device", type: "text", required: false )            
             //description
             input title: "", description: "**setLevel Default Function (Advanced)**\nDefines how 'setLevel' behavior affects the light.",  type: "paragraph", element: "paragraph"
-            input "setlevelmode", "bool", title: "setLevel Does Not Activate Light", defaultValue:false
+            //input "setlevelmode", "bool", title: "setLevel Does Not Activate Light", defaultValue:false
+            input (name: "setlevelmode", title: "setLevel Activates Light",
+            	description: "Default is Disabled",
+                type: "enum",
+                options: [
+                   "Enabled", "Disabled"
+                ])
     }
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
@@ -415,7 +427,7 @@ def setLevel(value) {
 	def valueaux = value as Integer
 	def level = Math.max(Math.min(valueaux, 99), 0)
     def cmds = []    	
-    if (settings.setlevelmode){ 
+    if (settings.setlevelmode!="Enabled"){ 
     	log.debug "setlevel does not activate light"
     	if (device.currentValue("switch") == "on") {
             sendEvent(name: "level", value: level, unit: "%")
@@ -662,7 +674,7 @@ def updated() {
       	cmds << zwave.configurationV1.configurationGet(parameterNumber: 10)  
 	}
     //switch mode param 16
-    switchMode = switchmode ? 1 : 0
+    switchMode = switchmode!="Enabled" ? 0 : 1
     cmds << zwave.configurationV1.configurationSet(configurationValue: [switchMode], parameterNumber: 16, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 16)
     //switch level param 17
@@ -756,7 +768,7 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     	(motion=="Disabled" && motionSensorTxt =="Disabled")  ? "✔" : "‼"
     def lightSync = (lightsense=="Disabled" && state.currentLightSensor == 0) || (lightsense!="Disabled" && state.currentLightSensor == 1) ? "✔" : "‼"
     def timeSync = (timeoutduration && state.currentTimeDelay == timeoutduration.toInteger()) || (!timeoutduration && state.currentTimeDelay == 5)  ? "✔" : "‼"
-    def switchSync = (switchmode && state.currentSwitchMode == 1) || (!switchmode && state.currentSwitchMode == 0) ? "✔" : "‼"
+    def switchSync = (switchmode=="Enabled" && state.currentSwitchMode == 1) || (switchmode!="Enabled" && state.currentSwitchMode == 0) ? "✔" : "‼"
     String result =""
    	result +="${dimSync} Default Dim Level: " + dimLevelTxt
     result +="\n${motionSync} Motion Sensitivity: " + motionSensorTxt
