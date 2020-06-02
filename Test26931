@@ -107,10 +107,9 @@ metadata {
             )
             //param 6
 			input (name: "motion", title: "Motion Sensor",
-            	description: "Default is Enabled",
                 type: "enum",
                 options: [
-                   "Enabled", "Disabled"
+                   "Enabled":"Enabled (Default)", "Disabled":"Disabled"
                 ])
             //param 13
             input (name: "motionsensitivity", title: "Motion Sensitivity (When Motion Sensor Enabled)",
@@ -125,17 +124,15 @@ metadata {
             )
 			//param 14
             input (name: "lightsense", title: "Light Sensing (Occupancy)",
-            	description: "Default is Enabled",
-                type: "enum",
+            	type: "enum",
                 options: [
-                   "Enabled", "Disabled"
+                   "Enabled":"Enabled (Default)", "Disabled":"Disabled"
                 ])
             //param 5
             input (name: "invertSwitch", title: "Remote Switch Orientation",
-            	description: "Default is Normal",
-                type: "enum",
+            	type: "enum",
                 options: [
-                   "Normal", "Inverted"
+                   "Normal":"Normal (Default)","Inverted":"Inverted"
                 ])
                 //param 15
             input ("resetcycle","enum",title: "Motion Reset Cycle", 
