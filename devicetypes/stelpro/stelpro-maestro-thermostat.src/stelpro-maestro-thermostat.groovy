@@ -54,11 +54,12 @@ metadata {
 	preferences {
 		section {
 			input("lock", "enum", title: "Do you want to lock your thermostat's physical keypad?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: false)
-			input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
+			input("heatdetails", "enum", title: "Do you want to see detailed operating state events in the activity history? There may be many.", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		}
 		section {
-			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+			input(title: "Outdoor Temperature", description: 	"To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing)." +
+					"Do not use space. If you don't want a forecast, leave it blank.", displayDuringSetup: false, type: "paragraph", element: "paragraph")
+			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "")
 		}
 		/*
 		input("away_setpoint", "enum", title: "Away setpoint", options: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "5.5", "15.5", "16", "16.5", "17", "17.5", "18", "18.5", "19", "19.5", "20", "20.5", "21", "21.5", "22", "22.5", "23", "24", "24.5", "25", "25.5", "26", "26.5", "27", "27.5", "28", "28.5", "29", "29.5", "30"], defaultValue: "21", required: true)
@@ -122,7 +123,7 @@ metadata {
 					[value: 84, color: "#f1d801"],
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
-				]
+			]
 		}
 		standardTile("temperatureAlarm", "device.temperatureAlarm", decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'No Alarm', icon: "st.alarm.temperature.normal", backgroundColor: "#ffffff"
@@ -233,7 +234,7 @@ def parameterSetting() {
 	if (valid_lock) {
 		log.debug "lock valid"
 		zigbee.writeAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT, DataType.ENUM8, lockmode) +
-			poll()
+				poll()
 	} else {
 		log.debug "nothing valid"
 	}
@@ -278,11 +279,12 @@ def parse(String description) {
 					map.value = "heating"
 				}
 
-				// If the user does not want to see the Idle and Heating events in the event history,
-				// don't show them. Otherwise, don't show them more frequently than 30 seconds.
-				if (settings.heatdetails == "No" ||
-					!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 30)) {
-					map.displayed = false
+				map.displayed = false
+				// If the user want to see each of the Idle and Heating events in the event history,
+				// Otherwise don't show them more frequently than 5 minutes.
+				if (settings.heatdetails == "Yes" ||
+						!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
+					map.displayed = true
 				}
 			}
 		} else if (descMap.clusterInt == zigbee.RELATIVE_HUMIDITY_CLUSTER) {
@@ -349,12 +351,12 @@ def handleTemperature(descMap) {
 				if ((lastAlarm == "freeze" &&
 						map.value > FREEZE_ALARM_TEMP &&
 						lastTemp < map.value) ||
-					(lastAlarm == "heat" &&
-						map.value < HEAT_ALARM_TEMP &&
-						lastTemp > map.value)) {
-							log.debug "Clearing $lastAlarm temp alarm"
-							sendEvent(name: "temperatureAlarm", value: "cleared")
-							cleared = true
+						(lastAlarm == "heat" &&
+								map.value < HEAT_ALARM_TEMP &&
+								lastTemp > map.value)) {
+					log.debug "Clearing $lastAlarm temp alarm"
+					sendEvent(name: "temperatureAlarm", value: "cleared")
+					cleared = true
 				}
 			}
 
@@ -362,7 +364,7 @@ def handleTemperature(descMap) {
 			// just mask it.
 			if (!cleared &&
 					((lastAlarm == "freeze" && map.value > FREEZE_ALARM_TEMP) ||
-					 (lastAlarm == "heat" && map.value < HEAT_ALARM_TEMP))) {
+							(lastAlarm == "heat" && map.value < HEAT_ALARM_TEMP))) {
 				log.debug "Hiding stale temperature ${map.value} because of ${lastAlarm} alarm"
 				map.value = (lastAlarm == "freeze") ? FREEZE_ALARM_TEMP : HEAT_ALARM_TEMP
 			}
@@ -503,8 +505,8 @@ def setHeatingSetpoint(preciseDegrees) {
 			log.debug "setHeatingSetpoint({$degrees} ${temperatureScale})"
 
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, zigbee.convertToHexString(celsius * 100, 4)) +
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT) +
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
+					zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT) +
+					zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
 		} else {
 			log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"
 		}

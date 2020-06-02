@@ -50,11 +50,12 @@ metadata {
 
 	preferences {
 		section {
-			input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: true, displayDuringSetup: true)
+			input("heatdetails", "enum", title: "Do you want to see detailed operating state events in the activity history? There may be many.", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		}
 		section {
-			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+			input(title: "Outdoor Temperature", description: 	"To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing)." +
+					"Do not use space. If you don't want a forecast, leave it blank.", displayDuringSetup: false, type: "paragraph", element: "paragraph")
+			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "")
 		}
 	}
 
@@ -101,7 +102,7 @@ metadata {
 					[value: 84, color: "#f1d801"],
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
-				]
+			]
 		}
 		standardTile("temperatureAlarm", "device.temperatureAlarm", decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'No Alarm', icon: "st.alarm.temperature.normal", backgroundColor: "#ffffff"
@@ -201,7 +202,7 @@ def parse(String description) {
 				value: map.value,
 				unit: map.unit,
 				data: [thermostatSetpointRange: thermostatSetpointRange]
-			])
+		])
 	}
 
 	log.debug "Parse returned $result"
@@ -279,7 +280,7 @@ def poll() {
 			zwave.thermostatModeV2.thermostatModeGet().format(),
 			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1).format(),
 			zwave.sensorMultilevelV3.sensorMultilevelGet().format() // current temperature
-		], 100)
+	], 100)
 }
 
 // Event Generation
@@ -290,7 +291,7 @@ def zwaveEvent(thermostatsetpointv2.ThermostatSetpointReport cmd) {
 	def map = [:]
 
 	if (cmd.scaledValue >= 327 ||
-		cmd.setpointType != thermostatsetpointv2.ThermostatSetpointReport.SETPOINT_TYPE_HEATING_1) {
+			cmd.setpointType != thermostatsetpointv2.ThermostatSetpointReport.SETPOINT_TYPE_HEATING_1) {
 		return [:]
 	}
 	temp = convertTemperatureIfNeeded(cmd.scaledValue, cmdScale, cmd.precision)
@@ -365,9 +366,12 @@ def zwaveEvent(thermostatoperatingstatev1.ThermostatOperatingStateReport cmd) {
 	if (operatingState) {
 		map.name = "thermostatOperatingState"
 		map.value = operatingState
-
-		if (settings.heatdetails == "No") {
-			map.displayed = false
+		map.displayed = false
+		// If the user want to see each of the Idle and Heating events in the event history,
+		// Otherwise don't show them more frequently than 5 minutes.
+		if (settings.heatdetails == "Yes" ||
+				!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
+			map.displayed = true
 		}
 	} else {
 		log.trace "${device.displayName} sent invalid operating state $value"
@@ -393,9 +397,9 @@ def zwaveEvent(thermostatmodev2.ThermostatModeReport cmd) {
 
 def zwaveEvent(associationv2.AssociationReport cmd) {
 	delayBetween([
-		zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:0).format(),
-		zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format(),
-		poll()
+			zwave.associationV1.associationRemove(groupingIdentifier:1, nodeId:0).format(),
+			zwave.associationV1.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId]).format(),
+			poll()
 	], 2300)
 }
 
@@ -441,8 +445,8 @@ def setHeatingSetpoint(preciseDegrees) {
 		}
 
 		delayBetween([
-			zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: setpointType, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
-			zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointType).format()
+				zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: setpointType, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
+				zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: setpointType).format()
 		], 1000)
 	} else {
 		log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"
@@ -533,8 +537,8 @@ def cool() {
 def setThermostatMode(value) {
 	if (supportedThermostatModes.contains(value)) {
 		delayBetween([
-			zwave.thermostatModeV2.thermostatModeSet(mode: modeNumericMap[value]).format(),
-			zwave.thermostatModeV2.thermostatModeGet().format()
+				zwave.thermostatModeV2.thermostatModeSet(mode: modeNumericMap[value]).format(),
+				zwave.thermostatModeV2.thermostatModeGet().format()
 		], 1000)
 	} else {
 		log.trace "${device.displayName} does not support $value mode"

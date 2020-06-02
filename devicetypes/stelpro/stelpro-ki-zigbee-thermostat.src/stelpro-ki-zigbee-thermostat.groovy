@@ -53,11 +53,12 @@ metadata {
 	preferences {
 		section {
 			input("lock", "enum", title: "Do you want to lock your thermostat's physical keypad?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: false)
-			input("heatdetails", "enum", title: "Do you want a detailed operating state notification?", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
+			input("heatdetails", "enum", title: "Do you want to see detailed operating state events in the activity history? There may be many.", options: ["No", "Yes"], defaultValue: "No", required: false, displayDuringSetup: true)
 		}
 		section {
-			input title: "Outdoor Temperature", description: "To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing).", displayDuringSetup: false, type: "paragraph", element: "paragraph"
-			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "[Do not use space](Blank = No Forecast)")
+			input(title: "Outdoor Temperature", description: 	"To get the current outdoor temperature to display on your thermostat enter your zip code or postal code below and make sure that your SmartThings location has a Geolocation configured (typically used for geofencing)." +
+					"Do not use space. If you don't want a forecast, leave it blank.", displayDuringSetup: false, type: "paragraph", element: "paragraph")
+			input("zipcode", "text", title: "ZipCode (Outdoor Temperature)", description: "")
 		}
 	}
 
@@ -106,7 +107,7 @@ metadata {
 					[value: 84, color: "#f1d801"],
 					[value: 95, color: "#d04e00"],
 					[value: 96, color: "#bc2323"]
-				]
+			]
 		}
 		standardTile("temperatureAlarm", "device.temperatureAlarm", decoration: "flat", width: 2, height: 2) {
 			state "default", label: 'No Alarm', icon: "st.alarm.temperature.normal", backgroundColor: "#ffffff"
@@ -163,9 +164,9 @@ def getSetpointStep() {
 }
 
 def getModeMap() {[
-	"00":"off",
-	"04":"heat",
-	"05":"eco"
+		"00":"off",
+		"04":"heat",
+		"05":"eco"
 ]}
 
 def setupHealthCheck() {
@@ -221,7 +222,7 @@ def parameterSetting() {
 	if (valid_lock) {
 		log.debug "lock valid"
 		zigbee.writeAttribute(THERMOSTAT_UI_CONFIG_CLUSTER, ATTRIBUTE_KEYPAD_LOCKOUT, DataType.ENUM8, lockmode) +
-			poll()
+				poll()
 	} else {
 		log.debug "nothing valid"
 	}
@@ -306,12 +307,12 @@ def parse(String description) {
 				} else {
 					map.value = "heating"
 				}
-
-				// If the user does not want to see the Idle and Heating events in the event history,
-				// don't show them. Otherwise, don't show them more frequently than 30 seconds.
-				if (settings.heatdetails == "No" ||
-					!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 30)) {
-					map.displayed = false
+				map.displayed = false
+				// If the user want to see each of the Idle and Heating events in the event history,
+				// Otherwise don't show them more frequently than 5 minutes.
+				if (settings.heatdetails == "Yes" ||
+						!secondsPast(device.currentState("thermostatOperatingState")?.getLastUpdated(), 60 * 5)) {
+					map.displayed = true
 				}
 				map = validateOperatingStateBugfix(map)
 				// Check to see if this was changed, if so make sure we have the correct heating setpoint
@@ -549,8 +550,8 @@ def setHeatingSetpoint(preciseDegrees) {
 			log.debug "setHeatingSetpoint({$degrees} ${temperatureScale})"
 
 			zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT, DataType.INT16, zigbee.convertToHexString(celsius * 100, 4)) +
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT) +
-				zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
+					zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_HEAT_SETPOINT) +
+					zigbee.readAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_PI_HEATING_STATE)
 		} else {
 			log.debug "heatingSetpoint $preciseDegrees out of range! (supported: $minSetpoint - $maxSetpoint ${getTemperatureScale()})"
 		}
@@ -614,8 +615,8 @@ def setThermostatMode(value) {
 		}
 
 		zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_SYSTEM_MODE, DataType.ENUM8, modeNumber) +
-			zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_MFR_SPEC_SETPOINT_MODE, DataType.ENUM8, setpointModeNumber, ["mfgCode": "0x1185"]) +
-			poll()
+				zigbee.writeAttribute(THERMOSTAT_CLUSTER, ATTRIBUTE_MFR_SPEC_SETPOINT_MODE, DataType.ENUM8, setpointModeNumber, ["mfgCode": "0x1185"]) +
+				poll()
 	} else {
 		log.debug "Invalid thermostat mode $value"
 	}
