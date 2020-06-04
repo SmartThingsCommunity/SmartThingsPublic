@@ -241,10 +241,10 @@ def configure() {
 	request << zwave.notificationV3.notificationGet(notificationType: 0x07, event: 0x08)  //motion
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x01) //temperature
 	request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x05) //humidity
-	if (!isEverspringSP815()) {
-		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
-	} else if (isEverspringSP815()) {
+	if (isEverspringSP815()) {
 		request += getConfigurationCommands()
+	} else {
+		request << zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 0x03) //illuminance
 	}
 
 	secureSequence(request) + ["delay 20000", zwave.wakeUpV2.wakeUpNoMoreInformation().format()]
