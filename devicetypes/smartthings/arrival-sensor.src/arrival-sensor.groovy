@@ -14,7 +14,7 @@ import groovy.json.JsonOutput
  *
  */
 metadata {
-	definition (name: "Arrival Sensor", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Arrival Sensor", namespace: "smartthings", author: "SmartThings", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Tone"
 		capability "Actuator"
 		capability "Signal Strength"
@@ -23,9 +23,9 @@ metadata {
 		capability "Battery"
 		capability "Health Check"
 
-		fingerprint profileId: "FC01", deviceId: "019A"
-		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000,0003", outClusters: "0003"
-		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000", outClusters: "0006"
+		fingerprint profileId: "FC01", deviceId: "019A", deviceJoinName: "SmartThings Presence Sensor"
+		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000,0003", outClusters: "0003", deviceJoinName: "SmartThings Presence Sensor"
+		fingerprint profileId: "FC01", deviceId: "0131", inClusters: "0000", outClusters: "0006", deviceJoinName: "SmartThings Presence Sensor"
 	}
 
 	simulator {

@@ -19,8 +19,9 @@ definition(
     author: "Sheikh Dawood",
     description: "Turn on/off humidifier based on relative humidity from a sensor.",
     category: "Convenience",
-   iconUrl: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather12-icn",
-    iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather12-icn?displaySize=2x"
+    iconUrl: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather12-icn",
+    iconX2Url: "https://graph.api.smartthings.com/api/devices/icons/st.Weather.weather12-icn?displaySize=2x",
+    pausable: true
 )
 
 

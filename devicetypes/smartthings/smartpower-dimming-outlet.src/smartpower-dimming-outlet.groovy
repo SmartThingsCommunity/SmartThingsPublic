@@ -16,7 +16,7 @@
  *	Date: 2013-12-04
  */
 metadata {
-	definition (name: "SmartPower Dimming Outlet", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug") {
+	definition (name: "SmartPower Dimming Outlet", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-dimmer-power", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Switch"
 		capability "Switch Level"
 		capability "Power Meter"
@@ -25,8 +25,9 @@ metadata {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Outlet"
+		capability "Health Check"
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "4257050-ZHAC"
+		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0B04,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "4257050-ZHAC", deviceJoinName: "Centralite Dimmer Switch"
 
 	}
 
@@ -84,7 +85,7 @@ def parse(String description) {
 	return event ? createEvent(event) : event
 }
 
-def setLevel(value) {
+def setLevel(value, rate = null) {
 	zigbee.setLevel(value)
 }
 
@@ -96,10 +97,16 @@ def on() {
 	zigbee.on()
 }
 
+def ping() {
+	zigbee.onOffRefresh()
+}
+
 def refresh() {
 	zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.electricMeasurementPowerRefresh()
 }
 
 def configure() {
+	// default reporting time is 10min for on/off, checkInterval is set to 21min
+	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 	refresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.electricMeasurementPowerConfig()
 }

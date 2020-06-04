@@ -19,14 +19,15 @@
  *
  */
 metadata {
-	definition(name: "Inovelli 2-Channel Smart Plug", namespace: "erocm123", author: "Eric Maycock") {
+	definition(name: "Inovelli 2-Channel Smart Plug", namespace: "erocm123", author: "Eric Maycock", ocfDeviceType: "oic.d.smartplug", mnmn: "SmartThings", vid: "generic-switch") {
 		capability "Actuator"
 		capability "Sensor"
 		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
 		capability "Health Check"
-		fingerprint manufacturer: "015D", prod: "0221", model: "251C"
+
+		// Fingerprints moved to "Inovelli 2-Channel Smart Plug MCD" for modern MCD experience.
 	}
 	simulator {}
 	preferences {}
@@ -75,7 +76,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd, ep = null) 
 			def allOff = true
 			childDevices.each {
 				n ->
-					if (n.currentState("switch").value != "off") allOff = false
+					if (n.currentState("switch")?.value != "off") allOff = false
 			}
 			if (allOff) {
 				event = [createEvent([name: "switch", value: "off"])]
@@ -108,7 +109,7 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 			def allOff = true
 			childDevices.each {
 				n->
-					if (n.currentState("switch").value != "off") allOff = false
+					if (n.currentState("switch")?.value != "off") allOff = false
 			}
 			if (allOff) {
 				event = [createEvent([name: "switch", value: "off"])]
@@ -126,6 +127,14 @@ def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cm
 	}
 }
 def zwaveEvent(physicalgraph.zwave.commands.multichannelv3.MultiChannelCmdEncap cmd) {
+	if (cmd.commandClass == 0x6C && cmd.parameter.size >= 4) { // Supervision encapsulated Message
+		// Supervision header is 4 bytes long, two bytes dropped here are the latter two bytes of the supervision header
+		cmd.parameter = cmd.parameter.drop(2)
+		// Updated Command Class/Command now with the remaining bytes
+		cmd.commandClass = cmd.parameter[0]
+		cmd.command = cmd.parameter[1]
+		cmd.parameter = cmd.parameter.drop(2)
+	}
 	logging("MultiChannelCmdEncap ${cmd}", 2)
 	def encapsulatedCommand = cmd.encapsulatedCommand([0x32: 3, 0x25: 1, 0x20: 1])
 	if (encapsulatedCommand) {
@@ -215,7 +224,7 @@ def updated() {
 		}
 		state.oldLabel = device.label
 	}
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 	sendEvent(name: "needUpdate", value: device.currentValue("needUpdate"), displayed: false, isStateChange: true)
 }
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -246,8 +255,14 @@ private channelNumber(String dni) {
 private void createChildDevices() {
 	state.oldLabel = device.label
 	for (i in 1..2) {
-		addChildDevice("Switch Child Device", "${device.deviceNetworkId}-ep${i}", null, [completedSetup: true, label: "${device.displayName} (CH${i})",
-																						 isComponent: true, componentName: "ep$i", componentLabel: "Channel $i"
+		addChildDevice("Switch Child Device",
+				"${device.deviceNetworkId}-ep${i}",
+				device.hubId,
+				[completedSetup: true,
+				 label: "${device.displayName} (CH${i})",
+				 isComponent: true,
+				 componentName: "ep$i",
+				 componentLabel: "Channel $i"
 		])
 	}
 }

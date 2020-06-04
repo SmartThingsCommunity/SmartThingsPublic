@@ -16,7 +16,8 @@ definition(
   description: "If your heating or cooling system come on, it gives you notice if there are any windows or doors left open, preventing the system from working optimally.",
   category: "Green Living",
   iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-  iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png"
+  iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience%402x.png",
+  pausable: true
 )
 
 preferences {

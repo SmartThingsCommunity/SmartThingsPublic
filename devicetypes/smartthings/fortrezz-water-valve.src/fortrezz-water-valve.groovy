@@ -12,15 +12,15 @@
  *
  */
 metadata {
-	definition (name: "Fortrezz Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve") {
+	definition (name: "Fortrezz Water Valve", namespace: "smartthings", author: "SmartThings", ocfDeviceType: "oic.d.watervalve", runLocally: true, minHubCoreVersion: '000.017.0012', executeCommandsLocally: false) {
 		capability "Actuator"
 		capability "Health Check"
 		capability "Valve"
 		capability "Refresh"
 		capability "Sensor"
 
-		fingerprint deviceId: "0x1000", inClusters: "0x25,0x72,0x86,0x71,0x22,0x70"
-		fingerprint mfr:"0084", prod:"0213", model:"0215", deviceJoinName: "FortrezZ Water Valve"
+		fingerprint deviceId: "0x1000", inClusters: "0x25,0x72,0x86,0x71,0x22,0x70", deviceJoinName: "FortrezZ Valve"
+		fingerprint mfr:"0084", prod:"0213", model:"0215", deviceJoinName: "FortrezZ Valve" //FortrezZ Water Valve
 	}
 
 	// simulator metadata
@@ -55,12 +55,14 @@ metadata {
 
 def installed(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
+
+	response(refresh())
 }
 
 def updated(){
 // Device-Watch simply pings if no device events received for 32min(checkInterval)
-	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+	sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID, offlinePingable: "1"])
 }
 
 def parse(String description) {
@@ -76,8 +78,7 @@ def parse(String description) {
 def zwaveEvent(physicalgraph.zwave.commands.switchbinaryv1.SwitchBinaryReport cmd) {
 	def value = cmd.value ? "closed" : "open"
 
-	return [createEventWithDebug([name: "contact", value: value, descriptionText: "$device.displayName valve is $value"]),
-			createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])]
+	return createEventWithDebug([name: "valve", value: value, descriptionText: "$device.displayName valve is $value"])
 }
 
 def zwaveEvent(physicalgraph.zwave.Command cmd) {
@@ -85,11 +86,17 @@ def zwaveEvent(physicalgraph.zwave.Command cmd) {
 }
 
 def open() {
-	zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format()
+	delayBetween([
+		zwave.switchBinaryV1.switchBinarySet(switchValue: 0x00).format(),
+		zwave.switchBinaryV1.switchBinaryGet().format()
+	], 500)
 }
 
 def close() {
-	zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format()
+	delayBetween([
+		zwave.switchBinaryV1.switchBinarySet(switchValue: 0xFF).format(),
+		zwave.switchBinaryV1.switchBinaryGet().format()
+	], 500)
 }
 
 /**
@@ -105,6 +112,6 @@ def refresh() {
 
 def createEventWithDebug(eventMap) {
 	def event = createEvent(eventMap)
-	log.debug "Event created with ${event?.descriptionText}"
+	log.debug "Event created with ${event?.name}:${event?.value} - ${event?.descriptionText}"
 	return event
 }
