@@ -69,7 +69,7 @@ metadata {
 		section {
 			input(
 					title: "Settings Available For Everspring SP815 only",
-					description: "To activate device's settings changes press the learn key on the device three times or check the device manual.",
+					description: "To apply updated device settings to the device press the learn key on the device three times or check the device manual.",
 					type: "paragraph",
 					element: "paragraph"
 			)
@@ -80,7 +80,7 @@ metadata {
 					type: "number",
 					range: "600..1440",
 					defaultValue: 600
-			) // defaultValue: 600
+			)
 			input(
 					title: "Re-trigger Interval Setting (Everspring SP815 only):",
 					description: "The setting adjusts the sleep period (in seconds) after the detector has been triggered. No response will be made during this interval if a movement is presented. Longer re-trigger interval will result in longer battery life.",
@@ -88,7 +88,7 @@ metadata {
 					type: "number",
 					range: "10..3600",
 					defaultValue: 180
-			) // defaultValue: 180
+			)
 		}
 	}
 }
@@ -126,9 +126,9 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd) {
 	def results = []
 	results += createEvent(descriptionText: "$device.displayName woke up", isStateChange: false)
 
-	log.debug "isConfigured: ${isConfigured()}"
-	if (isEverspringSP815() && !isConfigured()) {
-		result += lateConfigure()
+	log.debug "isConfigured: $state.configured"
+	if (isEverspringSP815() && !state.configured) {
+		results += lateConfigure()
 	}
 
 	results += response([
@@ -286,13 +286,22 @@ private secureSequence(commands, delay = 200) {
 def getConfigurationCommands() {
 	log.debug "getConfigurationCommands"
 	def result = []
+
 	if (isEverspringSP815()) {
-		if (!state.temperatureAndHumidityReport) state.temperatureAndHumidityReport = getEverspringDefaults[1]
-		if (!state.retriggerIntervalSettings) state.retriggerIntervalSettings = getEverspringDefaults[2]
 		Integer temperatureAndHumidityReport = (settings.temperatureAndHumidityReport as Integer) ?: everspringDefaults[1]
 		Integer retriggerIntervalSettings = (settings.retriggerIntervalSettings as Integer) ?: everspringDefaults[2]
-		if (!isConfigured() || (temperatureAndHumidityReport != state.temperatureAndHumidityReport || retriggerIntervalSettings != state.retriggerIntervalSettings)) {
+
+		if (!state.temperatureAndHumidityReport) {
+			state.temperatureAndHumidityReport = getEverspringDefaults[1]
+		}
+		if (!state.retriggerIntervalSettings) {
+			state.retriggerIntervalSettings = getEverspringDefaults[2]
+		}
+
+		if (!state.configured || (temperatureAndHumidityReport != state.temperatureAndHumidityReport || retriggerIntervalSettings != state.retriggerIntervalSettings)) {
+
 			state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
+
 			if (!state.temperatureConfigured || temperatureAndHumidityReport != state.temperatureAndHumidityReport) {
 				state.temperatureConfigured = false
 				result << zwave.configurationV2.configurationSet(parameterNumber: 1, size: 2, scaledConfigurationValue: temperatureAndHumidityReport)
@@ -305,6 +314,7 @@ def getConfigurationCommands() {
 			}
 		}
 	}
+
 	return result
 }
 
@@ -315,11 +325,7 @@ def getEverspringDefaults() {
 
 def lateConfigure() {
 	log.debug "lateConfigure"
-	sendHubCommand(getConfigurationCommands(),200)
-}
-
-private isConfigured() {
-	return state.configured == true
+	sendHubCommand(getConfigurationCommands(), 200)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -331,12 +337,14 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 			state.retriggerIntervalSettings = scaledConfigurationValue
 			state.intervalConfigured = true
 		}
-		if (state.intervalConfigured == true && state.temperatureConfigured== true) {
+
+		if (state.intervalConfigured && state.temperatureConfigured) {
 			state.configured = true
 		}
 		log.debug "Everspring Configuration Report: ${cmd}"
-		return [:]
 	}
+
+	return [:]
 }
 
 private isEverspringSP815() {

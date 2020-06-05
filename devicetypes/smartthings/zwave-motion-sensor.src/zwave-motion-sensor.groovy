@@ -81,7 +81,7 @@ metadata {
 		section {
 			input(
 					title: "Settings Available For Everspring SP817 only",
-					description: "To activate device's settings changes press the tamper switch on the device three times or check the device manual.",
+					description: "To apply updated device settings to the device press the tamper switch on the device three times or check the device manual.",
 					type: "paragraph",
 					element: "paragraph"
 			)
@@ -92,7 +92,7 @@ metadata {
 					type: "number",
 					range: "10..3600",
 					defaultValue: 180
-			) // defaultValue: 180
+			)
 		}
 	}
 }
@@ -208,8 +208,8 @@ def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
 {
 	def result = [createEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)]
 
-	log.debug "isConfigured: ${isConfigured()}"
-	if (isEverspringSP817() && !isConfigured()) {
+	log.debug "isConfigured: $state.configured"
+	if (isEverspringSP817() && !state.configured) {
 		result = lateConfigure()
 	}
 
@@ -356,11 +356,18 @@ private command(physicalgraph.zwave.Command cmd) {
 def getConfigurationCommands() {
 	log.debug "getConfigurationCommands"
 	def result = []
+
 	if (isEverspringSP817()) {
-		if (!state.retriggerIntervalSettings) state.retriggerIntervalSettings = 180 // default value (parameter 4) for Everspring SP817
 		Integer retriggerIntervalSettings = (settings.retriggerIntervalSettings as Integer) ?: 180 // default value (parameter 4) for Everspring SP817
-		if (!isConfigured() || (retriggerIntervalSettings != state.retriggerIntervalSettings)) {
+
+		if (!state.retriggerIntervalSettings) {
+			state.retriggerIntervalSettings = 180 // default value (parameter 4) for Everspring SP817
+		}
+
+		if (!state.configured || (retriggerIntervalSettings != state.retriggerIntervalSettings)) {
+
 			state.configured = false
+
 			if (!state.intervalConfigured || retriggerIntervalSettings != state.retriggerIntervalSettings) {
 				state.intervalConfigured = false
 				result << zwave.configurationV2.configurationSet(parameterNumber: 4, size: 2, scaledConfigurationValue: retriggerIntervalSettings)
@@ -368,16 +375,13 @@ def getConfigurationCommands() {
 			}
 		}
 	}
+
 	return result
 }
 
 def lateConfigure() {
 	log.debug "lateConfigure"
-	sendHubCommand(getConfigurationCommands(),200)
-}
-
-private isConfigured() {
-	return state.configured == true
+	sendHubCommand(getConfigurationCommands(), 200)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
@@ -387,8 +391,9 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 			state.configured = true
 		}
 		log.debug "Everspring Configuration Report: ${cmd}"
-		return [:]
 	}
+
+	return [:]
 }
 
 private isEnerwave() {
