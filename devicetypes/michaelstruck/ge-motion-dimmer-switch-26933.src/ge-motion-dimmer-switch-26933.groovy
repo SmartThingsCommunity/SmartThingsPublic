@@ -6,8 +6,9 @@
  *
  *  Based off of the Dimmer Switch under Templates in the IDE 
  *
- *  Version 1.0.7 5/27/20 
+ *  Version 1.0.8 6/3/20 
  *
+ *  Version 1.0.8 (6/3/20) - Updated Setting to allow for Boolean for items like enabling motion sensor; added button capability back in
  *  Version 1.0.7 (5/27/20) - Version alignment with switch code. 
  *  Version 1.0.6a (2/11/20) - Fixed the reset cycle parameter that was not saving properly. Thank @Morgon!
  *  Version 1.0.5 (12/4/18) - Removed logging to reduce Zwave traffic; optimized button triple press  
@@ -28,16 +29,17 @@
  *
  */
 metadata {
-	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", vid: "generic-dimmer") {
+	definition (name: "GE Motion Dimmer Switch 26933", namespace: "MichaelStruck", author: "Michael Struck", mnmn:"SmartThings", ocfDeviceType: "oic.r.light.dimming") {
 		capability "Motion Sensor"
-        capability "Actuator"
+		capability "Actuator"
  		capability "Switch"
-        capability "Switch Level"
+		capability "Switch Level"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
 		capability "Health Check"
 		capability "Light"
+		capability "Button"
         
 		command "toggleMode"
         command "occupancy"
@@ -51,7 +53,7 @@ metadata {
         command "setMotionSenseHigh"
         command "setMotionSenseOff"
         command "lightSenseOn"
-		command "lightSenseOff"
+        command "lightSenseOff"
         command "setTimeout5Seconds"
         command "setTimeout1Minute"
         command "setTimeout5Minutes"
@@ -112,7 +114,11 @@ metadata {
                 required: false
             )
             //param 6
-            input "motion", "bool", title: "Enable Motion Sensor", defaultValue:true
+            input (name: "motion", title: "Motion Sensor",
+            	type: "enum",
+                options: [
+                   "Enabled": "Enabled (Default)", "Disabled": "Disabled"
+                ])
             //param 13
 			input ("motionsensitivity","enum", title: "Motion Sensitivity (When Motion Sensor Enabled)",
             	description: "Motion Sensitivity",
@@ -123,9 +129,17 @@ metadata {
                 ]
             )
             //param 14
-            input "lightsense", "bool", title: "Enable Light Sensing (Occupancy)", defaultValue:true
+            input (name: "lightsense", title: "Light Sensing (Occupancy)",
+            	type: "enum",
+                options: [
+                   "Enabled":"Enabled (Default)", "Disabled":"Disabled"
+                ])
             //param 5
-            input "invertSwitch", "bool", title: "Invert Remote Switch Orientation", defaultValue:false
+            input (name: "invertSwitch", title: "Remote Switch Orientation",
+            	type: "enum",
+                options: [
+                   "Normal":"Normal (Default)", "Inverted":"Inverted"
+                ])
             //param 15
             input ("resetcycle","enum",title: "Motion Reset Cycle", description: "Time to stop reporting motion once motion has stopped",
                 options: [
@@ -149,7 +163,11 @@ metadata {
             //description
             input title: "", description: "**Single Tap Ramp Rate Settings**", displayDuringSetup: false, type: "paragraph", element: "paragraph"
             //param 18
-            input "dimrate", "bool", title: "Enable Slow Dim Rate (Off=Quick)", defaultValue:false
+            input (name: "dimrate", title: "Slow Dim Rate (Disabled=Quick)",
+            	type: "enum",
+                options: [
+                   "Enabled":"Enabled", "Disabled":"Disabled (default)"
+                ])
             //param 17
             input "switchlevel","number", title: "Default Dim Level", description:"Default 0: Return to last state, Max 99", range: "0..99", defaultValue: 0
             //descrip
@@ -158,8 +176,12 @@ metadata {
             input "manualStepSize", "number", title: "Manual Step Size (%)", range: "1..99", defaultValue: 1
        		//param 8
             input "manualStepDuration", "number", title: "Manual Step Intervals Each 10 ms", range: "1..255", defaultValue: 3
-            //param 16
-            input "switchmode", "bool", title: "Enable Switch Mode", defaultValue:false                             
+            //param 16                             
+            input (name: "switchmode", title: "Switch Mode",
+            	type: "enum",
+                options: [
+                   "Enabled":"Enabled", "Disabled":"Disabled (Default)"
+                ])
             //association groups
         	input ( type: "paragraph", element: "paragraph",
             title: "", description: "**Configure Association Groups**\nDevices in association groups 2 & 3 will receive Basic Set commands directly from the switch when it is turned on or off (physically or locally through the motion detector). Use this to control other devices as if they were connected to this switch.\n\n" +
@@ -169,7 +191,11 @@ metadata {
         	input ( name: "requestedGroup3", title: "Association Group 3 Members (Max of 4):", description: "Use the 'Device Network ID' for each device", type: "text", required: false )            
             //description
             input title: "", description: "**setLevel Default Function (Advanced)**\nDefines how 'setLevel' behavior affects the light.",  type: "paragraph", element: "paragraph"
-            input "setlevelmode", "bool", title: "setLevel Does Not Activate Light", defaultValue:false
+            input (name: "setlevelmode", title: "setLevel Activates Light",
+            	type: "enum",
+                options: [
+                   "Enabled":"Enabled", "Disabled":"Disabled (Default)"
+                ])
     }
 	tiles(scale: 2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
@@ -232,7 +258,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicReport cmd) {
 def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
 	def result = []
     if (cmd.value == 255) {
-    	result << createEvent([name: "switch", value: "on", data: [buttonNumber: "1"], descriptionText: "On/Up (button 1) on $device.displayName was pushed", isStateChange: true, type: "physical"])
+    	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "1"], descriptionText: "On/Up (button 1) on $device.displayName was pushed", isStateChange: true, type: "physical"])
     	if (timeoutdurationPress){
         	if (modeOverride) state.offCounter=0
             if (!state.onCounter || state.onCounter > 2 || (now()-state.Timer) > 10000) state.onCounter=0
@@ -250,7 +276,7 @@ def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd) {
         }
     }
 	else if (cmd.value == 0) {
-    	result << createEvent([name: "switch", value: "off", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
+    	result << createEvent([name: "button", value: "pushed", data: [buttonNumber: "2"], descriptionText: "Off/Down (button 2) on $device.displayName was pushed", isStateChange: true, type: "physical"])
     	if (modeOverride) {
         	if (timeoutdurationPress) state.onCounter=0
             if (!state.offCounter || state.offCounter > 2 || (now()-state.timerOff)>10000) state.offCounter=0
@@ -323,11 +349,13 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
     } else if (cmd.parameterNumber == 10) {
     	result << createEvent([name:"ManualStepDuration", value: config, displayed:true, isStateChange:true])
     } else if (cmd.parameterNumber == 16) {
-    	result << createEvent([name:"SwitchMode", value: config, displayed:true, isStateChange:true])
+    	def value = config == 0 ? "Disabled" : "Enabled"
+        result << createEvent([name:"SwitchMode", value: value, displayed:true, isStateChange:true])
     } else if (cmd.parameterNumber == 17) {
     	result << createEvent([name:"defaultLevel", value: config, displayed:true, isStateChange:true])
     } else if (cmd.parameterNumber == 18) {
-    	result << createEvent([name:"DimRate", value: config, displayed:true, isStateChange:true])
+    	def value = config == 0 ? "Disabled" : "Enabled"
+        result << createEvent([name:"DimRate", value: value, displayed:true, isStateChange:true])
     } else {
     log.warn "Parameter  ${cmd.parameterNumber} ${config}"}
     //
@@ -398,7 +426,7 @@ def setLevel(value) {
 	def valueaux = value as Integer
 	def level = Math.max(Math.min(valueaux, 99), 0)
     def cmds = []    	
-    if (settings.setlevelmode){ 
+    if (settings.setlevelmode!="Enabled"){ 
     	log.debug "setlevel does not activate light"
     	if (device.currentValue("switch") == "on") {
             sendEvent(name: "level", value: level, unit: "%")
@@ -578,7 +606,7 @@ def updated() {
         motionSensor=2
     }
     //param 14 lightsense
-    lightSensor = lightsense ? 1 : 0
+    lightSensor = lightsense!="Disabled" ? 1 : 0
     cmds << zwave.configurationV1.configurationSet(configurationValue: [lightSensor], parameterNumber: 14, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 14)
 	//param 15 reset cycle
@@ -593,12 +621,12 @@ def updated() {
     //param 3 operating mode (no default...no entry=no change)
     if (settings.operationmode) cmds << zwave.configurationV1.configurationSet(configurationValue: [settings.operationmode.toInteger()], parameterNumber: 3, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 3)
-    //param 6 motion
-    motionSensor = !motion ? 0 : motionSensor
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [motion ? 1 : 0], parameterNumber: 6, size: 1)
+    //param 6 motion  
+    motionSensor = motion=="Disabled" ? 0 : motionSensor
+    cmds << zwave.configurationV1.configurationSet(configurationValue: [motion!="Disabled" ? 1: 0], parameterNumber: 6, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 6)
     //param 5 invert switch
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [invertSwitch ? 1 : 0 ], parameterNumber: 5, size: 1)
+    cmds << zwave.configurationV1.configurationSet(configurationValue: [ invertSwitch!="Inverted" ? 0 : 1 ], parameterNumber: 5, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 5)
 
     cmds << zwave.associationV1.associationSet(groupingIdentifier:0, nodeId:zwaveHubNodeId)
@@ -645,7 +673,7 @@ def updated() {
       	cmds << zwave.configurationV1.configurationGet(parameterNumber: 10)  
 	}
     //switch mode param 16
-    switchMode = switchmode ? 1 : 0
+    switchMode = switchmode!="Enabled" ? 0 : 1
     cmds << zwave.configurationV1.configurationSet(configurationValue: [switchMode], parameterNumber: 16, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 16)
     //switch level param 17
@@ -659,7 +687,7 @@ def updated() {
         dimLevel =switchlevel.toInteger()
     }
     //dim rate param 18
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [dimrate ? 1 : 0], parameterNumber: 18, size: 1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: [dimrate!="Enabled" ? 0 : 1], parameterNumber: 18, size: 1)
     cmds << zwave.configurationV1.configurationGet(parameterNumber: 18)
 
     //end of dimmer specific params   
@@ -735,11 +763,11 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     def dimLevelTxt = dimLevel +"%"
     def switchModeTxt = switchMode ? "Enabled" : "Disabled"
     def dimSync = (switchlevel && state.currentDimLevel == switchlevel.toInteger()) || (!switchlevel && state.currentDimLevel== 0) ? "✔" : "‼"
-    def motionSync = ((motion && motionSensorTxt !="Disabled" && motionsensitivity && state.currentMotionSensor==motionsensitivity.toInteger()) || (!motionsensitivity && state.currentMotionSensor==2)) ||
-    	(!motion && motionSensorTxt =="Disabled")  ? "✔" : "‼"
-    def lightSync = (!lightsense && state.currentLightSensor == 0) || (lightsense && state.currentLightSensor == 1) ? "✔" : "‼"
+    def motionSync = ((motion!="Disabled" && motionSensorTxt !="Disabled" && motionsensitivity && state.currentMotionSensor==motionsensitivity.toInteger()) || (!motionsensitivity && state.currentMotionSensor==2)) ||
+    	(motion=="Disabled" && motionSensorTxt =="Disabled")  ? "✔" : "‼"
+    def lightSync = (lightsense=="Disabled" && state.currentLightSensor == 0) || (lightsense!="Disabled" && state.currentLightSensor == 1) ? "✔" : "‼"
     def timeSync = (timeoutduration && state.currentTimeDelay == timeoutduration.toInteger()) || (!timeoutduration && state.currentTimeDelay == 5)  ? "✔" : "‼"
-    def switchSync = (switchmode && state.currentSwitchMode == 1) || (!switchmode && state.currentSwitchMode == 0) ? "✔" : "‼"
+    def switchSync = (switchmode=="Enabled" && state.currentSwitchMode == 1) || (switchmode!="Enabled" && state.currentSwitchMode == 0) ? "✔" : "‼"
     String result =""
    	result +="${dimSync} Default Dim Level: " + dimLevelTxt
     result +="\n${motionSync} Motion Sensitivity: " + motionSensorTxt
@@ -748,4 +776,4 @@ def showDashboard(timeDelay, motionSensor, lightSensor, dimLevel, switchMode) {
     result +="\n${switchSync} Switch Mode: " + switchModeTxt
 	sendEvent (name:"dashboard", value: result ) 
 }
-def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.7 (05/27/20)") }
+def showVersion() { sendEvent (name: "about", value:"DTH Version 1.0.8 (06/03/20)") }
