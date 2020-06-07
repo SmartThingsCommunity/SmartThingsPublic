@@ -21,10 +21,11 @@
  *
  */
 def version() {
-    return "v0.2.6e.20200302"
+    return "v0.2.7e.20200527"
 }
 
 /* 
+ *	27-May-2020 >>> v0.2.7e.20200527 - Handle extra null battery site info from Tesla. Handle no time zone set. 
  *	02-Mar-2020 >>> v0.2.6e.20200302 - Correct mobile notifications
  *	29-Feb-2020 >>> v0.2.5e.20200229 - Additional http command and query error checks. Added option to pause automations.
  *	19-Feb-2020 >>> v0.2.4e.20200219 - Added battery charge % triggers time and day restriction options.
@@ -53,8 +54,10 @@ definition(
 
 preferences {
     page(name: "pageMain")
-    page(name: "verifyPowerwalls")
-    page(name: "accountInfo")
+    page(name: "pageConnections")
+    page(name: "pageConnectionMethod")
+    page(name: "teslaAccountInfo")
+    page(name: "gatewayAccountInfo")
     page(name: "pageNotifications")
     page(name: "pageSchedules")
     page(name: "pageTriggers")
@@ -75,7 +78,7 @@ preferences {
 }
 
 private pageMain() {
-    return dynamicPage(name: "pageMain", title: "", nextPage: "verifyPowerwalls") {
+    return dynamicPage(name: "pageMain", title: "", install: true) {
         section() {
             if (hubIsSt()) {
                 paragraph app.version(),
@@ -87,10 +90,12 @@ private pageMain() {
                     "<div style='float: left; margin-top: 6px; margin-left: 16px'>Powerwall Manager\n ${app.version()}</div>"
             }               
         }
-        section("Tesla Account Information") {
-            href "accountInfo", title: "Account Information..", description: "", required: (!userEmail || !userPw), image:
-                "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon50.png"
+        
+         section("Powerwall Connections") {
+            href "pageConnections", title: "Account Information..", description: "", required: false, image:
+               "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/Tesla-Icon50.png"
         }
+
         section("Preferences") {
             href "pageNotifications", title: "Notification Preferences..", description: "", required: false,
                 image: "https://rawgit.com/DarwinsDen/SmartThingsPublic/master/resources/icons/notification50.png"
@@ -134,15 +139,142 @@ def pageRemove() {
     }
 }
 
-private accountInfo() {
-    return dynamicPage(name: "accountInfo", title: "", install: false) {
+private teslaAccountInfo() {
+    return dynamicPage(name: "teslaAccountInfo", title: "", install: false) {
         resetAccountAccess()
         section("Tesla Account Information: ") {
-            input "userEmail", "text", title: "Email", autoCorrect: false, required: true
-            input "userPw", "password", title: "Password", autoCorrect: false, required: true
+            input "userEmail", "text", title: "Email", autoCorrect: false, required: false
+            input "userPw", "password", title: "Password", autoCorrect: false, required: false
         }
     }
 }
+
+private gatewayAccountInfo() {
+    return dynamicPage(name: "gatewayAccountInfo", title: "", install: false) {
+           section("Local Gateway Information. If provided, the Powerwall Manager will also (or only if no Tesla Account information is provided) " +
+                  "obtain real-time meter and battery level data from the gateway itself. The Powerwall Manager does not currently support mode and state status " +
+                   "or command capability directly from the local gateway.") {
+               input("gatewayAddress", "string", title: "Powerwall Gateway IP local address (eg. 192.168.1.200)", required: false )
+            //input "installerEmail", "text", title: "Gateway  Unstaller Email", autoCorrect: false, required: false
+            //input "installerPw", "password", title: "Gateway Installer Password", autoCorrect: false, required: false
+           }
+      }
+}
+
+def getConnectionMethodStatus() {
+    def statusStr
+    if (!connectionMethod) {
+        statusStr = "Use Remote Tesla Account Server Only"
+    } else {
+        if (connectionMethod == "Use Local Gateway Only") {
+            statusStr = connectionMethod.toString() + ".\n Note: A Tesla Server connection is also required for all Powerwall Manager capabilities."
+        } else {
+           statusStr = connectionMethod.toString()
+        }
+    }
+    return statusStr
+}       
+
+def pageConnectionMethod() {
+    dynamicPage(name: "pageConnectionMethod", title:"Choose how to connect to the Powerwall.", install: false, uninstall: false) {
+        section("Connection Method") {
+             input "connectionMethod", "enum", required: false, defaultValue: "Use Remote Tesla Account Server Only", title: "Connection Method", 
+                 options: ["Use Remote Tesla Account Server Only", "Use Local Gateway Only", "Use Both Tesla Server and Local Gateway"]
+         }
+    }
+}
+        
+def pageConnections() {
+    dynamicPage(name: "pageConnections", title:"Choose how to connect to the Powerwall.", install: false, uninstall: false) {
+        def statusString
+        if (!hubIsSt()) {
+           section("Connection Method") {
+               statusString = getConnectionMethodStatus()
+               href "pageConnectionMethod", title: "${statusString}", description: ""
+            }
+        }
+
+        if (!connectionMethod || connectionMethod != "Use Local Gateway Only") {
+            statusString = getTeslaServerStatus()
+            section("Tesla Server") {
+               href "teslaAccountInfo", title: "${statusString}", description: ""
+            }
+        }
+        if (connectionMethod && connectionMethod != "Use Remote Tesla Account Server Only") {
+            statusString = getLocalGwStatus()
+            section("Gateway Status") {
+               href "gatewayAccountInfo", title: "${statusString}", description: ""
+            }
+        }
+    }
+}
+
+def getTeslaServerStatus() {
+    try {
+        def messageStr
+        if (!userEmail || !userPw) {
+            messageStr = "Enter your Tesla Account credentials"
+        } else {
+           getPowerwalls() 
+           if (!state.accessTokenValid) {
+               messageStr = "Error Verifying Tesla/Powerwall Account\n" +
+                   "Please verify your Tesla Account username and password."
+           } else if (state.foundPowerwalls) {
+            messageStr = "Tesla Account Verified:\n" +
+                        "Connection to Tesla server established.\n" +
+                        "Site Name: ${state.siteName}\n" +
+                        "Id: ${state.pwId}\n" +
+                        "Site Id: ${state.energySiteId}"
+           } else {
+              messageStr = "Error: No Powerwalls found\n" +
+                   "Please verify your Tesla Account username and password."
+           }
+        }
+        return messageStr
+    } catch (Exception e) {
+        log.error e
+        return "Error accessing Powerwall account\n" + 
+            "Please verify your Tesla account username and password." 
+    }
+}
+
+def getLocalGwStatus() {
+    try {
+        def messageStr
+        if (gatewayAddress == null) {
+                messageStr = "Enter your local gateway IP address" 
+        } else {
+                log.debug "Attempting to connect to local gateway"
+                messageStr = "Local Gateway Status:\nCould not connect to local gateway at ${gatewayAddress}" 
+                def requestParameters = [
+                   uri: "https://${gatewayAddress}",
+                   path: "/api/site_info/site_name",
+                   contentType: 'application/json',
+                   ignoreSSLIssues: true 
+                ]
+            
+                httpGet(requestParameters) {
+                  resp -> 
+                   log.debug "response data was ${resp.data} "
+                   //def data = resp.json
+                   // log.debug "${data}"          
+                  // localConnectionValid = true
+                   messageStr = "Local Gateway Verified:\n" +
+                       "Connected at ${gatewayAddress}\n"+
+                       "Site Name: ${resp.data.site_name.toString()}\n" +
+                       "Gateway time zone: ${resp.data.timezone.toString()}"
+                   state.foundGateway = true
+                }
+                log.debug "${messageStr}"
+        }
+       return messageStr
+
+    } catch (Exception e) {
+        log.error e
+           return "Unknown error accessing local gateway"
+    }
+}
+
 
 def pageNotifications() {
     dynamicPage(name: "pageNotifications", title: "Notification Preferences", install: false, uninstall: false) {
@@ -350,6 +482,10 @@ def pagePwPreferences() {
         section("") {
             input "pollingPeriod", "enum", required: false, title: "Powerwall polling interval", defaultValue: "10 minutes",
                 options: ["Do not poll", "5 minutes", "10 minutes", "30 minutes", "1 hour"]
+              //if ((connectionMethod && connectionMethod != "Use Remote Tesla Account Server Only")) {
+              //   input "gatewayPollingPeriod", "enum", required: false, title: "Local Gateway Powerwall polling interval", defaultValue: "10 minutes",
+              //      options: ["Do not poll", "1 minute", "5 minutes", "10 minutes", "1 hour"]
+              //} 
         }
         section("") {
             input "logLevel", "enum", required: false, title: "IDE Log Level (sets log level in web IDE live logging tab)", options: ["none",
@@ -514,6 +650,20 @@ Boolean hubIsSt() {
     return (getHubType() == "SmartThings")
 }
 
+def getPwDevice() {
+   def deviceIdStr = null
+   if (state.childDeviceId) {
+      deviceIdStr = state.childDeviceId
+   } else {
+      def devices = getChildDevices()
+      if (devices.size() > 0) {
+          deviceIdStr = getChildDevices().first().getDeviceNetworkId()
+          state.childDeviceId = deviceIdStr
+      }
+   } 
+   return getChildDevice(deviceIdStr)
+}
+
 private getHubType() {
     def hubType = "SmartThings"
     if (state.hubType == null) {
@@ -569,7 +719,7 @@ def getOptionsString(modeSetting, reserveSetting, stormwatchSetting, strategySet
                 optionsString = appendOnNewLine(optionsString, "Time-Based Control Strategy: " + strategySetting.toString())
             }
             if (controlDevices && controlDevices.size() > 0) {
-                optionsString = appendOnNewLine(optionsString, "Control Devices")               
+                optionsString = appendOnNewLine(optionsString, "Control Devices: ${controlDevices}")               
             }
             if (enableTriggers && enableTriggers.toString() != "No Action") {
                 if (optionsString != '') {
@@ -660,7 +810,11 @@ def setSchedules() {
 def getTheDay() {
     def df = new java.text.SimpleDateFormat("EEEE")
     // Ensure the new date object is set to local time zone
-    df.setTimeZone(location.timeZone)
+    if (location.timeZone != null) {
+        df.setTimeZone(location.timeZone)
+    } else {
+        log.info "no time zone found for schedule processing"
+    }
     def day = df.format(new Date())
     //log.debug "Today is: ${day}"
     return day
@@ -695,7 +849,7 @@ def triggerPeriodActive() {
 }
 
 def commandPwActions(mode, reserve, stormwatch, strategy, enableChargeTriggers) {
-    def pwDevice = getChildDevice("powerwallDashboard")
+    def pwDevice = getPwDevice()
     def message = ""
     if (mode && mode.toString() != "No Action") {
         message = message + " Mode: ${mode.toString()}."
@@ -773,41 +927,6 @@ def processSchedule6() {
 
 def processSchedule7() {
     commandPwFromSchedule(schedule7Mode, schedule7Reserve, schedule7Stormwatch, schedule7Strategy, schedule7Days)
-}
-
-def verifyPowerwalls() {
-    try {
-        getPowerwalls()
-        if (!state.accessTokenValid) {
-            return dynamicPage(name: "verifyPowerwalls", title: "Tesla account issue", install: false, uninstall: false, nextPage: "") {
-                section("Error verifying Tesla/Powerwall account") {
-                    paragraph "Please go back and check your username and password"
-                }
-            }
-        } else if (state.foundPowerwalls) {
-            return dynamicPage(name: "verifyPowerwalls", title: "Tap 'Save/Done' to complete installation/update.", install: true, uninstall: false) {
-                section("Found Powerwall(s): ") {
-                    paragraph "Name: ${state.siteName}\n" +
-                        "Id: ${state.pwId}\n" +
-                        "Site Id: ${state.energySiteId}"
-                }
-            }
-        } else {
-            return dynamicPage(name: "verifyPowerwalls", title: "Tesla", install: false, uninstall: true, nextPage: "") {
-                section("Error: No Powerwalls found") {
-                    paragraph "Please go back and check your username and password"
-                }
-            }
-        }
-
-    } catch (Exception e) {
-        log.error e
-        return dynamicPage(name: "verifyPowerwalls", title: "Tesla", install: false, uninstall: true, nextPage: "") {
-            section("Error accessing Powerwall account") {
-                paragraph "Please check your username and password"
-            }
-        }
-    }
 }
 
 private getUrl() {
@@ -911,10 +1030,8 @@ private httpAuthAsyncGet(handlerMethod, String path, Integer attempt = 1) {
         ]
         if (hubIsSt()) {
             include 'asynchttp_v1'
-            //asynchttp_v1.get(handlerMethod, requestParameters, [path: path, attempt : attempt])
             asynchttp_v1.get(handlerMethod, requestParameters, [attempt: attempt])
         } else {
-            //asynchttpGet(handlerMethod, requestParameters, [path: path, attempt : attempt])
             asynchttpGet(handlerMethod, requestParameters, [attempt: attempt])
         }
     } catch (e) {
@@ -941,10 +1058,61 @@ private httpAuthGet(String path, Closure closure) {
     }
 }
 
+/*
+private httpAuthGetL(String path, Closure closure) {
+    log.debug "requesting: ${path}"
+    try {
+        def requestParameters = [
+            uri: "https://${gatewayAddress}",
+            path: path,
+            headers: [
+                'User-Agent': agent,
+                Authorization: "Bearer ${token}"
+            ]
+        ]
+        httpGet(requestParameters) {
+            resp -> closure(resp)
+        }
+    } catch (e) {
+        log.error "Http Get failed: ${e}"
+    }
+}
+*/
+
+
+private httpAsyncGet(address, handlerMethod, String path, Integer attempt = 1) {
+    try {
+        if (logLevel == "debug" | logLevel == "trace") {
+           log.debug "Async requesting: ${path}"
+        }
+        //log.debug "https://${gatewayAddress}"
+        def requestParameters = [
+            uri: "https://${address}",
+            path: path,
+            contentType: 'application/json',
+            ignoreSSLIssues: true 
+            //,
+            //headers: ['User-Agent': agent, Authorization: "Bearer ${token}"]
+        ]
+        if (hubIsSt()) {
+            include 'asynchttp_v1'
+            asynchttp_v1.get(handlerMethod, requestParameters, [attempt: attempt])
+        } else {
+            asynchttpGet(handlerMethod, requestParameters, [attempt: attempt])
+        }
+    } catch (e) {
+        log.error "Http Async Get failed: ${e}"
+    }
+}
+
 private httpAuthPost(Map params = [: ], String cmdName, String path, Closure closure, Integer attempt = null) {
     //cmdName is descriptive name for logging/notification
     def tryCount = attempt ?: 1
-    log.debug "Command: ${cmdName}, Body: ${params?.body}, Attempt: ${tryCount}"
+    def attemptStr = ""
+    if (tryCount > 1) {
+        attemptStr = ", Attempt: ${tryCount}"
+    }
+    log.debug "Command: ${cmdName} ${params?.body}" + attemptStr
     try {
         def requestParameters = [
             uri: url,
@@ -1029,20 +1197,25 @@ private sendNotificationMessage(message, msgType = null) {
 
 private getPowerwalls() {
     state.foundPowerwalls = false
+    def foundPowerwall = false
     httpAuthGet("/api/1/products", {
         resp ->
         //log.debug "response data for products was ${resp.data} "
         resp.data.response.each {
             product ->
                 if (product.resource_type == "battery") {
-                    state.foundPowerwalls = true
-                    log.debug "battery found: ${product.id} site_name: ${product.site_name} energy_site_id: ${product.energy_site_id}"
-                    state.energySiteId = product.energy_site_id
-                    state.pwId = product.id
-                    state.siteName = product.site_name
+                    //do not consider battery site if its site_name is null and a battery has previously been found (possibly a bad second site in the database)
+                    if (product.site_name != null || !foundPowerwall) {
+                        foundPowerwall = true
+                        log.debug "battery found: ${product.id} site_name: ${product.site_name} energy_site_id: ${product.energy_site_id}"
+                        state.energySiteId = product.energy_site_id
+                        state.pwId = product.id
+                        state.siteName = product.site_name
+                    }
                 }
         }
     })
+    state.foundPowerwalls = foundPowerwall
 }
 
 def installed() {
@@ -1095,9 +1268,10 @@ def initialize() {
 }
 
 private createDeviceForPowerwall() {
-    def pwDevice = getChildDevice("powerwallDashboard")
+    def pwDevice = getPwDevice()
     if (!pwDevice) {
-        def device = addChildDevice("darwinsden", "Tesla Powerwall", "powerwallDashboard", null, [name: "Tesla Powerwall", label: "Tesla Powerwall",
+        def device = addChildDevice("darwinsden", "Tesla Powerwall", "Powerwall" + now().toString(), null, 
+                            [name: "Tesla Powerwall", label: "Tesla Powerwall",
             completedSetup: true
         ])
         log.debug "created powerwall device"
@@ -1135,6 +1309,7 @@ def updateIfChanged(device, attr, value, delta = null) {
         if (changed || heartBeatUpdateDue || (currentValue == null && (value != null && value != ''))) {
             device.sendEvent(name: attr, value: value)
             state.lastHeartbeatUpdateTime[attr] = now()
+            //if (changed) {log.debug "changed ${attr} from ${currentValue} to ${value}"}
         }
     } else {
         log.debug("No Powerwall device to update ${attr} to ${value}")
@@ -1155,7 +1330,7 @@ def processBelowTriggerDeviceActions() {
 }
 
 def checkBatteryNotifications(data) {
-    if (notifyWhenReserveApproached?.toBoolean()) {
+    if (notifyWhenReserveApproached?.toBoolean() && data.reservePercent != null) {
         if (data.batteryPercent - data.reservePercent < 5) {
             def status
             if (data.batteryPercent <= data.reservePercent) {
@@ -1231,13 +1406,14 @@ def checkBatteryNotifications(data) {
 
 def processSiteResponse(response, callData) {
     // log.debug "${callData}"
-    //log.debug " r1 ${(5000 * Math.random()).toInteger()}"
-    //log.debug "r2 ${Math.random()}"
     if (logLevel == "debug" | logLevel == "trace") {
         log.debug "processing site data response"
     }
     if (!response.hasError()) {
         def data = response.json.response
+        if (logLevel == "trace") {
+          log.debug "${data}"   
+        }
         def strategy = data.tou_settings.optimization_strategy
         def strategyUi
         if (strategy == "economics") {
@@ -1248,7 +1424,7 @@ def processSiteResponse(response, callData) {
             strategyUi = strategy
         }
         state.strategy = strategyUi.toString()
-        def pwDevice = getChildDevice("powerwallDashboard")
+        def pwDevice = getPwDevice()
         def changed = updateIfChanged(pwDevice, "currentStrategy", strategyUi)
         if (changed && notifyWhenModesChange?.toBoolean()) {
             sendNotificationMessage("Powerwall ATC optimization strategy changed to ${strategyUi}")
@@ -1272,6 +1448,85 @@ def processSiteResponse(response, callData) {
     }
 }
 
+def processGwAggregatesResponse(response, callData) {
+    //log.debug "${callData}"
+    if (logLevel == "debug" | logLevel == "trace") {
+       log.debug "processing gateway aggregates response"
+    }
+    if (!response.hasError()) {
+        def data = response.json
+        if (logLevel == "trace") {
+          log.debug "${data}" 
+        }
+        def child = getPwDevice()
+        updateIfChanged(child, "loadPower", data.load.instant_power.toInteger(), 100)
+        updateIfChanged(child, "gridPower", data.site.instant_power.toInteger(), 100)
+        updateIfChanged(child, "power", data.site.instant_power.toInteger(), 100)
+        updateIfChanged(child, "solarPower", data.solar.instant_power.toInteger(), 100)
+        updateIfChanged(child, "powerwallPower", data.battery.instant_power.toInteger(), 100)
+    } else {
+        
+       log.debug "error"
+         log.debug "${data}"   
+    }       
+}
+
+def processGwSoeResponse(response, callData) {
+    //log.debug "${callData}"
+    if (logLevel == "debug" | logLevel == "trace") {
+      log.debug "processing gateway SOE response"
+    }
+    if (!response.hasError()) {
+        def data = response.json
+        if (logLevel == "trace") {
+           log.debug "${data}" 
+        }
+        def child = getPwDevice()
+        //def batteryPercent = (data.percentage.toFloat() - 5.0)/0.95 //adjust TEG to match Tesla Server API
+        def batteryPercent = (data.percentage.toFloat() - 6)/0.94 //adjust TEG to match Tesla Server API. Remove 5% and rescale 0 - 100%
+        float bpRounded = Math.round(batteryPercent * 10)/10 //rounded to one decimal place 
+        //log.debug "percent: ${bpRounded}"
+        updateIfChanged(child, "battery", (bpRounded + 0.5).toInteger())
+        updateIfChanged(child, "batteryPercent", bpRounded)
+        //runIn(1, checkBatteryNotifications, [data: [batteryPercent: bpRounded, reservePercent: data.backup.backup_reserve_percent.toInteger()]])
+        runIn(1, checkBatteryNotifications, [data: [batteryPercent: bpRounded, reservePercent: null]])
+    } else { 
+        log.debug "error"
+        log.debug "${data}"   
+    }  
+}
+
+def processGwOperationResponse(response, callData) {
+    //log.debug "${callData}"
+    log.debug "processing gateway operation response"
+    if (!response.hasError()) {
+        def data = response.json
+        log.debug "${data}" 
+        def child = getPwDevice()
+    } else { 
+       log.debug "error"
+       log.debug "${data}"   
+    }     
+}
+
+def processGwSiteNameResponse(response, callData) {
+    //log.debug "${callData}"
+    if (logLevel == "debug" | logLevel == "trace") {
+       log.debug "processing gateway sitename response"
+    }
+    if (!response.hasError()) {
+        def data = response.json
+        //log.debug "${data}" 
+        def child = getPwDevice()
+        //updateIfChanged(child, "sitenameAndVers", data.site_name.toString() + ' ' + versionString + '\n' + gridStatusString)
+        updateIfChanged(child, "siteName", data.site_name.toString())
+
+    } else {
+       log.debug "error"
+         log.debug "${data}"   
+    }      
+}
+
 def processPowerwallResponse(response, callData) {
     //     log.debug "${callData}"
     if (logLevel == "debug" | logLevel == "trace") {
@@ -1279,8 +1534,10 @@ def processPowerwallResponse(response, callData) {
     }
     if (!response.hasError()) {
         def data = response.json.response
-        //log.debug "${data}"   
-        def child = getChildDevice("powerwallDashboard")
+        if (logLevel == "trace") {
+          log.debug "${data}"   
+        }
+        def child = getPwDevice()
         def reservePercent
         if (data.operation == "backup") {
             reservePercent = 100
@@ -1292,9 +1549,15 @@ def processPowerwallResponse(response, callData) {
         if (data.total_pack_energy > 1) //sometimes data appears invalid
         {
             def batteryPercent = data.energy_left.toFloat() / data.total_pack_energy.toFloat() * 100.0
-            updateIfChanged(child, "battery", batteryPercent.toInteger())
-            updateIfChanged(child, "batteryPercent", Math.round(batteryPercent * 10) / 10)
-            runIn(1, checkBatteryNotifications, [data: [batteryPercent: batteryPercent, reservePercent: data.backup.backup_reserve_percent.toInteger()]])
+            
+            def bpRounded = Math.round(batteryPercent * 10)/10 //rounded to one decimal place 
+            //log.debug "percent: ${bpRounded}"
+            updateIfChanged(child, "battery", (bpRounded + 0.5).toInteger())
+            updateIfChanged(child, "batteryPercent", bpRounded)
+            
+            //updateIfChanged(child, "battery", Math.round(batteryPercent * 10) / 10).toInteger()
+            //updateIfChanged(child, "batteryPercent", Math.round(batteryPercent * 10) / 10)
+            runIn(1, checkBatteryNotifications, [data: [batteryPercent: bpRounded, reservePercent: data.backup.backup_reserve_percent.toInteger()]])
         }
 
         updateIfChanged(child, "loadPower", data.power_reading.load_power[0].toInteger(), 100)
@@ -1368,7 +1631,7 @@ def processPowerwallResponse(response, callData) {
 
 def processOffGridActions() {
     log.debug "processing off grid actions"
-    def child = getChildDevice("powerwallDashboard")
+    def child = getPwDevice()
     updateIfChanged(child, "switch", "off")
     if (notifyWhenGridStatusChanges?.toBoolean()) {
         sendNotificationMessage("Powerwall status changed to: Off Grid")
@@ -1380,7 +1643,7 @@ def processOffGridActions() {
 
 def processOnGridActions() {
     log.debug "processing on grid actions"
-    def child = getChildDevice("powerwallDashboard")
+    def child = getPwDevice()
     updateIfChanged(child, "switch", "on")
     if (notifyWhenGridStatusChanges?.toBoolean()) {
         sendNotificationMessage("Powerwall status changed to: On Grid")
@@ -1394,7 +1657,9 @@ def requestSiteData(data) {
     if (!state?.lastSiteRequestTime || now() - state.lastSiteRequestTime > 1000) {
         def tryCount = data?.attempt ?: 1
         //log.debug "requesting site info"
-        httpAuthAsyncGet('processSiteResponse', "/api/1/energy_sites/${state.energySiteId}/site_info", tryCount)
+        if ((connectionMethod == null || connectionMethod != "Use Local Gateway Only") && state.foundPowerwalls) {
+            httpAuthAsyncGet('processSiteResponse', "/api/1/energy_sites/${state.energySiteId}/site_info", tryCount)
+        }
         state.lastSiteRequestTime = now()
     }
 }
@@ -1403,7 +1668,22 @@ def requestPwData(data) {
     if (!state?.lastPwRequestTime || now() - state.lastPwRequestTime > 1000) {
         def tryCount = data?.attempt ?: 1
         //log.debug "requesting powerwall data"
-        httpAuthAsyncGet('processPowerwallResponse', "/api/1/powerwalls/${state.pwId}", tryCount)
+        if ((connectionMethod == null || connectionMethod != "Use Local Gateway Only") && state.foundPowerwalls) {
+            httpAuthAsyncGet('processPowerwallResponse', "/api/1/powerwalls/${state.pwId}", tryCount)
+        }
+        if ((connectionMethod && connectionMethod != "Use Remote Tesla Account Server Only") && state.foundGateway && gatewayAddress) {
+           httpAsyncGet(gatewayAddress, 'processGwAggregatesResponse', "/api/meters/aggregates", tryCount)
+           httpAsyncGet(gatewayAddress, 'processGwSoeResponse', "/api/system_status/soe", tryCount)
+           httpAsyncGet(gatewayAddress, 'processGwSiteNameResponse', "/api/site_info/site_name", tryCount)
+            
+          // Authenticate...
+          //httpAsyncGet(gatewayAddress, 'processGwOperationResponse', "/api/operation", tryCount)
+          //https://192.168.1.106/api/system/update/status - version...
+          // https://192.168.1.106/api/operation
+          // api/system_status/grid_status
+
+        }
+        
         state.lastPwRequestTime = now()
     }
 }
@@ -1602,6 +1882,7 @@ def processMain() {
             lastStateProcessTime = state.lastStateRunTime
     }
     def secondsSinceLastRun = (now() - lastStateProcessTime) / 1000
+    //log.debug "${location.timeZone}"
     if (secondsSinceLastRun > 60) {
         state.lastStateRunTime = now()
         runIn(1, requestPwData)
