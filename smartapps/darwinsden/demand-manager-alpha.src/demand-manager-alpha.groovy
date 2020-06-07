@@ -2,7 +2,7 @@
  *  Demand Manager
  *
  *  Author: Darwin@DarwinsDen.com
- *  Copyright 2018, 2019 - All rights reserved
+ *  Copyright 2018, 2019, 2020 - All rights reserved
  *
  *  For questions, more information, or to provide feedback on this smart app, please visit: 
  *
@@ -27,9 +27,10 @@
  */
  
 def version() {
-    return "v0.3.1e.20200111"
+    return "v0.3.2e.20200527"
 }
 /*   
+ *	27-May-2020 >>> v0.3.2e.20200527 - Additional Hubitat compatibility updates.
  *	10-Jan-2020 >>> v0.3.1e.20200111 - Initial basic cross-platform support for Hubitat.
  *	16-Oct-2019 >>> v0.2.4e.20191016 - Added support for multiple thermostats and updated watchdog to only notify once on issue occurrence and resolution.
  *	08-Aug-2019 >>> v0.2.3e.20190808 - Auto-refresh home energy meter and solar power meter if these are Powerwall devices 
@@ -190,7 +191,7 @@ def pagePeakSchedule() {
 def pagePeakSchedule1() {
     dynamicPage(name: "pagePeakSchedule1", title: "Enter Your Utility Schedule 1 Peak Hours and Months.", install: false, uninstall: false) {
         section() {
-            input "schedule1IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
+            input "schedule1IsActive", "bool", required: false, defaultValue: false, title: "Enable this schedule"
         }
         section("") {
             input "schedule1StartTime", "time", required: false, title: "Start Time (schedule 1)"
@@ -208,7 +209,7 @@ def pagePeakSchedule1() {
 def pagePeakSchedule2() {
     dynamicPage(name: "pagePeakSchedule2", title: "Enter Your Utility Schedule 2 Peak Hours and Months.", install: false, uninstall: false) {
         section() {
-            input "schedule2IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
+            input "schedule2IsActive", "bool", required: false, defaultValue: false, title: "Enable this schedule"
         }
         section("") {
             input "schedule2StartTime", "time", required: false, title: "Start Time (schedule 2)"
@@ -226,7 +227,7 @@ def pagePeakSchedule2() {
 def pagePeakSchedule3() {
     dynamicPage(name: "pagePeakSchedule3", title: "Enter Your Utility Schedule 3 Peak Hours and Months.", install: false, uninstall: false) {
         section() {
-            input "schedule3IsActive", "boolean", required: false, defaultValue: false, title: "Enable this schedule"
+            input "schedule3IsActive", "bool", required: false, defaultValue: false, title: "Enable this schedule"
         }
         section("") {
             input "schedule3StartTime", "time", required: false, title: "Start Time (schedule 3)"
@@ -244,7 +245,7 @@ def pagePeakSchedule3() {
 def pageComEdPricing() {
     dynamicPage(name: "pageComEdPricing", title: "Set Peak Period based on ComEd real-time pricing.", install: false, uninstall: false) {
         section() {
-            input "peakHoursFromComEdPricing", "boolean", required: false, defaultValue: false, title: "Set peak hours based on real-time ComEd pricing"
+            input "peakHoursFromComEdPricing", "bool", required: false, defaultValue: false, title: "Set peak hours based on real-time ComEd pricing"
             input "comEdPeakPriceTrigger", "decimal", required: false, defaultValue: false, title: "Enter the value in cents per kW that should trigger a peak period (for example: 4.1)"
         }
     }
@@ -253,7 +254,7 @@ def pageComEdPricing() {
 def pageGriddyPricing() {
     dynamicPage(name: "pageGriddyPricing", title: "Set Peak Period based on Griddy real-time pricing.", install: false, uninstall: false) {
         section() {
-            input "peakHoursFromGriddyPricing", "boolean", required: false, defaultValue: false, title: "Set peak hours based on real-time Griddy pricing"
+            input "peakHoursFromGriddyPricing", "bool", required: false, defaultValue: false, title: "Set peak hours based on real-time Griddy pricing"
             input "griddyPeakPriceTrigger", "decimal", required: false, defaultValue: false, title: "Enter the value in cents per kW that should trigger a peak period (for example: 4.1)"
             input "griddyLoadZone", "string", required: false, defaultValue: false, title: "Griddy load zone/settlement point (eg: LZ_HOUSTON)"
         }
@@ -282,7 +283,7 @@ def pageDisplayIndicators() {
         section("Select a color indicator light (such as the EZ MultiPli/HomeSeer HSM200) to indicate when you're in a peak demand period. Note: " +
             "The indicator on green light will only be briefly displayed during off-peak unless the persist off-peak display is set below.") {
             input colorIndicatorDevices
-            input "alwaysDisplayOffPeakIndicator", "boolean", required: false, defaultValue: false, title: "Persist off-peak indication display"
+            input "alwaysDisplayOffPeakIndicator", "bool", required: false, defaultValue: false, title: "Persist off-peak indication display"
         }
         section("Select HomeSeer WD200+ dimmers to be used as demand warning indicators and solar inverter (if present) production level indicators. " +
             "The Demand Manager will use the colored LED's on the switch plates as graphing indicators (not the bulbs connected to the loads).") {
@@ -292,7 +293,7 @@ def pageDisplayIndicators() {
         }
         section("Install Virtual Demand Meters (Current, Projected, Peak Today, and Peak Month) for use with dashboards (ActionTiles, etc..). " +
             "These should be added to the dashboard smart app as Power Meters.") {
-            input "installVirtualDemandMeters", "boolean", required: false, defaultValue: false, title: "Install Virtual Demand Meters"
+            input "installVirtualDemandMeters", "bool", required: false, defaultValue: false, title: "Install Virtual Demand Meters"
         }
     }
 }
@@ -301,21 +302,21 @@ def pageNotifications() {
     dynamicPage(name: "pageNotifications", title: "Notification Preferences", install: false, uninstall: false) {
 
         section("Send a notification if your demand goal was exceeded for any demand cycle (ie. 30 or 60 minute period).") {
-            input "notifyWhenCycleDemandExceeded", "boolean", required: false, defaultValue: false, title: "Notify when cycle demand exceeded"
+            input "notifyWhenCycleDemandExceeded", "bool", required: false, defaultValue: false, title: "Notify when cycle demand exceeded"
         }
 
         section("Send a notification if the monthly demand reaches a new high") {
-            input "notifyWhenMonthlyDemandExceeded", "boolean", required: false, defaultValue: false, title: "Notify of new monthly high demand"
+            input "notifyWhenMonthlyDemandExceeded", "bool", required: false, defaultValue: false, title: "Notify of new monthly high demand"
         }
         section("Send a notification for general demand status (demand cycle started/ended, etc..)") {
-            input "notifyWithGeneralDemandStatus", "boolean", required: false, defaultValue: false, title: "Notify of general demand status"
+            input "notifyWithGeneralDemandStatus", "bool", required: false, defaultValue: false, title: "Notify of general demand status"
         }
         section("Notify when thermostat is controlled - or when the Demand Manager recommends that the air conditioner should be turned off if thermostat control is disabled") {
-            input "notifyWhenThermostatControlled", "boolean", required: false, defaultValue: false, title: "Notify of pending or recommended thermostat control"
+            input "notifyWhenThermostatControlled", "bool", required: false, defaultValue: false, title: "Notify of pending or recommended thermostat control"
         }
 
         section("Send a notification if anomalies are encountered in the Demand Manager") {
-            input "notifyWhenAnomalies", "boolean", required: false, defaultValue: true, title: "Notify when anomalies are encountered"
+            input "notifyWhenAnomalies", "bool", required: false, defaultValue: true, title: "Notify when anomalies are encountered"
         }
 
         section("Amount in Watts that the current projected cycle demand can exceed before a notification is sent (only applies when cycle demand notifications are on).") {
@@ -401,7 +402,7 @@ def pageThermostat() {
             "This must be turned on before any thermostat command controls below will be applied. By default, if this is turned on without Temperature Rise Scheduling (TRS) applied (see advanced Beta option), the demand manager will aggressively attempt to control the thermostat to meet your demand goal, and will increase the thermostat setpoint if the home temperature " +
             " increases higher than the setpoint in high demand situations. This can result in rapidly increasing home temperatures and/or relatively short air conditioner duty cycles. It is recommended that the home be pre-cooled " +
             "before peak utility hours if this option is set.") {
-            input "commandThermostat", "boolean", required: false, defaultValue: false, title: "Command Thermostat"
+            input "commandThermostat", "bool", required: false, defaultValue: false, title: "Command Thermostat"
         }
 
         section("Maximum thermostat set point temperature the program will reach. Once this set-point temperature is reached, the Demand Manager will no longer raise the thermostat temperature to manage demand.") {
@@ -415,7 +416,7 @@ def pageThermostat() {
 
         section("Conserve Energy: Allow air conditioner to continue through to the next demand cycle (ie 30 or 60 minute period) if it is close to the end of a demand cycle and demand overage will not be extreme. " +
             "Warning: May result in demand slightly exceeding your goal demand") {
-            input "conserveAirConditioningEnergy", "boolean", required: false, defaultValue: false, title: "Conserve AC Energy"
+            input "conserveAirConditioningEnergy", "bool", required: false, defaultValue: false, title: "Conserve AC Energy"
         }
 
         section("") {
@@ -432,7 +433,7 @@ def pageAdvancedSettings() {
       }
       section ("Automatically perform device refreshes during peak periods. This may improve usage accuracy data, but result in network congestion. " +
          "Currently applies to selected Home Energy Meter and Thermostat devices. Powerwall devices are automatically rereshed during peak periods regardless of this setting") {
-            input "refreshDevices", "boolean", required: false, title: "Refresh Devices during peak periods"
+            input "refreshDevices", "bool", required: false, title: "Refresh Devices during peak periods"
         }
    }
 }
@@ -443,7 +444,7 @@ def pagePrecoolSettings() {
             "the pre-cool start time is typically 30 minutes or more before your peak period begins, and the pre-cool return time will typically be the same time " +
             "that your peak period ends. Note: You may wish to  program your smart thermostat to perform this function itself locally instead of using the precool functions here. " +
             "Pre-cooling currently only applies to the first thermostat chosen if multiple thermostats are selected.") {
-            input "precoolHome", "boolean", required: false, defaultValue: false, title: "Precool"
+            input "precoolHome", "bool", required: false, defaultValue: false, title: "Precool"
             input "precoolStartTime", "time", required: false, title: "Pre-cool start time"
             input "precoolStopTime", "time", required: false, title: "Pre-cool return time"
             input "precoolStartTemperature", "number", required: false, title: "Temperature to pre-cool to (°F)"
@@ -457,7 +458,7 @@ def pageAdvancedThermostatCommandSettings() {
         section("Return the thermostat back to pre-defined temperature setpoint after completing each (30 or 60 minute) cycle. Note: This will likely cause issues if TRS is enabled. " +
             "This may also result in inefficient and frequent air conditioner cycles with typical environments. It is recommended that this option is only used when demand goal " +
             "overage conditions are rarely expected, such as in mild/temperate environments or when supplemental home generators or batteries (eg PowerWalls) are being utilized") {
-            input "returnSetPointAfterCycle", "boolean", required: false, defaultValue: false, title: "Return temperature after each cycle"
+            input "returnSetPointAfterCycle", "bool", required: false, defaultValue: false, title: "Return temperature after each cycle"
             input "returnCycleSetPoint", "number", required: false, title: "Temperature to return to after each (30 or 60 minute) cycle (°F)"
         }
         section("Minimum allowable time between thermostat commands. Default is 3 minutes") {
@@ -491,13 +492,13 @@ def pageRemove() {
 
 def installed() {
     log.debug("installed called")
-    updated()
+    //updated()
     //initialize()
+    runIn (10, initialize)
 }
 
 def uninstalled() {
     removeChildDevices(getChildDevices())
-
 }
 
 private removeChildDevices(delete) {
@@ -507,8 +508,12 @@ private removeChildDevices(delete) {
 }
 
 def updated() {
-    log.debug("updated called")
+   log.debug("updated called")
+   runIn (10, initialize)
+}
 
+def initialize() {
+    log.debug("initializing Demand Manager")
     def defaultDemandGoalWatts = 3000
     def defaultNominalUsageWatts = 1000
     def defaultAirConditionerWatts = 5000
@@ -551,7 +556,10 @@ def updated() {
     }
    
     if (getChildDevice("dashboardDevice") == null) {
-        log.debug "adding virtual active peak period switch"
+        log.debug "adding virtual active peak period switch"     
+        //def uuid = UUID.randomUUID()
+        //log.debug "${uuid.toString()}"
+        //def child = addChildDevice("darwinsden", "Demand Manager Dashboard", uuid.toString(), null, [name: "dashboardDevice", label: "Demand Manager", completedSetup: true])          //def child = addChildDevice("darwinsden", "Demand Manager Dashboard", "dashboardDevice", null, [name: uuid.toString(), label: "Demand Manager", completedSetup: true])
         def child = addChildDevice("darwinsden", "Demand Manager Dashboard", "dashboardDevice", null, [name: "dashboardDevice", label: "Demand Manager - Active Peak Period Switch", completedSetup: true])
         def dashboardDevice = getChildDevice("dashboardDevice")
         if (dashboardDevice) {
@@ -584,7 +592,7 @@ def updated() {
     }
     unsubscribe()
     unschedule()
-    initialize()
+    runIn(1,setSchedules)
 }
 
 def memUsed() {
@@ -610,8 +618,8 @@ private getHubType() {
     return atomicState.hubType
 }
 
-def initialize() {
-    log.debug "Initializing Demand Manager"
+def setSchedules() {
+    log.debug "Setting schedules"
     atomicState.lastThrottleRunTime = now()
     runEvery1Minute(throttleEvents)
     runEvery5Minutes(processWatchDog)
@@ -635,16 +643,19 @@ private timeOfDayIsBetween(fromDate, toDate, checkDate, timeZone)     {
      return (!checkDate.before(toDateTime(fromDate)) && !checkDate.after(toDateTime(toDate)))
 }
 
+def startPeakScheduleNow (startTime, stopTime) {
+    def onPeakNow = timeOfDayIsBetween(startTime, stopTime, new Date(), location.timeZone)
+    return onPeakNow && !atomicState.nowInPeakUtilityPeriod?.toBoolean()
+}
+   
 def schedulePeakTimes() {
     if (schedule1IsActive?.toBoolean()) {
         if (schedule1StartTime && schedule1StopTime) {
-            def onPeakNow = timeOfDayIsBetween(schedule1StartTime, schedule1StopTime, new Date(), location.timeZone)
-            if (onPeakNow) {
-                startPeak1Schedule()
-            }
             schedule(schedule1StartTime.toString(), startPeak1Schedule)
             schedule(schedule1StopTime.toString(), stopPeak1Schedule)
-
+            if (startPeakScheduleNow(schedule1StartTime, schedule1StopTime)) {
+                startPeak1Schedule()
+            }
         } else {
             message = "Schedule 1 enabled in preferences, but start and/or stop time was not specified. Peak schedule 1 could not be set."
             log.warn message
@@ -653,12 +664,11 @@ def schedulePeakTimes() {
     }
     if (schedule2IsActive?.toBoolean()) {
         if (schedule2StartTime && schedule2StopTime) {
-            def onPeakNow = timeOfDayIsBetween(schedule2StartTime, schedule2StopTime, new Date(), location.timeZone)
-            if (onPeakNow) {
-                startPeak2Schedule()
-            }
             schedule(schedule2StartTime.toString(), startPeak2Schedule)
             schedule(schedule2StopTime.toString(), stopPeak2Schedule)
+            if (startPeakScheduleNow(schedule2StartTime, schedule2StopTime)) {
+                startPeak2Schedule()
+            }
         } else {
             message = "Schedule 2 enabled in preferences, but start and/or stop time was not specified. Peak schedule 2 could not be set."
             log.warn message
@@ -667,12 +677,11 @@ def schedulePeakTimes() {
     }
     if (schedule3IsActive?.toBoolean()) {
         if (schedule3StartTime && schedule3StopTime) {
-            def onPeakNow = timeOfDayIsBetween(schedule3StartTime, schedule3StopTime, new Date(), location.timeZone)
-            if (onPeakNow) {
-                startPeak3Schedule()
-            }
             schedule(schedule3StartTime.toString(), startPeak3Schedule)
             schedule(schedule3StopTime.toString(), stopPeak3Schedule)
+            if (startPeakScheduleNow(schedule3StartTime, schedule3StopTime)) {
+                startPeak3Schedule()
+            }
         } else {
             message = "Schedule 3 enabled in preferences, but start and/or stop time was not specified. Peak schedule 3 could not be set."
             log.warn message
@@ -718,23 +727,31 @@ def getTheMonth() {
 }
 
 def peakPeriodOnActions() {
-    if (operationMode && operationMode.toString() == "fullControl") {
+    if (operationMode?.toString() == "fullControl") {
         if (devicesToTurnOffDuringPeak?.size()) {
            devicesToTurnOffDuringPeak.off()
         }
     }
+    atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
+    atomicState.thermostatIdToReturn = 0
+    atomicState.thermostatSetLastCycle = 0
+    atomicState.thermostatToControlThisCycle = 0
+    sendNotificationMessage("Entering utility peak period.", "demandGeneral")
+    runIn(1, immediateEvent)
 }
 
 def peakPeriodOffActions() {
-    if (operationMode && operationMode.toString() == "fullControl") {
+    if (operationMode?.toString() == "fullControl") {
         if (devicesToTurnOffDuringPeak?.size()) {
            devicesToTurnOffDuringPeak.on()
         }
     }
+    sendNotificationMessage("Ending utility peak period.", "demandGeneral")
+    runIn(1, immediateEvent)
 }
 
 def peakDemandOnActions() {
-    if (operationMode && operationMode.toString() == "fullControl") {
+    if (operationMode?.toString() == "fullControl") {
         if (devicesToTurnOffDuringPeakDemand?.size()) {
            devicesToTurnOffDuringPeakDemand.off()
         }
@@ -742,7 +759,7 @@ def peakDemandOnActions() {
 }
 
 def peakDemandOffActions() {
-    if (operationMode && operationMode.toString() == "fullControl") {
+    if (operationMode?.toString() == "fullControl") {
         if (devicesToTurnOffDuringPeakDemand?.size()) {
            devicesToTurnOffDuringPeakDemand.on()
         }
@@ -752,30 +769,22 @@ def peakDemandOffActions() {
 def turnOnPeakPeriod() {
     def dashboardDevice = getChildDevice("dashboardDevice")
     if (dashboardDevice) {
-        if (operationMode && operationMode.toString() == "fullControl") {
-            dashboardDevice.on()
-            peakPeriodOnActions()
-            atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
-            atomicState.thermostatIdToReturn = 0
-            atomicState.thermostatSetLastCycle = 0
-            atomicState.thermostatToControlThisCycle = 0
-        }
+        dashboardDevice.on()
     } else {
         log.error "Can't turn on peak period switch. Switch not found"
     }
+    runIn (2, peakPeriodOnActions)
 }
 
 def turnOffPeakPeriod() {
     def dashboardDevice = getChildDevice("dashboardDevice")
     if (dashboardDevice) {
-        if (operationMode && operationMode.toString() == "fullControl") {
-            dashboardDevice.off()
-            peakPeriodOffActions()
-            logDebug "now ending peak demand period"
-        }
+        dashboardDevice.off()
     } else {
         log.error "Can't turn off peak period switch. Switch not found"
     }
+    runIn(2,peakPeriodOffActions)
+    //logDebug "now ending peak demand period"
 }
 
 def startPeak1Schedule() {
@@ -783,16 +792,14 @@ def startPeak1Schedule() {
     if (!weekend() && (!monthsSchedule1 || monthsSchedule1.contains(month))) {
         atomicState.peak1ScheduleActive = true
         turnOnPeakPeriod()
-        runIn(1, immediateEvent)
     }
 }
 
 def stopPeak1Schedule() {
     def month = getTheMonth()
-    if (!monthsSchedule1 || monthsSchedule1.contains(month)) {
+    if (!weekend() && (!monthsSchedule1 || monthsSchedule1.contains(month))) {
         atomicState.peak1ScheduleActive = false
         turnOffPeakPeriod()
-        runIn(1, immediateEvent)
     }
 }
 
@@ -801,16 +808,14 @@ def startPeak2Schedule() {
     if (!weekend() && (!monthsSchedule2 || monthsSchedule2.contains(month))) {
         atomicState.peak2ScheduleActive = true
         turnOnPeakPeriod()
-        runIn(1, immediateEvent)
     }
 }
 
 def stopPeak2Schedule() {
     def month = getTheMonth()
-    if (!monthsSchedule2 || monthsSchedule2.contains(month)) {
+    if (!weekend() && (!monthsSchedule2 || monthsSchedule2.contains(month))) {
         atomicState.peak2ScheduleActive = false
         turnOffPeakPeriod()
-        runIn(1, immediateEvent)
     }
 }
 
@@ -819,7 +824,6 @@ def startPeak3Schedule() {
     if (!weekend() && (!monthsSchedule3 || monthsSchedule3.contains(month))) {
         atomicState.peak3ScheduleActive = true
         turnOnPeakPeriod()
-        runIn(1, immediateEvent)
     }
 }
 
@@ -828,7 +832,6 @@ def stopPeak3Schedule() {
     if (!monthsSchedule3 || monthsSchedule3.contains(month)) {
         atomicState.peak3ScheduleActive = false
         turnOffPeakPeriod()
-        runIn(1, immediateEvent)
     }
 }
 
@@ -979,19 +982,11 @@ def subscribeDevices() {
 
 def peakPeriodSwitchEvent(evt) {
     //log.debug "Throttled Event Received: ${evt.device} ${evt.name} ${evt.value}"
-    if (operationMode && operationMode.toString() == "fullControl") {
-        def dashboardDevice = getChildDevice("dashboardDevice")
-        if (dashboardDevice.currentValue("switch") == "on") {
-            sendNotificationMessage("Entering utility peak period.", "demandGeneral")
-            atomicState.processNewCycleThermo = false //new cycle thermo controls should only be applied after a new/reset cycle in an existing demand period
-            atomicState.thermostatIdToReturn  = 0
-            atomicState.thermostatSetLastCycle = 0
-            atomicState.thermostatToControlThisCycle = 0
-            peakPeriodOnActions()
-        } else {
-            sendNotificationMessage("Ending utility peak period.", "demandGeneral")
-            peakPeriodOffActions()
-        }
+    def dashboardDevice = getChildDevice("dashboardDevice")
+    if (dashboardDevice?.currentValue("switch") == "on") {
+          runIn(2,peakPeriodOnActions)
+    } else {
+          runIn(2,peakPeriodOffActions)
     }
     process()
 }
@@ -1055,13 +1050,11 @@ def checkForPriceThresholdTrigger (def price, def threshold, def source) {
            if (price >= threshold.toFloat()) {
               sendNotificationMessage("${source} pricing of ${price} cents/kwH exceeded trigger threshold of ${threshold.toFloat()} cents/kwH. Entering peak period", "demandGeneral")
               turnOnPeakPeriod()
-              runIn(1, immediateEvent)
            }
        } else {
            if (price <  threshold.toFloat()) {
               sendNotificationMessage("${source} Pricing of ${price} cents/kwH dropped below trigger threshold of ${threshold.toFloat()} cents/kwH. Ending peak period", "demandGeneral")
               turnOffPeakPeriod()
-              runIn(1, immediateEvent)
            }
        }
    }
@@ -2000,8 +1993,6 @@ def confirmDisplayIndications() {
 }
 
 def rescheduleAllEvents() {
-    unsubscribe()
-    unschedule()
     initialize()
 }
 
