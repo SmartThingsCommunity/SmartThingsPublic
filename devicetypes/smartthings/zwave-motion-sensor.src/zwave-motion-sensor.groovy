@@ -113,7 +113,6 @@ def updated() {
 def configure() {
 	if (isEverspringSP817()) {
 		state.configured = false
-		state.intervalConfigured = false
 	}
 	response(initialPoll())
 }

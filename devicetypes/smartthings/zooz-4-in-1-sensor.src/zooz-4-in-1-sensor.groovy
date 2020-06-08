@@ -299,7 +299,6 @@ def getConfigurationCommands() {
 		}
 
 		if (!state.configured || (temperatureAndHumidityReport != state.temperatureAndHumidityReport || retriggerIntervalSettings != state.retriggerIntervalSettings)) {
-
 			state.configured = false // this flag needs to be set to false when settings are changed (and the device was initially configured before)
 
 			if (!state.temperatureConfigured || temperatureAndHumidityReport != state.temperatureAndHumidityReport) {
