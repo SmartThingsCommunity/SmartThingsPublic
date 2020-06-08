@@ -61,23 +61,12 @@ def updated() {
 
 
 def initialize() {
-	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
-	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	if(isUntrackedAeotec() || isUntrackedFibaro()) {
 		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 	} else {
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
-	if(!childDevices) {
-		addChildButtons(numberOfButtons)
-	}
-	if(childDevices) {
-		def event
-		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
-			event = createEvent(name: "button", value: "pushed", isStateChange: true, displayed: false)
-			sendEventToChild(endpoint, event)
-		}
-	}
+
 	response([
 			secure(zwave.batteryV1.batteryGet()),
 			"delay 2000",
@@ -97,7 +86,22 @@ def configure() {
 			//Makes Fibaro KeyFob buttons send all kind of supported events
 		}
 	}
+	setupChildDevices()
 	cmds
+}
+
+def setupChildDevices(){
+	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
+	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
+	if(!childDevices) {
+		addChildButtons(numberOfButtons)
+	}
+	if(childDevices) {
+		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
+			def event = createEvent(name: "button", value: "pushed", isStateChange: true)
+			sendEventToChild(endpoint, event)
+		}
+	}
 }
 
 def parse(String description) {
