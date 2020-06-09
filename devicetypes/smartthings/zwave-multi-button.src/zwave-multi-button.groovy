@@ -95,8 +95,7 @@ def setupChildDevices(){
 	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	if(!childDevices) {
 		addChildButtons(numberOfButtons)
-	}
-	if(childDevices) {
+
 		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
 			def event = createEvent(name: "button", value: "pushed", isStateChange: true)
 			sendEventToChild(endpoint, event)
