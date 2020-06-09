@@ -161,7 +161,7 @@ private isAeotec() {
 
 private getSupportedButtonValues() {
 	if (isAeotec()) {
-		["pushed", "held"]
+		["pushed", "held", "down_hold"]
 	} else {
 		["pushed", "held", "down_hold", "double", "pushed_3x", "pushed_4x", "pushed_5x"]
 	}
