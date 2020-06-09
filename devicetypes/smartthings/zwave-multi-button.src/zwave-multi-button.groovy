@@ -61,23 +61,12 @@ def updated() {
 
 
 def initialize() {
-	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
-	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
 	if(isUntrackedAeotec() || isUntrackedFibaro()) {
 		sendEvent(name: "DeviceWatch-Enroll", value: JsonOutput.toJson([protocol: "zwave", scheme:"untracked"]), displayed: false)
 	} else {
 		sendEvent(name: "checkInterval", value: 8 * 60 * 60 + 10 * 60, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
 	}
-	if(!childDevices) {
-		addChildButtons(numberOfButtons)
-	}
-	if(childDevices) {
-		def event
-		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
-			event = createEvent(name: "button", value: "pushed", isStateChange: true)
-			sendEventToChild(endpoint, event)
-		}
-	}
+
 	response([
 			secure(zwave.batteryV1.batteryGet()),
 			"delay 2000",
@@ -97,7 +86,21 @@ def configure() {
 			//Makes Fibaro KeyFob buttons send all kind of supported events
 		}
 	}
+	setupChildDevices()
 	cmds
+}
+
+def setupChildDevices(){
+	def numberOfButtons = prodNumberOfButtons[zwaveInfo.prod]
+	sendEvent(name: "numberOfButtons", value: numberOfButtons, displayed: false)
+	if(!childDevices) {
+		addChildButtons(numberOfButtons)
+
+		for(def endpoint : 1..prodNumberOfButtons[zwaveInfo.prod]) {
+			def event = createEvent(name: "button", value: "pushed", isStateChange: true)
+			sendEventToChild(endpoint, event)
+		}
+	}
 }
 
 def parse(String description) {
@@ -137,9 +140,9 @@ def zwaveEvent(physicalgraph.zwave.commands.sceneactivationv1.SceneActivationSet
 def zwaveEvent(physicalgraph.zwave.commands.centralscenev1.CentralSceneNotification cmd) {
 	def value = eventsMap[(int) cmd.keyAttributes]
 	def description = "Button no. ${cmd.sceneNumber} was ${value}"
-	def event = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
-	sendEventToChild(cmd.sceneNumber, event)
-	return event
+	def childEvent = createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true)
+	sendEventToChild(cmd.sceneNumber, childEvent)
+	return createEvent(name: "button", value: value, descriptionText: description, data: [buttonNumber: cmd.sceneNumber], isStateChange: true, displayed: false)
 }
 
 def sendEventToChild(buttonNumber, event) {
