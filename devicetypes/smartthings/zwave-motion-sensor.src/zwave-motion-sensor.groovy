@@ -364,16 +364,12 @@ def getConfigurationCommands() {
 		}
 
 		if (!state.configured || (retriggerIntervalSettings != state.retriggerIntervalSettings)) {
-
+			// when state.configured is true but if there were changes made through the preferences section this flag needs to be reset
 			state.configured = false
-
-			if (!state.intervalConfigured || retriggerIntervalSettings != state.retriggerIntervalSettings) {
-				state.intervalConfigured = false
-				result << zwave.configurationV2.configurationSet(parameterNumber: 4, size: 2, scaledConfigurationValue: retriggerIntervalSettings)
-				result << zwave.configurationV2.configurationGet(parameterNumber: 4)
+			result << zwave.configurationV2.configurationSet(parameterNumber: 4, size: 2, scaledConfigurationValue: retriggerIntervalSettings)
+			result << zwave.configurationV2.configurationGet(parameterNumber: 4)
 			}
 		}
-	}
 
 	return result
 }
