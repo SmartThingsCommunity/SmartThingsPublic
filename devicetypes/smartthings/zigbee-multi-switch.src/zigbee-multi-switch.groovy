@@ -235,8 +235,6 @@ private getChildCount() {
 		return 5
 	} else if (device.getDataValue("model") == "E220-KR6N0Z0-HA") {
 		return 6 
-	} else if (device.getDataValue("model") == "PM-S340-ZB") {
-		return 3
 	} else if (device.getDataValue("model") == "PM-S340-ZB" || device.getDataValue("model") == "PM-S340R-ZB") {
 		return 3
 	} else {
